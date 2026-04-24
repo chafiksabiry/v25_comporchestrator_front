@@ -24,8 +24,8 @@ interface ContentUploaderProps {
   journey?: any;
   methodology?: TrainingMethodology | null;
   /**
-   * REP / gig chat: créer un nouveau `training_journeys` + vider le fil (nouveau chat serveur au prochain message).
-   * Sans cela, « New » ne faisait qu’effacer l’UI tout en gardant le même parcours Mongo.
+   * Créer un nouveau `training_journeys` + vider le fil (nouveau chat au prochain message).
+   * Sans cela, « New » effaçait l’UI puis un effet rouvrait la dernière session du gig.
    */
   onForkNewJourneyTraining?: () => Promise<{ trainingJourneyId: string }>;
   /** `persistedJourneyId` : id Mongo renvoyé après save cloud — évite un 2e POST dans JourneyBuilder. */
@@ -2664,7 +2664,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     const startNewConversation = async () => {
-      if (rep && onForkNewJourneyTraining) {
+      if (onForkNewJourneyTraining) {
         try {
           const { trainingJourneyId } = await onForkNewJourneyTraining();
           if (trainingJourneyId && /^[a-f\d]{24}$/i.test(trainingJourneyId)) {
@@ -2790,18 +2790,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (!match?._id) return;
       autoOpenedHistoryForJourneyRef.current = journeyId;
       void openHistorySession(match._id);
-    }, [repOnboardingLayout, chatHistorySessions, activeChatSessionId]);
-
-    useEffect(() => {
-      if (!repOnboardingLayout) return;
-      if (isHistoryLoading) return;
-      if (activeChatSessionId) return;
-      if (!Array.isArray(chatHistorySessions) || chatHistorySessions.length === 0) return;
-
-      const latest = chatHistorySessions[0];
-      if (!latest?._id) return;
-      void openHistorySession(latest._id);
-    }, [repOnboardingLayout, isHistoryLoading, chatHistorySessions, activeChatSessionId]);
+    }, [repOnboardingLayout, chatHistorySessions, activeChatSessionId, journey]);
 
     const generationPreferences = {
       selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
