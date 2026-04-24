@@ -3445,7 +3445,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
           title: String(m?.title || '').trim(),
           objectifs: Array.isArray(m?.objectifs) ? m.objectifs : [],
           keyTopics: Array.isArray(m?.keyTopics) ? m.keyTopics : [],
-          activites: Array.isArray(m?.activites) ? m.activites : [],
           durationMinutes: Number(m?.durationMinutes || 0) || undefined,
         });
         const effectiveModulePlanSource =

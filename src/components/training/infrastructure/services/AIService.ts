@@ -128,7 +128,6 @@ export interface ChatSessionModulePlanItem {
   title: string;
   objectifs: string[];
   keyTopics: string[];
-  activites: string[];
   durationMinutes?: number;
 }
 
