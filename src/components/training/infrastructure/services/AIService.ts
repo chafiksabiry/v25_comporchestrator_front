@@ -129,6 +129,7 @@ export interface ChatSessionModulePlanItem {
   objectifs: string[];
   keyTopics: string[];
   durationMinutes?: number;
+  isValid?: boolean;
 }
 
 export interface ChatSessionDetails {
