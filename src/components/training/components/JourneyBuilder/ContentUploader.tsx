@@ -3447,8 +3447,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
           keyTopics: Array.isArray(m?.keyTopics) ? m.keyTopics : [],
           durationMinutes: Number(m?.durationMinutes || 0) || undefined,
         });
+        // Prefer latest chat-session plan while user iterates in chat (add/remove/modify modules).
+        // Journey plan can be older until explicit save/validation.
         const effectiveModulePlanSource =
-          journeyModulePlanRaw.length >= 2 ? journeyModulePlanRaw : sessionPlanRaw;
+          sessionPlanRaw.length >= 2 ? sessionPlanRaw : journeyModulePlanRaw;
         const journeyModulePlanForContext = effectiveModulePlanSource.map(normalizePlanItem).filter((x) => x.title);
         const curriculumOutlineFromSessionPlan =
           journeyModulePlanForContext.length >= 2
@@ -3870,12 +3872,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
         /(plan\s+de\s+formation|training\s+plan|^\s*##\s*module\s*\d+|^\s*module\s*\d+\s*[-:])/im.test(text);
       const parsedPlan = parseTrainingPlan(text);
       const structuredModules = getStructuredModulePlanForUi();
-      const timelineModules =
-        likelyPlanMessage && structuredModules.length >= 2 ? structuredModules : parsedPlan.modules;
+      const timelineModules = likelyPlanMessage
+        ? (parsedPlan.modules.length >= 2 ? parsedPlan.modules : structuredModules)
+        : (structuredModules.length >= 2 ? structuredModules : parsedPlan.modules);
       if (timelineModules.length >= 2) {
-        const usingStructuredPlan = structuredModules.length >= 2;
-        const timelineTitle = usingStructuredPlan ? 'Plan de formation (sauvegardé)' : parsedPlan.title || 'Plan de formation';
-        const timelineIntro = usingStructuredPlan ? '' : parsedPlan.intro;
+        const usingParsedForCurrentMessage = likelyPlanMessage && parsedPlan.modules.length >= 2;
+        const usingStructuredPlan = !usingParsedForCurrentMessage && structuredModules.length >= 2;
+        const timelineTitle = usingStructuredPlan
+          ? 'Plan de formation (sauvegardé)'
+          : parsedPlan.title || 'Plan de formation';
+        const timelineIntro = usingParsedForCurrentMessage ? parsedPlan.intro : '';
         const moduleThemes = [
           { bg: 'bg-emerald-50', border: 'border-emerald-200', badge: 'bg-emerald-600' },
           { bg: 'bg-sky-50', border: 'border-sky-200', badge: 'bg-sky-600' },
