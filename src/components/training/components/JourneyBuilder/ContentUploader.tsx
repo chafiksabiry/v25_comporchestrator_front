@@ -157,6 +157,39 @@ function extractTrainingReadinessBlock(raw: string): {
   }
 }
 
+/**
+ * Anciennes sessions (ou réponses modèle) sans `<harx-training-status>` : déduit une carte
+ * « Valider le module N » quand le markdown correspond au premier module non terminé du workflow.
+ */
+function inferSyntheticTrainingReadiness(
+  displayText: string,
+  opts: {
+    workflow: ChatWorkflowStatus | null | undefined;
+    planIsValid: boolean;
+  }
+): TrainingReadinessPayload | null {
+  const { workflow, planIsValid } = opts;
+  if (!planIsValid && workflow?.plan !== 'completed') return null;
+  const modules = workflow?.modules;
+  if (!Array.isArray(modules) || modules.length === 0) return null;
+  const stripped = stripHarxStyleBlocks(String(displayText || '')).trim();
+  const head = stripped.match(/^#\s*Module\s+(\d+)\s*[:\s—–-]/im) ?? stripped.match(/^#\s*Module\s+(\d+)\b/im);
+  if (!head?.[1]) return null;
+  const moduleNum = Number(head[1]);
+  if (!Number.isFinite(moduleNum) || moduleNum < 1) return null;
+  const firstOpen = modules.findIndex((mod) => mod.status !== 'completed');
+  if (firstOpen < 0) return null;
+  if (moduleNum !== firstOpen + 1) return null;
+  if (stripped.length < 800) return null;
+  const title = String(modules[firstOpen]?.title || `Module ${moduleNum}`).trim();
+  return {
+    readiness: 'incomplete',
+    missingModules: [],
+    messageFr: `${title} — validez ce contenu pour enregistrer l’avancement et passer au module suivant.`,
+    actions: [{ id: 'validate_module_content', label: `Valider le contenu du module ${moduleNum}` }],
+  };
+}
+
 /** Lecture TTS gratuite (Web Speech API) — découpe le texte pour éviter les limites du moteur. */
 async function speakPlainTextWithWebSpeech(
   service: WebSpeechService,
@@ -5585,9 +5618,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const presentationArtifact = renderPresentationArtifact(textWithoutStyle);
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle, String(msg.text || ''));
                               const interactiveChoiceCards = renderInteractiveChoiceCards(msg.id, textWithoutStyle, String(msg.text || ''));
+                              const mergedReadiness =
+                                msg.trainingReadiness ||
+                                inferSyntheticTrainingReadiness(
+                                  String(msg.text || ''),
+                                  {
+                                    workflow: chatWorkflowStatus,
+                                    planIsValid:
+                                      isPlanSavedForChat || chatWorkflowStatus?.plan === 'completed',
+                                  }
+                                );
                               const trainingReadinessCard =
                                 msg.role === 'assistant' && msg.id === lastAssistantMessageId
-                                  ? renderTrainingReadinessCard(msg.id, msg.trainingReadiness)
+                                  ? renderTrainingReadinessCard(msg.id, mergedReadiness)
                                   : null;
                               const hideMarkdownForInteractivePlan = !!interactiveTimeline;
                               const shouldShowMarkdownBody = !hideMarkdownForInteractivePlan && !msg.suppressText;
