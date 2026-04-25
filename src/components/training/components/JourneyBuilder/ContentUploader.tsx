@@ -128,6 +128,7 @@ function extractTrainingReadinessBlock(raw: string): {
                 a.id === 'validate_module_content' ||
                 a.id === 'validate_all_modules_content' ||
                 a.id === 'generate_current_module' ||
+                a.id === 'view_interactive_presentation' ||
                 a.id === 'validate_training' ||
                 a.id === 'save_without_missing' ||
                 a.id === 'generate_missing_modules')
@@ -4761,6 +4762,52 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     const moduleRef =
                       String(action.label || '').match(/module\s+\d+/i)?.[0] || 'Module 1';
                     void sendChatMessage(`Génère-moi le contenu du ${moduleRef}.`);
+                    return;
+                  }
+                  if (action.id === 'view_interactive_presentation') {
+                    const sid = String(activeChatSessionId || '').trim();
+                    if (!sid) {
+                      appendChatMessage(
+                        'assistant',
+                        "Impossible d'afficher la présentation interactive pour le moment (session introuvable)."
+                      );
+                      return;
+                    }
+                    try {
+                      const session = await AIService.getChatSession(sid);
+                      const modulePlan = Array.isArray((session as any)?.modulePlan)
+                        ? ((session as any).modulePlan as Array<Record<string, any>>)
+                        : [];
+                      const labelMatch = String(action.label || '').match(/module\s+(\d+)/i);
+                      const moduleNum = labelMatch?.[1] ? parseInt(labelMatch[1], 10) : NaN;
+                      const targetIdx =
+                        Number.isFinite(moduleNum) && moduleNum >= 1
+                          ? moduleNum - 1
+                          : modulePlan.findIndex((m) => !!(m as any)?.interactivePresentation);
+                      const payload =
+                        targetIdx >= 0 && targetIdx < modulePlan.length
+                          ? (modulePlan[targetIdx] as any)?.interactivePresentation
+                          : null;
+                      if (!payload) {
+                        appendChatMessage(
+                          'assistant',
+                          "La présentation interactive n'est pas encore disponible pour ce module."
+                        );
+                        return;
+                      }
+                      const moduleTitle =
+                        String(modulePlan[targetIdx]?.title || '').trim() || `Module ${targetIdx + 1}`;
+                      const prettyJson = JSON.stringify(payload, null, 2).slice(0, 24000);
+                      appendChatMessage(
+                        'assistant',
+                        `### Présentation interactive - ${moduleTitle}\n\n\`\`\`json\n${prettyJson}\n\`\`\``
+                      );
+                    } catch {
+                      appendChatMessage(
+                        'assistant',
+                        "Impossible de charger la présentation interactive pour l'instant."
+                      );
+                    }
                     return;
                   }
                   if (action.id === 'save_without_missing' || action.id === 'validate_training') {
