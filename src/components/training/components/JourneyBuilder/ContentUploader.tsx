@@ -3770,7 +3770,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             setChatMessages((prev) =>
               prev.map((m) =>
                 m.id === streamingAssistantId
-                  ? { ...m, isStreaming: false, trainingReadiness: undefined }
+                  ? { ...m, isStreaming: false }
                   : m.isStreaming
                     ? { ...m, isStreaming: false }
                     : m
@@ -3811,10 +3811,41 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     const handleStopChatGeneration = () => {
       if (!isChatLoading) return;
+      const workflow = chatWorkflowStatus || chatWorkflowStatusRef.current;
+      const modules = Array.isArray(workflow?.modules) ? workflow.modules : [];
+      const currentIdx = modules.findIndex((m) => m.status !== 'completed');
+      const canSuggestGenerateCurrentModule =
+        (isPlanSavedForChat || workflow?.plan === 'completed') &&
+        currentIdx >= 0 &&
+        currentIdx < modules.length;
+      const stopReadiness: TrainingReadinessPayload | undefined = canSuggestGenerateCurrentModule
+        ? {
+            readiness: 'incomplete',
+            missingModules: [],
+            messageFr: `Génération arrêtée. Cliquez sur "Générer le contenu du module ${currentIdx + 1}" pour reprendre.`,
+            actions: [
+              {
+                id: 'generate_current_module',
+                label: `Générer le contenu du module ${currentIdx + 1}`,
+              },
+            ],
+          }
+        : undefined;
       activeChatAbortRef.current?.abort();
       activeChatAbortRef.current = null;
       setIsChatLoading(false);
-      setChatMessages((prev) => prev.map((m) => (m.isStreaming ? { ...m, isStreaming: false } : m)));
+      setChatMessages((prev) =>
+        prev.map((m) => {
+          if (!m.isStreaming) return m;
+          if (m.role !== 'assistant') return { ...m, isStreaming: false };
+          return {
+            ...m,
+            isStreaming: false,
+            trainingReadiness: stopReadiness || m.trainingReadiness,
+            suppressText: false,
+          };
+        })
+      );
     };
 
     const handleRegenerateMessage = async (assistantId: string) => {
