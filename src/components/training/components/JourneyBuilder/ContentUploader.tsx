@@ -128,6 +128,7 @@ function extractTrainingReadinessBlock(raw: string): {
                 a.id === 'validate_module_content' ||
                 a.id === 'validate_all_modules_content' ||
                 a.id === 'generate_current_module' ||
+                a.id === 'generate_interactive_presentation' ||
                 a.id === 'view_interactive_presentation' ||
                 a.id === 'validate_training' ||
                 a.id === 'save_without_missing' ||
@@ -4380,8 +4381,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const renderPresentationArtifact = (rawText: string): React.ReactNode | null => {
       const artifact = extractPresentationArtifactFromText(rawText);
       if (!artifact) return null;
+      const animatedSlides = artifact.slides.slice(0, 6);
+      const cycleSeconds = Math.max(12, animatedSlides.length * 4);
       return (
         <div className="mb-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <style>{`
+            @keyframes harxDeckSlideCycle {
+              0% { opacity: 0; transform: translateX(24px) scale(0.98); }
+              8% { opacity: 1; transform: translateX(0) scale(1); }
+              26% { opacity: 1; transform: translateX(0) scale(1); }
+              34% { opacity: 0; transform: translateX(-24px) scale(0.98); }
+              100% { opacity: 0; transform: translateX(-24px) scale(0.98); }
+            }
+          `}</style>
           <div className="mb-2 flex items-center justify-between gap-2">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-slate-600">Presentation Artifact</p>
@@ -4424,6 +4436,31 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </button>
             </div>
           </div>
+          {animatedSlides.length > 0 ? (
+            <div className="mb-3 overflow-hidden rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 p-2">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">Animated preview</p>
+              <div className="relative h-44 rounded-lg border border-white/70 bg-white/80 shadow-inner">
+                {animatedSlides.map((slide, idx) => (
+                  <div
+                    key={`animated-slide-${idx}`}
+                    className="absolute inset-0 rounded-lg p-3"
+                    style={{
+                      opacity: idx === 0 ? 1 : 0,
+                      animation: `harxDeckSlideCycle ${cycleSeconds}s linear infinite`,
+                      animationDelay: `${idx * 4}s`,
+                    }}
+                  >
+                    <p className="mb-1 text-xs font-bold text-slate-900">{slide.title || `Slide ${idx + 1}`}</p>
+                    <ul className="space-y-0.5 pl-4 text-[11px] leading-4 text-slate-700">
+                      {slide.bullets.slice(0, 4).map((b, bi) => (
+                        <li key={`animated-slide-b-${idx}-${bi}`} className="list-disc">{b}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="grid gap-2 md:grid-cols-3">
             {artifact.slides.slice(0, 6).map((slide, idx) => (
               <div key={`artifact-slide-${idx}`} className="rounded-xl border border-slate-200 bg-white p-2">
@@ -4762,6 +4799,31 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     const moduleRef =
                       String(action.label || '').match(/module\s+\d+/i)?.[0] || 'Module 1';
                     void sendChatMessage(`Génère-moi le contenu du ${moduleRef}.`);
+                    return;
+                  }
+                  if (action.id === 'generate_interactive_presentation') {
+                    const generated = await generatePresentationFromState(true);
+                    const slides = Array.isArray((generated as any)?.slides) ? (generated as any).slides : [];
+                    if (slides.length > 0) {
+                      const compactSlides = slides.slice(0, 8).map((s: any, idx: number) => ({
+                        title: String(s?.title || `Slide ${idx + 1}`).trim(),
+                        bullets: Array.isArray(s?.bullets)
+                          ? s.bullets.map((b: any) => String(b || '').trim()).filter(Boolean).slice(0, 6)
+                          : String(s?.content || '')
+                              .split('\n')
+                              .map((line: string) => line.replace(/^[-*•]\s*/, '').trim())
+                              .filter(Boolean)
+                              .slice(0, 6),
+                      }));
+                      const payload = {
+                        title: String((generated as any)?.title || 'Présentation interactive').trim(),
+                        slides: compactSlides,
+                      };
+                      appendChatMessage(
+                        'assistant',
+                        `### Présentation interactive générée\n\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``
+                      );
+                    }
                     return;
                   }
                   if (action.id === 'view_interactive_presentation') {
