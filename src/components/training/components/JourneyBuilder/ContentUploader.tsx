@@ -5836,7 +5836,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               );
                             })()}
                           </div>
-                          {msg.text.trim() && !msg.suppressText ? (
+                          {msg.text.trim() &&
+                          !msg.suppressText &&
+                          !extractTrainingReadinessBlock(String(msg.text || '')).trainingReadiness ? (
                             <div className={`mt-2 flex items-center gap-2 text-slate-500 ${msg.isStreaming ? 'opacity-40 pointer-events-none' : ''}`}>
                               <button
                                 type="button"
