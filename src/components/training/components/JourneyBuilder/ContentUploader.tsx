@@ -11,7 +11,6 @@ import { DraftService } from '../../infrastructure/services/DraftService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 import { getGigsByCompanyId } from '../../../../api/matching';
 import type { Gig } from '../../../../types/matching';
-import PresentationPreview from '../Training/PresentationPreview';
 import { scrollJourneyMainToTop } from './journeyScroll';
 import type { TrainingMethodology } from '../../types/methodology';
 import { buildGigSnapshotForAi } from '../../utils/gigSnapshotForAi';
@@ -632,22 +631,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [generatedImageSet, setGeneratedImageSet] = useState<TrainingImageSet | null>(null);
   const [savedImageSets, setSavedImageSets] = useState<TrainingImageSet[]>([]);
   const [isSavedImageSetsLoading, setIsSavedImageSetsLoading] = useState(false);
-  const [showPresentationModal, setShowPresentationModal] = useState(false);
-  const [showModuleDetailsModal, setShowModuleDetailsModal] = useState(false);
-  const [moduleDetailsTab, setModuleDetailsTab] = useState<'sections' | 'quizzes'>('sections');
-  const [revealedQuizAnswers, setRevealedQuizAnswers] = useState<Record<string, boolean>>({});
-  const [expandedModuleSections, setExpandedModuleSections] = useState<Record<number, boolean>>({});
-  const [activeModuleQuizIndex, setActiveModuleQuizIndex] = useState(0);
-  const [selectedModuleQuizOptions, setSelectedModuleQuizOptions] = useState<Record<number, number>>({});
-  const [checkedModuleQuiz, setCheckedModuleQuiz] = useState<Record<number, boolean>>({});
-  const [selectedSidebarModule, setSelectedSidebarModule] = useState<null | {
-    index: number;
-    title: string;
-    status: 'pending' | 'in_progress' | 'completed';
-    sections: Array<{ title: string; bullets: string[] }>;
-    quizzes: Array<{ question: string; options: string[]; answer: string }>;
-    detailedContentMarkdown?: string;
-  }>(null);
   const [showImagePresentationModal, setShowImagePresentationModal] = useState(false);
   const [activeImageSet, setActiveImageSet] = useState<TrainingImageSet | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -2212,7 +2195,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const normalized = normalizePresentationFromApi(presentation) || presentation;
       setGeneratedPresentation(normalized);
       setWorkspaceTab('artifact');
-      setShowPresentationModal(true);
 
       return normalized;
     } catch (error: any) {
@@ -4289,25 +4271,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => {
-                  const presentation = normalizePresentationFromApi({
-                    title: artifact.title,
-                    slides: artifact.slides.map((s, idx) => ({
-                      title: s.title || `Slide ${idx + 1}`,
-                      content: s.bullets.map((b) => `• ${b}`).join('\n'),
-                    })),
-                  });
-                  if (presentation) {
-                    setGeneratedPresentation(presentation);
-                    setShowPresentationModal(true);
-                  }
-                }}
-                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Open preview
-              </button>
-              <button
-                type="button"
                 onClick={() =>
                   void AIService.exportPresentationToPPTX({
                     title: artifact.title,
@@ -4847,130 +4810,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       ? Number(m.index)
                       : idx;
                   return (
-                    <button
+                    <div
                       key={`wf-module-${idx}`}
-                      type="button"
-                      onClick={() => {
-                        const sourceEntry = (fallbackPlanRaw?.[resolvedIndex] || {}) as Record<string, any>;
-                        const journeyModule = Array.isArray((journey as any)?.modules)
-                          ? ((journey as any).modules[resolvedIndex] as Record<string, any> | undefined)
-                          : undefined;
-                        const markdown = String(
-                          sourceEntry?.detailedContentMarkdown ||
-                            journeyModule?.detailedContentMarkdown ||
-                            journeyModule?.description ||
-                            ''
-                        ).trim();
-
-                        const extractBulletsFromText = (raw: string): string[] => {
-                          const lines = String(raw || '')
-                            .split('\n')
-                            .map((ln) => ln.trim())
-                            .filter(Boolean);
-                          const bulletLines = lines
-                            .filter((ln) => /^[-*•]\s+/.test(ln))
-                            .map((ln) => ln.replace(/^[-*•]\s+/, '').trim())
-                            .filter(Boolean);
-                          if (bulletLines.length > 0) return bulletLines.slice(0, 12);
-                          return lines
-                            .filter((ln) => !/^#{1,6}\s/.test(ln))
-                            .slice(0, 8);
-                        };
-
-                        const parseSectionsFromMarkdown = (md: string): Array<{ title: string; bullets: string[] }> => {
-                          const clean = String(md || '').trim();
-                          if (!clean) return [];
-                          const sectionRegex = /###\s*Section\s*\d+\s*:\s*(.+?)\n([\s\S]*?)(?=\n###\s*Section\s*\d+\s*:|\n###\s*Quiz\b|$)/gi;
-                          const out: Array<{ title: string; bullets: string[] }> = [];
-                          let mSection: RegExpExecArray | null = sectionRegex.exec(clean);
-                          while (mSection) {
-                            out.push({
-                              title: String(mSection[1] || '').trim(),
-                              bullets: extractBulletsFromText(String(mSection[2] || '')),
-                            });
-                            mSection = sectionRegex.exec(clean);
-                          }
-                          return out;
-                        };
-
-                        const normalizeSections = (items: any[]): Array<{ title: string; bullets: string[] }> =>
-                          items
-                            .map((s: any) => ({
-                              title: String(s?.title || '').trim(),
-                              bullets: Array.isArray(s?.bullets)
-                                ? s.bullets.map((b: any) => String(b || '').trim()).filter(Boolean)
-                                : extractBulletsFromText(String(s?.content || '')),
-                            }))
-                            .filter((s: any) => s.title || s.bullets.length > 0);
-
-                        const normalizeQuizzes = (items: any[]): Array<{ question: string; options: string[]; answer: string }> => {
-                          const flat: Array<{ question: string; options: string[]; answer: string }> = [];
-                          items.forEach((q: any) => {
-                            if (Array.isArray(q?.questions) && q.questions.length > 0) {
-                              q.questions.forEach((qq: any) => {
-                                const opts = Array.isArray(qq?.options)
-                                  ? qq.options.map((o: any) => String(o || '').trim()).filter(Boolean)
-                                  : [];
-                                const answerIdx = Number(qq?.correctAnswer);
-                                const answerVal =
-                                  Number.isFinite(answerIdx) && answerIdx >= 0 && answerIdx < opts.length
-                                    ? `${String.fromCharCode(97 + answerIdx)}`
-                                    : String(qq?.answer || '').trim();
-                                flat.push({
-                                  question: String(qq?.question || '').trim(),
-                                  options: opts,
-                                  answer: answerVal,
-                                });
-                              });
-                              return;
-                            }
-                            const opts = Array.isArray(q?.options)
-                              ? q.options.map((o: any) => String(o || '').trim()).filter(Boolean)
-                              : [];
-                            flat.push({
-                              question: String(q?.question || '').trim(),
-                              options: opts,
-                              answer: String(q?.answer || '').trim(),
-                            });
-                          });
-                          return flat.filter((q) => q.question && q.options.length > 0);
-                        };
-
-                        const sectionsFromPlan = Array.isArray(sourceEntry?.sections) ? normalizeSections(sourceEntry.sections) : [];
-                        const sectionsFromJourney = Array.isArray(journeyModule?.sections) ? normalizeSections(journeyModule.sections) : [];
-                        const sectionsFromMarkdown = parseSectionsFromMarkdown(markdown);
-                        const sections =
-                          sectionsFromPlan.length > 0
-                            ? sectionsFromPlan
-                            : sectionsFromJourney.length > 0
-                              ? sectionsFromJourney
-                              : sectionsFromMarkdown;
-
-                        const quizzesFromPlan = Array.isArray(sourceEntry?.quizzes) ? normalizeQuizzes(sourceEntry.quizzes) : [];
-                        const quizzesFromJourney = Array.isArray(journeyModule?.quizzes) ? normalizeQuizzes(journeyModule.quizzes) : [];
-                        const quizzes = quizzesFromPlan.length > 0 ? quizzesFromPlan : quizzesFromJourney;
-
-                        setSelectedSidebarModule({
-                          index: resolvedIndex,
-                          title,
-                          status: statusValue,
-                          sections,
-                          quizzes,
-                          detailedContentMarkdown: markdown || undefined,
-                        });
-                        setModuleDetailsTab(sections.length > 0 ? 'sections' : 'quizzes');
-                        setRevealedQuizAnswers({});
-                        setExpandedModuleSections(
-                          sections.length > 0
-                            ? sections.reduce((acc, _s, sIdx) => ({ ...acc, [sIdx]: sIdx === 0 }), {} as Record<number, boolean>)
-                            : {}
-                        );
-                        setActiveModuleQuizIndex(0);
-                        setSelectedModuleQuizOptions({});
-                        setCheckedModuleQuiz({});
-                        setShowModuleDetailsModal(true);
-                      }}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-left transition hover:border-harx-200 hover:bg-harx-50/40"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-left"
                     >
                       <div className="mb-1 text-xs font-semibold text-slate-800">
                         {`Module ${resolvedIndex + 1}`}
@@ -4981,7 +4823,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           {formatStatus(statusValue)}
                         </span>
                       </div>
-                    </button>
+                    </div>
                   );
                 })
               )}
@@ -5290,28 +5132,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     setPodcastError(null);
                   }}
                 />
-              </div>
-              <div className="flex min-h-[260px] flex-1 flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-sm lg:min-h-0">
-                <p className="shrink-0 border-b border-rose-100/80 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-fuchsia-700">
-                  Training (slides)
-                </p>
-                <div className="min-h-[220px] flex-1 overflow-y-auto lg:min-h-[280px]">
-                  {generatedPresentation?.slides?.length ? (
-                    <div className="h-[min(55vh,520px)] min-h-[240px] lg:h-[min(calc(100dvh-22rem),640px)]">
-                      <PresentationPreview
-                        presentation={generatedPresentation}
-                        isEmbedded
-                        showPagination={false}
-                        hideExportPptx
-                        embedLightCanvas
-                      />
-                    </div>
-                  ) : (
-                    <div className="p-4 text-sm leading-relaxed text-slate-600">
-                      The slide preview will appear here once the training is generated in chat.
-                    </div>
-                  )}
-                </div>
               </div>
             </aside>
           )}
@@ -6150,280 +5970,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
             </div>
             {showChatModuleSidebar ? renderChatWorkflowSidebar() : null}
           </div>
-
-          {showModuleDetailsModal && selectedSidebarModule && (
-            <div className="fixed inset-0 z-[75] flex items-center justify-center bg-slate-900/45 p-4">
-              <div className="flex h-[88vh] w-[min(980px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-slate-900">
-                      {`Module ${selectedSidebarModule.index + 1} - ${selectedSidebarModule.title}`}
-                    </div>
-                    <div className="mt-0.5 text-xs text-slate-500">
-                      {selectedSidebarModule.sections.length} section(s) - {selectedSidebarModule.quizzes.length} quiz question(s)
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowModuleDetailsModal(false)}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Close
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2">
-                  <button
-                    type="button"
-                    onClick={() => setModuleDetailsTab('sections')}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${moduleDetailsTab === 'sections' ? 'bg-harx-500 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
-                  >
-                    Sections
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setModuleDetailsTab('quizzes')}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${moduleDetailsTab === 'quizzes' ? 'bg-harx-500 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
-                  >
-                    Quizzes
-                  </button>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto p-4">
-                  {moduleDetailsTab === 'sections' ? (
-                    selectedSidebarModule.sections.length > 0 ? (
-                      <div className="space-y-3">
-                        {selectedSidebarModule.sections.map((section, sIdx) => (
-                          <div key={`module-section-${sIdx}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setExpandedModuleSections((prev) => ({
-                                  ...prev,
-                                  [sIdx]: !prev[sIdx],
-                                }))
-                              }
-                              className="flex w-full items-center justify-between gap-2 text-left"
-                            >
-                              <div className="text-sm font-semibold text-slate-900">
-                                {`Section ${sIdx + 1}: ${section.title || 'Sans titre'}`}
-                              </div>
-                              <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                                {expandedModuleSections[sIdx] ? 'Hide' : 'Show'}
-                              </span>
-                            </button>
-                            {expandedModuleSections[sIdx] ? (
-                              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                                {section.bullets.length > 0 ? (
-                                  section.bullets.map((bullet, bIdx) => (
-                                    <li key={`section-bullet-${sIdx}-${bIdx}`}>{bullet}</li>
-                                  ))
-                                ) : (
-                                  <li>Aucun point clé structuré.</li>
-                                )}
-                              </ul>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-                        Aucune section structurée trouvée pour ce module.
-                      </div>
-                    )
-                  ) : selectedSidebarModule.quizzes.length > 0 ? (
-                    <div className="space-y-3">
-                      {(() => {
-                        const safeQuizIdx = Math.max(0, Math.min(activeModuleQuizIndex, selectedSidebarModule.quizzes.length - 1));
-                        const quiz = selectedSidebarModule.quizzes[safeQuizIdx];
-                        const picked = selectedModuleQuizOptions[safeQuizIdx];
-                        const checked = checkedModuleQuiz[safeQuizIdx] === true;
-                        const normalizedAnswer = String(quiz?.answer || '')
-                          .trim()
-                          .toLowerCase();
-                        const expectedIdxFromLetter = normalizedAnswer ? normalizedAnswer.charCodeAt(0) - 97 : -1;
-                        const expectedIdxFromText = Array.isArray(quiz?.options)
-                          ? quiz.options.findIndex((opt) => String(opt || '').trim().toLowerCase() === normalizedAnswer)
-                          : -1;
-                        const expectedIdx = expectedIdxFromLetter >= 0 ? expectedIdxFromLetter : expectedIdxFromText;
-                        const isCorrect = Number.isFinite(picked) && picked === expectedIdx;
-                        const answeredCount = Object.keys(checkedModuleQuiz).length;
-                        const correctCount = Object.keys(checkedModuleQuiz).filter((k) => {
-                          const qi = Number(k);
-                          if (!Number.isFinite(qi)) return false;
-                          const selected = selectedModuleQuizOptions[qi];
-                          const q = selectedSidebarModule.quizzes[qi];
-                          const ans = String(q?.answer || '').trim().toLowerCase();
-                          const idxLetter = ans ? ans.charCodeAt(0) - 97 : -1;
-                          const idxText = Array.isArray(q?.options)
-                            ? q.options.findIndex((opt) => String(opt || '').trim().toLowerCase() === ans)
-                            : -1;
-                          const expected = idxLetter >= 0 ? idxLetter : idxText;
-                          return Number.isFinite(selected) && selected === expected;
-                        }).length;
-
-                        return (
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                            <div className="mb-2 flex items-center justify-between">
-                              <div className="text-xs font-semibold text-slate-600">
-                                {`Question ${safeQuizIdx + 1} / ${selectedSidebarModule.quizzes.length}`}
-                              </div>
-                              <div className="text-xs font-semibold text-slate-600">
-                                {`Score: ${correctCount}/${answeredCount}`}
-                              </div>
-                            </div>
-                            <div className="mb-2 h-1.5 w-full rounded-full bg-slate-200">
-                              <div
-                                className="h-1.5 rounded-full bg-harx-500 transition-all"
-                                style={{ width: `${((safeQuizIdx + 1) / Math.max(selectedSidebarModule.quizzes.length, 1)) * 100}%` }}
-                              />
-                            </div>
-                            <div className="text-sm font-semibold text-slate-900">
-                              {quiz?.question || 'Sans question'}
-                            </div>
-                            <div className="mt-2 space-y-2">
-                              {(quiz?.options || []).map((opt, oIdx) => {
-                                const isPicked = picked === oIdx;
-                                const isExpected = checked && oIdx === expectedIdx;
-                                const isWrongPicked = checked && isPicked && expectedIdx >= 0 && oIdx !== expectedIdx;
-                                return (
-                                  <button
-                                    key={`quiz-opt-${safeQuizIdx}-${oIdx}`}
-                                    type="button"
-                                    onClick={() =>
-                                      setSelectedModuleQuizOptions((prev) => ({
-                                        ...prev,
-                                        [safeQuizIdx]: oIdx,
-                                      }))
-                                    }
-                                    className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition ${
-                                      isExpected
-                                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                                        : isWrongPicked
-                                          ? 'border-rose-300 bg-rose-50 text-rose-800'
-                                          : isPicked
-                                            ? 'border-harx-300 bg-harx-50 text-harx-800'
-                                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                    }`}
-                                  >
-                                    <span className="mr-2 font-semibold">{String.fromCharCode(97 + oIdx)})</span>
-                                    {opt}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                disabled={!Number.isFinite(picked)}
-                                onClick={() =>
-                                  setCheckedModuleQuiz((prev) => ({
-                                    ...prev,
-                                    [safeQuizIdx]: true,
-                                  }))
-                                }
-                                className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                              >
-                                Vérifier
-                              </button>
-                              {checked ? (
-                                <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${isCorrect ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-rose-300 bg-rose-50 text-rose-700'}`}>
-                                  {isCorrect ? 'Bonne réponse' : `Réponse correcte: ${quiz?.answer || 'N/A'}`}
-                                </span>
-                              ) : null}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setRevealedQuizAnswers((prev) => ({
-                                    ...prev,
-                                    [`m${selectedSidebarModule.index}-q${safeQuizIdx}`]:
-                                      !prev[`m${selectedSidebarModule.index}-q${safeQuizIdx}`],
-                                  }))
-                                }
-                                className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                              >
-                                {revealedQuizAnswers[`m${selectedSidebarModule.index}-q${safeQuizIdx}`]
-                                  ? 'Masquer la réponse'
-                                  : 'Voir la réponse'}
-                              </button>
-                              {revealedQuizAnswers[`m${selectedSidebarModule.index}-q${safeQuizIdx}`] ? (
-                                <span className="rounded-full border border-indigo-300 bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">
-                                  Réponse: {quiz?.answer || 'N/A'}
-                                </span>
-                              ) : null}
-                            </div>
-                            <div className="mt-3 flex items-center justify-between">
-                              <button
-                                type="button"
-                                onClick={() => setActiveModuleQuizIndex((prev) => Math.max(prev - 1, 0))}
-                                disabled={safeQuizIdx <= 0}
-                                className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                              >
-                                Prev
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setActiveModuleQuizIndex((prev) =>
-                                    Math.min(prev + 1, Math.max(selectedSidebarModule.quizzes.length - 1, 0))
-                                  )
-                                }
-                                disabled={safeQuizIdx >= selectedSidebarModule.quizzes.length - 1}
-                                className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-                              >
-                                Next
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-                      Aucun quiz structuré trouvé pour ce module.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {showPresentationModal && (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
-              <div className="flex h-[92vh] w-[min(1200px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-                  <div className="text-sm font-semibold text-slate-900">Presentation preview</div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void handleSavePresentation()}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowPresentationModal(false)}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-                <div className="min-h-0 flex-1 overflow-hidden">
-                  {generatedPresentation?.slides?.length ? (
-                    <PresentationPreview
-                      presentation={generatedPresentation}
-                      isEmbedded
-                      showPagination={false}
-                      hideExportPptx
-                      embedLightCanvas
-                    />
-                  ) : (
-                    <div className="p-4 text-sm text-slate-600">No presentation generated yet.</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
           {rep && showImagePresentationModal && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
