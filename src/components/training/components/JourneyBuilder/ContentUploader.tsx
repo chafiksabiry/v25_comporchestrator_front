@@ -2045,7 +2045,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   const generatePresentationFromState = async (regenerate: boolean): Promise<any | null> => {
     const fallbackGigId = String(gigId || (journey as any)?.gigId || '').trim();
-    if (uploads.length === 0 && !fallbackGigId) return null;
+    const sid = String(activeChatSessionId || '').trim();
+    if (uploads.length === 0 && !fallbackGigId && !sid) return null;
 
     const hasExistingSlides =
       Array.isArray(generatedPresentation?.slides) && generatedPresentation.slides.length > 0;
@@ -2063,12 +2064,92 @@ export default function ContentUploader(props: ContentUploaderProps) {
       
 
       let curriculum = generatedCurriculum;
+      const buildCurriculumFromGeneratedModules = async (): Promise<any | null> => {
+        const sid = String(activeChatSessionId || '').trim();
+        if (!sid) return null;
+        try {
+          const session = await AIService.getChatSession(sid);
+          const modulePlan = Array.isArray((session as any)?.modulePlan)
+            ? ((session as any).modulePlan as Array<Record<string, any>>)
+            : [];
+          if (modulePlan.length === 0) return null;
+
+          const normalizedModules = modulePlan
+            .map((m, idx) => {
+              const title = String(m?.title || `Module ${idx + 1}`).trim();
+              const sections = Array.isArray(m?.sections)
+                ? m.sections
+                    .map((s: any) => ({
+                      title: String(s?.title || '').trim(),
+                      bullets: Array.isArray(s?.bullets)
+                        ? s.bullets.map((b: any) => String(b || '').trim()).filter(Boolean).slice(0, 8)
+                        : [],
+                    }))
+                    .filter((s: any) => s.title || s.bullets.length > 0)
+                : [];
+              const quizzes = Array.isArray(m?.quizzes)
+                ? m.quizzes
+                    .map((q: any) => ({
+                      question: String(q?.question || '').trim(),
+                      options: Array.isArray(q?.options)
+                        ? q.options.map((o: any) => String(o || '').trim()).filter(Boolean).slice(0, 6)
+                        : [],
+                      answer: String(q?.answer || '').trim(),
+                    }))
+                    .filter((q: any) => q.question && q.options.length > 0)
+                : [];
+              const markdown = String(m?.detailedContentMarkdown || '').trim();
+
+              if (!title && sections.length === 0 && quizzes.length === 0 && !markdown) return null;
+              return {
+                title,
+                sections,
+                quizzes,
+                content:
+                  markdown ||
+                  [
+                    ...sections.map((s: any) => `Section: ${s.title}\n${s.bullets.map((b: string) => `- ${b}`).join('\n')}`),
+                    quizzes.length
+                      ? `Quiz:\n${quizzes
+                          .map(
+                            (q: any) =>
+                              `Q: ${q.question}\n${q.options
+                                .map((opt: string, i: number) => `${String.fromCharCode(97 + i)}) ${opt}`)
+                                .join('\n')}\nRéponse: ${q.answer || ''}`
+                          )
+                          .join('\n\n')}`
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join('\n\n'),
+              };
+            })
+            .filter(Boolean) as Array<Record<string, any>>;
+
+          if (normalizedModules.length === 0) return null;
+
+          return {
+            title: String((journey as any)?.name || 'Présentation interactive').trim(),
+            description: String((journey as any)?.description || '').trim(),
+            methodology: String(methodology?.name || 'Methodologie 360').trim(),
+            source: 'generated_modules',
+            modules: normalizedModules,
+          };
+        } catch (e) {
+          console.warn('[ContentUploader] Unable to build curriculum from generated modules:', e);
+          return null;
+        }
+      };
       const analyzedUploads = getAnalyzedUploads();
       const hasUploadSource = analyzedUploads.length > 0;
       const includeKbSource = !!fallbackGigId && useKbForPresentation;
       const gigOnly = !hasUploadSource && !!fallbackGigId;
 
-      if (!curriculum) {
+      const modulesBasedCurriculum = await buildCurriculumFromGeneratedModules();
+      if (modulesBasedCurriculum) {
+        curriculum = modulesBasedCurriculum;
+        setGeneratedCurriculum(modulesBasedCurriculum);
+      } else if (!curriculum) {
         setIsProcessing(true);
 
         if (hasUploadSource) {
@@ -2119,6 +2200,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setGeneratedPresentation(normalized);
       setIsPreviewOpen(false);
       setWorkspaceTab('artifact');
+      setShowPresentationModal(true);
 
       return normalized;
     } catch (error: any) {
@@ -6139,7 +6221,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             {showChatModuleSidebar ? renderChatWorkflowSidebar() : null}
           </div>
 
-          {rep && showPresentationModal && (
+          {showPresentationModal && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
               <div className="flex h-[92vh] w-[min(1200px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
