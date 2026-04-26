@@ -4848,34 +4848,111 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       type="button"
                       onClick={() => {
                         const sourceEntry = (fallbackPlanRaw?.[resolvedIndex] || {}) as Record<string, any>;
-                        const sections = Array.isArray(sourceEntry?.sections)
-                          ? sourceEntry.sections
-                              .map((s: any) => ({
-                                title: String(s?.title || '').trim(),
-                                bullets: Array.isArray(s?.bullets)
-                                  ? s.bullets.map((b: any) => String(b || '').trim()).filter(Boolean)
-                                  : [],
-                              }))
-                              .filter((s: any) => s.title || s.bullets.length > 0)
-                          : [];
-                        const quizzes = Array.isArray(sourceEntry?.quizzes)
-                          ? sourceEntry.quizzes
-                              .map((q: any) => ({
-                                question: String(q?.question || '').trim(),
-                                options: Array.isArray(q?.options)
-                                  ? q.options.map((o: any) => String(o || '').trim()).filter(Boolean)
-                                  : [],
-                                answer: String(q?.answer || '').trim(),
-                              }))
-                              .filter((q: any) => q.question && q.options.length > 0)
-                          : [];
+                        const journeyModule = Array.isArray((journey as any)?.modules)
+                          ? ((journey as any).modules[resolvedIndex] as Record<string, any> | undefined)
+                          : undefined;
+                        const markdown = String(
+                          sourceEntry?.detailedContentMarkdown ||
+                            journeyModule?.detailedContentMarkdown ||
+                            journeyModule?.description ||
+                            ''
+                        ).trim();
+
+                        const extractBulletsFromText = (raw: string): string[] => {
+                          const lines = String(raw || '')
+                            .split('\n')
+                            .map((ln) => ln.trim())
+                            .filter(Boolean);
+                          const bulletLines = lines
+                            .filter((ln) => /^[-*•]\s+/.test(ln))
+                            .map((ln) => ln.replace(/^[-*•]\s+/, '').trim())
+                            .filter(Boolean);
+                          if (bulletLines.length > 0) return bulletLines.slice(0, 12);
+                          return lines
+                            .filter((ln) => !/^#{1,6}\s/.test(ln))
+                            .slice(0, 8);
+                        };
+
+                        const parseSectionsFromMarkdown = (md: string): Array<{ title: string; bullets: string[] }> => {
+                          const clean = String(md || '').trim();
+                          if (!clean) return [];
+                          const sectionRegex = /###\s*Section\s*\d+\s*:\s*(.+?)\n([\s\S]*?)(?=\n###\s*Section\s*\d+\s*:|\n###\s*Quiz\b|$)/gi;
+                          const out: Array<{ title: string; bullets: string[] }> = [];
+                          let mSection: RegExpExecArray | null = sectionRegex.exec(clean);
+                          while (mSection) {
+                            out.push({
+                              title: String(mSection[1] || '').trim(),
+                              bullets: extractBulletsFromText(String(mSection[2] || '')),
+                            });
+                            mSection = sectionRegex.exec(clean);
+                          }
+                          return out;
+                        };
+
+                        const normalizeSections = (items: any[]): Array<{ title: string; bullets: string[] }> =>
+                          items
+                            .map((s: any) => ({
+                              title: String(s?.title || '').trim(),
+                              bullets: Array.isArray(s?.bullets)
+                                ? s.bullets.map((b: any) => String(b || '').trim()).filter(Boolean)
+                                : extractBulletsFromText(String(s?.content || '')),
+                            }))
+                            .filter((s: any) => s.title || s.bullets.length > 0);
+
+                        const normalizeQuizzes = (items: any[]): Array<{ question: string; options: string[]; answer: string }> => {
+                          const flat: Array<{ question: string; options: string[]; answer: string }> = [];
+                          items.forEach((q: any) => {
+                            if (Array.isArray(q?.questions) && q.questions.length > 0) {
+                              q.questions.forEach((qq: any) => {
+                                const opts = Array.isArray(qq?.options)
+                                  ? qq.options.map((o: any) => String(o || '').trim()).filter(Boolean)
+                                  : [];
+                                const answerIdx = Number(qq?.correctAnswer);
+                                const answerVal =
+                                  Number.isFinite(answerIdx) && answerIdx >= 0 && answerIdx < opts.length
+                                    ? `${String.fromCharCode(97 + answerIdx)}`
+                                    : String(qq?.answer || '').trim();
+                                flat.push({
+                                  question: String(qq?.question || '').trim(),
+                                  options: opts,
+                                  answer: answerVal,
+                                });
+                              });
+                              return;
+                            }
+                            const opts = Array.isArray(q?.options)
+                              ? q.options.map((o: any) => String(o || '').trim()).filter(Boolean)
+                              : [];
+                            flat.push({
+                              question: String(q?.question || '').trim(),
+                              options: opts,
+                              answer: String(q?.answer || '').trim(),
+                            });
+                          });
+                          return flat.filter((q) => q.question && q.options.length > 0);
+                        };
+
+                        const sectionsFromPlan = Array.isArray(sourceEntry?.sections) ? normalizeSections(sourceEntry.sections) : [];
+                        const sectionsFromJourney = Array.isArray(journeyModule?.sections) ? normalizeSections(journeyModule.sections) : [];
+                        const sectionsFromMarkdown = parseSectionsFromMarkdown(markdown);
+                        const sections =
+                          sectionsFromPlan.length > 0
+                            ? sectionsFromPlan
+                            : sectionsFromJourney.length > 0
+                              ? sectionsFromJourney
+                              : sectionsFromMarkdown;
+
+                        const quizzesFromPlan = Array.isArray(sourceEntry?.quizzes) ? normalizeQuizzes(sourceEntry.quizzes) : [];
+                        const quizzesFromJourney = Array.isArray(journeyModule?.quizzes) ? normalizeQuizzes(journeyModule.quizzes) : [];
+                        const quizzes = quizzesFromPlan.length > 0 ? quizzesFromPlan : quizzesFromJourney;
+
                         setSelectedSidebarModule({
                           index: resolvedIndex,
                           title,
                           status: statusValue,
                           sections,
                           quizzes,
-                          detailedContentMarkdown: String(sourceEntry?.detailedContentMarkdown || '').trim() || undefined,
+                          detailedContentMarkdown: markdown || undefined,
                         });
                         setModuleDetailsTab(sections.length > 0 ? 'sections' : 'quizzes');
                         setRevealedQuizAnswers({});
