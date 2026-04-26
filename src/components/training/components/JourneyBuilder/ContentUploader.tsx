@@ -633,6 +633,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [savedImageSets, setSavedImageSets] = useState<TrainingImageSet[]>([]);
   const [isSavedImageSetsLoading, setIsSavedImageSetsLoading] = useState(false);
   const [showPresentationModal, setShowPresentationModal] = useState(false);
+  const [showModuleDetailsModal, setShowModuleDetailsModal] = useState(false);
+  const [moduleDetailsTab, setModuleDetailsTab] = useState<'sections' | 'quizzes'>('sections');
+  const [revealedQuizAnswers, setRevealedQuizAnswers] = useState<Record<string, boolean>>({});
+  const [selectedSidebarModule, setSelectedSidebarModule] = useState<null | {
+    index: number;
+    title: string;
+    status: 'pending' | 'in_progress' | 'completed';
+    sections: Array<{ title: string; bullets: string[] }>;
+    quizzes: Array<{ question: string; options: string[]; answer: string }>;
+    detailedContentMarkdown?: string;
+  }>(null);
   const [showImagePresentationModal, setShowImagePresentationModal] = useState(false);
   const [activeImageSet, setActiveImageSet] = useState<TrainingImageSet | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -4827,10 +4838,53 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 modules.map((m, idx) => {
                   const statusValue = String(m?.status || 'pending') as 'pending' | 'in_progress' | 'completed';
                   const title = String(m?.title || `Module ${idx + 1}`);
+                  const resolvedIndex =
+                    Number.isFinite(Number(m?.index)) && Number(m?.index) >= 0
+                      ? Number(m.index)
+                      : idx;
                   return (
-                    <div key={`wf-module-${idx}`} className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2">
+                    <button
+                      key={`wf-module-${idx}`}
+                      type="button"
+                      onClick={() => {
+                        const sourceEntry = (fallbackPlanRaw?.[resolvedIndex] || {}) as Record<string, any>;
+                        const sections = Array.isArray(sourceEntry?.sections)
+                          ? sourceEntry.sections
+                              .map((s: any) => ({
+                                title: String(s?.title || '').trim(),
+                                bullets: Array.isArray(s?.bullets)
+                                  ? s.bullets.map((b: any) => String(b || '').trim()).filter(Boolean)
+                                  : [],
+                              }))
+                              .filter((s: any) => s.title || s.bullets.length > 0)
+                          : [];
+                        const quizzes = Array.isArray(sourceEntry?.quizzes)
+                          ? sourceEntry.quizzes
+                              .map((q: any) => ({
+                                question: String(q?.question || '').trim(),
+                                options: Array.isArray(q?.options)
+                                  ? q.options.map((o: any) => String(o || '').trim()).filter(Boolean)
+                                  : [],
+                                answer: String(q?.answer || '').trim(),
+                              }))
+                              .filter((q: any) => q.question && q.options.length > 0)
+                          : [];
+                        setSelectedSidebarModule({
+                          index: resolvedIndex,
+                          title,
+                          status: statusValue,
+                          sections,
+                          quizzes,
+                          detailedContentMarkdown: String(sourceEntry?.detailedContentMarkdown || '').trim() || undefined,
+                        });
+                        setModuleDetailsTab(sections.length > 0 ? 'sections' : 'quizzes');
+                        setRevealedQuizAnswers({});
+                        setShowModuleDetailsModal(true);
+                      }}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-left transition hover:border-harx-200 hover:bg-harx-50/40"
+                    >
                       <div className="mb-1 text-xs font-semibold text-slate-800">
-                        {`Module ${Number.isFinite(Number(m?.index)) ? Number(m.index) + 1 : idx + 1}`}
+                        {`Module ${resolvedIndex + 1}`}
                       </div>
                       <div className="line-clamp-2 text-[11px] text-slate-600">{title}</div>
                       <div className="mt-1.5">
@@ -4838,7 +4892,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           {formatStatus(statusValue)}
                         </span>
                       </div>
-                    </div>
+                    </button>
                   );
                 })
               )}
@@ -6007,6 +6061,116 @@ export default function ContentUploader(props: ContentUploaderProps) {
             </div>
             {showChatModuleSidebar ? renderChatWorkflowSidebar() : null}
           </div>
+
+          {showModuleDetailsModal && selectedSidebarModule && (
+            <div className="fixed inset-0 z-[75] flex items-center justify-center bg-slate-900/45 p-4">
+              <div className="flex h-[88vh] w-[min(980px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-slate-900">
+                      {`Module ${selectedSidebarModule.index + 1} - ${selectedSidebarModule.title}`}
+                    </div>
+                    <div className="mt-0.5 text-xs text-slate-500">
+                      {selectedSidebarModule.sections.length} section(s) - {selectedSidebarModule.quizzes.length} quiz question(s)
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowModuleDetailsModal(false)}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2">
+                  <button
+                    type="button"
+                    onClick={() => setModuleDetailsTab('sections')}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${moduleDetailsTab === 'sections' ? 'bg-harx-500 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                  >
+                    Sections
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModuleDetailsTab('quizzes')}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${moduleDetailsTab === 'quizzes' ? 'bg-harx-500 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                  >
+                    Quizzes
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                  {moduleDetailsTab === 'sections' ? (
+                    selectedSidebarModule.sections.length > 0 ? (
+                      <div className="space-y-3">
+                        {selectedSidebarModule.sections.map((section, sIdx) => (
+                          <div key={`module-section-${sIdx}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <div className="text-sm font-semibold text-slate-900">
+                              {`Section ${sIdx + 1}: ${section.title || 'Sans titre'}`}
+                            </div>
+                            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                              {section.bullets.length > 0 ? (
+                                section.bullets.map((bullet, bIdx) => (
+                                  <li key={`section-bullet-${sIdx}-${bIdx}`}>{bullet}</li>
+                                ))
+                              ) : (
+                                <li>Aucun point clé structuré.</li>
+                              )}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                        Aucune section structurée trouvée pour ce module.
+                      </div>
+                    )
+                  ) : selectedSidebarModule.quizzes.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedSidebarModule.quizzes.map((quiz, qIdx) => {
+                        const answerKey = `m${selectedSidebarModule.index}-q${qIdx}`;
+                        const showAnswer = revealedQuizAnswers[answerKey] === true;
+                        return (
+                          <div key={`module-quiz-${qIdx}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <div className="text-sm font-semibold text-slate-900">
+                              {`Question ${qIdx + 1}: ${quiz.question || 'Sans question'}`}
+                            </div>
+                            <ol className="mt-2 list-[lower-alpha] space-y-1 pl-5 text-sm text-slate-700">
+                              {quiz.options.map((opt, oIdx) => (
+                                <li key={`quiz-opt-${qIdx}-${oIdx}`}>{opt}</li>
+                              ))}
+                            </ol>
+                            <div className="mt-3 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setRevealedQuizAnswers((prev) => ({
+                                    ...prev,
+                                    [answerKey]: !showAnswer,
+                                  }))
+                                }
+                                className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                              >
+                                {showAnswer ? 'Masquer la réponse' : 'Voir la réponse'}
+                              </button>
+                              {showAnswer ? (
+                                <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                                  Réponse: {quiz.answer || 'N/A'}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                      Aucun quiz structuré trouvé pour ce module.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {showPresentationModal && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
