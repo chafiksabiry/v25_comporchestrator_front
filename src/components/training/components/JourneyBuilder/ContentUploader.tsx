@@ -2044,7 +2044,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
   };
 
   const generatePresentationFromState = async (regenerate: boolean): Promise<any | null> => {
-    if (uploads.length === 0 && !gigId) return null;
+    const fallbackGigId = String(gigId || (journey as any)?.gigId || '').trim();
+    if (uploads.length === 0 && !fallbackGigId) return null;
 
     const hasExistingSlides =
       Array.isArray(generatedPresentation?.slides) && generatedPresentation.slides.length > 0;
@@ -2064,8 +2065,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
       let curriculum = generatedCurriculum;
       const analyzedUploads = getAnalyzedUploads();
       const hasUploadSource = analyzedUploads.length > 0;
-      const includeKbSource = !!gigId && useKbForPresentation;
-      const gigOnly = !hasUploadSource && !!gigId;
+      const includeKbSource = !!fallbackGigId && useKbForPresentation;
+      const gigOnly = !hasUploadSource && !!fallbackGigId;
 
       if (!curriculum) {
         setIsProcessing(true);
@@ -2093,21 +2094,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
             }
           );
         } else {
-          curriculum = await fetchCurriculumFromGig(includeKbSource);
+          curriculum = await fetchCurriculumFromGig(includeKbSource, fallbackGigId);
         }
 
         setGeneratedCurriculum(curriculum);
         setIsProcessing(false);
       } else if (regenerate && gigOnly) {
         setIsProcessing(true);
-        curriculum = await fetchCurriculumFromGig(includeKbSource);
+        curriculum = await fetchCurriculumFromGig(includeKbSource, fallbackGigId);
         setGeneratedCurriculum(curriculum);
         setIsProcessing(false);
       }
 
       const generationContext = await buildPresentationSourceContext(includeKbSource);
       const presentation = await AIService.generatePresentation(curriculum, {
-        gigId: gigId || undefined,
+        gigId: fallbackGigId || undefined,
         useKnowledgeBase: includeKbSource,
         includeCallRecordings: includeKbSource,
         sourceMode: generationContext.sourceMode,
@@ -2158,10 +2159,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
   /**
    * Helper to fetch curriculum from Gig KB if no uploads are present
    */
-  const fetchCurriculumFromGig = async (includeKbSource: boolean) => {
-    if (!gigId) throw new Error('No Gig selected');
+  const fetchCurriculumFromGig = async (includeKbSource: boolean, targetGigId?: string) => {
+    const effectiveGigId = String(targetGigId || gigId || (journey as any)?.gigId || '').trim();
+    if (!effectiveGigId) throw new Error('No Gig selected');
     
-    return await AIService.generateTrainingFromGig(gigId, {
+    return await AIService.generateTrainingFromGig(effectiveGigId, {
       useKnowledgeBase: includeKbSource,
       includeCallRecordings: includeKbSource,
       sourceContext: {
@@ -4802,6 +4804,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     return;
                   }
                   if (action.id === 'generate_interactive_presentation') {
+                    appendChatMessage('assistant', "Génération de la présentation interactive en cours...");
                     const generated = await generatePresentationFromState(true);
                     const slides = Array.isArray((generated as any)?.slides) ? (generated as any).slides : [];
                     if (slides.length > 0) {
@@ -4822,6 +4825,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       appendChatMessage(
                         'assistant',
                         `### Présentation interactive générée\n\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``
+                      );
+                    } else {
+                      appendChatMessage(
+                        'assistant',
+                        "La présentation interactive n'a pas pu être générée pour le moment. Réessayez depuis le même bouton."
                       );
                     }
                     return;
