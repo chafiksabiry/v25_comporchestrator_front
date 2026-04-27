@@ -3,6 +3,7 @@ import Cookies from 'js-cookie';
 import { ArrowLeft, Brain, Pencil, Sparkles } from 'lucide-react';
 import apiClient from '../api/knowledgeClient';
 import ScriptListPanel from './script-generator/ScriptListPanel';
+import ScriptChatPanel from './script-generator/ScriptChatPanel';
 import ScriptViewPage from './script-generator/ScriptViewPage';
 
 interface Gig {
@@ -206,7 +207,7 @@ const ScriptGenerator: React.FC = () => {
   const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
-  const [currentView, setCurrentView] = useState<'list' | 'view'>('list');
+  const [currentView, setCurrentView] = useState<'list' | 'view' | 'chat'>('list');
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const getCompanyId = () => {
@@ -356,7 +357,7 @@ const ScriptGenerator: React.FC = () => {
       };
       setMessages((prev) => [...prev.filter((m) => !m.id.startsWith('assistant-pending-')), generatedMessage]);
       setActiveScriptMessage(generatedMessage);
-      setCurrentView('view');
+      setCurrentView('chat');
     } catch (err: any) {
       setMessages((prev) => prev.filter((m) => !m.id.startsWith('assistant-pending-')));
       setError(err?.response?.data?.error || err?.message || 'Failed to generate response');
@@ -412,6 +413,7 @@ const ScriptGenerator: React.FC = () => {
 
   const handleGenerateScript = async () => {
     if (!selectedGigSummary) return;
+    setCurrentView('chat');
     const autoPrompt = [
       'Generate a simple ready-to-use call script.',
       `Gig title: ${selectedGigSummary.title}`,
@@ -419,6 +421,11 @@ const ScriptGenerator: React.FC = () => {
       'Keep it short and practical.',
     ].join('\n');
     await sendMessageToApi(autoPrompt, false);
+  };
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessageToApi(input, true);
   };
 
   const buildScriptStepsFromMessage = (message: ChatMessage): ScriptStep[] => {
@@ -612,9 +619,39 @@ const ScriptGenerator: React.FC = () => {
         if (key) byTurnId.set(key, idx);
       });
 
+      // Show only the active scenario branch based on selected lead options.
+      const visibleTurnIndexes: number[] = [];
+      const visited = new Set<number>();
+      let cursor = 0;
+      while (
+        Number.isFinite(cursor) &&
+        cursor >= 0 &&
+        cursor < turns.length &&
+        !visited.has(cursor) &&
+        visibleTurnIndexes.length < 30
+      ) {
+        visibleTurnIndexes.push(cursor);
+        visited.add(cursor);
+        const turn = turns[cursor];
+        const options = Array.isArray(turn?.leadOptions)
+          ? turn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply)
+          : [];
+        if (options.length === 0) break;
+        const turnKey = `${messageId}-${cursor}`;
+        const selectedIdx = Number.isFinite(selectedLeadOptionByTurnKey[turnKey])
+          ? selectedLeadOptionByTurnKey[turnKey]
+          : 0;
+        const safeIdx = Math.max(0, Math.min(selectedIdx, options.length - 1));
+        const selected = options[safeIdx];
+        const nextTurnId = String(selected?.nextTurnId || '').trim();
+        const nextIdx = nextTurnId ? byTurnId.get(nextTurnId) : undefined;
+        if (typeof nextIdx !== 'number') break;
+        cursor = nextIdx;
+      }
+
       return (
         <div className="space-y-3">
-          {turns.map((_turn, turnIdx) => {
+          {visibleTurnIndexes.map((turnIdx) => {
             const turn = turns[turnIdx];
             const options = Array.isArray(turn?.leadOptions) ? turn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply) : [];
             if (!turn?.agentLine || options.length === 0) return null;
@@ -904,6 +941,19 @@ const ScriptGenerator: React.FC = () => {
                     ? 'Validation...'
                     : 'Valider le script'
             }
+          />
+        ) : currentView === 'chat' ? (
+          <ScriptChatPanel
+            messages={messages}
+            input={input}
+            isSending={isSending}
+            validatingScriptId={validatingScriptId}
+            validatedScriptIds={validatedScriptIds}
+            selectedGigId={selectedGig?._id}
+            onInputChange={setInput}
+            onSubmit={sendMessage}
+            onValidateScript={validateScript}
+            renderAssistantMessage={renderAssistantMessage}
           />
         ) : null}
 
