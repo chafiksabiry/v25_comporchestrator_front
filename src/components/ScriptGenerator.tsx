@@ -26,6 +26,7 @@ const ScriptGenerator: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const lastAutoGigIdRef = useRef<string | null>(null);
 
   const getCompanyId = () => {
     const runMode = import.meta.env.VITE_RUN_MODE || 'in-app';
@@ -166,22 +167,37 @@ const ScriptGenerator: React.FC = () => {
         },
       };
 
-      const response = await fetch(`${backendUrl}/api/ai/chat?stream=false`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: trimmedMessage,
-          context: contextPayload,
-          gigId: selectedGig._id,
-          companyId,
-          sessionId: sessionId || undefined,
-        }),
-      });
+      const payload = {
+        message: trimmedMessage,
+        context: contextPayload,
+        gigId: selectedGig._id,
+        companyId,
+        sessionId: sessionId || undefined,
+      };
+      const tryEndpoints = [`${backendUrl}/api/ai/chat?stream=false`, `${backendUrl}/rag/chat`];
+      let response: Response | null = null;
+      let lastError = '';
 
-      if (!response.ok) {
-        throw new Error(`Failed to send message: ${response.statusText}`);
+      for (const url of tryEndpoints) {
+        try {
+          const candidate = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+          if (candidate.ok) {
+            response = candidate;
+            break;
+          }
+          lastError = `${candidate.status} ${candidate.statusText}`;
+        } catch (e: any) {
+          lastError = e?.message || 'Network error';
+        }
+      }
+      if (!response) {
+        throw new Error(`Chat API unavailable (${lastError || 'no response'})`);
       }
 
       const body = await response.json();
@@ -200,7 +216,7 @@ const ScriptGenerator: React.FC = () => {
         'Je n’ai pas pu générer de réponse.';
 
       setMessages((prev) => [
-        ...prev,
+        ...prev.filter((m) => !m.id.startsWith('assistant-pending-')),
         {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
@@ -208,6 +224,7 @@ const ScriptGenerator: React.FC = () => {
         },
       ]);
     } catch (err: any) {
+      setMessages((prev) => prev.filter((m) => !m.id.startsWith('assistant-pending-')));
       setError(err.message || 'Failed to generate response');
     } finally {
       setIsSending(false);
@@ -215,7 +232,19 @@ const ScriptGenerator: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!selectedGigSummary) return;
+    if (!selectedGigSummary || !selectedGig?._id) return;
+    if (lastAutoGigIdRef.current === selectedGig._id) return;
+    lastAutoGigIdRef.current = selectedGig._id;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `assistant-pending-${Date.now()}`,
+        role: 'assistant',
+        content: 'Generation automatique en cours...',
+      },
+    ]);
+
     const autoPrompt = [
       'Generate a simple ready-to-use call script.',
       `Gig title: ${selectedGigSummary.title}`,
@@ -223,7 +252,7 @@ const ScriptGenerator: React.FC = () => {
       'Keep it short and practical.',
     ].join('\n');
     sendMessageToApi(autoPrompt, false);
-  }, [selectedGigSummary?.title, selectedGigSummary?.description]);
+  }, [selectedGig?._id, selectedGigSummary?.title, selectedGigSummary?.description]);
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
