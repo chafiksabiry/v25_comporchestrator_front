@@ -10,9 +10,11 @@ interface ScriptListPanelProps {
   isSending: boolean;
   isLoadingSavedScripts: boolean;
   savedScripts: SavedScript[];
+  showGenerateButton?: boolean;
   onGenerate: () => void;
   onView: (scriptId: string) => void;
   onEdit: (scriptId: string) => void;
+  onDelete: (scriptId: string) => void;
 }
 
 const ScriptListPanel: React.FC<ScriptListPanelProps> = ({
@@ -20,9 +22,11 @@ const ScriptListPanel: React.FC<ScriptListPanelProps> = ({
   isSending,
   isLoadingSavedScripts,
   savedScripts,
+  showGenerateButton = true,
   onGenerate,
   onView,
   onEdit,
+  onDelete,
 }) => {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 md:p-6 space-y-4">
@@ -31,14 +35,16 @@ const ScriptListPanel: React.FC<ScriptListPanelProps> = ({
           <p className="text-base font-semibold text-gray-800">Scripts</p>
           <p className="text-xs text-gray-500 mt-1">Gerer vos scripts valides pour le gig selectionne</p>
         </div>
-        <button
-          type="button"
-          onClick={onGenerate}
-          disabled={!selectedGigId || isSending}
-          className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Generer un script
-        </button>
+        {showGenerateButton && (
+          <button
+            type="button"
+            onClick={onGenerate}
+            disabled={!selectedGigId || isSending}
+            className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Generer un script
+          </button>
+        )}
       </div>
 
       {isLoadingSavedScripts ? (
@@ -73,6 +79,13 @@ const ScriptListPanel: React.FC<ScriptListPanelProps> = ({
                   className="px-3 py-1.5 text-xs rounded-lg border border-emerald-200 text-emerald-700 bg-white hover:bg-emerald-50"
                 >
                   Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(item._id)}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-red-200 text-red-700 bg-white hover:bg-red-50"
+                >
+                  Delete
                 </button>
               </div>
             </div>
