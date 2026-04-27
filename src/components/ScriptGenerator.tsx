@@ -48,17 +48,6 @@ interface StyledDialogueLine {
   text: string;
 }
 
-interface SavedScript {
-  _id: string;
-  gigId: string;
-  targetClient?: string;
-  language?: string;
-  details?: string;
-  script?: ScriptStep[];
-  isActive?: boolean;
-  createdAt?: string;
-}
-
 const formatScriptSteps = (steps: ScriptStep[]): string => {
   const lines = steps
     .map((step: ScriptStep) => {
@@ -202,8 +191,6 @@ const ScriptGenerator: React.FC = () => {
   const [validatedScriptIds, setValidatedScriptIds] = useState<Record<string, boolean>>({});
   const [selectedLeadOptionByTurnKey, setSelectedLeadOptionByTurnKey] = useState<Record<string, number>>({});
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
-  const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
-  const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const lastAutoGigIdRef = useRef<string | null>(null);
 
@@ -285,7 +272,6 @@ const ScriptGenerator: React.FC = () => {
     if (!selectedGig) return;
     setMessages([]);
     setError(null);
-    fetchSavedScripts(selectedGig._id);
   }, [selectedGig?._id]);
 
   const selectedGigSummary = useMemo(() => {
@@ -380,43 +366,6 @@ const ScriptGenerator: React.FC = () => {
     await sendMessageToApi(input, true);
   };
 
-  const fetchSavedScripts = async (gigId: string) => {
-    if (!gigId) {
-      setSavedScripts([]);
-      return;
-    }
-    setIsLoadingSavedScripts(true);
-    try {
-      const { data } = (await apiClient.get('/rag/scripts', { params: { gigId } })) as { data: any };
-      const items = Array.isArray(data?.data) ? data.data : [];
-      setSavedScripts(items);
-      const nextValidated: Record<string, boolean> = {};
-      items.forEach((item: SavedScript) => {
-        if (item?._id && item?.isActive) nextValidated[item._id] = true;
-      });
-      setValidatedScriptIds(nextValidated);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Failed to load scripts list');
-      setSavedScripts([]);
-    } finally {
-      setIsLoadingSavedScripts(false);
-    }
-  };
-
-  const convertSavedScriptToText = (steps?: ScriptStep[]): string => {
-    if (!Array.isArray(steps) || steps.length === 0) return '';
-    return steps
-      .map((s) => {
-        const actor = String(s?.actor || '').trim().toLowerCase();
-        const replica = String(s?.replica || '').trim();
-        if (!replica) return '';
-        const label = actor === 'lead' ? 'Lead' : 'Agent';
-        return `${label}: ${replica}`;
-      })
-      .filter(Boolean)
-      .join('\n');
-  };
-
   const buildScriptStepsFromMessage = (message: ChatMessage): ScriptStep[] => {
     const dialogue = Array.isArray(message?.playbook?.dialogue) ? message.playbook!.dialogue! : [];
     if (dialogue.length > 0) {
@@ -471,9 +420,6 @@ const ScriptGenerator: React.FC = () => {
         await apiClient.put(`/rag/scripts/${savedScriptId}/status`, { isActive: true });
       }
       setValidatedScriptIds((prev) => ({ ...prev, [String(savedScriptId)]: true, [message.id]: true }));
-      if (selectedGig?._id) {
-        fetchSavedScripts(selectedGig._id);
-      }
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Failed to validate script');
     } finally {
@@ -857,56 +803,6 @@ const ScriptGenerator: React.FC = () => {
           {isLoadingGigs && <p className="text-sm text-gray-500 mt-2">Loading gigs...</p>}
           {gigsError && <p className="text-sm text-red-600 mt-2">{gigsError}</p>}
         </div>
-
-        {selectedGig && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold text-gray-700">Saved scripts for this gig</p>
-              {isLoadingSavedScripts && <p className="text-xs text-gray-500">Loading...</p>}
-            </div>
-            {savedScripts.length === 0 ? (
-              <p className="text-sm text-gray-500">No scripts saved yet for this gig.</p>
-            ) : (
-              <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
-                {savedScripts.map((item) => {
-                  const created = item?.createdAt ? new Date(item.createdAt).toLocaleString() : '-';
-                  const fullText = convertSavedScriptToText(item?.script);
-                  const preview = fullText.split(/\r?\n/).filter(Boolean)[0] || 'Script';
-                  return (
-                    <button
-                      type="button"
-                      key={item._id}
-                      onClick={() =>
-                        setMessages((prev) => [
-                          ...prev,
-                          {
-                            id: `assistant-saved-${item._id}-${Date.now()}`,
-                            role: 'assistant',
-                            content: fullText || preview,
-                            scriptId: item._id,
-                          },
-                        ])
-                      }
-                      className="w-full text-left rounded-lg border border-gray-200 px-3 py-2 hover:bg-gray-50"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-gray-800 truncate">{preview}</p>
-                        <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full ${
-                            item?.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
-                          }`}
-                        >
-                          {item?.isActive ? 'Validated' : 'Draft'}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-gray-500 mt-1">{created}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden relative flex-1 min-h-0">
           <div
