@@ -16,6 +16,10 @@ interface ChatMessage {
   content: string;
   scriptId?: string;
   playbook?: {
+    dialogue?: Array<{
+      role?: 'agent' | 'lead';
+      text?: string;
+    }>;
     leadGuidance?: Array<{
       leadLine?: string;
       suggestedAgentReplies?: string[];
@@ -332,8 +336,6 @@ const ScriptGenerator: React.FC = () => {
       const { data: body } = (await apiClient.post('/rag/generate-script', scriptPayload)) as { data: any };
       const assistantText =
         body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
-      const generatedScriptId =
-        body?.data?.metadata?.scriptId || body?.data?.scriptId || body?.scriptId || undefined;
       const generatedPlaybook = body?.data?.playbook;
       const normalizedText = normalizeScriptText(assistantText);
       const assistantTextSafe =
@@ -348,13 +350,9 @@ const ScriptGenerator: React.FC = () => {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
           content: assistantTextSafe,
-          scriptId: generatedScriptId,
           playbook: generatedPlaybook,
         },
       ]);
-      if (selectedGig?._id) {
-        fetchSavedScripts(selectedGig._id);
-      }
     } catch (err: any) {
       setMessages((prev) => prev.filter((m) => !m.id.startsWith('assistant-pending-')));
       setError(err?.response?.data?.error || err?.message || 'Failed to generate response');
@@ -419,13 +417,60 @@ const ScriptGenerator: React.FC = () => {
       .join('\n');
   };
 
-  const validateScript = async (scriptId: string) => {
-    if (!scriptId || validatingScriptId) return;
-    setValidatingScriptId(scriptId);
+  const buildScriptStepsFromMessage = (message: ChatMessage): ScriptStep[] => {
+    const dialogue = Array.isArray(message?.playbook?.dialogue) ? message.playbook!.dialogue! : [];
+    if (dialogue.length > 0) {
+      return dialogue
+        .map((row) => ({
+          phase: 'Dialogue',
+          actor: row?.role === 'lead' ? 'lead' : 'agent',
+          replica: String(row?.text || '').trim(),
+        }))
+        .filter((row) => row.replica);
+    }
+
+    const rows = parseStyledDialogue(String(message?.content || ''));
+    return rows
+      .filter((r) => r.text)
+      .map((r) => ({
+        phase: 'Dialogue',
+        actor: r.side === 'lead' ? 'lead' : 'agent',
+        replica: String(r.text || '').trim(),
+      }));
+  };
+
+  const validateScript = async (message: ChatMessage) => {
+    const key = message.scriptId || message.id;
+    if (!key || validatingScriptId) return;
+    setValidatingScriptId(key);
     setError(null);
     try {
-      await apiClient.put(`/rag/scripts/${scriptId}/status`, { isActive: true });
-      setValidatedScriptIds((prev) => ({ ...prev, [scriptId]: true }));
+      let savedScriptId = message.scriptId;
+      if (!savedScriptId) {
+        if (!selectedGig?._id) throw new Error('Gig selection is required');
+        const script = buildScriptStepsFromMessage(message);
+        if (!Array.isArray(script) || script.length === 0) {
+          throw new Error('No dialogue to save');
+        }
+        const payload = {
+          gigId: selectedGig._id,
+          targetClient: 'general',
+          language: 'simple et direct',
+          details: input?.trim() || '',
+          script,
+          playbook: message.playbook,
+          isActive: true,
+        };
+        const { data } = (await apiClient.post('/rag/scripts', payload)) as { data: any };
+        savedScriptId = data?.data?._id || data?._id;
+        if (!savedScriptId) throw new Error('Script save failed');
+        setMessages((prev) =>
+          prev.map((m) => (m.id === message.id ? { ...m, scriptId: String(savedScriptId) } : m))
+        );
+      } else {
+        await apiClient.put(`/rag/scripts/${savedScriptId}/status`, { isActive: true });
+      }
+      setValidatedScriptIds((prev) => ({ ...prev, [String(savedScriptId)]: true, [message.id]: true }));
       if (selectedGig?._id) {
         fetchSavedScripts(selectedGig._id);
       }
@@ -902,22 +947,20 @@ const ScriptGenerator: React.FC = () => {
                   {message.role === 'assistant' ? (
                     <div className="space-y-3">
                       {renderAssistantMessage(message.id, message.content, message.playbook)}
-                      {message.scriptId && (
-                        <div className="pt-1">
-                          <button
-                            type="button"
-                            onClick={() => validateScript(message.scriptId as string)}
-                            disabled={Boolean(validatedScriptIds[message.scriptId]) || validatingScriptId === message.scriptId}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-60 disabled:cursor-not-allowed"
-                          >
-                            {validatedScriptIds[message.scriptId]
-                              ? 'Script valide'
-                              : validatingScriptId === message.scriptId
-                                ? 'Validation...'
-                                : 'Valider le script'}
-                          </button>
-                        </div>
-                      )}
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => validateScript(message)}
+                          disabled={Boolean(validatedScriptIds[message.scriptId || message.id]) || validatingScriptId === (message.scriptId || message.id)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {validatedScriptIds[message.scriptId || message.id]
+                            ? 'Script valide'
+                            : validatingScriptId === (message.scriptId || message.id)
+                              ? 'Validation...'
+                              : 'Valider le script'}
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     message.content
