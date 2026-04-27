@@ -725,6 +725,7 @@ const ScriptGenerator: React.FC = () => {
       // Show only the active scenario branch based on selected lead options.
       const visibleTurnIndexes: number[] = [];
       const visited = new Set<number>();
+      let terminalAgentReply = '';
       let cursor = 0;
       while (
         Number.isFinite(cursor) &&
@@ -761,7 +762,10 @@ const ScriptGenerator: React.FC = () => {
               : options.length === 1 && cursor + 1 < turns.length
                 ? cursor + 1
               : undefined;
-        if (typeof nextIdx !== 'number') break;
+        if (typeof nextIdx !== 'number') {
+          terminalAgentReply = String(selected?.agentReply || '').trim();
+          break;
+        }
         cursor = nextIdx;
       }
 
@@ -886,6 +890,14 @@ const ScriptGenerator: React.FC = () => {
               </div>
             );
           })}
+          {terminalAgentReply && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">Agent</p>
+                <p className="mt-1 text-slate-800">{terminalAgentReply}</p>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
