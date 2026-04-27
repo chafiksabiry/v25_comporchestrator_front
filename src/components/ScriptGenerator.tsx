@@ -350,12 +350,42 @@ const ScriptGenerator: React.FC = () => {
     setError(null);
 
     try {
+      const currentDialogue = Array.isArray(activeScriptMessage?.playbook?.dialogue)
+        ? activeScriptMessage!.playbook!.dialogue!
+            .map((row) => {
+              const role = row?.role === 'lead' ? 'Lead' : 'Agent';
+              const text = String(row?.text || '').trim();
+              return text ? `${role}: ${text}` : '';
+            })
+            .filter(Boolean)
+            .join('\n')
+        : '';
+      const currentScriptText = currentDialogue || String(activeScriptMessage?.content || '').trim();
+      const regenInstruction = addUserBubble
+        ? [
+            'Regenerate the full script from start to end.',
+            'Use the current script as base and apply the user update.',
+            currentScriptText ? `Current script:\n${currentScriptText}` : '',
+            `User update:\n${trimmedMessage}`,
+          ]
+            .filter(Boolean)
+            .join('\n\n')
+        : trimmedMessage;
+
       const scriptPayload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
         langueTon: 'simple et direct',
-        contexte: trimmedMessage,
+        contexte: regenInstruction,
+        currentScript: currentScriptText || undefined,
+        chatHistory: messages
+          .filter((m) => m.role === 'user' || m.role === 'assistant')
+          .map((m) => ({
+            role: m.role,
+            content: String(m.content || '').trim(),
+          }))
+          .filter((m) => m.content),
       };
       // KB API only (no training chat endpoint)
       const { data: body } = (await apiClient.post('/rag/generate-script', scriptPayload)) as { data: any };
@@ -375,7 +405,13 @@ const ScriptGenerator: React.FC = () => {
         content: assistantTextSafe,
         playbook: generatedPlaybook,
       };
-      setMessages((prev) => [...prev.filter((m) => !m.id.startsWith('assistant-pending-')), generatedMessage]);
+      setMessages((prev) => {
+        const cleanPrev = prev.filter((m) => !m.id.startsWith('assistant-pending-'));
+        if (!addUserBubble) return [...cleanPrev, generatedMessage];
+        // Chat message acts as regeneration command: keep user history, replace prior generated script view.
+        const withoutAssistants = cleanPrev.filter((m) => m.role !== 'assistant');
+        return [...withoutAssistants, generatedMessage];
+      });
       setActiveScriptMessage(generatedMessage);
       setCurrentView('chat');
     } catch (err: any) {
