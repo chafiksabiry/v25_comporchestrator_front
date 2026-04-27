@@ -48,6 +48,15 @@ interface StyledDialogueLine {
   text: string;
 }
 
+interface SavedScript {
+  _id: string;
+  gigId: string;
+  script?: ScriptStep[];
+  playbook?: ChatMessage['playbook'];
+  createdAt?: string;
+  isActive?: boolean;
+}
+
 const formatScriptSteps = (steps: ScriptStep[]): string => {
   const lines = steps
     .map((step: ScriptStep) => {
@@ -191,8 +200,9 @@ const ScriptGenerator: React.FC = () => {
   const [validatedScriptIds, setValidatedScriptIds] = useState<Record<string, boolean>>({});
   const [selectedLeadOptionByTurnKey, setSelectedLeadOptionByTurnKey] = useState<Record<string, number>>({});
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
+  const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
+  const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
-  const lastAutoGigIdRef = useRef<string | null>(null);
 
   const getCompanyId = () => {
     const runMode = import.meta.env.VITE_RUN_MODE || 'in-app';
@@ -272,6 +282,7 @@ const ScriptGenerator: React.FC = () => {
     if (!selectedGig) return;
     setMessages([]);
     setError(null);
+    fetchSavedScripts(selectedGig._id);
   }, [selectedGig?._id]);
 
   const selectedGigSummary = useMemo(() => {
@@ -347,23 +358,53 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (!selectedGigSummary || !selectedGig?._id) return;
-    if (lastAutoGigIdRef.current === selectedGig._id) return;
-    lastAutoGigIdRef.current = selectedGig._id;
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessageToApi(input, true);
+  };
 
+  const fetchSavedScripts = async (gigId: string) => {
+    if (!gigId) {
+      setSavedScripts([]);
+      return;
+    }
+    setIsLoadingSavedScripts(true);
+    try {
+      const { data } = (await apiClient.get('/rag/scripts', { params: { gigId } })) as { data: any };
+      const items = Array.isArray(data?.data) ? data.data : [];
+      setSavedScripts(items);
+    } catch (err: any) {
+      setSavedScripts([]);
+      setError(err?.response?.data?.error || err?.message || 'Failed to load scripts');
+    } finally {
+      setIsLoadingSavedScripts(false);
+    }
+  };
+
+  const openSavedScript = (item: SavedScript) => {
+    const normalizedText = normalizeScriptText(item?.script);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `assistant-saved-${item._id}-${Date.now()}`,
+        role: 'assistant',
+        content: normalizedText || 'Saved script',
+        scriptId: item._id,
+        playbook: item.playbook,
+      },
+    ]);
+    setValidatedScriptIds((prev) => ({ ...prev, [item._id]: Boolean(item?.isActive) }));
+  };
+
+  const handleGenerateScript = async () => {
+    if (!selectedGigSummary) return;
     const autoPrompt = [
       'Generate a simple ready-to-use call script.',
       `Gig title: ${selectedGigSummary.title}`,
       `Gig description: ${selectedGigSummary.description}`,
       'Keep it short and practical.',
     ].join('\n');
-    sendMessageToApi(autoPrompt, false);
-  }, [selectedGig?._id, selectedGigSummary?.title, selectedGigSummary?.description]);
-
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await sendMessageToApi(input, true);
+    await sendMessageToApi(autoPrompt, false);
   };
 
   const buildScriptStepsFromMessage = (message: ChatMessage): ScriptStep[] => {
@@ -420,6 +461,9 @@ const ScriptGenerator: React.FC = () => {
         await apiClient.put(`/rag/scripts/${savedScriptId}/status`, { isActive: true });
       }
       setValidatedScriptIds((prev) => ({ ...prev, [String(savedScriptId)]: true, [message.id]: true }));
+      if (selectedGig?._id) {
+        fetchSavedScripts(selectedGig._id);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Failed to validate script');
     } finally {
@@ -802,6 +846,43 @@ const ScriptGenerator: React.FC = () => {
 
           {isLoadingGigs && <p className="text-sm text-gray-500 mt-2">Loading gigs...</p>}
           {gigsError && <p className="text-sm text-red-600 mt-2">{gigsError}</p>}
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={handleGenerateScript}
+              disabled={!selectedGig || isSending}
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Generer un script
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-4">
+          <p className="text-sm font-semibold text-gray-700 mb-2">Liste des scripts</p>
+          {isLoadingSavedScripts ? (
+            <p className="text-sm text-gray-500">Loading scripts...</p>
+          ) : savedScripts.length === 0 ? (
+            <p className="text-sm text-gray-500">Aucun script pour ce gig.</p>
+          ) : (
+            <div className="space-y-2">
+              {savedScripts.map((item, idx) => (
+                <button
+                  key={item._id}
+                  type="button"
+                  onClick={() => openSavedScript(item)}
+                  className="w-full text-left rounded-lg border border-gray-200 hover:bg-gray-50 px-3 py-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-gray-800">Script {savedScripts.length - idx}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${item?.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {item?.isActive ? 'Valide' : 'Brouillon'}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden relative flex-1 min-h-0">
