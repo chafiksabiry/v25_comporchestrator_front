@@ -21,10 +21,12 @@ interface ChatMessage {
       suggestedAgentReplies?: string[];
     }>;
     turns?: Array<{
+      id?: string;
       agentLine?: string;
       leadOptions?: Array<{
         leadReply?: string;
         agentReply?: string;
+        nextTurnId?: string | null;
       }>;
     }>;
   };
@@ -379,28 +381,46 @@ const ScriptGenerator: React.FC = () => {
   const renderAssistantMessage = (messageId: string, content: string, playbook?: ChatMessage['playbook']) => {
     const turns = Array.isArray(playbook?.turns) ? playbook?.turns : [];
     if (turns && turns.length > 0) {
-      const resolvedTurns = turns.map((turn, idx) => {
-        const next = { ...(turn || {}) };
-        if (idx <= 0) return next;
-        const prevTurn = turns[idx - 1];
-        const prevOptions = Array.isArray(prevTurn?.leadOptions)
-          ? prevTurn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply)
-          : [];
-        const prevKey = `${messageId}-${idx - 1}`;
-        const prevSelectedIdx = Number.isFinite(selectedLeadOptionByTurnKey[prevKey])
-          ? selectedLeadOptionByTurnKey[prevKey]
-          : 0;
-        const safePrevIdx = Math.max(0, Math.min(prevSelectedIdx, Math.max(prevOptions.length - 1, 0)));
-        const selectedPrev = prevOptions[safePrevIdx];
-        if (selectedPrev?.agentReply) {
-          next.agentLine = String(selectedPrev.agentReply);
-        }
-        return next;
+      const byTurnId = new Map<string, number>();
+      turns.forEach((turn, idx) => {
+        const key = String(turn?.id || '').trim();
+        if (key) byTurnId.set(key, idx);
       });
+
+      // Visible scenario path: start from first turn, then follow selected lead option branch.
+      const visibleTurnIndexes: number[] = [];
+      const visited = new Set<number>();
+      let cursor = 0;
+      while (
+        Number.isFinite(cursor) &&
+        cursor >= 0 &&
+        cursor < turns.length &&
+        !visited.has(cursor) &&
+        visibleTurnIndexes.length < 20
+      ) {
+        visibleTurnIndexes.push(cursor);
+        visited.add(cursor);
+        const turn = turns[cursor];
+        const options = Array.isArray(turn?.leadOptions)
+          ? turn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply)
+          : [];
+        if (options.length === 0) break;
+        const turnKey = `${messageId}-${cursor}`;
+        const selectedIdx = Number.isFinite(selectedLeadOptionByTurnKey[turnKey])
+          ? selectedLeadOptionByTurnKey[turnKey]
+          : 0;
+        const safeIdx = Math.max(0, Math.min(selectedIdx, options.length - 1));
+        const selected = options[safeIdx];
+        const nextTurnId = String(selected?.nextTurnId || '').trim();
+        const nextIdx = nextTurnId ? byTurnId.get(nextTurnId) : undefined;
+        if (typeof nextIdx !== 'number') break;
+        cursor = nextIdx;
+      }
 
       return (
         <div className="space-y-3">
-          {resolvedTurns.map((turn, turnIdx) => {
+          {visibleTurnIndexes.map((turnIdx) => {
+            const turn = turns[turnIdx];
             const options = Array.isArray(turn?.leadOptions) ? turn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply) : [];
             if (!turn?.agentLine || options.length === 0) return null;
             const turnKey = `${messageId}-${turnIdx}`;
@@ -408,7 +428,6 @@ const ScriptGenerator: React.FC = () => {
               ? selectedLeadOptionByTurnKey[turnKey]
               : 0;
             const safeIdx = Math.max(0, Math.min(selectedIdx, options.length - 1));
-            const selected = options[safeIdx];
             return (
               <div key={turnKey} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2">
@@ -599,6 +618,12 @@ const ScriptGenerator: React.FC = () => {
             ref={messagesContainerRef}
             className="h-full overflow-y-auto p-5 pb-24 space-y-4 bg-gradient-to-b from-white to-gray-50"
           >
+            {isSending && (
+              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 flex items-center gap-2 w-fit shadow-sm">
+                <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
+                Generating professional script...
+              </div>
+            )}
             {messages.length === 0 && (
               <div className="h-full flex items-center justify-center text-center text-gray-500">
                 <div>
@@ -655,12 +680,6 @@ const ScriptGenerator: React.FC = () => {
                 )}
               </div>
             ))}
-            {isSending && (
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 flex items-center gap-2 w-fit shadow-sm">
-                <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
-                Generating professional script...
-              </div>
-            )}
           </div>
 
           <form
