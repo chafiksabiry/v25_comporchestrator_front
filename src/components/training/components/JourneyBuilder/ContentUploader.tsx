@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play, Target } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play, Target, BookOpen } from 'lucide-react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
@@ -659,6 +659,37 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const chatThreadRef = useRef<HTMLDivElement | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const shouldStickToBottomRef = useRef(true);
+  /** Parcours Mongo complet (modules / sections / quiz) pour aperçu REP — rechargé après sauvegardes chat. */
+  const savedJourneyHydrateSeqRef = useRef(0);
+  const [savedJourneyHydrated, setSavedJourneyHydrated] = useState<any | null>(null);
+  const [isSavedJourneyHydrating, setIsSavedJourneyHydrating] = useState(false);
+
+  const hydrateSavedJourneyFromApi = useCallback(async () => {
+    if (!repOnboardingLayout) return;
+    const id = linkedTrainingJourneyMongoId();
+    if (!id) return;
+    const seq = ++savedJourneyHydrateSeqRef.current;
+    setIsSavedJourneyHydrating(true);
+    try {
+      const data = await JourneyService.getJourneyById(id);
+      if (seq !== savedJourneyHydrateSeqRef.current) return;
+      setSavedJourneyHydrated(data || null);
+    } catch {
+      if (seq === savedJourneyHydrateSeqRef.current) setSavedJourneyHydrated(null);
+    } finally {
+      if (seq === savedJourneyHydrateSeqRef.current) setIsSavedJourneyHydrating(false);
+    }
+  }, [repOnboardingLayout, journey]);
+
+  useEffect(() => {
+    if (!repOnboardingLayout) {
+      savedJourneyHydrateSeqRef.current += 1;
+      setSavedJourneyHydrated(null);
+      setIsSavedJourneyHydrating(false);
+      return;
+    }
+    void hydrateSavedJourneyFromApi();
+  }, [repOnboardingLayout, journey, isPlanSavedForChat, hydrateSavedJourneyFromApi]);
 
   useEffect(() => {
     window.requestAnimationFrame(() => {
@@ -2626,6 +2657,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
       repPersonalizationBootstrapRef.current = false;
       setPersonalizationStep(0);
       setPersonalizationAnswers({});
+      savedJourneyHydrateSeqRef.current += 1;
+      setSavedJourneyHydrated(null);
+      setIsSavedJourneyHydrating(false);
       setGeneratedCurriculum(null);
       setGeneratedPresentation(null);
       setGeneratedImageSet(null);
@@ -3685,6 +3719,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
       } finally {
         activeChatAbortRef.current = null;
         setIsChatLoading(false);
+        if (repOnboardingLayout) {
+          void hydrateSavedJourneyFromApi();
+        }
       }
     };
 
@@ -4997,6 +5034,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
       shouldStickToBottomRef.current = distanceToBottom <= thresholdPx;
     };
 
+    const formationPreviewSource = savedJourneyHydrated || journey;
+    const formationModules = Array.isArray((formationPreviewSource as any)?.modules)
+      ? ((formationPreviewSource as any).modules as any[])
+      : [];
+
     return (
     <div className={rep ? 'flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white' : 'min-h-[92vh] bg-white p-2'}>
       <div
@@ -5465,6 +5507,140 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   </div>,
                   document.body
                 )}
+              {rep && (formationModules.length > 0 || isSavedJourneyHydrating) && (
+                <div className="mb-2 max-h-[min(42vh,520px)] shrink-0 overflow-y-auto rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/50 to-white p-3 shadow-sm">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <BookOpen className="h-4 w-4 shrink-0 text-emerald-700" aria-hidden />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-800">Formation enregistrée</p>
+                        <p className="truncate text-xs font-semibold text-slate-800">
+                          {String((formationPreviewSource as any)?.title || (formationPreviewSource as any)?.name || 'Parcours').trim()}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void hydrateSavedJourneyFromApi()}
+                      disabled={isSavedJourneyHydrating}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      title="Recharger depuis la base"
+                    >
+                      {isSavedJourneyHydrating ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3 w-3" />
+                      )}
+                      Actualiser
+                    </button>
+                  </div>
+                  {formationModules.length === 0 && isSavedJourneyHydrating ? (
+                    <div className="flex items-center gap-2 py-4 text-xs text-slate-600">
+                      <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
+                      Chargement du programme…
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {formationModules.map((mod: any, mi: number) => {
+                        const sections = Array.isArray(mod?.sections) ? mod.sections : [];
+                        const quizzes = Array.isArray(mod?.quizzes) ? mod.quizzes : [];
+                        return (
+                          <details
+                            key={String(mod?._id || mod?.id || mi)}
+                            className="rounded-xl border border-slate-200 bg-white px-2 py-1 shadow-sm"
+                          >
+                            <summary className="cursor-pointer list-none py-1.5 text-sm font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
+                              <span className="inline-flex w-full items-center gap-2">
+                                <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-xs font-bold text-white">
+                                  {mi + 1}
+                                </span>
+                                <span className="min-w-0 flex-1 text-left">{String(mod?.title || `Module ${mi + 1}`)}</span>
+                              </span>
+                            </summary>
+                            <div className="mt-2 space-y-3 border-t border-slate-100 pt-2">
+                              {String(mod?.description || '').trim() ? (
+                                <div className="prose prose-sm max-w-none text-slate-800">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(mod.description)}</ReactMarkdown>
+                                </div>
+                              ) : null}
+                              {sections.length > 0 ? (
+                                <div>
+                                  <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">Sections</p>
+                                  <div className="space-y-2">
+                                    {sections.map((sec: any, si: number) => (
+                                      <div
+                                        key={String(sec?._id || sec?.id || si)}
+                                        className="rounded-lg border border-slate-100 bg-slate-50/90 px-2 py-2"
+                                      >
+                                        <p className="text-xs font-semibold text-slate-900">
+                                          {String(sec?.title || `Section ${si + 1}`)}
+                                        </p>
+                                        {String(sec?.content || '').trim() ? (
+                                          <div className="prose prose-sm mt-1 max-w-none text-slate-700">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(sec.content)}</ReactMarkdown>
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : null}
+                              {quizzes.length > 0 ? (
+                                <div>
+                                  <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">Quiz</p>
+                                  <div className="space-y-2">
+                                    {quizzes.map((qz: any, qi: number) => (
+                                      <div
+                                        key={String(qz?._id || qi)}
+                                        className="rounded-lg border border-violet-100 bg-violet-50/60 px-2 py-2"
+                                      >
+                                        <p className="text-xs font-semibold text-violet-950">
+                                          {String(qz?.title || `Quiz ${qi + 1}`)}
+                                        </p>
+                                        {Array.isArray(qz?.questions)
+                                          ? qz.questions.map((q: any, qix: number) => {
+                                              const opts = Array.isArray(q?.options) ? q.options : [];
+                                              const correct =
+                                                typeof q?.correctAnswer === 'number' ? q.correctAnswer : -1;
+                                              return (
+                                                <div
+                                                  key={String(q?._id || qix)}
+                                                  className="mt-2 border-t border-violet-100 pt-2 first:mt-0 first:border-0 first:pt-0"
+                                                >
+                                                  <p className="text-[13px] font-medium text-slate-900">
+                                                    {String(q?.question || '')}
+                                                  </p>
+                                                  <ol className="mt-1 list-decimal space-y-0.5 pl-4 text-[12px] text-slate-700">
+                                                    {opts.map((op: string, oi: number) => (
+                                                      <li
+                                                        key={oi}
+                                                        className={oi === correct ? 'font-semibold text-emerald-800' : undefined}
+                                                      >
+                                                        {String(op)}
+                                                        {oi === correct ? ' ✓' : ''}
+                                                      </li>
+                                                    ))}
+                                                  </ol>
+                                                  {String(q?.explanation || '').trim() ? (
+                                                    <p className="mt-1 text-[11px] text-slate-600">{String(q.explanation)}</p>
+                                                  ) : null}
+                                                </div>
+                                              );
+                                            })
+                                          : null}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+                          </details>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
               {shouldShowChatThread && (
                 <div
                   ref={chatThreadRef}
