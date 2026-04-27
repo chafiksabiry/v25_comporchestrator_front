@@ -14,6 +14,7 @@ interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  scriptId?: string;
 }
 
 interface ScriptStep {
@@ -21,6 +22,77 @@ interface ScriptStep {
   actor?: string;
   replica?: string;
 }
+
+interface StyledDialogueLine {
+  side: 'agent' | 'lead' | 'other';
+  label: string;
+  text: string;
+}
+
+const formatScriptSteps = (steps: ScriptStep[]): string => {
+  const lines = steps
+    .map((step: ScriptStep) => {
+      const phase = String(step?.phase || '').trim();
+      const actor = String(step?.actor || '').trim();
+      const replica = String(step?.replica || '').trim();
+      const actorLabel = actor ? actor.toUpperCase() : 'AGENT';
+      if (phase && replica) return `[${phase}] ${actorLabel}: ${replica}`;
+      if (replica) return `${actorLabel}: ${replica}`;
+      return '';
+    })
+    .filter(Boolean);
+  return lines.join('\n\n');
+};
+
+const normalizeScriptText = (value: any): string => {
+  if (Array.isArray(value)) {
+    return formatScriptSteps(value as ScriptStep[]);
+  }
+  if (value && typeof value === 'object') {
+    return JSON.stringify(value, null, 2);
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    // Some backends return a JSON string instead of parsed JSON.
+    const looksLikeJson = trimmed.startsWith('[') || trimmed.startsWith('{');
+    if (looksLikeJson) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return formatScriptSteps(parsed as ScriptStep[]);
+        if (parsed && typeof parsed === 'object') {
+          const nestedScript = (parsed as any)?.script ?? (parsed as any)?.data?.script ?? null;
+          if (Array.isArray(nestedScript)) return formatScriptSteps(nestedScript as ScriptStep[]);
+          if (typeof nestedScript === 'string' && nestedScript.trim()) return nestedScript.trim();
+          return JSON.stringify(parsed, null, 2);
+        }
+      } catch {
+        // Keep original text when string is not valid JSON.
+      }
+    }
+    return trimmed;
+  }
+  return '';
+};
+
+const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
+  const lines = String(content || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return lines.map((line) => {
+    const normalized = line.replace(/^\[[^\]]+\]\s*/, '');
+    const match = normalized.match(/^(agent|lead|candidate|client)\s*:\s*(.+)$/i);
+    if (!match) {
+      return { side: 'other', label: 'Script', text: line };
+    }
+    const actor = String(match[1] || '').toLowerCase();
+    const text = String(match[2] || '').trim();
+    if (actor === 'agent') return { side: 'agent', label: 'Agent', text };
+    return { side: 'lead', label: 'Lead', text };
+  });
+};
 
 const ScriptGenerator: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
@@ -31,6 +103,8 @@ const ScriptGenerator: React.FC = () => {
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [gigsError, setGigsError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [validatingScriptId, setValidatingScriptId] = useState<string | null>(null);
+  const [validatedScriptIds, setValidatedScriptIds] = useState<Record<string, boolean>>({});
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const lastAutoGigIdRef = useRef<string | null>(null);
 
@@ -166,26 +240,10 @@ const ScriptGenerator: React.FC = () => {
       };
       // KB API only (no training chat endpoint)
       const { data: body } = await apiClient.post('/rag/generate-script', scriptPayload);
-      const assistantText = body?.data?.script || body?.script || body?.data?.text || body?.text;
-      const normalizeScriptText = (value: any): string => {
-        if (typeof value === 'string') return value;
-        if (Array.isArray(value)) {
-          const lines = value.map((step: ScriptStep) => {
-            const phase = String(step?.phase || '').trim();
-            const actor = String(step?.actor || '').trim();
-            const replica = String(step?.replica || '').trim();
-            const actorLabel = actor ? actor.toUpperCase() : 'AGENT';
-            if (phase && replica) return `[${phase}] ${actorLabel}: ${replica}`;
-            if (replica) return `${actorLabel}: ${replica}`;
-            return '';
-          }).filter(Boolean);
-          return lines.join('\n\n');
-        }
-        if (value && typeof value === 'object') {
-          return JSON.stringify(value, null, 2);
-        }
-        return '';
-      };
+      const assistantText =
+        body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
+      const generatedScriptId =
+        body?.data?.metadata?.scriptId || body?.data?.scriptId || body?.scriptId || undefined;
       const normalizedText = normalizeScriptText(assistantText);
       const assistantTextSafe =
         normalizedText || 'Je n’ai pas pu générer de réponse.';
@@ -196,6 +254,7 @@ const ScriptGenerator: React.FC = () => {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
           content: assistantTextSafe,
+          scriptId: generatedScriptId,
         },
       ]);
     } catch (err: any) {
@@ -232,6 +291,53 @@ const ScriptGenerator: React.FC = () => {
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     await sendMessageToApi(input, true);
+  };
+
+  const validateScript = async (scriptId: string) => {
+    if (!scriptId || validatingScriptId) return;
+    setValidatingScriptId(scriptId);
+    setError(null);
+    try {
+      await apiClient.put(`/scripts/${scriptId}/status`, { isActive: true });
+      setValidatedScriptIds((prev) => ({ ...prev, [scriptId]: true }));
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Failed to validate script');
+    } finally {
+      setValidatingScriptId(null);
+    }
+  };
+
+  const renderAssistantMessage = (content: string) => {
+    const rows = parseStyledDialogue(content);
+    const hasStructured = rows.some((row) => row.side !== 'other');
+    if (!hasStructured) {
+      return <span className="whitespace-pre-wrap">{content}</span>;
+    }
+    return (
+      <div className="space-y-2">
+        {rows.map((row, idx) => (
+          <div
+            key={`${row.label}-${idx}`}
+            className={`rounded-xl px-3 py-2 ${
+              row.side === 'agent'
+                ? 'bg-blue-50 border border-blue-200'
+                : row.side === 'lead'
+                  ? 'bg-emerald-50 border border-emerald-200'
+                  : 'bg-gray-50 border border-gray-200'
+            }`}
+          >
+            <p
+              className={`text-[11px] font-bold uppercase tracking-wide ${
+                row.side === 'agent' ? 'text-blue-700' : row.side === 'lead' ? 'text-emerald-700' : 'text-gray-600'
+              }`}
+            >
+              {row.label}
+            </p>
+            <p className="mt-1 whitespace-pre-wrap">{row.text}</p>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -286,14 +392,6 @@ const ScriptGenerator: React.FC = () => {
           {isLoadingGigs && <p className="text-sm text-gray-500 mt-2">Loading gigs...</p>}
           {gigsError && <p className="text-sm text-red-600 mt-2">{gigsError}</p>}
 
-          {selectedGigSummary && (
-            <div className="mt-4 p-4 rounded-xl bg-gray-50 border border-gray-200">
-              <p className="text-xs uppercase font-semibold text-gray-500">Gig title</p>
-              <p className="font-semibold text-gray-900">{selectedGigSummary.title}</p>
-              <p className="text-xs uppercase font-semibold text-gray-500 mt-2">Gig description</p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedGigSummary.description}</p>
-            </div>
-          )}
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
@@ -326,7 +424,29 @@ const ScriptGenerator: React.FC = () => {
                       : 'bg-white border border-gray-200 text-gray-800'
                   }`}
                 >
-                  {message.content}
+                  {message.role === 'assistant' ? (
+                    <div className="space-y-3">
+                      {renderAssistantMessage(message.content)}
+                      {message.scriptId && (
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => validateScript(message.scriptId as string)}
+                            disabled={Boolean(validatedScriptIds[message.scriptId]) || validatingScriptId === message.scriptId}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            {validatedScriptIds[message.scriptId]
+                              ? 'Script valide'
+                              : validatingScriptId === message.scriptId
+                                ? 'Validation...'
+                                : 'Valider le script'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    message.content
+                  )}
                 </div>
                 {message.role === 'user' && (
                   <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
