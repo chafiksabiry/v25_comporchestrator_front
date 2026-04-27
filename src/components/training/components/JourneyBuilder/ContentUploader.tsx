@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play, Target, BookOpen } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play, Target, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
@@ -664,6 +664,91 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [savedJourneyHydrated, setSavedJourneyHydrated] = useState<any | null>(null);
   const [isSavedJourneyHydrating, setIsSavedJourneyHydrating] = useState(false);
   const [showGeneratedFormationModal, setShowGeneratedFormationModal] = useState(false);
+  const [formationViewerSlideIndex, setFormationViewerSlideIndex] = useState(0);
+  const [formationViewerQuizState, setFormationViewerQuizState] = useState<
+    Record<string, { selected: number | null; revealed: boolean }>
+  >({});
+
+  const formationPreviewForViewer = useMemo(() => savedJourneyHydrated || journey, [savedJourneyHydrated, journey]);
+
+  type FormationViewerSlide =
+    | { key: string; kind: 'module_intro'; moduleIndex: number; totalModules: number; mod: any }
+    | {
+        key: string;
+        kind: 'section';
+        moduleIndex: number;
+        totalModules: number;
+        section: any;
+        modTitle: string;
+      }
+    | {
+        key: string;
+        kind: 'quiz_question';
+        moduleIndex: number;
+        totalModules: number;
+        quizTitle: string;
+        question: any;
+        correctAnswer: number;
+      };
+
+  const formationViewerSlides = useMemo((): FormationViewerSlide[] => {
+    const src = formationPreviewForViewer as any;
+    const modules = Array.isArray(src?.modules) ? (src.modules as any[]) : [];
+    const totalModules = modules.length;
+    const slides: FormationViewerSlide[] = [];
+    modules.forEach((mod, mi) => {
+      slides.push({
+        key: `m${mi}-intro`,
+        kind: 'module_intro',
+        moduleIndex: mi,
+        totalModules,
+        mod,
+      });
+      const sections = Array.isArray(mod?.sections) ? mod.sections : [];
+      sections.forEach((sec: any, si: number) => {
+        slides.push({
+          key: `m${mi}-s${si}`,
+          kind: 'section',
+          moduleIndex: mi,
+          totalModules,
+          section: sec,
+          modTitle: String(mod?.title || `Module ${mi + 1}`),
+        });
+      });
+      const quizzes = Array.isArray(mod?.quizzes) ? mod.quizzes : [];
+      quizzes.forEach((qz: any, qi: number) => {
+        const quizTitle = String(qz?.title || `Quiz ${qi + 1}`);
+        const questions = Array.isArray(qz?.questions) ? qz.questions : [];
+        questions.forEach((q: any, qix: number) => {
+          const correct = typeof q?.correctAnswer === 'number' ? q.correctAnswer : 0;
+          slides.push({
+            key: `m${mi}-qz${qi}-q${qix}`,
+            kind: 'quiz_question',
+            moduleIndex: mi,
+            totalModules,
+            quizTitle,
+            question: q,
+            correctAnswer: correct,
+          });
+        });
+      });
+    });
+    return slides;
+  }, [formationPreviewForViewer]);
+
+  useEffect(() => {
+    if (!showGeneratedFormationModal) return;
+    setFormationViewerSlideIndex(0);
+    setFormationViewerQuizState({});
+  }, [showGeneratedFormationModal]);
+
+  useEffect(() => {
+    if (!showGeneratedFormationModal) return;
+    setFormationViewerSlideIndex((i) => {
+      const max = Math.max(0, formationViewerSlides.length - 1);
+      return Math.min(i, max);
+    });
+  }, [formationViewerSlides, showGeneratedFormationModal]);
 
   const hydrateSavedJourneyFromApi = useCallback(async () => {
     if (!repOnboardingLayout) return;
@@ -5037,10 +5122,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       shouldStickToBottomRef.current = distanceToBottom <= thresholdPx;
     };
 
-    const formationPreviewSource = savedJourneyHydrated || journey;
-    const formationModules = Array.isArray((formationPreviewSource as any)?.modules)
-      ? ((formationPreviewSource as any).modules as any[])
-      : [];
+    const currentFormationViewerSlide = formationViewerSlides[formationViewerSlideIndex];
 
     return (
     <div className={rep ? 'flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white' : 'min-h-[92vh] bg-white p-2'}>
@@ -5552,8 +5634,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               </p>
                               <p className="mt-0.5 truncate text-sm font-medium text-slate-600">
                                 {String(
-                                  (formationPreviewSource as any)?.title ||
-                                    (formationPreviewSource as any)?.name ||
+                                  (formationPreviewForViewer as any)?.title ||
+                                    (formationPreviewForViewer as any)?.name ||
                                     'Parcours'
                                 ).trim()}
                               </p>
@@ -5585,127 +5667,205 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           </div>
                         </div>
                       </div>
-                      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
-                        {formationModules.length === 0 && isSavedJourneyHydrating ? (
-                          <div className="flex items-center gap-2 py-8 text-sm text-slate-600">
-                            <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
-                            Chargement du programme…
-                          </div>
-                        ) : formationModules.length === 0 ? (
-                          <p className="py-8 text-center text-sm text-slate-500">
-                            Aucun module enregistré pour l’instant. Validez le plan ou enregistrez des modules, puis
-                            actualisez.
-                          </p>
-                        ) : (
-                          <div className="space-y-2">
-                            {formationModules.map((mod: any, mi: number) => {
-                              const sections = Array.isArray(mod?.sections) ? mod.sections : [];
-                              const quizzes = Array.isArray(mod?.quizzes) ? mod.quizzes : [];
-                              return (
-                                <details
-                                  key={String(mod?._id || mod?.id || mi)}
-                                  className="rounded-xl border border-slate-200 bg-slate-50/40 px-2 py-1 shadow-sm"
-                                >
-                                  <summary className="cursor-pointer list-none py-1.5 text-sm font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
-                                    <span className="inline-flex w-full items-center gap-2">
-                                      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-xs font-bold text-white">
-                                        {mi + 1}
-                                      </span>
-                                      <span className="min-w-0 flex-1 text-left">
-                                        {String(mod?.title || `Module ${mi + 1}`)}
-                                      </span>
-                                    </span>
-                                  </summary>
-                                  <div className="mt-2 space-y-3 border-t border-slate-200/80 bg-white/80 px-1 pb-2 pt-2">
-                                    {String(mod?.description || '').trim() ? (
-                                      <div className="prose prose-sm max-w-none text-slate-800">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(mod.description)}</ReactMarkdown>
-                                      </div>
-                                    ) : null}
-                                    {sections.length > 0 ? (
-                                      <div>
-                                        <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                                          Sections
-                                        </p>
-                                        <div className="space-y-2">
-                                          {sections.map((sec: any, si: number) => (
-                                            <div
-                                              key={String(sec?._id || sec?.id || si)}
-                                              className="rounded-lg border border-slate-100 bg-slate-50/90 px-2 py-2"
+                      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
+                          {formationViewerSlides.length === 0 && isSavedJourneyHydrating ? (
+                            <div className="flex items-center gap-2 py-8 text-sm text-slate-600">
+                              <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                              Chargement du programme…
+                            </div>
+                          ) : formationViewerSlides.length === 0 ? (
+                            <p className="py-8 text-center text-sm text-slate-500">
+                              Aucun module enregistré pour l’instant. Validez le plan ou enregistrez des modules, puis
+                              actualisez.
+                            </p>
+                          ) : currentFormationViewerSlide ? (
+                            <div className="mx-auto max-w-2xl">
+                              <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-widest text-emerald-800/90">
+                                Slide {formationViewerSlideIndex + 1} / {formationViewerSlides.length}
+                              </p>
+                              {currentFormationViewerSlide.kind === 'module_intro' ? (
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6">
+                                  <p className="mb-2 text-xs font-semibold text-slate-500">
+                                    Module {currentFormationViewerSlide.moduleIndex + 1} /{' '}
+                                    {currentFormationViewerSlide.totalModules}
+                                  </p>
+                                  <h3 className="mb-3 text-lg font-bold text-slate-900 sm:text-xl">
+                                    {String(currentFormationViewerSlide.mod?.title || 'Module')}
+                                  </h3>
+                                  {String(currentFormationViewerSlide.mod?.description || '').trim() ? (
+                                    <div className="prose prose-sm max-w-none text-slate-800">
+                                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {String(currentFormationViewerSlide.mod.description)}
+                                      </ReactMarkdown>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-slate-500">Pas de description pour ce module.</p>
+                                  )}
+                                </div>
+                              ) : currentFormationViewerSlide.kind === 'section' ? (
+                                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
+                                  <p className="mb-1 text-xs font-semibold text-emerald-800">
+                                    {currentFormationViewerSlide.modTitle}
+                                  </p>
+                                  <h3 className="mb-3 text-base font-bold text-slate-900 sm:text-lg">
+                                    {String(currentFormationViewerSlide.section?.title || 'Section')}
+                                  </h3>
+                                  {String(currentFormationViewerSlide.section?.content || '').trim() ? (
+                                    <div className="prose prose-sm max-w-none text-slate-700">
+                                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {String(currentFormationViewerSlide.section.content)}
+                                      </ReactMarkdown>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-slate-500">Contenu vide.</p>
+                                  )}
+                                </div>
+                              ) : (
+                                (() => {
+                                  const slide = currentFormationViewerSlide;
+                                  const q = slide.question;
+                                  const opts = Array.isArray(q?.options) ? q.options : [];
+                                  const qKey = slide.key;
+                                  const qState = formationViewerQuizState[qKey] || {
+                                    selected: null as number | null,
+                                    revealed: false,
+                                  };
+                                  const correctIdx = slide.correctAnswer;
+                                  const isCorrect =
+                                    qState.revealed && qState.selected !== null && qState.selected === correctIdx;
+                                  const isWrong =
+                                    qState.revealed && qState.selected !== null && qState.selected !== correctIdx;
+                                  return (
+                                    <div className="rounded-2xl border border-violet-200/80 bg-violet-50/40 p-4 sm:p-6">
+                                      <p className="mb-2 text-xs font-semibold text-violet-900">{slide.quizTitle}</p>
+                                      <p className="mb-4 text-base font-semibold text-slate-900 sm:text-lg">
+                                        {String(q?.question || '')}
+                                      </p>
+                                      <div className="space-y-2" role="radiogroup" aria-label="Réponses">
+                                        {opts.map((op: string, oi: number) => {
+                                          const selected = qState.selected === oi;
+                                          const showAsCorrect = qState.revealed && oi === correctIdx;
+                                          const wrongSelected =
+                                            qState.revealed &&
+                                            qState.selected === oi &&
+                                            oi !== correctIdx;
+                                          return (
+                                            <button
+                                              key={oi}
+                                              type="button"
+                                              disabled={qState.revealed}
+                                              onClick={() => {
+                                                if (qState.revealed) return;
+                                                setFormationViewerQuizState((prev) => ({
+                                                  ...prev,
+                                                  [qKey]: {
+                                                    selected: oi,
+                                                    revealed: prev[qKey]?.revealed ?? false,
+                                                  },
+                                                }));
+                                              }}
+                                              className={`flex w-full rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                                                showAsCorrect
+                                                  ? 'border-emerald-500 bg-emerald-50 font-semibold text-emerald-950'
+                                                  : wrongSelected
+                                                    ? 'border-rose-400 bg-rose-50 text-rose-950'
+                                                    : selected && !qState.revealed
+                                                      ? 'border-violet-500 bg-violet-100/80 text-slate-900'
+                                                      : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300'
+                                              }`}
                                             >
-                                              <p className="text-xs font-semibold text-slate-900">
-                                                {String(sec?.title || `Section ${si + 1}`)}
-                                              </p>
-                                              {String(sec?.content || '').trim() ? (
-                                                <div className="prose prose-sm mt-1 max-w-none text-slate-700">
-                                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(sec.content)}</ReactMarkdown>
-                                                </div>
-                                              ) : null}
-                                            </div>
-                                          ))}
-                                        </div>
+                                              <span className="mr-2 font-mono text-xs text-slate-400">{oi + 1}.</span>
+                                              <span className="flex-1">{String(op)}</span>
+                                              {showAsCorrect ? <CheckCircle className="ml-2 h-4 w-4 shrink-0 text-emerald-600" /> : null}
+                                              {wrongSelected ? <X className="ml-2 h-4 w-4 shrink-0 text-rose-600" /> : null}
+                                            </button>
+                                          );
+                                        })}
                                       </div>
-                                    ) : null}
-                                    {quizzes.length > 0 ? (
-                                      <div>
-                                        <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                                          Quiz
-                                        </p>
-                                        <div className="space-y-2">
-                                          {quizzes.map((qz: any, qi: number) => (
-                                            <div
-                                              key={String(qz?._id || qi)}
-                                              className="rounded-lg border border-violet-100 bg-violet-50/60 px-2 py-2"
-                                            >
-                                              <p className="text-xs font-semibold text-violet-950">
-                                                {String(qz?.title || `Quiz ${qi + 1}`)}
-                                              </p>
-                                              {Array.isArray(qz?.questions)
-                                                ? qz.questions.map((q: any, qix: number) => {
-                                                    const opts = Array.isArray(q?.options) ? q.options : [];
-                                                    const correct =
-                                                      typeof q?.correctAnswer === 'number' ? q.correctAnswer : -1;
-                                                    return (
-                                                      <div
-                                                        key={String(q?._id || qix)}
-                                                        className="mt-2 border-t border-violet-100 pt-2 first:mt-0 first:border-0 first:pt-0"
-                                                      >
-                                                        <p className="text-[13px] font-medium text-slate-900">
-                                                          {String(q?.question || '')}
-                                                        </p>
-                                                        <ol className="mt-1 list-decimal space-y-0.5 pl-4 text-[12px] text-slate-700">
-                                                          {opts.map((op: string, oi: number) => (
-                                                            <li
-                                                              key={oi}
-                                                              className={
-                                                                oi === correct ? 'font-semibold text-emerald-800' : undefined
-                                                              }
-                                                            >
-                                                              {String(op)}
-                                                              {oi === correct ? ' ✓' : ''}
-                                                            </li>
-                                                          ))}
-                                                        </ol>
-                                                        {String(q?.explanation || '').trim() ? (
-                                                          <p className="mt-1 text-[11px] text-slate-600">
-                                                            {String(q.explanation)}
-                                                          </p>
-                                                        ) : null}
-                                                      </div>
-                                                    );
-                                                  })
-                                                : null}
-                                            </div>
-                                          ))}
+                                      {!qState.revealed ? (
+                                        <button
+                                          type="button"
+                                          disabled={qState.selected === null}
+                                          onClick={() =>
+                                            setFormationViewerQuizState((prev) => ({
+                                              ...prev,
+                                              [qKey]: {
+                                                selected: prev[qKey]?.selected ?? null,
+                                                revealed: true,
+                                              },
+                                            }))
+                                          }
+                                          className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                          Valider ma réponse
+                                        </button>
+                                      ) : (
+                                        <div className="mt-4 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                                          <p
+                                            className={`text-sm font-semibold ${
+                                              isCorrect ? 'text-emerald-800' : isWrong ? 'text-rose-800' : 'text-slate-700'
+                                            }`}
+                                          >
+                                            {isCorrect
+                                              ? 'Bonne réponse !'
+                                              : isWrong
+                                                ? 'Ce n’était pas la bonne réponse.'
+                                                : 'Réponse affichée.'}
+                                          </p>
+                                          {String(q?.explanation || '').trim() ? (
+                                            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                                              {String(q.explanation)}
+                                            </p>
+                                          ) : null}
                                         </div>
-                                      </div>
-                                    ) : null}
-                                  </div>
-                                </details>
-                              );
-                            })}
+                                      )}
+                                    </div>
+                                  );
+                                })()
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                        {formationViewerSlides.length > 0 ? (
+                          <div className="shrink-0 border-t border-slate-200 bg-slate-50/80 px-4 py-3 sm:px-6">
+                            <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                              <div
+                                className="h-full rounded-full bg-emerald-600 transition-[width] duration-300 ease-out"
+                                style={{
+                                  width: `${((formationViewerSlideIndex + 1) / formationViewerSlides.length) * 100}%`,
+                                }}
+                              />
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFormationViewerSlideIndex((i) => Math.max(0, i - 1))}
+                                disabled={formationViewerSlideIndex <= 0}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                                Précédent
+                              </button>
+                              <span className="text-xs font-medium text-slate-600">
+                                {formationViewerSlideIndex + 1} / {formationViewerSlides.length}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormationViewerSlideIndex((i) =>
+                                    Math.min(formationViewerSlides.length - 1, i + 1)
+                                  )
+                                }
+                                disabled={formationViewerSlideIndex >= formationViewerSlides.length - 1}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                Suivant
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
+                            </div>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>,
