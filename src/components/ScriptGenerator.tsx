@@ -123,11 +123,9 @@ const ScriptGenerator: React.FC = () => {
     };
   }, [selectedGig]);
 
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmedMessage = input.trim();
+  const sendMessageToApi = async (rawMessage: string, addUserBubble: boolean) => {
+    const trimmedMessage = rawMessage.trim();
     if (!trimmedMessage || !selectedGigSummary) return;
-
     const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
     if (!backendUrl) {
       setError('Backend API URL not configured');
@@ -140,13 +138,15 @@ const ScriptGenerator: React.FC = () => {
       return;
     }
 
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: trimmedMessage,
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
+    if (addUserBubble) {
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: trimmedMessage,
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      setInput('');
+    }
     setIsSending(true);
     setError(null);
 
@@ -212,6 +212,22 @@ const ScriptGenerator: React.FC = () => {
     } finally {
       setIsSending(false);
     }
+  };
+
+  useEffect(() => {
+    if (!selectedGigSummary) return;
+    const autoPrompt = [
+      'Generate a simple ready-to-use call script.',
+      `Gig title: ${selectedGigSummary.title}`,
+      `Gig description: ${selectedGigSummary.description}`,
+      'Keep it short and practical.',
+    ].join('\n');
+    sendMessageToApi(autoPrompt, false);
+  }, [selectedGigSummary?.title, selectedGigSummary?.description]);
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessageToApi(input, true);
   };
 
   return (
