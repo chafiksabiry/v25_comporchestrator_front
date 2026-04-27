@@ -15,6 +15,12 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   scriptId?: string;
+  playbook?: {
+    leadGuidance?: Array<{
+      leadLine?: string;
+      suggestedAgentReplies?: string[];
+    }>;
+  };
 }
 
 interface ScriptStep {
@@ -109,14 +115,54 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
   });
 };
 
-const collectProbableLeadReplies = (rows: StyledDialogueLine[]): string[] => {
-  const unique = new Set<string>();
-  rows.forEach((row) => {
-    if (row.side === 'lead' && row.text) {
-      unique.add(row.text);
+const buildLeadAgentSuggestions = (rows: StyledDialogueLine[]): Record<number, string[]> => {
+  const suggestions: Record<number, string[]> = {};
+  const fallbackSuggestions = [
+    'Merci pour votre retour. Je vous explique rapidement les points cles du poste.',
+    'Tres bien, est-ce que je peux vous poser 2 questions pour confirmer votre adequation ?',
+    'Parfait. Si vous etes d accord, on planifie un court entretien de suivi.',
+  ];
+
+  rows.forEach((row, idx) => {
+    if (row.side !== 'lead') return;
+    const nextAgentLines: string[] = [];
+    for (let i = idx + 1; i < rows.length; i += 1) {
+      const candidate = rows[i];
+      if (candidate.side === 'lead') break;
+      if (candidate.side === 'agent' && candidate.text) {
+        nextAgentLines.push(candidate.text);
+      }
+      if (nextAgentLines.length >= 3) break;
+    }
+    suggestions[idx] = nextAgentLines.length > 0 ? nextAgentLines : fallbackSuggestions;
+  });
+
+  return suggestions;
+};
+
+const buildLeadAgentSuggestionsFromPlaybook = (
+  rows: StyledDialogueLine[],
+  playbook?: {
+    leadGuidance?: Array<{
+      leadLine?: string;
+      suggestedAgentReplies?: string[];
+    }>;
+  }
+): Record<number, string[]> => {
+  const suggestions: Record<number, string[]> = {};
+  const guidance = Array.isArray(playbook?.leadGuidance) ? playbook!.leadGuidance! : [];
+  if (guidance.length === 0) return suggestions;
+
+  rows.forEach((row, idx) => {
+    if (row.side !== 'lead') return;
+    const leadText = String(row.text || '').trim().toLowerCase();
+    const match = guidance.find((g) => String(g?.leadLine || '').trim().toLowerCase() === leadText);
+    if (match && Array.isArray(match.suggestedAgentReplies) && match.suggestedAgentReplies.length > 0) {
+      suggestions[idx] = match.suggestedAgentReplies.map((s) => String(s || '').trim()).filter(Boolean).slice(0, 4);
     }
   });
-  return Array.from(unique).slice(0, 4);
+
+  return suggestions;
 };
 
 const ScriptGenerator: React.FC = () => {
@@ -263,6 +309,7 @@ const ScriptGenerator: React.FC = () => {
         body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
       const generatedScriptId =
         body?.data?.metadata?.scriptId || body?.data?.scriptId || body?.scriptId || undefined;
+      const generatedPlaybook = body?.data?.playbook;
       const normalizedText = normalizeScriptText(assistantText);
       const assistantTextSafe =
         normalizedText || 'Je n’ai pas pu générer de réponse.';
@@ -274,6 +321,7 @@ const ScriptGenerator: React.FC = () => {
           role: 'assistant',
           content: assistantTextSafe,
           scriptId: generatedScriptId,
+          playbook: generatedPlaybook,
         },
       ]);
     } catch (err: any) {
@@ -326,7 +374,7 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
-  const renderAssistantMessage = (content: string) => {
+  const renderAssistantMessage = (content: string, playbook?: ChatMessage['playbook']) => {
     const rows = parseStyledDialogue(content);
     const hasStructured = rows.some((row) => row.side !== 'other');
     if (!hasStructured) {
@@ -336,7 +384,9 @@ const ScriptGenerator: React.FC = () => {
         </div>
       );
     }
-    const probableLeadReplies = collectProbableLeadReplies(rows);
+    const byPlaybook = buildLeadAgentSuggestionsFromPlaybook(rows, playbook);
+    const byFallback = buildLeadAgentSuggestions(rows);
+    const leadAgentSuggestions: Record<number, string[]> = { ...byFallback, ...byPlaybook };
     return (
       <div className="space-y-3">
         <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
@@ -365,31 +415,31 @@ const ScriptGenerator: React.FC = () => {
                   {row.label}
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-slate-800">{row.text}</p>
+                {row.side === 'lead' && (
+                  <div className="mt-2">
+                    <details className="group rounded-lg border border-emerald-200 bg-white/90 px-2 py-1">
+                      <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-wide text-emerald-700 flex items-center justify-between">
+                        <span>Reponse agent probable</span>
+                        <span className="text-emerald-600 group-open:rotate-180 transition-transform">▼</span>
+                      </summary>
+                      <div className="mt-2 space-y-1.5">
+                        {(leadAgentSuggestions[idx] || []).map((suggestion, sIdx) => (
+                          <div
+                            key={`lead-${idx}-agent-${sIdx}`}
+                            className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-slate-700"
+                          >
+                            <span className="mr-1 text-[10px] font-bold text-blue-700">Agent:</span>
+                            <span>{suggestion}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
-
-        {probableLeadReplies.length > 0 && (
-          <div className="rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-fuchsia-50 p-3 shadow-sm">
-            <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-violet-700">
-              Reponses probables du lead
-            </p>
-            <div className="grid gap-2">
-              {probableLeadReplies.map((reply, index) => (
-                <div
-                  key={`probable-${index}`}
-                  className="rounded-lg border border-violet-200 bg-white/80 px-3 py-2 text-slate-700"
-                >
-                  <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-[10px] font-bold text-violet-700">
-                    {index + 1}
-                  </span>
-                  {reply}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     );
   };
@@ -487,7 +537,7 @@ const ScriptGenerator: React.FC = () => {
                 >
                   {message.role === 'assistant' ? (
                     <div className="space-y-3">
-                      {renderAssistantMessage(message.content)}
+                      {renderAssistantMessage(message.content, message.playbook)}
                       {message.scriptId && (
                         <div className="pt-1">
                           <button
