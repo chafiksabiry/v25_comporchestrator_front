@@ -1073,17 +1073,19 @@ const ScriptGenerator: React.FC = () => {
           {gigsError && <p className="text-sm text-red-600 mt-2.5">{gigsError}</p>}
         </div>
 
-        <ScriptListPanel
-          selectedGigId={selectedGig?._id}
-          isSending={isSending}
-          isLoadingSavedScripts={isLoadingSavedScripts}
-          savedScripts={savedScripts}
-          showGenerateButton={currentView !== 'chat'}
-          onGenerate={handleGenerateScript}
-          onView={handleViewSavedScript}
-          onEdit={handleEditSavedScript}
-          onDelete={handleDeleteSavedScript}
-        />
+        {currentView !== 'view' && (
+          <ScriptListPanel
+            selectedGigId={selectedGig?._id}
+            isSending={isSending}
+            isLoadingSavedScripts={isLoadingSavedScripts}
+            savedScripts={savedScripts}
+            showGenerateButton={currentView !== 'chat' && savedScripts.length === 0}
+            onGenerate={handleGenerateScript}
+            onView={handleViewSavedScript}
+            onEdit={handleEditSavedScript}
+            onDelete={handleDeleteSavedScript}
+          />
+        )}
 
         {currentView === 'view' ? (
           <ScriptViewPage
