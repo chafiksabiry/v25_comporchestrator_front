@@ -711,6 +711,11 @@ const ScriptGenerator: React.FC = () => {
   const renderAssistantMessage = (messageId: string, content: string, playbook?: ChatMessage['playbook']) => {
     const turns = Array.isArray(playbook?.turns) ? playbook?.turns : [];
     if (turns && turns.length > 0) {
+      const normalizeLine = (text?: string) =>
+        String(text || '')
+          .toLowerCase()
+          .replace(/\s+/g, ' ')
+          .trim();
       const byTurnId = new Map<string, number>();
       turns.forEach((turn, idx) => {
         const key = String(turn?.id || '').trim();
@@ -743,11 +748,18 @@ const ScriptGenerator: React.FC = () => {
         const selected = options[safeIdx];
         const nextTurnId = String(selected?.nextTurnId || '').trim();
         const nextIdxFromLink = nextTurnId ? byTurnId.get(nextTurnId) : undefined;
+        const selectedAgentReplyKey = normalizeLine(selected?.agentReply);
+        const nextIdxFromReply =
+          selectedAgentReplyKey
+            ? turns.findIndex((t) => normalizeLine(t?.agentLine) === selectedAgentReplyKey)
+            : -1;
         const nextIdx =
           typeof nextIdxFromLink === 'number'
             ? nextIdxFromLink
-            : cursor + 1 < turns.length
-              ? cursor + 1
+            : nextIdxFromReply >= 0
+              ? nextIdxFromReply
+              : options.length === 1 && cursor + 1 < turns.length
+                ? cursor + 1
               : undefined;
         if (typeof nextIdx !== 'number') break;
         cursor = nextIdx;
