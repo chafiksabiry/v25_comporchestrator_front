@@ -184,7 +184,6 @@ const ScriptGenerator: React.FC = () => {
   const [validatingScriptId, setValidatingScriptId] = useState<string | null>(null);
   const [validatedScriptIds, setValidatedScriptIds] = useState<Record<string, boolean>>({});
   const [selectedLeadOptionByTurnKey, setSelectedLeadOptionByTurnKey] = useState<Record<string, number>>({});
-  const [regeneratingTurnKey, setRegeneratingTurnKey] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const lastAutoGigIdRef = useRef<string | null>(null);
 
@@ -383,155 +382,58 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
-  const regenerateFromLeadChoice = async (
-    messageId: string,
-    turns: NonNullable<NonNullable<ChatMessage['playbook']>['turns']>,
-    selectedTurnIdx: number,
-    selectedOptionIdx: number
-  ) => {
-    if (!selectedGigSummary || !selectedGig) return;
-    const companyId = getCompanyId();
-    if (!companyId) {
-      setError('Company ID not found');
-      return;
-    }
-    const turnKey = `${messageId}-${selectedTurnIdx}`;
-    setRegeneratingTurnKey(turnKey);
-    setError(null);
-    try {
-      const historyLines: string[] = [];
-      for (let i = 0; i <= selectedTurnIdx; i += 1) {
-        const turn = turns[i];
-        const options = Array.isArray(turn?.leadOptions) ? turn.leadOptions : [];
-        if (!turn?.agentLine || options.length === 0) continue;
-        const key = `${messageId}-${i}`;
-        const chosenIdx = i === selectedTurnIdx
-          ? selectedOptionIdx
-          : Number.isFinite(selectedLeadOptionByTurnKey[key])
-            ? selectedLeadOptionByTurnKey[key]
-            : 0;
-        const safeIdx = Math.max(0, Math.min(chosenIdx, options.length - 1));
-        const chosen = options[safeIdx];
-        historyLines.push(`Agent: ${String(turn.agentLine || '').trim()}`);
-        historyLines.push(`Lead: ${String(chosen?.leadReply || '').trim()}`);
-        historyLines.push(`Agent: ${String(chosen?.agentReply || '').trim()}`);
-      }
-
-      const continuationPrompt = [
-        'Continue this professional recruitment script from the selected branch.',
-        'The following conversation is locked and must be respected exactly:',
-        ...historyLines,
-        '',
-        'Now generate the NEXT part of the script with branching lead options and matching agent replies.',
-        'Keep it professional and coherent with previous turns.',
-      ].join('\n');
-
-      const scriptPayload = {
-        companyId,
-        gig: selectedGig,
-        typeClient: 'general',
-        langueTon: 'simple et direct',
-        contexte: continuationPrompt,
-      };
-
-      const { data: body } = await apiClient.post('/rag/generate-script', scriptPayload);
-      const newPlaybook = body?.data?.playbook;
-      const newScript = body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
-      const normalized = normalizeScriptText(newScript);
-
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageId
-            ? {
-                ...m,
-                content: normalized || m.content,
-                playbook: newPlaybook || m.playbook,
-              }
-            : m
-        )
-      );
-
-      // Keep selected choice on current turn; clear later turns because branch changed.
-      setSelectedLeadOptionByTurnKey((prev) => {
-        const next = { ...prev, [turnKey]: selectedOptionIdx };
-        Object.keys(next).forEach((k) => {
-          if (!k.startsWith(`${messageId}-`)) return;
-          const idx = Number(String(k).split('-').pop());
-          if (Number.isFinite(idx) && idx > selectedTurnIdx) delete next[k];
-        });
-        return next;
-      });
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Failed to regenerate following script');
-    } finally {
-      setRegeneratingTurnKey(null);
-    }
-  };
-
   const renderAssistantMessage = (messageId: string, content: string, playbook?: ChatMessage['playbook']) => {
     const turns = Array.isArray(playbook?.turns) ? playbook?.turns : [];
     if (turns && turns.length > 0) {
       return (
         <div className="space-y-3">
-          <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-            <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Script Dialogue</p>
-            <div className="space-y-3">
-              {turns.map((turn, turnIdx) => {
-                const options = Array.isArray(turn?.leadOptions) ? turn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply) : [];
-                if (!turn?.agentLine || options.length === 0) return null;
-                const turnKey = `${messageId}-${turnIdx}`;
-                const selectedIdx = Number.isFinite(selectedLeadOptionByTurnKey[turnKey])
-                  ? selectedLeadOptionByTurnKey[turnKey]
-                  : 0;
-                const safeIdx = Math.max(0, Math.min(selectedIdx, options.length - 1));
-                const selected = options[safeIdx];
-                return (
-                  <div key={turnKey} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">Agent</p>
-                      <p className="mt-1 text-slate-800">{String(turn.agentLine)}</p>
-                    </div>
-                    <div className="mt-2 space-y-2">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Choisir la reponse du lead</p>
-                      <div className="grid gap-1.5">
-                        {options.map((opt, optIdx) => {
-                          const active = optIdx === safeIdx;
-                          return (
-                            <button
-                              key={`${turnKey}-opt-${optIdx}`}
-                              type="button"
-                              onClick={async () => {
-                                setSelectedLeadOptionByTurnKey((prev) => ({ ...prev, [turnKey]: optIdx }));
-                                await regenerateFromLeadChoice(messageId, turns as any, turnIdx, optIdx);
-                              }}
-                              className={`text-left rounded-lg border px-3 py-2 transition-colors ${
-                                active
-                                  ? 'border-emerald-400 bg-emerald-100 text-emerald-900'
-                                  : 'border-emerald-200 bg-white text-slate-700 hover:bg-emerald-50'
-                              }`}
-                            >
-                              <span className="mr-1 text-[10px] font-bold uppercase text-emerald-700">Lead:</span>
-                              {String(opt.leadReply)}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-violet-700">Agent repond</p>
-                      <p className="mt-1 text-slate-800">{String(selected?.agentReply || '')}</p>
-                      {regeneratingTurnKey === turnKey && (
-                        <div className="mt-2 inline-flex items-center gap-2 text-xs text-violet-700">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          Regeneration de toute la suite...
-                        </div>
-                      )}
-                    </div>
+          {turns.map((turn, turnIdx) => {
+            const options = Array.isArray(turn?.leadOptions) ? turn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply) : [];
+            if (!turn?.agentLine || options.length === 0) return null;
+            const turnKey = `${messageId}-${turnIdx}`;
+            const selectedIdx = Number.isFinite(selectedLeadOptionByTurnKey[turnKey])
+              ? selectedLeadOptionByTurnKey[turnKey]
+              : 0;
+            const safeIdx = Math.max(0, Math.min(selectedIdx, options.length - 1));
+            const selected = options[safeIdx];
+            return (
+              <div key={turnKey} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">Agent</p>
+                  <p className="mt-1 text-slate-800">{String(turn.agentLine)}</p>
+                </div>
+                <div className="mt-2 space-y-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Choisir la reponse du lead</p>
+                  <div className="grid gap-1.5">
+                    {options.map((opt, optIdx) => {
+                      const active = optIdx === safeIdx;
+                      return (
+                        <button
+                          key={`${turnKey}-opt-${optIdx}`}
+                          type="button"
+                          onClick={() => {
+                            setSelectedLeadOptionByTurnKey((prev) => ({ ...prev, [turnKey]: optIdx }));
+                          }}
+                          className={`text-left rounded-lg border px-3 py-2 transition-colors ${
+                            active
+                              ? 'border-emerald-400 bg-emerald-100 text-emerald-900'
+                              : 'border-emerald-200 bg-white text-slate-700 hover:bg-emerald-50'
+                          }`}
+                        >
+                          <span className="mr-1 text-[10px] font-bold uppercase text-emerald-700">Lead:</span>
+                          {String(opt.leadReply)}
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                </div>
+                <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-violet-700">Agent repond</p>
+                  <p className="mt-1 text-slate-800">{String(selected?.agentReply || '')}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       );
     }
