@@ -60,6 +60,17 @@ interface SavedScript {
   isActive?: boolean;
 }
 
+interface EditModalState {
+  open: boolean;
+  mode: 'manual' | 'ai';
+  messageId: string;
+  turnIdx: number;
+  role: 'agent' | 'lead';
+  optionIdx?: number;
+  value: string;
+  title: string;
+}
+
 const formatScriptSteps = (steps: ScriptStep[]): string => {
   const lines = steps
     .map((step: ScriptStep) => {
@@ -208,6 +219,15 @@ const ScriptGenerator: React.FC = () => {
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
   const [currentView, setCurrentView] = useState<'list' | 'view' | 'chat'>('list');
+  const [editModal, setEditModal] = useState<EditModalState>({
+    open: false,
+    mode: 'manual',
+    messageId: '',
+    turnIdx: 0,
+    role: 'agent',
+    value: '',
+    title: 'Modifier',
+  });
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const getCompanyId = () => {
@@ -411,6 +431,26 @@ const ScriptGenerator: React.FC = () => {
     openSavedScript(item);
   };
 
+  const handleDeleteSavedScript = async (scriptId: string) => {
+    if (!scriptId) return;
+    setError(null);
+    try {
+      await apiClient.delete(`/rag/scripts/${scriptId}`);
+      setSavedScripts((prev) => prev.filter((s) => s._id !== scriptId));
+      setValidatedScriptIds((prev) => {
+        const next = { ...prev };
+        delete next[scriptId];
+        return next;
+      });
+      if (activeScriptMessage?.scriptId === scriptId) {
+        setActiveScriptMessage(null);
+        setCurrentView('list');
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Failed to delete script');
+    }
+  };
+
   const handleGenerateScript = async () => {
     if (!selectedGigSummary) return;
     setCurrentView('chat');
@@ -569,28 +609,17 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
-  const applyManualEdit = (params: {
+  const applyManualEditWithValue = (params: {
     messageId: string;
     turnIdx: number;
     role: 'agent' | 'lead';
     optionIdx?: number;
+    value: string;
   }) => {
-    const { messageId, turnIdx, role, optionIdx } = params;
-    const targetMessage = messages.find((m) => m.id === messageId);
-    const turns = Array.isArray(targetMessage?.playbook?.turns) ? targetMessage!.playbook!.turns! : [];
-    const turn = turns[turnIdx];
-    if (!turn) return;
-    const options = Array.isArray(turn.leadOptions) ? turn.leadOptions : [];
+    const { messageId, turnIdx, role, optionIdx, value } = params;
+    const nextValue = String(value || '').trim();
+    if (!nextValue) return;
     const selectedIdx = Number.isFinite(optionIdx as number) ? Number(optionIdx) : 0;
-    const sourceLine =
-      role === 'agent'
-        ? String(turn.agentLine || '').trim()
-        : String(options[selectedIdx]?.leadReply || '').trim();
-    if (!sourceLine) return;
-
-    const updated = window.prompt('Modifier la ligne:', sourceLine);
-    const nextValue = String(updated || '').trim();
-    if (!nextValue || nextValue === sourceLine) return;
 
     setMessages((prev) =>
       prev.map((m) => {
@@ -608,6 +637,75 @@ const ScriptGenerator: React.FC = () => {
         return { ...m, playbook: { ...m.playbook, turns: nextTurns } };
       })
     );
+  };
+
+  const getSourceLine = (params: {
+    messageId: string;
+    turnIdx: number;
+    role: 'agent' | 'lead';
+    optionIdx?: number;
+  }): string => {
+    const { messageId, turnIdx, role, optionIdx } = params;
+    const targetMessage = messages.find((m) => m.id === messageId);
+    const turns = Array.isArray(targetMessage?.playbook?.turns) ? targetMessage!.playbook!.turns! : [];
+    const turn = turns[turnIdx];
+    if (!turn) return '';
+    const options = Array.isArray(turn.leadOptions) ? turn.leadOptions : [];
+    const selectedIdx = Number.isFinite(optionIdx as number) ? Number(optionIdx) : 0;
+    return role === 'agent'
+      ? String(turn.agentLine || '').trim()
+      : String(options[selectedIdx]?.leadReply || '').trim();
+  };
+
+  const openEditModal = (params: {
+    mode: 'manual' | 'ai';
+    messageId: string;
+    turnIdx: number;
+    role: 'agent' | 'lead';
+    optionIdx?: number;
+  }) => {
+    const source = getSourceLine(params);
+    if (!source) return;
+    setEditModal({
+      open: true,
+      mode: params.mode,
+      messageId: params.messageId,
+      turnIdx: params.turnIdx,
+      role: params.role,
+      optionIdx: params.optionIdx,
+      value: params.mode === 'manual' ? source : '',
+      title:
+        params.mode === 'manual'
+          ? 'Modifier la ligne'
+          : params.role === 'agent'
+            ? 'Instruction IA pour modifier la ligne agent'
+            : 'Instruction IA pour modifier la reponse lead selectionnee',
+    });
+  };
+
+  const submitEditModal = async () => {
+    const payload = { ...editModal };
+    const value = String(payload.value || '').trim();
+    if (!value) return;
+    if (payload.mode === 'manual') {
+      applyManualEditWithValue({
+        messageId: payload.messageId,
+        turnIdx: payload.turnIdx,
+        role: payload.role,
+        optionIdx: payload.optionIdx,
+        value,
+      });
+      setEditModal((prev) => ({ ...prev, open: false }));
+      return;
+    }
+    await applyPromptEdit({
+      messageId: payload.messageId,
+      turnIdx: payload.turnIdx,
+      role: payload.role,
+      optionIdx: payload.optionIdx,
+      prompt: value,
+    });
+    setEditModal((prev) => ({ ...prev, open: false }));
   };
 
   const renderAssistantMessage = (messageId: string, content: string, playbook?: ChatMessage['playbook']) => {
@@ -644,7 +742,13 @@ const ScriptGenerator: React.FC = () => {
         const safeIdx = Math.max(0, Math.min(selectedIdx, options.length - 1));
         const selected = options[safeIdx];
         const nextTurnId = String(selected?.nextTurnId || '').trim();
-        const nextIdx = nextTurnId ? byTurnId.get(nextTurnId) : undefined;
+        const nextIdxFromLink = nextTurnId ? byTurnId.get(nextTurnId) : undefined;
+        const nextIdx =
+          typeof nextIdxFromLink === 'number'
+            ? nextIdxFromLink
+            : cursor + 1 < turns.length
+              ? cursor + 1
+              : undefined;
         if (typeof nextIdx !== 'number') break;
         cursor = nextIdx;
       }
@@ -668,7 +772,7 @@ const ScriptGenerator: React.FC = () => {
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => applyManualEdit({ messageId, turnIdx, role: 'agent' })}
+                        onClick={() => openEditModal({ mode: 'manual', messageId, turnIdx, role: 'agent' })}
                         className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-blue-200 bg-white text-blue-700 hover:bg-blue-50"
                       >
                         <Pencil className="w-3 h-3" />
@@ -676,11 +780,7 @@ const ScriptGenerator: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={async () => {
-                          const prompt = window.prompt('Instruction IA pour modifier cette ligne agent:');
-                          if (!String(prompt || '').trim()) return;
-                          await applyPromptEdit({ messageId, turnIdx, role: 'agent', prompt: String(prompt) });
-                        }}
+                        onClick={() => openEditModal({ mode: 'ai', messageId, turnIdx, role: 'agent' })}
                         disabled={rewritingKey === `${messageId}-${turnIdx}-agent`}
                         className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-blue-200 bg-white text-blue-700 hover:bg-blue-50 disabled:opacity-60"
                       >
@@ -748,7 +848,7 @@ const ScriptGenerator: React.FC = () => {
                   <div className="mt-1 flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => applyManualEdit({ messageId, turnIdx, role: 'lead', optionIdx: safeIdx })}
+                      onClick={() => openEditModal({ mode: 'manual', messageId, turnIdx, role: 'lead', optionIdx: safeIdx })}
                       className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
                     >
                       <Pencil className="w-3 h-3" />
@@ -756,17 +856,7 @@ const ScriptGenerator: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={async () => {
-                        const prompt = window.prompt('Instruction IA pour modifier la reponse lead selectionnee:');
-                        if (!String(prompt || '').trim()) return;
-                        await applyPromptEdit({
-                          messageId,
-                          turnIdx,
-                          role: 'lead',
-                          optionIdx: safeIdx,
-                          prompt: String(prompt),
-                        });
-                      }}
+                      onClick={() => openEditModal({ mode: 'ai', messageId, turnIdx, role: 'lead', optionIdx: safeIdx })}
                       disabled={rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}`}
                       className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 disabled:opacity-60"
                     >
@@ -904,9 +994,11 @@ const ScriptGenerator: React.FC = () => {
           isSending={isSending}
           isLoadingSavedScripts={isLoadingSavedScripts}
           savedScripts={savedScripts}
+          showGenerateButton={currentView !== 'chat'}
           onGenerate={handleGenerateScript}
           onView={handleViewSavedScript}
           onEdit={handleEditSavedScript}
+          onDelete={handleDeleteSavedScript}
         />
 
         {currentView === 'view' ? (
@@ -956,6 +1048,51 @@ const ScriptGenerator: React.FC = () => {
             renderAssistantMessage={renderAssistantMessage}
           />
         ) : null}
+
+        {editModal.open && (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-4">
+            <div className="w-full max-w-lg bg-white rounded-2xl border border-gray-200 shadow-xl">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <p className="text-sm font-semibold text-gray-800">{editModal.title}</p>
+              </div>
+              <div className="p-5 space-y-3">
+                {editModal.mode === 'manual' ? (
+                  <textarea
+                    value={editModal.value}
+                    onChange={(e) => setEditModal((prev) => ({ ...prev, value: e.target.value }))}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="Modifier la ligne..."
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={editModal.value}
+                    onChange={(e) => setEditModal((prev) => ({ ...prev, value: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="Ecrire l'instruction IA..."
+                  />
+                )}
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditModal((prev) => ({ ...prev, open: false }))}
+                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitEditModal}
+                    className="px-3 py-1.5 text-sm rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
+                  >
+                    Appliquer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm">
