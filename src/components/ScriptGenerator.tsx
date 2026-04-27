@@ -15,6 +15,12 @@ interface ChatMessage {
   content: string;
 }
 
+interface ScriptStep {
+  phase?: string;
+  actor?: string;
+  replica?: string;
+}
+
 const ScriptGenerator: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -167,13 +173,6 @@ const ScriptGenerator: React.FC = () => {
         },
       };
 
-      const chatPayload = {
-        message: trimmedMessage,
-        context: contextPayload,
-        gigId: selectedGig._id,
-        companyId,
-        sessionId: sessionId || undefined,
-      };
       const scriptPayload = {
         companyId,
         gig: selectedGig,
@@ -181,15 +180,12 @@ const ScriptGenerator: React.FC = () => {
         langueTon: 'simple et direct',
         contexte: trimmedMessage,
       };
-      const tryEndpoints: Array<{ url: string; body: any; kind: 'chat' | 'script' }> = [
-        { url: `${backendUrl}/api/ai/chat?stream=false`, body: chatPayload, kind: 'chat' },
-        { url: `${backendUrl}/api/rag/chat`, body: chatPayload, kind: 'chat' },
-        { url: `${backendUrl}/rag/chat`, body: chatPayload, kind: 'chat' },
+      const tryEndpoints: Array<{ url: string; body: any; kind: 'script' }> = [
         { url: `${backendUrl}/api/rag/generate-script`, body: scriptPayload, kind: 'script' },
         { url: `${backendUrl}/rag/generate-script`, body: scriptPayload, kind: 'script' },
       ];
       let response: Response | null = null;
-      let responseKind: 'chat' | 'script' = 'chat';
+      let responseKind: 'script' = 'script';
       let lastError = '';
 
       for (const candidate of tryEndpoints) {
@@ -225,15 +221,29 @@ const ScriptGenerator: React.FC = () => {
 
       const assistantText = responseKind === 'script'
         ? body?.data?.script || body?.script || body?.data?.text || body?.text
-        : body?.response || body?.data?.response || body?.data?.text || body?.text;
+        : '';
+      const normalizeScriptText = (value: any): string => {
+        if (typeof value === 'string') return value;
+        if (Array.isArray(value)) {
+          const lines = value.map((step: ScriptStep) => {
+            const phase = String(step?.phase || '').trim();
+            const actor = String(step?.actor || '').trim();
+            const replica = String(step?.replica || '').trim();
+            const actorLabel = actor ? actor.toUpperCase() : 'AGENT';
+            if (phase && replica) return `[${phase}] ${actorLabel}: ${replica}`;
+            if (replica) return `${actorLabel}: ${replica}`;
+            return '';
+          }).filter(Boolean);
+          return lines.join('\n\n');
+        }
+        if (value && typeof value === 'object') {
+          return JSON.stringify(value, null, 2);
+        }
+        return '';
+      };
+      const normalizedText = normalizeScriptText(assistantText);
       const assistantTextSafe =
-        typeof assistantText === 'string'
-          ? assistantText
-          : Array.isArray(assistantText)
-            ? assistantText.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join('\n')
-            : assistantText
-              ? JSON.stringify(assistantText)
-              : 'Je n’ai pas pu générer de réponse.';
+        normalizedText || 'Je n’ai pas pu générer de réponse.';
 
       setMessages((prev) => [
         ...prev.filter((m) => !m.id.startsWith('assistant-pending-')),
