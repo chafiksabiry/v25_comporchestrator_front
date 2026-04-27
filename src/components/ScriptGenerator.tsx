@@ -94,6 +94,16 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
   });
 };
 
+const collectProbableLeadReplies = (rows: StyledDialogueLine[]): string[] => {
+  const unique = new Set<string>();
+  rows.forEach((row) => {
+    if (row.side === 'lead' && row.text) {
+      unique.add(row.text);
+    }
+  });
+  return Array.from(unique).slice(0, 4);
+};
+
 const ScriptGenerator: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,13 +194,7 @@ const ScriptGenerator: React.FC = () => {
 
   useEffect(() => {
     if (!selectedGig) return;
-    setMessages([
-      {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: `Chat prêt pour "${selectedGig.title}". Pose une question, ou demande directement un script court.`,
-      },
-    ]);
+    setMessages([]);
     setError(null);
   }, [selectedGig?._id]);
 
@@ -311,31 +315,66 @@ const ScriptGenerator: React.FC = () => {
     const rows = parseStyledDialogue(content);
     const hasStructured = rows.some((row) => row.side !== 'other');
     if (!hasStructured) {
-      return <span className="whitespace-pre-wrap">{content}</span>;
+      return (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <span className="whitespace-pre-wrap text-slate-800">{content}</span>
+        </div>
+      );
     }
+    const probableLeadReplies = collectProbableLeadReplies(rows);
     return (
-      <div className="space-y-2">
-        {rows.map((row, idx) => (
-          <div
-            key={`${row.label}-${idx}`}
-            className={`rounded-xl px-3 py-2 ${
-              row.side === 'agent'
-                ? 'bg-blue-50 border border-blue-200'
-                : row.side === 'lead'
-                  ? 'bg-emerald-50 border border-emerald-200'
-                  : 'bg-gray-50 border border-gray-200'
-            }`}
-          >
-            <p
-              className={`text-[11px] font-bold uppercase tracking-wide ${
-                row.side === 'agent' ? 'text-blue-700' : row.side === 'lead' ? 'text-emerald-700' : 'text-gray-600'
-              }`}
-            >
-              {row.label}
-            </p>
-            <p className="mt-1 whitespace-pre-wrap">{row.text}</p>
+      <div className="space-y-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+          <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Script Dialogue</p>
+          <div className="space-y-2">
+            {rows.map((row, idx) => (
+              <div
+                key={`${row.label}-${idx}`}
+                className={`rounded-xl px-3 py-2 ${
+                  row.side === 'agent'
+                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200'
+                    : row.side === 'lead'
+                      ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200'
+                      : 'bg-gray-50 border border-gray-200'
+                }`}
+              >
+                <p
+                  className={`text-[11px] font-bold uppercase tracking-wide ${
+                    row.side === 'agent'
+                      ? 'text-blue-700'
+                      : row.side === 'lead'
+                        ? 'text-emerald-700'
+                        : 'text-gray-600'
+                  }`}
+                >
+                  {row.label}
+                </p>
+                <p className="mt-1 whitespace-pre-wrap text-slate-800">{row.text}</p>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {probableLeadReplies.length > 0 && (
+          <div className="rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-fuchsia-50 p-3 shadow-sm">
+            <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-violet-700">
+              Reponses probables du lead
+            </p>
+            <div className="grid gap-2">
+              {probableLeadReplies.map((reply, index) => (
+                <div
+                  key={`probable-${index}`}
+                  className="rounded-lg border border-violet-200 bg-white/80 px-3 py-2 text-slate-700"
+                >
+                  <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-[10px] font-bold text-violet-700">
+                    {index + 1}
+                  </span>
+                  {reply}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
