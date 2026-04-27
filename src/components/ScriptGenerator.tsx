@@ -379,6 +379,7 @@ const ScriptGenerator: React.FC = () => {
         langueTon: 'simple et direct',
         contexte: regenInstruction,
         currentScript: currentScriptText || undefined,
+        currentPlaybook: activeScriptMessage?.playbook || undefined,
         chatHistory: messages
           .filter((m) => m.role === 'user' || m.role === 'assistant')
           .map((m) => ({
@@ -405,13 +406,7 @@ const ScriptGenerator: React.FC = () => {
         content: assistantTextSafe,
         playbook: generatedPlaybook,
       };
-      setMessages((prev) => {
-        const cleanPrev = prev.filter((m) => !m.id.startsWith('assistant-pending-'));
-        if (!addUserBubble) return [...cleanPrev, generatedMessage];
-        // Chat message acts as regeneration command: keep user history, replace prior generated script view.
-        const withoutAssistants = cleanPrev.filter((m) => m.role !== 'assistant');
-        return [...withoutAssistants, generatedMessage];
-      });
+      setMessages((prev) => [...prev.filter((m) => !m.id.startsWith('assistant-pending-')), generatedMessage]);
       setActiveScriptMessage(generatedMessage);
       setCurrentView('chat');
     } catch (err: any) {
@@ -752,6 +747,19 @@ const ScriptGenerator: React.FC = () => {
           .toLowerCase()
           .replace(/\s+/g, ' ')
           .trim();
+      const isClosingReply = (text?: string) => {
+        const t = normalizeLine(text);
+        if (!t) return false;
+        return (
+          t.includes('au revoir') ||
+          t.includes('bonne journee') ||
+          t.includes('bonne journée') ||
+          t.includes('merci de votre temps') ||
+          t.includes('je vous souhaite') ||
+          t.includes('merci quand meme') ||
+          t.includes('merci quand même')
+        );
+      };
       const byTurnId = new Map<string, number>();
       turns.forEach((turn, idx) => {
         const key = String(turn?.id || '').trim();
@@ -795,7 +803,7 @@ const ScriptGenerator: React.FC = () => {
             ? nextIdxFromLink
             : nextIdxFromReply >= 0
               ? nextIdxFromReply
-              : options.length === 1 && cursor + 1 < turns.length
+              : !isClosingReply(selected?.agentReply) && cursor + 1 < turns.length
                 ? cursor + 1
               : undefined;
         if (typeof nextIdx !== 'number') {
