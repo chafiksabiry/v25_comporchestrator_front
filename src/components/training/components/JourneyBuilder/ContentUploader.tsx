@@ -663,6 +663,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const savedJourneyHydrateSeqRef = useRef(0);
   const [savedJourneyHydrated, setSavedJourneyHydrated] = useState<any | null>(null);
   const [isSavedJourneyHydrating, setIsSavedJourneyHydrating] = useState(false);
+  const [showGeneratedFormationModal, setShowGeneratedFormationModal] = useState(false);
 
   const hydrateSavedJourneyFromApi = useCallback(async () => {
     if (!repOnboardingLayout) return;
@@ -686,6 +687,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       savedJourneyHydrateSeqRef.current += 1;
       setSavedJourneyHydrated(null);
       setIsSavedJourneyHydrating(false);
+      setShowGeneratedFormationModal(false);
       return;
     }
     void hydrateSavedJourneyFromApi();
@@ -2647,6 +2649,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setUploads([]);
       setChatUploadedSources([]);
       setShowRepSourcePopup(false);
+      setShowGeneratedFormationModal(false);
       setActiveChatSessionId(null);
       autoOpenedHistoryForJourneyRef.current = null;
       void refreshChatHistory();
@@ -5374,6 +5377,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       {isQuizGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Target className="h-3.5 w-3.5" />}
                       Quizzes
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowGeneratedFormationModal(true);
+                        void hydrateSavedJourneyFromApi();
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-900 hover:bg-emerald-100/90"
+                      title="Modules, sections et quiz enregistrés"
+                    >
+                      <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                      Voir la formation générée
+                    </button>
                   </div>
                 )}
                 {isHistoryOpen && (
@@ -5507,140 +5522,195 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   </div>,
                   document.body
                 )}
-              {rep && (formationModules.length > 0 || isSavedJourneyHydrating) && (
-                <div className="mb-2 max-h-[min(42vh,520px)] shrink-0 overflow-y-auto rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/50 to-white p-3 shadow-sm">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <BookOpen className="h-4 w-4 shrink-0 text-emerald-700" aria-hidden />
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-800">Formation enregistrée</p>
-                        <p className="truncate text-xs font-semibold text-slate-800">
-                          {String((formationPreviewSource as any)?.title || (formationPreviewSource as any)?.name || 'Parcours').trim()}
-                        </p>
+              {rep &&
+                showGeneratedFormationModal &&
+                typeof document !== 'undefined' &&
+                createPortal(
+                  <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-[2px] sm:p-6"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="generated-formation-modal-title"
+                    onClick={(e) => {
+                      if (e.target === e.currentTarget) setShowGeneratedFormationModal(false);
+                    }}
+                  >
+                    <div
+                      className="flex max-h-[min(92dvh,820px)] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-emerald-200/80 bg-white shadow-2xl"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="shrink-0 border-b border-slate-100 bg-gradient-to-r from-emerald-50/80 to-white px-4 pb-3 pt-4 sm:px-6 sm:pt-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-start gap-3">
+                            <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" aria-hidden />
+                            <div className="min-w-0">
+                              <p
+                                id="generated-formation-modal-title"
+                                className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl"
+                              >
+                                Formation générée
+                              </p>
+                              <p className="mt-0.5 truncate text-sm font-medium text-slate-600">
+                                {String(
+                                  (formationPreviewSource as any)?.title ||
+                                    (formationPreviewSource as any)?.name ||
+                                    'Parcours'
+                                ).trim()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => void hydrateSavedJourneyFromApi()}
+                              disabled={isSavedJourneyHydrating}
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                              title="Recharger depuis la base"
+                            >
+                              {isSavedJourneyHydrating ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-3.5 w-3.5" />
+                              )}
+                              Actualiser
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowGeneratedFormationModal(false)}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+                              title="Fermer"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
+                        {formationModules.length === 0 && isSavedJourneyHydrating ? (
+                          <div className="flex items-center gap-2 py-8 text-sm text-slate-600">
+                            <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                            Chargement du programme…
+                          </div>
+                        ) : formationModules.length === 0 ? (
+                          <p className="py-8 text-center text-sm text-slate-500">
+                            Aucun module enregistré pour l’instant. Validez le plan ou enregistrez des modules, puis
+                            actualisez.
+                          </p>
+                        ) : (
+                          <div className="space-y-2">
+                            {formationModules.map((mod: any, mi: number) => {
+                              const sections = Array.isArray(mod?.sections) ? mod.sections : [];
+                              const quizzes = Array.isArray(mod?.quizzes) ? mod.quizzes : [];
+                              return (
+                                <details
+                                  key={String(mod?._id || mod?.id || mi)}
+                                  className="rounded-xl border border-slate-200 bg-slate-50/40 px-2 py-1 shadow-sm"
+                                >
+                                  <summary className="cursor-pointer list-none py-1.5 text-sm font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
+                                    <span className="inline-flex w-full items-center gap-2">
+                                      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-xs font-bold text-white">
+                                        {mi + 1}
+                                      </span>
+                                      <span className="min-w-0 flex-1 text-left">
+                                        {String(mod?.title || `Module ${mi + 1}`)}
+                                      </span>
+                                    </span>
+                                  </summary>
+                                  <div className="mt-2 space-y-3 border-t border-slate-200/80 bg-white/80 px-1 pb-2 pt-2">
+                                    {String(mod?.description || '').trim() ? (
+                                      <div className="prose prose-sm max-w-none text-slate-800">
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(mod.description)}</ReactMarkdown>
+                                      </div>
+                                    ) : null}
+                                    {sections.length > 0 ? (
+                                      <div>
+                                        <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                                          Sections
+                                        </p>
+                                        <div className="space-y-2">
+                                          {sections.map((sec: any, si: number) => (
+                                            <div
+                                              key={String(sec?._id || sec?.id || si)}
+                                              className="rounded-lg border border-slate-100 bg-slate-50/90 px-2 py-2"
+                                            >
+                                              <p className="text-xs font-semibold text-slate-900">
+                                                {String(sec?.title || `Section ${si + 1}`)}
+                                              </p>
+                                              {String(sec?.content || '').trim() ? (
+                                                <div className="prose prose-sm mt-1 max-w-none text-slate-700">
+                                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(sec.content)}</ReactMarkdown>
+                                                </div>
+                                              ) : null}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                    {quizzes.length > 0 ? (
+                                      <div>
+                                        <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                                          Quiz
+                                        </p>
+                                        <div className="space-y-2">
+                                          {quizzes.map((qz: any, qi: number) => (
+                                            <div
+                                              key={String(qz?._id || qi)}
+                                              className="rounded-lg border border-violet-100 bg-violet-50/60 px-2 py-2"
+                                            >
+                                              <p className="text-xs font-semibold text-violet-950">
+                                                {String(qz?.title || `Quiz ${qi + 1}`)}
+                                              </p>
+                                              {Array.isArray(qz?.questions)
+                                                ? qz.questions.map((q: any, qix: number) => {
+                                                    const opts = Array.isArray(q?.options) ? q.options : [];
+                                                    const correct =
+                                                      typeof q?.correctAnswer === 'number' ? q.correctAnswer : -1;
+                                                    return (
+                                                      <div
+                                                        key={String(q?._id || qix)}
+                                                        className="mt-2 border-t border-violet-100 pt-2 first:mt-0 first:border-0 first:pt-0"
+                                                      >
+                                                        <p className="text-[13px] font-medium text-slate-900">
+                                                          {String(q?.question || '')}
+                                                        </p>
+                                                        <ol className="mt-1 list-decimal space-y-0.5 pl-4 text-[12px] text-slate-700">
+                                                          {opts.map((op: string, oi: number) => (
+                                                            <li
+                                                              key={oi}
+                                                              className={
+                                                                oi === correct ? 'font-semibold text-emerald-800' : undefined
+                                                              }
+                                                            >
+                                                              {String(op)}
+                                                              {oi === correct ? ' ✓' : ''}
+                                                            </li>
+                                                          ))}
+                                                        </ol>
+                                                        {String(q?.explanation || '').trim() ? (
+                                                          <p className="mt-1 text-[11px] text-slate-600">
+                                                            {String(q.explanation)}
+                                                          </p>
+                                                        ) : null}
+                                                      </div>
+                                                    );
+                                                  })
+                                                : null}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </details>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => void hydrateSavedJourneyFromApi()}
-                      disabled={isSavedJourneyHydrating}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                      title="Recharger depuis la base"
-                    >
-                      {isSavedJourneyHydrating ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3 w-3" />
-                      )}
-                      Actualiser
-                    </button>
-                  </div>
-                  {formationModules.length === 0 && isSavedJourneyHydrating ? (
-                    <div className="flex items-center gap-2 py-4 text-xs text-slate-600">
-                      <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
-                      Chargement du programme…
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {formationModules.map((mod: any, mi: number) => {
-                        const sections = Array.isArray(mod?.sections) ? mod.sections : [];
-                        const quizzes = Array.isArray(mod?.quizzes) ? mod.quizzes : [];
-                        return (
-                          <details
-                            key={String(mod?._id || mod?.id || mi)}
-                            className="rounded-xl border border-slate-200 bg-white px-2 py-1 shadow-sm"
-                          >
-                            <summary className="cursor-pointer list-none py-1.5 text-sm font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
-                              <span className="inline-flex w-full items-center gap-2">
-                                <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-xs font-bold text-white">
-                                  {mi + 1}
-                                </span>
-                                <span className="min-w-0 flex-1 text-left">{String(mod?.title || `Module ${mi + 1}`)}</span>
-                              </span>
-                            </summary>
-                            <div className="mt-2 space-y-3 border-t border-slate-100 pt-2">
-                              {String(mod?.description || '').trim() ? (
-                                <div className="prose prose-sm max-w-none text-slate-800">
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(mod.description)}</ReactMarkdown>
-                                </div>
-                              ) : null}
-                              {sections.length > 0 ? (
-                                <div>
-                                  <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">Sections</p>
-                                  <div className="space-y-2">
-                                    {sections.map((sec: any, si: number) => (
-                                      <div
-                                        key={String(sec?._id || sec?.id || si)}
-                                        className="rounded-lg border border-slate-100 bg-slate-50/90 px-2 py-2"
-                                      >
-                                        <p className="text-xs font-semibold text-slate-900">
-                                          {String(sec?.title || `Section ${si + 1}`)}
-                                        </p>
-                                        {String(sec?.content || '').trim() ? (
-                                          <div className="prose prose-sm mt-1 max-w-none text-slate-700">
-                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(sec.content)}</ReactMarkdown>
-                                          </div>
-                                        ) : null}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : null}
-                              {quizzes.length > 0 ? (
-                                <div>
-                                  <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">Quiz</p>
-                                  <div className="space-y-2">
-                                    {quizzes.map((qz: any, qi: number) => (
-                                      <div
-                                        key={String(qz?._id || qi)}
-                                        className="rounded-lg border border-violet-100 bg-violet-50/60 px-2 py-2"
-                                      >
-                                        <p className="text-xs font-semibold text-violet-950">
-                                          {String(qz?.title || `Quiz ${qi + 1}`)}
-                                        </p>
-                                        {Array.isArray(qz?.questions)
-                                          ? qz.questions.map((q: any, qix: number) => {
-                                              const opts = Array.isArray(q?.options) ? q.options : [];
-                                              const correct =
-                                                typeof q?.correctAnswer === 'number' ? q.correctAnswer : -1;
-                                              return (
-                                                <div
-                                                  key={String(q?._id || qix)}
-                                                  className="mt-2 border-t border-violet-100 pt-2 first:mt-0 first:border-0 first:pt-0"
-                                                >
-                                                  <p className="text-[13px] font-medium text-slate-900">
-                                                    {String(q?.question || '')}
-                                                  </p>
-                                                  <ol className="mt-1 list-decimal space-y-0.5 pl-4 text-[12px] text-slate-700">
-                                                    {opts.map((op: string, oi: number) => (
-                                                      <li
-                                                        key={oi}
-                                                        className={oi === correct ? 'font-semibold text-emerald-800' : undefined}
-                                                      >
-                                                        {String(op)}
-                                                        {oi === correct ? ' ✓' : ''}
-                                                      </li>
-                                                    ))}
-                                                  </ol>
-                                                  {String(q?.explanation || '').trim() ? (
-                                                    <p className="mt-1 text-[11px] text-slate-600">{String(q.explanation)}</p>
-                                                  ) : null}
-                                                </div>
-                                              );
-                                            })
-                                          : null}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          </details>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
+                  </div>,
+                  document.body
+                )}
               {shouldShowChatThread && (
                 <div
                   ref={chatThreadRef}
