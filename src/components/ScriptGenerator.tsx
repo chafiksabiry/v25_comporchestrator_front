@@ -248,6 +248,58 @@ const ScriptGenerator: React.FC = () => {
     window.dispatchEvent(event);
   };
 
+  const markOnboardingScriptStepCompleted = async () => {
+    const companyId = getCompanyId();
+    if (!companyId) return;
+
+    // Keep configurable for environments where the script step ID differs.
+    const phaseId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_PHASE_ID || 3);
+    const stepId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_STEP_ID || 10);
+    const apiUrl =
+      import.meta.env.VITE_COMPANY_API_URL ||
+      'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+    const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding`;
+    const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`;
+
+    try {
+      await fetch(stepUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed' }),
+      });
+    } catch (error) {
+      console.error('[ScriptGenerator] Failed to mark onboarding step completed:', error);
+      window.dispatchEvent(new Event('refreshOnboardingProgress'));
+      return;
+    }
+
+    try {
+      const response = await fetch(onboardingUrl);
+      const progress = await response.json();
+      const raw = (progress || {}) as Record<string, unknown>;
+      const completedSteps = Array.isArray(raw?.completedSteps)
+        ? [...(raw.completedSteps as number[])]
+        : [];
+      if (!completedSteps.includes(stepId)) completedSteps.push(stepId);
+      const currentPhase = typeof raw?.currentPhase === 'number' ? (raw.currentPhase as number) : phaseId;
+      const cookiePayload = { ...raw, completedSteps };
+      Cookies.set('companyOnboardingProgress', JSON.stringify(cookiePayload), { expires: 7 });
+      window.dispatchEvent(
+        new CustomEvent('stepCompleted', {
+          detail: {
+            stepId,
+            phaseId: currentPhase,
+            status: 'completed',
+            completedSteps,
+          },
+        })
+      );
+    } catch (error) {
+      console.error('[ScriptGenerator] Failed to refresh onboarding progress:', error);
+      window.dispatchEvent(new Event('refreshOnboardingProgress'));
+    }
+  };
+
   const fetchGigs = async () => {
     const companyId = getCompanyId();
     
@@ -566,6 +618,7 @@ const ScriptGenerator: React.FC = () => {
       if (selectedGig?._id) {
         fetchSavedScripts(selectedGig._id);
       }
+      await markOnboardingScriptStepCompleted();
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Failed to validate script');
     } finally {
