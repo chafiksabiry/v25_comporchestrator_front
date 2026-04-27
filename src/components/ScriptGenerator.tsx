@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
-import { ArrowLeft, Bot, Loader2, Send, Sparkles, User } from 'lucide-react';
+import { ArrowLeft, Bot, Brain, Loader2, Pencil, Send, Sparkles, User } from 'lucide-react';
 import apiClient from '../api/knowledgeClient';
 
 interface Gig {
@@ -42,6 +42,17 @@ interface StyledDialogueLine {
   side: 'agent' | 'lead' | 'other';
   label: string;
   text: string;
+}
+
+interface SavedScript {
+  _id: string;
+  gigId: string;
+  targetClient?: string;
+  language?: string;
+  details?: string;
+  script?: ScriptStep[];
+  isActive?: boolean;
+  createdAt?: string;
 }
 
 const formatScriptSteps = (steps: ScriptStep[]): string => {
@@ -186,8 +197,9 @@ const ScriptGenerator: React.FC = () => {
   const [validatingScriptId, setValidatingScriptId] = useState<string | null>(null);
   const [validatedScriptIds, setValidatedScriptIds] = useState<Record<string, boolean>>({});
   const [selectedLeadOptionByTurnKey, setSelectedLeadOptionByTurnKey] = useState<Record<string, number>>({});
-  const [editPromptByKey, setEditPromptByKey] = useState<Record<string, string>>({});
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
+  const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
+  const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const lastAutoGigIdRef = useRef<string | null>(null);
 
@@ -269,6 +281,7 @@ const ScriptGenerator: React.FC = () => {
     if (!selectedGig) return;
     setMessages([]);
     setError(null);
+    fetchSavedScripts(selectedGig._id);
   }, [selectedGig?._id]);
 
   const selectedGigSummary = useMemo(() => {
@@ -316,7 +329,7 @@ const ScriptGenerator: React.FC = () => {
         contexte: trimmedMessage,
       };
       // KB API only (no training chat endpoint)
-      const { data: body } = await apiClient.post('/rag/generate-script', scriptPayload);
+      const { data: body } = (await apiClient.post('/rag/generate-script', scriptPayload)) as { data: any };
       const assistantText =
         body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
       const generatedScriptId =
@@ -339,6 +352,9 @@ const ScriptGenerator: React.FC = () => {
           playbook: generatedPlaybook,
         },
       ]);
+      if (selectedGig?._id) {
+        fetchSavedScripts(selectedGig._id);
+      }
     } catch (err: any) {
       setMessages((prev) => prev.filter((m) => !m.id.startsWith('assistant-pending-')));
       setError(err?.response?.data?.error || err?.message || 'Failed to generate response');
@@ -366,13 +382,53 @@ const ScriptGenerator: React.FC = () => {
     await sendMessageToApi(input, true);
   };
 
+  const fetchSavedScripts = async (gigId: string) => {
+    if (!gigId) {
+      setSavedScripts([]);
+      return;
+    }
+    setIsLoadingSavedScripts(true);
+    try {
+      const { data } = (await apiClient.get('/rag/scripts', { params: { gigId } })) as { data: any };
+      const items = Array.isArray(data?.data) ? data.data : [];
+      setSavedScripts(items);
+      const nextValidated: Record<string, boolean> = {};
+      items.forEach((item: SavedScript) => {
+        if (item?._id && item?.isActive) nextValidated[item._id] = true;
+      });
+      setValidatedScriptIds(nextValidated);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Failed to load scripts list');
+      setSavedScripts([]);
+    } finally {
+      setIsLoadingSavedScripts(false);
+    }
+  };
+
+  const convertSavedScriptToText = (steps?: ScriptStep[]): string => {
+    if (!Array.isArray(steps) || steps.length === 0) return '';
+    return steps
+      .map((s) => {
+        const actor = String(s?.actor || '').trim().toLowerCase();
+        const replica = String(s?.replica || '').trim();
+        if (!replica) return '';
+        const label = actor === 'lead' ? 'Lead' : 'Agent';
+        return `${label}: ${replica}`;
+      })
+      .filter(Boolean)
+      .join('\n');
+  };
+
   const validateScript = async (scriptId: string) => {
     if (!scriptId || validatingScriptId) return;
     setValidatingScriptId(scriptId);
     setError(null);
     try {
-      await apiClient.put(`/scripts/${scriptId}/status`, { isActive: true });
+      await apiClient.put(`/rag/scripts/${scriptId}/status`, { isActive: true });
       setValidatedScriptIds((prev) => ({ ...prev, [scriptId]: true }));
+      if (selectedGig?._id) {
+        fetchSavedScripts(selectedGig._id);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Failed to validate script');
     } finally {
@@ -399,7 +455,7 @@ const ScriptGenerator: React.FC = () => {
       langueTon: 'simple et direct',
       contexte: rewritePrompt,
     };
-    const { data: body } = await apiClient.post('/rag/generate-script', scriptPayload);
+    const { data: body } = (await apiClient.post('/rag/generate-script', scriptPayload)) as { data: any };
     const raw = String(body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text || '').trim();
     const firstLine = raw.split(/\r?\n/).map((l: string) => l.trim()).find(Boolean) || '';
     const match = firstLine.match(/^(agent|lead)\s*:\s*(.+)$/i);
@@ -412,11 +468,12 @@ const ScriptGenerator: React.FC = () => {
     turnIdx: number;
     role: 'agent' | 'lead';
     optionIdx?: number;
+    prompt: string;
   }) => {
-    const { messageId, turnIdx, role, optionIdx } = params;
+    const { messageId, turnIdx, role, optionIdx, prompt } = params;
     const key = role === 'agent' ? `${messageId}-${turnIdx}-agent` : `${messageId}-${turnIdx}-lead-${optionIdx}`;
-    const prompt = String(editPromptByKey[key] || '').trim();
-    if (!prompt) return;
+    const safePrompt = String(prompt || '').trim();
+    if (!safePrompt) return;
     setRewritingKey(key);
     setError(null);
     try {
@@ -432,7 +489,7 @@ const ScriptGenerator: React.FC = () => {
           : String(options[selectedIdx]?.leadReply || '').trim();
       if (!sourceLine) return;
 
-      const rewritten = await rewriteLineWithPrompt(sourceLine, role, prompt);
+      const rewritten = await rewriteLineWithPrompt(sourceLine, role, safePrompt);
       setMessages((prev) =>
         prev.map((m) => {
           if (m.id !== messageId || !m.playbook?.turns) return m;
@@ -449,12 +506,52 @@ const ScriptGenerator: React.FC = () => {
           return { ...m, playbook: { ...m.playbook, turns: nextTurns } };
         })
       );
-      setEditPromptByKey((prev) => ({ ...prev, [key]: '' }));
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Failed to apply prompt modification');
     } finally {
       setRewritingKey(null);
     }
+  };
+
+  const applyManualEdit = (params: {
+    messageId: string;
+    turnIdx: number;
+    role: 'agent' | 'lead';
+    optionIdx?: number;
+  }) => {
+    const { messageId, turnIdx, role, optionIdx } = params;
+    const targetMessage = messages.find((m) => m.id === messageId);
+    const turns = Array.isArray(targetMessage?.playbook?.turns) ? targetMessage!.playbook!.turns! : [];
+    const turn = turns[turnIdx];
+    if (!turn) return;
+    const options = Array.isArray(turn.leadOptions) ? turn.leadOptions : [];
+    const selectedIdx = Number.isFinite(optionIdx as number) ? Number(optionIdx) : 0;
+    const sourceLine =
+      role === 'agent'
+        ? String(turn.agentLine || '').trim()
+        : String(options[selectedIdx]?.leadReply || '').trim();
+    if (!sourceLine) return;
+
+    const updated = window.prompt('Modifier la ligne:', sourceLine);
+    const nextValue = String(updated || '').trim();
+    if (!nextValue || nextValue === sourceLine) return;
+
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId || !m.playbook?.turns) return m;
+        const nextTurns = m.playbook.turns.map((t, idx) => {
+          if (idx !== turnIdx) return t;
+          if (role === 'agent') {
+            return { ...t, agentLine: nextValue };
+          }
+          const leadOptions = Array.isArray(t.leadOptions)
+            ? t.leadOptions.map((opt, oi) => (oi === selectedIdx ? { ...opt, leadReply: nextValue } : opt))
+            : t.leadOptions;
+          return { ...t, leadOptions };
+        });
+        return { ...m, playbook: { ...m.playbook, turns: nextTurns } };
+      })
+    );
   };
 
   const renderAssistantMessage = (messageId: string, content: string, playbook?: ChatMessage['playbook']) => {
@@ -466,39 +563,9 @@ const ScriptGenerator: React.FC = () => {
         if (key) byTurnId.set(key, idx);
       });
 
-      // Visible scenario path: start from first turn, then follow selected lead option branch.
-      const visibleTurnIndexes: number[] = [];
-      const visited = new Set<number>();
-      let cursor = 0;
-      while (
-        Number.isFinite(cursor) &&
-        cursor >= 0 &&
-        cursor < turns.length &&
-        !visited.has(cursor) &&
-        visibleTurnIndexes.length < 20
-      ) {
-        visibleTurnIndexes.push(cursor);
-        visited.add(cursor);
-        const turn = turns[cursor];
-        const options = Array.isArray(turn?.leadOptions)
-          ? turn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply)
-          : [];
-        if (options.length === 0) break;
-        const turnKey = `${messageId}-${cursor}`;
-        const selectedIdx = Number.isFinite(selectedLeadOptionByTurnKey[turnKey])
-          ? selectedLeadOptionByTurnKey[turnKey]
-          : 0;
-        const safeIdx = Math.max(0, Math.min(selectedIdx, options.length - 1));
-        const selected = options[safeIdx];
-        const nextTurnId = String(selected?.nextTurnId || '').trim();
-        const nextIdx = nextTurnId ? byTurnId.get(nextTurnId) : undefined;
-        if (typeof nextIdx !== 'number') break;
-        cursor = nextIdx;
-      }
-
       return (
         <div className="space-y-3">
-          {visibleTurnIndexes.map((turnIdx) => {
+          {turns.map((_turn, turnIdx) => {
             const turn = turns[turnIdx];
             const options = Array.isArray(turn?.leadOptions) ? turn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply) : [];
             if (!turn?.agentLine || options.length === 0) return null;
@@ -510,27 +577,33 @@ const ScriptGenerator: React.FC = () => {
             return (
               <div key={turnKey} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">Agent</p>
-                  <p className="mt-1 text-slate-800">{String(turn.agentLine)}</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={editPromptByKey[`${messageId}-${turnIdx}-agent`] || ''}
-                      onChange={(e) =>
-                        setEditPromptByKey((prev) => ({ ...prev, [`${messageId}-${turnIdx}-agent`]: e.target.value }))
-                      }
-                      placeholder="Prompt de modification agent..."
-                      className="flex-1 px-2 py-1 text-xs border border-blue-200 rounded-md bg-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => applyPromptEdit({ messageId, turnIdx, role: 'agent' })}
-                      disabled={rewritingKey === `${messageId}-${turnIdx}-agent`}
-                      className="px-2 py-1 text-xs rounded-md bg-blue-600 text-white disabled:opacity-60"
-                    >
-                      {rewritingKey === `${messageId}-${turnIdx}-agent` ? '...' : 'Appliquer'}
-                    </button>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">Agent</p>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => applyManualEdit({ messageId, turnIdx, role: 'agent' })}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-blue-200 bg-white text-blue-700 hover:bg-blue-50"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const prompt = window.prompt('Instruction IA pour modifier cette ligne agent:');
+                          if (!String(prompt || '').trim()) return;
+                          await applyPromptEdit({ messageId, turnIdx, role: 'agent', prompt: String(prompt) });
+                        }}
+                        disabled={rewritingKey === `${messageId}-${turnIdx}-agent`}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-blue-200 bg-white text-blue-700 hover:bg-blue-50 disabled:opacity-60"
+                      >
+                        <Brain className="w-3 h-3" />
+                        {rewritingKey === `${messageId}-${turnIdx}-agent` ? '...' : 'Edit with AI'}
+                      </button>
+                    </div>
                   </div>
+                  <p className="mt-1 text-slate-800">{String(turn.agentLine)}</p>
                 </div>
                 <div className="mt-2 space-y-2">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Choisir la reponse du lead</p>
@@ -587,25 +660,32 @@ const ScriptGenerator: React.FC = () => {
                     })}
                   </div>
                   <div className="mt-1 flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={editPromptByKey[`${messageId}-${turnIdx}-lead-${safeIdx}`] || ''}
-                      onChange={(e) =>
-                        setEditPromptByKey((prev) => ({
-                          ...prev,
-                          [`${messageId}-${turnIdx}-lead-${safeIdx}`]: e.target.value,
-                        }))
-                      }
-                      placeholder="Prompt de modification lead selectionne..."
-                      className="flex-1 px-2 py-1 text-xs border border-emerald-200 rounded-md bg-white"
-                    />
                     <button
                       type="button"
-                      onClick={() => applyPromptEdit({ messageId, turnIdx, role: 'lead', optionIdx: safeIdx })}
-                      disabled={rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}`}
-                      className="px-2 py-1 text-xs rounded-md bg-emerald-600 text-white disabled:opacity-60"
+                      onClick={() => applyManualEdit({ messageId, turnIdx, role: 'lead', optionIdx: safeIdx })}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
                     >
-                      {rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}` ? '...' : 'Appliquer'}
+                      <Pencil className="w-3 h-3" />
+                      Edit lead selectionne
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const prompt = window.prompt('Instruction IA pour modifier la reponse lead selectionnee:');
+                        if (!String(prompt || '').trim()) return;
+                        await applyPromptEdit({
+                          messageId,
+                          turnIdx,
+                          role: 'lead',
+                          optionIdx: safeIdx,
+                          prompt: String(prompt),
+                        });
+                      }}
+                      disabled={rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}`}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 disabled:opacity-60"
+                    >
+                      <Brain className="w-3 h-3" />
+                      {rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}` ? '...' : 'Edit with AI'}
                     </button>
                   </div>
                 </div>
@@ -732,6 +812,56 @@ const ScriptGenerator: React.FC = () => {
           {isLoadingGigs && <p className="text-sm text-gray-500 mt-2">Loading gigs...</p>}
           {gigsError && <p className="text-sm text-red-600 mt-2">{gigsError}</p>}
         </div>
+
+        {selectedGig && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-semibold text-gray-700">Saved scripts for this gig</p>
+              {isLoadingSavedScripts && <p className="text-xs text-gray-500">Loading...</p>}
+            </div>
+            {savedScripts.length === 0 ? (
+              <p className="text-sm text-gray-500">No scripts saved yet for this gig.</p>
+            ) : (
+              <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                {savedScripts.map((item) => {
+                  const created = item?.createdAt ? new Date(item.createdAt).toLocaleString() : '-';
+                  const fullText = convertSavedScriptToText(item?.script);
+                  const preview = fullText.split(/\r?\n/).filter(Boolean)[0] || 'Script';
+                  return (
+                    <button
+                      type="button"
+                      key={item._id}
+                      onClick={() =>
+                        setMessages((prev) => [
+                          ...prev,
+                          {
+                            id: `assistant-saved-${item._id}-${Date.now()}`,
+                            role: 'assistant',
+                            content: fullText || preview,
+                            scriptId: item._id,
+                          },
+                        ])
+                      }
+                      className="w-full text-left rounded-lg border border-gray-200 px-3 py-2 hover:bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-gray-800 truncate">{preview}</p>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full ${
+                            item?.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {item?.isActive ? 'Validated' : 'Draft'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-500 mt-1">{created}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden relative flex-1 min-h-0">
           <div
