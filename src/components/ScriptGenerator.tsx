@@ -427,6 +427,11 @@ const ScriptGenerator: React.FC = () => {
       const { data } = (await apiClient.get('/rag/scripts', { params: { gigId } })) as { data: any };
       const items = Array.isArray(data?.data) ? data.data : [];
       setSavedScripts(items);
+      const nextValidated: Record<string, boolean> = {};
+      items.forEach((item: any) => {
+        if (item?._id && item?.isActive) nextValidated[item._id] = true;
+      });
+      setValidatedScriptIds(nextValidated);
     } catch (err: any) {
       setSavedScripts([]);
       setError(err?.response?.data?.error || err?.message || 'Failed to load scripts');
@@ -524,6 +529,11 @@ const ScriptGenerator: React.FC = () => {
   const validateScript = async (message: ChatMessage) => {
     const key = message.scriptId || message.id;
     if (!key || validatingScriptId) return;
+    const alreadyValidatedId = savedScripts.find((s) => Boolean((s as any)?.isActive))?._id;
+    if (alreadyValidatedId && (!message.scriptId || String(message.scriptId) !== String(alreadyValidatedId))) {
+      setError('Un script est deja valide pour ce gig. Supprimez-le ou modifiez-le avant de valider un autre script.');
+      return;
+    }
     setValidatingScriptId(key);
     setError(null);
     try {
@@ -1125,40 +1135,31 @@ const ScriptGenerator: React.FC = () => {
 
         {editModal.open && (
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-4">
-            <div className="w-full max-w-lg bg-white rounded-2xl border border-gray-200 shadow-xl">
-              <div className="px-5 py-4 border-b border-gray-100">
-                <p className="text-sm font-semibold text-gray-800">{editModal.title}</p>
+            <div className="w-full max-w-2xl bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden">
+              <div className="px-6 py-4 bg-gradient-to-r from-harx-500 to-fuchsia-500">
+                <p className="text-sm font-semibold text-white tracking-wide">{editModal.title}</p>
+                <p className="text-xs text-white/90 mt-1">Ajustez la reponse avec un style professionnel HARX.</p>
               </div>
-              <div className="p-5 space-y-3">
-                {editModal.mode === 'manual' ? (
-                  <textarea
-                    value={editModal.value}
-                    onChange={(e) => setEditModal((prev) => ({ ...prev, value: e.target.value }))}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    placeholder="Modifier la ligne..."
-                  />
-                ) : (
-                  <input
-                    type="text"
-                    value={editModal.value}
-                    onChange={(e) => setEditModal((prev) => ({ ...prev, value: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    placeholder="Ecrire l'instruction IA..."
-                  />
-                )}
-                <div className="flex items-center justify-end gap-2">
+              <div className="p-6 space-y-4 bg-gradient-to-b from-white to-slate-50">
+                <textarea
+                  value={editModal.value}
+                  onChange={(e) => setEditModal((prev) => ({ ...prev, value: e.target.value }))}
+                  rows={editModal.mode === 'manual' ? 5 : 4}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 text-sm text-slate-800 bg-white shadow-sm resize-y"
+                  placeholder={editModal.mode === 'manual' ? 'Modifier la ligne...' : "Ecrire l'instruction IA..."}
+                />
+                <div className="flex items-center justify-end gap-3 pt-1">
                   <button
                     type="button"
                     onClick={() => setEditModal((prev) => ({ ...prev, open: false }))}
-                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                    className="px-4 py-2 text-sm rounded-xl border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
                   >
                     Annuler
                   </button>
                   <button
                     type="button"
                     onClick={submitEditModal}
-                    className="px-3 py-1.5 text-sm rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
+                    className="px-4 py-2 text-sm rounded-xl text-white bg-gradient-to-r from-harx-500 to-fuchsia-500 hover:opacity-95 shadow-sm"
                   >
                     Appliquer
                   </button>
