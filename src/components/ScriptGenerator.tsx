@@ -773,19 +773,22 @@ const ScriptGenerator: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => openEditModal({ mode: 'manual', messageId, turnIdx, role: 'agent' })}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-blue-200 bg-white text-blue-700 hover:bg-blue-50"
+                        title="Edit"
+                        aria-label="Edit"
+                        className="inline-flex items-center justify-center w-7 h-7 text-[11px] rounded-md border border-blue-200 bg-white text-blue-700 hover:bg-blue-50"
                       >
                         <Pencil className="w-3 h-3" />
-                        Edit
                       </button>
                       <button
                         type="button"
                         onClick={() => openEditModal({ mode: 'ai', messageId, turnIdx, role: 'agent' })}
                         disabled={rewritingKey === `${messageId}-${turnIdx}-agent`}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-blue-200 bg-white text-blue-700 hover:bg-blue-50 disabled:opacity-60"
+                        title="Edit with AI"
+                        aria-label="Edit with AI"
+                        className="inline-flex items-center justify-center w-7 h-7 text-[11px] rounded-md border border-blue-200 bg-white text-blue-700 hover:bg-blue-50 disabled:opacity-60"
                       >
                         <Brain className="w-3 h-3" />
-                        {rewritingKey === `${messageId}-${turnIdx}-agent` ? '...' : 'Edit with AI'}
+                        {rewritingKey === `${messageId}-${turnIdx}-agent` ? '...' : null}
                       </button>
                     </div>
                   </div>
@@ -849,19 +852,22 @@ const ScriptGenerator: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => openEditModal({ mode: 'manual', messageId, turnIdx, role: 'lead', optionIdx: safeIdx })}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
+                      title="Edit lead"
+                      aria-label="Edit lead"
+                      className="inline-flex items-center justify-center w-7 h-7 text-[11px] rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
                     >
                       <Pencil className="w-3 h-3" />
-                      Edit lead selectionne
                     </button>
                     <button
                       type="button"
                       onClick={() => openEditModal({ mode: 'ai', messageId, turnIdx, role: 'lead', optionIdx: safeIdx })}
                       disabled={rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}`}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 disabled:opacity-60"
+                      title="Edit lead with AI"
+                      aria-label="Edit lead with AI"
+                      className="inline-flex items-center justify-center w-7 h-7 text-[11px] rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 disabled:opacity-60"
                     >
                       <Brain className="w-3 h-3" />
-                      {rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}` ? '...' : 'Edit with AI'}
+                      {rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}` ? '...' : null}
                     </button>
                   </div>
                 </div>
