@@ -348,15 +348,6 @@ const ScriptGenerator: React.FC = () => {
     if (lastAutoGigIdRef.current === selectedGig._id) return;
     lastAutoGigIdRef.current = selectedGig._id;
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `assistant-pending-${Date.now()}`,
-        role: 'assistant',
-        content: 'Generation automatique en cours...',
-      },
-    ]);
-
     const autoPrompt = [
       'Generate a simple ready-to-use call script.',
       `Gig title: ${selectedGigSummary.title}`,
@@ -500,57 +491,52 @@ const ScriptGenerator: React.FC = () => {
     const leadAgentSuggestions: Record<number, string[]> = { ...byFallback, ...byPlaybook };
     return (
       <div className="space-y-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-          <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Script Dialogue</p>
-          <div className="space-y-2">
-            {rows.map((row, idx) => (
-              <div
-                key={`${row.label}-${idx}`}
-                className={`rounded-xl px-3 py-2 ${
-                  row.side === 'agent'
-                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200'
-                    : row.side === 'lead'
-                      ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200'
-                      : 'bg-gray-50 border border-gray-200'
-                }`}
-              >
-                <p
-                  className={`text-[11px] font-bold uppercase tracking-wide ${
-                    row.side === 'agent'
-                      ? 'text-blue-700'
-                      : row.side === 'lead'
-                        ? 'text-emerald-700'
-                        : 'text-gray-600'
-                  }`}
-                >
-                  {row.label}
-                </p>
-                <p className="mt-1 whitespace-pre-wrap text-slate-800">{row.text}</p>
-                {row.side === 'lead' && (
-                  <div className="mt-2">
-                    <details className="group rounded-lg border border-emerald-200 bg-white/90 px-2 py-1">
-                      <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-wide text-emerald-700 flex items-center justify-between">
-                        <span>Reponse agent probable</span>
-                        <span className="text-emerald-600 group-open:rotate-180 transition-transform">▼</span>
-                      </summary>
-                      <div className="mt-2 space-y-1.5">
-                        {(leadAgentSuggestions[idx] || []).map((suggestion, sIdx) => (
-                          <div
-                            key={`lead-${idx}-agent-${sIdx}`}
-                            className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-slate-700"
-                          >
-                            <span className="mr-1 text-[10px] font-bold text-blue-700">Agent:</span>
-                            <span>{suggestion}</span>
-                          </div>
-                        ))}
+        {rows.map((row, idx) => (
+          <div
+            key={`${row.label}-${idx}`}
+            className={`rounded-xl px-3 py-2 ${
+              row.side === 'agent'
+                ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200'
+                : row.side === 'lead'
+                  ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200'
+                  : 'bg-gray-50 border border-gray-200'
+            }`}
+          >
+            <p
+              className={`text-[11px] font-bold uppercase tracking-wide ${
+                row.side === 'agent'
+                  ? 'text-blue-700'
+                  : row.side === 'lead'
+                    ? 'text-emerald-700'
+                    : 'text-gray-600'
+              }`}
+            >
+              {row.label}
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-slate-800">{row.text}</p>
+            {row.side === 'lead' && (
+              <div className="mt-2">
+                <details className="group rounded-lg border border-emerald-200 bg-white/90 px-2 py-1">
+                  <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-wide text-emerald-700 flex items-center justify-between">
+                    <span>Reponse agent probable</span>
+                    <span className="text-emerald-600 group-open:rotate-180 transition-transform">▼</span>
+                  </summary>
+                  <div className="mt-2 space-y-1.5">
+                    {(leadAgentSuggestions[idx] || []).map((suggestion, sIdx) => (
+                      <div
+                        key={`lead-${idx}-agent-${sIdx}`}
+                        className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-slate-700"
+                      >
+                        <span className="mr-1 text-[10px] font-bold text-blue-700">Agent:</span>
+                        <span>{suggestion}</span>
                       </div>
-                    </details>
+                    ))}
                   </div>
-                )}
+                </details>
               </div>
-            ))}
+            )}
           </div>
-        </div>
+        ))}
       </div>
     );
   };
@@ -608,7 +594,7 @@ const ScriptGenerator: React.FC = () => {
           {gigsError && <p className="text-sm text-red-600 mt-2">{gigsError}</p>}
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden flex flex-col">
           <div
             ref={messagesContainerRef}
             className="h-[420px] overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-white to-gray-50"
@@ -677,7 +663,7 @@ const ScriptGenerator: React.FC = () => {
             )}
           </div>
 
-          <form onSubmit={sendMessage} className="p-4 border-t border-gray-100 bg-white">
+          <form onSubmit={sendMessage} className="sticky bottom-0 z-10 p-4 border-t border-gray-100 bg-white/95 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <input
                 type="text"
