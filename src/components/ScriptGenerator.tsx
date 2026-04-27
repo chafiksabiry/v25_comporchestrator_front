@@ -385,9 +385,28 @@ const ScriptGenerator: React.FC = () => {
   const renderAssistantMessage = (messageId: string, content: string, playbook?: ChatMessage['playbook']) => {
     const turns = Array.isArray(playbook?.turns) ? playbook?.turns : [];
     if (turns && turns.length > 0) {
+      const resolvedTurns = turns.map((turn, idx) => {
+        const next = { ...(turn || {}) };
+        if (idx <= 0) return next;
+        const prevTurn = turns[idx - 1];
+        const prevOptions = Array.isArray(prevTurn?.leadOptions)
+          ? prevTurn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply)
+          : [];
+        const prevKey = `${messageId}-${idx - 1}`;
+        const prevSelectedIdx = Number.isFinite(selectedLeadOptionByTurnKey[prevKey])
+          ? selectedLeadOptionByTurnKey[prevKey]
+          : 0;
+        const safePrevIdx = Math.max(0, Math.min(prevSelectedIdx, Math.max(prevOptions.length - 1, 0)));
+        const selectedPrev = prevOptions[safePrevIdx];
+        if (selectedPrev?.agentReply) {
+          next.agentLine = String(selectedPrev.agentReply);
+        }
+        return next;
+      });
+
       return (
         <div className="space-y-3">
-          {turns.map((turn, turnIdx) => {
+          {resolvedTurns.map((turn, turnIdx) => {
             const options = Array.isArray(turn?.leadOptions) ? turn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply) : [];
             if (!turn?.agentLine || options.length === 0) return null;
             const turnKey = `${messageId}-${turnIdx}`;
@@ -415,13 +434,34 @@ const ScriptGenerator: React.FC = () => {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setSelectedLeadOptionByTurnKey((prev) => ({ ...prev, [turnKey]: optIdx }));
+                            setSelectedLeadOptionByTurnKey((prev) => {
+                              const next = { ...prev, [turnKey]: optIdx };
+                              // Reset downstream choices so the flow re-aligns to the new branch.
+                              Object.keys(next).forEach((k) => {
+                                if (!k.startsWith(`${messageId}-`)) return;
+                                const idxToken = Number(String(k).split('-').pop());
+                                if (Number.isFinite(idxToken) && idxToken > turnIdx) {
+                                  delete next[k];
+                                }
+                              });
+                              return next;
+                            });
                           }}
                           onKeyDown={(e) => {
                             if (e.key !== 'Enter' && e.key !== ' ') return;
                             e.preventDefault();
                             e.stopPropagation();
-                            setSelectedLeadOptionByTurnKey((prev) => ({ ...prev, [turnKey]: optIdx }));
+                            setSelectedLeadOptionByTurnKey((prev) => {
+                              const next = { ...prev, [turnKey]: optIdx };
+                              Object.keys(next).forEach((k) => {
+                                if (!k.startsWith(`${messageId}-`)) return;
+                                const idxToken = Number(String(k).split('-').pop());
+                                if (Number.isFinite(idxToken) && idxToken > turnIdx) {
+                                  delete next[k];
+                                }
+                              });
+                              return next;
+                            });
                           }}
                           className={`text-left rounded-lg border px-3 py-2 transition-colors cursor-pointer ${
                             active
