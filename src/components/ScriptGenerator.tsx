@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
-import { ArrowLeft, Bot, Brain, Loader2, Pencil, Send, Sparkles, User } from 'lucide-react';
+import { ArrowLeft, Brain, Pencil, Sparkles } from 'lucide-react';
 import apiClient from '../api/knowledgeClient';
+import ScriptListPanel from './script-generator/ScriptListPanel';
+import ScriptViewerPanel from './script-generator/ScriptViewerPanel';
+import ScriptChatPanel from './script-generator/ScriptChatPanel';
 
 interface Gig {
   _id: string;
@@ -187,6 +190,7 @@ const buildLeadAgentSuggestionsFromPlaybook = (
   return suggestions;
 };
 
+
 const ScriptGenerator: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -202,6 +206,7 @@ const ScriptGenerator: React.FC = () => {
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
   const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
+  const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const getCompanyId = () => {
@@ -282,6 +287,7 @@ const ScriptGenerator: React.FC = () => {
     if (!selectedGig) return;
     setMessages([]);
     setError(null);
+    setActiveScriptMessage(null);
     fetchSavedScripts(selectedGig._id);
   }, [selectedGig?._id]);
 
@@ -341,15 +347,14 @@ const ScriptGenerator: React.FC = () => {
       console.log('[ScriptGenerator] Generated script:', assistantTextSafe);
       console.log('[ScriptGenerator] Generated playbook:', generatedPlaybook);
 
-      setMessages((prev) => [
-        ...prev.filter((m) => !m.id.startsWith('assistant-pending-')),
-        {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: assistantTextSafe,
-          playbook: generatedPlaybook,
-        },
-      ]);
+      const generatedMessage: ChatMessage = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: assistantTextSafe,
+        playbook: generatedPlaybook,
+      };
+      setMessages((prev) => [...prev.filter((m) => !m.id.startsWith('assistant-pending-')), generatedMessage]);
+      setActiveScriptMessage(generatedMessage);
     } catch (err: any) {
       setMessages((prev) => prev.filter((m) => !m.id.startsWith('assistant-pending-')));
       setError(err?.response?.data?.error || err?.message || 'Failed to generate response');
@@ -383,17 +388,28 @@ const ScriptGenerator: React.FC = () => {
 
   const openSavedScript = (item: SavedScript) => {
     const normalizedText = normalizeScriptText(item?.script);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `assistant-saved-${item._id}-${Date.now()}`,
-        role: 'assistant',
-        content: normalizedText || 'Saved script',
-        scriptId: item._id,
-        playbook: item.playbook,
-      },
-    ]);
+    const message: ChatMessage = {
+      id: `assistant-saved-${item._id}-${Date.now()}`,
+      role: 'assistant',
+      content: normalizedText || 'Saved script',
+      scriptId: item._id,
+      playbook: item.playbook,
+    };
+    setMessages((prev) => [...prev, message]);
+    setActiveScriptMessage(message);
     setValidatedScriptIds((prev) => ({ ...prev, [item._id]: Boolean(item?.isActive) }));
+  };
+
+  const handleViewSavedScript = (scriptId: string) => {
+    const item = savedScripts.find((s) => s._id === scriptId);
+    if (!item) return;
+    openSavedScript(item);
+  };
+
+  const handleEditSavedScript = (scriptId: string) => {
+    const item = savedScripts.find((s) => s._id === scriptId);
+    if (!item) return;
+    openSavedScript(item);
   };
 
   const handleGenerateScript = async () => {
@@ -846,138 +862,57 @@ const ScriptGenerator: React.FC = () => {
 
           {isLoadingGigs && <p className="text-sm text-gray-500 mt-2">Loading gigs...</p>}
           {gigsError && <p className="text-sm text-red-600 mt-2">{gigsError}</p>}
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={handleGenerateScript}
-              disabled={!selectedGig || isSending}
-              className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Generer un script
-            </button>
-          </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-4">
-          <p className="text-sm font-semibold text-gray-700 mb-2">Liste des scripts</p>
-          {isLoadingSavedScripts ? (
-            <p className="text-sm text-gray-500">Loading scripts...</p>
-          ) : savedScripts.length === 0 ? (
-            <p className="text-sm text-gray-500">Aucun script pour ce gig.</p>
-          ) : (
-            <div className="space-y-2">
-              {savedScripts.map((item, idx) => (
-                <button
-                  key={item._id}
-                  type="button"
-                  onClick={() => openSavedScript(item)}
-                  className="w-full text-left rounded-lg border border-gray-200 hover:bg-gray-50 px-3 py-2"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-gray-800">Script {savedScripts.length - idx}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${item?.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {item?.isActive ? 'Valide' : 'Brouillon'}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <ScriptListPanel
+          selectedGigId={selectedGig?._id}
+          isSending={isSending}
+          isLoadingSavedScripts={isLoadingSavedScripts}
+          savedScripts={savedScripts}
+          onGenerate={handleGenerateScript}
+          onView={handleViewSavedScript}
+          onEdit={handleEditSavedScript}
+        />
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden relative flex-1 min-h-0">
-          <div
-            ref={messagesContainerRef}
-            className="h-full overflow-y-auto p-5 pb-24 space-y-4 bg-gradient-to-b from-white to-gray-50"
-          >
-            {isSending && (
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 flex items-center gap-2 w-fit shadow-sm">
-                <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
-                Generating professional script...
-              </div>
-            )}
-            {messages.length === 0 && (
-              <div className="h-full flex items-center justify-center text-center text-gray-500">
-                <div>
-                  <Bot className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p>Select a gig and start chatting.</p>
-                </div>
-              </div>
-            )}
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex items-start gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {message.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-full bg-harx-100 text-harx-600 flex items-center justify-center shrink-0">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                )}
-                <div
-                  className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm whitespace-pre-wrap ${
-                    message.role === 'user'
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                      : 'bg-white border border-gray-200 text-gray-800'
-                  }`}
-                >
-                  {message.role === 'assistant' ? (
-                    <div className="space-y-3">
-                      {renderAssistantMessage(message.id, message.content, message.playbook)}
-                      <div className="pt-1">
-                        <button
-                          type="button"
-                          onClick={() => validateScript(message)}
-                          disabled={Boolean(validatedScriptIds[message.scriptId || message.id]) || validatingScriptId === (message.scriptId || message.id)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          {validatedScriptIds[message.scriptId || message.id]
-                            ? 'Script valide'
-                            : validatingScriptId === (message.scriptId || message.id)
-                              ? 'Validation...'
-                              : 'Valider le script'}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    message.content
-                  )}
-                </div>
-                {message.role === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                    <User className="w-4 h-4" />
-                  </div>
+        <ScriptViewerPanel
+          selectedScriptTitle={activeScriptMessage ? 'View script' : 'View script'}
+          selectedScriptContent={
+            activeScriptMessage ? (
+              <div className="space-y-3">
+                {renderAssistantMessage(
+                  activeScriptMessage.id,
+                  activeScriptMessage.content,
+                  activeScriptMessage.playbook
                 )}
               </div>
-            ))}
-          </div>
+            ) : (
+              <p className="text-sm text-gray-500">Selectionne un script depuis la liste, ou genere un nouveau script.</p>
+            )
+          }
+          onValidate={activeScriptMessage ? () => validateScript(activeScriptMessage) : undefined}
+          validateDisabled={
+            !activeScriptMessage ||
+            Boolean(validatedScriptIds[activeScriptMessage.scriptId || activeScriptMessage.id]) ||
+            validatingScriptId === (activeScriptMessage.scriptId || activeScriptMessage.id)
+          }
+          validateLabel={
+            !activeScriptMessage
+              ? 'Valider le script'
+              : validatedScriptIds[activeScriptMessage.scriptId || activeScriptMessage.id]
+                ? 'Script valide'
+                : validatingScriptId === (activeScriptMessage.scriptId || activeScriptMessage.id)
+                  ? 'Validation...'
+                  : 'Valider le script'
+          }
+        />
 
-          <form
-            onSubmit={sendMessage}
-            className="absolute bottom-0 left-0 right-0 z-10 border-t border-gray-200 bg-white/95 backdrop-blur-sm"
-          >
-            <div className="p-4">
-              <div className="flex items-center gap-3">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask for a script line, opening, objection answer..."
-                className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                disabled={!selectedGig || isSending}
-              />
-              <button
-                type="submit"
-                disabled={!selectedGig || !input.trim() || isSending}
-                className="px-5 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
-              >
-                {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Send
-              </button>
-              </div>
-            </div>
-          </form>
-        </div>
+        <ScriptChatPanel
+          input={input}
+          isSending={isSending}
+          selectedGigId={selectedGig?._id}
+          onInputChange={setInput}
+          onSubmit={sendMessage}
+        />
 
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
