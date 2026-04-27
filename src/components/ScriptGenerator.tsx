@@ -690,9 +690,9 @@ const ScriptGenerator: React.FC = () => {
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Professional Script Studio</h2>
+                <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Call Script</h2>
                 <p className="text-[14px] font-medium text-white/90">
-                  Professional Agent/Lead scripts based on selected gig
+                  Call scripts Agent/Lead
                 </p>
               </div>
             </div>
