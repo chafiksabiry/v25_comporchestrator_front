@@ -408,13 +408,22 @@ const ScriptGenerator: React.FC = () => {
                     {options.map((opt, optIdx) => {
                       const active = optIdx === safeIdx;
                       return (
-                        <button
+                        <div
                           key={`${turnKey}-opt-${optIdx}`}
-                          type="button"
-                          onClick={() => {
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             setSelectedLeadOptionByTurnKey((prev) => ({ ...prev, [turnKey]: optIdx }));
                           }}
-                          className={`text-left rounded-lg border px-3 py-2 transition-colors ${
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter' && e.key !== ' ') return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedLeadOptionByTurnKey((prev) => ({ ...prev, [turnKey]: optIdx }));
+                          }}
+                          className={`text-left rounded-lg border px-3 py-2 transition-colors cursor-pointer ${
                             active
                               ? 'border-emerald-400 bg-emerald-100 text-emerald-900'
                               : 'border-emerald-200 bg-white text-slate-700 hover:bg-emerald-50'
@@ -422,14 +431,10 @@ const ScriptGenerator: React.FC = () => {
                         >
                           <span className="mr-1 text-[10px] font-bold uppercase text-emerald-700">Lead:</span>
                           {String(opt.leadReply)}
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
-                </div>
-                <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-violet-700">Agent repond</p>
-                  <p className="mt-1 text-slate-800">{String(selected?.agentReply || '')}</p>
                 </div>
               </div>
             );
@@ -558,14 +563,6 @@ const ScriptGenerator: React.FC = () => {
 
           {isLoadingGigs && <p className="text-sm text-gray-500 mt-2">Loading gigs...</p>}
           {gigsError && <p className="text-sm text-red-600 mt-2">{gigsError}</p>}
-          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Style Guide</p>
-            <div className="mt-1 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full bg-blue-100 px-2 py-1 font-semibold text-blue-700">Agent</span>
-              <span className="rounded-full bg-emerald-100 px-2 py-1 font-semibold text-emerald-700">Lead</span>
-              <span className="rounded-full bg-violet-100 px-2 py-1 font-semibold text-violet-700">Probable replies</span>
-            </div>
-          </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
