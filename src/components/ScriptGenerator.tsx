@@ -167,31 +167,46 @@ const ScriptGenerator: React.FC = () => {
         },
       };
 
-      const payload = {
+      const chatPayload = {
         message: trimmedMessage,
         context: contextPayload,
         gigId: selectedGig._id,
         companyId,
         sessionId: sessionId || undefined,
       };
-      const tryEndpoints = [`${backendUrl}/api/ai/chat?stream=false`, `${backendUrl}/rag/chat`];
+      const scriptPayload = {
+        companyId,
+        gig: selectedGig,
+        typeClient: 'general',
+        langueTon: 'simple et direct',
+        contexte: trimmedMessage,
+      };
+      const tryEndpoints: Array<{ url: string; body: any; kind: 'chat' | 'script' }> = [
+        { url: `${backendUrl}/api/ai/chat?stream=false`, body: chatPayload, kind: 'chat' },
+        { url: `${backendUrl}/api/rag/chat`, body: chatPayload, kind: 'chat' },
+        { url: `${backendUrl}/rag/chat`, body: chatPayload, kind: 'chat' },
+        { url: `${backendUrl}/api/rag/generate-script`, body: scriptPayload, kind: 'script' },
+        { url: `${backendUrl}/rag/generate-script`, body: scriptPayload, kind: 'script' },
+      ];
       let response: Response | null = null;
+      let responseKind: 'chat' | 'script' = 'chat';
       let lastError = '';
 
-      for (const url of tryEndpoints) {
+      for (const candidate of tryEndpoints) {
         try {
-          const candidate = await fetch(url, {
+          const resp = await fetch(candidate.url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify(candidate.body),
           });
-          if (candidate.ok) {
-            response = candidate;
+          if (resp.ok) {
+            response = resp;
+            responseKind = candidate.kind;
             break;
           }
-          lastError = `${candidate.status} ${candidate.statusText}`;
+          lastError = `${resp.status} ${resp.statusText}`;
         } catch (e: any) {
           lastError = e?.message || 'Network error';
         }
@@ -208,19 +223,24 @@ const ScriptGenerator: React.FC = () => {
         setSessionId(body.sessionId.trim());
       }
 
-      const assistantText =
-        body?.response ||
-        body?.data?.response ||
-        body?.data?.text ||
-        body?.text ||
-        'Je n’ai pas pu générer de réponse.';
+      const assistantText = responseKind === 'script'
+        ? body?.data?.script || body?.script || body?.data?.text || body?.text
+        : body?.response || body?.data?.response || body?.data?.text || body?.text;
+      const assistantTextSafe =
+        typeof assistantText === 'string'
+          ? assistantText
+          : Array.isArray(assistantText)
+            ? assistantText.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join('\n')
+            : assistantText
+              ? JSON.stringify(assistantText)
+              : 'Je n’ai pas pu générer de réponse.';
 
       setMessages((prev) => [
         ...prev.filter((m) => !m.id.startsWith('assistant-pending-')),
         {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
-          content: String(assistantText),
+          content: assistantTextSafe,
         },
       ]);
     } catch (err: any) {
