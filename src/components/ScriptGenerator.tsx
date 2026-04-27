@@ -186,6 +186,8 @@ const ScriptGenerator: React.FC = () => {
   const [validatingScriptId, setValidatingScriptId] = useState<string | null>(null);
   const [validatedScriptIds, setValidatedScriptIds] = useState<Record<string, boolean>>({});
   const [selectedLeadOptionByTurnKey, setSelectedLeadOptionByTurnKey] = useState<Record<string, number>>({});
+  const [editPromptByKey, setEditPromptByKey] = useState<Record<string, string>>({});
+  const [rewritingKey, setRewritingKey] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const lastAutoGigIdRef = useRef<string | null>(null);
 
@@ -378,6 +380,83 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
+  const rewriteLineWithPrompt = async (line: string, role: 'agent' | 'lead', prompt: string): Promise<string> => {
+    const companyId = getCompanyId();
+    if (!companyId || !selectedGig) return line;
+    const rewritePrompt = [
+      'Rewrite exactly one dialogue line.',
+      `Role: ${role === 'agent' ? 'Agent' : 'Lead'}`,
+      `Original line: ${line}`,
+      `Instruction: ${prompt}`,
+      'Return ONLY one line with the same role prefix format:',
+      role === 'agent' ? 'Agent: ...' : 'Lead: ...',
+    ].join('\n');
+
+    const scriptPayload = {
+      companyId,
+      gig: selectedGig,
+      typeClient: 'general',
+      langueTon: 'simple et direct',
+      contexte: rewritePrompt,
+    };
+    const { data: body } = await apiClient.post('/rag/generate-script', scriptPayload);
+    const raw = String(body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text || '').trim();
+    const firstLine = raw.split(/\r?\n/).map((l: string) => l.trim()).find(Boolean) || '';
+    const match = firstLine.match(/^(agent|lead)\s*:\s*(.+)$/i);
+    if (match) return String(match[2] || '').trim() || line;
+    return firstLine || line;
+  };
+
+  const applyPromptEdit = async (params: {
+    messageId: string;
+    turnIdx: number;
+    role: 'agent' | 'lead';
+    optionIdx?: number;
+  }) => {
+    const { messageId, turnIdx, role, optionIdx } = params;
+    const key = role === 'agent' ? `${messageId}-${turnIdx}-agent` : `${messageId}-${turnIdx}-lead-${optionIdx}`;
+    const prompt = String(editPromptByKey[key] || '').trim();
+    if (!prompt) return;
+    setRewritingKey(key);
+    setError(null);
+    try {
+      const targetMessage = messages.find((m) => m.id === messageId);
+      const turns = Array.isArray(targetMessage?.playbook?.turns) ? targetMessage!.playbook!.turns! : [];
+      const turn = turns[turnIdx];
+      if (!turn) return;
+      const options = Array.isArray(turn.leadOptions) ? turn.leadOptions : [];
+      const selectedIdx = Number.isFinite(optionIdx as number) ? Number(optionIdx) : 0;
+      const sourceLine =
+        role === 'agent'
+          ? String(turn.agentLine || '').trim()
+          : String(options[selectedIdx]?.leadReply || '').trim();
+      if (!sourceLine) return;
+
+      const rewritten = await rewriteLineWithPrompt(sourceLine, role, prompt);
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== messageId || !m.playbook?.turns) return m;
+          const nextTurns = m.playbook.turns.map((t, idx) => {
+            if (idx !== turnIdx) return t;
+            if (role === 'agent') {
+              return { ...t, agentLine: rewritten };
+            }
+            const leadOptions = Array.isArray(t.leadOptions)
+              ? t.leadOptions.map((opt, oi) => (oi === selectedIdx ? { ...opt, leadReply: rewritten } : opt))
+              : t.leadOptions;
+            return { ...t, leadOptions };
+          });
+          return { ...m, playbook: { ...m.playbook, turns: nextTurns } };
+        })
+      );
+      setEditPromptByKey((prev) => ({ ...prev, [key]: '' }));
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Failed to apply prompt modification');
+    } finally {
+      setRewritingKey(null);
+    }
+  };
+
   const renderAssistantMessage = (messageId: string, content: string, playbook?: ChatMessage['playbook']) => {
     const turns = Array.isArray(playbook?.turns) ? playbook?.turns : [];
     if (turns && turns.length > 0) {
@@ -433,6 +512,25 @@ const ScriptGenerator: React.FC = () => {
                 <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">Agent</p>
                   <p className="mt-1 text-slate-800">{String(turn.agentLine)}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={editPromptByKey[`${messageId}-${turnIdx}-agent`] || ''}
+                      onChange={(e) =>
+                        setEditPromptByKey((prev) => ({ ...prev, [`${messageId}-${turnIdx}-agent`]: e.target.value }))
+                      }
+                      placeholder="Prompt de modification agent..."
+                      className="flex-1 px-2 py-1 text-xs border border-blue-200 rounded-md bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => applyPromptEdit({ messageId, turnIdx, role: 'agent' })}
+                      disabled={rewritingKey === `${messageId}-${turnIdx}-agent`}
+                      className="px-2 py-1 text-xs rounded-md bg-blue-600 text-white disabled:opacity-60"
+                    >
+                      {rewritingKey === `${messageId}-${turnIdx}-agent` ? '...' : 'Appliquer'}
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-2 space-y-2">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Choisir la reponse du lead</p>
@@ -487,6 +585,28 @@ const ScriptGenerator: React.FC = () => {
                         </div>
                       );
                     })}
+                  </div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={editPromptByKey[`${messageId}-${turnIdx}-lead-${safeIdx}`] || ''}
+                      onChange={(e) =>
+                        setEditPromptByKey((prev) => ({
+                          ...prev,
+                          [`${messageId}-${turnIdx}-lead-${safeIdx}`]: e.target.value,
+                        }))
+                      }
+                      placeholder="Prompt de modification lead selectionne..."
+                      className="flex-1 px-2 py-1 text-xs border border-emerald-200 rounded-md bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => applyPromptEdit({ messageId, turnIdx, role: 'lead', optionIdx: safeIdx })}
+                      disabled={rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}`}
+                      className="px-2 py-1 text-xs rounded-md bg-emerald-600 text-white disabled:opacity-60"
+                    >
+                      {rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}` ? '...' : 'Appliquer'}
+                    </button>
                   </div>
                 </div>
               </div>
