@@ -81,15 +81,30 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
     .map((line) => line.trim())
     .filter(Boolean);
 
+  let autoTurn: 'agent' | 'lead' = 'agent';
   return lines.map((line) => {
-    const normalized = line.replace(/^\[[^\]]+\]\s*/, '');
+    const normalized = line
+      .replace(/^\[[^\]]+\]\s*/, '')
+      .replace(/^\[?\s*r[ée]ponse\s+du\s+candidat\s*\]?\s*:?\s*/i, '')
+      .trim();
     const match = normalized.match(/^(agent|lead|candidate|client)\s*:\s*(.+)$/i);
     if (!match) {
-      return { side: 'other', label: 'Script', text: line };
+      // If line looks like dialogue text without label, auto-assign alternating roles.
+      const inferredSide: 'agent' | 'lead' = autoTurn;
+      autoTurn = autoTurn === 'agent' ? 'lead' : 'agent';
+      return {
+        side: inferredSide,
+        label: inferredSide === 'agent' ? 'Agent' : 'Lead',
+        text: normalized || line,
+      };
     }
     const actor = String(match[1] || '').toLowerCase();
     const text = String(match[2] || '').trim();
-    if (actor === 'agent') return { side: 'agent', label: 'Agent', text };
+    if (actor === 'agent') {
+      autoTurn = 'lead';
+      return { side: 'agent', label: 'Agent', text };
+    }
+    autoTurn = 'agent';
     return { side: 'lead', label: 'Lead', text };
   });
 };
@@ -389,9 +404,9 @@ const ScriptGenerator: React.FC = () => {
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Script Chat</h2>
+                <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Professional Script Studio</h2>
                 <p className="text-[14px] font-medium text-white/90">
-                  Simple chat based only on gig title and description
+                  Professional Agent/Lead scripts based on selected gig
                 </p>
               </div>
             </div>
@@ -430,7 +445,14 @@ const ScriptGenerator: React.FC = () => {
 
           {isLoadingGigs && <p className="text-sm text-gray-500 mt-2">Loading gigs...</p>}
           {gigsError && <p className="text-sm text-red-600 mt-2">{gigsError}</p>}
-
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Style Guide</p>
+            <div className="mt-1 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-blue-100 px-2 py-1 font-semibold text-blue-700">Agent</span>
+              <span className="rounded-full bg-emerald-100 px-2 py-1 font-semibold text-emerald-700">Lead</span>
+              <span className="rounded-full bg-violet-100 px-2 py-1 font-semibold text-violet-700">Probable replies</span>
+            </div>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
@@ -495,9 +517,9 @@ const ScriptGenerator: React.FC = () => {
               </div>
             ))}
             {isSending && (
-              <div className="flex items-center gap-2 text-gray-500 text-sm">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Writing script reply...
+              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 flex items-center gap-2 w-fit shadow-sm">
+                <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
+                Generating professional script...
               </div>
             )}
           </div>
