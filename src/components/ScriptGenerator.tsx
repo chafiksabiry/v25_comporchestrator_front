@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
 import { ArrowLeft, Bot, Loader2, Send, Sparkles, User } from 'lucide-react';
+import apiClient from '../api/knowledgeClient';
 
 interface Gig {
   _id: string;
@@ -30,7 +31,6 @@ const ScriptGenerator: React.FC = () => {
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [gigsError, setGigsError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const lastAutoGigIdRef = useRef<string | null>(null);
 
@@ -110,7 +110,6 @@ const ScriptGenerator: React.FC = () => {
 
   useEffect(() => {
     if (!selectedGig) return;
-    setSessionId(null);
     setMessages([
       {
         id: `assistant-${Date.now()}`,
@@ -158,21 +157,6 @@ const ScriptGenerator: React.FC = () => {
     setError(null);
 
     try {
-      const contextPayload = {
-        app: 'HARX Script Chat',
-        chatStyle: 'free_chat',
-        requestedOutput: 'general_chat',
-        sourceMode: 'knowledge_base',
-        useKnowledgeBase: true,
-        useUploadedDocuments: false,
-        selectedGigId: selectedGig._id,
-        selectedGigTitle: selectedGigSummary.title,
-        gigSnapshot: {
-          title: selectedGigSummary.title,
-          description: selectedGigSummary.description,
-        },
-      };
-
       const scriptPayload = {
         companyId,
         gig: selectedGig,
@@ -180,48 +164,9 @@ const ScriptGenerator: React.FC = () => {
         langueTon: 'simple et direct',
         contexte: trimmedMessage,
       };
-      const tryEndpoints: Array<{ url: string; body: any; kind: 'script' }> = [
-        { url: `${backendUrl}/api/rag/generate-script`, body: scriptPayload, kind: 'script' },
-        { url: `${backendUrl}/rag/generate-script`, body: scriptPayload, kind: 'script' },
-      ];
-      let response: Response | null = null;
-      let responseKind: 'script' = 'script';
-      let lastError = '';
-
-      for (const candidate of tryEndpoints) {
-        try {
-          const resp = await fetch(candidate.url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(candidate.body),
-          });
-          if (resp.ok) {
-            response = resp;
-            responseKind = candidate.kind;
-            break;
-          }
-          lastError = `${resp.status} ${resp.statusText}`;
-        } catch (e: any) {
-          lastError = e?.message || 'Network error';
-        }
-      }
-      if (!response) {
-        throw new Error(`Chat API unavailable (${lastError || 'no response'})`);
-      }
-
-      const body = await response.json();
-      const nextSessionId = response.headers.get('X-Chat-Session-Id');
-      if (nextSessionId) {
-        setSessionId(nextSessionId);
-      } else if (typeof body?.sessionId === 'string' && body.sessionId.trim()) {
-        setSessionId(body.sessionId.trim());
-      }
-
-      const assistantText = responseKind === 'script'
-        ? body?.data?.script || body?.script || body?.data?.text || body?.text
-        : '';
+      // KB API only (no training chat endpoint)
+      const { data: body } = await apiClient.post('/rag/generate-script', scriptPayload);
+      const assistantText = body?.data?.script || body?.script || body?.data?.text || body?.text;
       const normalizeScriptText = (value: any): string => {
         if (typeof value === 'string') return value;
         if (Array.isArray(value)) {
@@ -255,7 +200,7 @@ const ScriptGenerator: React.FC = () => {
       ]);
     } catch (err: any) {
       setMessages((prev) => prev.filter((m) => !m.id.startsWith('assistant-pending-')));
-      setError(err.message || 'Failed to generate response');
+      setError(err?.response?.data?.error || err?.message || 'Failed to generate response');
     } finally {
       setIsSending(false);
     }
