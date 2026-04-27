@@ -322,6 +322,9 @@ const ScriptGenerator: React.FC = () => {
       const assistantTextSafe =
         normalizedText || 'Je n’ai pas pu générer de réponse.';
 
+      console.log('[ScriptGenerator] Generated script:', assistantTextSafe);
+      console.log('[ScriptGenerator] Generated playbook:', generatedPlaybook);
+
       setMessages((prev) => [
         ...prev.filter((m) => !m.id.startsWith('assistant-pending-')),
         {
