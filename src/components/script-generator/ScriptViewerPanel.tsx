@@ -16,9 +16,9 @@ const ScriptViewerPanel: React.FC<ScriptViewerPanelProps> = ({
   validateLabel,
 }) => {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 space-y-3">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 md:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-gray-700">{selectedScriptTitle}</p>
+        <p className="text-base font-semibold text-gray-800">{selectedScriptTitle}</p>
         {onValidate && (
           <button
             type="button"
@@ -30,7 +30,7 @@ const ScriptViewerPanel: React.FC<ScriptViewerPanelProps> = ({
           </button>
         )}
       </div>
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         {selectedScriptContent}
       </div>
     </div>

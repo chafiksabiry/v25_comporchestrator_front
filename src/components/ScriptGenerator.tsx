@@ -3,8 +3,7 @@ import Cookies from 'js-cookie';
 import { ArrowLeft, Brain, Pencil, Sparkles } from 'lucide-react';
 import apiClient from '../api/knowledgeClient';
 import ScriptListPanel from './script-generator/ScriptListPanel';
-import ScriptViewerPanel from './script-generator/ScriptViewerPanel';
-import ScriptChatPanel from './script-generator/ScriptChatPanel';
+import ScriptViewPage from './script-generator/ScriptViewPage';
 
 interface Gig {
   _id: string;
@@ -207,6 +206,7 @@ const ScriptGenerator: React.FC = () => {
   const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
+  const [currentView, setCurrentView] = useState<'list' | 'view'>('list');
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const getCompanyId = () => {
@@ -288,6 +288,7 @@ const ScriptGenerator: React.FC = () => {
     setMessages([]);
     setError(null);
     setActiveScriptMessage(null);
+    setCurrentView('list');
     fetchSavedScripts(selectedGig._id);
   }, [selectedGig?._id]);
 
@@ -355,17 +356,13 @@ const ScriptGenerator: React.FC = () => {
       };
       setMessages((prev) => [...prev.filter((m) => !m.id.startsWith('assistant-pending-')), generatedMessage]);
       setActiveScriptMessage(generatedMessage);
+      setCurrentView('view');
     } catch (err: any) {
       setMessages((prev) => prev.filter((m) => !m.id.startsWith('assistant-pending-')));
       setError(err?.response?.data?.error || err?.message || 'Failed to generate response');
     } finally {
       setIsSending(false);
     }
-  };
-
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await sendMessageToApi(input, true);
   };
 
   const fetchSavedScripts = async (gigId: string) => {
@@ -397,6 +394,7 @@ const ScriptGenerator: React.FC = () => {
     };
     setMessages((prev) => [...prev, message]);
     setActiveScriptMessage(message);
+    setCurrentView('view');
     setValidatedScriptIds((prev) => ({ ...prev, [item._id]: Boolean(item?.isActive) }));
   };
 
@@ -812,23 +810,23 @@ const ScriptGenerator: React.FC = () => {
   };
 
   return (
-    <div className="w-full py-2 animate-in fade-in duration-500 min-h-[calc(100vh-100px)]">
-      <div className="max-w-5xl mx-auto space-y-4 h-[calc(100vh-120px)] flex flex-col">
-        <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 shadow-lg shadow-harx-500/20">
+    <div className="w-full py-4 min-h-[calc(100vh-100px)]">
+      <div className="max-w-6xl mx-auto px-2 md:px-4 space-y-5">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-harx px-6 py-5 shadow-md shadow-harx-500/20">
           <div className="relative z-10 flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20">
-                <Sparkles className="h-6 w-6 text-white" />
+              <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                <Sparkles className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Call Script</h2>
-                <p className="text-[14px] font-medium text-white/90">
+                <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">Call Script</h2>
+                <p className="text-sm font-medium text-white/90">
                   Call scripts Agent/Lead
                 </p>
               </div>
             </div>
             <button
-              className="px-5 py-2 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2"
+              className="px-4 py-2 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-bold rounded-xl border border-white/20 transition-all duration-200 uppercase tracking-wide text-[10px] flex items-center gap-2"
               onClick={handleBackToOrchestrator}
             >
               <ArrowLeft className="w-4 h-4" />
@@ -839,8 +837,8 @@ const ScriptGenerator: React.FC = () => {
           <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/10 rounded-full blur-2xl" />
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-5">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 md:p-6">
+          <label className="block text-sm font-semibold text-gray-700 mb-2.5">
             Select Gig <span className="text-red-500">*</span>
           </label>
           <select
@@ -849,7 +847,7 @@ const ScriptGenerator: React.FC = () => {
               const gig = gigs.find((g) => g._id === e.target.value) || null;
               setSelectedGig(gig);
             }}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
             disabled={isLoadingGigs}
           >
             <option value="">Choose a gig...</option>
@@ -860,8 +858,8 @@ const ScriptGenerator: React.FC = () => {
             ))}
           </select>
 
-          {isLoadingGigs && <p className="text-sm text-gray-500 mt-2">Loading gigs...</p>}
-          {gigsError && <p className="text-sm text-red-600 mt-2">{gigsError}</p>}
+          {isLoadingGigs && <p className="text-sm text-gray-500 mt-2.5">Loading gigs...</p>}
+          {gigsError && <p className="text-sm text-red-600 mt-2.5">{gigsError}</p>}
         </div>
 
         <ScriptListPanel
@@ -874,48 +872,43 @@ const ScriptGenerator: React.FC = () => {
           onEdit={handleEditSavedScript}
         />
 
-        <ScriptViewerPanel
-          selectedScriptTitle={activeScriptMessage ? 'View script' : 'View script'}
-          selectedScriptContent={
-            activeScriptMessage ? (
-              <div className="space-y-3">
-                {renderAssistantMessage(
-                  activeScriptMessage.id,
-                  activeScriptMessage.content,
-                  activeScriptMessage.playbook
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">Selectionne un script depuis la liste, ou genere un nouveau script.</p>
-            )
-          }
-          onValidate={activeScriptMessage ? () => validateScript(activeScriptMessage) : undefined}
-          validateDisabled={
-            !activeScriptMessage ||
-            Boolean(validatedScriptIds[activeScriptMessage.scriptId || activeScriptMessage.id]) ||
-            validatingScriptId === (activeScriptMessage.scriptId || activeScriptMessage.id)
-          }
-          validateLabel={
-            !activeScriptMessage
-              ? 'Valider le script'
-              : validatedScriptIds[activeScriptMessage.scriptId || activeScriptMessage.id]
-                ? 'Script valide'
-                : validatingScriptId === (activeScriptMessage.scriptId || activeScriptMessage.id)
-                  ? 'Validation...'
-                  : 'Valider le script'
-          }
-        />
-
-        <ScriptChatPanel
-          input={input}
-          isSending={isSending}
-          selectedGigId={selectedGig?._id}
-          onInputChange={setInput}
-          onSubmit={sendMessage}
-        />
+        {currentView === 'view' ? (
+          <ScriptViewPage
+            hasActiveScript={Boolean(activeScriptMessage)}
+            content={
+              activeScriptMessage ? (
+                <div className="space-y-3">
+                  {renderAssistantMessage(
+                    activeScriptMessage.id,
+                    activeScriptMessage.content,
+                    activeScriptMessage.playbook
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Selectionne un script depuis la liste, ou genere un nouveau script.</p>
+              )
+            }
+            onBackToList={() => setCurrentView('list')}
+            onValidate={activeScriptMessage ? () => validateScript(activeScriptMessage) : undefined}
+            validateDisabled={
+              !activeScriptMessage ||
+              Boolean(validatedScriptIds[activeScriptMessage.scriptId || activeScriptMessage.id]) ||
+              validatingScriptId === (activeScriptMessage.scriptId || activeScriptMessage.id)
+            }
+            validateLabel={
+              !activeScriptMessage
+                ? 'Valider le script'
+                : validatedScriptIds[activeScriptMessage.scriptId || activeScriptMessage.id]
+                  ? 'Script valide'
+                  : validatingScriptId === (activeScriptMessage.scriptId || activeScriptMessage.id)
+                    ? 'Validation...'
+                    : 'Valider le script'
+            }
+          />
+        ) : null}
 
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm">
             <p className="text-red-700 text-sm">{error}</p>
           </div>
         )}
