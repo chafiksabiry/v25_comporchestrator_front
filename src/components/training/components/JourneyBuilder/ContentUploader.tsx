@@ -608,6 +608,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
   const [chatWorkflowStatus, setChatWorkflowStatus] = useState<ChatWorkflowStatus | null>(null);
   const activeChatAbortRef = useRef<AbortController | null>(null);
+  /** REP empty-chat: after first auto-open, do not force the 4-step card again on hide (Skip / dismiss). Reset on new conversation or leaving REP. */
+  const repPersonalizationBootstrapRef = useRef(false);
   const autoOpenedHistoryForJourneyRef = useRef<string | null>(null);
   const historyFetchSeqRef = useRef(0);
   const [gigSwitchHint, setGigSwitchHint] = useState<string | null>(null);
@@ -683,12 +685,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   useEffect(() => {
     // REP onboarding: start directly with the 4-question flow (no KB 1/1 card).
-    if (!repOnboardingLayout) return;
+    if (!repOnboardingLayout) {
+      repPersonalizationBootstrapRef.current = false;
+      return;
+    }
     if (chatMessages.length > 0) return;
     if (showPersonalizationCard) return;
+    if (repPersonalizationBootstrapRef.current) return;
     setShowPersonalizationCard(true);
     setPersonalizationStep(0);
     setPersonalizationAnswers({});
+    repPersonalizationBootstrapRef.current = true;
   }, [repOnboardingLayout, chatMessages.length, showPersonalizationCard]);
 
   useEffect(() => {
@@ -2616,6 +2623,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setKbGenerationChoice(null);
       setChatKbDocuments([]);
       setShowPersonalizationCard(false);
+      repPersonalizationBootstrapRef.current = false;
       setPersonalizationStep(0);
       setPersonalizationAnswers({});
       setGeneratedCurriculum(null);
