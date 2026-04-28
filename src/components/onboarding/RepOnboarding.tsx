@@ -45,7 +45,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [savedPodcasts, setSavedPodcasts] = useState<SavedPodcastItem[]>([]);
   const [loadingPodcasts, setLoadingPodcasts] = useState(false);
   const [savedImageSets, setSavedImageSets] = useState<TrainingImageSet[]>([]);
-  const [loadingImageSets, setLoadingImageSets] = useState(false);
   const [selectedImageSet, setSelectedImageSet] = useState<TrainingImageSet | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, gigId?: string, newJourney?: boolean }>({ isOpen: false });
@@ -567,7 +566,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       setSavedImageSets([]);
       return;
     }
-    setLoadingImageSets(true);
     try {
       const rows = await AIService.listTrainingImages({
         companyId,
@@ -579,7 +577,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       console.error('[RepOnboarding] Error fetching training image sets:', error);
       setSavedImageSets([]);
     } finally {
-      setLoadingImageSets(false);
+      // no-op
     }
   }, [companyId, filterGigId]);
 
@@ -677,31 +675,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     [savedImageSets, resolveJourneyGigId]
   );
 
-  const openImageSlides = (imageSet: TrainingImageSet, previewJourneyUpdate?: any) => {
-    if (previewJourneyUpdate !== undefined) {
-      setPreviewJourney(previewJourneyUpdate);
+  /** In training list, Start/Content must open the training viewer (not image carousel). */
+  const openJourneyContentOrImages = (journey: any) => {
+    const journeyId = String(journey?._id || journey?.id || '').trim();
+    if (!journeyId) {
+      window.alert('Training ID not found.');
+      return;
     }
-    setSelectedImageSet(imageSet);
-    setSelectedImageIndex(0);
-  };
-
-  /** Always opens the image carousel (same UX as Content), never text/HTML slides. */
-  const openJourneyContentOrImages = (journey: any, formatted: ReturnType<typeof formatTrainingJourney>) => {
-    const imageSet = findImageSetForJourney(journey);
-    const hasItems = Array.isArray(imageSet?.items) && imageSet.items.length > 0;
-    const effectiveSet: TrainingImageSet =
-      hasItems && imageSet
-        ? imageSet
-        : imageSet && Array.isArray(imageSet.items)
-          ? imageSet
-          : {
-              _id: `no-images-${formatted.id}`,
-              title: formatted.title,
-              trainingTitle: formatted.title,
-              language: 'fr',
-              items: [],
-            };
-    openImageSlides(effectiveSet, journey);
+    const resolvedGigId = resolveJourneyGigId(journey) || undefined;
+    setShowTraining({ isOpen: true, newJourney: true, journeyId, gigId: resolvedGigId || undefined });
   };
 
   const stopPodcastPlayback = useCallback(() => {
@@ -1076,69 +1058,23 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     <p className="mt-4 text-sm font-medium text-gray-600">Loading available trainings...</p>
                   </div>
                 ) : trainings.length === 0 ? (
-                  savedImageSets.length > 0 ? (
-                    <div className="space-y-5">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {savedImageSets.map((set) => (
-                          <div
-                            key={set._id}
-                            className="group relative overflow-hidden rounded-[26px] border border-[#f2d8e1] bg-white/95 p-0 shadow-[0_10px_24px_rgba(25,35,60,0.08)] transition-all duration-500 hover:-translate-y-1 hover:border-harx-300"
-                          >
-                            <div className="h-1.5 w-full bg-gradient-harx" aria-hidden />
-                            <div className="relative z-10 p-5">
-                              <div className="mb-3 flex items-start justify-between gap-2">
-                                <h3 className="line-clamp-2 text-[20px] font-black leading-[1.1] text-gray-900">
-                                  {set.trainingTitle || set.title || 'Training images'}
-                                </h3>
-                                <span className="rounded-lg bg-harx-50 px-2 py-1 text-xs font-bold text-harx-700">
-                                  {Array.isArray(set.items) ? set.items.length : 0} slides
-                                </span>
-                              </div>
-                              <p className="line-clamp-1 text-xs font-medium text-gray-500">
-                                {set.createdAt ? new Date(set.createdAt).toLocaleString() : 'Date unavailable'}
-                              </p>
-                              {Array.isArray(set.items) && set.items[0]?.imageUrl ? (
-                                <img
-                                  src={set.items[0].imageUrl}
-                                  alt={set.items[0].title || 'Training slide preview'}
-                                  className="mt-3 h-28 w-full rounded-xl border border-gray-100 object-cover"
-                                />
-                              ) : null}
-                              <div className="mt-4">
-                                <button
-                                  type="button"
-                                  onClick={() => openImageSlides(set, null)}
-                                  disabled={!Array.isArray(set.items) || set.items.length === 0}
-                                  className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  <FileText className="h-4 w-4" />
-                                  Content
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-harx-200 py-12 p-8 text-center">
+                    <div className="mb-4 rounded-2xl border border-harx-100 bg-white p-3">
+                      <Plus className="h-6 w-6 text-harx-500" />
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-harx-200 py-12 p-8 text-center">
-                      <div className="mb-4 rounded-2xl border border-harx-100 bg-white p-3">
-                        <Plus className="h-6 w-6 text-harx-500" />
-                      </div>
-                      <h3 className="text-base font-bold text-gray-900">No training journeys yet</h3>
-                      <p className="mx-auto mt-2 max-w-xs text-sm text-gray-600">
-                        Add your first training journey to start onboarding your REPs.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleCreateNewTrainingJourney}
-                        className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"
-                      >
-                        <Plus className="h-4 w-4" />
-                        <span>Create First Journey</span>
-                      </button>
-                    </div>
-                  )
+                    <h3 className="text-base font-bold text-gray-900">No training journeys yet</h3>
+                    <p className="mx-auto mt-2 max-w-xs text-sm text-gray-600">
+                      Add your first training journey to start onboarding your REPs.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleCreateNewTrainingJourney}
+                      className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Create First Journey</span>
+                    </button>
+                  </div>
                 ) : (
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -1146,16 +1082,11 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         const formatted = formatTrainingJourney(journey);
                         const imageSet = findImageSetForJourney(journey);
                         const displayTitle = resolveCardTrainingTitle(journey, formatted, imageSet);
-                        const imageSlidesCount = Array.isArray(imageSet?.items) ? imageSet.items.length : 0;
-                        const imageSetPreview =
-                          imageSet && Array.isArray(imageSet.items) && imageSet.items[0]?.imageUrl
-                            ? String(imageSet.items[0].imageUrl).trim()
-                            : '';
                         const trainingBgImage =
                           String(formatted?.trainingLogo?.type || '').toLowerCase() === 'image'
                             ? String(formatted?.trainingLogo?.value || '').trim()
                             : '';
-                        const trainingPreviewImage = imageSetPreview || trainingBgImage;
+                        const trainingPreviewImage = trainingBgImage;
                         return (
                           <div
                           key={formatted.id}
@@ -1213,15 +1144,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 {formatted.modulesCount} modules
                               </div>
                               <div className="col-span-2 truncate rounded-xl border border-harx-100 bg-harx-50/50 px-3 py-2 text-xs font-semibold text-harx-700">
-                                Slides images: {imageSlidesCount}
-                                {loadingImageSets ? ' (loading...)' : ''}
+                                Formation content: modules + sections + quizzes
                               </div>
                             </div>
                             <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => openJourneyContentOrImages(journey, formatted)}
+                                  onClick={() => openJourneyContentOrImages(journey)}
                                   disabled={deletingJourneyId === formatted.id}
                                   className={`inline-flex items-center space-x-2 rounded-xl px-3 py-2 text-xs font-bold transition-all ${formatted.status === 'completed'
                                     ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100 hover:bg-emerald-100'
@@ -1235,7 +1165,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => openJourneyContentOrImages(journey, formatted)}
+                                  onClick={() => openJourneyContentOrImages(journey)}
                                   disabled={deletingJourneyId === formatted.id}
                                   className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-xs font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
