@@ -5703,21 +5703,32 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       </div>
                       <div className="shrink-0 border-b border-slate-100 bg-slate-50/90 px-4 py-2.5 sm:px-6">
                         <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                          Présentation interactive (HTML · style type PPT)
+                          Présentation interactive (HTML · génération IA Claude via le serveur, secours local si besoin)
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
                             disabled={isBuildingRepFormationDeck || formationViewerSlides.length === 0}
-                            onClick={() => {
+                            onClick={async () => {
                               setRepFormationDeckHint(null);
                               setIsBuildingRepFormationDeck(true);
                               try {
-                                const html = buildRepInteractivePresentationHtml(formationPreviewForViewer);
+                                let html: string;
+                                let hint: string;
+                                try {
+                                  html = await AIService.generateRepInteractiveDeckHtmlWithAi(
+                                    formationPreviewForViewer
+                                  );
+                                  hint =
+                                    'Présentation générée par l’IA (Claude / chat backend). Enregistrez pour la lier au parcours.';
+                                } catch (e) {
+                                  console.warn('[ContentUploader] AI interactive deck failed, using local template', e);
+                                  html = buildRepInteractivePresentationHtml(formationPreviewForViewer);
+                                  hint =
+                                    'L’IA n’a pas renvoyé de HTML valide (réseau, quota ou format) — version locale de secours.';
+                                }
                                 setRepFormationDeckHtml(html);
-                                setRepFormationDeckHint(
-                                  'Présentation générée (slides, quiz, navigation). Enregistrez pour la lier au parcours.'
-                                );
+                                setRepFormationDeckHint(hint);
                               } catch {
                                 setRepFormationDeckHint('La génération a échoué. Réessayez.');
                               } finally {
@@ -5731,7 +5742,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             ) : (
                               <Sparkles className="h-3.5 w-3.5" />
                             )}
-                            Générer la présentation
+                            Générer avec l’IA
                           </button>
                           <button
                             type="button"

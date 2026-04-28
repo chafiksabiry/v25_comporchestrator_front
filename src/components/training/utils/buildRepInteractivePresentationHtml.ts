@@ -445,3 +445,134 @@ export function buildRepInteractivePresentationHtml(journey: any): string {
 </body>
 </html>`;
 }
+
+/** Taille max du JSON envoyé au chat IA (caractères). */
+const DIGEST_JSON_MAX = 26000;
+const SECTION_BODY_MAX = 1800;
+const MAX_MODULES_AI = 20;
+
+export type FormationDigestForAi = {
+  title: string;
+  modules: Array<{
+    title: string;
+    sections: Array<{ title: string; contentPlain: string }>;
+    quizzes: Array<{
+      title: string;
+      questions: Array<{
+        question: string;
+        options: string[];
+        correctIndex: number;
+        explanation: string;
+      }>;
+    }>;
+  }>;
+};
+
+/**
+ * Digest compact et tronqué pour le prompt IA (Claude via /api/ai/chat).
+ */
+export function buildFormationDigestForRepPresentation(journey: any): FormationDigestForAi {
+  const title = String(journey?.title || journey?.name || 'Formation').trim() || 'Formation';
+  const rawMods = Array.isArray(journey?.modules) ? journey.modules : [];
+  const modules = rawMods.slice(0, MAX_MODULES_AI).map((mod: any) => {
+    const sections = Array.isArray(mod?.sections) ? mod.sections : [];
+    const quizzes = Array.isArray(mod?.quizzes) ? mod.quizzes : [];
+    return {
+      title: String(mod?.title || 'Module').trim(),
+      sections: sections.map((sec: any) => ({
+        title: String(sec?.title || '').trim(),
+        contentPlain: markdownishToPlain(String(sec?.content || '')).slice(0, SECTION_BODY_MAX),
+      })),
+      quizzes: quizzes.map((qz: any) => ({
+        title: String(qz?.title || 'Quiz').trim(),
+        questions: (Array.isArray(qz?.questions) ? qz.questions : []).map((q: any) => {
+          const opts = Array.isArray(q?.options)
+            ? q.options.map((o: any) => String(o || '').trim()).filter(Boolean).slice(0, 8)
+            : [];
+          const correct = typeof q?.correctAnswer === 'number' ? q.correctAnswer : 0;
+          return {
+            question: String(q?.question || '').trim().slice(0, 800),
+            options: opts,
+            correctIndex: opts.length ? Math.min(Math.max(0, correct), opts.length - 1) : 0,
+            explanation: String(q?.explanation || '').trim().slice(0, 1200),
+          };
+        }),
+      })),
+    };
+  });
+
+  let digest: FormationDigestForAi = { title, modules };
+  let json = JSON.stringify(digest);
+  while (json.length > DIGEST_JSON_MAX && digest.modules.length > 1) {
+    digest = {
+      ...digest,
+      modules: digest.modules.slice(0, -1),
+    };
+    json = JSON.stringify(digest);
+  }
+  if (json.length > DIGEST_JSON_MAX) {
+    digest = {
+      title: digest.title,
+      modules: digest.modules.map((m) => ({
+        ...m,
+        sections: m.sections.slice(0, 10).map((s) => ({
+          ...s,
+          contentPlain: s.contentPlain.slice(0, Math.floor(SECTION_BODY_MAX / 2)),
+        })),
+        quizzes: m.quizzes.map((qz) => ({
+          ...qz,
+          questions: qz.questions.slice(0, 6).map((q) => ({
+            ...q,
+            question: q.question.slice(0, 400),
+            explanation: q.explanation.slice(0, 500),
+          })),
+        })),
+      })),
+    };
+    json = JSON.stringify(digest);
+  }
+  if (json.length > DIGEST_JSON_MAX) {
+    digest = {
+      title: digest.title,
+      modules: digest.modules.map((m) => ({
+        ...m,
+        sections: m.sections.map((s) => ({ ...s, contentPlain: s.contentPlain.slice(0, 400) })),
+        quizzes: m.quizzes.map((qz) => ({
+          ...qz,
+          questions: qz.questions.slice(0, 4),
+        })),
+      })),
+    };
+  }
+  return digest;
+}
+
+/**
+ * Extrait un document HTML depuis la réponse du modèle (fences markdown ou brut).
+ */
+export function extractHtmlDocumentFromAiResponse(raw: string): string | null {
+  const s = String(raw || '').trim();
+  if (!s) return null;
+
+  const fenceHtml = s.match(/```(?:html)?\s*([\s\S]*?)```/i);
+  if (fenceHtml?.[1]) {
+    const inner = fenceHtml[1].trim();
+    if (/<!DOCTYPE/i.test(inner) || /<html[\s>]/i.test(inner)) return inner;
+  }
+
+  const doctypeIdx = s.search(/<!DOCTYPE\s+html/i);
+  if (doctypeIdx >= 0) {
+    const slice = s.slice(doctypeIdx);
+    const end = slice.toLowerCase().lastIndexOf('</html>');
+    if (end >= 0) return slice.slice(0, end + 7).trim();
+  }
+
+  const htmlIdx = s.search(/<html[\s>]/i);
+  if (htmlIdx >= 0) {
+    const slice = s.slice(htmlIdx);
+    const end = slice.toLowerCase().lastIndexOf('</html>');
+    if (end >= 0) return slice.slice(0, end + 7).trim();
+  }
+
+  return null;
+}

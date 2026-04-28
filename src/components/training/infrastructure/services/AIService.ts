@@ -1,4 +1,8 @@
 import { ApiClient } from '../../lib/api';
+import {
+  buildFormationDigestForRepPresentation,
+  extractHtmlDocumentFromAiResponse,
+} from '../../utils/buildRepInteractivePresentationHtml';
 
 /** Coerce API presentation payloads into { title, slides[] } for the preview / export. */
 export function normalizePresentationFromApi(raw: any): any | null {
@@ -518,6 +522,39 @@ export class AIService {
     }
 
     return response.data.response || '';
+  }
+
+  /**
+   * Génère une page HTML/CSS/JS interactive (slides + quiz) via le chat IA backend (Claude ou équivalent).
+   * Le contenu est ancré sur le digest JSON du parcours `training_journeys`.
+   */
+  static async generateRepInteractiveDeckHtmlWithAi(journey: any): Promise<string> {
+    const digest = buildFormationDigestForRepPresentation(journey);
+    const json = JSON.stringify(digest);
+
+    const message = `[TÂCHE — répondre UNIQUEMENT avec le fichier HTML complet, sans texte avant ni après]
+
+Tu es un expert front-end. Génère UNE page HTML autonome pour une formation en ligne (interface en français : Précédent, Suivant, Valider ma réponse, Bonne réponse, Mauvaise réponse, etc.).
+
+Contraintes techniques obligatoires :
+- Un seul fichier : <!DOCTYPE html>, tout le CSS dans <style> dans le <head>, tout le JS dans un <script> avant </body>. Aucune bibliothèque externe, aucun CDN.
+- Design « présentation pro » : fond type navy #0f172a (ou dégradé sobre), accents teal #14b8a6, zones de contenu claires (cartes blanches / slate-50), typographie lisible, coins arrondis, ombres légères.
+- Navigation slide par slide : boutons Précédent / Suivant, pastilles ou points de pagination cliquables, barre de progression en haut. Raccourcis clavier ← → .
+- Couvrir TOUT le JSON ci-dessous : pour chaque module → slide d’intro (numéro + titre), puis une slide par section (titre + corps en paragraphes), puis pour chaque question de quiz une slide avec les options cliquables, un bouton « Valider ma réponse », puis affichage correct/incorrect et l’explication. Ne jamais révéler la bonne réponse avant validation.
+- Sécurité : n’injecte pas de HTML brut utilisateur avec innerHTML. Utilise textContent ou une fonction escapeHtml() en JavaScript pour afficher les textes issus du JSON.
+- Tu peux placer les données dans <script type="application/json" id="deck-data">…</script> (JSON valide ; dans les chaînes, échappe les caractères < comme \\u003c si nécessaire).
+
+JSON formation (source de vérité) :
+${json}
+
+Commence ta réponse par <!DOCTYPE html>`;
+
+    const raw = await AIService.chat(message, '');
+    const html = extractHtmlDocumentFromAiResponse(raw);
+    if (!html || html.length < 400) {
+      throw new Error('Réponse IA vide ou sans document HTML valide');
+    }
+    return html;
   }
 
   /**
