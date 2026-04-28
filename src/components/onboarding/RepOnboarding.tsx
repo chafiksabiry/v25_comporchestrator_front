@@ -685,9 +685,19 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   /** In training list, Start/Content must open the training viewer (not image carousel). */
   const openJourneyContentOrImages = (journey: any) => {
-    setSelectedJourneyForContent(journey);
-    setActiveContentModuleIndex(0);
-    setActiveContentSectionIndex(0);
+    const journeyId = String(journey?._id || journey?.id || '').trim();
+    if (!journeyId) {
+      window.alert('Training ID not found.');
+      return;
+    }
+    const resolvedGigId = resolveJourneyGigId(journey) || undefined;
+    setShowTraining({
+      isOpen: true,
+      newJourney: true,
+      journeyId,
+      gigId: resolvedGigId || undefined,
+      openFormationViewer: true,
+    });
   };
 
   const stopPodcastPlayback = useCallback(() => {
@@ -799,8 +809,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
-      <div className="fixed inset-0 z-[120] flex h-dvh w-screen min-w-0 flex-col overflow-hidden bg-white px-4 pt-2 pb-4 md:px-8 md:pt-3 md:pb-6">
-        <div className="mx-auto flex min-h-0 h-full w-full max-w-7xl flex-1 flex-col">
+      <div className="flex h-[calc(100dvh-5.5rem)] w-full min-w-0 flex-col overflow-hidden px-4 pt-0 pb-4 md:px-8 md:pt-1 md:pb-6">
+        <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
           <header className="mb-2 shrink-0 overflow-hidden rounded-xl border border-harx-100 px-5 py-2">
             <div className="h-0.5 w-full -mx-5 -mt-2 mb-2 rounded-t-xl bg-gradient-harx" aria-hidden />
             <div className="flex items-center justify-between">
