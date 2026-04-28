@@ -5689,10 +5689,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 )}
               {rep &&
                 showGeneratedFormationModal &&
-                typeof document !== 'undefined' &&
-                createPortal(
+                (
                   <div
-                    className="fixed inset-0 z-[100] flex h-dvh w-screen flex-col bg-white"
+                    className="relative z-20 flex min-h-0 h-full w-full flex-col bg-white"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="generated-formation-modal-title"
@@ -6181,10 +6180,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         ) : null}
                       </div>
                     </div>
-                  </div>,
-                  document.body
+                  </div>
                 )}
-              {shouldShowChatThread && (
+              {!showGeneratedFormationModal && shouldShowChatThread && (
                 <div
                   ref={chatThreadRef}
                   onScroll={handleChatThreadScroll}
