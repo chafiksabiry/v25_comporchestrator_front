@@ -5929,41 +5929,63 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               actualisez.
                             </p>
                           ) : currentFormationViewerSlide ? (
-                            <div className="mx-auto max-w-2xl">
+                            <div className="mx-auto w-full max-w-5xl">
                               <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-widest text-emerald-800/90">
                                 Feuille de route · slide {formationViewerSlideIndex + 1} /{' '}
                                 {formationViewerSlides.length}
                               </p>
                               {currentFormationViewerSlide.kind === 'overview' ? (
-                                <div className="rounded-2xl border border-harx-100 bg-gradient-to-br from-white via-harx-50/40 to-harx-alt-50/30 p-4 shadow-sm sm:p-6">
-                                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-harx-700">
-                                    HARX Training
-                                  </p>
-                                  <h3 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
-                                    {String(
-                                      (formationPreviewForViewer as any)?.title ||
-                                        (formationPreviewForViewer as any)?.name ||
-                                        'Formation'
-                                    ).trim()}
-                                  </h3>
-                                  <p className="mt-2 text-sm text-slate-600">
-                                    Choisissez un module ou une section pour ouvrir directement son contenu.
-                                  </p>
-                                  <div className="mt-5 space-y-3">
+                                <div className="rounded-3xl border border-harx-100/80 bg-gradient-to-br from-white via-slate-50 to-harx-50/40 p-4 shadow-lg shadow-slate-200/60 sm:p-6">
+                                  <div className="rounded-2xl border border-harx-100 bg-white/80 p-4 backdrop-blur-sm sm:p-5">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                      <div>
+                                        <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-harx-700">
+                                          HARX Training
+                                        </p>
+                                        <h3 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+                                          {String(
+                                            (formationPreviewForViewer as any)?.title ||
+                                              (formationPreviewForViewer as any)?.name ||
+                                              'Formation'
+                                          ).trim()}
+                                        </h3>
+                                      </div>
+                                      <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-800">
+                                        {currentFormationViewerSlide.modules.length} modules
+                                      </span>
+                                    </div>
+                                    <p className="mt-2 text-sm text-slate-600">
+                                      Choisissez un module ou une section pour ouvrir directement son contenu.
+                                    </p>
+                                  </div>
+                                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
                                     {currentFormationViewerSlide.modules.map((mod) => (
-                                      <div key={`overview-mod-${mod.moduleIndex}`} className="rounded-xl border border-slate-200 bg-white/85 p-3">
+                                      <div
+                                        key={`overview-mod-${mod.moduleIndex}`}
+                                        className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                                      >
                                         <button
                                           type="button"
                                           onClick={() => jumpToFormationSlide(`m${mod.moduleIndex}-intro`)}
-                                          className="flex w-full items-center justify-between gap-3 rounded-lg bg-gradient-to-r from-harx-600 to-harx-alt-500 px-3 py-2 text-left text-sm font-semibold text-white shadow-sm transition hover:brightness-105"
+                                          className="group flex w-full items-start justify-between gap-3 rounded-xl bg-gradient-to-r from-harx-600 to-harx-alt-500 px-3 py-2.5 text-left text-white shadow-sm transition hover:brightness-105"
                                         >
-                                          <span>{`Module ${mod.moduleIndex + 1} · ${mod.title}`}</span>
-                                          <span className="text-[11px] font-bold uppercase tracking-wide opacity-90">
+                                          <span className="min-w-0">
+                                            <span className="block text-[10px] font-bold uppercase tracking-wider text-white/90">
+                                              Module {mod.moduleIndex + 1}
+                                            </span>
+                                            <span className="mt-0.5 block truncate text-sm font-semibold">
+                                              {mod.title}
+                                            </span>
+                                          </span>
+                                          <span className="inline-flex shrink-0 items-center rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
                                             Ouvrir
                                           </span>
                                         </button>
+                                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+                                          <span>{mod.sections.length} section(s)</span>
+                                        </div>
                                         {mod.sections.length > 0 ? (
-                                          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                                          <div className="mt-2 space-y-1.5">
                                             {mod.sections.map((sec) => (
                                               <button
                                                 key={`overview-sec-${mod.moduleIndex}-${sec.sectionIndex}`}
@@ -5971,14 +5993,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                                 onClick={() =>
                                                   jumpToFormationSlide(`m${mod.moduleIndex}-s${sec.sectionIndex}`)
                                                 }
-                                                className="rounded-lg border border-harx-100 bg-harx-50/50 px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:border-harx-300 hover:bg-harx-100/50"
+                                                className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-2.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:border-harx-300 hover:bg-harx-50"
                                               >
-                                                {sec.title}
+                                                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white text-[10px] font-bold text-harx-700 ring-1 ring-harx-100">
+                                                  {sec.sectionIndex + 1}
+                                                </span>
+                                                <span className="truncate">{sec.title}</span>
                                               </button>
                                             ))}
                                           </div>
                                         ) : (
-                                          <p className="mt-2 text-xs text-slate-500">Aucune section structurée.</p>
+                                          <p className="mt-2 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-500">
+                                            Aucune section structurée.
+                                          </p>
                                         )}
                                       </div>
                                     ))}
@@ -5992,12 +6019,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   /** `description` côté API recopie souvent tout le module (sections + quiz) : on évite de la réafficher si des sections structurées existent. */
                                   const showFullDescription = sectionCount === 0 && !!desc;
                                   return (
-                                    <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6">
-                                      <p className="mb-2 text-xs font-semibold text-slate-500">
+                                    <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5 shadow-sm sm:p-7">
+                                      <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-500">
                                         Module {currentFormationViewerSlide.moduleIndex + 1} /{' '}
                                         {currentFormationViewerSlide.totalModules}
                                       </p>
-                                      <h3 className="mb-3 text-lg font-bold text-slate-900 sm:text-xl">
+                                      <h3 className="mb-3 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
                                         {String(mod?.title || 'Module')}
                                       </h3>
                                       {showFullDescription ? (
@@ -6016,11 +6043,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   );
                                 })()
                               ) : currentFormationViewerSlide.kind === 'section' ? (
-                                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
-                                  <p className="mb-1 text-xs font-semibold text-emerald-800">
+                                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+                                  <p className="mb-2 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
                                     {currentFormationViewerSlide.modTitle}
                                   </p>
-                                  <h3 className="mb-3 text-base font-bold text-slate-900 sm:text-lg">
+                                  <h3 className="mb-3 text-lg font-bold text-slate-900 sm:text-xl">
                                     {String(currentFormationViewerSlide.section?.title || 'Section')}
                                   </h3>
                                   {String(currentFormationViewerSlide.section?.content || '').trim() ? (
@@ -6049,8 +6076,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   const isWrong =
                                     qState.revealed && qState.selected !== null && qState.selected !== correctIdx;
                                   return (
-                                    <div className="rounded-2xl border border-violet-200/80 bg-violet-50/40 p-4 sm:p-6">
-                                      <p className="mb-2 text-xs font-semibold text-violet-900">{slide.quizTitle}</p>
+                                    <div className="rounded-3xl border border-violet-200/80 bg-gradient-to-br from-violet-50/60 to-white p-5 shadow-sm sm:p-7">
+                                      <p className="mb-2 inline-flex rounded-full border border-violet-200 bg-white px-2.5 py-1 text-xs font-semibold text-violet-900">
+                                        {slide.quizTitle}
+                                      </p>
                                       <p className="mb-4 text-base font-semibold text-slate-900 sm:text-lg">
                                         {String(q?.question || '')}
                                       </p>
