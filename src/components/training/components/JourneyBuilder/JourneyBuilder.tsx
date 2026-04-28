@@ -15,6 +15,7 @@ interface JourneyBuilderProps {
   forceNew?: boolean;
   repOnboardingLayout?: boolean;
   startWithRepViewer?: boolean;
+  onExitToTrainingList?: () => void;
   initialStep?: number;
   initialJourneyId?: string;
   initialGigId?: string;
@@ -25,6 +26,7 @@ export default function JourneyBuilder({
   forceNew = false,
   repOnboardingLayout = false,
   startWithRepViewer = false,
+  onExitToTrainingList,
   initialStep = 0,
   initialJourneyId,
   initialGigId = null,
@@ -352,6 +354,7 @@ export default function JourneyBuilder({
             methodology={methodology}
             repOnboardingLayout={repOnboardingLayout}
             autoOpenFormationViewer={startWithRepViewer}
+            onExitToTrainingList={onExitToTrainingList}
             onForkNewJourneyTraining={company ? handleForkNewJourneyTraining : undefined}
           />
         );

@@ -24,6 +24,7 @@ interface ContentUploaderProps {
   journey?: any;
   methodology?: TrainingMethodology | null;
   autoOpenFormationViewer?: boolean;
+  onExitToTrainingList?: () => void;
   /**
    * Créer un nouveau `training_journeys` + vider le fil (nouveau chat au prochain message).
    * Sans cela, « New » effaçait l’UI puis un effet rouvrait la dernière session du gig.
@@ -511,6 +512,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     journey,
     methodology,
     autoOpenFormationViewer = false,
+    onExitToTrainingList,
     repOnboardingLayout = false,
     onForkNewJourneyTraining,
   } = props;
@@ -5735,7 +5737,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             </button>
                             <button
                               type="button"
-                              onClick={() => setShowGeneratedFormationModal(false)}
+                              onClick={() => {
+                                if (repOnboardingLayout && autoOpenFormationViewer && onExitToTrainingList) {
+                                  onExitToTrainingList();
+                                  return;
+                                }
+                                setShowGeneratedFormationModal(false);
+                              }}
                               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
                               title="Fermer"
                             >

@@ -77,6 +77,7 @@ export function AppContent({
   startJourneyStep = 0,
   startWithRepViewer = false,
   repOnboardingLayout = false,
+  onExitToTrainingList,
   onJourneyLaunch
 }: {
   initialJourneyId?: string,
@@ -88,6 +89,7 @@ export function AppContent({
   startWithRepViewer?: boolean,
   /** Simpler modules + slides only (no PPTX download, fullscreen, or “Continue to AI enhancement”) */
   repOnboardingLayout?: boolean,
+  onExitToTrainingList?: () => void,
   onJourneyLaunch?: () => void
 } = {}) {
   // Get journey ID from route params (inside Router context)
@@ -943,6 +945,7 @@ export function AppContent({
           initialGigId={initialGigId}
           startWithRepViewer={startWithRepViewer}
           repOnboardingLayout={repOnboardingLayout}
+          onExitToTrainingList={onExitToTrainingList}
         />
       </div>
     );
