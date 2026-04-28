@@ -810,15 +810,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
   }, [formationViewerSlides, showGeneratedFormationModal]);
 
   useEffect(() => {
-    if (!rep || !showImagePresentationModal) return;
-    setShowImagePresentationModal(false);
-    setFormationDeckModalTab('parcours');
-    setFormationViewerSlideIndex(0);
-    setShowGeneratedFormationModal(true);
-    void hydrateSavedJourneyFromApi();
-  }, [rep, showImagePresentationModal, hydrateSavedJourneyFromApi]);
-
-  useEffect(() => {
     if (!showGeneratedFormationModal) {
       repFormationModalHydratedRef.current = false;
       return;
@@ -3971,7 +3962,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     const openImagePresentationModal = () => {
-      if (rep) {
+      if (repOnboardingLayout) {
         setShowImagePresentationModal(false);
         setFormationDeckModalTab('parcours');
         setFormationViewerSlideIndex(0);
