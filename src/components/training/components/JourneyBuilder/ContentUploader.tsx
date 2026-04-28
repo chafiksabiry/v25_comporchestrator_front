@@ -503,6 +503,7 @@ function RepPodcastSidebarPanel({
 
 export default function ContentUploader(props: ContentUploaderProps) {
   const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false, onForkNewJourneyTraining } = props;
+  const rep = Boolean(repOnboardingLayout);
   /** Après validation du plan dans le chat, le backend renvoie l’id — on le réinjecte dans le contexte des appels suivants. */
   const chatConfirmedJourneyIdRef = useRef<string | null>(null);
   /** Plan structuré issu de `training_chat_sessions.contextSnapshot.modulePlan` (aligné sur TrainingJourney). */
@@ -2661,7 +2662,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
   }
 
   function renderSourcesUploadUI() {
-    const rep = repOnboardingLayout;
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.length > 0;
     const showChatModuleSidebar =
