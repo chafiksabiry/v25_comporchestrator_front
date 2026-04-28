@@ -514,8 +514,19 @@ export class AIService {
   /**
    * Chat avec l'AI Tutor
    */
-  static async chat(message: string, context: string = ''): Promise<string> {
-    const response = await ApiClient.post<AiResponse<any>>('/api/ai/chat?stream=false', { message, context });
+  static async chat(
+    message: string,
+    context: string = '',
+    extras?: { maxTokens?: number; purpose?: string }
+  ): Promise<string> {
+    const payload: Record<string, unknown> = { message, context };
+    if (extras?.maxTokens != null && Number.isFinite(extras.maxTokens)) {
+      payload.maxTokens = extras.maxTokens;
+    }
+    if (extras?.purpose) {
+      payload.purpose = extras.purpose;
+    }
+    const response = await ApiClient.post<AiResponse<any>>('/api/ai/chat?stream=false', payload);
 
     if (!response.data.success) {
       throw new Error(response.data.error || 'Chat failed');
@@ -538,8 +549,9 @@ Tu es un expert front-end. Génère UNE page HTML autonome pour une formation en
 
 Contraintes techniques obligatoires :
 - Un seul fichier : <!DOCTYPE html>, tout le CSS dans <style> dans le <head>, tout le JS dans un <script> avant </body>. Aucune bibliothèque externe, aucun CDN.
+- Le fichier DOIT se terminer proprement par </body></html>. Si tu risques d’être trop long : CSS minimal (peu de règles, pas de commentaires), slides générées depuis le JSON en JavaScript, plutôt que d’écrire chaque slide en HTML statique.
 - Design « présentation pro » : fond type navy #0f172a (ou dégradé sobre), accents teal #14b8a6, zones de contenu claires (cartes blanches / slate-50), typographie lisible, coins arrondis, ombres légères.
-- Navigation slide par slide : boutons Précédent / Suivant, pastilles ou points de pagination cliquables, barre de progression en haut. Raccourcis clavier ← → .
+- Navigation slide par slide : boutons Précédent / Suivant, pastilles ou points de pagination cliquables, barre de progression en haut. Raccourcis clavier ← → . La première slide visible au chargement doit être la slide 1 (index 0).
 - Couvrir TOUT le JSON ci-dessous : pour chaque module → slide d’intro (numéro + titre), puis une slide par section (titre + corps en paragraphes), puis pour chaque question de quiz une slide avec les options cliquables, un bouton « Valider ma réponse », puis affichage correct/incorrect et l’explication. Ne jamais révéler la bonne réponse avant validation.
 - Sécurité : n’injecte pas de HTML brut utilisateur avec innerHTML. Utilise textContent ou une fonction escapeHtml() en JavaScript pour afficher les textes issus du JSON.
 - Tu peux placer les données dans <script type="application/json" id="deck-data">…</script> (JSON valide ; dans les chaînes, échappe les caractères < comme \\u003c si nécessaire).
@@ -549,7 +561,10 @@ ${json}
 
 Commence ta réponse par <!DOCTYPE html>`;
 
-    const raw = await AIService.chat(message, '');
+    const raw = await AIService.chat(message, '', {
+      maxTokens: 16384,
+      purpose: 'rep_interactive_deck_html',
+    });
     const html = extractHtmlDocumentFromAiResponse(raw);
     if (!html || html.length < 400) {
       throw new Error('Réponse IA vide ou sans document HTML valide');
