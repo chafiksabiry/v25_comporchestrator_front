@@ -3964,7 +3964,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const openImagePresentationModal = () => {
       const candidate =
         generatedImageSet?.items?.length ? generatedImageSet : null;
-      if (!candidate) return;
+      if (!candidate) {
+        setFormationDeckModalTab('parcours');
+        setFormationViewerSlideIndex(0);
+        setShowGeneratedFormationModal(true);
+        void hydrateSavedJourneyFromApi();
+        setRepFormationDeckHint(
+          'Aucune image générée. Ouverture du viewer de formation (modules/sections) à la place.'
+        );
+        return;
+      }
       setActiveImageSet(candidate);
       setActiveImageIndex(0);
       setShowImagePresentationModal(true);
@@ -4873,80 +4882,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     return;
                   }
                   if (action.id === 'generate_interactive_presentation') {
-                    appendChatMessage('assistant', "Génération de la présentation interactive en cours...");
-                    const generated = await generatePresentationFromState(true);
-                    const slides = Array.isArray((generated as any)?.slides) ? (generated as any).slides : [];
-                    if (slides.length > 0) {
-                      const compactSlides = slides.slice(0, 8).map((s: any, idx: number) => ({
-                        title: String(s?.title || `Slide ${idx + 1}`).trim(),
-                        bullets: Array.isArray(s?.bullets)
-                          ? s.bullets.map((b: any) => String(b || '').trim()).filter(Boolean).slice(0, 6)
-                          : String(s?.content || '')
-                              .split('\n')
-                              .map((line: string) => line.replace(/^[-*•]\s*/, '').trim())
-                              .filter(Boolean)
-                              .slice(0, 6),
-                      }));
-                      const payload = {
-                        title: String((generated as any)?.title || 'Présentation interactive').trim(),
-                        slides: compactSlides,
-                      };
-                      appendChatMessage(
-                        'assistant',
-                        `### Présentation interactive générée\n\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``
-                      );
-                    } else {
-                      appendChatMessage(
-                        'assistant',
-                        "La présentation interactive n'a pas pu être générée pour le moment. Réessayez depuis le même bouton."
-                      );
-                    }
+                    setFormationDeckModalTab('parcours');
+                    setFormationViewerSlideIndex(0);
+                    setShowGeneratedFormationModal(true);
+                    void hydrateSavedJourneyFromApi();
+                    appendChatMessage(
+                      'assistant',
+                      'Viewer de formation ouvert en plein écran (design HARX local, modules/sections cliquables).'
+                    );
                     return;
                   }
                   if (action.id === 'view_interactive_presentation') {
-                    const sid = String(activeChatSessionId || '').trim();
-                    if (!sid) {
-                      appendChatMessage(
-                        'assistant',
-                        "Impossible d'afficher la présentation interactive pour le moment (session introuvable)."
-                      );
-                      return;
-                    }
-                    try {
-                      const session = await AIService.getChatSession(sid);
-                      const modulePlan = Array.isArray((session as any)?.modulePlan)
-                        ? ((session as any).modulePlan as Array<Record<string, any>>)
-                        : [];
-                      const labelMatch = String(action.label || '').match(/module\s+(\d+)/i);
-                      const moduleNum = labelMatch?.[1] ? parseInt(labelMatch[1], 10) : NaN;
-                      const targetIdx =
-                        Number.isFinite(moduleNum) && moduleNum >= 1
-                          ? moduleNum - 1
-                          : modulePlan.findIndex((m) => !!(m as any)?.interactivePresentation);
-                      const payload =
-                        targetIdx >= 0 && targetIdx < modulePlan.length
-                          ? (modulePlan[targetIdx] as any)?.interactivePresentation
-                          : null;
-                      if (!payload) {
-                        appendChatMessage(
-                          'assistant',
-                          "La présentation interactive n'est pas encore disponible pour ce module."
-                        );
-                        return;
-                      }
-                      const moduleTitle =
-                        String(modulePlan[targetIdx]?.title || '').trim() || `Module ${targetIdx + 1}`;
-                      const prettyJson = JSON.stringify(payload, null, 2).slice(0, 24000);
-                      appendChatMessage(
-                        'assistant',
-                        `### Présentation interactive - ${moduleTitle}\n\n\`\`\`json\n${prettyJson}\n\`\`\``
-                      );
-                    } catch {
-                      appendChatMessage(
-                        'assistant',
-                        "Impossible de charger la présentation interactive pour l'instant."
-                      );
-                    }
+                    setFormationDeckModalTab('parcours');
+                    setShowGeneratedFormationModal(true);
+                    void hydrateSavedJourneyFromApi();
                     return;
                   }
                   if (action.id === 'save_without_missing' || action.id === 'validate_training') {
