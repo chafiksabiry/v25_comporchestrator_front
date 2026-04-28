@@ -266,10 +266,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     const journeyId = String(journey?._id || journey?.id || '');
     if (!journeyId) return;
 
-    const journeyTitle = asUiString(journey?.title ?? journey?.name, 'this training');
-    const confirmed = window.confirm(`Delete "${journeyTitle}"? This action cannot be undone.`);
-    if (!confirmed) return;
-
     try {
       setDeletingJourneyId(journeyId);
       const trainingBackendUrl = getTrainingBackendUrl();
@@ -1172,15 +1168,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   {formatted.status === 'completed' ? <CheckCircle className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="flex items-start gap-2">
-                                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white/85 text-harx-600 ring-1 ring-harx-100">
-                                      {renderTrainingLogo(formatted.trainingLogo)}
-                                    </span>
-                                    <h3 className="truncate text-lg font-black leading-tight text-gray-900 transition-colors group-hover:text-harx-700">
-                                      {displayTitle}
-                                    </h3>
-                                  </div>
-                                  <p className="mt-1 truncate text-xs font-medium text-gray-500">
+                                  <h3 className="line-clamp-2 text-lg font-black leading-tight text-gray-900 transition-colors group-hover:text-harx-700">
+                                    {displayTitle}
+                                  </h3>
+                                  <p className="mt-1 line-clamp-2 text-xs font-medium text-gray-500">
                                     {formatted.description}
                                   </p>
                                 </div>
