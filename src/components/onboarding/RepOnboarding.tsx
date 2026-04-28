@@ -295,6 +295,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       return;
     }
     const resolvedGigId = resolveJourneyGigId(journey) || undefined;
+    setSelectedJourneyForContent(null);
     // Open journey chat directly on chat step, keeping journey context/history + gig context
     setShowTraining({
       isOpen: true,
@@ -311,6 +312,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
    */
   const handleCreateNewTrainingJourney = () => {
     DraftService.clearDraft();
+    setSelectedJourneyForContent(null);
     setShowTraining({
       isOpen: true,
       newJourney: true,
@@ -689,19 +691,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   /** In training list, Start/Content must open the training viewer (not image carousel). */
   const openJourneyContentOrImages = (journey: any) => {
-    const journeyId = String(journey?._id || journey?.id || '').trim();
-    if (!journeyId) {
-      window.alert('Training ID not found.');
-      return;
-    }
-    const resolvedGigId = resolveJourneyGigId(journey) || undefined;
-    setShowTraining({
-      isOpen: true,
-      newJourney: true,
-      journeyId,
-      gigId: resolvedGigId || undefined,
-      openFormationViewer: true,
-    });
+    setSelectedJourneyForContent(journey);
+    setActiveContentModuleIndex(0);
+    setActiveContentSectionIndex(0);
   };
 
   const stopPodcastPlayback = useCallback(() => {
@@ -1065,6 +1057,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           {/* Main Content */}
           <div className="space-y-6">
             {/* Training Section — HARX brand (rose / purple) aligned with Journey Builder */}
+            {!selectedJourneyForContent ? (
             <section className="relative overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-2xl shadow-gray-200/50">
               <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-harx-50/40 blur-[100px] -mr-32 -mt-32" />
               <div className="h-1 w-full bg-gradient-harx" aria-hidden />
@@ -1334,6 +1327,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 )}
               </div>
             </section>
+            ) : null}
             <section className="relative overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-2xl shadow-gray-200/50">
               <div className="h-1 w-full bg-gradient-harx" aria-hidden />
               <div className="relative z-10 p-6">
