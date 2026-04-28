@@ -3962,6 +3962,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     const openImagePresentationModal = () => {
+      if (rep) {
+        setShowImagePresentationModal(false);
+        setFormationDeckModalTab('parcours');
+        setFormationViewerSlideIndex(0);
+        setShowGeneratedFormationModal(true);
+        void hydrateSavedJourneyFromApi();
+        setRepFormationDeckHint('Mode REP: affichage images désactivé ici, ouverture du viewer formation.');
+        return;
+      }
       const candidate =
         generatedImageSet?.items?.length ? generatedImageSet : null;
       if (!candidate) {
