@@ -670,6 +670,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isBuildingRepFormationDeck, setIsBuildingRepFormationDeck] = useState(false);
   const [isSavingRepFormationDeck, setIsSavingRepFormationDeck] = useState(false);
   const [repFormationDeckHint, setRepFormationDeckHint] = useState<string | null>(null);
+  /** Une seule vue « slides » à la fois : HTML généré vs lecteur intégré (évite deux compteurs de slides différents). */
+  const [formationDeckModalTab, setFormationDeckModalTab] = useState<'html' | 'parcours'>('parcours');
+  const [repFormationIframeKey, setRepFormationIframeKey] = useState(0);
   const [formationViewerSlideIndex, setFormationViewerSlideIndex] = useState(0);
   const [formationViewerQuizState, setFormationViewerQuizState] = useState<
     Record<string, { selected: number | null; revealed: boolean }>
@@ -746,7 +749,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
     if (!showGeneratedFormationModal) return;
     setFormationViewerSlideIndex(0);
     setFormationViewerQuizState({});
+    setFormationDeckModalTab('parcours');
   }, [showGeneratedFormationModal]);
+
+  useEffect(() => {
+    if (!repFormationDeckHtml) return;
+    setRepFormationIframeKey((k) => k + 1);
+  }, [repFormationDeckHtml]);
 
   useEffect(() => {
     if (!showGeneratedFormationModal) return;
@@ -2768,6 +2777,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setShowGeneratedFormationModal(false);
       setRepFormationDeckHtml(null);
       setRepFormationDeckHint(null);
+      setFormationDeckModalTab('parcours');
       repFormationModalHydratedRef.current = false;
       setActiveChatSessionId(null);
       autoOpenedHistoryForJourneyRef.current = null;
@@ -5721,11 +5731,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   );
                                   hint =
                                     'Présentation générée par l’IA (Claude / chat backend). Enregistrez pour la lier au parcours.';
+                                  setFormationDeckModalTab('html');
                                 } catch (e) {
                                   console.warn('[ContentUploader] AI interactive deck failed, using local template', e);
                                   html = buildRepInteractivePresentationHtml(formationPreviewForViewer);
                                   hint =
-                                    'L’IA n’a pas renvoyé de HTML valide (réseau, quota ou format) — version locale de secours.';
+                                    'L’IA n’a pas renvoyé un document HTML complet (troncature serveur, quota ou format) — version locale de secours.';
+                                  setFormationDeckModalTab('html');
                                 }
                                 setRepFormationDeckHtml(html);
                                 setRepFormationDeckHint(hint);
@@ -5827,22 +5839,56 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <p className="mt-2 text-[11px] text-slate-600">{repFormationDeckHint}</p>
                         ) : null}
                         {repFormationDeckHtml ? (
-                          <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-900/5 shadow-inner">
-                            <p className="bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                              Aperçu
-                            </p>
-                            <iframe
-                              title="Présentation interactive"
-                              srcDoc={repFormationDeckHtml}
-                              sandbox="allow-scripts"
-                              className="h-[min(38vh,360px)] w-full border-0 bg-white"
-                            />
+                          <div
+                            className="mt-3 flex rounded-lg border border-slate-200 bg-slate-200/60 p-0.5"
+                            role="tablist"
+                            aria-label="Mode d’affichage de la formation"
+                          >
+                            <button
+                              type="button"
+                              role="tab"
+                              aria-selected={formationDeckModalTab === 'html'}
+                              onClick={() => setFormationDeckModalTab('html')}
+                              className={`flex-1 rounded-md px-2 py-1.5 text-center text-[11px] font-semibold transition ${
+                                formationDeckModalTab === 'html'
+                                  ? 'bg-white text-slate-900 shadow-sm'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              Présentation HTML
+                            </button>
+                            <button
+                              type="button"
+                              role="tab"
+                              aria-selected={formationDeckModalTab === 'parcours'}
+                              onClick={() => setFormationDeckModalTab('parcours')}
+                              className={`flex-1 rounded-md px-2 py-1.5 text-center text-[11px] font-semibold transition ${
+                                formationDeckModalTab === 'parcours'
+                                  ? 'bg-white text-slate-900 shadow-sm'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              Feuille de route (app)
+                            </button>
                           </div>
                         ) : null}
                       </div>
                       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
-                          {formationViewerSlides.length === 0 && isSavedJourneyHydrating ? (
+                          {repFormationDeckHtml && formationDeckModalTab === 'html' ? (
+                            <div className="flex h-full min-h-[min(52vh,520px)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-900/5 shadow-inner">
+                              <p className="shrink-0 bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                Aperçu — navigation dans le cadre (indépendant de l’onglet feuille de route)
+                              </p>
+                              <iframe
+                                key={repFormationIframeKey}
+                                title="Présentation interactive HTML"
+                                srcDoc={repFormationDeckHtml}
+                                sandbox="allow-scripts"
+                                className="min-h-0 w-full flex-1 border-0 bg-white"
+                              />
+                            </div>
+                          ) : formationViewerSlides.length === 0 && isSavedJourneyHydrating ? (
                             <div className="flex items-center gap-2 py-8 text-sm text-slate-600">
                               <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
                               Chargement du programme…
@@ -5855,7 +5901,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           ) : currentFormationViewerSlide ? (
                             <div className="mx-auto max-w-2xl">
                               <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-widest text-emerald-800/90">
-                                Slide {formationViewerSlideIndex + 1} / {formationViewerSlides.length}
+                                Feuille de route · slide {formationViewerSlideIndex + 1} /{' '}
+                                {formationViewerSlides.length}
                               </p>
                               {currentFormationViewerSlide.kind === 'module_intro' ? (
                                 (() => {
@@ -6012,7 +6059,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             </div>
                           ) : null}
                         </div>
-                        {formationViewerSlides.length > 0 ? (
+                        {formationViewerSlides.length > 0 &&
+                        (!repFormationDeckHtml || formationDeckModalTab === 'parcours') ? (
                           <div className="shrink-0 border-t border-slate-200 bg-slate-50/80 px-4 py-3 sm:px-6">
                             <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-slate-200">
                               <div
