@@ -39,10 +39,9 @@ export type RepDeckSlide =
 
 export function buildRepDeckSlidesFromJourney(journey: any): RepDeckSlide[] {
   const modules = Array.isArray(journey?.modules) ? journey.modules : [];
-  const totalModules = modules.length;
   const slides: RepDeckSlide[] = [];
 
-  modules.forEach((mod: any, mi: number) => {
+  modules.forEach((_: any, mi: number) => {
     slides.push(...buildRepDeckSlidesForSingleModule(journey, mi));
   });
 
@@ -141,19 +140,24 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
   <title>${escapeHtml(title)}</title>
   <style>
     :root {
-      --navy: #0f172a;
-      --navy2: #1e293b;
-      --teal: #14b8a6;
-      --teal2: #0d9488;
+      --navy: #020617;
+      --navy2: #0f172a;
+      --indigo: #312e81;
+      --teal: #2dd4bf;
+      --teal2: #0f766e;
       --paper: #f8fafc;
       --muted: #94a3b8;
+      --ring: rgba(45,212,191,0.5);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: linear-gradient(165deg, var(--navy) 0%, #0c4a6e 45%, var(--navy2) 100%);
+      background:
+        radial-gradient(1200px 520px at 8% -5%, rgba(45,212,191,0.22) 0%, transparent 60%),
+        radial-gradient(1000px 460px at 92% -2%, rgba(99,102,241,0.24) 0%, transparent 58%),
+        linear-gradient(155deg, var(--navy) 0%, var(--indigo) 38%, var(--navy2) 100%);
       color: #e2e8f0;
     }
     .shell {
@@ -167,6 +171,11 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
     header {
       text-align: center;
       margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.35);
+      border: 1px solid rgba(148,163,184,0.2);
+      backdrop-filter: blur(6px);
     }
     header h1 {
       margin: 0 0 6px;
@@ -181,15 +190,16 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
     }
     .progress-wrap {
       height: 4px;
-      background: rgba(148,163,184,0.25);
+      background: rgba(148,163,184,0.22);
       border-radius: 999px;
       overflow: hidden;
       margin-bottom: 14px;
+      box-shadow: inset 0 1px 1px rgba(15,23,42,0.35);
     }
     .progress-bar {
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, var(--teal), #5eead4);
+      background: linear-gradient(90deg, #14b8a6, #5eead4, #67e8f9);
       border-radius: 999px;
       transition: width 0.35s ease;
     }
@@ -209,9 +219,10 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
     .card {
       background: var(--paper);
       color: var(--navy);
-      border-radius: 16px;
-      padding: 20px 18px;
-      box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+      border-radius: 20px;
+      border: 1px solid rgba(226,232,240,0.95);
+      padding: 22px 20px;
+      box-shadow: 0 22px 65px rgba(2,6,23,0.42), 0 2px 12px rgba(15,23,42,0.12);
       min-height: 220px;
     }
     .card h2 {
@@ -256,7 +267,7 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
       cursor: pointer;
       font-size: 0.9rem;
       color: var(--navy);
-      transition: border-color 0.2s, background 0.2s;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.2s;
     }
     .opt:hover:not(:disabled) { border-color: var(--teal); background: #f0fdfa; }
     .opt:disabled { cursor: default; opacity: 0.95; }
