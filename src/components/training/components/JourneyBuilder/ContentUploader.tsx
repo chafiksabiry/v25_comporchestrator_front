@@ -5691,13 +5691,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 showGeneratedFormationModal &&
                 (
                   <div
-                    className="relative z-20 flex min-h-0 h-full w-full flex-col bg-white"
+                    className="fixed inset-0 z-[120] flex h-full w-full flex-col bg-black/35 p-2 sm:p-4"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="generated-formation-modal-title"
                   >
                     <div
-                      className="flex h-full w-full flex-col overflow-hidden border-t-4 border-harx-500 bg-white"
+                      className="mx-auto flex h-full w-full max-w-[1500px] flex-col overflow-hidden rounded-xl border-t-4 border-harx-500 bg-white shadow-2xl"
                     >
                       <div className="shrink-0 border-b border-slate-100 bg-gradient-to-r from-emerald-50/80 to-white px-4 pb-3 pt-4 sm:px-6 sm:pt-5">
                         <div className="flex items-start justify-between gap-3">
