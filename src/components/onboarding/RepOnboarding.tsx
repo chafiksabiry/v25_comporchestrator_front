@@ -47,7 +47,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [savedImageSets, setSavedImageSets] = useState<TrainingImageSet[]>([]);
   const [selectedImageSet, setSelectedImageSet] = useState<TrainingImageSet | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, gigId?: string, newJourney?: boolean }>({ isOpen: false });
+  const [showTraining, setShowTraining] = useState<{
+    isOpen: boolean;
+    journeyId?: string;
+    gigId?: string;
+    newJourney?: boolean;
+    openFormationViewer?: boolean;
+  }>({ isOpen: false });
   /** Journey context when viewing generated slide images from a training card */
   const [previewJourney, setPreviewJourney] = useState<any | null>(null);
   const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
@@ -291,7 +297,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     }
     const resolvedGigId = resolveJourneyGigId(journey) || undefined;
     // Open journey chat directly on chat step, keeping journey context/history + gig context
-    setShowTraining({ isOpen: true, newJourney: true, journeyId, gigId: resolvedGigId || undefined });
+    setShowTraining({
+      isOpen: true,
+      newJourney: true,
+      journeyId,
+      gigId: resolvedGigId || undefined,
+      openFormationViewer: false,
+    });
   };
 
   /**
@@ -304,6 +316,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       isOpen: true,
       newJourney: true,
       gigId: filterGigId !== 'all' ? String(filterGigId).trim() : undefined,
+      openFormationViewer: false,
     });
   };
 
@@ -683,7 +696,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       return;
     }
     const resolvedGigId = resolveJourneyGigId(journey) || undefined;
-    setShowTraining({ isOpen: true, newJourney: true, journeyId, gigId: resolvedGigId || undefined });
+    setShowTraining({
+      isOpen: true,
+      newJourney: true,
+      journeyId,
+      gigId: resolvedGigId || undefined,
+      openFormationViewer: true,
+    });
   };
 
   const stopPodcastPlayback = useCallback(() => {
@@ -810,6 +829,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 isEmbedded={true}
                 startWithJourneyBuilder={true}
                 startJourneyStep={showTraining.journeyId ? 1 : 0}
+                startWithRepViewer={Boolean(showTraining.openFormationViewer)}
                 repOnboardingLayout={true}
                 onJourneyLaunch={handleEmbeddedJourneyComplete}
               />

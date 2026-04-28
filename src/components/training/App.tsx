@@ -75,6 +75,7 @@ export function AppContent({
   startWithJourneyBuilder = false,
   startWithManualTraining = false,
   startJourneyStep = 0,
+  startWithRepViewer = false,
   repOnboardingLayout = false,
   onJourneyLaunch
 }: {
@@ -84,6 +85,7 @@ export function AppContent({
   startWithJourneyBuilder?: boolean,
   startWithManualTraining?: boolean,
   startJourneyStep?: number,
+  startWithRepViewer?: boolean,
   /** Simpler modules + slides only (no PPTX download, fullscreen, or “Continue to AI enhancement”) */
   repOnboardingLayout?: boolean,
   onJourneyLaunch?: () => void
@@ -939,6 +941,7 @@ export function AppContent({
           initialStep={startJourneyStep}
           initialJourneyId={initialJourneyId}
           initialGigId={initialGigId}
+          startWithRepViewer={startWithRepViewer}
           repOnboardingLayout={repOnboardingLayout}
         />
       </div>
