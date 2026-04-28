@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { MemoryRouter } from 'react-router-dom';
 import {
   BookOpen,
   CheckCircle,
@@ -47,6 +46,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [savedImageSets, setSavedImageSets] = useState<TrainingImageSet[]>([]);
   const [selectedImageSet, setSelectedImageSet] = useState<TrainingImageSet | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedJourneyForContent, setSelectedJourneyForContent] = useState<any | null>(null);
+  const [activeContentModuleIndex, setActiveContentModuleIndex] = useState(0);
+  const [activeContentSectionIndex, setActiveContentSectionIndex] = useState(0);
+  const [previewJourney, setPreviewJourney] = useState<any | null>(null);
   const [showTraining, setShowTraining] = useState<{
     isOpen: boolean;
     journeyId?: string;
@@ -54,8 +57,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     newJourney?: boolean;
     openFormationViewer?: boolean;
   }>({ isOpen: false });
-  /** Journey context when viewing generated slide images from a training card */
-  const [previewJourney, setPreviewJourney] = useState<any | null>(null);
   const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -273,12 +274,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         : `${trainingBackendUrl}/api`;
 
       await axios.delete(`${baseUrl}/training_journeys/${journeyId}`);
-
-      if (previewJourney && String(previewJourney?._id || previewJourney?.id || '') === journeyId) {
-        setPreviewJourney(null);
-        setSelectedImageSet(null);
-        setSelectedImageIndex(0);
-      }
 
       await fetchCompanyTrainings();
     } catch (error) {
@@ -690,19 +685,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   /** In training list, Start/Content must open the training viewer (not image carousel). */
   const openJourneyContentOrImages = (journey: any) => {
-    const journeyId = String(journey?._id || journey?.id || '').trim();
-    if (!journeyId) {
-      window.alert('Training ID not found.');
-      return;
-    }
-    const resolvedGigId = resolveJourneyGigId(journey) || undefined;
-    setShowTraining({
-      isOpen: true,
-      newJourney: true,
-      journeyId,
-      gigId: resolvedGigId || undefined,
-      openFormationViewer: true,
-    });
+    setSelectedJourneyForContent(journey);
+    setActiveContentModuleIndex(0);
+    setActiveContentSectionIndex(0);
   };
 
   const stopPodcastPlayback = useCallback(() => {
@@ -802,6 +787,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       stopPodcastPlayback();
     };
   }, [stopPodcastPlayback]);
+
+  const contentViewerModules = Array.isArray(selectedJourneyForContent?.modules)
+    ? selectedJourneyForContent.modules
+    : [];
+  const safeContentModuleIndex = Math.min(Math.max(activeContentModuleIndex, 0), Math.max(contentViewerModules.length - 1, 0));
+  const activeContentModule = contentViewerModules[safeContentModuleIndex];
+  const activeContentSections = Array.isArray(activeContentModule?.sections) ? activeContentModule.sections : [];
+  const safeContentSectionIndex = Math.min(Math.max(activeContentSectionIndex, 0), Math.max(activeContentSections.length - 1, 0));
+  const activeContentSection = activeContentSections[safeContentSectionIndex];
 
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
@@ -1073,7 +1067,95 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     </div>
                   </div>
 
-                {loadingTrainings ? (
+                {selectedJourneyForContent ? (
+                  <div className="mt-4 rounded-2xl border border-harx-100 bg-white p-4 shadow-sm">
+                    <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-harx-600">Formation content viewer</p>
+                        <h3 className="truncate text-lg font-black text-slate-900">
+                          {String(
+                            selectedJourneyForContent?.title ||
+                              selectedJourneyForContent?.name ||
+                              'Formation'
+                          )}
+                        </h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedJourneyForContent(null)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                        Back to trainings
+                      </button>
+                    </div>
+                    {contentViewerModules.length === 0 ? (
+                      <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                        Aucun module disponible pour cette formation.
+                      </p>
+                    ) : (
+                      <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+                        <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/70 p-2">
+                          {contentViewerModules.map((mod: any, mi: number) => (
+                            <button
+                              key={`content-mod-${mi}`}
+                              type="button"
+                              onClick={() => {
+                                setActiveContentModuleIndex(mi);
+                                setActiveContentSectionIndex(0);
+                              }}
+                              className={`w-full rounded-lg border px-3 py-2 text-left text-xs font-semibold transition ${
+                                mi === safeContentModuleIndex
+                                  ? 'border-harx-300 bg-harx-50 text-harx-800'
+                                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                              }`}
+                            >
+                              {String(mod?.title || `Module ${mi + 1}`)}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="rounded-xl border border-slate-200 bg-white p-4">
+                          <p className="text-xs font-semibold text-harx-700">
+                            {`Module ${safeContentModuleIndex + 1} / ${contentViewerModules.length}`}
+                          </p>
+                          <h4 className="mt-1 text-base font-black text-slate-900">
+                            {String(activeContentModule?.title || `Module ${safeContentModuleIndex + 1}`)}
+                          </h4>
+                          {activeContentSections.length > 0 ? (
+                            <>
+                              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                {activeContentSections.map((sec: any, si: number) => (
+                                  <button
+                                    key={`content-sec-${safeContentModuleIndex}-${si}`}
+                                    type="button"
+                                    onClick={() => setActiveContentSectionIndex(si)}
+                                    className={`rounded-lg border px-3 py-2 text-left text-xs font-medium transition ${
+                                      si === safeContentSectionIndex
+                                        ? 'border-harx-300 bg-harx-50 text-harx-800'
+                                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                                    }`}
+                                  >
+                                    {String(sec?.title || `Section ${si + 1}`)}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                <p className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+                                  {String(activeContentSection?.title || `Section ${safeContentSectionIndex + 1}`)}
+                                </p>
+                                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                                  {String(activeContentSection?.content || 'Contenu indisponible.')}
+                                </p>
+                              </div>
+                            </>
+                          ) : (
+                            <p className="mt-3 text-sm text-slate-600">Ce module ne contient pas encore de sections.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : loadingTrainings ? (
                   <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-harx-100 py-12">
                     <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
                     <p className="mt-4 text-sm font-medium text-gray-600">Loading available trainings...</p>
