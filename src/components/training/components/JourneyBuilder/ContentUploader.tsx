@@ -23,6 +23,7 @@ interface ContentUploaderProps {
   gigId?: string | null;
   journey?: any;
   methodology?: TrainingMethodology | null;
+  autoOpenFormationViewer?: boolean;
   /**
    * Créer un nouveau `training_journeys` + vider le fil (nouveau chat au prochain message).
    * Sans cela, « New » effaçait l’UI puis un effet rouvrait la dernière session du gig.
@@ -502,7 +503,17 @@ function RepPodcastSidebarPanel({
 }
 
 export default function ContentUploader(props: ContentUploaderProps) {
-  const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false, onForkNewJourneyTraining } = props;
+  const {
+    onComplete,
+    onBack,
+    company,
+    gigId,
+    journey,
+    methodology,
+    autoOpenFormationViewer = false,
+    repOnboardingLayout = false,
+    onForkNewJourneyTraining,
+  } = props;
   const rep = Boolean(repOnboardingLayout);
   /** Après validation du plan dans le chat, le backend renvoie l’id — on le réinjecte dans le contexte des appels suivants. */
   const chatConfirmedJourneyIdRef = useRef<string | null>(null);
@@ -851,6 +862,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (seq === savedJourneyHydrateSeqRef.current) setIsSavedJourneyHydrating(false);
     }
   }, [repOnboardingLayout, journey]);
+
+  useEffect(() => {
+    if (!repOnboardingLayout || !autoOpenFormationViewer) return;
+    setFormationDeckModalTab('parcours');
+    setFormationViewerSlideIndex(0);
+    setShowGeneratedFormationModal(true);
+    void hydrateSavedJourneyFromApi();
+  }, [repOnboardingLayout, autoOpenFormationViewer, hydrateSavedJourneyFromApi]);
 
   useEffect(() => {
     if (!repOnboardingLayout) {

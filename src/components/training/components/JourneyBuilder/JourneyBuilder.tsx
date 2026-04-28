@@ -14,6 +14,7 @@ interface JourneyBuilderProps {
   onComplete: (journey: TrainingJourney, modules: TrainingModule[], enrolledReps: Rep[]) => void;
   forceNew?: boolean;
   repOnboardingLayout?: boolean;
+  startWithRepViewer?: boolean;
   initialStep?: number;
   initialJourneyId?: string;
   initialGigId?: string;
@@ -23,6 +24,7 @@ export default function JourneyBuilder({
   onComplete,
   forceNew = false,
   repOnboardingLayout = false,
+  startWithRepViewer = false,
   initialStep = 0,
   initialJourneyId,
   initialGigId = null,
@@ -349,6 +351,7 @@ export default function JourneyBuilder({
             journey={journey}
             methodology={methodology}
             repOnboardingLayout={repOnboardingLayout}
+            autoOpenFormationViewer={startWithRepViewer}
             onForkNewJourneyTraining={company ? handleForkNewJourneyTraining : undefined}
           />
         );
