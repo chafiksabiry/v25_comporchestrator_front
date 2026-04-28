@@ -5729,7 +5729,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 id="generated-formation-modal-title"
                                 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl"
                               >
-                                HARX Training Viewer
+                                {String(
+                                  (formationPreviewForViewer as any)?.title ||
+                                    (formationPreviewForViewer as any)?.name ||
+                                    'Training'
+                                ).trim()}
                               </p>
                               <p className="mt-0.5 truncate text-sm font-medium text-slate-600">
                                 {String(
@@ -5772,173 +5776,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           </div>
                         </div>
                       </div>
-                      <div className="shrink-0 border-b border-harx-100 bg-gradient-to-r from-white via-harx-50/40 to-white px-4 py-2.5 sm:px-6">
-                        <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-harx-700">
-                          Présentation interactive HARX (design local, plein écran)
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            type="button"
-                            disabled={isBuildingRepFormationDeck || formationViewerSlides.length === 0}
-                            onClick={async () => {
-                              setRepFormationDeckHint(null);
-                              setIsBuildingRepFormationDeck(true);
-                              try {
-                                setRepFormationDeckHint('Construction du design HARX local…');
-                                setFormationDeckModalTab('html');
-                                const html = buildRepInteractivePresentationHtml(formationPreviewForViewer);
-                                const hint =
-                                  'Présentation locale générée (sans design Claude). Enregistrez pour la lier au parcours.';
-                                setRepFormationDeckHtml(html);
-                                setRepFormationDeckHint(hint);
-                              } catch {
-                                setRepFormationDeckHint('La génération a échoué. Réessayez.');
-                              } finally {
-                                setIsBuildingRepFormationDeck(false);
-                              }
-                            }}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-harx-200 bg-gradient-to-r from-harx-50 to-harx-alt-50 px-3 py-1.5 text-xs font-semibold text-harx-800 transition hover:from-harx-100 hover:to-harx-alt-100 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {isBuildingRepFormationDeck ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <LayoutGrid className="h-3.5 w-3.5" />
-                            )}
-                            Générer design local
-                          </button>
-                          <button
-                            type="button"
-                            disabled={!repFormationDeckHtml || isSavingRepFormationDeck}
-                            onClick={async () => {
-                              if (!repFormationDeckHtml) return;
-                              const jid = linkedTrainingJourneyMongoId();
-                              if (jid) {
-                                try {
-                                  localStorage.setItem(`harx_rep_deck_${jid}`, repFormationDeckHtml);
-                                } catch {
-                                  /* ignore */
-                                }
-                              }
-                              setIsSavingRepFormationDeck(true);
-                              setRepFormationDeckHint(null);
-                              if (!jid) {
-                                setRepFormationDeckHint('Copie locale uniquement (aucun parcours Mongo lié).');
-                                setIsSavingRepFormationDeck(false);
-                                return;
-                              }
-                              const r = await JourneyService.saveJourneyRepInteractiveHtml(jid, repFormationDeckHtml);
-                              if (r.ok) {
-                                setRepFormationDeckHint('Enregistré sur le parcours et en copie locale.');
-                                setSavedJourneyHydrated((prev: any) => {
-                                  const base = prev && typeof prev === 'object' ? prev : journey;
-                                  if (!base || typeof base !== 'object') return prev;
-                                  return {
-                                    ...base,
-                                    methodologyData: {
-                                      ...(base.methodologyData && typeof base.methodologyData === 'object'
-                                        ? base.methodologyData
-                                        : {}),
-                                      repInteractivePresentationHtml: repFormationDeckHtml,
-                                    },
-                                  };
-                                });
-                              } else {
-                                setRepFormationDeckHint(
-                                  `Copie locale OK. Enregistrement serveur : ${r.error || 'indisponible'}.`
-                                );
-                              }
-                              setIsSavingRepFormationDeck(false);
-                            }}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-harx-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {isSavingRepFormationDeck ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Save className="h-3.5 w-3.5" />
-                            )}
-                            Enregistrer
-                          </button>
-                          <button
-                            type="button"
-                            disabled={!repFormationDeckHtml}
-                            onClick={() => {
-                              if (!repFormationDeckHtml) return;
-                              const name = String(
-                                (formationPreviewForViewer as any)?.title ||
-                                  (formationPreviewForViewer as any)?.name ||
-                                  'formation'
-                              )
-                                .replace(/[^\w\s-]/g, '')
-                                .trim()
-                                .slice(0, 60);
-                              const blob = new Blob([repFormationDeckHtml], { type: 'text/html;charset=utf-8' });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `${name || 'formation'}-presentation.html`;
-                              a.click();
-                              URL.revokeObjectURL(url);
-                            }}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-harx-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-harx-50 disabled:opacity-50"
-                          >
-                            <FileText className="h-3.5 w-3.5" />
-                            Télécharger .html
-                          </button>
-                        </div>
-                        {repFormationDeckHint ? (
-                          <p className="mt-2 text-[11px] text-slate-600">{repFormationDeckHint}</p>
-                        ) : null}
-                        {repFormationDeckHtml ? (
-                          <div
-                            className="mt-3 flex rounded-lg border border-harx-200 bg-harx-50/60 p-0.5"
-                            role="tablist"
-                            aria-label="Mode d’affichage de la formation"
-                          >
-                            <button
-                              type="button"
-                              role="tab"
-                              aria-selected={formationDeckModalTab === 'html'}
-                              onClick={() => setFormationDeckModalTab('html')}
-                              className={`flex-1 rounded-md px-2 py-1.5 text-center text-[11px] font-semibold transition ${
-                                formationDeckModalTab === 'html'
-                                  ? 'bg-white text-harx-900 shadow-sm'
-                                  : 'text-slate-600 hover:text-harx-900'
-                              }`}
-                            >
-                              Start (HTML)
-                            </button>
-                            <button
-                              type="button"
-                              role="tab"
-                              aria-selected={formationDeckModalTab === 'parcours'}
-                              onClick={() => setFormationDeckModalTab('parcours')}
-                              className={`flex-1 rounded-md px-2 py-1.5 text-center text-[11px] font-semibold transition ${
-                                formationDeckModalTab === 'parcours'
-                                  ? 'bg-white text-harx-900 shadow-sm'
-                                  : 'text-slate-600 hover:text-harx-900'
-                              }`}
-                            >
-                              Content (modules)
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
+                      
                       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-[#070a1a] via-[#0a1024] to-[#090d1f]">
                         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
-                          {repFormationDeckHtml && formationDeckModalTab === 'html' ? (
-                            <div className="flex h-full min-h-[min(52vh,520px)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-900/5 shadow-inner">
-                              <p className="shrink-0 bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                                Aperçu — navigation dans le cadre (indépendant de l’onglet feuille de route)
-                              </p>
-                              <iframe
-                                key={repFormationIframeKey}
-                                title="Présentation interactive HTML"
-                                srcDoc={repFormationDeckHtml}
-                                sandbox="allow-scripts"
-                                className="min-h-0 w-full flex-1 border-0 bg-white"
-                              />
-                            </div>
-                          ) : !hasFormationContentSlides && isSavedJourneyHydrating ? (
+                          {!hasFormationContentSlides && isSavedJourneyHydrating ? (
                             <div className="flex items-center gap-2 py-8 text-sm text-slate-600">
                               <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
                               Chargement du programme…
@@ -6052,9 +5893,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                                     .trim()
                                                 : '';
                                               return (
-                                                <div
+                                                <button
                                                   key={`module-intro-sec-${currentFormationViewerSlide.moduleIndex}-${si}`}
-                                                  className="rounded-2xl border border-harx-500/25 bg-[#12172f] p-3 shadow-[0_10px_35px_-20px_rgba(236,72,153,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:border-harx-400/50 hover:shadow-[0_18px_40px_-20px_rgba(236,72,153,0.45)]"
+                                                  type="button"
+                                                  onClick={() =>
+                                                    jumpToFormationSlide(
+                                                      `m${currentFormationViewerSlide.moduleIndex}-s${si}`
+                                                    )
+                                                  }
+                                                  className="w-full rounded-2xl border border-harx-500/25 bg-[#12172f] p-3 text-left shadow-[0_10px_35px_-20px_rgba(236,72,153,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:border-harx-400/50 hover:shadow-[0_18px_40px_-20px_rgba(236,72,153,0.45)]"
                                                 >
                                                   <div className="flex items-start gap-2">
                                                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-harx-500/20 text-[11px] font-bold text-harx-100 ring-1 ring-harx-400/35">
@@ -6076,18 +5923,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                                       )}
                                                     </div>
                                                   </div>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                      jumpToFormationSlide(
-                                                        `m${currentFormationViewerSlide.moduleIndex}-s${si}`
-                                                      )
-                                                    }
-                                                    className="mt-3 inline-flex items-center rounded-lg border border-harx-400/40 bg-gradient-to-r from-harx-500/25 to-harx-alt-500/25 px-2.5 py-1.5 text-xs font-semibold text-harx-100 transition hover:from-harx-500/35 hover:to-harx-alt-500/35"
-                                                  >
-                                                    Ouvrir la section
-                                                  </button>
-                                                </div>
+                                                </button>
                                               );
                                             })}
                                           </div>
