@@ -5726,10 +5726,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 let html: string;
                                 let hint: string;
                                 try {
-                                  setRepFormationDeckHint('Préparation (parcours + modules, un appel par module)…');
+                                  setRepFormationDeckHint('Préparation (parcours), puis génération section par section…');
+                                  setFormationDeckModalTab('html');
                                   const out = await AIService.generateRepInteractiveDeckHtmlWithAiModular(
                                     formationPreviewForViewer,
-                                    (msg) => setRepFormationDeckHint(msg)
+                                    (msg) => setRepFormationDeckHint(msg),
+                                    (partialHtml) => {
+                                      setRepFormationDeckHtml(partialHtml);
+                                    }
                                   );
                                   html = out.html;
                                   hint = `${out.hint} Enregistrez pour lier la présentation au parcours.`;
