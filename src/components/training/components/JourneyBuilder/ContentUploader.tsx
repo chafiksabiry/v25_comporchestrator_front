@@ -6022,7 +6022,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                               const sectionTitle = String(sec?.title || `Section ${si + 1}`).trim();
                                               const rawContent = String(sec?.content || '').trim();
                                               const preview = rawContent
+                                                .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+                                                .replace(/[*_`#>-]/g, '')
                                                 ? rawContent
+                                                    .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+                                                    .replace(/[*_`#>-]/g, '')
                                                     .replace(/\s+/g, ' ')
                                                     .slice(0, 170)
                                                     .trim()
@@ -6030,7 +6034,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                               return (
                                                 <div
                                                   key={`module-intro-sec-${currentFormationViewerSlide.moduleIndex}-${si}`}
-                                                  className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
+                                                  className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-harx-300 hover:shadow-md"
                                                 >
                                                   <div className="flex items-start gap-2">
                                                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-harx-50 text-[11px] font-bold text-harx-700 ring-1 ring-harx-100">
@@ -6059,7 +6063,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                                         `m${currentFormationViewerSlide.moduleIndex}-s${si}`
                                                       )
                                                     }
-                                                    className="mt-3 inline-flex items-center rounded-lg border border-harx-200 bg-harx-50 px-2.5 py-1.5 text-xs font-semibold text-harx-700 transition hover:bg-harx-100"
+                                                    className="mt-3 inline-flex items-center rounded-lg border border-harx-200 bg-gradient-to-r from-harx-50 to-harx-alt-50 px-2.5 py-1.5 text-xs font-semibold text-harx-700 transition hover:from-harx-100 hover:to-harx-alt-100"
                                                   >
                                                     Ouvrir la section
                                                   </button>
@@ -6075,7 +6079,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   );
                                 })()
                               ) : currentFormationViewerSlide.kind === 'section' ? (
-                                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+                                <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-white to-emerald-50/20 p-5 shadow-sm sm:p-7">
                                   <p className="mb-2 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
                                     {currentFormationViewerSlide.modTitle}
                                   </p>
@@ -6083,8 +6087,36 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                     {String(currentFormationViewerSlide.section?.title || 'Section')}
                                   </h3>
                                   {String(currentFormationViewerSlide.section?.content || '').trim() ? (
-                                    <div className="prose prose-sm max-w-none text-slate-700">
-                                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+                                      <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                          p: ({ children }) => (
+                                            <p className="mb-3 text-[15px] leading-7 text-slate-700 last:mb-0">{children}</p>
+                                          ),
+                                          ul: ({ children }) => (
+                                            <ul className="mb-3 space-y-2 rounded-xl bg-slate-50 p-3 last:mb-0">{children}</ul>
+                                          ),
+                                          li: ({ children }) => (
+                                            <li className="flex items-start gap-2 text-[14px] leading-6 text-slate-700">
+                                              <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-harx-500" />
+                                              <span className="flex-1">{children}</span>
+                                            </li>
+                                          ),
+                                          strong: ({ children }) => (
+                                            <strong className="font-semibold text-slate-900">{children}</strong>
+                                          ),
+                                          h1: ({ children }) => (
+                                            <h4 className="mb-2 mt-4 text-xl font-bold text-slate-900 first:mt-0">{children}</h4>
+                                          ),
+                                          h2: ({ children }) => (
+                                            <h5 className="mb-2 mt-4 text-lg font-bold text-slate-900 first:mt-0">{children}</h5>
+                                          ),
+                                          h3: ({ children }) => (
+                                            <h6 className="mb-2 mt-4 text-base font-bold text-slate-900 first:mt-0">{children}</h6>
+                                          ),
+                                        }}
+                                      >
                                         {String(currentFormationViewerSlide.section.content)}
                                       </ReactMarkdown>
                                     </div>
