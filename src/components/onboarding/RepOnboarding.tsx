@@ -30,7 +30,6 @@ import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
 import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../training/infrastructure/services/AIService';
 import { cloudinaryService } from '../training/lib/cloudinaryService';
-import { buildRepInteractivePresentationHtml } from '../training/utils/buildRepInteractivePresentationHtml';
 import '../training/index.css';
 
 interface RepOnboardingProps { }
@@ -690,12 +689,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     [savedImageSets, resolveJourneyGigId]
   );
 
-  /** In training list, Start/Content must open the training viewer (not image carousel). */
-  const openJourneyContentOrImages = (journey: any) => {
-    setSelectedJourneyForContent(journey);
-    setRepViewerHtml(buildRepInteractivePresentationHtml(journey));
-  };
-
   /** Start button opens the full REP viewer flow (same as JourneyBuilder viewer mode). */
   const openJourneyStartViewer = (journey: any) => {
     const journeyId = String(journey?._id || journey?.id || '').trim();
@@ -1233,7 +1226,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => openJourneyContentOrImages(journey)}
+                                  onClick={() => openJourneyStartViewer(journey)}
                                   disabled={deletingJourneyId === formatted.id}
                                   className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-xs font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
