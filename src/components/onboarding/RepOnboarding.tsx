@@ -831,6 +831,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 startJourneyStep={showTraining.journeyId ? 1 : 0}
                 startWithRepViewer={Boolean(showTraining.openFormationViewer)}
                 repOnboardingLayout={true}
+                onExitToTrainingList={() => setShowTraining({ isOpen: false })}
                 onJourneyLaunch={handleEmbeddedJourneyComplete}
               />
             </div>
