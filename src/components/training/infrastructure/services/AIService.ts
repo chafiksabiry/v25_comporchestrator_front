@@ -588,12 +588,22 @@ Commence ta réponse par <!DOCTYPE html>`;
    */
   static async generateRepInteractiveDeckHtmlWithAiModular(
     journey: any,
-    onProgress?: (message: string) => void
+    onProgress?: (message: string) => void,
+    onPartialHtml?: (html: string) => void
   ): Promise<{ html: string; hint: string }> {
     const title = String(journey?.title || journey?.name || 'Formation').trim() || 'Formation';
     const modules = Array.isArray(journey?.modules) ? journey.modules : [];
     const overview = buildFormationOverviewSlide(journey);
     const allSlides: RepDeckSlide[] = [overview];
+    const emitPartial = () => {
+      if (!onPartialHtml) return;
+      try {
+        onPartialHtml(buildRepInteractivePresentationHtmlFromDeck(title, allSlides));
+      } catch {
+        // no-op: partial preview is best-effort
+      }
+    };
+    emitPartial();
 
     if (!modules.length) {
       return {
@@ -625,6 +635,7 @@ Commence ta réponse par <!DOCTYPE html>`;
         moduleNum: i + 1,
         totalModules: modules.length,
       });
+      emitPartial();
 
       for (let si = 0; si < sections.length; si++) {
         onProgress?.(`Génération IA · module ${i + 1}/${modules.length} · section ${si + 1}/${sections.length}…`);
@@ -672,6 +683,7 @@ ${scopeJson}`;
           }).filter((s) => s.kind === 'section');
           if (!normalized.length) throw new Error('empty section slide');
           allSlides.push(normalized[0]);
+          emitPartial();
         } catch (e) {
           console.warn(`[AIService] section unit failed m${i + 1}s${si + 1}, using local`, e);
           fallbackUnits.push(`M${i + 1}-S${si + 1}`);
@@ -681,6 +693,7 @@ ${scopeJson}`;
             sectionTitle: String(sec?.title || `Section ${si + 1}`).trim(),
             body: String(sec?.content || '').trim() || '(Contenu vide)',
           });
+          emitPartial();
         }
       }
 
@@ -737,6 +750,7 @@ ${scopeJson}`;
             }).filter((s) => s.kind === 'quiz');
             if (!normalized.length) throw new Error('empty quiz slide');
             allSlides.push(normalized[0]);
+            emitPartial();
           } catch (e) {
             console.warn(`[AIService] quiz unit failed m${i + 1}q${qi + 1}.${qqi + 1}, using local`, e);
             fallbackUnits.push(`M${i + 1}-Q${qi + 1}.${qqi + 1}`);
@@ -750,6 +764,7 @@ ${scopeJson}`;
                 correctIndex: Math.min(Math.max(0, correct), options.length - 1),
                 explanation: String(q?.explanation || '').trim(),
               });
+              emitPartial();
             }
           }
         }
