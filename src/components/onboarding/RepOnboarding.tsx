@@ -742,11 +742,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         gigId: routeGigId || undefined,
         openFormationViewer: true,
       });
+      // Consume route once to avoid reopening viewer on every reload/navigation.
+      clearTrainingViewerRoute();
     };
     syncFromRoute();
     window.addEventListener('popstate', syncFromRoute);
     return () => window.removeEventListener('popstate', syncFromRoute);
-  }, []);
+  }, [clearTrainingViewerRoute]);
 
   const stopPodcastPlayback = useCallback(() => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
