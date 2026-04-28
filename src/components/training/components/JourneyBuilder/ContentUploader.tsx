@@ -681,6 +681,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const formationPreviewForViewer = useMemo(() => savedJourneyHydrated || journey, [savedJourneyHydrated, journey]);
 
   type FormationViewerSlide =
+    | {
+        key: 'overview';
+        kind: 'overview';
+        totalModules: number;
+        modules: Array<{
+          title: string;
+          moduleIndex: number;
+          sectionCount: number;
+          sections: Array<{ title: string; sectionIndex: number }>;
+        }>;
+      }
     | { key: string; kind: 'module_intro'; moduleIndex: number; totalModules: number; mod: any }
     | {
         key: string;
@@ -705,6 +716,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const modules = Array.isArray(src?.modules) ? (src.modules as any[]) : [];
     const totalModules = modules.length;
     const slides: FormationViewerSlide[] = [];
+    slides.push({
+      key: 'overview',
+      kind: 'overview',
+      totalModules,
+      modules: modules.map((mod, mi) => {
+        const sections = Array.isArray(mod?.sections) ? mod.sections : [];
+        return {
+          title: String(mod?.title || `Module ${mi + 1}`),
+          moduleIndex: mi,
+          sectionCount: sections.length,
+          sections: sections.map((sec: any, si: number) => ({
+            title: String(sec?.title || `Section ${si + 1}`),
+            sectionIndex: si,
+          })),
+        };
+      }),
+    });
     modules.forEach((mod, mi) => {
       slides.push({
         key: `m${mi}-intro`,
@@ -744,6 +772,22 @@ export default function ContentUploader(props: ContentUploaderProps) {
     });
     return slides;
   }, [formationPreviewForViewer]);
+
+  const formationViewerSlideIndexByKey = useMemo(() => {
+    const map = new Map<string, number>();
+    formationViewerSlides.forEach((slide, idx) => {
+      map.set(slide.key, idx);
+    });
+    return map;
+  }, [formationViewerSlides]);
+
+  const jumpToFormationSlide = useCallback(
+    (key: string) => {
+      const idx = formationViewerSlideIndexByKey.get(key);
+      if (typeof idx === 'number') setFormationViewerSlideIndex(idx);
+    },
+    [formationViewerSlideIndexByKey]
+  );
 
   useEffect(() => {
     if (!showGeneratedFormationModal) return;
@@ -5167,6 +5211,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     const currentFormationViewerSlide = formationViewerSlides[formationViewerSlideIndex];
+    const hasFormationContentSlides = formationViewerSlides.some((s) => s.kind !== 'overview');
 
     return (
     <div className={rep ? 'flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white' : 'min-h-[92vh] bg-white p-2'}>
@@ -5506,14 +5551,29 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     <button
                       type="button"
                       onClick={() => {
+                        setFormationDeckModalTab('parcours');
+                        setFormationViewerSlideIndex(0);
+                        setShowGeneratedFormationModal(true);
+                        void hydrateSavedJourneyFromApi();
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-harx-200 bg-harx-50/80 px-3 py-1.5 text-xs font-semibold text-harx-900 hover:bg-harx-100/90"
+                      title="Ouvrir Start en plein écran"
+                    >
+                      <Play className="h-3.5 w-3.5 shrink-0" />
+                      Start
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormationDeckModalTab('parcours');
                         setShowGeneratedFormationModal(true);
                         void hydrateSavedJourneyFromApi();
                       }}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-900 hover:bg-emerald-100/90"
-                      title="Modules, sections et quiz enregistrés"
+                      title="Voir le contenu modules/sections"
                     >
                       <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                      Voir la formation générée
+                      Content
                     </button>
                   </div>
                 )}
@@ -5653,17 +5713,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 typeof document !== 'undefined' &&
                 createPortal(
                   <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-[2px] sm:p-6"
+                    className="fixed inset-0 z-[100] flex h-dvh w-screen flex-col bg-white"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="generated-formation-modal-title"
-                    onClick={(e) => {
-                      if (e.target === e.currentTarget) setShowGeneratedFormationModal(false);
-                    }}
                   >
                     <div
-                      className="flex max-h-[min(92dvh,820px)] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-emerald-200/80 bg-white shadow-2xl"
-                      onClick={(e) => e.stopPropagation()}
+                      className="flex h-full w-full flex-col overflow-hidden border-t-4 border-harx-500 bg-white"
                     >
                       <div className="shrink-0 border-b border-slate-100 bg-gradient-to-r from-emerald-50/80 to-white px-4 pb-3 pt-4 sm:px-6 sm:pt-5">
                         <div className="flex items-start justify-between gap-3">
@@ -5674,7 +5730,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 id="generated-formation-modal-title"
                                 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl"
                               >
-                                Formation générée
+                                HARX Training Viewer
                               </p>
                               <p className="mt-0.5 truncate text-sm font-medium text-slate-600">
                                 {String(
@@ -5713,7 +5769,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       </div>
                       <div className="shrink-0 border-b border-slate-100 bg-slate-50/90 px-4 py-2.5 sm:px-6">
                         <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                          Présentation interactive (HTML · génération IA Claude via le serveur, secours local si besoin)
+                          Présentation interactive HARX (design local, plein écran)
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
                           <button
@@ -5723,28 +5779,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               setRepFormationDeckHint(null);
                               setIsBuildingRepFormationDeck(true);
                               try {
-                                let html: string;
-                                let hint: string;
-                                try {
-                                  setRepFormationDeckHint('Préparation (parcours), puis génération section par section…');
-                                  setFormationDeckModalTab('html');
-                                  const out = await AIService.generateRepInteractiveDeckHtmlWithAiModular(
-                                    formationPreviewForViewer,
-                                    (msg) => setRepFormationDeckHint(msg),
-                                    (partialHtml) => {
-                                      setRepFormationDeckHtml(partialHtml);
-                                    }
-                                  );
-                                  html = out.html;
-                                  hint = `${out.hint} Enregistrez pour lier la présentation au parcours.`;
-                                  setFormationDeckModalTab('html');
-                                } catch (e) {
-                                  console.warn('[ContentUploader] AI modular deck failed, using local template', e);
-                                  html = buildRepInteractivePresentationHtml(formationPreviewForViewer);
-                                  hint =
-                                    'La génération IA modulaire a échoué (réseau ou serveur) — version locale de secours (tout le parcours).';
-                                  setFormationDeckModalTab('html');
-                                }
+                                setRepFormationDeckHint('Construction du design HARX local…');
+                                setFormationDeckModalTab('html');
+                                const html = buildRepInteractivePresentationHtml(formationPreviewForViewer);
+                                const hint =
+                                  'Présentation locale générée (sans design Claude). Enregistrez pour la lier au parcours.';
                                 setRepFormationDeckHtml(html);
                                 setRepFormationDeckHint(hint);
                               } catch {
@@ -5758,9 +5797,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             {isBuildingRepFormationDeck ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             ) : (
-                              <Sparkles className="h-3.5 w-3.5" />
+                              <LayoutGrid className="h-3.5 w-3.5" />
                             )}
-                            Générer avec l’IA
+                            Générer design local
                           </button>
                           <button
                             type="button"
@@ -5861,7 +5900,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   : 'text-slate-600 hover:text-slate-900'
                               }`}
                             >
-                              Présentation HTML
+                              Start (HTML)
                             </button>
                             <button
                               type="button"
@@ -5874,7 +5913,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   : 'text-slate-600 hover:text-slate-900'
                               }`}
                             >
-                              Feuille de route (app)
+                              Content (modules)
                             </button>
                           </div>
                         ) : null}
@@ -5894,12 +5933,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 className="min-h-0 w-full flex-1 border-0 bg-white"
                               />
                             </div>
-                          ) : formationViewerSlides.length === 0 && isSavedJourneyHydrating ? (
+                          ) : !hasFormationContentSlides && isSavedJourneyHydrating ? (
                             <div className="flex items-center gap-2 py-8 text-sm text-slate-600">
                               <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
                               Chargement du programme…
                             </div>
-                          ) : formationViewerSlides.length === 0 ? (
+                          ) : !hasFormationContentSlides ? (
                             <p className="py-8 text-center text-sm text-slate-500">
                               Aucun module enregistré pour l’instant. Validez le plan ou enregistrez des modules, puis
                               actualisez.
@@ -5910,7 +5949,57 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 Feuille de route · slide {formationViewerSlideIndex + 1} /{' '}
                                 {formationViewerSlides.length}
                               </p>
-                              {currentFormationViewerSlide.kind === 'module_intro' ? (
+                              {currentFormationViewerSlide.kind === 'overview' ? (
+                                <div className="rounded-2xl border border-harx-100 bg-gradient-to-br from-white via-harx-50/40 to-harx-alt-50/30 p-4 shadow-sm sm:p-6">
+                                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-harx-700">
+                                    HARX Training
+                                  </p>
+                                  <h3 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+                                    {String(
+                                      (formationPreviewForViewer as any)?.title ||
+                                        (formationPreviewForViewer as any)?.name ||
+                                        'Formation'
+                                    ).trim()}
+                                  </h3>
+                                  <p className="mt-2 text-sm text-slate-600">
+                                    Choisissez un module ou une section pour ouvrir directement son contenu.
+                                  </p>
+                                  <div className="mt-5 space-y-3">
+                                    {currentFormationViewerSlide.modules.map((mod) => (
+                                      <div key={`overview-mod-${mod.moduleIndex}`} className="rounded-xl border border-slate-200 bg-white/85 p-3">
+                                        <button
+                                          type="button"
+                                          onClick={() => jumpToFormationSlide(`m${mod.moduleIndex}-intro`)}
+                                          className="flex w-full items-center justify-between gap-3 rounded-lg bg-gradient-to-r from-harx-600 to-harx-alt-500 px-3 py-2 text-left text-sm font-semibold text-white shadow-sm transition hover:brightness-105"
+                                        >
+                                          <span>{`Module ${mod.moduleIndex + 1} · ${mod.title}`}</span>
+                                          <span className="text-[11px] font-bold uppercase tracking-wide opacity-90">
+                                            Ouvrir
+                                          </span>
+                                        </button>
+                                        {mod.sections.length > 0 ? (
+                                          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                                            {mod.sections.map((sec) => (
+                                              <button
+                                                key={`overview-sec-${mod.moduleIndex}-${sec.sectionIndex}`}
+                                                type="button"
+                                                onClick={() =>
+                                                  jumpToFormationSlide(`m${mod.moduleIndex}-s${sec.sectionIndex}`)
+                                                }
+                                                className="rounded-lg border border-harx-100 bg-harx-50/50 px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:border-harx-300 hover:bg-harx-100/50"
+                                              >
+                                                {sec.title}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <p className="mt-2 text-xs text-slate-500">Aucune section structurée.</p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : currentFormationViewerSlide.kind === 'module_intro' ? (
                                 (() => {
                                   const mod = currentFormationViewerSlide.mod;
                                   const sectionCount = Array.isArray(mod?.sections) ? mod.sections.length : 0;
@@ -6065,7 +6154,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             </div>
                           ) : null}
                         </div>
-                        {formationViewerSlides.length > 0 &&
+                        {hasFormationContentSlides &&
                         (!repFormationDeckHtml || formationDeckModalTab === 'parcours') ? (
                           <div className="shrink-0 border-t border-slate-200 bg-slate-50/80 px-4 py-3 sm:px-6">
                             <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-slate-200">
