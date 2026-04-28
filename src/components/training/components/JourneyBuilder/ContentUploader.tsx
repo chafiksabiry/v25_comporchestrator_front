@@ -5685,24 +5685,36 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 Slide {formationViewerSlideIndex + 1} / {formationViewerSlides.length}
                               </p>
                               {currentFormationViewerSlide.kind === 'module_intro' ? (
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6">
-                                  <p className="mb-2 text-xs font-semibold text-slate-500">
-                                    Module {currentFormationViewerSlide.moduleIndex + 1} /{' '}
-                                    {currentFormationViewerSlide.totalModules}
-                                  </p>
-                                  <h3 className="mb-3 text-lg font-bold text-slate-900 sm:text-xl">
-                                    {String(currentFormationViewerSlide.mod?.title || 'Module')}
-                                  </h3>
-                                  {String(currentFormationViewerSlide.mod?.description || '').trim() ? (
-                                    <div className="prose prose-sm max-w-none text-slate-800">
-                                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                        {String(currentFormationViewerSlide.mod.description)}
-                                      </ReactMarkdown>
+                                (() => {
+                                  const mod = currentFormationViewerSlide.mod;
+                                  const sectionCount = Array.isArray(mod?.sections) ? mod.sections.length : 0;
+                                  const desc = String(mod?.description || '').trim();
+                                  /** `description` côté API recopie souvent tout le module (sections + quiz) : on évite de la réafficher si des sections structurées existent. */
+                                  const showFullDescription = sectionCount === 0 && !!desc;
+                                  return (
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6">
+                                      <p className="mb-2 text-xs font-semibold text-slate-500">
+                                        Module {currentFormationViewerSlide.moduleIndex + 1} /{' '}
+                                        {currentFormationViewerSlide.totalModules}
+                                      </p>
+                                      <h3 className="mb-3 text-lg font-bold text-slate-900 sm:text-xl">
+                                        {String(mod?.title || 'Module')}
+                                      </h3>
+                                      {showFullDescription ? (
+                                        <div className="prose prose-sm max-w-none text-slate-800">
+                                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{desc}</ReactMarkdown>
+                                        </div>
+                                      ) : sectionCount > 0 ? (
+                                        <p className="text-sm leading-relaxed text-slate-600">
+                                          Le détail du cours est découpé slide par slide dans les sections suivantes (puis
+                                          les quiz).
+                                        </p>
+                                      ) : (
+                                        <p className="text-sm text-slate-500">Pas de description pour ce module.</p>
+                                      )}
                                     </div>
-                                  ) : (
-                                    <p className="text-sm text-slate-500">Pas de description pour ce module.</p>
-                                  )}
-                                </div>
+                                  );
+                                })()
                               ) : currentFormationViewerSlide.kind === 'section' ? (
                                 <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
                                   <p className="mb-1 text-xs font-semibold text-emerald-800">
