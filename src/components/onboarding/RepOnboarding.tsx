@@ -1057,7 +1057,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           {/* Main Content */}
           <div className="space-y-6">
             {/* Training Section — HARX brand (rose / purple) aligned with Journey Builder */}
-            {!selectedJourneyForContent ? (
             <section className="relative overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-2xl shadow-gray-200/50">
               <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-harx-50/40 blur-[100px] -mr-32 -mt-32" />
               <div className="h-1 w-full bg-gradient-harx" aria-hidden />
@@ -1327,7 +1326,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 )}
               </div>
             </section>
-            ) : null}
+            {!selectedJourneyForContent ? (
             <section className="relative overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-2xl shadow-gray-200/50">
               <div className="h-1 w-full bg-gradient-harx" aria-hidden />
               <div className="relative z-10 p-6">
@@ -1407,6 +1406,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 )}
               </div>
             </section>
+            ) : null}
           </div>
         </div>
           </>
