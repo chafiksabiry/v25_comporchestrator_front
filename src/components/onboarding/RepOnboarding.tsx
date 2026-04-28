@@ -696,6 +696,24 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     setRepViewerHtml(buildRepInteractivePresentationHtml(journey));
   };
 
+  /** Start button opens the full REP viewer flow (same as JourneyBuilder viewer mode). */
+  const openJourneyStartViewer = (journey: any) => {
+    const journeyId = String(journey?._id || journey?.id || '').trim();
+    if (!journeyId) {
+      window.alert('Training ID not found.');
+      return;
+    }
+    const resolvedGigId = resolveJourneyGigId(journey) || undefined;
+    setSelectedJourneyForContent(null);
+    setShowTraining({
+      isOpen: true,
+      newJourney: true,
+      journeyId,
+      gigId: resolvedGigId || undefined,
+      openFormationViewer: true,
+    });
+  };
+
   const stopPodcastPlayback = useCallback(() => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
@@ -1201,7 +1219,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => openJourneyContentOrImages(journey)}
+                                  onClick={() => openJourneyStartViewer(journey)}
                                   disabled={deletingJourneyId === formatted.id}
                                   className={`inline-flex items-center space-x-2 rounded-xl px-3 py-2 text-xs font-bold transition-all ${formatted.status === 'completed'
                                     ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100 hover:bg-emerald-100'
