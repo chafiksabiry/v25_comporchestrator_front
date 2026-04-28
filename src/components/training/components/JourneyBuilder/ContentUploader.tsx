@@ -106,13 +106,56 @@ function extractTrainingReadinessBlock(raw: string): {
   trainingReadiness: TrainingReadinessPayload | null;
 } {
   const full = String(raw || '');
-  const m = full.match(HARX_TRAINING_STATUS_REGEX);
-  if (!m?.[1]) {
+  const closed = full.match(HARX_TRAINING_STATUS_REGEX);
+  let payloadRaw = String(closed?.[1] || '').trim();
+  let displayText = closed ? full.replace(HARX_TRAINING_STATUS_REGEX, '').trim() : full.trim();
+
+  // Streaming guard: if closing tag is missing, still strip and parse the payload.
+  if (!payloadRaw) {
+    const openMatch = full.match(/<harx-training-status\b[^>]*>/i);
+    if (openMatch && openMatch.index != null) {
+      const start = openMatch.index;
+      const afterOpen = full.slice(start + openMatch[0].length);
+      const closeIdx = afterOpen.search(/<\/harx-training-status>/i);
+      payloadRaw = (closeIdx >= 0 ? afterOpen.slice(0, closeIdx) : afterOpen).trim();
+      const end =
+        closeIdx >= 0
+          ? start + openMatch[0].length + closeIdx + '</harx-training-status>'.length
+          : full.length;
+      displayText = (full.slice(0, start) + full.slice(end)).trim();
+    }
+  }
+
+  if (!payloadRaw) {
     return { displayText: full.trim(), trainingReadiness: null };
   }
-  const displayText = full.replace(HARX_TRAINING_STATUS_REGEX, '').trim();
+
+  const tryParsePayload = (src: string): any | null => {
+    const t = String(src || '').trim();
+    if (!t) return null;
+    try {
+      return JSON.parse(t);
+    } catch {
+      const firstBrace = t.indexOf('{');
+      const lastBrace = t.lastIndexOf('}');
+      if (firstBrace >= 0 && lastBrace > firstBrace) {
+        const candidate = t.slice(firstBrace, lastBrace + 1);
+        try {
+          return JSON.parse(candidate);
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    }
+  };
+
+  const parsed = tryParsePayload(payloadRaw);
+  if (!parsed || typeof parsed !== 'object') {
+    return { displayText, trainingReadiness: null };
+  }
+
   try {
-    const parsed = JSON.parse(m[1]);
     let readiness = parsed?.readiness as 'ready' | 'incomplete' | 'not_applicable' | undefined;
     if (readiness !== 'ready' && readiness !== 'incomplete' && readiness !== 'not_applicable') {
       return { displayText, trainingReadiness: null };
