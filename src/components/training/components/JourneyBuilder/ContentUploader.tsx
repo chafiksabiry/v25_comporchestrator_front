@@ -691,6 +691,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [formationViewerQuizState, setFormationViewerQuizState] = useState<
     Record<string, { selected: number | null; revealed: boolean }>
   >({});
+  const [formationViewerQuizPage, setFormationViewerQuizPage] = useState<Record<string, number>>({});
 
   const formationPreviewForViewer = useMemo(() => savedJourneyHydrated || journey, [savedJourneyHydrated, journey]);
 
@@ -717,12 +718,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     | {
         key: string;
-        kind: 'quiz_question';
+        kind: 'quiz_group';
         moduleIndex: number;
         totalModules: number;
-        quizTitle: string;
-        question: any;
-        correctAnswer: number;
+        questions: Array<{ quizTitle: string; question: any; correctAnswer: number }>;
       };
 
   const formationViewerSlides = useMemo((): FormationViewerSlide[] => {
@@ -767,22 +766,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
         });
       });
       const quizzes = Array.isArray(mod?.quizzes) ? mod.quizzes : [];
+      const moduleQuestions: Array<{ quizTitle: string; question: any; correctAnswer: number }> = [];
       quizzes.forEach((qz: any, qi: number) => {
         const quizTitle = String(qz?.title || `Quiz ${qi + 1}`);
         const questions = Array.isArray(qz?.questions) ? qz.questions : [];
-        questions.forEach((q: any, qix: number) => {
+        questions.forEach((q: any) => {
           const correct = typeof q?.correctAnswer === 'number' ? q.correctAnswer : 0;
-          slides.push({
-            key: `m${mi}-qz${qi}-q${qix}`,
-            kind: 'quiz_question',
-            moduleIndex: mi,
-            totalModules,
-            quizTitle,
-            question: q,
-            correctAnswer: correct,
-          });
+          moduleQuestions.push({ quizTitle, question: q, correctAnswer: correct });
         });
       });
+      if (moduleQuestions.length > 0) {
+        slides.push({
+          key: `m${mi}-quiz`,
+          kind: 'quiz_group',
+          moduleIndex: mi,
+          totalModules,
+          questions: moduleQuestions,
+        });
+      }
     });
     return slides;
   }, [formationPreviewForViewer]);
@@ -807,6 +808,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     if (!showGeneratedFormationModal) return;
     setFormationViewerSlideIndex(0);
     setFormationViewerQuizState({});
+    setFormationViewerQuizPage({});
     setFormationDeckModalTab('parcours');
   }, [showGeneratedFormationModal]);
 
@@ -822,6 +824,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
       return Math.min(i, max);
     });
   }, [formationViewerSlides, showGeneratedFormationModal]);
+
+  useEffect(() => {
+    setFormationViewerQuizPage((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      formationViewerSlides.forEach((slide) => {
+        if (slide.kind !== 'quiz_group') return;
+        const max = Math.max(0, slide.questions.length - 1);
+        const current = typeof next[slide.key] === 'number' ? next[slide.key] : 0;
+        const clamped = Math.min(Math.max(current, 0), max);
+        if (clamped !== current) {
+          next[slide.key] = clamped;
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [formationViewerSlides]);
 
   useEffect(() => {
     if (!showGeneratedFormationModal) {
@@ -6127,14 +6147,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               ) : (
                                 (() => {
                                   const slide = currentFormationViewerSlide;
-                                  const q = slide.question;
+                                  const totalQuestions = slide.questions.length;
+                                  const page = Math.min(
+                                    Math.max(formationViewerQuizPage[slide.key] ?? 0, 0),
+                                    Math.max(0, totalQuestions - 1)
+                                  );
+                                  const currentQuestion = slide.questions[page];
+                                  const q = currentQuestion?.question;
                                   const opts = Array.isArray(q?.options) ? q.options : [];
-                                  const qKey = slide.key;
+                                  const qKey = `${slide.key}-q${page}`;
                                   const qState = formationViewerQuizState[qKey] || {
                                     selected: null as number | null,
                                     revealed: false,
                                   };
-                                  const correctIdx = slide.correctAnswer;
+                                  const correctIdx = typeof currentQuestion?.correctAnswer === 'number' ? currentQuestion.correctAnswer : 0;
                                   const isCorrect =
                                     qState.revealed && qState.selected !== null && qState.selected === correctIdx;
                                   const isWrong =
@@ -6142,8 +6168,41 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   return (
                                     <div className="rounded-3xl border border-harx-500/30 bg-[#0b1025]/90 p-5 shadow-[0_20px_70px_-25px_rgba(236,72,153,0.4)] sm:p-7">
                                       <p className="mb-2 inline-flex rounded-full border border-harx-400/40 bg-harx-500/20 px-2.5 py-1 text-xs font-semibold text-harx-100">
-                                        {slide.quizTitle}
+                                        {currentQuestion?.quizTitle || `Quiz module ${slide.moduleIndex + 1}`}
                                       </p>
+                                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                        <span className="rounded-full border border-harx-400/35 bg-[#12172f] px-2.5 py-1 font-semibold text-harx-100">
+                                          Question {page + 1} / {totalQuestions}
+                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                          <button
+                                            type="button"
+                                            disabled={page <= 0}
+                                            onClick={() =>
+                                              setFormationViewerQuizPage((prev) => ({
+                                                ...prev,
+                                                [slide.key]: Math.max(0, (prev[slide.key] ?? 0) - 1),
+                                              }))
+                                            }
+                                            className="rounded-lg border border-harx-500/30 bg-[#12172f] px-2.5 py-1 font-semibold text-slate-200 transition hover:border-harx-400/60 disabled:opacity-40"
+                                          >
+                                            Précédente
+                                          </button>
+                                          <button
+                                            type="button"
+                                            disabled={page >= totalQuestions - 1}
+                                            onClick={() =>
+                                              setFormationViewerQuizPage((prev) => ({
+                                                ...prev,
+                                                [slide.key]: Math.min(totalQuestions - 1, (prev[slide.key] ?? 0) + 1),
+                                              }))
+                                            }
+                                            className="rounded-lg border border-harx-400/40 bg-gradient-to-r from-harx-600/85 to-harx-alt-500/85 px-2.5 py-1 font-semibold text-white transition hover:brightness-110 disabled:opacity-40"
+                                          >
+                                            Suivante
+                                          </button>
+                                        </div>
+                                      </div>
                                       <p className="mb-4 text-base font-semibold text-white sm:text-lg">
                                         {String(q?.question || '')}
                                       </p>
