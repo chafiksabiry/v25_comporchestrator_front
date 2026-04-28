@@ -54,10 +54,36 @@ export type TrainingReadinessPayload = {
 const HARX_TRAINING_STATUS_REGEX = /<harx-training-status>\s*([\s\S]*?)\s*<\/harx-training-status>/i;
 const HIDDEN_CHAT_COMMAND_REGEX = /^__(?:VALIDATE_PLAN__|VALIDATE_MODULE_CONTENT__|VALIDATE_ALL_MODULES_CONTENT__)/i;
 
+function stripHarxTrainingStatusBlocks(rawText: string): string {
+  let s = String(rawText || '');
+  for (;;) {
+    const m = s.match(/<harx-training-status\b[^>]*>/i);
+    if (!m || m.index == null) break;
+    const start = m.index;
+    const tail = s.slice(start + m[0].length);
+    const closeMatch = tail.match(/<\/harx-training-status>/i);
+    if (closeMatch && closeMatch.index != null) {
+      const end = start + m[0].length + closeMatch.index + closeMatch[0].length;
+      s = s.slice(0, start) + s.slice(end);
+      continue;
+    }
+    s = s.slice(0, start);
+    break;
+  }
+  // Extra guard for leaked/truncated JSON status tails.
+  s = s.replace(/,?\s*"messageFr"\s*:\s*"[^"]*"[\s\S]*?"actions"\s*:\s*\[[\s\S]*$/gi, '');
+  return s.trim();
+}
+
 function stripAssistantTrainingTags(raw: string): string {
-  return stripHarxStyleBlocks(String(raw || ''))
-    .replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, '')
-    .replace(HARX_TRAINING_STATUS_REGEX, '')
+  return sanitizeAssistantMessage(raw);
+}
+
+function sanitizeAssistantMessage(raw: string): string {
+  return stripHarxTrainingStatusBlocks(
+    stripHarxStyleBlocks(String(raw || ''))
+      .replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, '')
+  )
     .replace(/<harx-plan-confirm>[\s\S]*?<\/harx-plan-confirm>/gi, '')
     .trim();
 }
@@ -127,7 +153,7 @@ function extractTrainingReadinessBlock(raw: string): {
   }
 
   if (!payloadRaw) {
-    return { displayText: full.trim(), trainingReadiness: null };
+    return { displayText: sanitizeAssistantMessage(full), trainingReadiness: null };
   }
 
   const tryParsePayload = (src: string): any | null => {
@@ -152,13 +178,13 @@ function extractTrainingReadinessBlock(raw: string): {
 
   const parsed = tryParsePayload(payloadRaw);
   if (!parsed || typeof parsed !== 'object') {
-    return { displayText, trainingReadiness: null };
+    return { displayText: sanitizeAssistantMessage(displayText), trainingReadiness: null };
   }
 
   try {
     let readiness = parsed?.readiness as 'ready' | 'incomplete' | 'not_applicable' | undefined;
     if (readiness !== 'ready' && readiness !== 'incomplete' && readiness !== 'not_applicable') {
-      return { displayText, trainingReadiness: null };
+      return { displayText: sanitizeAssistantMessage(displayText), trainingReadiness: null };
     }
     const missingModules = Array.isArray(parsed?.missingModules)
       ? (parsed.missingModules as any[])
@@ -196,7 +222,7 @@ function extractTrainingReadinessBlock(raw: string): {
           .filter((a) => a.label)
       : [];
     if (!actions.length) {
-      return { displayText, trainingReadiness: null };
+      return { displayText: sanitizeAssistantMessage(displayText), trainingReadiness: null };
     }
     return {
       displayText,
@@ -212,7 +238,7 @@ function extractTrainingReadinessBlock(raw: string): {
       },
     };
   } catch {
-    return { displayText, trainingReadiness: null };
+    return { displayText: sanitizeAssistantMessage(displayText), trainingReadiness: null };
   }
 }
 
@@ -6656,9 +6682,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         <div className="max-w-[88%]">
                           <div className="max-w-none text-slate-900">
                             {(() => {
-                              const textWithoutStyle = stripPromptEcho(stripResourceSections(
-                                stripStyleBlueprint(String(msg.text || '').replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, ''))
-                              ));
+                              const textWithoutStyle = stripPromptEcho(
+                                stripResourceSections(stripStyleBlueprint(sanitizeAssistantMessage(String(msg.text || ''))))
+                              );
                               const styleBlueprint = extractStyleBlueprint(String(msg.text || ''));
                               const contentTheme = styleBlueprint.contentTheme;
                               const typography = styleBlueprint.typography || {
