@@ -5778,7 +5778,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       </div>
                       
                       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-[#070a1a] via-[#0a1024] to-[#090d1f]">
-                        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
+                        <div className="min-h-0 flex-1 overflow-hidden px-4 py-3 sm:px-6 sm:py-4">
                           {!hasFormationContentSlides && isSavedJourneyHydrating ? (
                             <div className="flex items-center gap-2 py-8 text-sm text-slate-600">
                               <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
