@@ -5692,18 +5692,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 createPortal(
                   (
                   <div
-                    className="fixed inset-0 z-[120] flex h-full w-full flex-col bg-black/35 p-2 sm:p-4"
+                    className="fixed inset-0 z-[120] flex h-full w-full flex-col bg-slate-950/60 p-2 backdrop-blur-[2px] sm:p-4"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="generated-formation-modal-title"
                   >
                     <div
-                      className="mx-auto flex h-full w-full max-w-[1500px] flex-col overflow-hidden rounded-xl border-t-4 border-harx-500 bg-white shadow-2xl"
+                      className="mx-auto flex h-full w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-harx-200/70 bg-white shadow-[0_30px_120px_-30px_rgba(244,63,94,0.55)]"
                     >
-                      <div className="shrink-0 border-b border-slate-100 bg-gradient-to-r from-emerald-50/80 to-white px-4 pb-3 pt-4 sm:px-6 sm:pt-5">
+                      <div className="shrink-0 border-b border-harx-100 bg-gradient-to-r from-harx-50 via-white to-harx-alt-50 px-4 pb-3 pt-4 sm:px-6 sm:pt-5">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex min-w-0 items-start gap-3">
-                            <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" aria-hidden />
+                            <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-harx-700" aria-hidden />
                             <div className="min-w-0">
                               <p
                                 id="generated-formation-modal-title"
@@ -5725,7 +5725,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               type="button"
                               onClick={() => void hydrateSavedJourneyFromApi()}
                               disabled={isSavedJourneyHydrating}
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-harx-50 disabled:opacity-50"
                               title="Recharger depuis la base"
                             >
                               {isSavedJourneyHydrating ? (
@@ -5744,7 +5744,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 }
                                 setShowGeneratedFormationModal(false);
                               }}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-harx-200 text-slate-500 transition hover:bg-harx-50"
                               title="Fermer"
                             >
                               <X className="h-4 w-4" />
@@ -5752,8 +5752,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           </div>
                         </div>
                       </div>
-                      <div className="shrink-0 border-b border-slate-100 bg-slate-50/90 px-4 py-2.5 sm:px-6">
-                        <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                      <div className="shrink-0 border-b border-harx-100 bg-gradient-to-r from-white via-harx-50/40 to-white px-4 py-2.5 sm:px-6">
+                        <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-harx-700">
                           Présentation interactive HARX (design local, plein écran)
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
@@ -5777,7 +5777,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 setIsBuildingRepFormationDeck(false);
                               }
                             }}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-900 hover:bg-teal-100/80 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-harx-200 bg-gradient-to-r from-harx-50 to-harx-alt-50 px-3 py-1.5 text-xs font-semibold text-harx-800 transition hover:from-harx-100 hover:to-harx-alt-100 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {isBuildingRepFormationDeck ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -5829,7 +5829,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               }
                               setIsSavingRepFormationDeck(false);
                             }}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-harx-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {isSavingRepFormationDeck ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -5859,7 +5859,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               a.click();
                               URL.revokeObjectURL(url);
                             }}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-harx-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-harx-50 disabled:opacity-50"
                           >
                             <FileText className="h-3.5 w-3.5" />
                             Télécharger .html
@@ -5870,7 +5870,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         ) : null}
                         {repFormationDeckHtml ? (
                           <div
-                            className="mt-3 flex rounded-lg border border-slate-200 bg-slate-200/60 p-0.5"
+                            className="mt-3 flex rounded-lg border border-harx-200 bg-harx-50/60 p-0.5"
                             role="tablist"
                             aria-label="Mode d’affichage de la formation"
                           >
@@ -5881,8 +5881,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               onClick={() => setFormationDeckModalTab('html')}
                               className={`flex-1 rounded-md px-2 py-1.5 text-center text-[11px] font-semibold transition ${
                                 formationDeckModalTab === 'html'
-                                  ? 'bg-white text-slate-900 shadow-sm'
-                                  : 'text-slate-600 hover:text-slate-900'
+                                  ? 'bg-white text-harx-900 shadow-sm'
+                                  : 'text-slate-600 hover:text-harx-900'
                               }`}
                             >
                               Start (HTML)
@@ -5894,8 +5894,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               onClick={() => setFormationDeckModalTab('parcours')}
                               className={`flex-1 rounded-md px-2 py-1.5 text-center text-[11px] font-semibold transition ${
                                 formationDeckModalTab === 'parcours'
-                                  ? 'bg-white text-slate-900 shadow-sm'
-                                  : 'text-slate-600 hover:text-slate-900'
+                                  ? 'bg-white text-harx-900 shadow-sm'
+                                  : 'text-slate-600 hover:text-harx-900'
                               }`}
                             >
                               Content (modules)
@@ -5903,7 +5903,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           </div>
                         ) : null}
                       </div>
-                      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-[#070a1a] via-[#0a1024] to-[#090d1f]">
                         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
                           {repFormationDeckHtml && formationDeckModalTab === 'html' ? (
                             <div className="flex h-full min-h-[min(52vh,520px)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-900/5 shadow-inner">
@@ -5930,19 +5930,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             </p>
                           ) : currentFormationViewerSlide ? (
                             <div className="mx-auto w-full max-w-5xl">
-                              <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-widest text-emerald-800/90">
+                              <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-widest text-harx-200">
                                 Feuille de route · slide {formationViewerSlideIndex + 1} /{' '}
                                 {formationViewerSlides.length}
                               </p>
                               {currentFormationViewerSlide.kind === 'overview' ? (
-                                <div className="rounded-3xl border border-harx-100/80 bg-gradient-to-br from-white via-slate-50 to-harx-50/40 p-4 shadow-lg shadow-slate-200/60 sm:p-6">
-                                  <div className="rounded-2xl border border-harx-100 bg-white/80 p-4 backdrop-blur-sm sm:p-5">
+                                <div className="rounded-3xl border border-harx-500/30 bg-[#0b1025]/90 p-4 shadow-[0_20px_70px_-25px_rgba(236,72,153,0.45)] sm:p-6">
+                                  <div className="rounded-2xl border border-harx-500/25 bg-gradient-to-r from-[#141833] to-[#101530] p-4 backdrop-blur-sm sm:p-5">
                                     <div className="flex flex-wrap items-center justify-between gap-3">
                                       <div>
-                                        <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-harx-700">
+                                        <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-harx-300">
                                           HARX Training
                                         </p>
-                                        <h3 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+                                        <h3 className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
                                           {String(
                                             (formationPreviewForViewer as any)?.title ||
                                               (formationPreviewForViewer as any)?.name ||
@@ -5950,11 +5950,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                           ).trim()}
                                         </h3>
                                       </div>
-                                      <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-800">
+                                      <span className="inline-flex items-center rounded-full border border-harx-400/40 bg-harx-500/20 px-3 py-1 text-[11px] font-semibold text-harx-100">
                                         {currentFormationViewerSlide.modules.length} modules
                                       </span>
                                     </div>
-                                    <p className="mt-2 text-sm text-slate-600">
+                                    <p className="mt-2 text-sm text-slate-300">
                                       Choisissez un module pour afficher son contenu organise par sections.
                                     </p>
                                   </div>
@@ -5962,7 +5962,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                     {currentFormationViewerSlide.modules.map((mod) => (
                                       <div
                                         key={`overview-mod-${mod.moduleIndex}`}
-                                        className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                                        className="rounded-2xl border border-harx-500/25 bg-[#12172f] p-3 shadow-[0_10px_35px_-20px_rgba(236,72,153,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:border-harx-400/50 hover:shadow-[0_18px_40px_-20px_rgba(236,72,153,0.45)]"
                                       >
                                         <button
                                           type="button"
@@ -5981,10 +5981,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                             Ouvrir
                                           </span>
                                         </button>
-                                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+                                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-300">
                                           <span>{mod.sections.length} section(s)</span>
                                         </div>
-                                        <p className="mt-2 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-500">
+                                        <p className="mt-2 rounded-lg border border-dashed border-harx-500/30 bg-[#0f1430] px-2.5 py-2 text-xs text-slate-300">
                                           Cliquez sur le module pour voir les sections.
                                         </p>
                                       </div>
@@ -6000,21 +6000,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   /** `description` côté API recopie souvent tout le module (sections + quiz) : on évite de la réafficher si des sections structurées existent. */
                                   const showFullDescription = sectionCount === 0 && !!desc;
                                   return (
-                                    <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5 shadow-sm sm:p-7">
-                                      <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-500">
+                                    <div className="rounded-3xl border border-harx-500/30 bg-[#0b1025]/90 p-5 shadow-[0_20px_70px_-25px_rgba(236,72,153,0.4)] sm:p-7">
+                                      <p className="mb-2 inline-flex rounded-full border border-harx-400/40 bg-harx-500/20 px-2.5 py-1 text-xs font-semibold text-harx-100">
                                         Module {currentFormationViewerSlide.moduleIndex + 1} /{' '}
                                         {currentFormationViewerSlide.totalModules}
                                       </p>
-                                      <h3 className="mb-3 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+                                      <h3 className="mb-3 text-xl font-extrabold tracking-tight text-white sm:text-2xl">
                                         {String(mod?.title || 'Module')}
                                       </h3>
                                       {showFullDescription ? (
-                                        <div className="prose prose-sm max-w-none text-slate-800">
+                                        <div className="prose prose-sm max-w-none text-slate-200">
                                           <ReactMarkdown remarkPlugins={[remarkGfm]}>{desc}</ReactMarkdown>
                                         </div>
                                       ) : sectionCount > 0 ? (
                                         <>
-                                          <p className="text-sm leading-relaxed text-slate-600">
+                                          <p className="text-sm leading-relaxed text-slate-300">
                                             Contenu du module par sections.
                                           </p>
                                           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -6034,23 +6034,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                               return (
                                                 <div
                                                   key={`module-intro-sec-${currentFormationViewerSlide.moduleIndex}-${si}`}
-                                                  className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-harx-300 hover:shadow-md"
+                                                  className="rounded-2xl border border-harx-500/25 bg-[#12172f] p-3 shadow-[0_10px_35px_-20px_rgba(236,72,153,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:border-harx-400/50 hover:shadow-[0_18px_40px_-20px_rgba(236,72,153,0.45)]"
                                                 >
                                                   <div className="flex items-start gap-2">
-                                                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-harx-50 text-[11px] font-bold text-harx-700 ring-1 ring-harx-100">
+                                                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-harx-500/20 text-[11px] font-bold text-harx-100 ring-1 ring-harx-400/35">
                                                       {si + 1}
                                                     </span>
                                                     <div className="min-w-0 flex-1">
-                                                      <p className="truncate text-sm font-semibold text-slate-900">
+                                                      <p className="truncate text-sm font-semibold text-white">
                                                         {sectionTitle}
                                                       </p>
                                                       {preview ? (
-                                                        <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                                                        <p className="mt-1 text-xs leading-relaxed text-slate-300">
                                                           {preview}
                                                           {rawContent.length > 170 ? '…' : ''}
                                                         </p>
                                                       ) : (
-                                                        <p className="mt-1 text-xs text-slate-500">
+                                                        <p className="mt-1 text-xs text-slate-400">
                                                           Aucun contenu texte pour cette section.
                                                         </p>
                                                       )}
@@ -6063,7 +6063,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                                         `m${currentFormationViewerSlide.moduleIndex}-s${si}`
                                                       )
                                                     }
-                                                    className="mt-3 inline-flex items-center rounded-lg border border-harx-200 bg-gradient-to-r from-harx-50 to-harx-alt-50 px-2.5 py-1.5 text-xs font-semibold text-harx-700 transition hover:from-harx-100 hover:to-harx-alt-100"
+                                                    className="mt-3 inline-flex items-center rounded-lg border border-harx-400/40 bg-gradient-to-r from-harx-500/25 to-harx-alt-500/25 px-2.5 py-1.5 text-xs font-semibold text-harx-100 transition hover:from-harx-500/35 hover:to-harx-alt-500/35"
                                                   >
                                                     Ouvrir la section
                                                   </button>
@@ -6073,47 +6073,47 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                           </div>
                                         </>
                                       ) : (
-                                        <p className="text-sm text-slate-500">Pas de description pour ce module.</p>
+                                        <p className="text-sm text-slate-300">Pas de description pour ce module.</p>
                                       )}
                                     </div>
                                   );
                                 })()
                               ) : currentFormationViewerSlide.kind === 'section' ? (
-                                <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-white to-emerald-50/20 p-5 shadow-sm sm:p-7">
-                                  <p className="mb-2 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                                <div className="rounded-3xl border border-harx-500/30 bg-[#0b1025]/90 p-5 shadow-[0_20px_70px_-25px_rgba(236,72,153,0.4)] sm:p-7">
+                                  <p className="mb-2 inline-flex rounded-full border border-harx-400/40 bg-harx-500/20 px-2.5 py-1 text-xs font-semibold text-harx-100">
                                     {currentFormationViewerSlide.modTitle}
                                   </p>
-                                  <h3 className="mb-3 text-lg font-bold text-slate-900 sm:text-xl">
+                                  <h3 className="mb-3 text-lg font-bold text-white sm:text-xl">
                                     {String(currentFormationViewerSlide.section?.title || 'Section')}
                                   </h3>
                                   {String(currentFormationViewerSlide.section?.content || '').trim() ? (
-                                    <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+                                    <div className="rounded-2xl border border-harx-500/20 bg-[#12172f] p-4 shadow-[0_12px_30px_-18px_rgba(236,72,153,0.4)]">
                                       <ReactMarkdown
                                         remarkPlugins={[remarkGfm]}
                                         components={{
                                           p: ({ children }) => (
-                                            <p className="mb-3 text-[15px] leading-7 text-slate-700 last:mb-0">{children}</p>
+                                            <p className="mb-3 text-[15px] leading-7 text-slate-200 last:mb-0">{children}</p>
                                           ),
                                           ul: ({ children }) => (
-                                            <ul className="mb-3 space-y-2 rounded-xl bg-slate-50 p-3 last:mb-0">{children}</ul>
+                                            <ul className="mb-3 space-y-2 rounded-xl border border-harx-500/20 bg-[#0f1430] p-3 last:mb-0">{children}</ul>
                                           ),
                                           li: ({ children }) => (
-                                            <li className="flex items-start gap-2 text-[14px] leading-6 text-slate-700">
-                                              <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-harx-500" />
+                                            <li className="flex items-start gap-2 text-[14px] leading-6 text-slate-200">
+                                              <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-harx-400" />
                                               <span className="flex-1">{children}</span>
                                             </li>
                                           ),
                                           strong: ({ children }) => (
-                                            <strong className="font-semibold text-slate-900">{children}</strong>
+                                            <strong className="font-semibold text-white">{children}</strong>
                                           ),
                                           h1: ({ children }) => (
-                                            <h4 className="mb-2 mt-4 text-xl font-bold text-slate-900 first:mt-0">{children}</h4>
+                                            <h4 className="mb-2 mt-4 text-xl font-bold text-white first:mt-0">{children}</h4>
                                           ),
                                           h2: ({ children }) => (
-                                            <h5 className="mb-2 mt-4 text-lg font-bold text-slate-900 first:mt-0">{children}</h5>
+                                            <h5 className="mb-2 mt-4 text-lg font-bold text-white first:mt-0">{children}</h5>
                                           ),
                                           h3: ({ children }) => (
-                                            <h6 className="mb-2 mt-4 text-base font-bold text-slate-900 first:mt-0">{children}</h6>
+                                            <h6 className="mb-2 mt-4 text-base font-bold text-white first:mt-0">{children}</h6>
                                           ),
                                         }}
                                       >
@@ -6121,7 +6121,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                       </ReactMarkdown>
                                     </div>
                                   ) : (
-                                    <p className="text-sm text-slate-500">Contenu vide.</p>
+                                    <p className="text-sm text-slate-300">Contenu vide.</p>
                                   )}
                                 </div>
                               ) : (
@@ -6140,11 +6140,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   const isWrong =
                                     qState.revealed && qState.selected !== null && qState.selected !== correctIdx;
                                   return (
-                                    <div className="rounded-3xl border border-violet-200/80 bg-gradient-to-br from-violet-50/60 to-white p-5 shadow-sm sm:p-7">
-                                      <p className="mb-2 inline-flex rounded-full border border-violet-200 bg-white px-2.5 py-1 text-xs font-semibold text-violet-900">
+                                    <div className="rounded-3xl border border-harx-500/30 bg-[#0b1025]/90 p-5 shadow-[0_20px_70px_-25px_rgba(236,72,153,0.4)] sm:p-7">
+                                      <p className="mb-2 inline-flex rounded-full border border-harx-400/40 bg-harx-500/20 px-2.5 py-1 text-xs font-semibold text-harx-100">
                                         {slide.quizTitle}
                                       </p>
-                                      <p className="mb-4 text-base font-semibold text-slate-900 sm:text-lg">
+                                      <p className="mb-4 text-base font-semibold text-white sm:text-lg">
                                         {String(q?.question || '')}
                                       </p>
                                       <div className="space-y-2" role="radiogroup" aria-label="Réponses">
@@ -6172,12 +6172,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                               }}
                                               className={`flex w-full rounded-xl border px-3 py-2.5 text-left text-sm transition ${
                                                 showAsCorrect
-                                                  ? 'border-emerald-500 bg-emerald-50 font-semibold text-emerald-950'
+                                                  ? 'border-emerald-400 bg-emerald-500/20 font-semibold text-emerald-100'
                                                   : wrongSelected
-                                                    ? 'border-rose-400 bg-rose-50 text-rose-950'
+                                                    ? 'border-rose-400 bg-rose-500/20 text-rose-100'
                                                     : selected && !qState.revealed
-                                                      ? 'border-violet-500 bg-violet-100/80 text-slate-900'
-                                                      : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300'
+                                                      ? 'border-harx-400 bg-harx-500/25 text-white'
+                                                      : 'border-harx-500/20 bg-[#12172f] text-slate-100 hover:border-harx-400/40'
                                               }`}
                                             >
                                               <span className="mr-2 font-mono text-xs text-slate-400">{oi + 1}.</span>
@@ -6201,15 +6201,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                               },
                                             }))
                                           }
-                                          className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                          className="mt-4 w-full rounded-xl bg-gradient-to-r from-harx-600 to-harx-alt-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                           Valider ma réponse
                                         </button>
                                       ) : (
-                                        <div className="mt-4 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                                        <div className="mt-4 rounded-xl border border-harx-500/20 bg-[#12172f] px-3 py-3">
                                           <p
                                             className={`text-sm font-semibold ${
-                                              isCorrect ? 'text-emerald-800' : isWrong ? 'text-rose-800' : 'text-slate-700'
+                                              isCorrect ? 'text-emerald-300' : isWrong ? 'text-rose-300' : 'text-slate-200'
                                             }`}
                                           >
                                             {isCorrect
@@ -6219,7 +6219,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                                 : 'Réponse affichée.'}
                                           </p>
                                           {String(q?.explanation || '').trim() ? (
-                                            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                                            <p className="mt-2 text-sm leading-relaxed text-slate-300">
                                               {String(q.explanation)}
                                             </p>
                                           ) : null}
@@ -6234,10 +6234,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         </div>
                         {hasFormationContentSlides &&
                         (!repFormationDeckHtml || formationDeckModalTab === 'parcours') ? (
-                          <div className="shrink-0 border-t border-slate-200 bg-slate-50/80 px-4 py-3 sm:px-6">
-                            <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                          <div className="shrink-0 border-t border-harx-500/20 bg-gradient-to-r from-[#0b1025] via-[#0d1430] to-[#0b1025] px-4 py-3 sm:px-6">
+                            <div className="mb-3 h-2 w-full overflow-hidden rounded-full border border-harx-500/20 bg-[#12172f]">
                               <div
-                                className="h-full rounded-full bg-emerald-600 transition-[width] duration-300 ease-out"
+                                className="h-full rounded-full bg-gradient-to-r from-harx-500 via-harx-alt-500 to-fuchsia-400 shadow-[0_0_18px_rgba(236,72,153,0.55)] transition-[width] duration-300 ease-out"
                                 style={{
                                   width: `${((formationViewerSlideIndex + 1) / formationViewerSlides.length) * 100}%`,
                                 }}
@@ -6248,12 +6248,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 type="button"
                                 onClick={() => setFormationViewerSlideIndex((i) => Math.max(0, i - 1))}
                                 disabled={formationViewerSlideIndex <= 0}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="inline-flex items-center gap-1.5 rounded-full border border-harx-400/35 bg-[#141a36] px-3.5 py-2 text-xs font-semibold text-slate-100 shadow-[0_10px_24px_-16px_rgba(236,72,153,0.55)] transition hover:-translate-y-0.5 hover:border-harx-300/60 hover:bg-[#1a2142] disabled:cursor-not-allowed disabled:opacity-40"
                               >
                                 <ChevronLeft className="h-4 w-4" />
                                 Précédent
                               </button>
-                              <span className="text-xs font-medium text-slate-600">
+                              <span className="rounded-full border border-harx-500/25 bg-[#11172f] px-3 py-1 text-xs font-medium text-harx-100">
                                 {formationViewerSlideIndex + 1} / {formationViewerSlides.length}
                               </span>
                               <button
@@ -6264,7 +6264,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   )
                                 }
                                 disabled={formationViewerSlideIndex >= formationViewerSlides.length - 1}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="inline-flex items-center gap-1.5 rounded-full border border-harx-400/35 bg-gradient-to-r from-harx-600/85 to-harx-alt-500/85 px-3.5 py-2 text-xs font-semibold text-white shadow-[0_12px_28px_-14px_rgba(236,72,153,0.75)] transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
                               >
                                 Suivant
                                 <ChevronRight className="h-4 w-4" />
