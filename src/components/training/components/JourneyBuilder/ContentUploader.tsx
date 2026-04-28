@@ -81,6 +81,12 @@ function stripHarxStyleBlocks(rawText: string): string {
     s = s.slice(0, start) + s.slice(cut);
     break;
   }
+  // Guardrail: sometimes a trailing JSON fragment can leak without <harx-style> tags.
+  // Remove common style-blueprint tails (kpiLabel/kpiValue/.../canvasBg).
+  s = s.replace(
+    /,?\s*"kpiLabel"\s*:\s*"#[0-9a-fA-F]{3,8}"[\s\S]*?"canvasBg"\s*:\s*"#[0-9a-fA-F]{3,8}"\s*}\s*}?/gi,
+    ''
+  );
   return s.replace(/<\/harx-style>/gi, '').trim();
 }
 
@@ -2356,12 +2362,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const fileTrainingUrl: string | undefined = undefined;
       setFileTrainingUrl(undefined);
 
+      const setupJourney = (savedJourneyHydrated || journey) as any;
+      const setupTitle = String(
+        setupJourney?.title || setupJourney?.name || ''
+      ).trim();
+      const setupDescription = String(setupJourney?.description || '').trim();
+      const setupTrainingLogo =
+        setupJourney?.trainingLogo && typeof setupJourney.trainingLogo === 'object'
+          ? setupJourney.trainingLogo
+          : undefined;
+
       const journeyToSave: any = {
-        title: generatedCurriculum?.title || presentationToSave?.title || 'AI-generated training',
-        description: generatedCurriculum?.description || 'AI-generated description',
+        // Priorite aux valeurs configurees dans le setup (thumbnail/title/description).
+        title: setupTitle || generatedCurriculum?.title || presentationToSave?.title || 'AI-generated training',
+        description: setupDescription || generatedCurriculum?.description || 'AI-generated description',
         status: 'active',
         industry: company?.industry || 'General',
         company: company?.name || 'My Company',
+        ...(setupTrainingLogo ? { trainingLogo: setupTrainingLogo } : {}),
       };
 
       let modulesToSave: any[] =
@@ -2413,7 +2431,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
         (generatedCurriculum as any)?.data?.journeyId ||
         (generatedCurriculum as any)?.journeyId ||
         (generatedCurriculum as any)?._id ||
-        (generatedCurriculum as any)?.id;
+        (generatedCurriculum as any)?.id ||
+        linkedTrainingJourneyMongoId() ||
+        String((savedJourneyHydrated as any)?._id || (savedJourneyHydrated as any)?.id || '').trim() ||
+        String((journey as any)?._id || (journey as any)?.id || '').trim();
 
       const saveResult = await JourneyService.saveJourney(
         journeyToSave,
