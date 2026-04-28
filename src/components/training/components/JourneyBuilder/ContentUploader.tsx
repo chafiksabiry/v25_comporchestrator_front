@@ -5689,7 +5689,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 )}
               {rep &&
                 showGeneratedFormationModal &&
-                (
+                createPortal(
+                  (
                   <div
                     className="fixed inset-0 z-[120] flex h-full w-full flex-col bg-black/35 p-2 sm:p-4"
                     role="dialog"
@@ -6181,6 +6182,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       </div>
                     </div>
                   </div>
+                  ),
+                  document.body
                 )}
               {!showGeneratedFormationModal && shouldShowChatThread && (
                 <div
