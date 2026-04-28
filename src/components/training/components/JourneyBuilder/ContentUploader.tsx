@@ -740,6 +740,91 @@ export default function ContentUploader(props: ContentUploaderProps) {
     return themes[trainingViewerTheme];
   }, [trainingViewerTheme]);
 
+  const moduleColorStyles = useMemo(() => {
+    if (trainingViewerTheme === 'ocean') {
+      return [
+        {
+          accentBg: 'linear-gradient(90deg,#06b6d4 0%,#0ea5e9 55%,#38bdf8 100%)',
+          border: 'rgba(14,165,233,0.45)',
+          glow: '0 16px 38px -22px rgba(14,165,233,0.55)',
+          chipBg: 'rgba(14,165,233,0.22)',
+          chipBorder: 'rgba(14,165,233,0.48)',
+          softBg: 'rgba(14,165,233,0.10)',
+        },
+        {
+          accentBg: 'linear-gradient(90deg,#22d3ee 0%,#14b8a6 55%,#2dd4bf 100%)',
+          border: 'rgba(45,212,191,0.42)',
+          glow: '0 16px 38px -22px rgba(45,212,191,0.52)',
+          chipBg: 'rgba(45,212,191,0.2)',
+          chipBorder: 'rgba(45,212,191,0.45)',
+          softBg: 'rgba(45,212,191,0.08)',
+        },
+        {
+          accentBg: 'linear-gradient(90deg,#6366f1 0%,#3b82f6 55%,#0ea5e9 100%)',
+          border: 'rgba(99,102,241,0.42)',
+          glow: '0 16px 38px -22px rgba(99,102,241,0.5)',
+          chipBg: 'rgba(99,102,241,0.2)',
+          chipBorder: 'rgba(99,102,241,0.45)',
+          softBg: 'rgba(99,102,241,0.08)',
+        },
+      ];
+    }
+    if (trainingViewerTheme === 'sunset') {
+      return [
+        {
+          accentBg: 'linear-gradient(90deg,#fb7185 0%,#f97316 55%,#f59e0b 100%)',
+          border: 'rgba(251,113,133,0.45)',
+          glow: '0 16px 38px -22px rgba(251,113,133,0.55)',
+          chipBg: 'rgba(251,113,133,0.2)',
+          chipBorder: 'rgba(251,113,133,0.5)',
+          softBg: 'rgba(251,113,133,0.1)',
+        },
+        {
+          accentBg: 'linear-gradient(90deg,#f59e0b 0%,#f97316 55%,#ef4444 100%)',
+          border: 'rgba(245,158,11,0.45)',
+          glow: '0 16px 38px -22px rgba(245,158,11,0.52)',
+          chipBg: 'rgba(245,158,11,0.2)',
+          chipBorder: 'rgba(245,158,11,0.48)',
+          softBg: 'rgba(245,158,11,0.1)',
+        },
+        {
+          accentBg: 'linear-gradient(90deg,#a855f7 0%,#ec4899 55%,#fb7185 100%)',
+          border: 'rgba(236,72,153,0.45)',
+          glow: '0 16px 38px -22px rgba(236,72,153,0.52)',
+          chipBg: 'rgba(236,72,153,0.2)',
+          chipBorder: 'rgba(236,72,153,0.48)',
+          softBg: 'rgba(236,72,153,0.1)',
+        },
+      ];
+    }
+    return [
+      {
+        accentBg: 'linear-gradient(90deg,#f43f5e 0%,#e11d48 55%,#ec4899 100%)',
+        border: 'rgba(244,63,94,0.42)',
+        glow: '0 16px 38px -22px rgba(244,63,94,0.55)',
+        chipBg: 'rgba(244,63,94,0.22)',
+        chipBorder: 'rgba(244,63,94,0.45)',
+        softBg: 'rgba(244,63,94,0.08)',
+      },
+      {
+        accentBg: 'linear-gradient(90deg,#a855f7 0%,#7c3aed 55%,#ec4899 100%)',
+        border: 'rgba(168,85,247,0.42)',
+        glow: '0 16px 38px -22px rgba(168,85,247,0.55)',
+        chipBg: 'rgba(168,85,247,0.22)',
+        chipBorder: 'rgba(168,85,247,0.45)',
+        softBg: 'rgba(168,85,247,0.08)',
+      },
+      {
+        accentBg: 'linear-gradient(90deg,#22d3ee 0%,#0ea5e9 55%,#38bdf8 100%)',
+        border: 'rgba(34,211,238,0.42)',
+        glow: '0 16px 38px -22px rgba(34,211,238,0.55)',
+        chipBg: 'rgba(34,211,238,0.2)',
+        chipBorder: 'rgba(34,211,238,0.45)',
+        softBg: 'rgba(34,211,238,0.08)',
+      },
+    ];
+  }, [trainingViewerTheme]);
+
   const formationPreviewForViewer = useMemo(() => savedJourneyHydrated || journey, [savedJourneyHydrated, journey]);
 
   type FormationViewerSlide =
@@ -5877,7 +5962,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       ) : null}
                       
                       <div className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ background: viewerThemeTokens.contentBg }}>
-                        <div className="min-h-0 flex-1 overflow-hidden px-4 py-3 sm:px-6 sm:py-4">
+                        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
                           {!hasFormationContentSlides && isSavedJourneyHydrating ? (
                             <div className="flex items-center gap-2 py-8 text-sm text-slate-600">
                               <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
@@ -5906,7 +5991,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                           ).trim()}
                                         </h3>
                                       </div>
-                                      <span className="inline-flex items-center rounded-full border border-harx-400/40 bg-harx-500/20 px-3 py-1 text-[11px] font-semibold text-harx-100">
+                                      <span
+                                        className="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold text-white"
+                                        style={{
+                                          borderColor: moduleColorStyles[0].chipBorder,
+                                          background: moduleColorStyles[0].chipBg,
+                                        }}
+                                      >
                                         {currentFormationViewerSlide.modules.length} modules
                                       </span>
                                     </div>
@@ -5915,17 +6006,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                     </p>
                                   </div>
                                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                                    {currentFormationViewerSlide.modules.map((mod) => (
+                                    {currentFormationViewerSlide.modules.map((mod) => {
+                                      const moduleTheme =
+                                        moduleColorStyles[mod.moduleIndex % moduleColorStyles.length];
+                                      return (
                                       <div
                                         key={`overview-mod-${mod.moduleIndex}`}
                                         className="rounded-2xl border p-3 shadow-[0_10px_35px_-20px_rgba(236,72,153,0.35)] transition-all duration-300 hover:-translate-y-0.5"
-                                        style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.cardBg }}
+                                        style={{
+                                          borderColor: moduleTheme.border,
+                                          background: viewerThemeTokens.cardBg,
+                                          boxShadow: moduleTheme.glow,
+                                        }}
                                       >
                                         <button
                                           type="button"
                                           onClick={() => jumpToFormationSlide(`m${mod.moduleIndex}-intro`)}
                                           className="group flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-white shadow-sm transition hover:brightness-105"
-                                          style={{ background: viewerThemeTokens.accentBg }}
+                                          style={{ background: moduleTheme.accentBg }}
                                         >
                                           <span className="min-w-0">
                                             <span className="block text-[10px] font-bold uppercase tracking-wider text-white/90">
@@ -5942,24 +6040,38 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         <div className="mt-2 flex items-center justify-between text-[11px] text-slate-300">
                                           <span>{mod.sections.length} section(s)</span>
                                         </div>
-                                        <p className="mt-2 rounded-lg border border-dashed border-harx-500/30 bg-[#0f1430] px-2.5 py-2 text-xs text-slate-300">
+                                        <p
+                                          className="mt-2 rounded-lg border border-dashed px-2.5 py-2 text-xs text-slate-300"
+                                          style={{ borderColor: moduleTheme.border, background: moduleTheme.softBg }}
+                                        >
                                           Cliquez sur le module pour voir les sections.
                                         </p>
                                       </div>
-                                    ))}
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               ) : currentFormationViewerSlide.kind === 'module_intro' ? (
                                 (() => {
                                   const mod = currentFormationViewerSlide.mod;
+                                  const moduleTheme =
+                                    moduleColorStyles[
+                                      currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                    ];
                                   const sections = Array.isArray(mod?.sections) ? mod.sections : [];
                                   const sectionCount = sections.length;
                                   const desc = String(mod?.description || '').trim();
                                   /** `description` côté API recopie souvent tout le module (sections + quiz) : on évite de la réafficher si des sections structurées existent. */
                                   const showFullDescription = sectionCount === 0 && !!desc;
                                   return (
-                                    <div className="rounded-3xl border border-harx-500/30 bg-[#0b1025]/90 p-5 shadow-[0_20px_70px_-25px_rgba(236,72,153,0.4)] sm:p-7">
-                                      <p className="mb-2 inline-flex rounded-full border border-harx-400/40 bg-harx-500/20 px-2.5 py-1 text-xs font-semibold text-harx-100">
+                                    <div
+                                      className="rounded-3xl border bg-[#0b1025]/90 p-5 sm:p-7"
+                                      style={{ borderColor: moduleTheme.border, boxShadow: moduleTheme.glow }}
+                                    >
+                                      <p
+                                        className="mb-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold text-white"
+                                        style={{ borderColor: moduleTheme.chipBorder, background: moduleTheme.chipBg }}
+                                      >
                                         Module {currentFormationViewerSlide.moduleIndex + 1} /{' '}
                                         {currentFormationViewerSlide.totalModules}
                                       </p>
@@ -5998,10 +6110,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                                       `m${currentFormationViewerSlide.moduleIndex}-s${si}`
                                                     )
                                                   }
-                                                  className="w-full rounded-2xl border border-harx-500/25 bg-[#12172f] p-3 text-left shadow-[0_10px_35px_-20px_rgba(236,72,153,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:border-harx-400/50 hover:shadow-[0_18px_40px_-20px_rgba(236,72,153,0.45)]"
+                                                  className="w-full rounded-2xl border p-3 text-left transition-all duration-300 hover:-translate-y-0.5"
+                                                  style={{
+                                                    borderColor: moduleTheme.border,
+                                                    background: viewerThemeTokens.cardBg,
+                                                    boxShadow: moduleTheme.glow,
+                                                  }}
                                                 >
                                                   <div className="flex items-start gap-2">
-                                                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-harx-500/20 text-[11px] font-bold text-harx-100 ring-1 ring-harx-400/35">
+                                                    <span
+                                                      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold text-white ring-1"
+                                                      style={{
+                                                        background: moduleTheme.chipBg,
+                                                        borderColor: moduleTheme.chipBorder,
+                                                      }}
+                                                    >
                                                       {si + 1}
                                                     </span>
                                                     <div className="min-w-0 flex-1">
@@ -6032,27 +6155,84 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   );
                                 })()
                               ) : currentFormationViewerSlide.kind === 'section' ? (
-                                <div className="rounded-3xl border border-harx-500/30 bg-[#0b1025]/90 p-5 shadow-[0_20px_70px_-25px_rgba(236,72,153,0.4)] sm:p-7">
-                                  <p className="mb-2 inline-flex rounded-full border border-harx-400/40 bg-harx-500/20 px-2.5 py-1 text-xs font-semibold text-harx-100">
+                                <div
+                                  className="rounded-3xl border bg-[#0b1025]/90 p-5 sm:p-7"
+                                  style={{
+                                    borderColor:
+                                      moduleColorStyles[
+                                        currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                      ].border,
+                                    boxShadow:
+                                      moduleColorStyles[
+                                        currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                      ].glow,
+                                  }}
+                                >
+                                  <p
+                                    className="mb-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold text-white"
+                                    style={{
+                                      borderColor:
+                                        moduleColorStyles[
+                                          currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                        ].chipBorder,
+                                      background:
+                                        moduleColorStyles[
+                                          currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                        ].chipBg,
+                                    }}
+                                  >
                                     {currentFormationViewerSlide.modTitle}
                                   </p>
                                   <h3 className="mb-3 text-lg font-bold text-white sm:text-xl">
                                     {String(currentFormationViewerSlide.section?.title || 'Section')}
                                   </h3>
                                   {String(currentFormationViewerSlide.section?.content || '').trim() ? (
-                                    <div className="rounded-2xl border border-harx-500/20 bg-[#12172f] p-4 shadow-[0_12px_30px_-18px_rgba(236,72,153,0.4)]">
+                                    <div
+                                      className="rounded-2xl border p-4"
+                                      style={{
+                                        borderColor:
+                                          moduleColorStyles[
+                                            currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                          ].border,
+                                        background: viewerThemeTokens.cardBg,
+                                        boxShadow:
+                                          moduleColorStyles[
+                                            currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                          ].glow,
+                                      }}
+                                    >
                                       <ReactMarkdown
                                         remarkPlugins={[remarkGfm]}
                                         components={{
                                           p: ({ children }) => (
                                             <p className="mb-3 text-[15px] leading-7 text-slate-200 last:mb-0">{children}</p>
                                           ),
-                                          ul: ({ children }) => (
-                                            <ul className="mb-3 space-y-2 rounded-xl border border-harx-500/20 bg-[#0f1430] p-3 last:mb-0">{children}</ul>
-                                          ),
+                                          ul: ({ children }) => {
+                                            const modTheme =
+                                              moduleColorStyles[
+                                                currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                              ];
+                                            return (
+                                              <ul
+                                                className="mb-3 space-y-2 rounded-xl border p-3 last:mb-0"
+                                                style={{ borderColor: modTheme.border, background: modTheme.softBg }}
+                                              >
+                                                {children}
+                                              </ul>
+                                            );
+                                          },
                                           li: ({ children }) => (
                                             <li className="flex items-start gap-2 text-[14px] leading-6 text-slate-200">
-                                              <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-harx-400" />
+                                              <span
+                                                className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+                                                style={{
+                                                  background:
+                                                    moduleColorStyles[
+                                                      currentFormationViewerSlide.moduleIndex %
+                                                        moduleColorStyles.length
+                                                    ].chipBorder,
+                                                }}
+                                              />
                                               <span className="flex-1">{children}</span>
                                             </li>
                                           ),
@@ -6226,11 +6406,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         </div>
                         {hasFormationContentSlides &&
                         (!repFormationDeckHtml || formationDeckModalTab === 'parcours') ? (
-                          <div className="shrink-0 border-t border-harx-500/20 bg-gradient-to-r from-[#0b1025] via-[#0d1430] to-[#0b1025] px-4 py-3 sm:px-6">
-                            <div className="mb-3 h-2 w-full overflow-hidden rounded-full border border-harx-500/20 bg-[#12172f]">
+                          <div
+                            className="shrink-0 border-t px-4 py-3 sm:px-6"
+                            style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.panelBg }}
+                          >
+                            <div className="mb-3 h-2 w-full overflow-hidden rounded-full border" style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.cardBg }}>
                               <div
-                                className="h-full rounded-full bg-gradient-to-r from-harx-500 via-harx-alt-500 to-fuchsia-400 shadow-[0_0_18px_rgba(236,72,153,0.55)] transition-[width] duration-300 ease-out"
+                                className="h-full rounded-full transition-[width] duration-300 ease-out"
                                 style={{
+                                  background: viewerThemeTokens.accentBg,
+                                  boxShadow: viewerThemeTokens.accentShadow,
                                   width: `${((formationViewerSlideIndex + 1) / formationViewerSlides.length) * 100}%`,
                                 }}
                               />
@@ -6240,12 +6425,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 type="button"
                                 onClick={() => setFormationViewerSlideIndex((i) => Math.max(0, i - 1))}
                                 disabled={formationViewerSlideIndex <= 0}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-harx-400/35 bg-[#141a36] px-3.5 py-2 text-xs font-semibold text-slate-100 shadow-[0_10px_24px_-16px_rgba(236,72,153,0.55)] transition hover:-translate-y-0.5 hover:border-harx-300/60 hover:bg-[#1a2142] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold text-slate-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+                                style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.cardBg, boxShadow: viewerThemeTokens.accentShadow }}
                               >
                                 <ChevronLeft className="h-4 w-4" />
                                 Précédent
                               </button>
-                              <span className="rounded-full border border-harx-500/25 bg-[#11172f] px-3 py-1 text-xs font-medium text-harx-100">
+                              <span className="rounded-full border px-3 py-1 text-xs font-medium text-white" style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.cardBg }}>
                                 {formationViewerSlideIndex + 1} / {formationViewerSlides.length}
                               </span>
                               <button
@@ -6256,7 +6442,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   )
                                 }
                                 disabled={formationViewerSlideIndex >= formationViewerSlides.length - 1}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-harx-400/35 bg-gradient-to-r from-harx-600/85 to-harx-alt-500/85 px-3.5 py-2 text-xs font-semibold text-white shadow-[0_12px_28px_-14px_rgba(236,72,153,0.75)] transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                                style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.accentBg, boxShadow: viewerThemeTokens.accentShadow }}
                               >
                                 Suivant
                                 <ChevronRight className="h-4 w-4" />
