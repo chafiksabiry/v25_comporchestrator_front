@@ -217,18 +217,36 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
       to { opacity: 1; transform: translateY(0); }
     }
     .card {
-      background: var(--paper);
-      color: var(--navy);
-      border-radius: 20px;
-      border: 1px solid rgba(226,232,240,0.95);
-      padding: 22px 20px;
-      box-shadow: 0 22px 65px rgba(2,6,23,0.42), 0 2px 12px rgba(15,23,42,0.12);
-      min-height: 220px;
+      position: relative;
+      background:
+        radial-gradient(600px 220px at 10% 0%, rgba(45,212,191,0.16), transparent 62%),
+        radial-gradient(500px 240px at 95% 100%, rgba(99,102,241,0.18), transparent 64%),
+        linear-gradient(145deg, #07162a 0%, #0b1f37 55%, #0a1a2f 100%);
+      color: #e2e8f0;
+      border-radius: 24px;
+      border: 1px solid rgba(148,163,184,0.18);
+      padding: 24px 22px;
+      box-shadow: 0 24px 68px rgba(2,6,23,0.52), inset 0 1px 0 rgba(255,255,255,0.04);
+      min-height: 280px;
+      overflow: hidden;
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -110px;
+      bottom: -130px;
+      width: 300px;
+      height: 300px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.12);
+      background: radial-gradient(circle at 40% 40%, rgba(45,212,191,0.14), rgba(15,23,42,0) 65%);
+      pointer-events: none;
     }
     .card h2 {
       margin: 0 0 10px;
-      font-size: 1.2rem;
-      color: var(--navy);
+      font-size: clamp(1.25rem, 3.6vw, 2.15rem);
+      color: #f8fafc;
+      letter-spacing: -0.02em;
     }
     .badge {
       display: inline-block;
@@ -236,7 +254,7 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--teal2);
+      color: #34d399;
       margin-bottom: 8px;
     }
     .module-num {
@@ -247,10 +265,41 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
       margin-bottom: 8px;
     }
     .body-text {
-      font-size: 0.95rem;
-      line-height: 1.55;
+      font-size: 1rem;
+      line-height: 1.65;
       white-space: pre-wrap;
-      color: #334155;
+      color: #cbd5e1;
+    }
+    .section-points {
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+    .section-points li {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      color: #e2e8f0;
+      font-size: 0.98rem;
+      font-weight: 550;
+      line-height: 1.45;
+    }
+    .section-points li::before {
+      content: "✓";
+      flex: 0 0 22px;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #042f2e;
+      background: linear-gradient(135deg, #2dd4bf, #34d399);
     }
     .quiz-zone {
       margin-top: 12px;
@@ -262,18 +311,23 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
       margin: 8px 0;
       padding: 12px 14px;
       border-radius: 12px;
-      border: 2px solid #e2e8f0;
-      background: #fff;
+      border: 1px solid rgba(148,163,184,0.28);
+      background: rgba(15,23,42,0.45);
       cursor: pointer;
       font-size: 0.9rem;
-      color: var(--navy);
+      color: #e2e8f0;
       transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.2s;
     }
-    .opt:hover:not(:disabled) { border-color: var(--teal); background: #f0fdfa; }
+    .opt:hover:not(:disabled) {
+      border-color: rgba(45,212,191,0.8);
+      background: rgba(15,23,42,0.72);
+      box-shadow: 0 0 0 3px rgba(45,212,191,0.15);
+      transform: translateY(-1px);
+    }
     .opt:disabled { cursor: default; opacity: 0.95; }
-    .opt.pick { border-color: var(--teal); background: #ecfdf5; }
-    .opt.correct { border-color: #059669; background: #d1fae5; }
-    .opt.wrong { border-color: #e11d48; background: #ffe4e6; }
+    .opt.pick { border-color: #2dd4bf; background: rgba(20,184,166,0.2); }
+    .opt.correct { border-color: #10b981; background: rgba(16,185,129,0.24); }
+    .opt.wrong { border-color: #f43f5e; background: rgba(244,63,94,0.22); }
     .btn-row { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     button.primary {
       background: linear-gradient(135deg, var(--teal), var(--teal2));
@@ -291,8 +345,9 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
       padding: 12px;
       border-radius: 10px;
       font-size: 0.88rem;
-      background: #f1f5f9;
-      color: #334155;
+      background: rgba(15,23,42,0.52);
+      border: 1px solid rgba(148,163,184,0.24);
+      color: #e2e8f0;
     }
     nav.footer {
       position: fixed;
@@ -328,7 +383,7 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
       border: none;
       padding: 0;
     }
-    .dot.on { background: var(--teal); transform: scale(1.15); }
+    .dot.on { background: var(--teal); transform: scale(1.15); box-shadow: 0 0 0 3px rgba(45,212,191,0.2); }
     .nav-btn {
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(148,163,184,0.35);
@@ -343,7 +398,7 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
       font-size: 1.1rem;
     }
     .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .counter { font-size: 0.8rem; color: var(--muted); min-width: 4.5rem; text-align: center; }
+    .counter { font-size: 0.95rem; color: #e2e8f0; font-weight: 700; min-width: 4.5rem; text-align: center; }
   </style>
 </head>
 <body>
@@ -396,10 +451,14 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
         '<h2>' + esc(s.title) + '</h2>' +
         '<p class="body-text">' + esc(s.subtitle) + '</p></div>';
     } else if (s.kind === 'section') {
+      var lines = String(s.body || '').split(/\n+/).map(function (x) { return String(x || '').trim(); }).filter(Boolean);
+      var points = lines.length > 1
+        ? '<ul class="section-points">' + lines.map(function (ln) { return '<li>' + esc(ln) + '</li>'; }).join('') + '</ul>'
+        : '<div class="body-text">' + esc(String(s.body || '')) + '</div>';
       html = '<div class="card">' +
         '<div class="badge">' + esc(s.moduleTitle) + '</div>' +
         '<h2>' + esc(s.sectionTitle) + '</h2>' +
-        '<div class="body-text">' + esc(s.body) + '</div></div>';
+        points + '</div>';
     } else if (s.kind === 'quiz') {
       html = '<div class="card">' +
         '<div class="badge">' + esc(s.quizTitle) + '</div>' +
