@@ -1,7 +1,15 @@
 import { ApiClient } from '../../lib/api';
+import type { RepDeckSlide } from '../../utils/buildRepInteractivePresentationHtml';
 import {
   buildFormationDigestForRepPresentation,
   extractHtmlDocumentFromAiResponse,
+  buildFormationDigestEnvelopeForRepPresentation,
+  buildSingleModuleDigestForRepPresentation,
+  parseRepDeckSlidesJsonFromAiResponse,
+  normalizeAiRepDeckSlides,
+  buildFormationOverviewSlide,
+  buildRepInteractivePresentationHtmlFromDeck,
+  buildRepDeckSlidesForSingleModule,
 } from '../../utils/buildRepInteractivePresentationHtml';
 
 /** Coerce API presentation payloads into { title, slides[] } for the preview / export. */
@@ -570,6 +578,96 @@ Commence ta réponse par <!DOCTYPE html>`;
       throw new Error('Réponse IA vide ou sans document HTML valide');
     }
     return html;
+  }
+
+  /**
+   * Génère la présentation HTML en plusieurs appels IA : enveloppe du parcours + **un seul module** par requête
+   * (JSON `slides` ensuite fusionné dans le gabarit local). Réduit troncation / timeout vs un seul gros HTML.
+   * Le backend doit accepter `purpose: 'rep_interactive_deck_slides_module'` et `maxTokens` (ex. 8192).
+   */
+  static async generateRepInteractiveDeckHtmlWithAiModular(
+    journey: any,
+    onProgress?: (message: string) => void
+  ): Promise<{ html: string; hint: string }> {
+    const title = String(journey?.title || journey?.name || 'Formation').trim() || 'Formation';
+    const modules = Array.isArray(journey?.modules) ? journey.modules : [];
+    const overview = buildFormationOverviewSlide(journey);
+    const allSlides: RepDeckSlide[] = [overview];
+
+    if (!modules.length) {
+      return {
+        html: buildRepInteractivePresentationHtmlFromDeck(title, allSlides),
+        hint: 'Aucun module : seule la slide d’introduction du parcours a été générée.',
+      };
+    }
+
+    const envelope = buildFormationDigestEnvelopeForRepPresentation(journey);
+    const fallbackModules: number[] = [];
+    const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    for (let i = 0; i < modules.length; i++) {
+      onProgress?.(`Génération IA · module ${i + 1} / ${modules.length}…`);
+      const modDigest = buildSingleModuleDigestForRepPresentation(journey, i);
+      const moduleTitle =
+        modDigest?.title?.trim() || String(modules[i]?.title || `Module ${i + 1}`).trim();
+
+      const scopeJson = JSON.stringify({
+        envelope,
+        moduleIndex: i,
+        totalModules: modules.length,
+        module: modDigest,
+      });
+
+      const message = `[TÂCHE — répondre UNIQUEMENT avec un objet JSON valide, sans markdown ni texte avant/après]
+
+Tu produis la liste des slides pour UN SEUL module d’une formation (interface en français).
+
+Schéma exact de la réponse :
+{"slides":[ ... ]}
+
+Chaque élément de "slides" est un objet avec "kind" :
+- "module_intro" : { "kind":"module_intro", "title", "subtitle", "moduleNum", "totalModules" }
+- "section" : { "kind":"section", "moduleTitle", "sectionTitle", "body" } — body en texte brut (pas de HTML)
+- "quiz" : { "kind":"quiz", "quizTitle", "question", "options": ["..."], "correctIndex": 0, "explanation" }
+
+Règles :
+- Utilise UNIQUEMENT le module fourni dans "module" du JSON ci-dessous (sections + quiz). N’invente pas de contenu absent du JSON.
+- Inclure une slide "module_intro" pour ce module, puis une slide "section" par entrée de module.sections, puis une slide "quiz" par question (options cliquables côté rendu : respecter l’ordre des options ; ne pas révéler la bonne réponse dans le texte des options).
+- moduleNum = (moduleIndex + 1), totalModules = totalModules du scope. subtitle peut résumer le module en 1–2 phrases si le JSON le permet.
+- Réponse compacte : pas de commentaires JSON, pas de champs inutiles.
+
+Scope (enveloppe + un module) :
+${scopeJson}`;
+
+      try {
+        if (i > 0) await delay(200);
+        const raw = await AIService.chat(message, '', {
+          maxTokens: 8192,
+          purpose: 'rep_interactive_deck_slides_module',
+        });
+        const parsed = parseRepDeckSlidesJsonFromAiResponse(raw);
+        const normalized = normalizeAiRepDeckSlides(parsed, {
+          totalModules: modules.length,
+          moduleIndex0: i,
+          moduleTitle,
+          journeyTitle: title,
+        });
+        if (!normalized.length) throw new Error('empty slides');
+        allSlides.push(...normalized);
+      } catch (e) {
+        console.warn(`[AIService] modular deck module ${i + 1} failed, using local slides`, e);
+        fallbackModules.push(i + 1);
+        allSlides.push(...buildRepDeckSlidesForSingleModule(journey, i));
+      }
+    }
+
+    const html = buildRepInteractivePresentationHtmlFromDeck(title, allSlides);
+    let hint =
+      'Présentation assemblée : une slide d’introduction (parcours complet), puis pour chaque module une requête IA avec **seulement ce module** dans le prompt (JSON slides + gabarit HTML local).';
+    if (fallbackModules.length) {
+      hint += ` Secours local pour le(s) module(s) n° ${fallbackModules.join(', ')} (réponse IA vide ou invalide).`;
+    }
+    return { html, hint };
   }
 
   /**

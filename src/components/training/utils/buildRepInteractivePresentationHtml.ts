@@ -43,49 +43,65 @@ export function buildRepDeckSlidesFromJourney(journey: any): RepDeckSlide[] {
   const slides: RepDeckSlide[] = [];
 
   modules.forEach((mod: any, mi: number) => {
-    const modTitle = String(mod?.title || `Module ${mi + 1}`).trim();
-    const sectionCount = Array.isArray(mod?.sections) ? mod.sections.length : 0;
-    const subtitle =
-      sectionCount > 0
-        ? 'Le détail suit dans les prochaines slides (sections puis quiz).'
-        : markdownishToPlain(String(mod?.description || '')).slice(0, 280) +
-          (String(mod?.description || '').length > 280 ? '…' : '');
+    slides.push(...buildRepDeckSlidesForSingleModule(journey, mi));
+  });
 
+  return slides;
+}
+
+/**
+ * Slides pour un seul module (indices 0-based), avec numérotation cohérente sur le parcours complet.
+ */
+export function buildRepDeckSlidesForSingleModule(journey: any, moduleIndex: number): RepDeckSlide[] {
+  const modules = Array.isArray(journey?.modules) ? journey.modules : [];
+  const totalModules = modules.length;
+  const slides: RepDeckSlide[] = [];
+  if (moduleIndex < 0 || moduleIndex >= modules.length) return slides;
+
+  const mod = modules[moduleIndex];
+  const mi = moduleIndex;
+  const modTitle = String(mod?.title || `Module ${mi + 1}`).trim();
+  const sectionCount = Array.isArray(mod?.sections) ? mod.sections.length : 0;
+  const subtitle =
+    sectionCount > 0
+      ? 'Le détail suit dans les prochaines slides (sections puis quiz).'
+      : markdownishToPlain(String(mod?.description || '')).slice(0, 280) +
+        (String(mod?.description || '').length > 280 ? '…' : '');
+
+  slides.push({
+    kind: 'module_intro',
+    title: modTitle,
+    subtitle,
+    moduleNum: mi + 1,
+    totalModules,
+  });
+
+  const sections = Array.isArray(mod?.sections) ? mod.sections : [];
+  sections.forEach((sec: any) => {
+    const body = markdownishToPlain(String(sec?.content || ''));
     slides.push({
-      kind: 'module_intro',
-      title: modTitle,
-      subtitle,
-      moduleNum: mi + 1,
-      totalModules,
+      kind: 'section',
+      moduleTitle: modTitle,
+      sectionTitle: String(sec?.title || 'Section').trim(),
+      body: body || '(Contenu vide)',
     });
+  });
 
-    const sections = Array.isArray(mod?.sections) ? mod.sections : [];
-    sections.forEach((sec: any) => {
-      const body = markdownishToPlain(String(sec?.content || ''));
+  const quizzes = Array.isArray(mod?.quizzes) ? mod.quizzes : [];
+  quizzes.forEach((qz: any) => {
+    const quizTitle = String(qz?.title || 'Quiz').trim();
+    const questions = Array.isArray(qz?.questions) ? qz.questions : [];
+    questions.forEach((q: any) => {
+      const opts = Array.isArray(q?.options) ? q.options.map((o: any) => String(o || '').trim()).filter(Boolean) : [];
+      if (opts.length === 0) return;
+      const correct = typeof q?.correctAnswer === 'number' ? q.correctAnswer : 0;
       slides.push({
-        kind: 'section',
-        moduleTitle: modTitle,
-        sectionTitle: String(sec?.title || 'Section').trim(),
-        body: body || '(Contenu vide)',
-      });
-    });
-
-    const quizzes = Array.isArray(mod?.quizzes) ? mod.quizzes : [];
-    quizzes.forEach((qz: any) => {
-      const quizTitle = String(qz?.title || 'Quiz').trim();
-      const questions = Array.isArray(qz?.questions) ? qz.questions : [];
-      questions.forEach((q: any) => {
-        const opts = Array.isArray(q?.options) ? q.options.map((o: any) => String(o || '').trim()).filter(Boolean) : [];
-        if (opts.length === 0) return;
-        const correct = typeof q?.correctAnswer === 'number' ? q.correctAnswer : 0;
-        slides.push({
-          kind: 'quiz',
-          quizTitle,
-          question: String(q?.question || '').trim(),
-          options: opts,
-          correctIndex: Math.min(Math.max(0, correct), opts.length - 1),
-          explanation: String(q?.explanation || '').trim(),
-        });
+        kind: 'quiz',
+        quizTitle,
+        question: String(q?.question || '').trim(),
+        options: opts,
+        correctIndex: Math.min(Math.max(0, correct), opts.length - 1),
+        explanation: String(q?.explanation || '').trim(),
       });
     });
   });
@@ -93,9 +109,28 @@ export function buildRepDeckSlidesFromJourney(journey: any): RepDeckSlide[] {
   return slides;
 }
 
-export function buildRepInteractivePresentationHtml(journey: any): string {
+/**
+ * Slide d’introduction couvrant tout le parcours (obligatoire en tête de la présentation modulaire).
+ */
+export function buildFormationOverviewSlide(journey: any): RepDeckSlide {
   const title = String(journey?.title || journey?.name || 'Formation').trim() || 'Formation';
-  const slides = buildRepDeckSlidesFromJourney(journey);
+  const modules = Array.isArray(journey?.modules) ? journey.modules : [];
+  const lines = modules
+    .map((m: any, i: number) => `${i + 1}. ${String(m?.title || `Module ${i + 1}`).trim()}`)
+    .join('\n');
+  const desc = markdownishToPlain(String(journey?.description || '')).trim();
+  const parts: string[] = [];
+  if (desc) parts.push(`Résumé : ${desc.slice(0, 900)}${desc.length > 900 ? '…' : ''}`);
+  parts.push('Modules du parcours :', lines || '(Aucun module)');
+  return {
+    kind: 'section',
+    moduleTitle: title,
+    sectionTitle: 'Introduction — vue d’ensemble du parcours',
+    body: parts.join('\n').trim() || lines || '(Parcours)',
+  };
+}
+
+export function buildRepInteractivePresentationHtmlFromDeck(title: string, slides: RepDeckSlide[]): string {
   const json = JSON.stringify({ title, slides }).replace(/</g, '\\u003c');
 
   return `<!DOCTYPE html>
@@ -446,6 +481,12 @@ export function buildRepInteractivePresentationHtml(journey: any): string {
 </html>`;
 }
 
+export function buildRepInteractivePresentationHtml(journey: any): string {
+  const title = String(journey?.title || journey?.name || 'Formation').trim() || 'Formation';
+  const slides = buildRepDeckSlidesFromJourney(journey);
+  return buildRepInteractivePresentationHtmlFromDeck(title, slides);
+}
+
 /** Taille max du JSON envoyé au chat IA (caractères). */
 const DIGEST_JSON_MAX = 26000;
 const SECTION_BODY_MAX = 1800;
@@ -468,38 +509,181 @@ export type FormationDigestForAi = {
   }>;
 };
 
+export type FormationDigestEnvelopeForAi = {
+  title: string;
+  totalModules: number;
+  moduleTitles: string[];
+  descriptionPlain?: string;
+};
+
+export function formationDigestModuleFromRaw(mod: any): FormationDigestForAi['modules'][number] {
+  const sections = Array.isArray(mod?.sections) ? mod.sections : [];
+  const quizzes = Array.isArray(mod?.quizzes) ? mod.quizzes : [];
+  return {
+    title: String(mod?.title || 'Module').trim(),
+    sections: sections.map((sec: any) => ({
+      title: String(sec?.title || '').trim(),
+      contentPlain: markdownishToPlain(String(sec?.content || '')).slice(0, SECTION_BODY_MAX),
+    })),
+    quizzes: quizzes.map((qz: any) => ({
+      title: String(qz?.title || 'Quiz').trim(),
+      questions: (Array.isArray(qz?.questions) ? qz.questions : []).map((q: any) => {
+        const opts = Array.isArray(q?.options)
+          ? q.options.map((o: any) => String(o || '').trim()).filter(Boolean).slice(0, 8)
+          : [];
+        const correct = typeof q?.correctAnswer === 'number' ? q.correctAnswer : 0;
+        return {
+          question: String(q?.question || '').trim().slice(0, 800),
+          options: opts,
+          correctIndex: opts.length ? Math.min(Math.max(0, correct), opts.length - 1) : 0,
+          explanation: String(q?.explanation || '').trim().slice(0, 1200),
+        };
+      }),
+    })),
+  };
+}
+
+/** En-tête de parcours (titres des modules + description courte) — envoyé à chaque requête « un module ». */
+export function buildFormationDigestEnvelopeForRepPresentation(journey: any): FormationDigestEnvelopeForAi {
+  const title = String(journey?.title || journey?.name || 'Formation').trim() || 'Formation';
+  const rawMods = Array.isArray(journey?.modules) ? journey.modules : [];
+  const desc = markdownishToPlain(String(journey?.description || '')).trim();
+  return {
+    title,
+    totalModules: rawMods.length,
+    moduleTitles: rawMods.slice(0, MAX_MODULES_AI).map((m: any, i: number) => String(m?.title || `Module ${i + 1}`).trim()),
+    descriptionPlain: desc ? desc.slice(0, 1500) : undefined,
+  };
+}
+
+/** Digest d’un seul module (tronqué si nécessaire) pour le prompt IA. */
+export function buildSingleModuleDigestForRepPresentation(
+  journey: any,
+  moduleIndex: number
+): FormationDigestForAi['modules'][number] | null {
+  const rawMods = Array.isArray(journey?.modules) ? journey.modules : [];
+  const mod = rawMods[moduleIndex];
+  if (!mod) return null;
+  let m = formationDigestModuleFromRaw(mod);
+  let json = JSON.stringify({ module: m });
+  while (json.length > 18000 && m.sections.length > 0) {
+    m = {
+      ...m,
+      sections: m.sections.slice(0, -1),
+    };
+    json = JSON.stringify({ module: m });
+  }
+  if (json.length > 18000) {
+    m = {
+      ...m,
+      sections: m.sections.map((s) => ({
+        ...s,
+        contentPlain: s.contentPlain.slice(0, Math.floor(SECTION_BODY_MAX / 2)),
+      })),
+      quizzes: m.quizzes.map((qz) => ({
+        ...qz,
+        questions: qz.questions.slice(0, 4).map((q) => ({
+          ...q,
+          question: q.question.slice(0, 400),
+          explanation: q.explanation.slice(0, 400),
+        })),
+      })),
+    };
+  }
+  return m;
+}
+
+function coerceRepDeckSlide(
+  o: any,
+  ctx: { totalModules: number; moduleIndex0: number; moduleTitle: string; journeyTitle: string }
+): RepDeckSlide | null {
+  const kind = String(o?.kind || '').trim();
+  if (kind === 'module_intro') {
+    const moduleNum = Number.isFinite(o?.moduleNum)
+      ? Math.max(1, Math.min(ctx.totalModules, Math.round(Number(o.moduleNum))))
+      : ctx.moduleIndex0 + 1;
+    const totalModules = Number.isFinite(o?.totalModules)
+      ? Math.max(1, Math.round(Number(o.totalModules)))
+      : ctx.totalModules;
+    return {
+      kind: 'module_intro',
+      title: String(o?.title || ctx.moduleTitle).trim(),
+      subtitle:
+        String(o?.subtitle || '').trim() ||
+        'Le détail suit dans les prochaines slides (sections puis quiz).',
+      moduleNum,
+      totalModules,
+    };
+  }
+  if (kind === 'section') {
+    return {
+      kind: 'section',
+      moduleTitle: String(o?.moduleTitle || ctx.moduleTitle || ctx.journeyTitle).trim(),
+      sectionTitle: String(o?.sectionTitle || 'Section').trim(),
+      body: String(o?.body ?? '').trim() || '(Contenu)',
+    };
+  }
+  if (kind === 'quiz') {
+    const options = Array.isArray(o?.options)
+      ? o.options.map((x: any) => String(x || '').trim()).filter(Boolean).slice(0, 8)
+      : [];
+    if (options.length < 2) return null;
+    const ci =
+      typeof o?.correctIndex === 'number'
+        ? o.correctIndex
+        : typeof o?.correctAnswer === 'number'
+          ? o.correctAnswer
+          : 0;
+    return {
+      kind: 'quiz',
+      quizTitle: String(o?.quizTitle || 'Quiz').trim(),
+      question: String(o?.question || '').trim(),
+      options,
+      correctIndex: Math.min(Math.max(0, Math.round(Number(ci))), options.length - 1),
+      explanation: String(o?.explanation || '').trim(),
+    };
+  }
+  return null;
+}
+
+export function parseRepDeckSlidesJsonFromAiResponse(raw: string): unknown[] | null {
+  const s = String(raw || '').trim();
+  if (!s) return null;
+  let j = s;
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence?.[1]) j = fence[1].trim();
+  const start = j.indexOf('{');
+  const end = j.lastIndexOf('}');
+  if (start < 0 || end <= start) return null;
+  try {
+    const obj = JSON.parse(j.slice(start, end + 1)) as { slides?: unknown[] };
+    if (!obj || typeof obj !== 'object' || !Array.isArray(obj.slides)) return null;
+    return obj.slides;
+  } catch {
+    return null;
+  }
+}
+
+export function normalizeAiRepDeckSlides(
+  parsed: unknown[] | null,
+  ctx: { totalModules: number; moduleIndex0: number; moduleTitle: string; journeyTitle: string }
+): RepDeckSlide[] {
+  if (!parsed?.length) return [];
+  const out: RepDeckSlide[] = [];
+  for (const item of parsed) {
+    const slide = coerceRepDeckSlide(item, ctx);
+    if (slide) out.push(slide);
+  }
+  return out;
+}
+
 /**
  * Digest compact et tronqué pour le prompt IA (Claude via /api/ai/chat).
  */
 export function buildFormationDigestForRepPresentation(journey: any): FormationDigestForAi {
   const title = String(journey?.title || journey?.name || 'Formation').trim() || 'Formation';
   const rawMods = Array.isArray(journey?.modules) ? journey.modules : [];
-  const modules = rawMods.slice(0, MAX_MODULES_AI).map((mod: any) => {
-    const sections = Array.isArray(mod?.sections) ? mod.sections : [];
-    const quizzes = Array.isArray(mod?.quizzes) ? mod.quizzes : [];
-    return {
-      title: String(mod?.title || 'Module').trim(),
-      sections: sections.map((sec: any) => ({
-        title: String(sec?.title || '').trim(),
-        contentPlain: markdownishToPlain(String(sec?.content || '')).slice(0, SECTION_BODY_MAX),
-      })),
-      quizzes: quizzes.map((qz: any) => ({
-        title: String(qz?.title || 'Quiz').trim(),
-        questions: (Array.isArray(qz?.questions) ? qz.questions : []).map((q: any) => {
-          const opts = Array.isArray(q?.options)
-            ? q.options.map((o: any) => String(o || '').trim()).filter(Boolean).slice(0, 8)
-            : [];
-          const correct = typeof q?.correctAnswer === 'number' ? q.correctAnswer : 0;
-          return {
-            question: String(q?.question || '').trim().slice(0, 800),
-            options: opts,
-            correctIndex: opts.length ? Math.min(Math.max(0, correct), opts.length - 1) : 0,
-            explanation: String(q?.explanation || '').trim().slice(0, 1200),
-          };
-        }),
-      })),
-    };
-  });
+  const modules = rawMods.slice(0, MAX_MODULES_AI).map((mod: any) => formationDigestModuleFromRaw(mod));
 
   let digest: FormationDigestForAi = { title, modules };
   let json = JSON.stringify(digest);
