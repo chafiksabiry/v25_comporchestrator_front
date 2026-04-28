@@ -34,6 +34,9 @@ import '../training/index.css';
 
 interface RepOnboardingProps { }
 
+const TRAINING_VIEWER_ROUTE_KEY = 'trainingViewerJourneyId';
+const TRAINING_VIEWER_GIG_KEY = 'trainingViewerGigId';
+
 const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
@@ -76,6 +79,28 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const podcastUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const podcastAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const pushTrainingViewerRoute = useCallback((journeyId: string, gigId?: string) => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set(TRAINING_VIEWER_ROUTE_KEY, journeyId);
+    if (gigId) url.searchParams.set(TRAINING_VIEWER_GIG_KEY, gigId);
+    else url.searchParams.delete(TRAINING_VIEWER_GIG_KEY);
+    window.history.pushState({}, '', url.toString());
+  }, []);
+
+  const clearTrainingViewerRoute = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete(TRAINING_VIEWER_ROUTE_KEY);
+    url.searchParams.delete(TRAINING_VIEWER_GIG_KEY);
+    window.history.pushState({}, '', url.toString());
+  }, []);
+
+  const closeTrainingViewer = useCallback(() => {
+    setShowTraining({ isOpen: false });
+    clearTrainingViewerRoute();
+  }, [clearTrainingViewerRoute]);
 
   // Helper function to format training journey data for display
   const asUiString = (v: unknown, fallback: string): string => {
@@ -299,6 +324,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       gigId: resolvedGigId || undefined,
       openFormationViewer: false,
     });
+    clearTrainingViewerRoute();
   };
 
   /**
@@ -313,6 +339,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       gigId: filterGigId !== 'all' ? String(filterGigId).trim() : undefined,
       openFormationViewer: false,
     });
+    clearTrainingViewerRoute();
   };
 
   /** Mark Phase 3 Step 9 (REP Onboarding) complete and notify CompanyOnboarding like other steps. */
@@ -691,6 +718,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       return;
     }
     const resolvedGigId = resolveJourneyGigId(journey) || undefined;
+    pushTrainingViewerRoute(journeyId, resolvedGigId || undefined);
     setShowTraining({
       isOpen: true,
       newJourney: true,
@@ -699,6 +727,26 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       openFormationViewer: true,
     });
   };
+
+  useEffect(() => {
+    const syncFromRoute = () => {
+      if (typeof window === 'undefined') return;
+      const url = new URL(window.location.href);
+      const routeJourneyId = String(url.searchParams.get(TRAINING_VIEWER_ROUTE_KEY) || '').trim();
+      const routeGigId = String(url.searchParams.get(TRAINING_VIEWER_GIG_KEY) || '').trim();
+      if (!routeJourneyId) return;
+      setShowTraining({
+        isOpen: true,
+        newJourney: true,
+        journeyId: routeJourneyId,
+        gigId: routeGigId || undefined,
+        openFormationViewer: true,
+      });
+    };
+    syncFromRoute();
+    window.addEventListener('popstate', syncFromRoute);
+    return () => window.removeEventListener('popstate', syncFromRoute);
+  }, []);
 
   const stopPodcastPlayback = useCallback(() => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
@@ -809,24 +857,24 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
-      <div className="space-y-6">
-        <div className="mx-auto max-w-6xl">
+      <div className="flex h-[calc(100dvh-6.5rem)] w-full min-w-0 flex-col overflow-hidden">
+        <div className="flex min-h-0 h-full w-full flex-1 flex-col">
           <header className="mb-2 shrink-0 overflow-hidden rounded-xl border border-harx-100 px-5 py-2">
             <div className="h-0.5 w-full -mx-5 -mt-2 mb-2 rounded-t-xl bg-gradient-harx" aria-hidden />
             <div className="flex items-center justify-between">
               <div className="min-w-0" />
               <button
                 type="button"
-                onClick={() => setShowTraining({ isOpen: false })}
+                onClick={closeTrainingViewer}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-600 transition-all hover:border-harx-200 hover:text-harx-600"
               >
                 Back to trainings list
               </button>
             </div>
           </header>
-          <div className="w-full overflow-hidden rounded-xl border border-harx-100 bg-white">
+          <div className="min-h-0 h-full w-full overflow-hidden rounded-xl border border-harx-100 bg-white">
             <div className="h-0.5 w-full shrink-0 bg-gradient-harx" aria-hidden />
-            <div className="flex w-full flex-col overflow-hidden">
+            <div className="flex min-h-0 h-full w-full flex-col overflow-hidden">
               <AppContent
                 initialJourneyId={showTraining.journeyId}
                 initialGigId={showTraining.gigId}
@@ -835,7 +883,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 startJourneyStep={showTraining.journeyId ? 1 : 0}
                 startWithRepViewer={Boolean(showTraining.openFormationViewer)}
                 repOnboardingLayout={true}
-                onExitToTrainingList={() => setShowTraining({ isOpen: false })}
+                onExitToTrainingList={closeTrainingViewer}
                 onJourneyLaunch={handleEmbeddedJourneyComplete}
               />
             </div>
