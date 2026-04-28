@@ -14,7 +14,6 @@ import type { Gig } from '../../../../types/matching';
 import { scrollJourneyMainToTop } from './journeyScroll';
 import type { TrainingMethodology } from '../../types/methodology';
 import { buildGigSnapshotForAi } from '../../utils/gigSnapshotForAi';
-import { buildRepInteractivePresentationHtml } from '../../utils/buildRepInteractivePresentationHtml';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[], fileTrainingUrl?: string) => void;
@@ -692,6 +691,54 @@ export default function ContentUploader(props: ContentUploaderProps) {
     Record<string, { selected: number | null; revealed: boolean }>
   >({});
   const [formationViewerQuizPage, setFormationViewerQuizPage] = useState<Record<string, number>>({});
+  type TrainingViewerTheme = 'harx-night' | 'sunset' | 'ocean';
+  const [trainingViewerTheme, setTrainingViewerTheme] = useState<TrainingViewerTheme>('harx-night');
+  const [isSavingViewerTheme, setIsSavingViewerTheme] = useState(false);
+  const [viewerThemeHint, setViewerThemeHint] = useState<string | null>(null);
+
+  const viewerThemeTokens = useMemo(() => {
+    const themes: Record<
+      TrainingViewerTheme,
+      {
+        shellBg: string;
+        contentBg: string;
+        panelBg: string;
+        cardBg: string;
+        accentBg: string;
+        accentBorder: string;
+        accentShadow: string;
+      }
+    > = {
+      'harx-night': {
+        shellBg: 'rgba(2,6,23,0.6)',
+        contentBg: 'linear-gradient(180deg,#070a1a 0%,#0a1024 52%,#090d1f 100%)',
+        panelBg: 'rgba(11,16,37,0.92)',
+        cardBg: '#12172f',
+        accentBg: 'linear-gradient(90deg,#e11d48 0%,#f43f5e 50%,#ec4899 100%)',
+        accentBorder: 'rgba(244,63,94,0.35)',
+        accentShadow: '0 20px 70px -25px rgba(236,72,153,0.45)',
+      },
+      sunset: {
+        shellBg: 'rgba(55,24,24,0.58)',
+        contentBg: 'linear-gradient(180deg,#140a12 0%,#211026 50%,#2a1222 100%)',
+        panelBg: 'rgba(35,16,37,0.9)',
+        cardBg: '#2a1732',
+        accentBg: 'linear-gradient(90deg,#fb7185 0%,#f59e0b 52%,#f97316 100%)',
+        accentBorder: 'rgba(251,113,133,0.42)',
+        accentShadow: '0 20px 70px -25px rgba(251,113,133,0.42)',
+      },
+      ocean: {
+        shellBg: 'rgba(8,24,38,0.58)',
+        contentBg: 'linear-gradient(180deg,#061623 0%,#0a2233 50%,#0b2b3b 100%)',
+        panelBg: 'rgba(10,28,44,0.9)',
+        cardBg: '#12314a',
+        accentBg: 'linear-gradient(90deg,#06b6d4 0%,#0ea5e9 50%,#6366f1 100%)',
+        accentBorder: 'rgba(14,165,233,0.45)',
+        accentShadow: '0 20px 70px -25px rgba(14,165,233,0.45)',
+      },
+    };
+    return themes[trainingViewerTheme];
+  }, [trainingViewerTheme]);
 
   const formationPreviewForViewer = useMemo(() => savedJourneyHydrated || journey, [savedJourneyHydrated, journey]);
 
@@ -860,13 +907,39 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const jid = linkedTrainingJourneyMongoId();
     if (jid) {
       try {
+        const storedTheme = localStorage.getItem(`harx_rep_viewer_theme_${jid}`) as TrainingViewerTheme | null;
+        if (storedTheme === 'harx-night' || storedTheme === 'sunset' || storedTheme === 'ocean') {
+          setTrainingViewerTheme(storedTheme);
+        }
         const ls = localStorage.getItem(`harx_rep_deck_${jid}`);
         if (typeof ls === 'string' && ls.length > 200) setRepFormationDeckHtml(ls);
       } catch {
         /* ignore */
       }
     }
+    const themeFromMeta = String(src?.methodologyData?.repViewerTheme || '').trim();
+    if (themeFromMeta === 'harx-night' || themeFromMeta === 'sunset' || themeFromMeta === 'ocean') {
+      setTrainingViewerTheme(themeFromMeta);
+    }
   }, [showGeneratedFormationModal, savedJourneyHydrated, journey]);
+
+  const saveTrainingViewerTheme = useCallback(async () => {
+    setViewerThemeHint(null);
+    const jid = linkedTrainingJourneyMongoId();
+    if (jid) {
+      try {
+        localStorage.setItem(`harx_rep_viewer_theme_${jid}`, trainingViewerTheme);
+      } catch {
+        /* ignore */
+      }
+      setIsSavingViewerTheme(true);
+      const r = await JourneyService.saveJourneyRepViewerTheme(jid, trainingViewerTheme);
+      setIsSavingViewerTheme(false);
+      setViewerThemeHint(r.ok ? 'Theme enregistre.' : `Theme local OK. Serveur: ${r.error || 'indisponible'}`);
+      return;
+    }
+    setViewerThemeHint('Theme enregistre localement.');
+  }, [trainingViewerTheme]);
 
   const hydrateSavedJourneyFromApi = useCallback(async () => {
     if (!repOnboardingLayout) return;
@@ -5712,7 +5785,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 createPortal(
                   (
                   <div
-                    className="fixed inset-0 z-[120] flex h-full w-full flex-col bg-slate-950/60 p-2 backdrop-blur-[2px] sm:p-4"
+                    className="fixed inset-0 z-[120] flex h-full w-full flex-col p-2 backdrop-blur-[2px] sm:p-4"
+                    style={{ background: viewerThemeTokens.shellBg }}
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="generated-formation-modal-title"
@@ -5745,6 +5819,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             </div>
                           </div>
                           <div className="flex shrink-0 items-center gap-1.5">
+                            <select
+                              value={trainingViewerTheme}
+                              onChange={(e) => setTrainingViewerTheme(e.target.value as TrainingViewerTheme)}
+                              className="rounded-lg border border-harx-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700"
+                              title="Theme du viewer"
+                            >
+                              <option value="harx-night">HARX Night</option>
+                              <option value="sunset">Sunset</option>
+                              <option value="ocean">Ocean</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => void saveTrainingViewerTheme()}
+                              disabled={isSavingViewerTheme}
+                              className="inline-flex items-center gap-1 rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-harx-50 disabled:opacity-50"
+                              title="Enregistrer le theme"
+                            >
+                              {isSavingViewerTheme ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                              Theme
+                            </button>
                             <button
                               type="button"
                               onClick={() => void hydrateSavedJourneyFromApi()}
@@ -5776,8 +5870,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           </div>
                         </div>
                       </div>
+                      {viewerThemeHint ? (
+                        <p className="shrink-0 border-b border-harx-100 bg-white px-4 py-1.5 text-[11px] text-slate-600 sm:px-6">
+                          {viewerThemeHint}
+                        </p>
+                      ) : null}
                       
-                      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-[#070a1a] via-[#0a1024] to-[#090d1f]">
+                      <div className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ background: viewerThemeTokens.contentBg }}>
                         <div className="min-h-0 flex-1 overflow-hidden px-4 py-3 sm:px-6 sm:py-4">
                           {!hasFormationContentSlides && isSavedJourneyHydrating ? (
                             <div className="flex items-center gap-2 py-8 text-sm text-slate-600">
@@ -5791,13 +5890,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             </p>
                           ) : currentFormationViewerSlide ? (
                             <div className="mx-auto w-full max-w-5xl">
-                              <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-widest text-harx-200">
-                                Feuille de route · slide {formationViewerSlideIndex + 1} /{' '}
-                                {formationViewerSlides.length}
-                              </p>
                               {currentFormationViewerSlide.kind === 'overview' ? (
-                                <div className="rounded-3xl border border-harx-500/30 bg-[#0b1025]/90 p-4 shadow-[0_20px_70px_-25px_rgba(236,72,153,0.45)] sm:p-6">
-                                  <div className="rounded-2xl border border-harx-500/25 bg-gradient-to-r from-[#141833] to-[#101530] p-4 backdrop-blur-sm sm:p-5">
+                                <div className="rounded-3xl border p-4 sm:p-6" style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.panelBg, boxShadow: viewerThemeTokens.accentShadow }}>
+                                  <div className="rounded-2xl border p-4 backdrop-blur-sm sm:p-5" style={{ borderColor: viewerThemeTokens.accentBorder, background: 'linear-gradient(90deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))' }}>
                                     <div className="flex flex-wrap items-center justify-between gap-3">
                                       <div>
                                         <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-harx-300">
@@ -5823,12 +5918,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                     {currentFormationViewerSlide.modules.map((mod) => (
                                       <div
                                         key={`overview-mod-${mod.moduleIndex}`}
-                                        className="rounded-2xl border border-harx-500/25 bg-[#12172f] p-3 shadow-[0_10px_35px_-20px_rgba(236,72,153,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:border-harx-400/50 hover:shadow-[0_18px_40px_-20px_rgba(236,72,153,0.45)]"
+                                        className="rounded-2xl border p-3 shadow-[0_10px_35px_-20px_rgba(236,72,153,0.35)] transition-all duration-300 hover:-translate-y-0.5"
+                                        style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.cardBg }}
                                       >
                                         <button
                                           type="button"
                                           onClick={() => jumpToFormationSlide(`m${mod.moduleIndex}-intro`)}
-                                          className="group flex w-full items-start justify-between gap-3 rounded-xl bg-gradient-to-r from-harx-600 to-harx-alt-500 px-3 py-2.5 text-left text-white shadow-sm transition hover:brightness-105"
+                                          className="group flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-white shadow-sm transition hover:brightness-105"
+                                          style={{ background: viewerThemeTokens.accentBg }}
                                         >
                                           <span className="min-w-0">
                                             <span className="block text-[10px] font-bold uppercase tracking-wider text-white/90">
