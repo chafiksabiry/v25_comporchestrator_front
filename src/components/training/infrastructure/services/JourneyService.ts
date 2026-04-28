@@ -519,5 +519,42 @@ export class JourneyService {
       throw error;
     }
   }
+
+  /**
+   * Persiste une présentation HTML interactive (REP) dans methodologyData du parcours.
+   * GET puis PUT avec le document complet pour éviter d’écraser des champs si le backend remplace tout le document.
+   */
+  static async saveJourneyRepInteractiveHtml(
+    journeyId: string,
+    html: string
+  ): Promise<{ ok: boolean; error?: string }> {
+    if (!isValidMongoId(String(journeyId || '').trim())) {
+      return { ok: false, error: 'Identifiant de parcours invalide' };
+    }
+    try {
+      const journey = await JourneyService.getJourneyById(journeyId);
+      if (!journey || typeof journey !== 'object') {
+        return { ok: false, error: 'Parcours introuvable' };
+      }
+      const prevMd =
+        journey.methodologyData && typeof journey.methodologyData === 'object' ? journey.methodologyData : {};
+      const payload = {
+        ...journey,
+        methodologyData: {
+          ...prevMd,
+          repInteractivePresentationHtml: html,
+          repInteractivePresentationSavedAt: new Date().toISOString(),
+        },
+      };
+      const response = (await ApiClient.put(`/training_journeys/${journeyId}`, payload)) as any;
+      if (response?.data?.success === false) {
+        return { ok: false, error: String(response?.data?.error || 'Échec enregistrement') };
+      }
+      return { ok: true };
+    } catch (e: any) {
+      console.warn('[JourneyService] saveJourneyRepInteractiveHtml:', e);
+      return { ok: false, error: e?.message || 'Erreur réseau' };
+    }
+  }
 }
 
