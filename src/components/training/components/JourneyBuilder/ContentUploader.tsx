@@ -5726,17 +5726,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 let html: string;
                                 let hint: string;
                                 try {
-                                  html = await AIService.generateRepInteractiveDeckHtmlWithAi(
-                                    formationPreviewForViewer
+                                  setRepFormationDeckHint('Préparation (parcours + modules, un appel par module)…');
+                                  const out = await AIService.generateRepInteractiveDeckHtmlWithAiModular(
+                                    formationPreviewForViewer,
+                                    (msg) => setRepFormationDeckHint(msg)
                                   );
-                                  hint =
-                                    'Présentation générée par l’IA (Claude / chat backend). Enregistrez pour la lier au parcours.';
+                                  html = out.html;
+                                  hint = `${out.hint} Enregistrez pour lier la présentation au parcours.`;
                                   setFormationDeckModalTab('html');
                                 } catch (e) {
-                                  console.warn('[ContentUploader] AI interactive deck failed, using local template', e);
+                                  console.warn('[ContentUploader] AI modular deck failed, using local template', e);
                                   html = buildRepInteractivePresentationHtml(formationPreviewForViewer);
                                   hint =
-                                    'L’IA n’a pas renvoyé un document HTML complet (troncature serveur, quota ou format) — version locale de secours.';
+                                    'La génération IA modulaire a échoué (réseau ou serveur) — version locale de secours (tout le parcours).';
                                   setFormationDeckModalTab('html');
                                 }
                                 setRepFormationDeckHtml(html);
