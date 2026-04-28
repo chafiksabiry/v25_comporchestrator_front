@@ -451,7 +451,7 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
         '<h2>' + esc(s.title) + '</h2>' +
         '<p class="body-text">' + esc(s.subtitle) + '</p></div>';
     } else if (s.kind === 'section') {
-      var lines = String(s.body || '').split(/\n+/).map(function (x) { return String(x || '').trim(); }).filter(Boolean);
+      var lines = String(s.body || '').split(/\\n+/).map(function (x) { return String(x || '').trim(); }).filter(Boolean);
       var points = lines.length > 1
         ? '<ul class="section-points">' + lines.map(function (ln) { return '<li>' + esc(ln) + '</li>'; }).join('') + '</ul>'
         : '<div class="body-text">' + esc(String(s.body || '')) + '</div>';
