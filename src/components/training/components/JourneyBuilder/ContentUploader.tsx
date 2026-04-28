@@ -810,6 +810,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
   }, [formationViewerSlides, showGeneratedFormationModal]);
 
   useEffect(() => {
+    if (!rep || !showImagePresentationModal) return;
+    setShowImagePresentationModal(false);
+    setFormationDeckModalTab('parcours');
+    setFormationViewerSlideIndex(0);
+    setShowGeneratedFormationModal(true);
+    void hydrateSavedJourneyFromApi();
+  }, [rep, showImagePresentationModal, hydrateSavedJourneyFromApi]);
+
+  useEffect(() => {
     if (!showGeneratedFormationModal) {
       repFormationModalHydratedRef.current = false;
       return;
@@ -6671,7 +6680,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             {showChatModuleSidebar ? renderChatWorkflowSidebar() : null}
           </div>
 
-          {rep && showImagePresentationModal && (
+          {!rep && showImagePresentationModal && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
               <div className="flex h-[90vh] w-[min(1200px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
