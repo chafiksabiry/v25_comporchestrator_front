@@ -592,5 +592,42 @@ export class JourneyService {
       return { ok: false, error: e?.message || 'Erreur réseau' };
     }
   }
+
+  /**
+   * Force l'alignement des metadonnees setup (title/description/logo) sur un journey existant.
+   */
+  static async saveJourneySetupMetadata(
+    journeyId: string,
+    metadata: { title?: string; description?: string; trainingLogo?: any }
+  ): Promise<{ ok: boolean; error?: string }> {
+    if (!isValidMongoId(String(journeyId || '').trim())) {
+      return { ok: false, error: 'Identifiant de parcours invalide' };
+    }
+    try {
+      const journey = await JourneyService.getJourneyById(journeyId);
+      if (!journey || typeof journey !== 'object') {
+        return { ok: false, error: 'Parcours introuvable' };
+      }
+      const payload: any = { ...journey };
+      const title = String(metadata?.title || '').trim();
+      const description = String(metadata?.description || '').trim();
+      if (title) {
+        payload.title = title;
+        payload.name = title;
+      }
+      if (description) payload.description = description;
+      if (metadata?.trainingLogo && typeof metadata.trainingLogo === 'object') {
+        payload.trainingLogo = metadata.trainingLogo;
+      }
+      const response = (await ApiClient.put(`/training_journeys/${journeyId}`, payload)) as any;
+      if (response?.data?.success === false) {
+        return { ok: false, error: String(response?.data?.error || 'Échec enregistrement') };
+      }
+      return { ok: true };
+    } catch (e: any) {
+      console.warn('[JourneyService] saveJourneySetupMetadata:', e);
+      return { ok: false, error: e?.message || 'Erreur réseau' };
+    }
+  }
 }
 

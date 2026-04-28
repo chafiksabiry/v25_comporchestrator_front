@@ -81,12 +81,19 @@ function stripHarxStyleBlocks(rawText: string): string {
     s = s.slice(0, start) + s.slice(cut);
     break;
   }
-  // Guardrail: sometimes a trailing JSON fragment can leak without <harx-style> tags.
-  // Remove common style-blueprint tails (kpiLabel/kpiValue/.../canvasBg).
+  // Guardrail: sometimes style JSON leaks without <harx-style> tags.
+  // Case A: full-ish tail containing kpiLabel...canvasBg
   s = s.replace(
     /,?\s*"kpiLabel"\s*:\s*"#[0-9a-fA-F]{3,8}"[\s\S]*?"canvasBg"\s*:\s*"#[0-9a-fA-F]{3,8}"\s*}\s*}?/gi,
     ''
   );
+  // Case B: truncated tail chunk (e.g. e8eeff","badgeText":"#3949ab","canvasBg":"#ffffff"}})
+  s = s.replace(
+    /[a-fA-F0-9]{3,8}"\s*,\s*"badgeText"\s*:\s*"#[0-9a-fA-F]{3,8}"\s*,\s*"canvasBg"\s*:\s*"#[0-9a-fA-F]{3,8}"\s*}\s*}?/gi,
+    ''
+  );
+  // Case C: any standalone canvasBg trailer chunk
+  s = s.replace(/,?\s*"canvasBg"\s*:\s*"#[0-9a-fA-F]{3,8}"\s*}\s*}?/gi, '');
   return s.replace(/<\/harx-style>/gi, '').trim();
 }
 
@@ -3926,6 +3933,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
               }))
             : curriculumOutlineFromSessionPlan;
 
+        const setupJourneyForContext = (savedJourneyHydrated || journey) as any;
+        const setupTitleForContext = String(
+          setupJourneyForContext?.title || setupJourneyForContext?.name || ''
+        ).trim();
+        const setupDescriptionForContext = String(setupJourneyForContext?.description || '').trim();
+        const setupTrainingLogoForContext =
+          setupJourneyForContext?.trainingLogo && typeof setupJourneyForContext.trainingLogo === 'object'
+            ? setupJourneyForContext.trainingLogo
+            : null;
+
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
           selectedGigId: activeChatGigId || '',
@@ -3955,6 +3972,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
           requestedOutput,
           requestedModuleReference: requestedModuleReference || null,
           trainingJourneyId: linkedTrainingJourneyMongoId() || null,
+          setupTrainingTitle: setupTitleForContext || null,
+          setupTrainingDescription: setupDescriptionForContext || null,
+          setupTrainingLogo: setupTrainingLogoForContext,
           conversationHistory: historyForContext,
           canGenerateTraining: canProceed,
           curriculumOutline: curriculumOutlineForContext,
@@ -3995,6 +4015,22 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (streamResult.planSaved && streamResult.journeyId && /^[a-f\d]{24}$/i.test(streamResult.journeyId)) {
           chatConfirmedJourneyIdRef.current = streamResult.journeyId;
           setIsPlanSavedForChat(true);
+          // Le backend peut creer un shell de journey avec titre/description par defaut.
+          // Re-applique immediatement les metadonnees configurees au setup.
+          const setupJourney = (savedJourneyHydrated || journey) as any;
+          const setupTitle = String(setupJourney?.title || setupJourney?.name || '').trim();
+          const setupDescription = String(setupJourney?.description || '').trim();
+          const setupTrainingLogo =
+            setupJourney?.trainingLogo && typeof setupJourney.trainingLogo === 'object'
+              ? setupJourney.trainingLogo
+              : undefined;
+          if (setupTitle || setupDescription || setupTrainingLogo) {
+            void JourneyService.saveJourneySetupMetadata(streamResult.journeyId, {
+              title: setupTitle || undefined,
+              description: setupDescription || undefined,
+              trainingLogo: setupTrainingLogo,
+            });
+          }
         }
         const rawAssistant = streamResult.text?.trim() || "Je n'ai pas pu generer une reponse pour le moment.";
         const readinessParsed = extractTrainingReadinessBlock(rawAssistant);
