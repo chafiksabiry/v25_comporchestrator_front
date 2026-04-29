@@ -14,6 +14,12 @@ import type { Gig } from '../../../../types/matching';
 import { scrollJourneyMainToTop } from './journeyScroll';
 import type { TrainingMethodology } from '../../types/methodology';
 import { buildGigSnapshotForAi } from '../../utils/gigSnapshotForAi';
+import type { TrainingViewerTheme } from '../../utils/trainingViewerTheme';
+import {
+  getModuleColorStyles,
+  getViewerThemeTokens,
+  resolveRepViewerTheme,
+} from '../../utils/trainingViewerTheme';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[], fileTrainingUrl?: string) => void;
@@ -773,139 +779,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
     Record<string, { selected: number | null; revealed: boolean }>
   >({});
   const [formationViewerQuizPage, setFormationViewerQuizPage] = useState<Record<string, number>>({});
-  type TrainingViewerTheme = 'harx-night' | 'sunset' | 'ocean';
   const [trainingViewerTheme, setTrainingViewerTheme] = useState<TrainingViewerTheme>('harx-night');
   const [isSavingViewerTheme, setIsSavingViewerTheme] = useState(false);
   const [viewerThemeHint, setViewerThemeHint] = useState<string | null>(null);
 
-  const viewerThemeTokens = useMemo(() => {
-    const themes: Record<
-      TrainingViewerTheme,
-      {
-        shellBg: string;
-        contentBg: string;
-        panelBg: string;
-        cardBg: string;
-        accentBg: string;
-        accentBorder: string;
-        accentShadow: string;
-      }
-    > = {
-      'harx-night': {
-        shellBg: 'rgba(2,6,23,0.6)',
-        contentBg: 'linear-gradient(180deg,#070a1a 0%,#0a1024 52%,#090d1f 100%)',
-        panelBg: 'rgba(11,16,37,0.92)',
-        cardBg: '#12172f',
-        accentBg: 'linear-gradient(90deg,#e11d48 0%,#f43f5e 50%,#ec4899 100%)',
-        accentBorder: 'rgba(244,63,94,0.35)',
-        accentShadow: '0 20px 70px -25px rgba(236,72,153,0.45)',
-      },
-      sunset: {
-        shellBg: 'rgba(55,24,24,0.58)',
-        contentBg: 'linear-gradient(180deg,#140a12 0%,#211026 50%,#2a1222 100%)',
-        panelBg: 'rgba(35,16,37,0.9)',
-        cardBg: '#2a1732',
-        accentBg: 'linear-gradient(90deg,#fb7185 0%,#f59e0b 52%,#f97316 100%)',
-        accentBorder: 'rgba(251,113,133,0.42)',
-        accentShadow: '0 20px 70px -25px rgba(251,113,133,0.42)',
-      },
-      ocean: {
-        shellBg: 'rgba(8,24,38,0.58)',
-        contentBg: 'linear-gradient(180deg,#061623 0%,#0a2233 50%,#0b2b3b 100%)',
-        panelBg: 'rgba(10,28,44,0.9)',
-        cardBg: '#12314a',
-        accentBg: 'linear-gradient(90deg,#06b6d4 0%,#0ea5e9 50%,#6366f1 100%)',
-        accentBorder: 'rgba(14,165,233,0.45)',
-        accentShadow: '0 20px 70px -25px rgba(14,165,233,0.45)',
-      },
-    };
-    return themes[trainingViewerTheme];
-  }, [trainingViewerTheme]);
-
-  const moduleColorStyles = useMemo(() => {
-    if (trainingViewerTheme === 'ocean') {
-      return [
-        {
-          accentBg: 'linear-gradient(90deg,#06b6d4 0%,#0ea5e9 55%,#38bdf8 100%)',
-          border: 'rgba(14,165,233,0.45)',
-          glow: '0 16px 38px -22px rgba(14,165,233,0.55)',
-          chipBg: 'rgba(14,165,233,0.22)',
-          chipBorder: 'rgba(14,165,233,0.48)',
-          softBg: 'rgba(14,165,233,0.10)',
-        },
-        {
-          accentBg: 'linear-gradient(90deg,#22d3ee 0%,#14b8a6 55%,#2dd4bf 100%)',
-          border: 'rgba(45,212,191,0.42)',
-          glow: '0 16px 38px -22px rgba(45,212,191,0.52)',
-          chipBg: 'rgba(45,212,191,0.2)',
-          chipBorder: 'rgba(45,212,191,0.45)',
-          softBg: 'rgba(45,212,191,0.08)',
-        },
-        {
-          accentBg: 'linear-gradient(90deg,#6366f1 0%,#3b82f6 55%,#0ea5e9 100%)',
-          border: 'rgba(99,102,241,0.42)',
-          glow: '0 16px 38px -22px rgba(99,102,241,0.5)',
-          chipBg: 'rgba(99,102,241,0.2)',
-          chipBorder: 'rgba(99,102,241,0.45)',
-          softBg: 'rgba(99,102,241,0.08)',
-        },
-      ];
-    }
-    if (trainingViewerTheme === 'sunset') {
-      return [
-        {
-          accentBg: 'linear-gradient(90deg,#fb7185 0%,#f97316 55%,#f59e0b 100%)',
-          border: 'rgba(251,113,133,0.45)',
-          glow: '0 16px 38px -22px rgba(251,113,133,0.55)',
-          chipBg: 'rgba(251,113,133,0.2)',
-          chipBorder: 'rgba(251,113,133,0.5)',
-          softBg: 'rgba(251,113,133,0.1)',
-        },
-        {
-          accentBg: 'linear-gradient(90deg,#f59e0b 0%,#f97316 55%,#ef4444 100%)',
-          border: 'rgba(245,158,11,0.45)',
-          glow: '0 16px 38px -22px rgba(245,158,11,0.52)',
-          chipBg: 'rgba(245,158,11,0.2)',
-          chipBorder: 'rgba(245,158,11,0.48)',
-          softBg: 'rgba(245,158,11,0.1)',
-        },
-        {
-          accentBg: 'linear-gradient(90deg,#a855f7 0%,#ec4899 55%,#fb7185 100%)',
-          border: 'rgba(236,72,153,0.45)',
-          glow: '0 16px 38px -22px rgba(236,72,153,0.52)',
-          chipBg: 'rgba(236,72,153,0.2)',
-          chipBorder: 'rgba(236,72,153,0.48)',
-          softBg: 'rgba(236,72,153,0.1)',
-        },
-      ];
-    }
-    return [
-      {
-        accentBg: 'linear-gradient(90deg,#f43f5e 0%,#e11d48 55%,#ec4899 100%)',
-        border: 'rgba(244,63,94,0.42)',
-        glow: '0 16px 38px -22px rgba(244,63,94,0.55)',
-        chipBg: 'rgba(244,63,94,0.22)',
-        chipBorder: 'rgba(244,63,94,0.45)',
-        softBg: 'rgba(244,63,94,0.08)',
-      },
-      {
-        accentBg: 'linear-gradient(90deg,#a855f7 0%,#7c3aed 55%,#ec4899 100%)',
-        border: 'rgba(168,85,247,0.42)',
-        glow: '0 16px 38px -22px rgba(168,85,247,0.55)',
-        chipBg: 'rgba(168,85,247,0.22)',
-        chipBorder: 'rgba(168,85,247,0.45)',
-        softBg: 'rgba(168,85,247,0.08)',
-      },
-      {
-        accentBg: 'linear-gradient(90deg,#22d3ee 0%,#0ea5e9 55%,#38bdf8 100%)',
-        border: 'rgba(34,211,238,0.42)',
-        glow: '0 16px 38px -22px rgba(34,211,238,0.55)',
-        chipBg: 'rgba(34,211,238,0.2)',
-        chipBorder: 'rgba(34,211,238,0.45)',
-        softBg: 'rgba(34,211,238,0.08)',
-      },
-    ];
-  }, [trainingViewerTheme]);
+  const viewerThemeTokens = useMemo(() => getViewerThemeTokens(trainingViewerTheme), [trainingViewerTheme]);
+  const moduleColorStyles = useMemo(() => getModuleColorStyles(trainingViewerTheme), [trainingViewerTheme]);
 
   const formationPreviewForViewer = useMemo(() => savedJourneyHydrated || journey, [savedJourneyHydrated, journey]);
 
@@ -1066,27 +945,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
     repFormationModalHydratedRef.current = true;
     setRepFormationDeckHint(null);
     const src = (savedJourneyHydrated || journey) as any;
+    const jid = linkedTrainingJourneyMongoId();
+    setTrainingViewerTheme(resolveRepViewerTheme(src, jid ?? ''));
     const fromMeta = src?.methodologyData?.repInteractivePresentationHtml;
     if (typeof fromMeta === 'string' && fromMeta.length > 200) {
       setRepFormationDeckHtml(fromMeta);
       return;
     }
-    const jid = linkedTrainingJourneyMongoId();
     if (jid) {
       try {
-        const storedTheme = localStorage.getItem(`harx_rep_viewer_theme_${jid}`) as TrainingViewerTheme | null;
-        if (storedTheme === 'harx-night' || storedTheme === 'sunset' || storedTheme === 'ocean') {
-          setTrainingViewerTheme(storedTheme);
-        }
         const ls = localStorage.getItem(`harx_rep_deck_${jid}`);
         if (typeof ls === 'string' && ls.length > 200) setRepFormationDeckHtml(ls);
       } catch {
         /* ignore */
       }
-    }
-    const themeFromMeta = String(src?.methodologyData?.repViewerTheme || '').trim();
-    if (themeFromMeta === 'harx-night' || themeFromMeta === 'sunset' || themeFromMeta === 'ocean') {
-      setTrainingViewerTheme(themeFromMeta);
     }
   }, [showGeneratedFormationModal, savedJourneyHydrated, journey]);
 
