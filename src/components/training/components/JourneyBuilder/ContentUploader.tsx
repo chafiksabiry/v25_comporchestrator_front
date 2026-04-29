@@ -1,25 +1,36 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+
 import { createPortal } from 'react-dom';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play, Target, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, RefreshCw, LayoutGrid, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play, Target, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+
 import ReactMarkdown, { type Components } from 'react-markdown';
+
 import remarkGfm from 'remark-gfm';
+
 import { ContentUpload } from '../../types/core';
+
 import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem, type SavedPodcastItem, type TrainingImageSet, type QuizQuestion, type StructuredTrainingSlidesPayload, type ChatWorkflowStatus } from '../../infrastructure/services/AIService';
+
 import { WebSpeechService } from '../../infrastructure/services/CanvasVideoService';
+
 import { JourneyService } from '../../infrastructure/services/JourneyService';
+
 import { DraftService } from '../../infrastructure/services/DraftService';
+
 import { cloudinaryService } from '../../lib/cloudinaryService';
+
 import { getGigsByCompanyId } from '../../../../api/matching';
+
 import type { Gig } from '../../../../types/matching';
+
 import { scrollJourneyMainToTop } from './journeyScroll';
+
 import type { TrainingMethodology } from '../../types/methodology';
+
 import { buildGigSnapshotForAi } from '../../utils/gigSnapshotForAi';
 import type { TrainingViewerTheme } from '../../utils/trainingViewerTheme';
-import {
-  getModuleColorStyles,
-  getViewerThemeTokens,
-  resolveRepViewerTheme,
-} from '../../utils/trainingViewerTheme';
+import {getModuleColorStyles, getViewerThemeTokens, resolveRepViewerTheme} from '../../utils/trainingViewerTheme';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[], fileTrainingUrl?: string) => void;
@@ -30,12 +41,9 @@ interface ContentUploaderProps {
   methodology?: TrainingMethodology | null;
   autoOpenFormationViewer?: boolean;
   onExitToTrainingList?: () => void;
-  /**
-   * Créer un nouveau `training_journeys` + vider le fil (nouveau chat au prochain message).
-   * Sans cela, « New » effaçait l’UI puis un effet rouvrait la dernière session du gig.
-   */
+
   onForkNewJourneyTraining?: () => Promise<{ trainingJourneyId: string }>;
-  /** `persistedJourneyId` : id Mongo renvoyé après save cloud — évite un 2e POST dans JourneyBuilder. */
+
   onFinishEarly?: (
     uploads: ContentUpload[],
     curriculum?: any,
@@ -43,13 +51,12 @@ interface ContentUploaderProps {
     filetraining?: string,
     persistedJourneyId?: string
   ) => void;
-  /** REP company onboarding: modules sidebar + slides only, no PPTX/fullscreen/continue CTA */
+
   repOnboardingLayout?: boolean;
 }
 
 type KbGenerationMode = 'kb_only' | 'uploads_only' | 'kb_and_uploads' | 'none';
 
-/** Bloc JSON renvoyé par le backend (2e passage Claude) — actions hors zone de saisie. */
 export type TrainingReadinessPayload = {
   readiness: 'ready' | 'incomplete' | 'not_applicable';
   missingModules: { title: string; reason?: string }[];
@@ -94,7 +101,6 @@ function sanitizeAssistantMessage(raw: string): string {
     .trim();
 }
 
-/** Remove `<harx-style>…</harx-style>` including unclosed blocks (streaming) up to `<harx-training-status` or EOF. */
 function stripHarxStyleBlocks(rawText: string): string {
   let s = String(rawText || '');
   for (;;) {
@@ -142,7 +148,6 @@ function extractTrainingReadinessBlock(raw: string): {
   let payloadRaw = String(closed?.[1] || '').trim();
   let displayText = closed ? full.replace(HARX_TRAINING_STATUS_REGEX, '').trim() : full.trim();
 
-  // Streaming guard: if closing tag is missing, still strip and parse the payload.
   if (!payloadRaw) {
     const openMatch = full.match(/<harx-training-status\b[^>]*>/i);
     if (openMatch && openMatch.index != null) {
@@ -248,10 +253,6 @@ function extractTrainingReadinessBlock(raw: string): {
   }
 }
 
-/**
- * Anciennes sessions (ou réponses modèle) sans `<harx-training-status>` : déduit une carte
- * « Valider le module N » quand le markdown correspond au premier module non terminé du workflow.
- */
 function inferSyntheticTrainingReadiness(
   displayText: string,
   opts: {
@@ -281,7 +282,6 @@ function inferSyntheticTrainingReadiness(
   };
 }
 
-/** Lecture TTS gratuite (Web Speech API) — découpe le texte pour éviter les limites du moteur. */
 async function speakPlainTextWithWebSpeech(
   service: WebSpeechService,
   text: string,
@@ -592,7 +592,6 @@ function RepPodcastSidebarPanel({
 
 export default function ContentUploader(props: ContentUploaderProps) {
   const {
-    onComplete,
     onBack,
     company,
     gigId,
@@ -621,21 +620,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }
     return undefined;
   };
-  const analysisMetadata = {
-    gigId: gigId || undefined,
-    companyId: company?.id || company?._id || undefined
-  };
 
   const [uploads, setUploads] = useState<ContentUpload[]>([]);
-  const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [urlInput, setUrlInput] = useState('');
   const [viewMode, setViewMode] = useState<'upload' | 'curriculum'>('upload');
   const [generatedCurriculum, setGeneratedCurriculum] = useState<any>(null);
   const [isSavingCloud, setIsSavingCloud] = useState(false);
   /** When a presentation exists: split workspace — program preview vs upload sources */
   const [workspaceTab, setWorkspaceTab] = useState<'artifact' | 'sources'>('artifact');
-  const [isExportingPptx, setIsExportingPptx] = useState(false);
   const [isGeneratingPresentation, setIsGeneratingPresentation] = useState(false);
   const [generatedPresentation, setGeneratedPresentation] = useState<any>(null);
   const [fileTrainingUrl, setFileTrainingUrl] = useState<string | undefined>(undefined);
@@ -762,24 +754,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const shouldStickToBottomRef = useRef(true);
   const repFormationModalHydratedRef = useRef(false);
-  /** Parcours Mongo complet (modules / sections / quiz) pour aperçu REP — rechargé après sauvegardes chat. */
+
   const savedJourneyHydrateSeqRef = useRef(0);
   const [savedJourneyHydrated, setSavedJourneyHydrated] = useState<any | null>(null);
   const [isSavedJourneyHydrating, setIsSavedJourneyHydrating] = useState(false);
   const [showGeneratedFormationModal, setShowGeneratedFormationModal] = useState(false);
   const [repFormationDeckHtml, setRepFormationDeckHtml] = useState<string | null>(null);
-  const [isBuildingRepFormationDeck, setIsBuildingRepFormationDeck] = useState(false);
-  const [isSavingRepFormationDeck, setIsSavingRepFormationDeck] = useState(false);
   const [repFormationDeckHint, setRepFormationDeckHint] = useState<string | null>(null);
-  /** Une seule vue « slides » à la fois : HTML généré vs lecteur intégré (évite deux compteurs de slides différents). */
+
   const [formationDeckModalTab, setFormationDeckModalTab] = useState<'html' | 'parcours'>('parcours');
   const [repFormationIframeKey, setRepFormationIframeKey] = useState(0);
   const [formationViewerSlideIndex, setFormationViewerSlideIndex] = useState(0);
   const [formationViewerQuizState, setFormationViewerQuizState] = useState<
     Record<string, { selected: number | null; revealed: boolean }>
   >({});
+
   const [formationViewerQuizPage, setFormationViewerQuizPage] = useState<Record<string, number>>({});
   const [trainingViewerTheme, setTrainingViewerTheme] = useState<TrainingViewerTheme>('harx-night');
+
   const [isSavingViewerTheme, setIsSavingViewerTheme] = useState(false);
   const [viewerThemeHint, setViewerThemeHint] = useState<string | null>(null);
 
@@ -789,7 +781,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const formationPreviewForViewer = useMemo(() => savedJourneyHydrated || journey, [savedJourneyHydrated, journey]);
 
   type FormationViewerSlide =
-    | {
+     {
         key: 'overview';
         kind: 'overview';
         totalModules: number;
@@ -1968,10 +1960,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
           const uploadResult = await cloudinaryService.uploadDocument(
             upload.file,
             uploadFolder,
-            (progress) => {
-              // Update progress if needed
-              
-            }
           );
           cloudinaryUrl = uploadResult.secureUrl;
           publicId = uploadResult.publicId;
@@ -2020,181 +2008,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
     setIsProcessing(false);
   }, [gigId, company?.id, company?._id]);
 
-  const handleUrlSubmit = useCallback(async () => {
-    if (!urlInput.trim()) return;
-
-    const isYouTube = urlInput.includes('youtube.com') || urlInput.includes('youtu.be');
-    const urlUpload: ContentUpload = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      name: isYouTube ? 'YouTube Video' : 'Web Page',
-      type: isYouTube ? 'video' : 'document',
-      status: 'uploading',
-      size: 0,
-      uploadedAt: new Date().toISOString(),
-    } as any;
-
-    setUploads(prev => [...prev, urlUpload]);
-    setIsProcessing(true);
-
-    try {
-      setUploads(prev => prev.map(u =>
-        u.id === urlUpload.id ? { ...u, status: 'processing' } : u
-      ));
-
-      const analysis = await AIService.analyzeUrl(urlInput);
-
-      setUploads(prev => prev.map(u =>
-        u.id === urlUpload.id
-          ? { ...u, status: 'analyzed', aiAnalysis: analysis, name: urlInput }
-          : u
-      ));
-
-      setUrlInput(''); // Clear input after successful analysis
-    } catch (error) {
-      console.error('URL Analysis failed:', error);
-      setUploads(prev => prev.map(u =>
-        u.id === urlUpload.id ? { ...u, status: 'error' } : u
-      ));
-    }
-
-    setIsProcessing(false);
-  }, [urlInput]);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const files = Array.from(e.dataTransfer.files);
-    handleFileUpload(files);
-  }, [handleFileUpload]);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-  }, []);
-
   const removeUpload = (id: string) => {
     setUploads(prev => prev.filter(u => u.id !== id));
   };
 
-  const analyzeUpload = async (upload: ContentUpload) => {
-    if (!upload.file) {
-      console.error('Cannot analyze: file is missing');
-      return;
-    }
 
-    setUploads(prev => prev.map(u =>
-      u.id === upload.id ? { ...u, status: 'processing', error: undefined } : u
-    ));
-    setIsProcessing(true);
-
-    try {
-      const analysis = await AIService.analyzeDocument(upload.file, analysisMetadata);
-
-      setUploads(prev => prev.map(u =>
-        u.id === upload.id
-          ? {
-            ...u,
-            status: 'analyzed',
-            aiAnalysis: analysis,
-            error: undefined
-          }
-          : u
-      ));
-    } catch (error: any) {
-      console.error('AI Analysis failed:', error);
-      const errorMessage = error?.message || 'Analysis failed';
-      setUploads(prev => prev.map(u =>
-        u.id === upload.id ? {
-          ...u,
-          status: 'error',
-          error: errorMessage
-        } : u
-      ));
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleGenerateCurriculum = async () => {
-    if (uploads.length === 0 && !gigId) return;
-
-    setIsProcessing(true);
-    try {
-      let curriculum;
-      const analyzedUploads = getAnalyzedUploads();
-      const hasUploadSource = analyzedUploads.length > 0;
-      const includeKbSource = !!gigId && useKbForPresentation;
-
-      if (hasUploadSource) {
-        // Collect all successful analyses
-        const allAnalyses = analyzedUploads.map((u) => u.aiAnalysis);
-
-        if (allAnalyses.length === 0) throw new Error('No analyzed content available');
-
-        if (allAnalyses.length > 1) {
-          
-          curriculum = await AIService.synthesizeAnalyses(allAnalyses as any);
-        } else {
-          const mainAnalysis = allAnalyses[0];
-          if (!mainAnalysis) throw new Error('No analysis found');
-          const uploadContext = getUploadContext();
-
-          curriculum = await AIService.generateCurriculum(
-            mainAnalysis,
-            methodology?.name || 'General',
-            undefined,
-            uploadContext as any,
-            {
-              selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
-              methodologyName: methodology?.name || 'Methodologie 360',
-              methodologyDescription: methodology?.description,
-              methodologyComponents: Array.isArray(methodology?.components)
-                ? methodology.components.map((c) => c.title).slice(0, 8)
-                : [],
-              trainingTitle: journey?.name,
-              trainingDescription: journey?.description,
-            }
-          );
-        }
-      } else {
-        // Generate from Gig context (optionally grounded with KB docs + call recordings)
-        curriculum = await fetchCurriculumFromGig(includeKbSource);
-      }
-
-      setGeneratedCurriculum(curriculum);
-
-      const generationContext = await buildPresentationSourceContext(includeKbSource);
-      
-      const presentation = normalizePresentationFromApi(
-        await AIService.generatePresentation(curriculum, {
-          gigId: gigId || undefined,
-          useKnowledgeBase: includeKbSource,
-          includeCallRecordings: includeKbSource,
-          sourceMode: generationContext.sourceMode,
-          sourceContext: generationContext,
-        })
-      );
-
-      if (presentation?.slides?.length) {
-        setGeneratedPresentation(presentation);
-      } else {
-        setGeneratedPresentation(null);
-        console.warn('[ContentUploader] No slides to preview after curriculum generation');
-      }
-
-      setViewMode('curriculum');
-    } catch (error: any) {
-      console.error('Failed to generate curriculum/synthesis:', error);
-      alert('Error: ' + error.message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
 
   const handleSavePresentation = async (saveOpts?: { omitModuleTitles?: string[] }) => {
@@ -2587,26 +2405,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   const handleGeneratePresentation = () => void generatePresentationFromState(false);
 
-  const handleRegeneratePresentation = () => void generatePresentationFromState(true);
 
-  const handleDownloadPptx = async () => {
-    if (!generatedPresentation) return;
-    try {
-      setIsExportingPptx(true);
-      const blob = await AIService.exportToPowerPoint(generatedPresentation);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${generatedCurriculum?.title || 'Training'}.pptx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e: any) {
-      console.error(e);
-      alert(e?.message || 'PowerPoint export failed');
-    } finally {
-      setIsExportingPptx(false);
-    }
-  };
 
   /**
    * Helper to fetch curriculum from Gig KB if no uploads are present
@@ -2640,20 +2439,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
     });
   };
 
-  const getStatusIcon = (status: ContentUpload['status']) => {
-    switch (status) {
-      case 'analyzed':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'processing':
-        return <Wand2 className="h-5 w-5 text-blue-500 animate-spin" />;
-      case 'uploading':
-        return <Wand2 className="h-5 w-5 text-blue-500 animate-spin" />;
-      case 'error':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return <Wand2 className="h-5 w-5 text-gray-400 animate-spin" />;
-    }
-  };
 
   const formatDurationForAi = useCallback((raw?: string): string | undefined => {
     if (!raw) return undefined;
@@ -2673,7 +2458,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
   }, []);
 
   const canProceed = (uploads.length > 0 && uploads.every(u => u.status === 'analyzed')) || (uploads.length === 0 && !!gigId);
-  const totalAnalyzed = uploads.filter(u => u.status === 'analyzed').length;
   const isGigOnly = uploads.length === 0 && !!gigId;
   let openHistorySession: (sessionId: string) => Promise<void>;
 
