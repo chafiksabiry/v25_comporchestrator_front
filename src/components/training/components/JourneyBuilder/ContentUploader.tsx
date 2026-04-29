@@ -6246,6 +6246,59 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                           h3: ({ children }) => (
                                             <h6 className="mb-2 mt-4 text-base font-bold text-white first:mt-0">{children}</h6>
                                           ),
+                                          table: ({ children }) => {
+                                            const modTheme =
+                                              moduleColorStyles[
+                                                currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                              ];
+                                            return (
+                                              <div
+                                                className="my-3 overflow-x-auto rounded-xl border"
+                                                style={{ borderColor: modTheme.border, background: viewerThemeTokens.cardBg }}
+                                              >
+                                                <table className="min-w-full border-collapse text-sm">{children}</table>
+                                              </div>
+                                            );
+                                          },
+                                          thead: ({ children }) => {
+                                            const modTheme =
+                                              moduleColorStyles[
+                                                currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                              ];
+                                            return <thead style={{ background: modTheme.softBg }}>{children}</thead>;
+                                          },
+                                          tbody: ({ children }) => <tbody>{children}</tbody>,
+                                          tr: ({ children }) => (
+                                            <tr className="align-top even:bg-white/5">{children}</tr>
+                                          ),
+                                          th: ({ children }) => {
+                                            const modTheme =
+                                              moduleColorStyles[
+                                                currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                              ];
+                                            return (
+                                              <th
+                                                className="border-b px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-white"
+                                                style={{ borderColor: modTheme.border }}
+                                              >
+                                                {children}
+                                              </th>
+                                            );
+                                          },
+                                          td: ({ children }) => {
+                                            const modTheme =
+                                              moduleColorStyles[
+                                                currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                              ];
+                                            return (
+                                              <td
+                                                className="border-b px-3 py-2 text-[13px] leading-6 text-slate-200"
+                                                style={{ borderColor: modTheme.border }}
+                                              >
+                                                {children}
+                                              </td>
+                                            );
+                                          },
                                         }}
                                       >
                                         {String(currentFormationViewerSlide.section.content)}
