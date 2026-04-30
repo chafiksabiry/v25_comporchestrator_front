@@ -293,7 +293,7 @@ function AppContent() {
           currentStepGuide={currentStepGuide}
         />
 
-        <div className="flex flex-1 flex-col overflow-hidden relative">
+        <div className="flex flex-1 flex-col overflow-hidden relative bg-black">
           {/* Top Navigation / Navbar */}
           <header className={`bg-black border-b border-white/10 h-20 flex items-center shrink-0 px-8 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
             <div className="flex w-full items-center justify-between">
@@ -336,7 +336,7 @@ function AppContent() {
           </header>
 
           {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto relative w-full h-full">
+          <main className="flex-1 overflow-y-auto relative w-full h-full bg-white rounded-tl-[40px] shadow-2xl shadow-black/5">
             <ProjectViewSwitch
               activeView={activeProject}
               dashboard={<DashboardApp />}
