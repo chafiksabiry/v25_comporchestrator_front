@@ -76,9 +76,9 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
                       ? 'Script valide'
                       : hasValidatedScriptForGig
                         ? 'Validation bloquee'
-                      : validatingScriptId === (message.scriptId || message.id)
-                        ? 'Validation...'
-                        : 'Valider le script'}
+                        : validatingScriptId === (message.scriptId || message.id)
+                          ? 'Validation...'
+                          : 'Valider le script'}
                   </button>
                 </div>
               ) : (
@@ -95,7 +95,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
         {isSending && (
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 flex items-center gap-2 w-fit shadow-sm">
             <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
-            Generating professional script...
+            Generating script...
           </div>
         )}
       </div>
