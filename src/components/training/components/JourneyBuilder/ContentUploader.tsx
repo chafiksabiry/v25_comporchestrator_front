@@ -5004,13 +5004,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const hasPendingUpload = uploads.some(
       (u) => u.status === 'uploading' || u.status === 'processing'
     );
-    const composerInputDisabled = isChatLoading;
+    /** Pendant la génération : saisie autorisée, envoi désactivé (bouton Stop + Enter ignoré). */
     const composerSendDisabled = isChatLoading || hasPendingUpload;
     const composerPlaceholder = hasPendingUpload
       ? 'Analyse des documents en cours…'
-      : hasStartedChat
-        ? 'Reply...'
-        : 'How can I help you?';
+      : isChatLoading && hasStartedChat
+        ? 'Reply… (Send after generation ends)'
+        : hasStartedChat
+          ? 'Reply...'
+          : 'How can I help you?';
 
     const renderComposerBody = () => (
       <>
@@ -5082,7 +5084,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
         <textarea
           ref={chatTextareaRef}
           value={chatInput}
-          disabled={composerInputDisabled}
           onChange={(e) => setChatInput(e.target.value)}
           onInput={(e) => {
             const el = e.currentTarget;
@@ -5098,7 +5099,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           }}
           rows={1}
           placeholder={composerPlaceholder}
-          className="mb-3 w-full resize-none bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mb-3 w-full resize-none bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
         />
         <div className="flex items-center justify-between">
           <button
