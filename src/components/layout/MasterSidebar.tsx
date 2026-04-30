@@ -25,7 +25,6 @@ import {
   Info
 } from 'lucide-react';
 import { getHiddenSections } from '../dashboard/config/sections';
-import Math from 'mathjs'; // Dummy import to keep parser happy for now, not using it.
 import Cookies from 'js-cookie';
 import { useAuth } from '../dashboard/contexts/AuthContext';
 import type { ProjectView } from '../../App';
@@ -41,15 +40,15 @@ interface MasterSidebarProps {
   currentStepGuide?: { title: string; description: string } | null;
 }
 
-export function MasterSidebar({ 
-  isCollapsed, 
-  onToggle, 
-  activeProject, 
-  setActiveProject, 
-  activeTab, 
-  setActiveTab, 
+export function MasterSidebar({
+  isCollapsed,
+  onToggle,
+  activeProject,
+  setActiveProject,
+  activeTab,
+  setActiveTab,
   onLogout,
-  currentStepGuide 
+  currentStepGuide
 }: MasterSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -163,8 +162,8 @@ export function MasterSidebar({
   };
 
   return (
-    <div className={`${isCollapsed ? 'w-20' : 'w-64'} shrink-0 bg-[#0a0b14] h-screen relative text-white flex flex-col border-r border-white/5 shadow-2xl z-50 overflow-x-hidden transition-all duration-300`}>
-      <button 
+    <div className={`${isCollapsed ? 'w-20' : 'w-64'} shrink-0 bg-black h-screen relative text-white flex flex-col border-r border-white/5 shadow-2xl z-50 overflow-x-hidden transition-all duration-300`}>
+      <button
         onClick={onToggle}
         className="absolute -right-3 top-12 bg-rose-500 text-white rounded-full p-1.5 shadow-lg shadow-rose-500/30 hover:scale-110 active:scale-95 transition-all z-[60]"
       >
@@ -173,23 +172,26 @@ export function MasterSidebar({
 
       {/* Sidebar Header */}
       <div className={`flex items-center gap-3 mt-8 mb-10 relative group cursor-pointer transition-all duration-300 ${isCollapsed ? 'px-4 justify-center' : 'px-8'}`}>
-        <div className="p-2.5 bg-gradient-to-br from-orange-400 to-rose-500 rounded-xl shadow-lg shadow-rose-500/20 group-hover:scale-110 transition-transform duration-300 shrink-0">
-          <LayoutDashboard className="w-5 h-5 text-white" />
-        </div>
-        {!isCollapsed && (
-          <div className="flex flex-col overflow-hidden">
-            {activeProject === 'comporchestrator' ? (
-              <>
-                <span className="text-[10px] font-black text-rose-500 tracking-[0.2em] uppercase italic leading-none mb-1">Smart</span>
-                <span className="text-xl font-black tracking-tighter text-white leading-none whitespace-nowrap">Orchestrator</span>
-              </>
-            ) : (
-              <>
+        {activeProject === 'comporchestrator' ? (
+          <div className={`flex items-center justify-center w-full ${isCollapsed ? 'px-0' : 'px-2'}`}>
+            <img 
+              src={`${import.meta.env.BASE_URL || '/'}logo-black.png`} 
+              alt="HARX Orchestrator" 
+              className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-10' : 'w-48'}`}
+            />
+          </div>
+        ) : (
+          <>
+            <div className="p-2.5 bg-gradient-to-br from-orange-400 to-rose-500 rounded-xl shadow-lg shadow-rose-500/20 group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <LayoutDashboard className="w-5 h-5 text-white" />
+            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col overflow-hidden">
                 <span className="text-[10px] font-black text-rose-500 tracking-[0.2em] uppercase italic leading-none mb-1">HARX</span>
                 <span className="text-xl font-black tracking-tighter text-white leading-none whitespace-nowrap">Dashboard</span>
-              </>
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
 
@@ -204,11 +206,10 @@ export function MasterSidebar({
                   <button
                     key={item.key}
                     onClick={() => handleLinkClick(item.key)}
-                    className={`flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${
-                      isActive
+                    className={`flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isActive
                         ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
                         : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`}
+                      }`}
                   >
                     <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
                       {item.icon}
@@ -237,11 +238,11 @@ export function MasterSidebar({
                     // Manual override for specific prefix rules if they exist
                     const prefix = (item as { activePathPrefix?: string }).activePathPrefix;
                     const isReallyActive = isActive || (prefix && location.pathname.startsWith(prefix));
-                    
+
                     return `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isReallyActive
                       ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
                       : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`;
+                      }`;
                   }}
                 >
                   <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
@@ -279,7 +280,7 @@ export function MasterSidebar({
                   )}
                 </NavLink>
               )}
-              
+
               <div className="my-2 border-t border-white/10 pt-2" />
               <button
                 onClick={() => setActiveProject('comporchestrator')}
@@ -302,33 +303,33 @@ export function MasterSidebar({
 
           {!isCollapsed && activeProject === 'comporchestrator' && (
             <div className="mt-8 flex flex-col items-center shrink-0">
-               <div className="relative group">
-                 <div className="absolute -inset-4 bg-rose-500/20 rounded-full blur-2xl group-hover:bg-rose-500/30 transition-all duration-700" />
-                 <img
-                   src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
-                   alt="HARX Mascotte"
-                   className="w-40 h-40 object-contain drop-shadow-[0_0_20px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105 animate-float"
-                 />
-               </div>
+              <div className="relative group">
+                <div className="absolute -inset-4 bg-rose-500/20 rounded-full blur-2xl group-hover:bg-rose-500/30 transition-all duration-700" />
+                <img
+                  src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
+                  alt="HARX Mascotte"
+                  className="w-40 h-40 object-contain drop-shadow-[0_0_20px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105 animate-float"
+                />
+              </div>
 
-               {currentStepGuide && (
-                 <div className="px-2 animate-fade-in-up shrink-0 mt-6 w-full">
-                   <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-inner">
-                     <div className="flex items-center gap-2 mb-2 text-rose-400">
-                       <Sparkles className="h-4 w-4" />
-                       <span className="text-[10px] font-black uppercase tracking-widest">Active Guide</span>
-                     </div>
-                     <h4 className="text-xs font-bold text-white mb-1">{currentStepGuide.title}</h4>
-                     <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-3">
-                       {currentStepGuide.description}
-                     </p>
-                     <div className="mt-2 flex items-center gap-1.5 text-[9px] text-rose-500/80 font-bold uppercase tracking-tighter">
-                       <Info className="h-3 w-3" />
-                       <span>Interactive Step</span>
-                     </div>
-                   </div>
-                 </div>
-               )}
+              {currentStepGuide && (
+                <div className="px-2 animate-fade-in-up shrink-0 mt-6 w-full">
+                  <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-inner">
+                    <div className="flex items-center gap-2 mb-2 text-rose-400">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Active Guide</span>
+                    </div>
+                    <h4 className="text-xs font-bold text-white mb-1">{currentStepGuide.title}</h4>
+                    <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-3">
+                      {currentStepGuide.description}
+                    </p>
+                    <div className="mt-2 flex items-center gap-1.5 text-[9px] text-rose-500/80 font-bold uppercase tracking-tighter">
+                      <Info className="h-3 w-3" />
+                      <span>Interactive Step</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </nav>
@@ -344,7 +345,7 @@ export function MasterSidebar({
             <LogOut size={18} />
           </div>
           {!isCollapsed && <span className="font-bold text-sm tracking-tight">Logout</span>}
-          
+
           {isCollapsed && (
             <div className="absolute left-16 bg-rose-500 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl">
               Logout
