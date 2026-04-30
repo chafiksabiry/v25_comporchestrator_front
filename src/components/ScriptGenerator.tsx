@@ -374,7 +374,7 @@ const ScriptGenerator: React.FC = () => {
     };
   }, [selectedGig]);
 
-  const sendMessageToApi = async (rawMessage: string, addUserBubble: boolean) => {
+  const sendMessageToApi = async (rawMessage: string, addUserBubble: boolean, updateMessageId?: string) => {
     const trimmedMessage = rawMessage.trim();
     if (!trimmedMessage || !selectedGigSummary) return;
     const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
@@ -453,13 +453,23 @@ const ScriptGenerator: React.FC = () => {
       console.log('[ScriptGenerator] Generated playbook:', generatedPlaybook);
 
       const generatedMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
+        id: updateMessageId || `assistant-${Date.now()}`,
         role: 'assistant',
         content: assistantTextSafe,
         playbook: generatedPlaybook,
       };
-      setMessages((prev) => [...prev.filter((m) => !m.id.startsWith('assistant-pending-')), generatedMessage]);
-      setActiveScriptMessage(generatedMessage);
+
+      setMessages((prev) => {
+        const filtered = prev.filter((m) => !m.id.startsWith('assistant-pending-'));
+        if (updateMessageId) {
+          return filtered.map((m) => (m.id === updateMessageId ? generatedMessage : m));
+        }
+        return [...filtered, generatedMessage];
+      });
+
+      if (updateMessageId === activeScriptMessage?.id || !updateMessageId) {
+        setActiveScriptMessage(generatedMessage);
+      }
       setCurrentView('chat');
     } catch (err: any) {
       setMessages((prev) => prev.filter((m) => !m.id.startsWith('assistant-pending-')));
@@ -488,9 +498,9 @@ const ScriptGenerator: React.FC = () => {
     });
 
     // API call: trigger next scenario generation
-    // We send it as a user message to continue the flow
+    // We update the EXISTING assistant message to keep the playbook structure
     const nextScenarioPrompt = `Le lead a répondu : "${leadReply}". Continuez le scénario avec la prochaine étape logique pour l'agent.`;
-    await sendMessageToApi(nextScenarioPrompt, true);
+    await sendMessageToApi(nextScenarioPrompt, false, messageId);
   };
 
   const fetchSavedScripts = async (gigId: string) => {
