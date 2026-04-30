@@ -171,13 +171,13 @@ export function MasterSidebar({
       </button>
 
       {/* Sidebar Header */}
-      <div className={`flex items-center gap-3 mt-8 mb-10 relative group cursor-pointer transition-all duration-300 ${isCollapsed ? 'px-4 justify-center' : 'px-8'}`}>
+      <div className={`flex items-center relative group cursor-pointer transition-all duration-300 ${isCollapsed ? 'px-4 justify-center mt-8 mb-10' : activeProject === 'comporchestrator' ? 'px-0 mt-4 mb-6' : 'px-8 mt-8 mb-10 gap-3'}`}>
         {activeProject === 'comporchestrator' ? (
-          <div className={`flex items-center justify-center w-full ${isCollapsed ? 'px-0' : 'px-2'}`}>
+          <div className={`flex items-center justify-center w-full overflow-hidden`}>
             <img 
               src={`${import.meta.env.BASE_URL || '/'}logo-black.png`} 
               alt="HARX Orchestrator" 
-              className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-10' : 'w-48'}`}
+              className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-10' : 'w-full scale-110'}`}
             />
           </div>
         ) : (
