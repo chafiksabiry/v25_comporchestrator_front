@@ -30,7 +30,6 @@ import TraineeModulePlayer from './TraineeModulePlayer';
 import TraineeAssessmentView from './TraineeAssessmentView';
 import TraineeProgressDashboard from './TraineeProgressDashboard';
 import TraineeLiveSession from './TraineeLiveSession';
-import CertificationView from './CertificationView';
 import { ProgressService, RepProgress } from '../../infrastructure/services/ProgressService';
 import { getAgentId } from '../../utils/userUtils';
 import { extractObjectId } from '../../lib/mongoUtils';
@@ -186,13 +185,6 @@ export default function TraineePortal({
       }));
     }
   }, [repProgressData]);
-
-  // Check for journey completion to show certification
-  useEffect(() => {
-    if (repProgressData?.status === 'completed' && activeView !== 'certification') {
-      setActiveView('certification');
-    }
-  }, [repProgressData?.status, activeView]);
 
   // Find current module (in progress or first not started)
   const currentModule = useMemo(() => {
@@ -932,14 +924,6 @@ export default function TraineePortal({
     />
   );
 
-  const renderCertificationView = () => (
-    <CertificationView
-      trainee={trainee}
-      journey={journey}
-      onBack={handleBackToDashboard}
-    />
-  );
-
   // Main render logic
   switch (activeView) {
     case 'module':
@@ -950,8 +934,6 @@ export default function TraineePortal({
       return renderProgressView();
     case 'live-session':
       return renderLiveSessionView();
-    case 'certification':
-      return renderCertificationView();
     default:
       return (
         <div className="h-screen bg-gradient-to-br from-gray-50 to-blue-50 overflow-hidden flex flex-col">
