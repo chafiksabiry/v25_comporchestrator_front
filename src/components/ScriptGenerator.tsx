@@ -469,6 +469,30 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
+  const handleSelectLeadOption = async (messageId: string, turnIdx: number, optIdx: number, leadReply: string) => {
+    if (isSending) return;
+    
+    // Visual update: select the option
+    const turnKey = `${messageId}-${turnIdx}`;
+    setSelectedLeadOptionByTurnKey((prev) => {
+      const next = { ...prev, [turnKey]: optIdx };
+      // Reset downstream choices
+      Object.keys(next).forEach((k) => {
+        if (!k.startsWith(`${messageId}-`)) return;
+        const idxToken = Number(String(k).split('-').pop());
+        if (Number.isFinite(idxToken) && idxToken > turnIdx) {
+          delete next[k];
+        }
+      });
+      return next;
+    });
+
+    // API call: trigger next scenario generation
+    // We send it as a user message to continue the flow
+    const nextScenarioPrompt = `Le lead a répondu : "${leadReply}". Continuez le scénario avec la prochaine étape logique pour l'agent.`;
+    await sendMessageToApi(nextScenarioPrompt, true);
+  };
+
   const fetchSavedScripts = async (gigId: string) => {
     if (!gigId) {
       setSavedScripts([]);
@@ -953,18 +977,7 @@ const ScriptGenerator: React.FC = () => {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setSelectedLeadOptionByTurnKey((prev) => {
-                              const next = { ...prev, [turnKey]: optIdx };
-                              // Reset downstream choices so the flow re-aligns to the new branch.
-                              Object.keys(next).forEach((k) => {
-                                if (!k.startsWith(`${messageId}-`)) return;
-                                const idxToken = Number(String(k).split('-').pop());
-                                if (Number.isFinite(idxToken) && idxToken > turnIdx) {
-                                  delete next[k];
-                                }
-                              });
-                              return next;
-                            });
+                            handleSelectLeadOption(messageId, turnIdx, optIdx, String(opt.leadReply));
                           }}
                           onKeyDown={(e) => {
                             if (e.key !== 'Enter' && e.key !== ' ') return;
