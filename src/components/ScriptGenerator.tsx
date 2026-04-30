@@ -542,12 +542,26 @@ const ScriptGenerator: React.FC = () => {
   const handleGenerateScript = async () => {
     if (!selectedGigSummary) return;
     setCurrentView('chat');
+
     const autoPrompt = [
-      'Generate a simple ready-to-use call script.',
-      `Gig title: ${selectedGigSummary.title}`,
-      `Gig description: ${selectedGigSummary.description}`,
-      'Keep it short and practical.',
+      'You are a world-class sales expert specialized in cold calling and prospecting.',
+      'Generate a highly effective, structured call script using the REPS methodology:',
+      '1. Relational (R): Build rapport and establish a quick connection.',
+      '2. Emotional (E): Tap into the prospect\'s pain points and emotional triggers.',
+      '3. Project (P): Present the mission/offer and its unique value proposition.',
+      '4. Solution (S): Clear call to action and next steps.',
+      '',
+      'Mission Details:',
+      `- Title: ${selectedGigSummary.title}`,
+      `- Description: ${selectedGigSummary.description}`,
+      '',
+      'Requirements:',
+      '- Use a professional yet persuasive tone.',
+      '- Keep it short, practical, and ready to use.',
+      '- Format each line as: [Phase Name] ROLE: Text (e.g. [Relational] AGENT: ...)',
+      '- Do NOT include specific personality profiles (No DISC).',
     ].join('\n');
+
     await sendMessageToApi(autoPrompt, false);
   };
 
