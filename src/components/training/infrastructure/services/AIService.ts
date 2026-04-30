@@ -787,6 +787,7 @@ ${scopeJson}`;
     trainingDigest: string;
     trainingTitle?: string;
     language?: string;
+    journeyId?: string;
   }): Promise<string> {
     const response = await ApiClient.post<{
       success?: boolean;
@@ -797,6 +798,7 @@ ${scopeJson}`;
       trainingDigest: params.trainingDigest,
       trainingTitle: params.trainingTitle || '',
       language: params.language || 'fr',
+      journeyId: params.journeyId,
     });
     const raw = response.data as any;
     if (raw?.success === false) {

@@ -1291,33 +1291,66 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   const buildTrainingDigestForPodcast = useCallback((): string => {
     const parts: string[] = [];
-    if (generatedCurriculum?.title) {
-      parts.push(`Titre: ${String(generatedCurriculum.title)}`);
+    const journeyData = formationPreviewForViewer as any;
+    
+    if (journeyData && (Array.isArray(journeyData.modules) && journeyData.modules.length > 0 || Array.isArray(journeyData.modulePlan) && journeyData.modulePlan.length > 0)) {
+      parts.push(`Titre de la formation: ${String(journeyData.title || journeyData.name || 'Formation')}`);
+      if (journeyData.description) {
+        parts.push(`Description: ${String(journeyData.description).slice(0, 1500)}`);
+      }
+      const modulesToUse = Array.isArray(journeyData.modules) && journeyData.modules.length > 0 
+        ? journeyData.modules 
+        : journeyData.modulePlan;
+        
+      modulesToUse.slice(0, 24).forEach((m: any, i: number) => {
+        const title = m?.title || `Module ${i + 1}`;
+        const desc = String(m?.description || '').slice(0, 700);
+        const objectives = Array.isArray(m?.learningObjectives)
+          ? m.learningObjectives.slice(0, 8).join(' · ')
+          : Array.isArray(m?.sections?.objectives) ? m.sections.objectives.slice(0, 8).join(' · ') : '';
+        const sections = Array.isArray(m?.sections) ? m.sections : [];
+        const secBits = sections
+          .slice(0, 5)
+          .map((s: any) => {
+            const st = String(s?.title || '').slice(0, 120);
+            const sc = String(s?.content || s?.text || s?.body || '').slice(0, 450);
+            return st ? `${st}: ${sc}` : sc;
+          })
+          .filter(Boolean)
+          .join('\n');
+        parts.push(
+          `\n--- Module ${i + 1}: ${title} ---\n${desc}${objectives ? `\nObjectifs: ${objectives}` : ''}${secBits ? `\n${secBits}` : ''}`
+        );
+      });
+    } else {
+      if (generatedCurriculum?.title) {
+        parts.push(`Titre: ${String(generatedCurriculum.title)}`);
+      }
+      if (generatedCurriculum?.description) {
+        parts.push(`Description: ${String(generatedCurriculum.description).slice(0, 1500)}`);
+      }
+      const modules = Array.isArray(generatedCurriculum?.modules) ? generatedCurriculum.modules : [];
+      modules.slice(0, 24).forEach((m: any, i: number) => {
+        const title = m?.title || `Module ${i + 1}`;
+        const desc = String(m?.description || '').slice(0, 700);
+        const objectives = Array.isArray(m?.learningObjectives)
+          ? m.learningObjectives.slice(0, 8).join(' · ')
+          : '';
+        const sections = Array.isArray(m?.sections) ? m.sections : [];
+        const secBits = sections
+          .slice(0, 5)
+          .map((s: any) => {
+            const st = String(s?.title || '').slice(0, 120);
+            const sc = String(s?.content || s?.text || s?.body || '').slice(0, 450);
+            return st ? `${st}: ${sc}` : sc;
+          })
+          .filter(Boolean)
+          .join('\n');
+        parts.push(
+          `\n--- Module ${i + 1}: ${title} ---\n${desc}${objectives ? `\nObjectifs: ${objectives}` : ''}${secBits ? `\n${secBits}` : ''}`
+        );
+      });
     }
-    if (generatedCurriculum?.description) {
-      parts.push(`Description: ${String(generatedCurriculum.description).slice(0, 1500)}`);
-    }
-    const modules = Array.isArray(generatedCurriculum?.modules) ? generatedCurriculum.modules : [];
-    modules.slice(0, 24).forEach((m: any, i: number) => {
-      const title = m?.title || `Module ${i + 1}`;
-      const desc = String(m?.description || '').slice(0, 700);
-      const objectives = Array.isArray(m?.learningObjectives)
-        ? m.learningObjectives.slice(0, 8).join(' · ')
-        : '';
-      const sections = Array.isArray(m?.sections) ? m.sections : [];
-      const secBits = sections
-        .slice(0, 5)
-        .map((s: any) => {
-          const st = String(s?.title || '').slice(0, 120);
-          const sc = String(s?.content || s?.text || s?.body || '').slice(0, 450);
-          return st ? `${st}: ${sc}` : sc;
-        })
-        .filter(Boolean)
-        .join('\n');
-      parts.push(
-        `\n--- Module ${i + 1}: ${title} ---\n${desc}${objectives ? `\nObjectifs: ${objectives}` : ''}${secBits ? `\n${secBits}` : ''}`
-      );
-    });
     const slides = Array.isArray(generatedPresentation?.slides) ? generatedPresentation.slides : [];
     if (slides.length > 0) {
       parts.push('\n--- Slides (extraits) ---');
@@ -1386,6 +1419,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }
     return out;
   }, [
+    formationPreviewForViewer,
     generatedCurriculum,
     generatedPresentation,
     repChatPodcastDigest,
@@ -1414,6 +1448,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         trainingDigest: digest,
         trainingTitle,
         language: 'fr',
+        journeyId: linkedTrainingJourneyMongoId(),
       });
       setPodcastScript(script);
       lastPodcastGenChatLengthRef.current = chatMessages.length;
@@ -5253,7 +5288,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 <RepPodcastSidebarPanel
                   hasScript={!!podcastScript.trim()}
                   isGenerating={isPodcastGenerating}
-                  disableGenerateExtra={isChatLoading}
+                  disableGenerateExtra={isChatLoading || (!isPlanSavedForChat && chatWorkflowStatus?.plan !== 'completed')}
                   canGenerateFromTraining={showRepPodcastPanel}
                   hasSavedVersion={!!currentSavedPodcastId}
                   isSpeaking={isPodcastSpeaking}
@@ -5388,7 +5423,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     <button
                       type="button"
                       onClick={() => void handleGeneratePodcastScript()}
-                      disabled={isPodcastGenerating || isChatLoading}
+                      disabled={isPodcastGenerating || isChatLoading || (!isPlanSavedForChat && chatWorkflowStatus?.plan !== 'completed')}
+                      title={(!isPlanSavedForChat && chatWorkflowStatus?.plan !== 'completed') ? 'Validez la formation pour générer l\'audio' : 'Generate audio overview'}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                     >
                       {isPodcastGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mic className="h-3.5 w-3.5" />}
