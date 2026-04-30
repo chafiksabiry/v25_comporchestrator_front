@@ -5385,15 +5385,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ) : null}
                 {rep && (
                   <div className="flex w-full items-center justify-end gap-1.5 overflow-x-auto rounded-2xl border border-harx-100 bg-white p-2 shadow-sm ring-1 ring-harx-500/5">
-                    <select
-                      value={imageRenderMode}
-                      onChange={(e) => setImageRenderMode(e.target.value === 'template_slides' ? 'template_slides' : 'ai_images')}
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
-                      title="Presentation rendering mode"
-                    >
-                      <option value="ai_images">AI images</option>
-                      <option value="template_slides">Template slides</option>
-                    </select>
                     <button
                       type="button"
                       onClick={() => void handleGeneratePodcastScript()}
@@ -5422,74 +5413,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     ) : null}
                     <button
                       type="button"
-                      onClick={() => void handleGenerateStructuredSlides()}
-                      disabled={isStructuredSlidesGenerating || isChatLoading}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                      title="Generate HTML/CSS slides from chat"
-                    >
-                      {isStructuredSlidesGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LayoutGrid className="h-3.5 w-3.5" />}
-                      {structuredSlides?.slides?.length ? 'Regenerate HTML slides' : 'HTML slides'}
-                    </button>
-                    {structuredSlides?.slides?.length ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setStructuredSlideIndex(0);
-                          setShowStructuredSlidesModal(true);
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                      >
-                        <FileText className="h-3.5 w-3.5" />
-                        View HTML slides
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => void handleGenerateTrainingImages()}
-                      disabled={isImagesGenerating || isChatLoading}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                      title={
-                        imageRenderMode === 'template_slides'
-                          ? 'Generate deterministic template slides (no AI image generation)'
-                          : 'Generate training images for this conversation'
-                      }
-                    >
-                      {isImagesGenerating ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : generatedImageSet?.items?.length ? (
-                        <RefreshCw className="h-3.5 w-3.5" />
-                      ) : (
-                        <Presentation className="h-3.5 w-3.5" />
-                      )}
-                      {generatedImageSet?.items?.length
-                        ? imageRenderMode === 'template_slides'
-                          ? 'Regenerate template slides'
-                          : 'Regenerate presentation'
-                        : imageRenderMode === 'template_slides'
-                          ? 'Template slides'
-                          : 'Presentation'}
-                    </button>
-                    {generatedImageSet?.items?.length ? (
-                      <button
-                        type="button"
-                        onClick={() => void openImagePresentationModal()}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                      >
-                        <Image className="h-3.5 w-3.5" />
-                        {generatedImageSet?.renderMode === 'template_slides' ? 'View template slides' : 'View images as presentation'}
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => void handleGenerateQuizFromChat()}
-                      disabled={isQuizGenerating || isChatLoading}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      {isQuizGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Target className="h-3.5 w-3.5" />}
-                      Quizzes
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => {
                         setFormationDeckModalTab('parcours');
                         setFormationViewerSlideIndex(0);
@@ -5501,19 +5424,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     >
                       <Play className="h-3.5 w-3.5 shrink-0" />
                       Start
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormationDeckModalTab('parcours');
-                        setShowGeneratedFormationModal(true);
-                        void hydrateSavedJourneyFromApi();
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-900 hover:bg-emerald-100/90"
-                      title="Voir le contenu modules/sections"
-                    >
-                      <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                      Content
                     </button>
                   </div>
                 )}
