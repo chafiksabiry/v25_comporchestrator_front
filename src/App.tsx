@@ -295,7 +295,7 @@ function AppContent() {
 
         <div className="flex flex-1 flex-col overflow-hidden relative bg-black">
           {/* Top Navigation / Navbar */}
-          <header className={`bg-black border-b border-white/10 h-20 flex items-center shrink-0 px-8 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
+          <header className={`bg-black h-20 flex items-center shrink-0 px-8 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-6">
                 {globalBackConfig && (

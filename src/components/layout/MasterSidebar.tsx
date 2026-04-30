@@ -162,7 +162,7 @@ export function MasterSidebar({
   };
 
   return (
-    <div className={`${isCollapsed ? 'w-20' : 'w-64'} shrink-0 bg-black h-screen relative text-white flex flex-col border-r border-white/5 shadow-2xl z-50 overflow-x-hidden transition-all duration-300`}>
+    <div className={`${isCollapsed ? 'w-20' : 'w-64'} shrink-0 bg-black h-screen relative text-white flex flex-col shadow-2xl z-50 overflow-x-hidden transition-all duration-300`}>
       {/* Sidebar Header */}
       <div className={`flex items-center relative group cursor-pointer transition-all duration-300 ${isCollapsed ? 'px-4 justify-center mt-8 mb-10' : activeProject === 'comporchestrator' ? 'px-0 mt-4 mb-6' : 'px-8 mt-8 mb-10 gap-3'}`}>
         {activeProject === 'comporchestrator' ? (
