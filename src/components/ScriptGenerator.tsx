@@ -374,7 +374,7 @@ const ScriptGenerator: React.FC = () => {
     };
   }, [selectedGig]);
 
-  const sendMessageToApi = async (rawMessage: string, addUserBubble: boolean, updateMessageId?: string) => {
+  const sendMessageToApi = async (rawMessage: string, addUserBubble: boolean, updateMessageId?: string, appendMode: boolean = false) => {
     const trimmedMessage = rawMessage.trim();
     if (!trimmedMessage || !selectedGigSummary) return;
     const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
@@ -462,13 +462,35 @@ const ScriptGenerator: React.FC = () => {
       setMessages((prev) => {
         const filtered = prev.filter((m) => !m.id.startsWith('assistant-pending-'));
         if (updateMessageId) {
-          return filtered.map((m) => (m.id === updateMessageId ? generatedMessage : m));
+          return filtered.map((m) => {
+            if (m.id !== updateMessageId) return m;
+            
+            if (appendMode && m.playbook?.turns) {
+              // Append new turns to existing ones
+              const existingTurns = Array.isArray(m.playbook.turns) ? m.playbook.turns : [];
+              const newTurns = Array.isArray(generatedPlaybook?.turns) ? generatedPlaybook.turns : [];
+              return {
+                ...m,
+                playbook: {
+                  ...m.playbook,
+                  turns: [...existingTurns, ...newTurns]
+                }
+              };
+            }
+            
+            return generatedMessage;
+          });
         }
         return [...filtered, generatedMessage];
       });
 
       if (updateMessageId === activeScriptMessage?.id || !updateMessageId) {
-        setActiveScriptMessage(generatedMessage);
+        // If appending, we need to update activeScriptMessage with the merged state
+        setMessages((currentMessages) => {
+          const updated = currentMessages.find(m => m.id === (updateMessageId || generatedMessage.id));
+          if (updated) setActiveScriptMessage(updated);
+          return currentMessages;
+        });
       }
       setCurrentView('chat');
     } catch (err: any) {
@@ -497,10 +519,9 @@ const ScriptGenerator: React.FC = () => {
       return next;
     });
 
-    // API call: trigger next scenario generation
-    // We update the EXISTING assistant message to keep the playbook structure
-    const nextScenarioPrompt = `Le lead a répondu : "${leadReply}". Continuez le scénario avec la prochaine étape logique pour l'agent.`;
-    await sendMessageToApi(nextScenarioPrompt, false, messageId);
+    // API call: trigger next scenario generation (incremental)
+    const nextScenarioPrompt = `Le lead a répondu : "${leadReply}". Continuez le scénario avec les 3 prochaines étapes logiques pour l'agent.`;
+    await sendMessageToApi(nextScenarioPrompt, false, messageId, true);
   };
 
   const fetchSavedScripts = async (gigId: string) => {
