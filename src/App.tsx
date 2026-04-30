@@ -295,7 +295,7 @@ function AppContent() {
 
         <div className="flex flex-1 flex-col overflow-hidden relative">
           {/* Top Navigation / Navbar */}
-          <header className={`bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 flex items-center shrink-0 px-8 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
+          <header className={`bg-black border-b border-white/10 h-20 flex items-center shrink-0 px-8 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-6">
                 {globalBackConfig && (
@@ -311,7 +311,7 @@ function AppContent() {
                 )}
               </div>
               <div className="flex items-center space-x-4 ml-auto">
-                <div className="flex items-center space-x-3 bg-gray-50 p-1.5 pr-4 rounded-2xl border border-gray-100 shadow-sm">
+                <div className="flex items-center space-x-3 bg-white/5 p-1.5 pr-4 rounded-2xl border border-white/10 shadow-sm">
                   <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-black shadow-md overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
                     {companyLogo && !logoError ? (
                       <img
@@ -326,9 +326,9 @@ function AppContent() {
                   </div>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-gray-900 leading-tight">{companyName || userFullName}</span>
+                      <span className="text-sm font-black text-white leading-tight">{companyName || userFullName}</span>
                     </div>
-                    <span className="text-[10px] text-harx-500 font-bold uppercase tracking-wider">Administrator</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Administrator</span>
                   </div>
                 </div>
               </div>
