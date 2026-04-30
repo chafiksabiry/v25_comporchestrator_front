@@ -163,13 +163,6 @@ export function MasterSidebar({
 
   return (
     <div className={`${isCollapsed ? 'w-20' : 'w-64'} shrink-0 bg-black h-screen relative text-white flex flex-col border-r border-white/5 shadow-2xl z-50 overflow-x-hidden transition-all duration-300`}>
-      <button
-        onClick={onToggle}
-        className="absolute -right-3 top-12 bg-rose-500 text-white rounded-full p-1.5 shadow-lg shadow-rose-500/30 hover:scale-110 active:scale-95 transition-all z-[60]"
-      >
-        {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
-
       {/* Sidebar Header */}
       <div className={`flex items-center relative group cursor-pointer transition-all duration-300 ${isCollapsed ? 'px-4 justify-center mt-8 mb-10' : activeProject === 'comporchestrator' ? 'px-0 mt-4 mb-6' : 'px-8 mt-8 mb-10 gap-3'}`}>
         {activeProject === 'comporchestrator' ? (

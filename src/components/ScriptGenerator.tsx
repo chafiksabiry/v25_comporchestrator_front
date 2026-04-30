@@ -546,7 +546,7 @@ const ScriptGenerator: React.FC = () => {
     const autoPrompt = [
       'You are generating a structured sales call script.',
       'CRITICAL REQUIREMENTS:',
-      '1. The script MUST include ALL of the following 8 phases in this EXACT order:',
+      '1. The script MUST include ALL of the following 8 steps in this EXACT order:',
       '   - "Context & Preparation"',
       '   - "SBAM & Opening"',
       '   - "Legal & Compliance"',
@@ -555,19 +555,18 @@ const ScriptGenerator: React.FC = () => {
       '   - "Documents/Quote"',
       '   - "Objection Handling"',
       '   - "Confirmation & Closing"',
-      '2. Each phase MUST have at least one dialogue exchange.',
+      '2. Each step MUST have at least one dialogue exchange.',
       'DIALOGUE STRUCTURE:',
-      '- Each step must be a JSON object with:',
-      '  - phase: one of the 8 exact phase names listed above',
-      '  - actor: either "agent" or "lead"',
-      '  - replica: the dialogue text',
+      '1. Each line MUST start with the step name in brackets followed by the role, exactly like this:',
+      '   - [Step Name] Agent: ...',
+      '   - [Step Name] Lead: ...',
       '',
       'Context:',
       'Mission Details:',
       `- Title: ${selectedGigSummary.title}`,
       `- Description: ${selectedGigSummary.description}`,
       '',
-      'Return ONLY a JSON array of dialogue steps.',
+      'Return ONLY the script lines.',
     ].join('\n');
 
     await sendMessageToApi(autoPrompt, false);
