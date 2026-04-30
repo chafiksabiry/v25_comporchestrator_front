@@ -302,7 +302,7 @@ const ScriptGenerator: React.FC = () => {
 
   const fetchGigs = async () => {
     const companyId = getCompanyId();
-    
+
     if (!companyId) {
       setGigsError('Company ID not found');
       return;
@@ -323,7 +323,7 @@ const ScriptGenerator: React.FC = () => {
       }
 
       const data = await response.json();
-      
+
       setGigs(Array.isArray(data.data) ? data.data : []);
     } catch (err: any) {
       console.error('[GIGS] Error fetching gigs:', err);
@@ -404,24 +404,24 @@ const ScriptGenerator: React.FC = () => {
     try {
       const currentDialogue = Array.isArray(activeScriptMessage?.playbook?.dialogue)
         ? activeScriptMessage!.playbook!.dialogue!
-            .map((row) => {
-              const role = row?.role === 'lead' ? 'Lead' : 'Agent';
-              const text = String(row?.text || '').trim();
-              return text ? `${role}: ${text}` : '';
-            })
-            .filter(Boolean)
-            .join('\n')
+          .map((row) => {
+            const role = row?.role === 'lead' ? 'Lead' : 'Agent';
+            const text = String(row?.text || '').trim();
+            return text ? `${role}: ${text}` : '';
+          })
+          .filter(Boolean)
+          .join('\n')
         : '';
       const currentScriptText = currentDialogue || String(activeScriptMessage?.content || '').trim();
       const regenInstruction = addUserBubble
         ? [
-            'Regenerate the full script from start to end.',
-            'Use the current script as base and apply the user update.',
-            currentScriptText ? `Current script:\n${currentScriptText}` : '',
-            `User update:\n${trimmedMessage}`,
-          ]
-            .filter(Boolean)
-            .join('\n\n')
+          'Regenerate the full script from start to end.',
+          'Use the current script as base and apply the user update.',
+          currentScriptText ? `Current script:\n${currentScriptText}` : '',
+          `User update:\n${trimmedMessage}`,
+        ]
+          .filter(Boolean)
+          .join('\n\n')
         : trimmedMessage;
 
       const scriptPayload = {
@@ -544,22 +544,30 @@ const ScriptGenerator: React.FC = () => {
     setCurrentView('chat');
 
     const autoPrompt = [
-      'You are a world-class sales expert specialized in cold calling and prospecting.',
-      'Generate a highly effective, structured call script using the REPS methodology:',
-      '1. Relational (R): Build rapport and establish a quick connection.',
-      '2. Emotional (E): Tap into the prospect\'s pain points and emotional triggers.',
-      '3. Project (P): Present the mission/offer and its unique value proposition.',
-      '4. Solution (S): Clear call to action and next steps.',
+      'You are generating a structured sales call script.',
+      'CRITICAL REQUIREMENTS:',
+      '1. The script MUST include ALL of the following 8 phases in this EXACT order:',
+      '   - "Context & Preparation"',
+      '   - "SBAM & Opening"',
+      '   - "Legal & Compliance"',
+      '   - "Need Discovery"',
+      '   - "Value Proposition"',
+      '   - "Documents/Quote"',
+      '   - "Objection Handling"',
+      '   - "Confirmation & Closing"',
+      '2. Each phase MUST have at least one dialogue exchange.',
+      'DIALOGUE STRUCTURE:',
+      '- Each step must be a JSON object with:',
+      '  - phase: one of the 8 exact phase names listed above',
+      '  - actor: either "agent" or "lead"',
+      '  - replica: the dialogue text',
       '',
+      'Context:',
       'Mission Details:',
       `- Title: ${selectedGigSummary.title}`,
       `- Description: ${selectedGigSummary.description}`,
       '',
-      'Requirements:',
-      '- Use a professional yet persuasive tone.',
-      '- Keep it short, practical, and ready to use.',
-      '- Format each line as: [Phase Name] ROLE: Text (e.g. [Relational] AGENT: ...)',
-      '- Do NOT include specific personality profiles (No DISC).',
+      'Return ONLY a JSON array of dialogue steps.',
     ].join('\n');
 
     await sendMessageToApi(autoPrompt, false);
@@ -882,7 +890,7 @@ const ScriptGenerator: React.FC = () => {
               ? nextIdxFromReply
               : !isClosingReply(selected?.agentReply) && cursor + 1 < turns.length
                 ? cursor + 1
-              : undefined;
+                : undefined;
         if (typeof nextIdx !== 'number') {
           terminalAgentReply = String(selected?.agentReply || '').trim();
           break;
@@ -973,11 +981,10 @@ const ScriptGenerator: React.FC = () => {
                               return next;
                             });
                           }}
-                          className={`text-left rounded-lg border px-3 py-2 transition-colors cursor-pointer ${
-                            active
+                          className={`text-left rounded-lg border px-3 py-2 transition-colors cursor-pointer ${active
                               ? 'border-emerald-400 bg-emerald-100 text-emerald-900'
                               : 'border-emerald-200 bg-white text-slate-700 hover:bg-emerald-50'
-                          }`}
+                            }`}
                         >
                           <span className="mr-1 text-[10px] font-bold uppercase text-emerald-700">Lead:</span>
                           {String(opt.leadReply)}
@@ -1040,22 +1047,20 @@ const ScriptGenerator: React.FC = () => {
         {rows.map((row, idx) => (
           <div
             key={`${row.label}-${idx}`}
-            className={`rounded-xl px-3 py-2 ${
-              row.side === 'agent'
+            className={`rounded-xl px-3 py-2 ${row.side === 'agent'
                 ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200'
                 : row.side === 'lead'
                   ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200'
                   : 'bg-gray-50 border border-gray-200'
-            }`}
+              }`}
           >
             <p
-              className={`text-[11px] font-bold uppercase tracking-wide ${
-                row.side === 'agent'
+              className={`text-[11px] font-bold uppercase tracking-wide ${row.side === 'agent'
                   ? 'text-blue-700'
                   : row.side === 'lead'
                     ? 'text-emerald-700'
                     : 'text-gray-600'
-              }`}
+                }`}
             >
               {row.label}
             </p>
