@@ -3,6 +3,7 @@ import { TrendingUp, Users, DollarSign, Clock, Star, Bell, BookOpen, MessageSqua
 
 interface PremiumDashboardProps {
   profile?: any;
+  companyName?: string | null;
   trainingStats?: {
     completed: number;
     inProgress: number;
@@ -12,7 +13,7 @@ interface PremiumDashboardProps {
   };
 }
 
-export default function PremiumDashboard({ profile, trainingStats }: PremiumDashboardProps) {
+export default function PremiumDashboard({ profile, companyName, trainingStats }: PremiumDashboardProps) {
   // Helper to calculate score (ported from ProfileView)
   const calculateOverallScore = () => {
     if (!profile?.skills?.contactCenter?.length || !profile?.skills?.contactCenter[0]?.assessmentResults?.keyMetrics) return 75; // Fallback
@@ -20,7 +21,9 @@ export default function PremiumDashboard({ profile, trainingStats }: PremiumDash
     return Math.floor((professionalism + effectiveness + customerFocus) / 3);
   };
 
-  const displayName = profile?.personalInfo?.name ? profile.personalInfo.name.split(' ')[0] : (profile?.fullName?.split(' ')[0] || 'User');
+  const displayName = profile?.personalInfo?.name 
+    ? profile.personalInfo.name.split(' ')[0] 
+    : (profile?.fullName?.split(' ')[0] || localStorage.getItem('userFullName')?.split(' ')[0] || 'User');
   const overallScore = calculateOverallScore();
   
   // Calculate completion percentage based on onboarding phases
@@ -90,7 +93,7 @@ export default function PremiumDashboard({ profile, trainingStats }: PremiumDash
                 Welcome back, <span className="text-transparent bg-clip-text bg-gradient-harx">{displayName}!</span>
               </h1>
               <p className="text-slate-500 font-medium tracking-tight">
-                {profile?.professionalSummary?.currentRole || 'Professional Representative'} • {profile?.personalInfo?.email || profile?.email || ''}
+                {profile?.professionalSummary?.currentRole || 'Professional Representative'} • {companyName || profile?.company?.name || localStorage.getItem('companyName') || 'HARX'}
               </p>
             </div>
           </div>

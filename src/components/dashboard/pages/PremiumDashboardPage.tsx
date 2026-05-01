@@ -24,9 +24,11 @@ export default function PremiumDashboardPage() {
     overallProgress: 65
   };
 
+  const companyName = localStorage.getItem('companyName');
+
   return (
     <div className="p-8">
-      <PremiumDashboard profile={profileData} trainingStats={trainingStats} />
+      <PremiumDashboard profile={profileData} companyName={companyName} trainingStats={trainingStats} />
     </div>
   );
 }
