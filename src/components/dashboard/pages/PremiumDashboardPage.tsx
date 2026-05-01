@@ -15,6 +15,9 @@ export default function PremiumDashboardPage() {
     }
   }, []);
 
+  const companyName = localStorage.getItem('companyName');
+  const userType = localStorage.getItem('userType') === 'company' || localStorage.getItem('role') === 'company' ? 'company' : 'rep';
+
   // Mock training stats for the dashboard overview
   const trainingStats = {
     completed: 12,
@@ -24,11 +27,22 @@ export default function PremiumDashboardPage() {
     overallProgress: 65
   };
 
-  const companyName = localStorage.getItem('companyName');
+  const companyStats = {
+    gigs: 8,
+    calls: 142,
+    gigsEnrolled: 12,
+    activeLeads: 45
+  };
 
   return (
     <div className="p-8">
-      <PremiumDashboard profile={profileData} companyName={companyName} trainingStats={trainingStats} />
+      <PremiumDashboard 
+        profile={profileData} 
+        companyName={companyName} 
+        userType={userType}
+        trainingStats={trainingStats} 
+        companyStats={companyStats}
+      />
     </div>
   );
 }
