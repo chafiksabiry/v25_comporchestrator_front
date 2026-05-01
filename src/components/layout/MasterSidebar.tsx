@@ -182,8 +182,11 @@ export function MasterSidebar({
             </div>
             {!isCollapsed && (
               <div className="flex flex-col overflow-hidden">
-                <span className="text-[10px] font-black text-rose-500 tracking-[0.2em] uppercase italic leading-none mb-1">HARX</span>
-                <span className="text-xl font-black tracking-tighter text-white leading-none whitespace-nowrap">Dashboard</span>
+                <img 
+                  src={`${import.meta.env.BASE_URL || '/'}logo-black.png`} 
+                  alt="HARX Dashboard" 
+                  className="h-8 object-contain"
+                />
               </div>
             )}
           </>
