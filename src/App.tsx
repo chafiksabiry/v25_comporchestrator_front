@@ -257,6 +257,7 @@ function AppContent() {
           <div className="p-4">
             <PremiumDashboard 
               profile={{ personalInfo: { name: userFullName }, fullName: userFullName }} 
+              companyName={companyName}
               trainingStats={{ completed: 12, inProgress: 5, pending: 3, totalModules: 20, overallProgress: 65 }} 
             />
           </div>
