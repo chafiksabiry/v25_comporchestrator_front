@@ -163,7 +163,7 @@ export default function PremiumDashboard({ profile, trainingStats }: PremiumDash
                    <div className="flex flex-wrap gap-2">
                       {recentSpecialization.map((industry: any, idx: number) => (
                         <span key={idx} className="px-3 py-1.5 bg-harx-50 text-harx-700 rounded-xl text-xs font-bold border border-harx-100">
-                          {industry}
+                          {typeof industry === 'string' ? industry : (industry.name || industry.title || 'Unknown Industry')}
                         </span>
                       ))}
                    </div>
@@ -173,7 +173,7 @@ export default function PremiumDashboard({ profile, trainingStats }: PremiumDash
                    <div className="flex flex-wrap gap-2">
                       {profile?.specialization?.activities?.slice(0, 3).map((activity: any, idx: number) => (
                         <span key={idx} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold border border-blue-100">
-                          {activity}
+                          {typeof activity === 'string' ? activity : (activity.name || activity.title || 'Unknown Activity')}
                         </span>
                       )) || ['Consulting', 'Sales', 'Support'].map((act, i) => (
                         <span key={i} className="px-3 py-1.5 bg-slate-50 text-slate-400 rounded-xl text-xs font-bold border border-slate-100 italic">

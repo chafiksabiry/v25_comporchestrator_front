@@ -21,11 +21,13 @@ import KnowledgeBase from './panels/KnowledgeBase';
 import KnowledgeInsights from './panels/KnowledgeInsights';
 import OverviewDashboardPage from './pages/OverviewDashboardPage';
 import CompanyDashboardPage from './pages/CompanyDashboardPage';
+import PremiumDashboardPage from './pages/PremiumDashboardPage';
 
 function App() {
   return (
     <Routes>
       <Route element={<DashboardLayout />}>
+        <Route path="/dashboard/main" element={<PremiumDashboardPage />} />
         <Route path="/dashboard/overview" element={<OverviewDashboardPage />} />
         <Route path="/company" element={<Navigate to="/dashboard/profile" replace />} />
         <Route path="/dashboard" element={<CompanyDashboardPage />} />

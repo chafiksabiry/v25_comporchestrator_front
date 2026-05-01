@@ -118,7 +118,8 @@ export function MasterSidebar({
   }, [location.pathname, activeProject]);
 
   const dashboardItems = [
-    { icon: <LayoutDashboard size={20} />, label: 'Overview', path: '/dashboard/overview', key: 'overview', alwaysShow: true },
+    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard/main', key: 'premium-dashboard', alwaysShow: true },
+    { icon: <TrendingUp size={20} />, label: 'Overview', path: '/dashboard/overview', key: 'overview', alwaysShow: true },
     {
       icon: <Building2 size={20} />,
       label: 'Company',
