@@ -166,7 +166,7 @@ export function MasterSidebar({
   return (
     <div className={`${isCollapsed ? 'w-20' : 'w-64'} shrink-0 bg-black h-screen relative text-white flex flex-col shadow-2xl z-50 overflow-x-hidden transition-all duration-300`}>
       {/* Sidebar Header */}
-      <div className={`flex items-center relative group cursor-pointer transition-all duration-300 ${isCollapsed ? 'px-4 justify-center mt-8 mb-10' : activeProject === 'comporchestrator' ? 'px-0 mt-4 mb-6' : 'px-8 mt-8 mb-10 gap-3'}`}>
+      <div className={`flex items-center relative group cursor-pointer transition-all duration-300 ${isCollapsed ? 'px-4 justify-center mt-8 mb-10' : 'px-0 mt-4 mb-6'}`}>
         {activeProject === 'comporchestrator' ? (
           <div className={`flex items-center justify-center w-full overflow-hidden`}>
             <img 
@@ -176,20 +176,13 @@ export function MasterSidebar({
             />
           </div>
         ) : (
-          <>
-            <div className="p-2.5 bg-gradient-to-br from-orange-400 to-rose-500 rounded-xl shadow-lg shadow-rose-500/20 group-hover:scale-110 transition-transform duration-300 shrink-0">
-              <LayoutDashboard className="w-5 h-5 text-white" />
-            </div>
-            {!isCollapsed && (
-              <div className="flex flex-col overflow-hidden">
-                <img 
-                  src={`${import.meta.env.BASE_URL || '/'}logo-black.png`} 
-                  alt="HARX Dashboard" 
-                  className="h-8 object-contain"
-                />
-              </div>
-            )}
-          </>
+          <div className={`flex items-center justify-center w-full overflow-hidden`}>
+            <img 
+              src={`${import.meta.env.BASE_URL || '/'}logo-black.png`} 
+              alt="HARX Dashboard" 
+              className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-10' : 'w-full scale-110'}`}
+            />
+          </div>
         )}
       </div>
 

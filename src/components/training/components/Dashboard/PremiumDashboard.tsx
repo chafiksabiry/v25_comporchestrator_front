@@ -4,6 +4,7 @@ import { TrendingUp, Users, DollarSign, Clock, Star, Bell, BookOpen, MessageSqua
 interface PremiumDashboardProps {
   profile?: any;
   companyName?: string | null;
+  userType?: 'rep' | 'company';
   trainingStats?: {
     completed: number;
     inProgress: number;
@@ -11,9 +12,15 @@ interface PremiumDashboardProps {
     totalModules: number;
     overallProgress: number;
   };
+  companyStats?: {
+    gigs: number;
+    calls: number;
+    gigsEnrolled: number;
+    activeLeads: number;
+  };
 }
 
-export default function PremiumDashboard({ profile, companyName, trainingStats }: PremiumDashboardProps) {
+export default function PremiumDashboard({ profile, companyName, userType = 'rep', trainingStats, companyStats }: PremiumDashboardProps) {
   // Helper to calculate score (ported from ProfileView)
   const calculateOverallScore = () => {
     if (!profile?.skills?.contactCenter?.length || !profile?.skills?.contactCenter[0]?.assessmentResults?.keyMetrics) return 75; // Fallback
@@ -36,7 +43,12 @@ export default function PremiumDashboard({ profile, companyName, trainingStats }
 
   const onboardingProgress = calculateOnboardingProgress();
 
-  const stats = [
+  const stats = userType === 'company' ? [
+    { icon: Briefcase, label: 'Gigs', value: companyStats?.gigs || 0, change: 'Total', type: 'positive', color: 'harx' },
+    { icon: Phone, label: 'Calls', value: companyStats?.calls || 0, change: 'Executed', type: 'positive', color: 'blue' },
+    { icon: Users, label: 'Gigs Enrolled', value: companyStats?.gigsEnrolled || 0, change: 'Active', type: 'neutral', color: 'emerald' },
+    { icon: Activity, label: 'Active Leads', value: companyStats?.activeLeads || 0, change: 'Pipeline', type: 'positive', color: 'amber' },
+  ] : [
     { icon: TrendingUp, label: 'REPS Score', value: `${overallScore}/100`, change: 'Current', type: 'positive', color: 'harx' },
     { icon: BookOpen, label: 'Training', value: `${trainingStats?.overallProgress || 0}%`, change: 'Completion', type: 'positive', color: 'blue' },
     { icon: CheckCircle2, label: 'Modules', value: `${trainingStats?.completed || 0}/${trainingStats?.totalModules || 0}`, change: 'Done', type: 'neutral', color: 'emerald' },
@@ -142,8 +154,9 @@ export default function PremiumDashboard({ profile, companyName, trainingStats }
         ))}
       </div>
 
+      {userType === 'rep' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Professional Focus (Like "Company" section) */}
+        {/* Professional Focus */}
         <div className="lg:col-span-2 bg-white/60 backdrop-blur-md rounded-[32px] border border-white/80 shadow-xl shadow-slate-200/30 overflow-hidden">
           <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/40">
             <h2 className="text-lg font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
@@ -235,42 +248,45 @@ export default function PremiumDashboard({ profile, companyName, trainingStats }
           </div>
         </div>
       </div>
+      )}
 
-      {/* Skills & Expertise Section */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between px-2">
-          <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest flex items-center gap-3">
-            <Zap className="w-6 h-6 text-amber-500" />
-            Verified Expertise
-          </h2>
-          <button className="text-xs font-black text-harx-600 uppercase tracking-widest hover:text-harx-700 transition-colors px-4 py-2 bg-harx-50 rounded-xl border border-harx-100">
-            View All Skills
-          </button>
+      {/* Skills & Expertise Section - Only for Reps */}
+      {userType === 'rep' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest flex items-center gap-3">
+              <Zap className="w-6 h-6 text-amber-500" />
+              Verified Expertise
+            </h2>
+            <button className="text-xs font-black text-harx-600 uppercase tracking-widest hover:text-harx-700 transition-colors px-4 py-2 bg-harx-50 rounded-xl border border-harx-100">
+              View All Skills
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { label: 'Technical Skills', items: profile?.skills?.technical || [], color: 'blue' },
+              { label: 'Professional Skills', items: profile?.skills?.professional || [], color: 'harx' },
+              { label: 'Soft Skills', items: profile?.skills?.soft || [], color: 'emerald' }
+            ].map((category, idx) => (
+              <div key={idx} className="bg-white/60 backdrop-blur-md rounded-[32px] p-6 border border-white/80 shadow-xl shadow-slate-200/30">
+                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{category.label}</h3>
+                 <div className="flex flex-wrap gap-2">
+                    {category.items.length > 0 ? (
+                      category.items.map((skill: any, sIdx: number) => (
+                        <span key={sIdx} className={`px-3 py-1 rounded-lg bg-${category.color}-50 text-${category.color}-700 text-[10px] font-black uppercase border border-${category.color}-100`}>
+                          {typeof skill === 'string' ? skill : (skill.name || (typeof skill.skill === 'object' ? skill.skill?.name : skill.skill) || 'Unknown Skill')}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[10px] font-medium text-slate-400 italic">No skills listed</span>
+                    )}
+                 </div>
+              </div>
+            ))}
+          </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { label: 'Technical Skills', items: profile?.skills?.technical || [], color: 'blue' },
-            { label: 'Professional Skills', items: profile?.skills?.professional || [], color: 'harx' },
-            { label: 'Soft Skills', items: profile?.skills?.soft || [], color: 'emerald' }
-          ].map((category, idx) => (
-            <div key={idx} className="bg-white/60 backdrop-blur-md rounded-[32px] p-6 border border-white/80 shadow-xl shadow-slate-200/30">
-               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{category.label}</h3>
-               <div className="flex flex-wrap gap-2">
-                  {category.items.length > 0 ? (
-                    category.items.map((skill: any, sIdx: number) => (
-                      <span key={sIdx} className={`px-3 py-1 rounded-lg bg-${category.color}-50 text-${category.color}-700 text-[10px] font-black uppercase border border-${category.color}-100`}>
-                        {typeof skill === 'string' ? skill : (skill.name || (typeof skill.skill === 'object' ? skill.skill?.name : skill.skill) || 'Unknown Skill')}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-[10px] font-medium text-slate-400 italic">No skills listed</span>
-                  )}
-               </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

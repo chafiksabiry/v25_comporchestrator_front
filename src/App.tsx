@@ -258,7 +258,9 @@ function AppContent() {
             <PremiumDashboard 
               profile={{ personalInfo: { name: userFullName }, fullName: userFullName }} 
               companyName={companyName}
+              userType={localStorage.getItem('role') === 'company' ? 'company' : 'rep'}
               trainingStats={{ completed: 12, inProgress: 5, pending: 3, totalModules: 20, overallProgress: 65 }} 
+              companyStats={{ gigs: 8, calls: 142, gigsEnrolled: 12, activeLeads: 45 }}
             />
           </div>
         );
