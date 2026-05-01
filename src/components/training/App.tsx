@@ -31,6 +31,8 @@ import LiveSessions from './components/LiveSessions/LiveSessions';
 import AITutor from './components/AI/AITutor';
 import AIInsights from './components/AI/AIInsights';
 import TrainerDashboard from './components/Trainer/TrainerDashboard';
+import PremiumDashboard from './components/Dashboard/PremiumDashboard';
+import PremiumTrainerDashboard from './components/Dashboard/PremiumTrainerDashboard';
 import CompanyAnalytics from './components/Analytics/CompanyAnalytics';
 import CurriculumBuilder from './components/CurriculumBuilder/CurriculumBuilder';
 import LiveStreamStudio from './components/LiveStreaming/LiveStreamStudio';
@@ -154,6 +156,19 @@ export function AppContent({
   const [userType, setUserType] = useState<'company' | 'rep' | null>(initialJourneyId ? 'rep' : null);
   const [checkingUserType, setCheckingUserType] = useState(initialJourneyId ? false : true);
   const [traineeProgressData, setTraineeProgressData] = useState<Record<string, any>>({});
+  const [profileData, setProfileData] = useState<any>(null);
+
+  // Load profile data from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('profileData');
+      if (stored) {
+        setProfileData(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error('Failed to load profile data', e);
+    }
+  }, []);
 
   // Load specific journey by ID if provided in URL
   useEffect(() => {
@@ -1484,7 +1499,12 @@ export function AppContent({
     if (userRole === 'trainer') {
       switch (activeTab) {
         case 'dashboard':
-          return <TrainerDashboard onTraineeSelect={(trainee) => handleViewTraineePortal(trainee)} />;
+          return (
+            <div className="space-y-6">
+              <PremiumTrainerDashboard profile={profileData} />
+              <TrainerDashboard onTraineeSelect={(trainee) => handleViewTraineePortal(trainee)} />
+            </div>
+          );
         case 'training':
           return (
             loadingModules ? (
@@ -1926,27 +1946,23 @@ export function AppContent({
         if (userType === 'rep') {
           return (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  <ProgressOverview stats={progressStats} />
-                </div>
-                <div>
-                  <CurrentGig gig={mockGig} />
-                </div>
-              </div>
+              <PremiumDashboard profile={profileData} trainingStats={progressStats} />
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                   {progress.steps.length > 0 ? (
                     <OnboardingSteps steps={progress.steps} />
                   ) : (
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Onboarding Checklist</h2>
-                      <p className="text-gray-500 text-sm">Aucune étape d'onboarding disponible pour le moment.</p>
+                    <div className="bg-white/60 backdrop-blur-md rounded-[32px] p-8 border border-white/80 shadow-xl shadow-slate-200/30">
+                      <h2 className="text-lg font-black text-slate-900 uppercase tracking-widest mb-4">Onboarding Checklist</h2>
+                      <p className="text-slate-500 font-medium italic italic">Aucune étape d'onboarding disponible pour le moment.</p>
                     </div>
                   )}
                 </div>
                 <div>
-                  <AIInsights insights={mockAIInsights} userRole={userRole} />
+                  <CurrentGig gig={mockGig} />
+                  <div className="mt-6">
+                    <AIInsights insights={mockAIInsights} userRole={userRole} />
+                  </div>
                 </div>
               </div>
             </div>
