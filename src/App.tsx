@@ -26,6 +26,7 @@ import ScriptGenerator from './components/ScriptGenerator';
 import ZohoService from './services/zohoService';
 import StripeContainer from './components/stripe/StripeContainer';
 import DashboardApp from './components/dashboard/App';
+import PremiumDashboard from './components/training/components/Dashboard/PremiumDashboard';
 import MasterSidebar from './components/layout/MasterSidebar';
 import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwitch';
 
@@ -251,6 +252,15 @@ function AppContent() {
     if (isZohoAuth) return <ZohoAuth />;
 
     switch (activeTab) {
+      case 'dashboard':
+        return (
+          <div className="p-4">
+            <PremiumDashboard 
+              profile={{ personalInfo: { name: userFullName }, fullName: userFullName }} 
+              trainingStats={{ completed: 12, inProgress: 5, pending: 3, totalModules: 20, overallProgress: 65 }} 
+            />
+          </div>
+        );
       case 'profile-creation': return <ProfileCreation />;
       case 'gig-generation': return <GigGeneration />;
       case 'matching': return <Matching />;
