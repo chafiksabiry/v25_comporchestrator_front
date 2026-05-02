@@ -4,6 +4,7 @@ import ContentUploader from './ContentUploader';
 import CurriculumDesigner from './CurriculumDesigner';
 import RehearsalMode from './RehearsalMode';
 import LaunchApproval from './LaunchApproval';
+import SessionPlanningStep from './SessionPlanningStep';
 import { Company, TrainingJourney, ContentUpload, TrainingModule, Rep, RehearsalFeedback } from '../../types';
 import { TrainingMethodology } from '../../types/methodology';
 import { DraftService } from '../../infrastructure/services/DraftService';
@@ -117,8 +118,8 @@ export default function JourneyBuilder({
   // IMPORTANT: Only auto-save if draftId exists to prevent creating duplicate journeys
   // CRITICAL: Skip auto-save when in RehearsalMode (step 3) to prevent creating duplicate journeys when generating quizzes
   useEffect(() => {
-    // Skip auto-save during RehearsalMode (step 3) - quizzes are saved locally only
-    if (currentStep === 3) {
+    // Skip auto-save during RehearsalMode (step 4) - quizzes are saved locally only
+    if (currentStep === 4) {
       
       return;
     }
@@ -294,12 +295,19 @@ export default function JourneyBuilder({
       finalModules = enhanceModulesWithMethodology(newModules, methodology);
     }
     setModules(finalModules);
-    setCurrentStep(3); // Go to Test & Launch
+    setCurrentStep(3); // Go to Session Planning
 
     // Sauvegarder immédiatement après la création du curriculum
     await DraftService.saveDraftImmediately({
       modules: finalModules,
       currentStep: 3
+    });
+  };
+
+  const handleSessionPlanningComplete = async () => {
+    setCurrentStep(4); // Go to Test & Launch
+    await DraftService.saveDraftImmediately({
+      currentStep: 4
     });
   };
 
@@ -370,6 +378,15 @@ export default function JourneyBuilder({
           />
         );
       case 3:
+        return (
+          <SessionPlanningStep
+            journey={journey!}
+            gigId={selectedGigId}
+            onComplete={handleSessionPlanningComplete}
+            onBack={() => setCurrentStep(2)}
+          />
+        );
+      case 4:
         if (!showLaunchApproval) {
           return journey ? (
             <RehearsalMode
@@ -378,7 +395,7 @@ export default function JourneyBuilder({
               uploads={uploads}
               methodology={methodology}
               onComplete={handleRehearsalComplete}
-              onBack={() => setCurrentStep(2)}
+              onBack={() => setCurrentStep(3)}
             />
           ) : null;
         } else {
@@ -390,7 +407,7 @@ export default function JourneyBuilder({
               rehearsalRating={rehearsalRating}
               onLaunch={handleLaunch}
               onBackToRehearsal={() => setShowLaunchApproval(false)}
-              onBack={() => setCurrentStep(2)}
+              onBack={() => setCurrentStep(3)}
               gigId={selectedGigId}
               company={company}
             />
