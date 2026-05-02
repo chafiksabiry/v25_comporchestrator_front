@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as LucideCalendar, ArrowLeft, ArrowRight, Save, Clock, Info } from 'lucide-react';
-import { PlanningMatrix } from '../../onboarding/PlanningMatrix';
-import { TimeSlot, Rep } from '../../../types/scheduler';
-import { schedulerApi } from '../../../services/schedulerService';
-import { slotApi } from '../../../services/slotService';
-import { TrainingJourney } from '../../../types';
+import { PlanningMatrix } from '../../../onboarding/PlanningMatrix';
+import { TimeSlot, Rep } from '../../../../types/scheduler';
+import { schedulerApi } from '../../../../services/schedulerService';
+import { slotApi } from '../../../../services/slotService';
+import { TrainingJourney } from '../../types';
 
 interface SessionPlanningStepProps {
   journey: TrainingJourney;
