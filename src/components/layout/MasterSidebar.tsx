@@ -140,7 +140,6 @@ export function MasterSidebar({
   ];
 
   const orchestratorItems = [
-    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', key: 'dashboard' },
     { icon: <Building2 size={20} />, label: 'Company Onboarding', key: 'company-onboarding' },
   ];
 
