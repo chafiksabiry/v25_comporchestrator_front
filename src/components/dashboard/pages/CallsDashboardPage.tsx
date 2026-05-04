@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, X } from 'lucide-react';
+import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 
 export default function CallsDashboardPage() {
   const [calls, setCalls] = useState<any[]>([]);
@@ -223,12 +224,12 @@ export default function CallsDashboardPage() {
                 </div>
               </div>
 
-              <div className="flex-1 max-w-md mx-4">
+              <div className="flex-1 max-w-xl mx-4">
                 {(() => {
                   const recordingUrl = selectedCall.recording_url_cloudinary || selectedCall.recording_url;
-                  if (!recordingUrl) return <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">No recording available</div>;
+                  if (!recordingUrl) return <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">No recording</div>;
                   const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
-                  return <audio controls src={finalUrl} className="h-10 w-full" />;
+                  return <PremiumAudioPlayer url={finalUrl} />;
                 })()}
               </div>
 
