@@ -452,7 +452,7 @@ export default function PremiumDashboard({
                     </div>
                     <div className="flex items-center gap-8 flex-wrap md:flex-nowrap">
                       <div className="flex flex-col gap-1">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Duration</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Call Duration</p>
                         <p className="text-xs font-black text-slate-900">{call.duration ? `${Math.floor(call.duration/60)}m ${call.duration%60}s` : '0s'}</p>
                       </div>
                       <div className="flex flex-col gap-1">
