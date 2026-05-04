@@ -498,7 +498,7 @@ export default function PremiumDashboard({
               <div className="space-y-4">
                 <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">About You</h3>
                 <p className="text-slate-700 leading-relaxed font-medium italic">
-                  "{profile?.professionalSummary?.profileDescription || 'No professional summary provided. Update your profile to showcase your expertise.'}"
+                  &quot;{profile?.professionalSummary?.profileDescription || 'No professional summary provided. Update your profile to showcase your expertise.'}&quot;
                 </p>
               </div>
 
@@ -581,7 +581,7 @@ export default function PremiumDashboard({
 
       {/* Skills & Expertise Section - Only for Reps */}
       {userType === 'rep' && (
-        <div className="space-y-6">
+        <div className="space-y-6 mt-10">
           <div className="flex items-center justify-between px-2">
             <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest flex items-center gap-3">
               <Zap className="w-6 h-6 text-amber-500" />
