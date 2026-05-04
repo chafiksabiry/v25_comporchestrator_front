@@ -454,11 +454,35 @@ export default function PremiumDashboard({
                       <button 
                         onClick={() => {
                           const text = call.transcript.map((t: any) => `[${t.timestamp || ''}] ${t.speaker || 'Speaker'}: ${t.text}`).join('\n');
-                          alert(text); // Basic alert for now, can be a modal later
+                          alert(text);
                         }}
                         className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline"
                       >
                         View Transcript
+                      </button>
+                    )}
+
+                    {call.ai_call_score && (
+                      <button 
+                        onClick={() => {
+                          const s = call.ai_call_score;
+                          const feedback = `
+OVERALL: ${s.overall?.score || 0}/100 - ${s.overall?.feedback || ''}
+
+AGENT FLUENCY: ${s["Agent fluency"]?.score || 0}/100
+${s["Agent fluency"]?.feedback || ''}
+
+SENTIMENT: ${s["Sentiment analysis"]?.score || 0}/100
+${s["Sentiment analysis"]?.feedback || ''}
+
+FRAUD DETECTION: ${s["Fraud detection"]?.score || 0}/100
+${s["Fraud detection"]?.feedback || ''}
+                          `.trim();
+                          alert(feedback);
+                        }}
+                        className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline"
+                      >
+                        View Feedback
                       </button>
                     )}
                   </div>
