@@ -90,7 +90,12 @@ export default function PremiumDashboardPage() {
               
               // Filter by Gig
               if (selectedGigId !== 'all') {
-                filteredCalls = filteredCalls.filter((c: any) => c.gigId === selectedGigId || c.gig?._id === selectedGigId);
+                filteredCalls = filteredCalls.filter((c: any) => {
+                  const callGigId = c.gigId || (typeof c.gig === 'string' ? c.gig : c.gig?._id);
+                  const leadGigId = c.lead?.gigId || (typeof c.lead === 'object' ? c.lead?.gigId : null);
+                  
+                  return callGigId === selectedGigId || leadGigId === selectedGigId;
+                });
               }
 
               // Filter by Date Range
