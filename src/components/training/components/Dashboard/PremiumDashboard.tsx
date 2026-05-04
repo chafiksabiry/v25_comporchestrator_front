@@ -77,35 +77,96 @@ export default function PremiumDashboard({
 
   // Process calls data for histogram
   const processCallsForChart = () => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      return d;
-    });
+    const now = new Date();
+    let daysToShow = 7;
+    let grouping: 'day' | 'month' = 'day';
 
-    const counts = last7Days.map(date => {
-      const dateString = date.toDateString();
-      return (callsData || []).filter(call => {
-        const callDate = new Date(call.createdAt);
-        return callDate.toDateString() === dateString;
-      }).length;
-    });
+    if (dateRange === 'today') daysToShow = 1;
+    else if (dateRange === 'last_week') daysToShow = 7;
+    else if (dateRange === 'last_month') daysToShow = 30;
+    else if (dateRange === 'last_3_months') { daysToShow = 90; grouping = 'month'; }
+    else if (dateRange === 'last_year') { daysToShow = 365; grouping = 'month'; }
+    else if (dateRange === 'all') {
+      if (callsData && callsData.length > 0) {
+        const dates = callsData.map(c => new Date(c.createdAt || c.date).getTime());
+        const minDate = new Date(Math.min(...dates));
+        daysToShow = Math.ceil((now.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        if (daysToShow > 60) grouping = 'month';
+        if (daysToShow < 7) daysToShow = 7;
+      } else {
+        daysToShow = 7;
+      }
+    } else if (dateRange === 'custom' && customDates?.start && customDates?.end) {
+      const start = new Date(customDates.start);
+      const end = new Date(customDates.end);
+      daysToShow = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      if (daysToShow > 60) grouping = 'month';
+    }
 
-    return {
-      labels: last7Days.map(d => days[d.getDay()]),
-      datasets: [
-        {
-          label: 'Calls Executed',
-          data: counts,
-          backgroundColor: 'rgba(59, 130, 246, 0.5)',
-          borderColor: 'rgb(59, 130, 246)',
-          borderWidth: 2,
-          borderRadius: 8,
-          hoverBackgroundColor: 'rgba(59, 130, 246, 0.8)',
-        },
-      ],
-    };
+    if (grouping === 'day') {
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const range = Array.from({ length: daysToShow }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (daysToShow - 1 - i));
+        return d;
+      });
+
+      const counts = range.map(date => {
+        const dateString = date.toDateString();
+        return (callsData || []).filter(call => {
+          const callDate = new Date(call.createdAt || call.date);
+          return callDate.toDateString() === dateString;
+        }).length;
+      });
+
+      return {
+        labels: range.map(d => daysToShow <= 7 ? dayNames[d.getDay()] : `${d.getDate()}/${d.getMonth() + 1}`),
+        datasets: [
+          {
+            label: 'Calls',
+            data: counts,
+            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 2,
+            borderRadius: 8,
+            hoverBackgroundColor: 'rgba(59, 130, 246, 0.8)',
+          },
+        ],
+      };
+    } else {
+      // Group by month
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthsToShow = Math.max(12, Math.ceil(daysToShow / 30));
+      const range = Array.from({ length: monthsToShow }, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - (monthsToShow - 1 - i));
+        return d;
+      });
+
+      const counts = range.map(date => {
+        const m = date.getMonth();
+        const y = date.getFullYear();
+        return (callsData || []).filter(call => {
+          const callDate = new Date(call.createdAt || call.date);
+          return callDate.getMonth() === m && callDate.getFullYear() === y;
+        }).length;
+      });
+
+      return {
+        labels: range.map(d => months[d.getMonth()]),
+        datasets: [
+          {
+            label: 'Calls',
+            data: counts,
+            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 2,
+            borderRadius: 8,
+            hoverBackgroundColor: 'rgba(59, 130, 246, 0.8)',
+          },
+        ],
+      };
+    }
   };
 
   const chartData = processCallsForChart();
@@ -281,6 +342,10 @@ export default function PremiumDashboard({
             
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  {callsData.length} {callsData.length === 1 ? 'Call' : 'Calls'} found
+                </span>
+                <span className="w-px h-4 bg-slate-200 mx-2"></span>
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gig:</span>
                 <select 
                   value={selectedGigId}
