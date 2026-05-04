@@ -77,7 +77,8 @@ export default function PremiumDashboardPage() {
           try {
             const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
             const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
-            const callsResponse = await fetch(`${callsBase}/calls?userId=${userId}`);
+            // Add populate=lead to get the gigId from the lead object
+            const callsResponse = await fetch(`${callsBase}/calls?userId=${userId}&populate=lead`);
             if (callsResponse.ok) {
               const callsDataRaw = await callsResponse.json();
               let callsArray = Array.isArray(callsDataRaw) ? callsDataRaw : (Array.isArray(callsDataRaw.data) ? callsDataRaw.data : []);
@@ -91,8 +92,17 @@ export default function PremiumDashboardPage() {
               // Filter by Gig
               if (selectedGigId !== 'all') {
                 filteredCalls = filteredCalls.filter((c: any) => {
-                  const callGigId = c.gigId || (typeof c.gig === 'string' ? c.gig : c.gig?._id);
-                  const leadGigId = c.lead?.gigId || (typeof c.lead === 'object' ? c.lead?.gigId : null);
+                  // Helper to get ID from string or {$oid: string}
+                  const getID = (val: any) => {
+                    if (!val) return null;
+                    if (typeof val === 'string') return val;
+                    if (val.$oid) return val.$oid;
+                    if (val._id) return typeof val._id === 'string' ? val._id : val._id.$oid;
+                    return null;
+                  };
+
+                  const callGigId = getID(c.gigId) || getID(c.gig);
+                  const leadGigId = getID(c.lead?.gigId);
                   
                   return callGigId === selectedGigId || leadGigId === selectedGigId;
                 });
