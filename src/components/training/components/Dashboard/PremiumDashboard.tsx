@@ -467,7 +467,7 @@ export default function PremiumDashboard({
                               <div className="space-y-3">
                                 <p className="text-[9px] font-black text-emerald-600 uppercase">Executive Feedback</p>
                                 <div className="bg-emerald-50/50 rounded-xl p-4 text-[10px] text-emerald-900 leading-relaxed italic">
-                                  "{call.ai_call_score.overall?.feedback?.slice(0, 150)}..."
+                                  &quot;{call.ai_call_score?.overall?.feedback?.slice(0, 150)}...&quot;
                                 </div>
                               </div>
                             )}
