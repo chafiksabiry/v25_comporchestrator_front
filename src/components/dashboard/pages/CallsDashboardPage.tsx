@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Phone, MessageSquare, Star, Activity, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, X } from 'lucide-react';
 
 export default function CallsDashboardPage() {
   const [calls, setCalls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
-  const [expandedTab, setExpandedTab] = useState<'transcript' | 'insights' | null>(null);
+  const [selectedCall, setSelectedCall] = useState<any | null>(null);
+  const [activeTab, setActiveTab] = useState<'transcript' | 'insights'>('transcript');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -37,14 +37,9 @@ export default function CallsDashboardPage() {
     }
   };
 
-  const toggleExpand = (id: string, tab: 'transcript' | 'insights') => {
-    if (expandedCallId === id && expandedTab === tab) {
-      setExpandedCallId(null);
-      setExpandedTab(null);
-    } else {
-      setExpandedCallId(id);
-      setExpandedTab(tab);
-    }
+  const openCallDetails = (call: any, tab: 'transcript' | 'insights') => {
+    setSelectedCall(call);
+    setActiveTab(tab);
   };
 
   const filteredCalls = calls.filter(call => {
@@ -55,7 +50,7 @@ export default function CallsDashboardPage() {
   });
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-700">
+    <div className="p-8 space-y-8 animate-in fade-in duration-700 relative">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase tracking-widest">
@@ -127,214 +122,77 @@ export default function CallsDashboardPage() {
               ) : (
                 filteredCalls.map((call, idx) => {
                   const callId = call._id || idx;
-                  const isExpanded = expandedCallId === callId;
                   
                   return (
-                    <React.Fragment key={callId}>
-                      <tr className={`group hover:bg-white/60 transition-colors ${isExpanded ? 'bg-white/80' : ''}`}>
-                        <td className="px-8 py-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                              <Phone className="w-6 h-6" />
-                            </div>
-                            <div>
-                              <h3 className="text-sm font-black text-slate-900 tracking-tight">
-                                {call.lead?.First_Name || call.lead?.Last_Name ? `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim() : 'Unknown Lead'}
-                              </h3>
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
-                                Agent: {call.agent?.name || 'Assigned Agent'}
-                              </p>
-                            </div>
+                    <tr key={callId} className="group hover:bg-white/60 transition-colors">
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                            <Phone className="w-6 h-6" />
                           </div>
-                        </td>
-                        <td className="px-8 py-6">
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2 text-slate-700">
-                              <Clock className="w-3.5 h-3.5" />
-                              <span className="text-xs font-bold">{new Date(call.createdAt || call.date).toLocaleString()}</span>
-                            </div>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                              {call.duration ? `${Math.floor(call.duration/60)}m ${call.duration%60}s` : '0s'}
-                            </span>
+                          <div>
+                            <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                              {call.lead?.First_Name || call.lead?.Last_Name ? `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim() : 'Unknown Lead'}
+                            </h3>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                              Agent: {call.agent?.name || 'Assigned Agent'}
+                            </p>
                           </div>
-                        </td>
-                        <td className="px-8 py-6">
-                          <div className="flex flex-col items-center gap-2">
-                            <div className="flex items-center gap-1.5">
-                              <Star className={`w-4 h-4 ${call.ai_call_score?.overall?.score >= 80 ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
-                              <span className="text-sm font-black text-slate-900">{call.ai_call_score?.overall?.score || 'N/A'}</span>
-                            </div>
-                            <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full ${call.ai_call_score?.overall?.score >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} 
-                                style={{ width: `${call.ai_call_score?.overall?.score || 0}%` }}
-                              ></div>
-                            </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2 text-slate-700">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span className="text-xs font-bold">{new Date(call.createdAt || call.date).toLocaleString()}</span>
                           </div>
-                        </td>
-                        <td className="px-8 py-6 text-center">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                            call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
-                            call.status === 'failed' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
-                            'bg-slate-50 text-slate-500 border border-slate-100'
-                          }`}>
-                            {call.status}
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            {call.duration ? `${Math.floor(call.duration/60)}m ${call.duration%60}s` : '0s'}
                           </span>
-                        </td>
-                        <td className="px-8 py-6">
-                          <div className="flex items-center justify-end gap-2">
-                            <button 
-                              onClick={() => toggleExpand(callId, 'transcript')}
-                              className={`p-2 rounded-xl border transition-all ${isExpanded && expandedTab === 'transcript' ? 'bg-indigo-600 text-white border-indigo-600' : 'text-indigo-600 border-indigo-100 hover:bg-indigo-50'}`}
-                              title="View Transcript"
-                            >
-                              <MessageSquare className="w-5 h-5" />
-                            </button>
-                            <button 
-                              onClick={() => toggleExpand(callId, 'insights')}
-                              className={`p-2 rounded-xl border transition-all ${isExpanded && expandedTab === 'insights' ? 'bg-emerald-600 text-white border-emerald-600' : 'text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
-                              title="AI Performance Insights"
-                            >
-                              <Activity className="w-5 h-5" />
-                            </button>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <Star className={`w-4 h-4 ${call.ai_call_score?.overall?.score >= 80 ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
+                            <span className="text-sm font-black text-slate-900">{call.ai_call_score?.overall?.score || 'N/A'}</span>
                           </div>
-                        </td>
-                      </tr>
-                      
-                      {isExpanded && (
-                        <tr>
-                          <td colSpan={5} className="px-8 py-10 bg-slate-50/30">
-                            <div className="max-w-5xl mx-auto animate-in slide-in-from-top duration-500">
-                              <div className="bg-white rounded-[32px] border border-slate-200 shadow-xl overflow-hidden mb-8">
-                                <div className="px-8 py-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50/50">
-                                  <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/20">
-                                      <Phone className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                      <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Call Recording</h4>
-                                      <p className="text-[10px] font-medium text-slate-500 italic">Play the full interaction audio</p>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex-1 max-w-md">
-                                    {(() => {
-                                      const recordingUrl = call.recording_url_cloudinary || call.recording_url;
-                                      if (!recordingUrl) return <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">No recording available</div>;
-                                      const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
-                                      return <audio controls src={finalUrl} className="h-10 w-full" />;
-                                    })()}
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    <button 
-                                      onClick={() => setExpandedTab('transcript')}
-                                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${expandedTab === 'transcript' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                                    >
-                                      Transcript
-                                    </button>
-                                    <button 
-                                      onClick={() => setExpandedTab('insights')}
-                                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${expandedTab === 'insights' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                                    >
-                                      AI Insights
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {expandedTab === 'transcript' ? (
-                                <div className="bg-white rounded-[32px] border border-slate-200 shadow-xl overflow-hidden">
-                                  <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                                    <div className="flex items-center gap-3">
-                                      <MessageSquare className="w-5 h-5 text-indigo-500" />
-                                      <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Conversation Transcript</h4>
-                                    </div>
-                                    <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 transition-colors">
-                                      <Download className="w-3.5 h-3.5" />
-                                      Export
-                                    </button>
-                                  </div>
-                                  
-                                  <div className="p-10 max-h-[500px] overflow-y-auto space-y-6 custom-scrollbar bg-slate-50/20">
-                                    {call.transcript && call.transcript.length > 0 ? (
-                                      call.transcript.map((t: any, i: number) => (
-                                        <div key={i} className={`flex gap-4 ${t.speaker?.toLowerCase().includes('agent') ? 'flex-row' : 'flex-row-reverse'}`}>
-                                          <div className={`flex flex-col max-w-[70%] ${t.speaker?.toLowerCase().includes('agent') ? 'items-start' : 'items-end'}`}>
-                                            <div className="flex items-center gap-2 mb-1.5 px-2">
-                                              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.speaker}</span>
-                                              <span className="text-[9px] font-bold text-slate-300">{t.timestamp}</span>
-                                            </div>
-                                            <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${
-                                              t.speaker?.toLowerCase().includes('agent') 
-                                                ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm' 
-                                                : 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-600/20'
-                                            }`}>
-                                              {t.text}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))
-                                    ) : (
-                                      <div className="py-20 text-center">
-                                        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Transcript not available for this call</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="space-y-8">
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    {[
-                                      { label: 'Agent Fluency', data: call.ai_call_score?.["Agent fluency"], color: 'blue', icon: Globe },
-                                      { label: 'Sentiment Analysis', data: call.ai_call_score?.["Sentiment analysis"], color: 'indigo', icon: Activity },
-                                      { label: 'Fraud Detection', data: call.ai_call_score?.["Fraud detection"], color: 'rose', icon: Shield }
-                                    ].map((metric, mIdx) => (
-                                      <div key={mIdx} className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
-                                        <div className="flex justify-between items-start mb-6">
-                                          <div className={`w-12 h-12 rounded-2xl bg-${metric.color}-50 text-${metric.color}-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
-                                            <metric.icon className="w-6 h-6" />
-                                          </div>
-                                          <div className="text-right">
-                                            <span className={`text-2xl font-black text-${metric.color}-600`}>{metric.data?.score || 0}%</span>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Score</p>
-                                          </div>
-                                        </div>
-                                        <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-3">{metric.label}</h5>
-                                        <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
-                                          &quot;{metric.data?.feedback || 'Comprehensive analysis completed. Performance meets the expected standard for this category.'}&quot;
-                                        </p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  
-                                  <div className="bg-white rounded-[32px] border border-emerald-100 shadow-xl overflow-hidden relative group">
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-emerald-500/10 transition-colors"></div>
-                                    <div className="px-10 py-10 relative z-10">
-                                      <div className="flex items-center gap-4 mb-6">
-                                        <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                                          <Star className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                          <h4 className="text-lg font-black text-slate-900 uppercase tracking-widest">Executive Summary</h4>
-                                          <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Overall AI Evaluation</p>
-                                        </div>
-                                      </div>
-                                      
-                                      <div className="bg-emerald-50/50 rounded-2xl p-8 border border-emerald-100/50">
-                                        <p className="text-lg font-bold text-emerald-900 leading-relaxed italic">
-                                          &quot;{call.ai_call_score?.overall?.feedback || 'The agent demonstrated strong communication skills and effectively handled the lead. Key talking points were covered with professional fluency.'}&quot;
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
+                          <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full ${call.ai_call_score?.overall?.score >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} 
+                              style={{ width: `${call.ai_call_score?.overall?.score || 0}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6 text-center">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                          call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                          call.status === 'failed' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
+                          'bg-slate-50 text-slate-500 border border-slate-100'
+                        }`}>
+                          {call.status}
+                        </span>
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => openCallDetails(call, 'transcript')}
+                            className="p-2 rounded-xl border border-indigo-100 text-indigo-600 hover:bg-indigo-50 transition-all"
+                            title="View Transcript"
+                          >
+                            <MessageSquare className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={() => openCallDetails(call, 'insights')}
+                            className="p-2 rounded-xl border border-emerald-100 text-emerald-600 hover:bg-emerald-50 transition-all"
+                            title="AI Performance Insights"
+                          >
+                            <Activity className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   );
                 })
               )}
@@ -342,6 +200,153 @@ export default function CallsDashboardPage() {
           </table>
         </div>
       </div>
+
+      {/* Modal Overlay */}
+      {selectedCall && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedCall(null)}></div>
+          
+          <div className="relative bg-white w-full max-w-5xl max-h-[90vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+            {/* Modal Header */}
+            <div className="px-8 py-8 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-xl shadow-indigo-600/20">
+                  <Phone className="w-7 h-7" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">
+                    {selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim() : 'Call Details'}
+                  </h2>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
+                    Agent: {selectedCall.agent?.name || 'Assigned Agent'} • {new Date(selectedCall.createdAt || selectedCall.date).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-1 max-w-md mx-4">
+                {(() => {
+                  const recordingUrl = selectedCall.recording_url_cloudinary || selectedCall.recording_url;
+                  if (!recordingUrl) return <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">No recording available</div>;
+                  const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
+                  return <audio controls src={finalUrl} className="h-10 w-full" />;
+                })()}
+              </div>
+
+              <button 
+                onClick={() => setSelectedCall(null)}
+                className="p-3 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl border border-slate-100 transition-all shadow-sm"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="px-8 py-4 bg-white border-b border-slate-100 flex items-center gap-4">
+              <button 
+                onClick={() => setActiveTab('transcript')}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'transcript' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                Transcript
+              </button>
+              <button 
+                onClick={() => setActiveTab('insights')}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'insights' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+              >
+                <Activity className="w-4 h-4" />
+                AI Insights
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30 custom-scrollbar">
+              {activeTab === 'transcript' ? (
+                <div className="max-w-4xl mx-auto space-y-6">
+                  {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
+                    selectedCall.transcript.map((t: any, i: number) => (
+                      <div key={i} className={`flex gap-4 ${t.speaker?.toLowerCase().includes('agent') ? 'flex-row' : 'flex-row-reverse'}`}>
+                        <div className={`flex flex-col max-w-[75%] ${t.speaker?.toLowerCase().includes('agent') ? 'items-start' : 'items-end'}`}>
+                          <div className="flex items-center gap-2 mb-1.5 px-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.speaker}</span>
+                            <span className="text-[9px] font-bold text-slate-300">{t.timestamp}</span>
+                          </div>
+                          <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${
+                            t.speaker?.toLowerCase().includes('agent') 
+                              ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm' 
+                              : 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-600/20'
+                          }`}>
+                            {t.text}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-20 text-center">
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Transcript not available for this call</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="max-w-5xl mx-auto space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {[
+                      { label: 'Agent Fluency', data: selectedCall.ai_call_score?.["Agent fluency"], color: 'blue', icon: Globe },
+                      { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], color: 'indigo', icon: Activity },
+                      { label: 'Fraud Detection', data: selectedCall.ai_call_score?.["Fraud detection"], color: 'rose', icon: Shield }
+                    ].map((metric, mIdx) => (
+                      <div key={mIdx} className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
+                        <div className="flex justify-between items-start mb-6">
+                          <div className={`w-12 h-12 rounded-2xl bg-${metric.color}-50 text-${metric.color}-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
+                            <metric.icon className="w-6 h-6" />
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-2xl font-black text-${metric.color}-600`}>{metric.data?.score || 0}%</span>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Score</p>
+                          </div>
+                        </div>
+                        <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-3">{metric.label}</h5>
+                        <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
+                          &quot;{metric.data?.feedback || 'Comprehensive analysis completed.'}&quot;
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="bg-white rounded-[32px] border border-emerald-100 shadow-xl overflow-hidden relative group p-10">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-emerald-500/10 transition-colors"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                          <Star className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-black text-slate-900 uppercase tracking-widest">Executive Summary</h4>
+                          <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Overall AI Evaluation</p>
+                        </div>
+                      </div>
+                      <div className="bg-emerald-50/50 rounded-2xl p-8 border border-emerald-100/50">
+                        <p className="text-lg font-bold text-emerald-900 leading-relaxed italic">
+                          &quot;{selectedCall.ai_call_score?.overall?.feedback || 'The agent demonstrated standard performance.'}&quot;
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-8 py-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+              <button 
+                onClick={() => setSelectedCall(null)}
+                className="px-8 py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all shadow-lg"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
