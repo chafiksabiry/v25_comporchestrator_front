@@ -402,72 +402,77 @@ export default function PremiumDashboard({
                         <h3 className="text-[13px] font-black text-slate-900 truncate group-hover:text-harx-600 transition-colors">
                           {call.lead?.First_Name || call.lead?.Last_Name ? `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim() : 'Unknown Lead'}
                         </h3>
-                              <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                                <MessageSquare className="w-3 h-3" />
-                                Full Conversation Transcript
-                              </h4>
-                              <button onClick={() => setExpandedCallId(null)} className="text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase">Close</button>
-                            </div>
-                            <div className="bg-slate-50/50 rounded-3xl p-8 max-h-[400px] overflow-y-auto border border-slate-100 space-y-4 custom-scrollbar">
-                              {call.transcript.map((t: any, i: number) => (
-                                <div key={i} className={`flex gap-4 ${t.speaker?.toLowerCase().includes('agent') ? 'flex-row' : 'flex-row-reverse'}`}>
-                                  <div className={`flex flex-col max-w-[80%] ${t.speaker?.toLowerCase().includes('agent') ? 'items-start' : 'items-end'}`}>
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.speaker}</span>
-                                      <span className="text-[9px] font-bold text-slate-300">{t.timestamp}</span>
-                                    </div>
-                                    <div className={`px-4 py-3 rounded-2xl text-xs font-medium leading-relaxed ${t.speaker?.toLowerCase().includes('agent') ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100' : 'bg-indigo-600 text-white rounded-tr-none shadow-md shadow-indigo-600/10'}`}>
-                                      {t.text}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-8">
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
-                                <Star className="w-3 h-3" />
-                                Detailed AI Performance Analysis
-                              </h4>
-                              <button onClick={() => setExpandedCallId(null)} className="text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase">Close</button>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                              {[
-                                { label: 'Agent Fluency', data: call.ai_call_score["Agent fluency"], color: 'blue' },
-                                { label: 'Sentiment Analysis', data: call.ai_call_score["Sentiment analysis"], color: 'indigo' },
-                                { label: 'Fraud Detection', data: call.ai_call_score["Fraud detection"], color: 'rose' }
-                              ].map((metric, mIdx) => (
-                                <div key={mIdx} className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm">
-                                  <div className="flex justify-between items-center mb-4">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{metric.label}</p>
-                                    <span className={`text-xs font-black px-2 py-1 rounded-lg bg-${metric.color}-50 text-${metric.color}-600`}>
-                                      {metric.data?.score || 0}%
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] font-medium text-slate-600 leading-relaxed italic">
-                                    "{metric.data?.feedback || 'No specific feedback provided.'}"
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
+                        <p className="text-[10px] font-medium text-slate-500">{new Date(call.createdAt || call.date).toLocaleDateString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-[11px] font-black ${call.ai_call_score?.overall?.score >= 80 ? 'text-emerald-600' : 'text-slate-500'}`}>
+                          {call.ai_call_score?.overall?.score || 'N/A'}/100
+                        </span>
+                      </div>
+                    </div>
 
-                            <div className="bg-emerald-50/50 rounded-3xl p-8 border border-emerald-100/50 relative overflow-hidden">
-                              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-                              <h5 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <Activity className="w-3 h-3" />
-                                Executive Summary & Recommendations
-                              </h5>
-                              <p className="text-sm font-bold text-emerald-900 leading-relaxed relative z-10">
-                                {call.ai_call_score.overall?.feedback || 'Analysis completed. The agent demonstrated standard performance throughout the interaction.'}
-                              </p>
-                            </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                        <span>Duration: {call.duration ? `${Math.floor(call.duration/60)}m ${call.duration%60}s` : '0s'}</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-10 h-1 bg-slate-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${call.ai_call_score?.overall?.score >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${call.ai_call_score?.overall?.score || 0}%` }}></div>
                           </div>
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        {(() => {
+                          const recordingUrl = call.recording_url_cloudinary || call.recording_url;
+                          if (!recordingUrl) return <div className="text-[9px] font-black text-slate-400 uppercase text-center py-2 bg-slate-50/50 rounded-xl italic">No recording</div>;
+                          
+                          const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
+                          return <audio controls src={finalUrl} className="h-8 w-full opacity-90 hover:opacity-100 transition-opacity" />;
+                        })()}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {call.transcript && call.transcript.length > 0 && (
+                          <button 
+                            onClick={() => toggleExpand(call._id || idx, 'transcript')}
+                            className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${expandedCallId === (call._id || idx) && expandedTab === 'transcript' ? 'bg-blue-600 text-white border-blue-600' : 'text-blue-600 border-blue-100 hover:bg-blue-50'}`}
+                          >
+                            Transcript
+                          </button>
+                        )}
+                        {call.ai_call_score && (
+                          <button 
+                            onClick={() => toggleExpand(call._id || idx, 'insights')}
+                            className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${expandedCallId === (call._id || idx) && expandedTab === 'insights' ? 'bg-emerald-600 text-white border-emerald-600' : 'text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
+                          >
+                            AI Insights
+                          </button>
                         )}
                       </div>
-                    )}
+
+                      {expandedCallId === (call._id || idx) && (
+                        <div className="pt-4 border-t border-slate-100 animate-in slide-in-from-top duration-300">
+                          {expandedTab === 'transcript' ? (
+                            <div className="space-y-3">
+                              <p className="text-[9px] font-black text-blue-600 uppercase">Transcript Excerpt</p>
+                              <div className="bg-slate-50/50 rounded-xl p-4 max-h-[200px] overflow-y-auto text-[10px] space-y-2">
+                                {call.transcript.slice(0, 5).map((t: any, i: number) => (
+                                  <p key={i}><span className="font-bold">{t.speaker}:</span> {t.text}</p>
+                                ))}
+                                {call.transcript.length > 5 && <p className="text-slate-400 italic">... view more in full history</p>}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <p className="text-[9px] font-black text-emerald-600 uppercase">Executive Feedback</p>
+                              <div className="bg-emerald-50/50 rounded-xl p-4 text-[10px] text-emerald-900 leading-relaxed italic">
+                                "{call.ai_call_score.overall?.feedback?.slice(0, 150)}..."
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
