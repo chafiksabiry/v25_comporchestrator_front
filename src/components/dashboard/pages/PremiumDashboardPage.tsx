@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PremiumDashboard from '../../training/components/Dashboard/PremiumDashboard';
+import { getActiveAgentsForCompany } from '../matching';
 
 export default function PremiumDashboardPage() {
   const [profileData, setProfileData] = useState<any>(null);
@@ -23,7 +24,8 @@ export default function PremiumDashboardPage() {
     gigs: 0,
     calls: 0,
     gigsEnrolled: 0,
-    activeLeads: 0
+    activeLeads: 0,
+    agentsEnrolled: 0
   });
 
   useEffect(() => {
@@ -44,6 +46,10 @@ export default function PremiumDashboardPage() {
           const callsResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/api/calls`);
           const callsData = await callsResponse.json();
           const callsCount = Array.isArray(callsData) ? callsData.length : 0;
+          
+          // 4. Fetch Active Agents Enrolled
+          const agentsData = await getActiveAgentsForCompany(companyId);
+          const agentsCount = Array.isArray(agentsData) ? agentsData.length : 0;
 
           // 4. Fetch Enrolled Gigs (Mock for now or use a matching service endpoint if available)
           // For now we'll use a placeholder or derived value
@@ -52,7 +58,8 @@ export default function PremiumDashboardPage() {
             gigs: gigsCount,
             calls: callsCount,
             gigsEnrolled: Math.min(gigsCount, 12), // Fallback logic or real enrollment check
-            activeLeads: leadsCount
+            activeLeads: leadsCount,
+            agentsEnrolled: agentsCount
           });
         } catch (error) {
           console.error('Error fetching real stats:', error);

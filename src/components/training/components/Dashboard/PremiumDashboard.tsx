@@ -17,6 +17,7 @@ interface PremiumDashboardProps {
     calls: number;
     gigsEnrolled: number;
     activeLeads: number;
+    agentsEnrolled: number;
   };
 }
 
@@ -48,6 +49,7 @@ export default function PremiumDashboard({ profile, companyName, userType = 'rep
     { icon: Phone, label: 'Calls', value: companyStats?.calls || 0, change: 'Executed', type: 'positive', color: 'blue' },
     { icon: Users, label: 'Gigs Enrolled', value: companyStats?.gigsEnrolled || 0, change: 'Active', type: 'neutral', color: 'emerald' },
     { icon: Activity, label: 'Active Leads', value: companyStats?.activeLeads || 0, change: 'Pipeline', type: 'positive', color: 'amber' },
+    { icon: Users, label: 'Agents Enrolled', value: companyStats?.agentsEnrolled || 0, change: 'Total', type: 'positive', color: 'indigo' },
   ] : [
     { icon: TrendingUp, label: 'REPS Score', value: `${overallScore}/100`, change: 'Current', type: 'positive', color: 'harx' },
     { icon: BookOpen, label: 'Training', value: `${trainingStats?.overallProgress || 0}%`, change: 'Completion', type: 'positive', color: 'blue' },
@@ -122,20 +124,22 @@ export default function PremiumDashboard({ profile, companyName, userType = 'rep
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {stats.map((stat, index) => (
           <div key={index} className="group relative overflow-hidden bg-slate-50/50 backdrop-blur-md rounded-[28px] p-6 border border-slate-200/50 shadow-sm hover:shadow-md transition-all duration-300">
             <div className={`absolute top-0 right-0 w-24 h-24 rounded-full -mr-12 -mt-12 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity ${stat.color === 'harx' ? 'bg-harx-500' :
                 stat.color === 'blue' ? 'bg-blue-500' :
                   stat.color === 'amber' ? 'bg-amber-500' :
-                    'bg-emerald-500'
+                    stat.color === 'indigo' ? 'bg-indigo-500' :
+                      'bg-emerald-500'
               }`}></div>
 
             <div className="flex items-center justify-between mb-6 relative z-10">
               <div className={`w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center transition-transform group-hover:scale-110 duration-300 ${stat.color === 'harx' ? 'text-harx-500' :
                   stat.color === 'blue' ? 'text-blue-500' :
                     stat.color === 'amber' ? 'text-amber-500' :
-                      'text-emerald-500'
+                      stat.color === 'indigo' ? 'text-indigo-500' :
+                        'text-emerald-500'
                 }`}>
                 <stat.icon className="w-6 h-6" />
               </div>
