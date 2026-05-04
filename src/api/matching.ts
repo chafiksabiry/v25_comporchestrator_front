@@ -1,8 +1,8 @@
 import { Rep, Gig, Match, MatchResponse, MatchingWeights, GigAgentRequest } from '../types/matching';
 
 // URLs des APIs - utilise les mêmes que le projet matching
-const MATCHING_API_URL = import.meta.env.VITE_MATCHING_API_URL || 'http://localhost:5011/api';
-const GIGS_API_URL = import.meta.env.VITE_API_URL_GIGS || 'http://localhost:5012/api';
+const MATCHING_API_URL = import.meta.env.VITE_MATCHING_API_URL || 'https://v25matchingbackend-production.up.railway.app/api';
+const GIGS_API_URL = import.meta.env.VITE_API_URL_GIGS || import.meta.env.VITE_GIGS_API || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
 
 // ===== REPS API =====
 export const getReps = async (): Promise<Rep[]> => {

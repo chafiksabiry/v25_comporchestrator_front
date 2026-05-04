@@ -33,37 +33,56 @@ export default function PremiumDashboardPage() {
   useEffect(() => {
     if (userType === 'company' && companyId) {
       const fetchRealStats = async () => {
+        const stats = {
+          gigs: 0,
+          calls: 0,
+          gigsEnrolled: 0,
+          activeLeads: 0,
+          agentsEnrolled: 0
+        };
+
         try {
           // 1. Fetch Gigs
-          const gigsApiUrl = import.meta.env.VITE_GIGS_API || import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
-          const gigsResponse = await fetch(`${gigsApiUrl}/gigs/company/${companyId}?populate=companyId`);
-          const gigsData = await gigsResponse.json();
-          const gigsCount = Array.isArray(gigsData.data) ? gigsData.data.length : 0;
+          try {
+            const gigsApiUrl = import.meta.env.VITE_GIGS_API || import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+            const gigsResponse = await fetch(`${gigsApiUrl}/gigs/company/${companyId}?populate=companyId`);
+            if (gigsResponse.ok) {
+              const gigsData = await gigsResponse.json();
+              stats.gigs = Array.isArray(gigsData.data) ? gigsData.data.length : 0;
+            }
+          } catch (e) { console.error('Error fetching gigs:', e); }
 
-          // 2. Fetch Leads (Total Leads for the company)
-          const leadsResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`);
-          const leadsData = await leadsResponse.json();
-          const leadsCount = leadsData.count || 0;
+          // 2. Fetch Leads
+          try {
+            const leadsResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`);
+            if (leadsResponse.ok) {
+              const leadsData = await leadsResponse.json();
+              stats.activeLeads = leadsData.count || 0;
+            }
+          } catch (e) { console.error('Error fetching leads:', e); }
 
           // 3. Fetch Calls
-          const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
-          const callsResponse = await fetch(`${callsApiUrl}/api/calls?userId=${userId}`);
-          const callsData = await callsResponse.json();
-          const callsCount = Array.isArray(callsData) ? callsData.length : (Array.isArray(callsData.data) ? callsData.data.length : 0);
+          try {
+            const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
+            // Fix double /api if present
+            const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
+            const callsResponse = await fetch(`${callsBase}/calls?userId=${userId}`);
+            if (callsResponse.ok) {
+              const callsData = await callsResponse.json();
+              stats.calls = Array.isArray(callsData) ? callsData.length : (Array.isArray(callsData.data) ? callsData.data.length : 0);
+            }
+          } catch (e) { console.error('Error fetching calls:', e); }
           
-          // 4. Fetch Active Agents Enrolled
-          const agentsData = await getActiveAgentsForCompany(companyId);
-          const agentsCount = Array.isArray(agentsData) ? agentsData.length : 0;
+          // 4. Fetch Active Agents
+          try {
+            const agentsData = await getActiveAgentsForCompany(companyId);
+            stats.agentsEnrolled = Array.isArray(agentsData) ? agentsData.length : 0;
+            stats.gigsEnrolled = stats.agentsEnrolled > 0 ? 1 : 0;
+          } catch (e) { console.error('Error fetching agents:', e); }
 
-          setCompanyStats({
-            gigs: gigsCount,
-            calls: callsCount,
-            gigsEnrolled: agentsCount > 0 ? 1 : 0, // A gig is "enrolled" if it has active agents
-            activeLeads: leadsCount,
-            agentsEnrolled: agentsCount
-          });
+          setCompanyStats(stats);
         } catch (error) {
-          console.error('Error fetching real stats:', error);
+          console.error('Error in fetchRealStats:', error);
         }
       };
 
