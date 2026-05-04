@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Users, Award, Target, Bell, MessageSquare, ArrowRight, Zap, Shield, Activity, Users2, BarChart3, Star } from 'lucide-react';
+import { TrendingUp, Users, Award, Target, Bell, MessageSquare, ArrowRight, Zap, Shield, Activity as ActivityIcon, Users2, BarChart3, Star } from 'lucide-react';
 
 interface PremiumTrainerDashboardProps {
   profile?: any;
@@ -16,7 +16,7 @@ export default function PremiumTrainerDashboard({ profile, dashboardData }: Prem
 
   const stats = [
     { icon: Users2, label: 'Total Trainees', value: dashboardData?.totalTrainees || 0, change: 'Enrolled', type: 'positive', color: 'blue' },
-    { icon: Activity, label: 'Active Now', value: dashboardData?.activeTrainees || 0, change: 'Live', type: 'positive', color: 'emerald' },
+    { icon: ActivityIcon, label: 'Active Now', value: dashboardData?.activeTrainees || 0, change: 'Live', type: 'positive', color: 'emerald' },
     { icon: BarChart3, label: 'Completion', value: `${dashboardData?.completionRate || 0}%`, change: 'Average', type: 'neutral', color: 'harx' },
     { icon: Star, label: 'Engagement', value: `${dashboardData?.averageEngagement || 0}%`, change: 'Score', type: 'positive', color: 'amber' },
   ];

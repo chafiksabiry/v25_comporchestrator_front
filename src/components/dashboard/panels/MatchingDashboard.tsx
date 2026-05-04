@@ -3,7 +3,7 @@ import { Rep, Gig, Match, MatchingWeights } from '../types';
 import { formatScore } from '../utils/matchingAlgorithm';
 import { getReps, getGigs, findMatchesForGig, findGigsForRep, generateOptimalMatches } from '../api';
 import { 
-  Activity, 
+  Activity as ActivityIcon, 
   Users, 
   Briefcase, 
   Zap, 
@@ -362,7 +362,7 @@ const MatchingDashboard: React.FC = () => {
               onClick={() => setActiveTab('optimal')}
             >
               <div className="flex items-center justify-center space-x-2">
-                <Activity size={18} />
+                <ActivityIcon size={18} />
                 <span>Optimal Matching</span>
               </div>
             </button>
@@ -481,7 +481,7 @@ const MatchingDashboard: React.FC = () => {
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-3">
-                <Activity size={24} className="text-rose-500" />
+                <ActivityIcon size={24} className="text-rose-500" />
                 <h2 className="text-xl font-semibold text-gray-800">Optimal Matching Results</h2>
               </div>
               <div className="flex items-center space-x-4">
