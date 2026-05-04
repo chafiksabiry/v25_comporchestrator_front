@@ -192,7 +192,7 @@ const updateOnboardingProgress = async () => {
     const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
     const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/10`;
 
-    
+
     const response = await axios.put(endpoint, { status: "completed" });
 
     if (response.data) {
@@ -208,7 +208,7 @@ const updateOnboardingProgress = async () => {
           completedSteps: (response.data as any).completedSteps || []
         }
       }));
-      
+
     }
   } catch (error) {
     console.error('[SessionPlanning] Failed to update onboarding progress:', error);
@@ -255,7 +255,7 @@ export default function SessionPlanning() {
           if (mappedProjects.length > 0) {
             setSelectedGigId(mappedProjects[0].id);
           }
-          
+
         }
       } catch (error) {
         console.error('Error fetching gigs:', error);
@@ -383,7 +383,7 @@ export default function SessionPlanning() {
               avatar: personalInfo.photo?.url || agentData.avatar || agentData.photo?.url || '',
               specialties: professionalSummary.currentRole ? [professionalSummary.currentRole] : (agentData.specialties || []),
               performanceScore: agentData.performanceScore || 85,
-              preferredHours: agentData.preferredHours || { start: 9, end: 17 },
+              preferredHours: agentData.preferredHours || { start: 9, end: 23 },
               attendanceScore: agentData.attendanceScore || 90,
               attendanceHistory: []
             });

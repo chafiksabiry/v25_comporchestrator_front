@@ -16,7 +16,7 @@ interface PlanningMatrixProps {
     availabilitySchedule?: { day: string; start: string; end: string }[];
 }
 
-const HOURS = Array.from({ length: 11 }, (_, i) => i + 9); // 9:00 to 19:00
+const HOURS = Array.from({ length: 15 }, (_, i) => i + 9); // 9:00 to 23:00
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
 /** Lundi … dimanche de la semaine calendaire qui contient `anchor` (semaine ISO lundi) */
