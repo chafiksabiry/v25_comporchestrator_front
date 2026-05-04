@@ -237,7 +237,6 @@ export default function PremiumDashboard({
   const stats = userType === 'company' ? [
     { icon: Briefcase, label: 'Gigs', value: companyStats?.gigs || 0, change: 'Total', type: 'positive', color: 'harx' },
     { icon: Phone, label: 'Calls', value: companyStats?.calls || 0, change: 'Executed', type: 'positive', color: 'blue' },
-    { icon: Users, label: 'Gigs Enrolled', value: companyStats?.gigsEnrolled || 0, change: 'Active', type: 'neutral', color: 'emerald' },
     { icon: Activity, label: 'Active Leads', value: companyStats?.activeLeads || 0, change: 'Pipeline', type: 'positive', color: 'amber' },
     { icon: Target, label: 'Conversion Rate', value: `${companyStats?.conversionRate || 0}%`, change: 'Success', type: 'positive', color: 'indigo' },
     { icon: Users, label: 'Agents Enrolled', value: companyStats?.agentsEnrolled || 0, change: 'Total', type: 'positive', color: 'harx' },
