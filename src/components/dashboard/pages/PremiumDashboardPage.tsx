@@ -93,6 +93,7 @@ export default function PremiumDashboardPage() {
               // Filter calls for the histogram ONLY
               let filteredCalls = [...callsArray];
               
+              console.log('[Dashboard] Gigs in list:', gigsList.map(g => ({ id: g._id, title: g.title })));
               console.log('[Dashboard] Current selectedGigId:', selectedGigId);
 
               // Filter by Gig
@@ -103,7 +104,7 @@ export default function PremiumDashboardPage() {
                     if (!val) return null;
                     if (typeof val === 'string') return val;
                     if (val.$oid) return val.$oid;
-                    if (val._id) return typeof val._id === 'string' ? val._id : val._id.$oid;
+                    if (val._id) return typeof val._id === 'string' ? val._id : (val._id?.$oid || null);
                     return null;
                   };
 
@@ -111,7 +112,11 @@ export default function PremiumDashboardPage() {
                   const leadGigId = getID(c.lead?.gigId);
                   
                   const isMatch = callGigId === selectedGigId || leadGigId === selectedGigId;
-                  if (isMatch) console.log(`[Dashboard] MATCH for call ${getID(c)}: callGigId=${callGigId}, leadGigId=${leadGigId}`);
+                  
+                  // LOG EVERY COMPARISON for the first few calls to see what's happening
+                  if (callsArray.indexOf(c) < 5 || isMatch) {
+                    console.log(`[Dashboard] Call ${getID(c)}: callGigId=${callGigId}, leadGigId=${leadGigId}, selected=${selectedGigId}, match=${isMatch}`);
+                  }
                   
                   return isMatch;
                 });
