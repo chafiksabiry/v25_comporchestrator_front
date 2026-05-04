@@ -32,7 +32,7 @@ import {
   Filter,
   Inbox,
   BarChart2 as BarChartIcon,
-  Activity,
+  Activity as ActivityIcon,
   CheckCircle2
 } from 'lucide-react';
 import axios from 'axios';
@@ -278,7 +278,7 @@ const ReportingSetup = () => {
       id: 'customer_satisfaction',
       name: 'Customer Satisfaction',
       description: 'CSAT scores across channels',
-      icon: Activity,
+      icon: ActivityIcon,
       category: 'quality'
     },
     {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, X } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, X, TrendingUp } from 'lucide-react';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 
 export default function CallsDashboardPage() {
@@ -289,11 +289,19 @@ export default function CallsDashboardPage() {
                 </div>
               ) : (
                 <div className="max-w-5xl mx-auto space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
-                      { label: 'Agent Fluency', data: selectedCall.ai_call_score?.["Agent fluency"], color: 'blue', icon: Globe },
-                      { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], color: 'indigo', icon: ActivityIcon },
-                      { label: 'Fraud Detection', data: selectedCall.ai_call_score?.["Fraud detection"], color: 'rose', icon: Shield }
+                      { label: 'Agent Fluency', data: selectedCall.ai_call_score?.["Agent fluency"], icon: Globe },
+                      { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], icon: ActivityIcon },
+                      { label: 'Fraud Detection', data: selectedCall.ai_call_score?.["Fraud detection"], icon: Shield },
+                      { 
+                        label: 'Conversion Potential', 
+                        data: { 
+                          score: Math.round(((selectedCall.ai_call_score?.["Agent fluency"]?.score || 0) * 0.4) + ((selectedCall.ai_call_score?.["Sentiment analysis"]?.score || 0) * 0.6)),
+                          feedback: "Probabilité de conversion estimée basée sur l'analyse sémantique."
+                        }, 
+                        icon: TrendingUp 
+                      }
                     ].map((metric, mIdx) => (
                       <div key={mIdx} className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
                         <div className="flex justify-between items-start mb-6">

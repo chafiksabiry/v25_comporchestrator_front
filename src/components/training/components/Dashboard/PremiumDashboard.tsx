@@ -238,7 +238,7 @@ export default function PremiumDashboard({
   const stats = userType === 'company' ? [
     { icon: Briefcase, label: 'Gigs', value: companyStats?.gigs || 0, change: 'Total', type: 'positive', color: 'harx' },
     { icon: Phone, label: 'Calls', value: companyStats?.calls || 0, change: 'Executed', type: 'positive', color: 'blue' },
-    { icon: Activity, label: 'Active Leads', value: companyStats?.activeLeads || 0, change: 'Pipeline', type: 'positive', color: 'amber' },
+    { icon: ActivityIcon, label: 'Active Leads', value: companyStats?.activeLeads || 0, change: 'Pipeline', type: 'positive', color: 'amber' },
     { icon: Target, label: 'Conversion Rate', value: `${companyStats?.conversionRate || 0}%`, change: 'Success', type: 'positive', color: 'indigo' },
     { icon: Users, label: 'Agents Enrolled', value: companyStats?.agentsEnrolled || 0, change: 'Total', type: 'positive', color: 'harx' },
   ] : [
@@ -320,7 +320,7 @@ export default function PremiumDashboard({
             <div className="px-10 py-8 border-b border-white/40 flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-white/20">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <Activity className="w-6 h-6" />
+                  <ActivityIcon className="w-6 h-6" />
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">
@@ -530,7 +530,7 @@ export default function PremiumDashboard({
             <div className="lg:col-span-2 bg-white/60 backdrop-blur-md rounded-[32px] border border-white/80 shadow-xl shadow-slate-200/30 overflow-hidden">
               <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/40">
                 <h2 className="text-lg font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-harx-500" />
+                  <ActivityIcon className="w-5 h-5 text-harx-500" />
                   Professional Focus
                 </h2>
               </div>
