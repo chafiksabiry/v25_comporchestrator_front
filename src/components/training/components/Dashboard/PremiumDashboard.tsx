@@ -379,7 +379,10 @@ export default function PremiumDashboard({
                   <div className="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/20">
                     <Phone className="w-5 h-5" />
                   </div>
-                  <button className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline">
+                  <button 
+                    onClick={() => window.location.href = '#/dashboard/calls'}
+                    className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline"
+                  >
                     View All
                   </button>
                 </div>
