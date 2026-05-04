@@ -96,33 +96,22 @@ export default function PremiumDashboardPage() {
               console.log('[Dashboard] Gigs in list:', gigsList.map(g => ({ id: g._id, title: g.title })));
               console.log('[Dashboard] Current selectedGigId:', selectedGigId);
 
+              const getID = (val: any) => {
+                if (!val) return null;
+                if (typeof val === 'string') return val;
+                if (val.$oid) return val.$oid;
+                if (val._id) return typeof val._id === 'string' ? val._id : (val._id?.$oid || null);
+                return null;
+              };
+
               // Filter by Gig
               if (selectedGigId !== 'all') {
                 filteredCalls = filteredCalls.filter((c: any) => {
-                  // Helper to get ID from string or {$oid: string}
-                  const getID = (val: any) => {
-                    if (!val) return null;
-                    if (typeof val === 'string') return val;
-                    if (val.$oid) return val.$oid;
-                    if (val._id) return typeof val._id === 'string' ? val._id : (val._id?.$oid || null);
-                    return null;
-                  };
-
                   const callGigId = getID(c.gigId) || getID(c.gig);
                   const leadGigId = getID(c.lead?.gigId);
-                  
-                  const isMatch = callGigId === selectedGigId || leadGigId === selectedGigId;
-                  
-                  // LOG EVERY COMPARISON for the first few calls to see what's happening
-                  if (callsArray.indexOf(c) < 5 || isMatch) {
-                    console.log(`[Dashboard] Call ${getID(c)}: callGigId=${callGigId}, leadGigId=${leadGigId}, selected=${selectedGigId}, match=${isMatch}`);
-                  }
-                  
-                  return isMatch;
+                  return callGigId === selectedGigId || leadGigId === selectedGigId;
                 });
               }
-
-              console.log('[Dashboard] After Gig filter:', filteredCalls.length);
 
               // Filter by Date Range
               if (dateRange !== 'all') {
