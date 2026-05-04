@@ -22,6 +22,7 @@ import KnowledgeInsights from './panels/KnowledgeInsights';
 import OverviewDashboardPage from './pages/OverviewDashboardPage';
 import CompanyDashboardPage from './pages/CompanyDashboardPage';
 import PremiumDashboardPage from './pages/PremiumDashboardPage';
+import CallsDashboardPage from './pages/CallsDashboardPage';
 
 function App() {
   return (
@@ -35,7 +36,7 @@ function App() {
         <Route path="/dashboard/leads" element={<LeadManagementPanel />} />
         <Route path="/dashboard/rep-matching" element={<RepMatchingPanel />} />
         <Route path="/dashboard/scheduler" element={<SchedulerPanel />} />
-        <Route path="/dashboard/calls" element={<CallsPanel />} />
+        <Route path="/dashboard/calls" element={<CallsDashboardPage />} />
         <Route path="/dashboard/telnyx-call-test" element={<TelnyxCallTest />} />
         <Route path="/dashboard/call-report" element={<CallReportCard />} />
         <Route path="/dashboard/emails" element={<EmailsPanel />} />

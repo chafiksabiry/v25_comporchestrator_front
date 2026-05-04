@@ -129,6 +129,7 @@ export function MasterSidebar({
     },
     { icon: <Briefcase size={20} />, label: 'Gigs', path: '/dashboard/gigs', key: 'gigs', requiresGigs: true },
     { icon: <UserPlus size={20} />, label: 'Leads', path: '/dashboard/leads', key: 'leads', requiresLeads: true },
+    { icon: <Phone size={20} />, label: 'Calls', path: '/dashboard/calls', key: 'calls', alwaysShow: true },
     { icon: <Users size={20} />, label: 'Rep Matching', path: '/dashboard/rep-matching', key: 'rep-matching', requiresRepMatching: true },
     { icon: <Calendar size={20} />, label: 'Scheduler', path: '/dashboard/scheduler', key: 'scheduler', requiresRepMatching: true },
     { icon: <Mail size={20} />, label: 'Emails', path: '/dashboard/emails', key: 'emails', requiresRepMatching: true },
