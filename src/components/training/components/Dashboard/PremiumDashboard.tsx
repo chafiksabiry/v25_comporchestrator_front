@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TrendingUp, Users, DollarSign, Clock, Star, Bell, BookOpen, MessageSquare, Phone, Target, Award, ArrowRight, Briefcase, Zap, Shield, CheckCircle2, Layout, Globe, Activity } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -64,6 +64,19 @@ export default function PremiumDashboard({
   customDates,
   onCustomDatesChange
 }: PremiumDashboardProps) {
+  const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
+  const [expandedTab, setExpandedTab] = useState<'transcript' | 'insights' | null>(null);
+
+  const toggleExpand = (id: string, tab: 'transcript' | 'insights') => {
+    if (expandedCallId === id && expandedTab === tab) {
+      setExpandedCallId(null);
+      setExpandedTab(null);
+    } else {
+      setExpandedCallId(id);
+      setExpandedTab(tab);
+    }
+  };
+
   // Helper to calculate score (ported from ProfileView)
   const calculateOverallScore = () => {
     if (!profile?.skills?.contactCenter?.length || !profile?.skills?.contactCenter[0]?.assessmentResults?.keyMetrics) return 75; // Fallback
@@ -449,11 +462,8 @@ export default function PremiumDashboard({
                         <div className="flex items-center gap-4 justify-end">
                           {call.transcript && call.transcript.length > 0 && (
                             <button 
-                              onClick={() => {
-                                const text = call.transcript.map((t: any) => `[${t.timestamp || ''}] ${t.speaker || 'Speaker'}: ${t.text}`).join('\n');
-                                alert(text);
-                              }}
-                              className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700 flex items-center gap-1.5 transition-colors"
+                              onClick={() => toggleExpand(call._id || idx, 'transcript')}
+                              className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-lg ${expandedCallId === (call._id || idx) && expandedTab === 'transcript' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-blue-600 hover:bg-blue-50'}`}
                             >
                               <MessageSquare className="w-3 h-3" />
                               Transcript
@@ -461,12 +471,8 @@ export default function PremiumDashboard({
                           )}
                           {call.ai_call_score && (
                             <button 
-                              onClick={() => {
-                                const s = call.ai_call_score;
-                                const feedback = `OVERALL: ${s.overall?.score || 0}/100\n\n${s.overall?.feedback || ''}\n\nFLUENCY: ${s["Agent fluency"]?.score || 0}/100\nSENTIMENT: ${s["Sentiment analysis"]?.score || 0}/100\nFRAUD: ${s["Fraud detection"]?.score || 0}/100`;
-                                alert(feedback);
-                              }}
-                              className="text-[9px] font-black text-emerald-600 uppercase tracking-widest hover:text-emerald-700 flex items-center gap-1.5 transition-colors"
+                              onClick={() => toggleExpand(call._id || idx, 'insights')}
+                              className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-lg ${expandedCallId === (call._id || idx) && expandedTab === 'insights' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-emerald-600 hover:bg-emerald-50'}`}
                             >
                               <Star className="w-3 h-3" />
                               AI Insights
@@ -475,6 +481,78 @@ export default function PremiumDashboard({
                         </div>
                       </div>
                     </div>
+
+                    {expandedCallId === (call._id || idx) && (
+                      <div className="mt-8 pt-8 border-t border-slate-100 animate-in slide-in-from-top duration-500 w-full">
+                        {expandedTab === 'transcript' ? (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                                <MessageSquare className="w-3 h-3" />
+                                Full Conversation Transcript
+                              </h4>
+                              <button onClick={() => setExpandedCallId(null)} className="text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase">Close</button>
+                            </div>
+                            <div className="bg-slate-50/50 rounded-3xl p-8 max-h-[400px] overflow-y-auto border border-slate-100 space-y-4 custom-scrollbar">
+                              {call.transcript.map((t: any, i: number) => (
+                                <div key={i} className={`flex gap-4 ${t.speaker?.toLowerCase().includes('agent') ? 'flex-row' : 'flex-row-reverse'}`}>
+                                  <div className={`flex flex-col max-w-[80%] ${t.speaker?.toLowerCase().includes('agent') ? 'items-start' : 'items-end'}`}>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.speaker}</span>
+                                      <span className="text-[9px] font-bold text-slate-300">{t.timestamp}</span>
+                                    </div>
+                                    <div className={`px-4 py-3 rounded-2xl text-xs font-medium leading-relaxed ${t.speaker?.toLowerCase().includes('agent') ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100' : 'bg-indigo-600 text-white rounded-tr-none shadow-md shadow-indigo-600/10'}`}>
+                                      {t.text}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-8">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+                                <Star className="w-3 h-3" />
+                                Detailed AI Performance Analysis
+                              </h4>
+                              <button onClick={() => setExpandedCallId(null)} className="text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase">Close</button>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              {[
+                                { label: 'Agent Fluency', data: call.ai_call_score["Agent fluency"], color: 'blue' },
+                                { label: 'Sentiment Analysis', data: call.ai_call_score["Sentiment analysis"], color: 'indigo' },
+                                { label: 'Fraud Detection', data: call.ai_call_score["Fraud detection"], color: 'rose' }
+                              ].map((metric, mIdx) => (
+                                <div key={mIdx} className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm">
+                                  <div className="flex justify-between items-center mb-4">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{metric.label}</p>
+                                    <span className={`text-xs font-black px-2 py-1 rounded-lg bg-${metric.color}-50 text-${metric.color}-600`}>
+                                      {metric.data?.score || 0}%
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] font-medium text-slate-600 leading-relaxed italic">
+                                    "{metric.data?.feedback || 'No specific feedback provided.'}"
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="bg-emerald-50/50 rounded-3xl p-8 border border-emerald-100/50 relative overflow-hidden">
+                              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                              <h5 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <Activity className="w-3 h-3" />
+                                Executive Summary & Recommendations
+                              </h5>
+                              <p className="text-sm font-bold text-emerald-900 leading-relaxed relative z-10">
+                                {call.ai_call_score.overall?.feedback || 'Analysis completed. The agent demonstrated standard performance throughout the interaction.'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
