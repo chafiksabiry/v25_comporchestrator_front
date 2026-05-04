@@ -266,40 +266,6 @@ export default function PremiumDashboard({
 
   return (
     <div className="space-y-10 pb-10 animate-in fade-in duration-700">
-      {/* Welcome Section */}
-      <div className="relative overflow-hidden bg-white/40 backdrop-blur-xl rounded-[32px] p-8 border border-white/60 shadow-xl shadow-slate-200/40">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-harx-100/30 to-blue-100/30 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse"></div>
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 rounded-3xl bg-white shadow-xl border-4 border-white overflow-hidden shrink-0">
-              {profile?.personalInfo?.photo?.url ? (
-                <img src={profile.personalInfo.photo.url} className="w-full h-full object-cover" alt="Profile" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-slate-100 text-2xl font-black text-slate-300">
-                  {displayName.charAt(0)}
-                </div>
-              )}
-            </div>
-            <div className="space-y-1">
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none">
-                Welcome back, <span className="text-transparent bg-clip-text bg-gradient-harx">{displayName}!</span>
-              </h1>
-              <p className="text-slate-500 font-medium tracking-tight">
-                • {companyName || profile?.company?.name || localStorage.getItem('companyName') || 'HARX'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button className="relative p-3 bg-white shadow-sm border border-slate-100 rounded-2xl text-slate-400 hover:text-harx-500 transition-all group">
-              <Bell className="w-6 h-6" />
-              <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-harx-500 border-2 border-white rounded-full group-hover:scale-110 transition-transform"></span>
-            </button>
-            <button className="px-8 py-3.5 bg-gradient-harx text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-harx-500/30 hover:opacity-90 active:scale-95 transition-all">
-              Update Profile
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Stats Overview */}
       <div className={`grid grid-cols-1 md:grid-cols-2 ${stats.length === 6 ? 'lg:grid-cols-6' : (stats.length === 5 ? 'lg:grid-cols-5' : 'lg:grid-cols-4')} gap-6`}>
