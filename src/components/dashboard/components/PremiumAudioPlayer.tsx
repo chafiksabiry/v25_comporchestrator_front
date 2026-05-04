@@ -73,7 +73,7 @@ export function PremiumAudioPlayer({ url }: PremiumAudioPlayerProps) {
 
       <button
         onClick={togglePlay}
-        className="w-12 h-12 rounded-2xl bg-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/20 hover:scale-110 transition-all shrink-0"
+        className="w-12 h-12 rounded-2xl bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white flex items-center justify-center shadow-lg shadow-harx-500/20 hover:scale-110 transition-all shrink-0"
       >
         {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
       </button>
@@ -90,7 +90,7 @@ export function PremiumAudioPlayer({ url }: PremiumAudioPlayerProps) {
               <div
                 key={i}
                 className={`flex-1 rounded-full transition-all duration-300 ${
-                  isPlayed ? 'bg-orange-400' : 'bg-slate-700'
+                  isPlayed ? 'bg-harx-500' : 'bg-slate-700'
                 }`}
                 style={{ height: `${val * 100}%` }}
               ></div>
