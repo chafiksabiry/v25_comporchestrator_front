@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Phone, MessageSquare, Star, Activity, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, X } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, X } from 'lucide-react';
 
 export default function CallsDashboardPage() {
   const [calls, setCalls] = useState<any[]>([]);
@@ -188,7 +188,7 @@ export default function CallsDashboardPage() {
                             className="p-2 rounded-xl border border-emerald-100 text-emerald-600 hover:bg-emerald-50 transition-all"
                             title="AI Performance Insights"
                           >
-                            <Activity className="w-5 h-5" />
+                            <ActivityIcon className="w-5 h-5" />
                           </button>
                         </div>
                       </td>
@@ -253,7 +253,7 @@ export default function CallsDashboardPage() {
                 onClick={() => setActiveTab('insights')}
                 className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'insights' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
               >
-                <Activity className="w-4 h-4" />
+                <ActivityIcon className="w-4 h-4" />
                 AI Insights
               </button>
             </div>
@@ -291,7 +291,7 @@ export default function CallsDashboardPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {[
                       { label: 'Agent Fluency', data: selectedCall.ai_call_score?.["Agent fluency"], color: 'blue', icon: Globe },
-                      { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], color: 'indigo', icon: Activity },
+                      { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], color: 'indigo', icon: ActivityIcon },
                       { label: 'Fraud Detection', data: selectedCall.ai_call_score?.["Fraud detection"], color: 'rose', icon: Shield }
                     ].map((metric, mIdx) => (
                       <div key={mIdx} className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
