@@ -437,11 +437,29 @@ export default function PremiumDashboard({
                       {call.ai_call_score?.overall?.score || 'N/A'}/100
                     </p>
                   </div>
-                  <div className="min-w-[250px] flex justify-end">
-                    {call.recording_url ? (
-                      <audio controls src={call.recording_url} className="w-full max-w-[250px] h-10" />
-                    ) : (
-                      <span className="text-xs font-medium text-slate-400 italic px-4 py-2 bg-slate-50 rounded-lg">No recording</span>
+                  <div className="min-w-[250px] flex flex-col items-end gap-2">
+                    {(() => {
+                      const recordingUrl = call.recording_url_cloudinary || call.recording_url;
+                      if (!recordingUrl) return <span className="text-xs font-medium text-slate-400 italic px-4 py-2 bg-slate-50 rounded-lg">No recording</span>;
+                      
+                      // For Twilio URLs, ensure they end with .mp3 for better browser compatibility
+                      const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) 
+                        ? `${recordingUrl}.mp3` 
+                        : recordingUrl;
+
+                      return <audio controls src={finalUrl} className="w-full max-w-[250px] h-10" />;
+                    })()}
+                    
+                    {call.transcript && call.transcript.length > 0 && (
+                      <button 
+                        onClick={() => {
+                          const text = call.transcript.map((t: any) => `[${t.timestamp || ''}] ${t.speaker || 'Speaker'}: ${t.text}`).join('\n');
+                          alert(text); // Basic alert for now, can be a modal later
+                        }}
+                        className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline"
+                      >
+                        View Transcript
+                      </button>
                     )}
                   </div>
                 </div>
