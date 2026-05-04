@@ -1,5 +1,24 @@
 import React from 'react';
 import { TrendingUp, Users, DollarSign, Clock, Star, Bell, BookOpen, MessageSquare, Phone, Target, Award, ArrowRight, Briefcase, Zap, Shield, CheckCircle2, Layout, Globe, Activity } from 'lucide-react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface PremiumDashboardProps {
   profile?: any;
@@ -19,9 +38,10 @@ interface PremiumDashboardProps {
     activeLeads: number;
     agentsEnrolled: number;
   };
+  callsData?: any[];
 }
 
-export default function PremiumDashboard({ profile, companyName, userType = 'rep', trainingStats, companyStats }: PremiumDashboardProps) {
+export default function PremiumDashboard({ profile, companyName, userType = 'rep', trainingStats, companyStats, callsData = [] }: PremiumDashboardProps) {
   // Helper to calculate score (ported from ProfileView)
   const calculateOverallScore = () => {
     if (!profile?.skills?.contactCenter?.length || !profile?.skills?.contactCenter[0]?.assessmentResults?.keyMetrics) return 75; // Fallback
@@ -33,6 +53,80 @@ export default function PremiumDashboard({ profile, companyName, userType = 'rep
     ? profile.personalInfo.name.split(' ')[0]
     : (profile?.fullName?.split(' ')[0] || localStorage.getItem('userFullName')?.split(' ')[0] || 'User');
   const overallScore = calculateOverallScore();
+
+  // Process calls data for histogram
+  const processCallsForChart = () => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      return d;
+    });
+
+    const counts = last7Days.map(date => {
+      const dateString = date.toDateString();
+      return (callsData || []).filter(call => {
+        const callDate = new Date(call.createdAt);
+        return callDate.toDateString() === dateString;
+      }).length;
+    });
+
+    return {
+      labels: last7Days.map(d => days[d.getDay()]),
+      datasets: [
+        {
+          label: 'Calls Executed',
+          data: counts,
+          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+          borderColor: 'rgb(59, 130, 246)',
+          borderWidth: 2,
+          borderRadius: 8,
+          hoverBackgroundColor: 'rgba(59, 130, 246, 0.8)',
+        },
+      ],
+    };
+  };
+
+  const chartData = processCallsForChart();
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+        padding: 12,
+        titleFont: { size: 14, weight: 'bold' as const },
+        bodyFont: { size: 13 },
+        cornerRadius: 8,
+        displayColors: false,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(226, 232, 240, 0.4)',
+        },
+        ticks: {
+          stepSize: 1,
+          font: { size: 11, weight: '600' as const },
+          color: '#64748b',
+        },
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          font: { size: 11, weight: '600' as const },
+          color: '#64748b',
+        },
+      },
+    },
+  };
 
   // Calculate completion percentage based on onboarding phases
   const calculateOnboardingProgress = () => {
@@ -155,6 +249,24 @@ export default function PremiumDashboard({ profile, companyName, userType = 'rep
           </div>
         ))}
       </div>
+
+      {userType === 'company' && (
+        <div className="bg-white/60 backdrop-blur-md rounded-[32px] p-8 border border-white/80 shadow-xl shadow-slate-200/30">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest flex items-center gap-3">
+              <Activity className="w-6 h-6 text-blue-500" />
+              Calls Activity
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Last 7 Days</span>
+            </div>
+          </div>
+          <div className="h-[300px] w-full">
+            <Bar data={chartData} options={chartOptions} />
+          </div>
+        </div>
+      )}
 
       {userType === 'rep' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

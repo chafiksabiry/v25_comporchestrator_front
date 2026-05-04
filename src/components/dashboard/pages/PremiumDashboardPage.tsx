@@ -30,6 +30,8 @@ export default function PremiumDashboardPage() {
     agentsEnrolled: 0
   });
 
+  const [callsData, setCallsData] = useState<any[]>([]);
+
   useEffect(() => {
     if (userType === 'company' && companyId) {
       const fetchRealStats = async () => {
@@ -69,7 +71,9 @@ export default function PremiumDashboardPage() {
             const callsResponse = await fetch(`${callsBase}/calls?userId=${userId}`);
             if (callsResponse.ok) {
               const callsData = await callsResponse.json();
-              stats.calls = Array.isArray(callsData) ? callsData.length : (Array.isArray(callsData.data) ? callsData.data.length : 0);
+              const callsArray = Array.isArray(callsData) ? callsData : (Array.isArray(callsData.data) ? callsData.data : []);
+              stats.calls = callsArray.length;
+              setCallsData(callsArray);
             }
           } catch (e) { console.error('Error fetching calls:', e); }
           
@@ -107,6 +111,7 @@ export default function PremiumDashboardPage() {
         userType={userType}
         trainingStats={trainingStats} 
         companyStats={companyStats}
+        callsData={callsData}
       />
     </div>
   );
