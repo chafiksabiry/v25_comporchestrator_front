@@ -77,10 +77,14 @@ export default function PremiumDashboardPage() {
           try {
             const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
             const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
-            // Add populate=lead to get the gigId from the lead object
-            const callsResponse = await fetch(`${callsBase}/calls?userId=${userId}&populate=lead`);
+            const callsUrl = `${callsBase}/calls?userId=${userId}&populate=lead`;
+            console.log('[Dashboard] Fetching calls from:', callsUrl);
+
+            const callsResponse = await fetch(callsUrl);
             if (callsResponse.ok) {
               const callsDataRaw = await callsResponse.json();
+              console.log('[Dashboard] Raw calls data:', callsDataRaw);
+              
               let callsArray = Array.isArray(callsDataRaw) ? callsDataRaw : (Array.isArray(callsDataRaw.data) ? callsDataRaw.data : []);
               
               // Total calls (unfiltered) for the stats card
@@ -89,6 +93,8 @@ export default function PremiumDashboardPage() {
               // Filter calls for the histogram ONLY
               let filteredCalls = [...callsArray];
               
+              console.log('[Dashboard] Current selectedGigId:', selectedGigId);
+
               // Filter by Gig
               if (selectedGigId !== 'all') {
                 filteredCalls = filteredCalls.filter((c: any) => {
@@ -104,9 +110,14 @@ export default function PremiumDashboardPage() {
                   const callGigId = getID(c.gigId) || getID(c.gig);
                   const leadGigId = getID(c.lead?.gigId);
                   
-                  return callGigId === selectedGigId || leadGigId === selectedGigId;
+                  const isMatch = callGigId === selectedGigId || leadGigId === selectedGigId;
+                  if (isMatch) console.log(`[Dashboard] MATCH for call ${getID(c)}: callGigId=${callGigId}, leadGigId=${leadGigId}`);
+                  
+                  return isMatch;
                 });
               }
+
+              console.log('[Dashboard] After Gig filter:', filteredCalls.length);
 
               // Filter by Date Range
               if (dateRange !== 'all') {
