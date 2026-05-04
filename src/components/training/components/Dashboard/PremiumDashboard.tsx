@@ -313,7 +313,7 @@ export default function PremiumDashboard({
       </div>
 
       {userType === 'company' && (
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* Histogram Card */}
           <div className="bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/60 shadow-2xl shadow-slate-200/40 overflow-hidden group transition-all duration-500 hover:shadow-harx-500/10">
             <div className="px-10 py-8 border-b border-white/40 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/20">
