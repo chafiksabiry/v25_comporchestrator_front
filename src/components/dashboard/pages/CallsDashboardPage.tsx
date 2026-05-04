@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Phone, MessageSquare, Star, Activity, Clock, Search, Filter, ChevronDown, Download, ExternalLink } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield } from 'lucide-react';
 
 export default function CallsDashboardPage() {
   const [calls, setCalls] = useState<any[]>([]);
