@@ -274,7 +274,7 @@ export default function CallsDashboardPage() {
                           <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${
                             t.speaker?.toLowerCase().includes('agent') 
                               ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm' 
-                              : 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-600/20'
+                              : 'bg-gradient-harx text-white rounded-tr-none shadow-lg shadow-harx-500/20'
                           }`}>
                             {t.text}
                           </div>
