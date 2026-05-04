@@ -49,12 +49,12 @@ interface PremiumDashboardProps {
   onCustomDatesChange?: (dates: { start: string; end: string }) => void;
 }
 
-export default function PremiumDashboard({ 
-  profile, 
-  companyName, 
-  userType = 'rep', 
-  trainingStats, 
-  companyStats, 
+export default function PremiumDashboard({
+  profile,
+  companyName,
+  userType = 'rep',
+  trainingStats,
+  companyStats,
   callsData = [],
   gigs = [],
   selectedGigId = 'all',
@@ -284,18 +284,18 @@ export default function PremiumDashboard({
         {stats.map((stat, index) => (
           <div key={index} className="group relative overflow-hidden bg-slate-50/50 backdrop-blur-md rounded-[28px] p-6 border border-slate-200/50 shadow-sm hover:shadow-md transition-all duration-300">
             <div className={`absolute top-0 right-0 w-24 h-24 rounded-full -mr-12 -mt-12 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity ${stat.color === 'harx' ? 'bg-harx-500' :
-                stat.color === 'blue' ? 'bg-blue-500' :
-                  stat.color === 'amber' ? 'bg-amber-500' :
-                    stat.color === 'indigo' ? 'bg-indigo-500' :
-                      'bg-emerald-500'
+              stat.color === 'blue' ? 'bg-blue-500' :
+                stat.color === 'amber' ? 'bg-amber-500' :
+                  stat.color === 'indigo' ? 'bg-indigo-500' :
+                    'bg-emerald-500'
               }`}></div>
 
             <div className="flex items-center justify-between mb-6 relative z-10">
               <div className={`w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center transition-transform group-hover:scale-110 duration-300 ${stat.color === 'harx' ? 'text-harx-500' :
-                  stat.color === 'blue' ? 'text-blue-500' :
-                    stat.color === 'amber' ? 'text-amber-500' :
-                      stat.color === 'indigo' ? 'text-indigo-500' :
-                        'text-emerald-500'
+                stat.color === 'blue' ? 'text-blue-500' :
+                  stat.color === 'amber' ? 'text-amber-500' :
+                    stat.color === 'indigo' ? 'text-indigo-500' :
+                      'text-emerald-500'
                 }`}>
                 <stat.icon className="w-6 h-6" />
               </div>
@@ -393,8 +393,11 @@ export default function PremiumDashboard({
               
               <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar max-h-[600px]">
                 {callsData.slice().sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()).slice(0, 10).map((call, idx) => {
+                  const callId = call._id || idx;
+                  const isExpanded = expandedCallId === callId;
+                  
                   return (
-                    <div key={call._id || idx} className="group p-5 bg-white/40 hover:bg-white/80 rounded-[28px] border border-white/60 transition-all duration-300">
+                    <div key={callId} className="group p-5 bg-white/40 hover:bg-white/80 rounded-[28px] border border-white/60 transition-all duration-300">
                       <div className="flex items-center gap-4 mb-4">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${call.status === 'completed' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
                           <Phone className="w-5 h-5" />
@@ -435,39 +438,72 @@ export default function PremiumDashboard({
                         <div className="flex items-center gap-2">
                           {call.transcript && call.transcript.length > 0 && (
                             <button 
-                              onClick={() => toggleExpand(call._id || idx, 'transcript')}
-                              className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${expandedCallId === (call._id || idx) && expandedTab === 'transcript' ? 'bg-blue-600 text-white border-blue-600' : 'text-blue-600 border-blue-100 hover:bg-blue-50'}`}
+                              onClick={() => toggleExpand(callId, 'transcript')}
+                              className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${isExpanded && expandedTab === 'transcript' ? 'bg-blue-600 text-white border-blue-600' : 'text-blue-600 border-blue-100 hover:bg-blue-50'}`}
                             >
                               Transcript
                             </button>
                           )}
                           {call.ai_call_score && (
                             <button 
-                              onClick={() => toggleExpand(call._id || idx, 'insights')}
-                              className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${expandedCallId === (call._id || idx) && expandedTab === 'insights' ? 'bg-emerald-600 text-white border-emerald-600' : 'text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
+                              onClick={() => toggleExpand(callId, 'insights')}
+                              className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${isExpanded && expandedTab === 'insights' ? 'bg-emerald-600 text-white border-emerald-600' : 'text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
                             >
                               AI Insights
                             </button>
                           )}
                         </div>
 
-                        {expandedCallId === (call._id || idx) && (
+                        {isExpanded && (
                           <div className="pt-4 border-t border-slate-100 animate-in slide-in-from-top duration-300">
                             {expandedTab === 'transcript' ? (
                               <div className="space-y-3">
-                                <p className="text-[9px] font-black text-blue-600 uppercase">Transcript Excerpt</p>
-                                <div className="bg-slate-50/50 rounded-xl p-4 max-h-[200px] overflow-y-auto text-[10px] space-y-2">
-                                  {call.transcript.slice(0, 5).map((t: any, i: number) => (
-                                    <p key={i}><span className="font-bold">{t.speaker}:</span> {t.text}</p>
+                                <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                                  <MessageSquare className="w-3 h-3" />
+                                  Full Conversation Transcript
+                                </h4>
+                                <div className="bg-slate-50/50 rounded-2xl p-4 max-h-[300px] overflow-y-auto border border-slate-100 space-y-3 custom-scrollbar">
+                                  {call.transcript.map((t: any, i: number) => (
+                                    <div key={i} className="space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[8px] font-black uppercase text-slate-400">{t.speaker}</span>
+                                        <span className="text-[8px] font-medium text-slate-300">{t.timestamp}</span>
+                                      </div>
+                                      <p className="text-[10px] text-slate-600 leading-relaxed bg-white p-2 rounded-lg border border-slate-50">{t.text}</p>
+                                    </div>
                                   ))}
-                                  {call.transcript.length > 5 && <p className="text-slate-400 italic">... view more in full history</p>}
                                 </div>
                               </div>
                             ) : (
-                              <div className="space-y-3">
-                                <p className="text-[9px] font-black text-emerald-600 uppercase">Executive Feedback</p>
-                                <div className="bg-emerald-50/50 rounded-xl p-4 text-[10px] text-emerald-900 leading-relaxed italic">
-                                  &quot;{call.ai_call_score?.overall?.feedback?.slice(0, 150)}...&quot;
+                              <div className="space-y-4">
+                                <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+                                  <Star className="w-3 h-3" />
+                                  AI Performance Analysis
+                                </h4>
+                                <div className="grid grid-cols-1 gap-3">
+                                  {[
+                                    { label: 'Agent Fluency', data: call.ai_call_score?.["Agent fluency"], color: 'blue' },
+                                    { label: 'Sentiment', data: call.ai_call_score?.["Sentiment analysis"], color: 'indigo' },
+                                    { label: 'Fraud Detection', data: call.ai_call_score?.["Fraud detection"], color: 'rose' }
+                                  ].map((metric, mIdx) => (
+                                    <div key={mIdx} className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm">
+                                      <div className="flex justify-between items-center mb-1.5">
+                                        <p className="text-[8px] font-black text-slate-400 uppercase">{metric.label}</p>
+                                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md bg-${metric.color}-50 text-${metric.color}-600`}>
+                                          {metric.data?.score || 0}%
+                                        </span>
+                                      </div>
+                                      <p className="text-[9px] text-slate-500 leading-tight italic line-clamp-2">
+                                        &quot;{metric.data?.feedback || 'No feedback available.'}&quot;
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="bg-emerald-50/50 rounded-xl p-4 border border-emerald-100/50">
+                                  <p className="text-[8px] font-black text-emerald-700 uppercase mb-1">Executive Summary</p>
+                                  <p className="text-[10px] font-bold text-emerald-900 leading-relaxed italic">
+                                    &quot;{call.ai_call_score?.overall?.feedback || 'Analysis completed.'}&quot;
+                                  </p>
                                 </div>
                               </div>
                             )}
@@ -484,135 +520,109 @@ export default function PremiumDashboard({
       )}
 
       {userType === 'rep' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Professional Focus */}
-          <div className="lg:col-span-2 bg-white/60 backdrop-blur-md rounded-[32px] border border-white/80 shadow-xl shadow-slate-200/30 overflow-hidden">
-            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/40">
-              <h2 className="text-lg font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                <Activity className="w-5 h-5 text-harx-500" />
-                Professional Focus
-              </h2>
-              <button className="text-[10px] font-black text-harx-600 uppercase tracking-widest hover:underline">View All</button>
-            </div>
-            <div className="p-8 space-y-8">
-              <div className="space-y-4">
-                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">About You</h3>
-                <p className="text-slate-700 leading-relaxed font-medium italic">
-                  &quot;{profile?.professionalSummary?.profileDescription || 'No professional summary provided. Update your profile to showcase your expertise.'}&quot;
-                </p>
+        <div className="space-y-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Professional Focus */}
+            <div className="lg:col-span-2 bg-white/60 backdrop-blur-md rounded-[32px] border border-white/80 shadow-xl shadow-slate-200/30 overflow-hidden">
+              <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/40">
+                <h2 className="text-lg font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-harx-500" />
+                  Professional Focus
+                </h2>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
-                <div className="space-y-3">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Top Industries</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {recentSpecialization.map((industry: any, idx: number) => (
-                      <span key={idx} className="px-3 py-1.5 bg-harx-50 text-harx-700 rounded-xl text-xs font-bold border border-harx-100">
-                        {typeof industry === 'string' ? industry : (industry.name || industry.title || 'Unknown Industry')}
-                      </span>
-                    ))}
-                  </div>
+              <div className="p-8 space-y-8">
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">About You</h3>
+                  <p className="text-slate-700 leading-relaxed font-medium italic">
+                    &quot;{profile?.professionalSummary?.profileDescription || 'No professional summary provided.'}&quot;
+                  </p>
                 </div>
-                <div className="space-y-3">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Key Activities</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {profile?.specialization?.activities?.slice(0, 3).map((activity: any, idx: number) => (
-                      <span key={idx} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold border border-blue-100">
-                        {typeof activity === 'string' ? activity : (activity.name || activity.title || 'Unknown Activity')}
-                      </span>
-                    )) || ['Consulting', 'Sales', 'Support'].map((act, i) => (
-                      <span key={i} className="px-3 py-1.5 bg-slate-50 text-slate-400 rounded-xl text-xs font-bold border border-slate-100 italic">
-                        {act}
-                      </span>
-                    ))}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                  <div className="space-y-3">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Top Industries</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {recentSpecialization.map((industry: any, idx: number) => (
+                        <span key={idx} className="px-3 py-1.5 bg-harx-50 text-harx-700 rounded-xl text-xs font-bold border border-harx-100">
+                          {typeof industry === 'string' ? industry : (industry.name || industry.title || 'Unknown')}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Key Activities</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {profile?.specialization?.activities?.slice(0, 3).map((activity: any, idx: number) => (
+                        <span key={idx} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold border border-blue-100">
+                          {typeof activity === 'string' ? activity : (activity.name || activity.title || 'Unknown')}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Performance Insights */}
-          <div className="space-y-8">
-            <div className="bg-slate-950 rounded-[32px] p-8 shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/20 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-harx-500/30 transition-colors"></div>
-              <h2 className="text-xs font-black text-white uppercase tracking-[0.3em] mb-8 relative z-10 opacity-70">Assessment Metrics</h2>
-              <div className="grid grid-cols-2 gap-4 relative z-10">
-                {performanceMetrics.map((metric, index) => (
-                  <div key={index} className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                    <metric.icon className={`w-5 h-5 mb-3 ${metric.color}`} />
-                    <p className="text-xl font-black text-white tracking-tighter">{metric.value}</p>
-                    <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest mt-1">{metric.label}</p>
-                  </div>
-                ))}
+            {/* Performance Insights */}
+            <div className="space-y-8">
+              <div className="bg-slate-950 rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
+                <h2 className="text-xs font-black text-white uppercase tracking-[0.3em] mb-8 opacity-70">Assessment Metrics</h2>
+                <div className="grid grid-cols-2 gap-4 relative z-10">
+                  {performanceMetrics.map((metric, index) => (
+                    <div key={index} className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                      <metric.icon className={`w-5 h-5 mb-3 ${metric.color}`} />
+                      <p className="text-xl font-black text-white tracking-tighter">{metric.value}</p>
+                      <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest mt-1">{metric.label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="bg-white/60 backdrop-blur-md rounded-[32px] p-8 border border-white/80 shadow-xl shadow-slate-200/30">
-              <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Onboarding Status</h2>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                    <span className="text-slate-400">Completion</span>
-                    <span className="text-harx-600">{onboardingProgress}%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200/50">
-                    <div
-                      className="bg-gradient-harx h-full rounded-full transition-all duration-1000 ease-out"
-                      style={{ width: `${onboardingProgress}%` }}
-                    ></div>
+              <div className="bg-white/60 backdrop-blur-md rounded-[32px] p-8 border border-white/80 shadow-xl shadow-slate-200/30">
+                <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Onboarding Status</h2>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                      <span className="text-slate-400">Completion</span>
+                      <span className="text-harx-600">{onboardingProgress}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200/50">
+                      <div className="bg-gradient-harx h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${onboardingProgress}%` }}></div>
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {[1, 2, 3, 4, 5].map((phase) => {
-                    const isComp = profile?.onboardingProgress?.phases?.[`phase${phase}`]?.status === 'completed';
-                    return (
-                      <div key={phase} className={`h-1.5 rounded-full ${isComp ? 'bg-harx-500' : 'bg-slate-200'}`} />
-                    );
-                  })}
-                </div>
-                <p className="text-[10px] font-bold text-slate-500 text-center uppercase tracking-widest">
-                  Phase {profile?.onboardingProgress?.currentPhase || 1} in progress
-                </p>
               </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Skills & Expertise Section - Only for Reps */}
-      {userType === 'rep' && (
-        <div className="space-y-6 mt-10">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest flex items-center gap-3">
+          {/* Verified Expertise */}
+          <div className="space-y-6">
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
               <Zap className="w-6 h-6 text-amber-500" />
               Verified Expertise
             </h2>
-            <button className="text-xs font-black text-harx-600 uppercase tracking-widest hover:text-harx-700 transition-colors px-4 py-2 bg-harx-50 rounded-xl border border-harx-100">
-              View All Skills
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { label: 'Technical Skills', items: profile?.skills?.technical || [], color: 'blue' },
-              { label: 'Professional Skills', items: profile?.skills?.professional || [], color: 'harx' },
-              { label: 'Soft Skills', items: profile?.skills?.soft || [], color: 'emerald' }
-            ].map((category, idx) => (
-              <div key={idx} className="bg-white/60 backdrop-blur-md rounded-[32px] p-6 border border-white/80 shadow-xl shadow-slate-200/30">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{category.label}</h3>
-                <div className="flex flex-wrap gap-2">
-                  {category.items.length > 0 ? (
-                    category.items.map((skill: any, sIdx: number) => (
-                      <span key={sIdx} className={`px-3 py-1 rounded-lg bg-${category.color}-50 text-${category.color}-700 text-[10px] font-black uppercase border border-${category.color}-100`}>
-                        {typeof skill === 'string' ? skill : (skill.name || (typeof skill.skill === 'object' ? skill.skill?.name : skill.skill) || 'Unknown Skill')}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-[10px] font-medium text-slate-400 italic">No skills listed</span>
-                  )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { label: 'Technical Skills', items: profile?.skills?.technical || [], color: 'blue' },
+                { label: 'Professional Skills', items: profile?.skills?.professional || [], color: 'harx' },
+                { label: 'Soft Skills', items: profile?.skills?.soft || [], color: 'emerald' }
+              ].map((category, idx) => (
+                <div key={idx} className="bg-white/60 backdrop-blur-md rounded-[32px] p-6 border border-white/80 shadow-xl shadow-slate-200/30">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{category.label}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {category.items.length > 0 ? (
+                      category.items.map((skill: any, sIdx: number) => (
+                        <span key={sIdx} className={`px-2.5 py-1 rounded-lg bg-${category.color}-50 text-${category.color}-700 text-[10px] font-black uppercase border border-${category.color}-100`}>
+                          {typeof skill === 'string' ? skill : (skill.name || 'Unknown')}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[10px] font-medium text-slate-400 italic">No skills listed</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
