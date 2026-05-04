@@ -39,9 +39,30 @@ interface PremiumDashboardProps {
     agentsEnrolled: number;
   };
   callsData?: any[];
+  gigs?: any[];
+  selectedGigId?: string;
+  onGigSelect?: (id: string) => void;
+  dateRange?: string;
+  onDateRangeSelect?: (range: string) => void;
+  customDates?: { start: string; end: string };
+  onCustomDatesChange?: (dates: { start: string; end: string }) => void;
 }
 
-export default function PremiumDashboard({ profile, companyName, userType = 'rep', trainingStats, companyStats, callsData = [] }: PremiumDashboardProps) {
+export default function PremiumDashboard({ 
+  profile, 
+  companyName, 
+  userType = 'rep', 
+  trainingStats, 
+  companyStats, 
+  callsData = [],
+  gigs = [],
+  selectedGigId = 'all',
+  onGigSelect,
+  dateRange = 'all',
+  onDateRangeSelect,
+  customDates,
+  onCustomDatesChange
+}: PremiumDashboardProps) {
   // Helper to calculate score (ported from ProfileView)
   const calculateOverallScore = () => {
     if (!profile?.skills?.contactCenter?.length || !profile?.skills?.contactCenter[0]?.assessmentResults?.keyMetrics) return 75; // Fallback
@@ -205,14 +226,70 @@ export default function PremiumDashboard({ profile, companyName, userType = 'rep
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <button className="relative p-3 bg-white shadow-sm border border-slate-100 rounded-2xl text-slate-400 hover:text-harx-500 transition-all group">
-              <Bell className="w-6 h-6" />
-              <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-harx-500 border-2 border-white rounded-full group-hover:scale-110 transition-transform"></span>
-            </button>
-            <button className="px-8 py-3.5 bg-gradient-harx text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-harx-500/30 hover:opacity-90 active:scale-95 transition-all">
-              Update Profile
-            </button>
+          <div className="flex flex-wrap items-center gap-4">
+            {userType === 'company' && (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:inline">Gig:</span>
+                  <select 
+                    value={selectedGigId}
+                    onChange={(e) => onGigSelect?.(e.target.value)}
+                    className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-harx-500 focus:border-transparent outline-none transition-all cursor-pointer min-w-[140px]"
+                  >
+                    <option value="all">All Gigs</option>
+                    {gigs.map((gig: any) => (
+                      <option key={gig._id} value={gig._id}>
+                        {gig.title || gig.name || 'Untitled Gig'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:inline">Period:</span>
+                  <select 
+                    value={dateRange}
+                    onChange={(e) => onDateRangeSelect?.(e.target.value)}
+                    className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-harx-500 focus:border-transparent outline-none transition-all cursor-pointer min-w-[140px]"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="last_week">Last Week</option>
+                    <option value="last_month">Last Month</option>
+                    <option value="last_3_months">Last 3 Months</option>
+                    <option value="last_year">Last Year</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
+                </div>
+
+                {dateRange === 'custom' && (
+                  <div className="flex items-center gap-2 animate-in slide-in-from-right duration-300">
+                    <input 
+                      type="date"
+                      value={customDates?.start || ''}
+                      onChange={(e) => onCustomDatesChange?.({ ...customDates!, start: e.target.value })}
+                      className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-harx-500"
+                    />
+                    <span className="text-slate-400 text-xs font-bold">to</span>
+                    <input 
+                      type="date"
+                      value={customDates?.end || ''}
+                      onChange={(e) => onCustomDatesChange?.({ ...customDates!, end: e.target.value })}
+                      className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-harx-500"
+                    />
+                  </div>
+                )}
+              </>
+            )}
+            <div className="flex items-center space-x-3">
+              <button className="relative p-2.5 bg-white shadow-sm border border-slate-100 rounded-xl text-slate-400 hover:text-harx-500 transition-all group">
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-harx-500 border-2 border-white rounded-full group-hover:scale-110 transition-transform"></span>
+              </button>
+              <button className="px-6 py-2.5 bg-gradient-harx text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-harx-500/30 hover:opacity-90 active:scale-95 transition-all">
+                Update Profile
+              </button>
+            </div>
           </div>
         </div>
       </div>

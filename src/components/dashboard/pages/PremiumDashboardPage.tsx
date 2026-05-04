@@ -31,6 +31,10 @@ export default function PremiumDashboardPage() {
   });
 
   const [callsData, setCallsData] = useState<any[]>([]);
+  const [gigsList, setGigsList] = useState<any[]>([]);
+  const [selectedGigId, setSelectedGigId] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<string>('all');
+  const [customDates, setCustomDates] = useState<{ start: string; end: string }>({ start: '', end: '' });
 
   useEffect(() => {
     if (userType === 'company' && companyId) {
@@ -50,13 +54,19 @@ export default function PremiumDashboardPage() {
             const gigsResponse = await fetch(`${gigsApiUrl}/gigs/company/${companyId}?populate=companyId`);
             if (gigsResponse.ok) {
               const gigsData = await gigsResponse.json();
-              stats.gigs = Array.isArray(gigsData.data) ? gigsData.data.length : 0;
+              const list = Array.isArray(gigsData.data) ? gigsData.data : [];
+              setGigsList(list);
+              stats.gigs = list.length;
             }
           } catch (e) { console.error('Error fetching gigs:', e); }
 
           // 2. Fetch Leads
           try {
-            const leadsResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`);
+            let leadsUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`;
+            if (selectedGigId !== 'all') {
+              leadsUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads?gigId=${selectedGigId}`;
+            }
+            const leadsResponse = await fetch(leadsUrl);
             if (leadsResponse.ok) {
               const leadsData = await leadsResponse.json();
               stats.activeLeads = leadsData.count || 0;
@@ -66,12 +76,47 @@ export default function PremiumDashboardPage() {
           // 3. Fetch Calls
           try {
             const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
-            // Fix double /api if present
             const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
             const callsResponse = await fetch(`${callsBase}/calls?userId=${userId}`);
             if (callsResponse.ok) {
               const callsData = await callsResponse.json();
-              const callsArray = Array.isArray(callsData) ? callsData : (Array.isArray(callsData.data) ? callsData.data : []);
+              let callsArray = Array.isArray(callsData) ? callsData : (Array.isArray(callsData.data) ? callsData.data : []);
+              
+              // Filter by Gig
+              if (selectedGigId !== 'all') {
+                callsArray = callsArray.filter((c: any) => c.gigId === selectedGigId || c.gig?._id === selectedGigId);
+              }
+
+              // Filter by Date Range
+              if (dateRange !== 'all') {
+                const now = new Date();
+                let startDate = new Date();
+                let endDate = new Date();
+
+                if (dateRange === 'today') {
+                  startDate.setHours(0, 0, 0, 0);
+                } else if (dateRange === 'last_week') {
+                  startDate.setDate(now.getDate() - 7);
+                } else if (dateRange === 'last_month') {
+                  startDate.setMonth(now.getMonth() - 1);
+                } else if (dateRange === 'last_3_months') {
+                  startDate.setMonth(now.getMonth() - 3);
+                } else if (dateRange === 'last_year') {
+                  startDate.setFullYear(now.getFullYear() - 1);
+                } else if (dateRange === 'custom' && customDates.start && customDates.end) {
+                  startDate = new Date(customDates.start);
+                  endDate = new Date(customDates.end);
+                  endDate.setHours(23, 59, 59, 999);
+                }
+
+                if (dateRange !== 'custom' || (customDates.start && customDates.end)) {
+                  callsArray = callsArray.filter((c: any) => {
+                    const callDate = new Date(c.createdAt);
+                    return callDate >= startDate && callDate <= endDate;
+                  });
+                }
+              }
+              
               stats.calls = callsArray.length;
               setCallsData(callsArray);
             }
@@ -80,8 +125,14 @@ export default function PremiumDashboardPage() {
           // 4. Fetch Active Agents
           try {
             const agentsData = await getActiveAgentsForCompany(companyId);
-            stats.agentsEnrolled = Array.isArray(agentsData) ? agentsData.length : 0;
-            stats.gigsEnrolled = stats.agentsEnrolled > 0 ? 1 : 0;
+            let agentsArray = Array.isArray(agentsData) ? agentsData : [];
+            
+            if (selectedGigId !== 'all') {
+              agentsArray = agentsArray.filter((a: any) => a.gigId === selectedGigId);
+            }
+            
+            stats.agentsEnrolled = agentsArray.length;
+            stats.gigsEnrolled = stats.agentsEnrolled > 0 ? (selectedGigId === 'all' ? stats.gigs : 1) : 0;
           } catch (e) { console.error('Error fetching agents:', e); }
 
           setCompanyStats(stats);
@@ -92,7 +143,7 @@ export default function PremiumDashboardPage() {
 
       fetchRealStats();
     }
-  }, [userType, companyId, userId]);
+  }, [userType, companyId, userId, selectedGigId, dateRange, customDates]);
 
   // Mock training stats for the dashboard overview (for reps)
   const trainingStats = {
@@ -112,6 +163,13 @@ export default function PremiumDashboardPage() {
         trainingStats={trainingStats} 
         companyStats={companyStats}
         callsData={callsData}
+        gigs={gigsList}
+        selectedGigId={selectedGigId}
+        onGigSelect={setSelectedGigId}
+        dateRange={dateRange}
+        onDateRangeSelect={setDateRange}
+        customDates={customDates}
+        onCustomDatesChange={setCustomDates}
       />
     </div>
   );
