@@ -313,10 +313,10 @@ export default function PremiumDashboard({
       </div>
 
       {userType === 'company' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {/* Histogram Card */}
-          <div className="bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/60 shadow-2xl shadow-slate-200/40 overflow-hidden group transition-all duration-500 hover:shadow-harx-500/10">
-            <div className="px-10 py-8 border-b border-white/40 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/20">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          {/* Histogram Card - 2/3 width */}
+          <div className="lg:col-span-2 bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/60 shadow-2xl shadow-slate-200/40 overflow-hidden group transition-all duration-500 hover:shadow-harx-500/10 h-full">
+            <div className="px-10 py-8 border-b border-white/40 flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-white/20">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
                   <Activity className="w-6 h-6" />
@@ -326,166 +326,82 @@ export default function PremiumDashboard({
                     Calls Activity
                   </h2>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
-                    Real-time performance metrics
+                    Performance metrics
                   </p>
                 </div>
               </div>
               
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-3 px-4 py-2 bg-white/50 rounded-2xl border border-white/60 shadow-sm">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gig:</span>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/50 rounded-xl border border-white/60 shadow-sm">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Gig:</span>
                   <select 
                     value={selectedGigId}
                     onChange={(e) => onGigSelect?.(e.target.value)}
-                    className="bg-transparent text-[10px] font-bold text-slate-700 outline-none cursor-pointer"
+                    className="bg-transparent text-[9px] font-bold text-slate-700 outline-none cursor-pointer"
                   >
                     <option value="all">All Gigs</option>
                     {gigs.map((gig: any) => (
                       <option key={gig._id} value={gig._id}>
-                        {gig.title || gig.name || 'Untitled Gig'}
+                        {gig.title || gig.name || 'Untitled'}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                <div className="flex items-center gap-3 px-4 py-2 bg-white/50 rounded-2xl border border-white/60 shadow-sm">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Period:</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/50 rounded-xl border border-white/60 shadow-sm">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Period:</span>
                   <select 
                     value={dateRange}
                     onChange={(e) => onDateRangeSelect?.(e.target.value)}
-                    className="bg-transparent text-[10px] font-bold text-slate-700 outline-none cursor-pointer"
+                    className="bg-transparent text-[9px] font-bold text-slate-700 outline-none cursor-pointer"
                   >
                     <option value="all">All Time</option>
                     <option value="today">Today</option>
                     <option value="last_week">Last Week</option>
                     <option value="last_month">Last Month</option>
-                    <option value="last_3_months">Last 3 Months</option>
-                    <option value="last_year">Last Year</option>
-                    <option value="custom">Custom Range</option>
+                    <option value="custom">Custom</option>
                   </select>
                 </div>
-
-                {dateRange === 'custom' && (
-                  <div className="flex items-center gap-2">
-                    <input 
-                      type="date"
-                      value={customDates?.start || ''}
-                      onChange={(e) => onCustomDatesChange?.({ ...customDates!, start: e.target.value })}
-                      className="px-2 py-1.5 bg-white/50 border border-white/60 rounded-xl text-[9px] font-bold text-slate-700 outline-none"
-                    />
-                    <input 
-                      type="date"
-                      value={customDates?.end || ''}
-                      onChange={(e) => onCustomDatesChange?.({ ...customDates!, end: e.target.value })}
-                      className="px-2 py-1.5 bg-white/50 border border-white/60 rounded-xl text-[9px] font-bold text-slate-700 outline-none"
-                    />
-                  </div>
-                )}
               </div>
             </div>
             <div className="p-10">
-              <div className="h-[350px] w-full">
+              <div className="h-[400px] w-full">
                 <Bar data={chartData} options={chartOptions} />
               </div>
             </div>
           </div>
 
-          {/* Recent Calls Card */}
+          {/* Recent Calls Card - 1/3 width */}
           {callsData && callsData.length > 0 && (
-            <div className="bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/60 shadow-2xl shadow-slate-200/40 overflow-hidden transition-all duration-500 hover:shadow-indigo-500/10">
-              <div className="px-10 py-8 border-b border-white/40 flex items-center justify-between bg-white/20">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                    <Phone className="w-6 h-6" />
+            <div className="lg:col-span-1 bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/60 shadow-2xl shadow-slate-200/40 overflow-hidden flex flex-col h-full">
+              <div className="px-8 py-8 border-b border-white/40 bg-white/20">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <Phone className="w-5 h-5" />
                   </div>
-                  <div>
-                    <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest">
-                      Recent Call Recordings
-                    </h2>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
-                      {callsData.length} total calls recorded
-                    </p>
-                  </div>
+                  <button className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline">
+                    View All
+                  </button>
                 </div>
-                <button className="px-6 py-2 bg-white/60 hover:bg-white text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/80 shadow-sm transition-all active:scale-95">
-                  View All History
-                </button>
+                <h2 className="text-lg font-black text-slate-900 tracking-tight uppercase tracking-widest">
+                  Recent Calls
+                </h2>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                  Latest recorded sessions
+                </p>
               </div>
-              <div className="p-8 space-y-4">
+              
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar max-h-[600px]">
                 {callsData.slice().sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()).slice(0, 10).map((call, idx) => (
-                  <div key={call._id || idx} className="group flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 bg-white/40 hover:bg-white/80 rounded-[24px] border border-white/60 transition-all duration-300">
-                    <div className="flex items-center gap-5">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${call.status === 'completed' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
-                        <Phone className="w-6 h-6" />
+                  <div key={call._id || idx} className="group p-5 bg-white/40 hover:bg-white/80 rounded-[28px] border border-white/60 transition-all duration-300">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${call.status === 'completed' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                        <Phone className="w-5 h-5" />
                       </div>
-                      <div className="space-y-0.5">
-                        <h3 className="text-sm font-black text-slate-900 tracking-tight group-hover:text-harx-600 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-[13px] font-black text-slate-900 truncate group-hover:text-harx-600 transition-colors">
                           {call.lead?.First_Name || call.lead?.Last_Name ? `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim() : 'Unknown Lead'}
                         </h3>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-3 h-3 text-slate-400" />
-                          <p className="text-[11px] font-medium text-slate-500">{new Date(call.createdAt || call.date).toLocaleString()}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-8 flex-wrap md:flex-nowrap">
-                      <div className="flex flex-col gap-1">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Call Duration</p>
-                        <p className="text-xs font-black text-slate-900">{call.duration ? `${Math.floor(call.duration/60)}m ${call.duration%60}s` : '0s'}</p>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">AI Score</p>
-                        <div className="flex items-center gap-2">
-                          <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${call.ai_call_score?.overall?.score >= 80 ? 'bg-emerald-500' : call.ai_call_score?.overall?.score >= 50 ? 'bg-amber-500' : 'bg-slate-300'}`} 
-                                 style={{ width: `${call.ai_call_score?.overall?.score || 0}%` }}></div>
-                          </div>
-                          <span className={`text-xs font-black ${call.ai_call_score?.overall?.score >= 80 ? 'text-emerald-600' : call.ai_call_score?.overall?.score >= 50 ? 'text-amber-600' : 'text-slate-500'}`}>
-                            {call.ai_call_score?.overall?.score || 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2 min-w-[280px]">
-                        <div className="flex items-center gap-2">
-                          {(() => {
-                            const recordingUrl = call.recording_url_cloudinary || call.recording_url;
-                            if (!recordingUrl) return <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 py-2 bg-slate-50/50 rounded-xl">No recording</span>;
-                            
-                            const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) 
-                              ? `${recordingUrl}.mp3` 
-                              : recordingUrl;
-
-                            return <audio controls src={finalUrl} className="h-9 w-full opacity-80 hover:opacity-100 transition-opacity" />;
-                          })()}
-                        </div>
-                        <div className="flex items-center gap-4 justify-end">
-                          {call.transcript && call.transcript.length > 0 && (
-                            <button 
-                              onClick={() => toggleExpand(call._id || idx, 'transcript')}
-                              className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-lg ${expandedCallId === (call._id || idx) && expandedTab === 'transcript' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-blue-600 hover:bg-blue-50'}`}
-                            >
-                              <MessageSquare className="w-3 h-3" />
-                              Transcript
-                            </button>
-                          )}
-                          {call.ai_call_score && (
-                            <button 
-                              onClick={() => toggleExpand(call._id || idx, 'insights')}
-                              className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-lg ${expandedCallId === (call._id || idx) && expandedTab === 'insights' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-emerald-600 hover:bg-emerald-50'}`}
-                            >
-                              <Star className="w-3 h-3" />
-                              AI Insights
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {expandedCallId === (call._id || idx) && (
-                      <div className="mt-8 pt-8 border-t border-slate-100 animate-in slide-in-from-top duration-500 w-full">
-                        {expandedTab === 'transcript' ? (
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
                               <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
                                 <MessageSquare className="w-3 h-3" />
                                 Full Conversation Transcript
