@@ -404,6 +404,53 @@ export default function PremiumDashboard({
         </div>
       )}
 
+      {userType === 'company' && callsData && callsData.length > 0 && (
+        <div className="bg-white/60 backdrop-blur-md rounded-[32px] p-8 border border-white/80 shadow-xl shadow-slate-200/30">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+            <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest flex items-center gap-3">
+              <Phone className="w-6 h-6 text-indigo-500" />
+              Recent Call Recordings
+            </h2>
+          </div>
+          <div className="space-y-4">
+            {callsData.slice().sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()).slice(0, 10).map((call, idx) => (
+              <div key={call._id || idx} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${call.status === 'completed' ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-50 text-slate-500'}`}>
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      {call.lead?.First_Name || call.lead?.Last_Name ? `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim() : 'Unknown Lead'}
+                    </h3>
+                    <p className="text-xs font-medium text-slate-500">{new Date(call.createdAt || call.date).toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6 flex-wrap md:flex-nowrap">
+                  <div className="text-center">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration</p>
+                    <p className="text-sm font-bold text-slate-700">{call.duration ? `${Math.floor(call.duration/60)}m ${call.duration%60}s` : '0s'}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score</p>
+                    <p className={`text-sm font-bold ${call.ai_call_score?.overall?.score >= 80 ? 'text-emerald-500' : call.ai_call_score?.overall?.score >= 50 ? 'text-amber-500' : 'text-slate-700'}`}>
+                      {call.ai_call_score?.overall?.score || 'N/A'}/100
+                    </p>
+                  </div>
+                  <div className="min-w-[250px] flex justify-end">
+                    {call.recording_url ? (
+                      <audio controls src={call.recording_url} className="w-full max-w-[250px] h-10" />
+                    ) : (
+                      <span className="text-xs font-medium text-slate-400 italic px-4 py-2 bg-slate-50 rounded-lg">No recording</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {userType === 'rep' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Professional Focus */}
