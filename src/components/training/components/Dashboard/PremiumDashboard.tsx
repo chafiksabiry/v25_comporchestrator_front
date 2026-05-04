@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TrendingUp, Users, DollarSign, Clock, Star, Bell, BookOpen, MessageSquare, Phone, Target, Award, ArrowRight, Briefcase, Zap, Shield, CheckCircle2, Layout, Globe, Activity } from 'lucide-react';
+import { TrendingUp, Users, Star, BookOpen, MessageSquare, Phone, Target, Briefcase, Zap, Shield, CheckCircle2, Layout, Globe, Activity } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -330,11 +330,11 @@ export default function PremiumDashboard({
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white/50 rounded-xl border border-white/60 shadow-sm">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Gig:</span>
-                  <select 
+                  <select
                     value={selectedGigId}
                     onChange={(e) => onGigSelect?.(e.target.value)}
                     className="bg-transparent text-[9px] font-bold text-slate-700 outline-none cursor-pointer"
@@ -350,7 +350,7 @@ export default function PremiumDashboard({
 
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white/50 rounded-xl border border-white/60 shadow-sm">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Period:</span>
-                  <select 
+                  <select
                     value={dateRange}
                     onChange={(e) => onDateRangeSelect?.(e.target.value)}
                     className="bg-transparent text-[9px] font-bold text-slate-700 outline-none cursor-pointer"
@@ -390,12 +390,12 @@ export default function PremiumDashboard({
                   Latest recorded sessions
                 </p>
               </div>
-              
+
               <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar max-h-[600px]">
                 {callsData.slice().sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()).slice(0, 10).map((call, idx) => {
                   const callId = call._id || idx;
                   const isExpanded = expandedCallId === callId;
-                  
+
                   return (
                     <div key={callId} className="group p-5 bg-white/40 hover:bg-white/80 rounded-[28px] border border-white/60 transition-all duration-300">
                       <div className="flex items-center gap-4 mb-4">
@@ -417,7 +417,7 @@ export default function PremiumDashboard({
 
                       <div className="space-y-4">
                         <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                          <span>Duration: {call.duration ? `${Math.floor(call.duration/60)}m ${call.duration%60}s` : '0s'}</span>
+                          <span>Duration: {call.duration ? `${Math.floor(call.duration / 60)}m ${call.duration % 60}s` : '0s'}</span>
                           <div className="flex items-center gap-1.5">
                             <div className="w-10 h-1 bg-slate-100 rounded-full overflow-hidden">
                               <div className={`h-full rounded-full ${call.ai_call_score?.overall?.score >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${call.ai_call_score?.overall?.score || 0}%` }}></div>
@@ -429,7 +429,7 @@ export default function PremiumDashboard({
                           {(() => {
                             const recordingUrl = call.recording_url_cloudinary || call.recording_url;
                             if (!recordingUrl) return <div className="text-[9px] font-black text-slate-400 uppercase text-center py-2 bg-slate-50/50 rounded-xl italic">No recording</div>;
-                            
+
                             const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
                             return <audio controls src={finalUrl} className="h-8 w-full opacity-90 hover:opacity-100 transition-opacity" />;
                           })()}
@@ -437,7 +437,7 @@ export default function PremiumDashboard({
 
                         <div className="flex items-center gap-2">
                           {call.transcript && call.transcript.length > 0 && (
-                            <button 
+                            <button
                               onClick={() => toggleExpand(callId, 'transcript')}
                               className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${isExpanded && expandedTab === 'transcript' ? 'bg-blue-600 text-white border-blue-600' : 'text-blue-600 border-blue-100 hover:bg-blue-50'}`}
                             >
@@ -445,7 +445,7 @@ export default function PremiumDashboard({
                             </button>
                           )}
                           {call.ai_call_score && (
-                            <button 
+                            <button
                               onClick={() => toggleExpand(callId, 'insights')}
                               className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${isExpanded && expandedTab === 'insights' ? 'bg-emerald-600 text-white border-emerald-600' : 'text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
                             >
