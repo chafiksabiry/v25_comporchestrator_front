@@ -392,89 +392,91 @@ export default function PremiumDashboard({
               </div>
               
               <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar max-h-[600px]">
-                {callsData.slice().sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()).slice(0, 10).map((call, idx) => (
-                  <div key={call._id || idx} className="group p-5 bg-white/40 hover:bg-white/80 rounded-[28px] border border-white/60 transition-all duration-300">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${call.status === 'completed' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
-                        <Phone className="w-5 h-5" />
+                {callsData.slice().sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()).slice(0, 10).map((call, idx) => {
+                  return (
+                    <div key={call._id || idx} className="group p-5 bg-white/40 hover:bg-white/80 rounded-[28px] border border-white/60 transition-all duration-300">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${call.status === 'completed' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                          <Phone className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-[13px] font-black text-slate-900 truncate group-hover:text-harx-600 transition-colors">
+                            {call.lead?.First_Name || call.lead?.Last_Name ? `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim() : 'Unknown Lead'}
+                          </h3>
+                          <p className="text-[10px] font-medium text-slate-500">{new Date(call.createdAt || call.date).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-[11px] font-black ${call.ai_call_score?.overall?.score >= 80 ? 'text-emerald-600' : 'text-slate-500'}`}>
+                            {call.ai_call_score?.overall?.score || 'N/A'}/100
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-[13px] font-black text-slate-900 truncate group-hover:text-harx-600 transition-colors">
-                          {call.lead?.First_Name || call.lead?.Last_Name ? `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim() : 'Unknown Lead'}
-                        </h3>
-                        <p className="text-[10px] font-medium text-slate-500">{new Date(call.createdAt || call.date).toLocaleDateString()}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`text-[11px] font-black ${call.ai_call_score?.overall?.score >= 80 ? 'text-emerald-600' : 'text-slate-500'}`}>
-                          {call.ai_call_score?.overall?.score || 'N/A'}/100
-                        </span>
-                      </div>
-                    </div>
 
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                        <span>Duration: {call.duration ? `${Math.floor(call.duration/60)}m ${call.duration%60}s` : '0s'}</span>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-10 h-1 bg-slate-100 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${call.ai_call_score?.overall?.score >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${call.ai_call_score?.overall?.score || 0}%` }}></div>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                          <span>Duration: {call.duration ? `${Math.floor(call.duration/60)}m ${call.duration%60}s` : '0s'}</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-10 h-1 bg-slate-100 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full ${call.ai_call_score?.overall?.score >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${call.ai_call_score?.overall?.score || 0}%` }}></div>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="relative">
-                        {(() => {
-                          const recordingUrl = call.recording_url_cloudinary || call.recording_url;
-                          if (!recordingUrl) return <div className="text-[9px] font-black text-slate-400 uppercase text-center py-2 bg-slate-50/50 rounded-xl italic">No recording</div>;
-                          
-                          const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
-                          return <audio controls src={finalUrl} className="h-8 w-full opacity-90 hover:opacity-100 transition-opacity" />;
-                        })()}
-                      </div>
+                        <div className="relative">
+                          {(() => {
+                            const recordingUrl = call.recording_url_cloudinary || call.recording_url;
+                            if (!recordingUrl) return <div className="text-[9px] font-black text-slate-400 uppercase text-center py-2 bg-slate-50/50 rounded-xl italic">No recording</div>;
+                            
+                            const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
+                            return <audio controls src={finalUrl} className="h-8 w-full opacity-90 hover:opacity-100 transition-opacity" />;
+                          })()}
+                        </div>
 
-                      <div className="flex items-center gap-2">
-                        {call.transcript && call.transcript.length > 0 && (
-                          <button 
-                            onClick={() => toggleExpand(call._id || idx, 'transcript')}
-                            className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${expandedCallId === (call._id || idx) && expandedTab === 'transcript' ? 'bg-blue-600 text-white border-blue-600' : 'text-blue-600 border-blue-100 hover:bg-blue-50'}`}
-                          >
-                            Transcript
-                          </button>
-                        )}
-                        {call.ai_call_score && (
-                          <button 
-                            onClick={() => toggleExpand(call._id || idx, 'insights')}
-                            className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${expandedCallId === (call._id || idx) && expandedTab === 'insights' ? 'bg-emerald-600 text-white border-emerald-600' : 'text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
-                          >
-                            AI Insights
-                          </button>
-                        )}
-                      </div>
-
-                      {expandedCallId === (call._id || idx) && (
-                        <div className="pt-4 border-t border-slate-100 animate-in slide-in-from-top duration-300">
-                          {expandedTab === 'transcript' ? (
-                            <div className="space-y-3">
-                              <p className="text-[9px] font-black text-blue-600 uppercase">Transcript Excerpt</p>
-                              <div className="bg-slate-50/50 rounded-xl p-4 max-h-[200px] overflow-y-auto text-[10px] space-y-2">
-                                {call.transcript.slice(0, 5).map((t: any, i: number) => (
-                                  <p key={i}><span className="font-bold">{t.speaker}:</span> {t.text}</p>
-                                ))}
-                                {call.transcript.length > 5 && <p className="text-slate-400 italic">... view more in full history</p>}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              <p className="text-[9px] font-black text-emerald-600 uppercase">Executive Feedback</p>
-                              <div className="bg-emerald-50/50 rounded-xl p-4 text-[10px] text-emerald-900 leading-relaxed italic">
-                                "{call.ai_call_score.overall?.feedback?.slice(0, 150)}..."
-                              </div>
-                            </div>
+                        <div className="flex items-center gap-2">
+                          {call.transcript && call.transcript.length > 0 && (
+                            <button 
+                              onClick={() => toggleExpand(call._id || idx, 'transcript')}
+                              className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${expandedCallId === (call._id || idx) && expandedTab === 'transcript' ? 'bg-blue-600 text-white border-blue-600' : 'text-blue-600 border-blue-100 hover:bg-blue-50'}`}
+                            >
+                              Transcript
+                            </button>
+                          )}
+                          {call.ai_call_score && (
+                            <button 
+                              onClick={() => toggleExpand(call._id || idx, 'insights')}
+                              className={`flex-1 text-[8px] font-black uppercase tracking-widest py-2 rounded-lg transition-all border ${expandedCallId === (call._id || idx) && expandedTab === 'insights' ? 'bg-emerald-600 text-white border-emerald-600' : 'text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
+                            >
+                              AI Insights
+                            </button>
                           )}
                         </div>
-                      )}
+
+                        {expandedCallId === (call._id || idx) && (
+                          <div className="pt-4 border-t border-slate-100 animate-in slide-in-from-top duration-300">
+                            {expandedTab === 'transcript' ? (
+                              <div className="space-y-3">
+                                <p className="text-[9px] font-black text-blue-600 uppercase">Transcript Excerpt</p>
+                                <div className="bg-slate-50/50 rounded-xl p-4 max-h-[200px] overflow-y-auto text-[10px] space-y-2">
+                                  {call.transcript.slice(0, 5).map((t: any, i: number) => (
+                                    <p key={i}><span className="font-bold">{t.speaker}:</span> {t.text}</p>
+                                  ))}
+                                  {call.transcript.length > 5 && <p className="text-slate-400 italic">... view more in full history</p>}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <p className="text-[9px] font-black text-emerald-600 uppercase">Executive Feedback</p>
+                                <div className="bg-emerald-50/50 rounded-xl p-4 text-[10px] text-emerald-900 leading-relaxed italic">
+                                  "{call.ai_call_score.overall?.feedback?.slice(0, 150)}..."
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
