@@ -37,6 +37,7 @@ interface PremiumDashboardProps {
     gigsEnrolled: number;
     activeLeads: number;
     agentsEnrolled: number;
+    conversionRate: number;
   };
   callsData?: any[];
   gigs?: any[];
@@ -225,7 +226,8 @@ export default function PremiumDashboard({
     { icon: Phone, label: 'Calls', value: companyStats?.calls || 0, change: 'Executed', type: 'positive', color: 'blue' },
     { icon: Users, label: 'Gigs Enrolled', value: companyStats?.gigsEnrolled || 0, change: 'Active', type: 'neutral', color: 'emerald' },
     { icon: Activity, label: 'Active Leads', value: companyStats?.activeLeads || 0, change: 'Pipeline', type: 'positive', color: 'amber' },
-    { icon: Users, label: 'Agents Enrolled', value: companyStats?.agentsEnrolled || 0, change: 'Total', type: 'positive', color: 'indigo' },
+    { icon: Target, label: 'Conversion Rate', value: `${companyStats?.conversionRate || 0}%`, change: 'Success', type: 'positive', color: 'indigo' },
+    { icon: Users, label: 'Agents Enrolled', value: companyStats?.agentsEnrolled || 0, change: 'Total', type: 'positive', color: 'harx' },
   ] : [
     { icon: TrendingUp, label: 'REPS Score', value: `${overallScore}/100`, change: 'Current', type: 'positive', color: 'harx' },
     { icon: BookOpen, label: 'Training', value: `${trainingStats?.overallProgress || 0}%`, change: 'Completion', type: 'positive', color: 'blue' },
@@ -300,7 +302,7 @@ export default function PremiumDashboard({
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${stats.length === 6 ? 'lg:grid-cols-6' : (stats.length === 5 ? 'lg:grid-cols-5' : 'lg:grid-cols-4')} gap-6`}>
         {stats.map((stat, index) => (
           <div key={index} className="group relative overflow-hidden bg-slate-50/50 backdrop-blur-md rounded-[28px] p-6 border border-slate-200/50 shadow-sm hover:shadow-md transition-all duration-300">
             <div className={`absolute top-0 right-0 w-24 h-24 rounded-full -mr-12 -mt-12 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity ${stat.color === 'harx' ? 'bg-harx-500' :

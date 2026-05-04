@@ -27,7 +27,8 @@ export default function PremiumDashboardPage() {
     calls: 0,
     gigsEnrolled: 0,
     activeLeads: 0,
-    agentsEnrolled: 0
+    agentsEnrolled: 0,
+    conversionRate: 0
   });
 
   const [callsData, setCallsData] = useState<any[]>([]);
@@ -44,8 +45,10 @@ export default function PremiumDashboardPage() {
           calls: 0,
           gigsEnrolled: 0,
           activeLeads: 0,
-          agentsEnrolled: 0
+          agentsEnrolled: 0,
+          conversionRate: 0
         };
+
 
         try {
           // 1. Fetch Gigs
@@ -130,6 +133,10 @@ export default function PremiumDashboardPage() {
             stats.agentsEnrolled = Array.isArray(agentsData) ? agentsData.length : 0;
             stats.gigsEnrolled = stats.agentsEnrolled > 0 ? stats.gigs : 0;
           } catch (e) { console.error('Error fetching agents:', e); }
+
+          // Calculate Conversion Rate (Active Leads / Calls)
+          stats.conversionRate = stats.calls > 0 ? Math.round((stats.activeLeads / stats.calls) * 100) : 0;
+          if (stats.conversionRate > 100) stats.conversionRate = 100; // Cap at 100% just in case of data anomalies
 
           setCompanyStats(stats);
         } catch (error) {
