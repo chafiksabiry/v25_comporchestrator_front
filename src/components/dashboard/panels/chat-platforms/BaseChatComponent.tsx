@@ -9,6 +9,7 @@ import {
   Video,
   Share2
 } from "lucide-react";
+import { PremiumAudioPlayer } from "../../components/PremiumAudioPlayer";
 
 interface Message {
   id: string;
@@ -181,13 +182,9 @@ const BaseChatComponent: React.FC<BaseChatProps> = ({
                         {msg.sender?.name || "Unknown"}
                       </div>
                       {msg.type === "file" && msg.message.file?.type === "audio" ? (
-                        <audio controls>
-                          <source
-                            src={msg.message.file.url}
-                            type={msg.message.file.type}
-                          />
-                          Your browser does not support the audio element.
-                        </audio>
+                        <div className="mt-2 min-w-[300px]">
+                          <PremiumAudioPlayer url={msg.message.file.url} />
+                        </div>
                       ) : (
                         <div className={`text-md ${isOperator ? styles.messageSenderText : styles.messageReceiverText}`}>
                           {msg.message.text}

@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Image,
 } from 'lucide-react';
+import { PremiumAudioPlayer } from '../dashboard/components/PremiumAudioPlayer';
 
 import { AppContent } from '../training/App';
 import { getGigsByCompanyId } from '../../api/matching';
@@ -1332,14 +1333,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         </div>
                         {podcast.audioUrl ? (
                           <div className="mt-2">
-                            <audio
-                              controls
-                              preload="none"
-                              src={podcast.audioUrl}
-                              className="w-full"
-                            >
-                              Your browser does not support audio playback.
-                            </audio>
+                            <PremiumAudioPlayer url={podcast.audioUrl} />
                           </div>
                         ) : null}
                       </div>

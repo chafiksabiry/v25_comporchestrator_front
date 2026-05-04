@@ -4,6 +4,7 @@ import { vertexApi } from "../services/api/vertex";
 import { Call, callsApi } from "../services/api/calls";
 
 import { Info, Target, Volume2, BookOpen, User, Phone, Clock, Calendar, CheckCircle, XCircle, FileText, ClipboardList, ArrowRight } from 'lucide-react';
+import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 
 interface CallReport {
     "Agent fluency": { score: number; feedback: string };
@@ -183,10 +184,13 @@ function CallReportCard() {
                     <h3 className="text-sm font-medium text-rose-500">Call Recording</h3>
                 </div>
                 {call?.recording_url ? (
-                    <audio controls className="w-full">
-                        <source src={(call.recording_url_cloudinary) ? call.recording_url_cloudinary : call.recording_url} type="audio/mpeg" />
-                        Your browser does not support the audio element.
-                    </audio>
+                    <div className="mt-2">
+                        {(() => {
+                            const recordingUrl = call.recording_url_cloudinary || call.recording_url;
+                            const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
+                            return <PremiumAudioPlayer url={finalUrl} />;
+                        })()}
+                    </div>
                 ) : (
                     <p className="text-red-500">Recording not available.</p>
                 )}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { TrendingUp, Users, Star, BookOpen, MessageSquare, Phone, Target, Briefcase, Zap, Shield, CheckCircle2, Layout, Globe, Activity } from 'lucide-react';
+import { TrendingUp, Users, Star, BookOpen, MessageSquare, Phone, Target, Briefcase, Zap, Shield, CheckCircle2, Layout, Globe, Activity as ActivityIcon } from 'lucide-react';
+import { PremiumAudioPlayer } from '../../../dashboard/components/PremiumAudioPlayer';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -434,7 +435,7 @@ export default function PremiumDashboard({
                             if (!recordingUrl) return <div className="text-[9px] font-black text-slate-400 uppercase text-center py-2 bg-slate-50/50 rounded-xl italic">No recording</div>;
 
                             const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
-                            return <audio controls src={finalUrl} className="h-8 w-full opacity-90 hover:opacity-100 transition-opacity" />;
+                            return <div className="mt-2"><PremiumAudioPlayer url={finalUrl} /></div>;
                           })()}
                         </div>
 
