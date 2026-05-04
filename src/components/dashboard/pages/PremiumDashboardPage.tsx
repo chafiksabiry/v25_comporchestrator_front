@@ -64,7 +64,7 @@ export default function PremiumDashboardPage() {
           try {
             let leadsUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`;
             if (selectedGigId !== 'all') {
-              leadsUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads?gigId=${selectedGigId}`;
+              leadsUrl = `${leadsUrl}?gigId=${selectedGigId}`;
             }
             const leadsResponse = await fetch(leadsUrl);
             if (leadsResponse.ok) {
@@ -73,80 +73,57 @@ export default function PremiumDashboardPage() {
             }
           } catch (e) { console.error('Error fetching leads:', e); }
 
-          // 3. Fetch Calls
+          // 3. Fetch Calls (with Server-Side Filtering)
           try {
             const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
             const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
-            const callsUrl = `${callsBase}/calls?userId=${userId}&populate=lead`;
-            console.log('[Dashboard] Fetching calls from:', callsUrl);
+            
+            // A. Fetch GLOBAL stats for the cards (Total company calls)
+            const globalResponse = await fetch(`${callsBase}/calls?companyId=${companyId}`);
+            if (globalResponse.ok) {
+              const globalData = await globalResponse.json();
+              stats.calls = globalData.count || 0;
+            }
 
-            const callsResponse = await fetch(callsUrl);
+            // B. Fetch FILTERED calls for the histogram
+            const filterParams = new URLSearchParams();
+            filterParams.append('companyId', companyId);
+            filterParams.append('populate', 'lead');
+            
+            if (selectedGigId !== 'all') {
+              filterParams.append('gigId', selectedGigId);
+            }
+
+            if (dateRange !== 'all') {
+              const now = new Date();
+              let startDate = new Date();
+              if (dateRange === 'today') startDate.setHours(0, 0, 0, 0);
+              else if (dateRange === 'last_week') startDate.setDate(now.getDate() - 7);
+              else if (dateRange === 'last_month') startDate.setMonth(now.getMonth() - 1);
+              else if (dateRange === 'last_3_months') startDate.setMonth(now.getMonth() - 3);
+              else if (dateRange === 'last_year') startDate.setFullYear(now.getFullYear() - 1);
+              else if (dateRange === 'custom' && customDates?.start) {
+                startDate = new Date(customDates.start);
+                if (customDates.end) {
+                  const endDate = new Date(customDates.end);
+                  endDate.setHours(23, 59, 59, 999);
+                  filterParams.append('endDate', endDate.toISOString());
+                }
+              }
+              filterParams.append('startDate', startDate.toISOString());
+            }
+
+            const filteredUrl = `${callsBase}/calls?${filterParams.toString()}`;
+            console.log('[Dashboard] Fetching filtered calls:', filteredUrl);
+
+            const callsResponse = await fetch(filteredUrl);
             if (callsResponse.ok) {
               const callsDataRaw = await callsResponse.json();
-              console.log('[Dashboard] Raw calls data:', callsDataRaw);
-              
-              let callsArray = Array.isArray(callsDataRaw) ? callsDataRaw : (Array.isArray(callsDataRaw.data) ? callsDataRaw.data : []);
-              
-              // Total calls (unfiltered) for the stats card
-              stats.calls = callsArray.length;
-
-              // Filter calls for the histogram ONLY
-              let filteredCalls = [...callsArray];
-              
-              console.log('[Dashboard] Gigs in list:', gigsList.map(g => ({ id: g._id, title: g.title })));
-              console.log('[Dashboard] Current selectedGigId:', selectedGigId);
-
-              const getID = (val: any) => {
-                if (!val) return null;
-                if (typeof val === 'string') return val;
-                if (val.$oid) return val.$oid;
-                if (val._id) return typeof val._id === 'string' ? val._id : (val._id?.$oid || null);
-                return null;
-              };
-
-              // Filter by Gig
-              if (selectedGigId !== 'all') {
-                filteredCalls = filteredCalls.filter((c: any) => {
-                  const callGigId = getID(c.gigId) || getID(c.gig);
-                  const leadGigId = getID(c.lead?.gigId);
-                  return callGigId === selectedGigId || leadGigId === selectedGigId;
-                });
-              }
-
-              // Filter by Date Range
-              if (dateRange !== 'all') {
-                const now = new Date();
-                let startDate = new Date();
-                let endDate = new Date();
-
-                if (dateRange === 'today') {
-                  startDate.setHours(0, 0, 0, 0);
-                } else if (dateRange === 'last_week') {
-                  startDate.setDate(now.getDate() - 7);
-                } else if (dateRange === 'last_month') {
-                  startDate.setMonth(now.getMonth() - 1);
-                } else if (dateRange === 'last_3_months') {
-                  startDate.setMonth(now.getMonth() - 3);
-                } else if (dateRange === 'last_year') {
-                  startDate.setFullYear(now.getFullYear() - 1);
-                } else if (dateRange === 'custom' && customDates.start && customDates.end) {
-                  startDate = new Date(customDates.start);
-                  endDate = new Date(customDates.end);
-                  endDate.setHours(23, 59, 59, 999);
-                }
-
-                if (dateRange !== 'custom' || (customDates.start && customDates.end)) {
-                  filteredCalls = filteredCalls.filter((c: any) => {
-                    const callDate = new Date(c.createdAt);
-                    return callDate >= startDate && callDate <= endDate;
-                  });
-                }
-              }
-              
-              setCallsData(filteredCalls);
+              const filteredArray = Array.isArray(callsDataRaw.data) ? callsDataRaw.data : (Array.isArray(callsDataRaw) ? callsDataRaw : []);
+              setCallsData(filteredArray);
             }
           } catch (e) { console.error('Error fetching calls:', e); }
-          
+
           // 4. Fetch Active Agents
           try {
             const agentsData = await getActiveAgentsForCompany(companyId);
