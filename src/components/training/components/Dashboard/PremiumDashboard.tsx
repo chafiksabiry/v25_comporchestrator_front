@@ -226,70 +226,14 @@ export default function PremiumDashboard({
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-4">
-            {userType === 'company' && (
-              <>
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:inline">Gig:</span>
-                  <select 
-                    value={selectedGigId}
-                    onChange={(e) => onGigSelect?.(e.target.value)}
-                    className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-harx-500 focus:border-transparent outline-none transition-all cursor-pointer min-w-[140px]"
-                  >
-                    <option value="all">All Gigs</option>
-                    {gigs.map((gig: any) => (
-                      <option key={gig._id} value={gig._id}>
-                        {gig.title || gig.name || 'Untitled Gig'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:inline">Period:</span>
-                  <select 
-                    value={dateRange}
-                    onChange={(e) => onDateRangeSelect?.(e.target.value)}
-                    className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-harx-500 focus:border-transparent outline-none transition-all cursor-pointer min-w-[140px]"
-                  >
-                    <option value="all">All Time</option>
-                    <option value="today">Today</option>
-                    <option value="last_week">Last Week</option>
-                    <option value="last_month">Last Month</option>
-                    <option value="last_3_months">Last 3 Months</option>
-                    <option value="last_year">Last Year</option>
-                    <option value="custom">Custom Range</option>
-                  </select>
-                </div>
-
-                {dateRange === 'custom' && (
-                  <div className="flex items-center gap-2 animate-in slide-in-from-right duration-300">
-                    <input 
-                      type="date"
-                      value={customDates?.start || ''}
-                      onChange={(e) => onCustomDatesChange?.({ ...customDates!, start: e.target.value })}
-                      className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-harx-500"
-                    />
-                    <span className="text-slate-400 text-xs font-bold">to</span>
-                    <input 
-                      type="date"
-                      value={customDates?.end || ''}
-                      onChange={(e) => onCustomDatesChange?.({ ...customDates!, end: e.target.value })}
-                      className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-harx-500"
-                    />
-                  </div>
-                )}
-              </>
-            )}
-            <div className="flex items-center space-x-3">
-              <button className="relative p-2.5 bg-white shadow-sm border border-slate-100 rounded-xl text-slate-400 hover:text-harx-500 transition-all group">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-harx-500 border-2 border-white rounded-full group-hover:scale-110 transition-transform"></span>
-              </button>
-              <button className="px-6 py-2.5 bg-gradient-harx text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-harx-500/30 hover:opacity-90 active:scale-95 transition-all">
-                Update Profile
-              </button>
-            </div>
+          <div className="flex items-center space-x-4">
+            <button className="relative p-3 bg-white shadow-sm border border-slate-100 rounded-2xl text-slate-400 hover:text-harx-500 transition-all group">
+              <Bell className="w-6 h-6" />
+              <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-harx-500 border-2 border-white rounded-full group-hover:scale-110 transition-transform"></span>
+            </button>
+            <button className="px-8 py-3.5 bg-gradient-harx text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-harx-500/30 hover:opacity-90 active:scale-95 transition-all">
+              Update Profile
+            </button>
           </div>
         </div>
       </div>
@@ -329,14 +273,62 @@ export default function PremiumDashboard({
 
       {userType === 'company' && (
         <div className="bg-white/60 backdrop-blur-md rounded-[32px] p-8 border border-white/80 shadow-xl shadow-slate-200/30">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
             <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest flex items-center gap-3">
               <Activity className="w-6 h-6 text-blue-500" />
               Calls Activity
             </h2>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Last 7 Days</span>
+            
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gig:</span>
+                <select 
+                  value={selectedGigId}
+                  onChange={(e) => onGigSelect?.(e.target.value)}
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-harx-500 outline-none cursor-pointer"
+                >
+                  <option value="all">All Gigs</option>
+                  {gigs.map((gig: any) => (
+                    <option key={gig._id} value={gig._id}>
+                      {gig.title || gig.name || 'Untitled Gig'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Period:</span>
+                <select 
+                  value={dateRange}
+                  onChange={(e) => onDateRangeSelect?.(e.target.value)}
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-harx-500 outline-none cursor-pointer"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="last_week">Last Week</option>
+                  <option value="last_month">Last Month</option>
+                  <option value="last_3_months">Last 3 Months</option>
+                  <option value="last_year">Last Year</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+              </div>
+
+              {dateRange === 'custom' && (
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="date"
+                    value={customDates?.start || ''}
+                    onChange={(e) => onCustomDatesChange?.({ ...customDates!, start: e.target.value })}
+                    className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-bold text-slate-700 outline-none"
+                  />
+                  <input 
+                    type="date"
+                    value={customDates?.end || ''}
+                    onChange={(e) => onCustomDatesChange?.({ ...customDates!, end: e.target.value })}
+                    className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-bold text-slate-700 outline-none"
+                  />
+                </div>
+              )}
             </div>
           </div>
           <div className="h-[300px] w-full">

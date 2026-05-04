@@ -79,12 +79,18 @@ export default function PremiumDashboardPage() {
             const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
             const callsResponse = await fetch(`${callsBase}/calls?userId=${userId}`);
             if (callsResponse.ok) {
-              const callsData = await callsResponse.json();
-              let callsArray = Array.isArray(callsData) ? callsData : (Array.isArray(callsData.data) ? callsData.data : []);
+              const callsDataRaw = await callsResponse.json();
+              let callsArray = Array.isArray(callsDataRaw) ? callsDataRaw : (Array.isArray(callsDataRaw.data) ? callsDataRaw.data : []);
+              
+              // Total calls (unfiltered) for the stats card
+              stats.calls = callsArray.length;
+
+              // Filter calls for the histogram ONLY
+              let filteredCalls = [...callsArray];
               
               // Filter by Gig
               if (selectedGigId !== 'all') {
-                callsArray = callsArray.filter((c: any) => c.gigId === selectedGigId || c.gig?._id === selectedGigId);
+                filteredCalls = filteredCalls.filter((c: any) => c.gigId === selectedGigId || c.gig?._id === selectedGigId);
               }
 
               // Filter by Date Range
@@ -110,29 +116,22 @@ export default function PremiumDashboardPage() {
                 }
 
                 if (dateRange !== 'custom' || (customDates.start && customDates.end)) {
-                  callsArray = callsArray.filter((c: any) => {
+                  filteredCalls = filteredCalls.filter((c: any) => {
                     const callDate = new Date(c.createdAt);
                     return callDate >= startDate && callDate <= endDate;
                   });
                 }
               }
               
-              stats.calls = callsArray.length;
-              setCallsData(callsArray);
+              setCallsData(filteredCalls);
             }
           } catch (e) { console.error('Error fetching calls:', e); }
           
           // 4. Fetch Active Agents
           try {
             const agentsData = await getActiveAgentsForCompany(companyId);
-            let agentsArray = Array.isArray(agentsData) ? agentsData : [];
-            
-            if (selectedGigId !== 'all') {
-              agentsArray = agentsArray.filter((a: any) => a.gigId === selectedGigId);
-            }
-            
-            stats.agentsEnrolled = agentsArray.length;
-            stats.gigsEnrolled = stats.agentsEnrolled > 0 ? (selectedGigId === 'all' ? stats.gigs : 1) : 0;
+            stats.agentsEnrolled = Array.isArray(agentsData) ? agentsData.length : 0;
+            stats.gigsEnrolled = stats.agentsEnrolled > 0 ? stats.gigs : 0;
           } catch (e) { console.error('Error fetching agents:', e); }
 
           setCompanyStats(stats);
