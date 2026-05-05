@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    Users, 
-    Phone, 
-    Target, 
-    BarChart3, 
-    PieChart, 
-    TrendingUp, 
+import {
+    Users,
+    Phone,
+    Target,
+    BarChart3,
+    PieChart,
+    TrendingUp,
     Calendar,
     Briefcase,
     CheckCircle2,
@@ -19,32 +19,32 @@ import {
     Info
 } from 'lucide-react';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  PointElement,
-  LineElement,
-  ArcElement,
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    PointElement,
+    LineElement,
+    ArcElement,
 } from 'chart.js';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import Cookies from 'js-cookie';
 import axios from 'axios';
-import { getGigsByCompanyId } from '../matching';
+import { getActiveAgentsForCompany, getGigsByCompanyId } from '../matching';
 
 ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    PointElement,
+    LineElement,
+    ArcElement,
+    Title,
+    Tooltip,
+    Legend
 );
 
 interface PerformanceStats {
@@ -99,14 +99,14 @@ export function CompanyPerformanceDashboard() {
                 // 3. Fetch Calls
                 const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
                 const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
-                let callsUrl = `${callsBase}/calls?companyId=${companyId}&limit=10000`; 
-                
+                let callsUrl = `${callsBase}/calls?companyId=${companyId}&limit=10000`;
+
                 if (selectedGig !== 'all') {
                     callsUrl += `&gigId=${selectedGig}`;
                 }
 
                 const callsRes = await fetch(callsUrl);
-                
+
                 if (callsRes.ok) {
                     const callsDataRaw = await callsRes.json();
                     const allCalls = Array.isArray(callsDataRaw.data) ? callsDataRaw.data : (Array.isArray(callsDataRaw) ? callsDataRaw : []);
@@ -160,7 +160,7 @@ export function CompanyPerformanceDashboard() {
                 // 4. Fetch Active Agents
                 const agentsData = await getActiveAgentsForCompany(companyId);
                 const agentsArray = Array.isArray(agentsData) ? agentsData : [];
-                
+
                 // If a specific gig is selected, filter agents by that gig
                 let filteredAgents = agentsArray;
                 if (selectedGig !== 'all') {
@@ -191,7 +191,7 @@ export function CompanyPerformanceDashboard() {
     const histogramData = useMemo(() => {
         // Group calls by date based on timeRange
         const groups: Record<string, { calls: number, contacts: number }> = {};
-        
+
         callsList.forEach(call => {
             const date = new Date(call.createdAt || call.date);
             let key = '';
@@ -295,7 +295,7 @@ export function CompanyPerformanceDashboard() {
                 <div className="flex flex-wrap items-center gap-3">
                     {/* Gig Selector */}
                     <div className="relative group">
-                        <select 
+                        <select
                             value={selectedGig}
                             onChange={(e) => setSelectedGig(e.target.value)}
                             className="appearance-none bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 pr-12 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 transition-all cursor-pointer shadow-sm hover:bg-white"
@@ -317,11 +317,10 @@ export function CompanyPerformanceDashboard() {
                                 <button
                                     key={range}
                                     onClick={() => setTimeRange(range)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                                        timeRange === range 
-                                        ? 'bg-white text-harx-500 shadow-md ring-1 ring-black/5' 
-                                        : 'text-slate-400 hover:text-slate-600'
-                                    }`}
+                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${timeRange === range
+                                            ? 'bg-white text-harx-500 shadow-md ring-1 ring-black/5'
+                                            : 'text-slate-400 hover:text-slate-600'
+                                        }`}
                                 >
                                     {label}
                                 </button>
@@ -333,41 +332,41 @@ export function CompanyPerformanceDashboard() {
 
             {/* Top KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                <MetricCard 
-                    title="REPS Inscrits" 
-                    value={stats.registeredReps.toLocaleString()} 
+                <MetricCard
+                    title="REPS Inscrits"
+                    value={stats.registeredReps.toLocaleString()}
                     icon={<Briefcase className="w-6 h-6" />}
                     color="purple"
                     trend="Reps affectés au(x) Gig(s)"
                     isPositive={true}
                 />
-                <MetricCard 
-                    title="Total Leads" 
-                    value={stats.totalLeads.toLocaleString()} 
+                <MetricCard
+                    title="Total Leads"
+                    value={stats.totalLeads.toLocaleString()}
                     icon={<Users className="w-6 h-6" />}
                     color="blue"
                     trend="+12% vs mois dernier"
                     isPositive={true}
                 />
-                <MetricCard 
-                    title="Total Appels" 
-                    value={stats.totalCalls.toLocaleString()} 
+                <MetricCard
+                    title="Total Appels"
+                    value={stats.totalCalls.toLocaleString()}
                     icon={<Phone className="w-6 h-6" />}
                     color="harx"
                     trend="+8% vs mois dernier"
                     isPositive={true}
                 />
-                <MetricCard 
-                    title="Leads Contactés" 
-                    value={stats.contactedLeads.toLocaleString()} 
+                <MetricCard
+                    title="Leads Contactés"
+                    value={stats.contactedLeads.toLocaleString()}
                     icon={<Target className="w-6 h-6" />}
                     color="emerald"
                     trend="+15% vs mois dernier"
                     isPositive={true}
                 />
-                <MetricCard 
-                    title="Numéros Valides" 
-                    value={stats.validNumbers.toLocaleString()} 
+                <MetricCard
+                    title="Numéros Valides"
+                    value={stats.validNumbers.toLocaleString()}
                     icon={<CheckCircle2 className="w-6 h-6" />}
                     color="amber"
                     trend="+5% vs mois dernier"
@@ -377,28 +376,28 @@ export function CompanyPerformanceDashboard() {
 
             {/* Performance Ratios */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <RatioCard 
-                    title="Taux de Couverture" 
+                <RatioCard
+                    title="Taux de Couverture"
                     subtitle="Leads Contactés / Total Leads"
-                    value={coverageRate} 
+                    value={coverageRate}
                     color="harx"
                 />
-                <RatioCard 
-                    title="Taux de Joignabilité" 
+                <RatioCard
+                    title="Taux de Joignabilité"
                     subtitle="Numéros Valides / Total Appels"
-                    value={reachabilityRate} 
+                    value={reachabilityRate}
                     color="emerald"
                 />
-                <RatioCard 
-                    title="Taux d'Argumentation" 
+                <RatioCard
+                    title="Taux d'Argumentation"
                     subtitle="Appels > 1min30 / Leads Joints"
-                    value={argumentationRate} 
+                    value={argumentationRate}
                     color="blue"
                 />
-                <RatioCard 
-                    title="Taux de Répondeur" 
+                <RatioCard
+                    title="Taux de Répondeur"
                     subtitle="Appels Répondeur / Total Appels"
-                    value={machineRate} 
+                    value={machineRate}
                     color="amber"
                 />
             </div>
@@ -486,31 +485,31 @@ function MetricCard({ title, value, icon, color, trend, isPositive }: { title: s
 }
 
 function RatioCard({ title, subtitle, value, color }: { title: string, subtitle: string, value: number, color: 'harx' | 'blue' | 'emerald' | 'amber' }) {
-    const barColor = color === 'harx' ? 'bg-harx-500' : 
-                     color === 'blue' ? 'bg-blue-500' : 
-                     color === 'emerald' ? 'bg-emerald-500' : 'bg-amber-500';
+    const barColor = color === 'harx' ? 'bg-harx-500' :
+        color === 'blue' ? 'bg-blue-500' :
+            color === 'emerald' ? 'bg-emerald-500' : 'bg-amber-500';
 
     return (
         <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-white/5 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <Zap size={48} className="text-white" />
             </div>
-            
+
             <div className="relative z-10 space-y-4">
                 <div className="space-y-1">
                     <h3 className="text-white font-black text-sm uppercase tracking-tight">{title}</h3>
                     <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{subtitle}</p>
                 </div>
-                
+
                 <div className="space-y-2">
                     <div className="flex items-end justify-between">
                         <div className="text-4xl font-black text-white italic tracking-tighter">
                             {value.toFixed(1)}<span className="text-lg ml-0.5 not-italic">%</span>
                         </div>
                     </div>
-                    
+
                     <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div 
+                        <div
                             className={`h-full ${barColor} transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(255,77,77,0.5)]`}
                             style={{ width: `${value}%` }}
                         />
