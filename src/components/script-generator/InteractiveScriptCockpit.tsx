@@ -35,14 +35,10 @@ interface InteractiveScriptCockpitProps {
 
 export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: InteractiveScriptCockpitProps) {
     const [currentPhaseIdx, setCurrentPhaseIdx] = useState(0);
-    const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
     const [notes, setNotes] = useState('');
     const [seconds, setSeconds] = useState(0);
     const [isActive, setIsActive] = useState(false);
-    const [outcome, setOutcome] = useState<string | null>(null);
-    const [complianceChecked, setComplianceChecked] = useState(false);
 
-    const profiles = ['Salarié', 'Indépendant / TNS', 'Retraité', 'Jeune actif', 'Famille'];
     const currentPhase = phases[currentPhaseIdx];
 
     // Timer logic
@@ -144,28 +140,6 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                             <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tight">{currentPhase.title}</h3>
                         </div>
 
-                        {/* Compliance Alert (if any) */}
-                        {currentPhase.compliance && (
-                            <div className={`p-5 rounded-3xl border transition-all duration-500 flex items-start gap-4 ${
-                                complianceChecked ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-amber-50 border-amber-100 text-amber-800'
-                            }`}>
-                                <div className={`p-2 rounded-xl ${complianceChecked ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
-                                    <AlertCircle size={20} />
-                                </div>
-                                <div className="flex-1 space-y-3">
-                                    <p className="text-sm font-bold leading-relaxed">{currentPhase.compliance}</p>
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={complianceChecked}
-                                            onChange={() => setComplianceChecked(!complianceChecked)}
-                                            className="w-5 h-5 rounded-lg border-slate-300 text-harx-500 focus:ring-harx-500/20"
-                                        />
-                                        <span className="text-xs font-black uppercase tracking-wider text-slate-500 group-hover:text-slate-700 transition-colors">Information communiquée</span>
-                                    </label>
-                                </div>
-                            </div>
-                        )}
 
                         {/* Dialogue Card */}
                         <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 relative group overflow-hidden">
@@ -221,26 +195,6 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                     {/* Sidebar (Right) */}
                     <div className="w-80 bg-white border-l border-slate-100 p-8 flex flex-col gap-8 overflow-y-auto">
                         
-                        {/* Prospect Profile */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <Users size={16} className="text-harx-500" />
-                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Profil Prospect</h4>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {profiles.map(p => (
-                                    <button 
-                                        key={p}
-                                        onClick={() => setSelectedProfile(p)}
-                                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
-                                            selectedProfile === p ? 'bg-harx-500 text-white border-harx-500 shadow-md' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'
-                                        }`}
-                                    >
-                                        {p}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
 
                         {/* Quick Notes */}
                         <div className="space-y-4 flex-1">
@@ -254,32 +208,7 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                                 placeholder="Saisir des notes ici..."
                                 className="w-full h-40 bg-slate-50 border border-slate-100 rounded-3xl p-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 transition-all resize-none shadow-inner"
                             />
-                        </div>
-
-                        {/* Outcome */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <Flag size={16} className="text-harx-500" />
-                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Issue de l'appel</h4>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                                {['Signé', 'Rappel', 'Refus'].map(o => (
-                                    <button 
-                                        key={o}
-                                        onClick={() => setOutcome(o)}
-                                        className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
-                                            outcome === o ? 
-                                            (o === 'Signé' ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg' : 
-                                             o === 'Rappel' ? 'bg-amber-500 text-white border-amber-500 shadow-lg' : 
-                                             'bg-red-500 text-white border-red-500 shadow-lg') : 
-                                            'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'
-                                        }`}
-                                    >
-                                        {o}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                           </div>
 
                         {/* Action Buttons */}
                         <div className="pt-4 border-t border-slate-100">
