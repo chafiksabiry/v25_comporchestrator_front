@@ -647,12 +647,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         {/* 1. SMART MATCHING SYSTEM */}
                         {activeSection === 'matching' && (
                             <div className="space-y-6">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-slate-900">🎯 Smart Matching System</h2>
-                                        <p className="text-slate-500">Find and match the perfect reps for your gigs</p>
-                                    </div>
-                                </div>
 
                                 {/* Search Input - Only show when a gig is selected */}
                                 {selectedGig && (
@@ -1327,13 +1321,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         {/* 2. INVITED REPS */}
                         {activeSection === 'invited' && (
                             <div className="space-y-6">
-                                <div className="flex items-center space-x-3 mb-2">
-                                    <h2 className="text-2xl font-bold text-gray-900">📧 Invited Reps</h2>
-                                    <span className="px-3 py-1 bg-harx-alt-100 text-harx-alt-600 rounded-full text-sm font-medium border border-harx-alt-200">
-                                        {invitedAgentsList.length} Pending
-                                    </span>
-                                </div>
-                                <p className="text-gray-500">Reps who have been invited but haven't responded yet</p>
 
                                 <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
                                     <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
@@ -1387,13 +1374,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         {/* 3. ENROLLMENT REQUESTS */}
                         {activeSection === 'enrollment' && (
                             <div className="space-y-6">
-                                <div className="flex items-center space-x-3 mb-2">
-                                    <h2 className="text-2xl font-bold text-gray-900">📋 Enrollment Requests</h2>
-                                    <span className="px-3 py-1 bg-harx-50 text-harx-600 rounded-full text-sm font-medium border border-harx-100">
-                                        {enrollmentRequests.length} Requests
-                                    </span>
-                                </div>
-                                <p className="text-gray-500">Reps who accepted invitations and are requesting to join</p>
 
                                 <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
                                     <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
@@ -1490,13 +1470,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         {/* 4. ACTIVE REPS */}
                         {activeSection === 'active' && (
                             <div className="space-y-6">
-                                <div className="flex items-center space-x-3 mb-2">
-                                    <h2 className="text-2xl font-bold text-gray-900">✅ Active Reps</h2>
-                                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
-                                        {activeAgentsList.length} Active
-                                    </span>
-                                </div>
-                                <p className="text-gray-500">Reps who are approved and actively working</p>
 
                                 <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
                                     <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
