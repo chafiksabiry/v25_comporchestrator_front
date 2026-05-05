@@ -37,6 +37,7 @@ interface InteractiveScriptCockpitProps {
 
 export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: InteractiveScriptCockpitProps) {
     const [currentPhaseIdx, setCurrentPhaseIdx] = useState(0);
+    const [history, setHistory] = useState<number[]>([]);
     const [notes, setNotes] = useState('');
     const [seconds, setSeconds] = useState(0);
     const [isActive, setIsActive] = useState(false);
@@ -65,19 +66,23 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
     const handleJumpToPhase = (id: string) => {
         const idx = phases.findIndex(p => p.id === id);
         if (idx !== -1) {
+            setHistory(prev => [...prev, currentPhaseIdx]);
             setCurrentPhaseIdx(idx);
         }
     };
 
     const handleNext = () => {
         if (currentPhaseIdx < phases.length - 1) {
+            setHistory(prev => [...prev, currentPhaseIdx]);
             setCurrentPhaseIdx(currentPhaseIdx + 1);
         }
     };
 
     const handlePrev = () => {
-        if (currentPhaseIdx > 0) {
-            setCurrentPhaseIdx(currentPhaseIdx - 1);
+        if (history.length > 0) {
+            const lastIdx = history[history.length - 1];
+            setHistory(prev => prev.slice(0, -1));
+            setCurrentPhaseIdx(lastIdx);
         }
     };
 
