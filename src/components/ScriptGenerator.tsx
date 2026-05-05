@@ -744,6 +744,50 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
+  const handleSaveCockpitScript = async () => {
+    if (!cockpitData || !selectedGig?._id || validatingScriptId) return;
+    
+    setValidatingScriptId('cockpit-save');
+    setError(null);
+    
+    try {
+      // Map cockpit phases to the linear script format for DB compatibility
+      const scriptSteps = cockpitData.phases.map(phase => ({
+        phase: phase.title || 'Dialogue',
+        actor: 'agent' as const,
+        replica: phase.content
+      }));
+
+      const payload = {
+        gigId: selectedGig._id,
+        targetClient: 'general',
+        language: 'Professionnel et interactif',
+        details: 'Généré via Interactive Cockpit',
+        script: scriptSteps,
+        playbook: {
+          title: cockpitData.title,
+          phases: cockpitData.phases,
+          format: 'cockpit'
+        },
+        isActive: true
+      };
+
+      const { data } = (await apiClient.post('/rag/scripts', payload)) as { data: any };
+      const savedId = data?.data?._id || data?._id;
+      
+      if (!savedId) throw new Error('Failed to save cockpit script');
+
+      setValidatedScriptIds(prev => ({ ...prev, [String(savedId)]: true }));
+      fetchSavedScripts(selectedGig._id);
+      setCurrentView('list');
+      await markOnboardingScriptStepCompleted();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Failed to save script');
+    } finally {
+      setValidatingScriptId(null);
+    }
+  };
+
   const rewriteLineWithPrompt = async (line: string, role: 'agent' | 'lead', prompt: string): Promise<string> => {
     const companyId = getCompanyId();
     if (!companyId || !selectedGig) return line;
@@ -1249,6 +1293,8 @@ const ScriptGenerator: React.FC = () => {
             scriptTitle={cockpitData.title}
             phases={cockpitData.phases}
             onClose={() => setCurrentView('list')}
+            onValidate={handleSaveCockpitScript}
+            isValidating={validatingScriptId === 'cockpit-save'}
           />
         )}
 
