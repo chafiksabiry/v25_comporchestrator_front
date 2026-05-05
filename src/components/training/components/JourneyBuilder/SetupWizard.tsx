@@ -125,7 +125,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
 
   useEffect(() => {
     const prev = prevWizardStepRef.current;
-    if (currentStep === 3 && prev === 2) {
+    if (currentStep === 2 && prev === 1) {
       // Preserve already-entered values when user navigates back/forth.
       // Only initialize empty state the very first time.
       const hasExistingVision =
@@ -139,7 +139,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
         setVisionDesc('');
         setVisionDuration('');
       }
-    } else if (currentStep === 3 && prev === 4 && trainingDetails) {
+    } else if (currentStep === 2 && prev === 3 && trainingDetails) {
       setVisionSubStep(1);
       setVisionName(trainingDetails.trainingName);
       setVisionDesc(trainingDetails.trainingDescription);
@@ -150,20 +150,19 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   }, [currentStep, trainingDetails, visionName, visionDesc, visionDuration]);
 
   useEffect(() => {
-    if (currentStep !== 3) return;
+    if (currentStep !== 2) return;
     scrollJourneyMainToTop();
   }, [currentStep, visionSubStep]);
 
   const steps = [
     { id: 1, label: 'Gig' },
-    { id: 2, label: 'Thumbnail' },
-    { id: 3, label: 'Vision' },
-    { id: 4, label: 'Team' },
-    { id: 5, label: 'Methodology' },
+    { id: 2, label: 'Vision' },
+    { id: 3, label: 'Team' },
+    { id: 4, label: 'Methodology' },
   ];
 
   const handleNext = async () => {
-    if (currentStep === 6) {
+    if (currentStep === 5) {
       const realCompanyId = OnboardingService.getCompanyId();
       if (!realCompanyId) { alert('Internal Error: Company ID not found.'); return; }
       const completeCompany: Company = { id: realCompanyId, name: companyData?.name || companyData?.data?.name || company.name || '', industry: company.industry || '', size: company.size || 'medium', setupComplete: true };
@@ -190,12 +189,12 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
           : undefined,
       };
       onComplete(completeCompany, completeJourney, selectedMethodology || undefined, selectedGig?._id);
-    } else if (currentStep === 5) {
-      setCurrentStep(6);
-    } else if (currentStep === 4 && selectedMethodology) {
+    } else if (currentStep === 4) {
       setCurrentStep(5);
     } else if (currentStep === 3) {
       setCurrentStep(4);
+    } else if (currentStep === 2) {
+      setCurrentStep(3);
     } else if (currentStep === 1) {
       setCurrentStep(2);
     } else if (currentStep < steps.length) {
@@ -301,7 +300,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
 
   const handleVisionFooterBack = () => {
     if (visionSubStep > 0) setVisionSubStep(visionSubStep - 1);
-    else setCurrentStep(2);
+    else setCurrentStep(1);
   };
 
   const handleVisionFooterContinue = () => {
@@ -321,7 +320,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
         description: cleanVisionDesc || prev.description || '',
         estimatedDuration: visionDuration || prev.estimatedDuration,
       }));
-      setCurrentStep(4);
+      setCurrentStep(3);
     }
   };
 
@@ -329,8 +328,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
     // Keep user on methodology step: selection first, then explicit Continue.
     setSelectedMethodology(m);
   };
-  const handleMethodologyApply = (m: TrainingMethodology) => { setSelectedMethodology(m); setShowMethodologyBuilder(false); setCurrentStep(6); };
-  const handleCustomMethodology = () => { setCurrentStep(6); };
+  const handleMethodologyApply = (m: TrainingMethodology) => { setSelectedMethodology(m); setShowMethodologyBuilder(false); setCurrentStep(5); };
+  const handleCustomMethodology = () => { setCurrentStep(5); };
 
   const handleThumbnailUpload = async (file: File) => {
     try {
@@ -432,7 +431,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
 
   useEffect(() => {
     // AI auto-suggestion disabled on Team step: roles are selected manually.
-    if (currentStep !== 4 || !selectedGig) return;
+    if (currentStep !== 3 || !selectedGig) return;
     const key = `${selectedGig._id || selectedGig.title || 'gig'}::${String(company.industry || '')}`;
     if (autoRolesSuggestionKeyRef.current !== key) {
       autoRolesSuggestionKeyRef.current = key;
@@ -446,20 +445,19 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const isStepValid = () => {
     switch (currentStep) {
       case 1: return !!companyData && selectedGig !== null;
-      case 2: return !!thumbnailUrl && !thumbnailUploading;
-      case 3: return trainingDetails !== null;
-      case 4: return journey.targetRoles && journey.targetRoles.length > 0;
-      case 5: return selectedMethodology !== null;
-      case 6: return true;
+      case 2: return trainingDetails !== null;
+      case 3: return journey.targetRoles && journey.targetRoles.length > 0;
+      case 4: return selectedMethodology !== null;
+      case 5: return true;
       default: return true;
     }
   };
 
-  const stepNum = currentStep > 5 ? 5 : currentStep;
-  const isVisionStep = currentStep === 3;
-  const isStep4 = currentStep === 5;
-  const isStep5 = currentStep === 2;
-  const isStep6 = currentStep === 6;
+  const stepNum = currentStep > 4 ? 4 : currentStep;
+  const isVisionStep = currentStep === 2;
+  const isTeamStep = currentStep === 3;
+  const isMethodologyStep = currentStep === 4;
+  const isCompleteStep = currentStep === 5;
 
   const formatVisionDuration = (raw: string | undefined) => {
     if (!raw) return null;
@@ -484,44 +482,30 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       ? '4px 20px 8px'
       : isVisionStep
         ? '4px 20px 8px'
-        : isStep4
+        : isTeamStep
           ? '4px 20px 8px'
-          : isStep5
-            ? '2px 14px 4px'
-            : '8px 20px 10px'
+          : '8px 20px 10px'
     : currentStep === 1
       ? '12px 28px 8px'
       : isVisionStep
         ? '12px 28px 8px'
-        : isStep4
+        : isTeamStep
           ? '12px 28px 8px'
-          : isStep5
-            ? '8px 24px 6px'
-            : '16px 28px';
+          : '16px 28px';
 
-  const isThumbnailStep = currentStep === 2;
   const setupContentMaxWidth = '100%';
-  const thumbDropSize = embedCompact && isThumbnailStep ? 160 : 260;
-  const thumbSectionGap = embedCompact && isThumbnailStep ? 8 : 18;
-  const thumbAiBlockMarginTop = embedCompact && isThumbnailStep ? 10 : 18;
-  const thumbTextareaRows = embedCompact && isThumbnailStep ? 2 : 4;
-  const thumbTextareaMinH = embedCompact && isThumbnailStep ? 64 : 100;
   const lockBodyScroll = embedCompact && currentStep === 1;
   const headerTitle = isVisionStep
     ? 'Define your training vision'
-    : currentStep === 4
+    : currentStep === 3
       ? 'Identify your learners'
-    : isThumbnailStep
-      ? 'Upload training thumbnail'
       : 'Welcome to your training journey';
   const headerSubtitle = isVisionStep
     ? (visionSubStep === 0
       ? 'Step 1 of 2 — Name & description'
       : 'Step 2 of 2 — How long should it run?')
-    : currentStep === 4
+    : currentStep === 3
       ? 'Role-based paths · Skill assessments · Personalization'
-    : isThumbnailStep
-      ? 'Add a cover image for your training card, or describe one for AI.'
       : 'Smart defaults · Compliance';
   const uniformStepBodyMinHeight = embedCompact ? '100%' : '100%';
 
@@ -539,7 +523,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#ffffff', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: 9999, padding: '8px 12px', backdropFilter: 'blur(8px)' }}>
           {steps.map((step, i) => {
             const done = currentStep > step.id;
-            const active = currentStep === step.id || (currentStep === 6 && step.id === 5);
+            const active = currentStep === step.id || (currentStep === 5 && step.id === 4);
             return (
               <Fragment key={step.id}>
                 <button
@@ -749,7 +733,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
             />
           )}
 
-          {currentStep === 4 && (
+          {isTeamStep && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
@@ -784,217 +768,16 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
             </div>
           )}
 
-          {isStep4 && (
+          {isMethodologyStep && (
             <MethodologySelector
               onMethodologySelect={handleMethodologySelect}
               onCustomMethodology={handleCustomMethodology}
-              onBack={() => setCurrentStep(3)}
+              onBack={() => setCurrentStep(2)}
               hideBackButton
             />
           )}
 
-          {isStep5 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: thumbSectionGap, width: '100%' }}>
-              <div
-                style={{
-                  width: '100%',
-                  maxWidth: embedCompact && isThumbnailStep ? 360 : undefined,
-                  margin: embedCompact && isThumbnailStep ? '0 auto' : undefined,
-                  border: '1px solid #e2e8f0',
-                  borderRadius: embedCompact ? 12 : 14,
-                  padding: embedCompact ? '10px 10px 8px' : '14px 14px 12px',
-                  background: '#ffffff',
-                  boxShadow: '0 4px 14px rgba(15,23,42,0.06)',
-                }}
-              >
-                <input
-                  id="training-thumbnail-input"
-                  type="file"
-                  accept="image/*"
-                  disabled={thumbnailUploading || thumbnailGenerating}
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void handleThumbnailUpload(file);
-                    e.currentTarget.value = '';
-                  }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                  <label
-                    htmlFor="training-thumbnail-input"
-                    onDragOver={(e) => {
-                      if (thumbnailUploading || thumbnailGenerating) return;
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onDrop={(e) => {
-                      if (thumbnailUploading || thumbnailGenerating) return;
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const file = e.dataTransfer.files?.[0];
-                      if (file) void handleThumbnailUpload(file);
-                    }}
-                    className={`transition-all duration-200 focus-within:ring-2 focus-within:ring-slate-200 focus-within:ring-offset-2 ${(thumbnailUploading || thumbnailGenerating) ? 'cursor-not-allowed opacity-55' : 'cursor-pointer hover:border-slate-300 hover:shadow-sm'}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: thumbDropSize,
-                      height: thumbDropSize,
-                      maxWidth: '100%',
-                      aspectRatio: '1',
-                      border: '1.5px dashed #cbd5e1',
-                      borderRadius: embedCompact ? 12 : 14,
-                      background: '#f8fafc',
-                      overflow: 'hidden',
-                      boxSizing: 'border-box',
-                      boxShadow: thumbnailUrl ? '0 8px 20px rgba(17,24,39,0.10)' : 'none',
-                      filter: (thumbnailUploading || thumbnailGenerating) ? 'grayscale(0.35)' : 'none',
-                    }}
-                  >
-                    {thumbnailUrl ? (
-                      <img
-                        src={thumbnailUrl}
-                        alt="Training thumbnail"
-                        onError={(e) => {
-                          console.error('[SetupWizard] Thumbnail failed to render from URL:', thumbnailUrl);
-                          const img = e.currentTarget as HTMLImageElement;
-                          img.style.display = 'none';
-                        }}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: embedCompact ? '0 10px' : '0 18px' }}>
-                        {thumbnailUploading ? (
-                          <Loader2 className="animate-spin" style={{ width: embedCompact ? 18 : 22, height: embedCompact ? 18 : 22, color: HARX, margin: embedCompact ? '0 auto 6px' : '0 auto 10px' }} />
-                        ) : (
-                          <ImagePlus style={{ width: embedCompact ? 22 : 26, height: embedCompact ? 22 : 26, color: '#94a3b8', margin: embedCompact ? '0 auto 6px' : '0 auto 10px' }} strokeWidth={1.5} />
-                        )}
-                        <div style={{ fontSize: embedCompact ? 12 : 13, fontWeight: 700, color: '#0f172a' }}>
-                          {thumbnailUploading ? 'Uploading…' : 'Import or drop image'}
-                        </div>
-                        <div style={{ fontSize: embedCompact ? 11 : 12, color: '#64748b', marginTop: embedCompact ? 4 : 6, lineHeight: 1.35 }}>
-                          PNG, JPG, WEBP
-                        </div>
-                      </div>
-                    )}
-                  </label>
-                </div>
-
-                <div style={{ marginTop: thumbAiBlockMarginTop, width: '100%', display: 'flex', flexDirection: 'column', gap: embedCompact ? 6 : 10 }}>
-                  {thumbnailAiPromptOpen && (
-                    <>
-                      <label htmlFor="thumbnail-ai-prompt" style={{ fontSize: embedCompact ? 11 : 12, fontWeight: 700, color: '#334155' }}>
-                        Describe an AI thumbnail <span style={{ fontWeight: 500, color: '#94a3b8' }}>(optional)</span>
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <textarea
-                          id="thumbnail-ai-prompt"
-                          value={thumbnailPrompt}
-                          onChange={(e) => setThumbnailPrompt(e.target.value)}
-                          placeholder="E.g. modern dashboard mockup, soft gradients, professional training cover…"
-                          rows={thumbTextareaRows}
-                          style={{
-                            width: '100%',
-                            minHeight: thumbTextareaMinH,
-                            resize: 'vertical',
-                            border: '1px solid #dbe2ea',
-                            borderRadius: 10,
-                            padding: embedCompact ? '8px 38px 8px 10px' : '12px 44px 12px 14px',
-                            fontSize: embedCompact ? 12 : 13,
-                            lineHeight: 1.5,
-                            color: '#1e293b',
-                            outline: 'none',
-                            fontFamily: 'inherit',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => void handleGenerateThumbnailWithAI()}
-                          disabled={thumbnailGenerating}
-                          style={{
-                            position: 'absolute',
-                            right: 8,
-                            bottom: 8,
-                            width: 30,
-                            height: 30,
-                            borderRadius: 8,
-                            border: '1px solid #0f172a',
-                            background: '#0f172a',
-                            color: '#fff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: thumbnailGenerating ? 'not-allowed' : 'pointer',
-                            opacity: thumbnailGenerating ? 0.65 : 1,
-                          }}
-                          title={thumbnailGenerating ? 'Generating…' : 'Generate image'}
-                          aria-label="Generate image with AI"
-                        >
-                          {thumbnailGenerating ? (
-                            <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />
-                          ) : (
-                            <Brain style={{ width: 14, height: 14 }} />
-                          )}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      gap: 8,
-                      width: '100%',
-                    }}
-                  >
-                    {thumbnailUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => setThumbnailUrl('')}
-                        style={{
-                          padding: '9px 13px',
-                          borderRadius: 10,
-                          border: '1px solid #e2e8f0',
-                          background: '#fff',
-                          color: '#64748b',
-                          fontSize: 13,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Remove image
-                      </button>
-                    ) : null}
-                    {!thumbnailAiPromptOpen && (
-                      <button
-                        type="button"
-                        onClick={() => setThumbnailAiPromptOpen(true)}
-                        style={{
-                          padding: '9px 16px',
-                          borderRadius: 10,
-                          border: '1px solid #0f172a',
-                          background: '#0f172a',
-                          color: '#fff',
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.18)',
-                        }}
-                      >
-                        Generate with AI
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {isStep6 && (
+          {isCompleteStep && (
             <div
               style={{
                 flex: 1,
@@ -1240,7 +1023,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 boxShadow: isStepValid() ? '0 6px 16px rgba(185,28,28,0.22)' : 'none',
               }}
             >
-              {currentStep === 6 ? 'Start building' : 'Continue'}
+              {currentStep === 5 ? 'Start building' : 'Continue'}
               <ArrowRight style={{ width: 14, height: 14 }} />
             </button>
           </>
