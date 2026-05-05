@@ -1996,7 +1996,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
         {/* File Processing Results */}
         {selectedFile && showFileName && (
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <div className="mt-2 p-2 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center">
                 <FileText className="mr-2 h-4 w-4 text-blue-600" />
@@ -2013,7 +2013,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
               </button>
             </div>
-            <div className="mt-4">
+            <div className="mt-2">
               <div className="relative">
                 <div className="h-4 rounded-full bg-gray-200 overflow-hidden shadow-inner">
                   <div
@@ -2078,24 +2078,24 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               </div>
             )}
             {parsedLeads.length > 0 && !uploadSuccess && !isProcessing && showSaveButton && (
-              <div className="mt-4 space-y-4">
+              <div className="mt-3 space-y-3">
                 {validationResults && (
-                  <div className="bg-gradient-to-r from-harx-50 to-harx-100/50 border border-harx-100 rounded-2xl p-6 shadow-sm">
-                    <h4 className="text-lg font-bold text-harx-900 mb-4 flex items-center tracking-tight">
-                      <Info className="mr-3 h-5 w-5 text-harx-500" />
+                  <div className="bg-gradient-to-r from-harx-50 to-harx-100/50 border border-harx-100 rounded-2xl p-4 shadow-sm">
+                    <h4 className="text-lg font-bold text-harx-900 mb-3 flex items-center tracking-tight">
+                      <Info className="mr-2 h-5 w-5 text-harx-500" />
                       AI Processing Analysis
                     </h4>
-                    <div className="grid grid-cols-2 gap-6 text-base">
-                      <div className="bg-white/60 backdrop-blur-sm p-3 rounded-xl border border-harx-100">
+                    <div className="grid grid-cols-2 gap-4 text-base">
+                      <div className="bg-white/60 backdrop-blur-sm p-2 rounded-xl border border-harx-100">
                         <span className="text-gray-500 font-bold block text-xs uppercase tracking-widest mb-1">Total Found</span> 
                         <span className="text-xl font-black text-gray-900">{validationResults.totalRows}</span>
                       </div>
-                      <div className="bg-white/60 backdrop-blur-sm p-3 rounded-xl border border-harx-100">
+                      <div className="bg-white/60 backdrop-blur-sm p-2 rounded-xl border border-harx-100">
                         <span className="text-emerald-600 font-bold block text-xs uppercase tracking-widest mb-1">Verified</span> 
                         <span className="text-xl font-black text-emerald-700">{validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}</span>
                       </div>
                       {validationResults.invalidRows > 0 && (
-                        <div className="col-span-2 bg-red-50 p-3 rounded-xl border border-red-100">
+                        <div className="col-span-2 bg-red-50 p-2 rounded-xl border border-red-100">
                           <span className="text-red-500 font-bold block text-xs uppercase tracking-widest mb-1">Requiring Attention</span> 
                           <span className="text-xl font-black text-red-700">{validationResults.invalidRows}</span>
                         </div>
@@ -2104,7 +2104,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
                     {validationResults.errors && validationResults.errors.length > 0 && (
-                      <div className="mt-4">
+                      <div className="mt-2">
                         <details className="text-sm group">
                           <summary className="cursor-pointer text-harx-600 hover:text-harx-800 font-bold flex items-center transition-colors duration-300">
                             <span className="bg-harx-100 px-2 py-0.5 rounded-lg mr-2 group-hover:bg-harx-200">View Details</span>
@@ -2125,13 +2125,13 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 )}
 
                 {/* Preview Section */}
-                <div className="bg-white border border-harx-100 rounded-3xl p-6 shadow-lg shadow-harx-500/5">
-                  <div className="flex items-center justify-between mb-6">
+                <div className="bg-white border border-harx-100 rounded-2xl p-4 shadow-lg shadow-harx-500/5">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-xl bg-harx-50 flex items-center justify-center mr-3">
-                        <CheckCircle className="h-5 w-5 text-harx-500" />
+                      <div className="w-8 h-8 rounded-lg bg-harx-50 flex items-center justify-center mr-2">
+                        <CheckCircle className="h-4 w-4 text-harx-500" />
                       </div>
-                      <h4 className="text-xl font-bold text-gray-900 tracking-tight">
+                      <h4 className="text-lg font-bold text-gray-900 tracking-tight">
                         Confirm & Edit Leads <span className="text-harx-500 ml-1">({parsedLeads.length})</span>
                       </h4>
                       {dataTooLarge && (
@@ -2156,27 +2156,27 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   </div>
                   {showLeadsPreview && (
                     <>
-                      <p className="text-sm text-gray-500 mb-6 font-medium leading-relaxed">Review and edit your leads before saving. Click the edit icon to modify any field to ensure data integrity.</p>
+                      <p className="text-sm text-gray-500 mb-3 font-medium leading-relaxed">Review and edit your leads before saving. Click the edit icon to modify any field to ensure data integrity.</p>
                       <div className="max-h-96 overflow-y-auto pr-2 custom-scrollbar">
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {(parsedLeads || []).map((lead: any, index: number) => lead && (
-                            <div key={lead._id || `parsed-${index}`} className="bg-gray-50/80 rounded-2xl p-4 border border-gray-100 hover:border-harx-200 hover:bg-white transition-all duration-300 group">
-                              <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center space-x-4">
-                                  <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:border-harx-100">
-                                    <span className="text-sm font-black text-harx-600">{index + 1}</span>
+                            <div key={lead._id || `parsed-${index}`} className="bg-gray-50/80 rounded-xl p-3 border border-gray-100 hover:border-harx-200 hover:bg-white transition-all duration-300 group">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-8 h-8 bg-white rounded-lg shadow-sm border border-gray-100 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:border-harx-100">
+                                    <span className="text-xs font-black text-harx-600">{index + 1}</span>
                                   </div>
-                                  <span className="text-base font-bold text-gray-900 group-hover:text-harx-700 transition-colors duration-300">
+                                  <span className="text-sm font-bold text-gray-900 group-hover:text-harx-700 transition-colors duration-300">
                                     {lead.Deal_Name || 'Unnamed Lead'}
                                   </span>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <button
                                     onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
-                                    className="p-2.5 rounded-xl bg-white border border-gray-100 text-gray-400 hover:text-harx-600 hover:border-harx-200 hover:shadow-md transition-all duration-300"
+                                    className="p-2 rounded-lg bg-white border border-gray-100 text-gray-400 hover:text-harx-600 hover:border-harx-200 hover:shadow-md transition-all duration-300"
                                     title="Edit lead"
                                   >
-                                    <Edit className="h-4.5 w-4.5" />
+                                    <Edit className="h-4 w-4" />
                                   </button>
                                   <button
                                     onClick={() => {
@@ -2184,10 +2184,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                       newLeads.splice(index, 1);
                                       setParsedLeads(newLeads);
                                     }}
-                                    className="p-2.5 rounded-xl bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:border-red-100 hover:shadow-md transition-all duration-300"
+                                    className="p-2 rounded-lg bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:border-red-100 hover:shadow-md transition-all duration-300"
                                     title="Delete lead"
                                   >
-                                    <Trash2 className="h-4.5 w-4.5" />
+                                    <Trash2 className="h-4 w-4" />
                                   </button>
                                 </div>
                               </div>
@@ -2202,79 +2202,79 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                       value={lead.First_Name || ''}
                                       onChange={(e) => handleEditLead(index, 'First_Name', e.target.value)}
                                       placeholder="Enter first name"
-                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
+                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Last Name</label>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1">Last Name</label>
                                     <input
                                       type="text"
                                       value={lead.Last_Name || ''}
                                       onChange={(e) => handleEditLead(index, 'Last_Name', e.target.value)}
                                       placeholder="Enter last name"
-                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
+                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Email</label>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1">Email</label>
                                     <input
                                       type="email"
                                       value={lead.Email_1 || ''}
                                       onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
                                       placeholder="Enter email address"
-                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
+                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Phone</label>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1">Phone</label>
                                     <input
                                       type="tel"
                                       value={lead.Phone || ''}
                                       onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
                                       placeholder="Enter phone number"
-                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
+                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Address</label>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
                                     <input
                                       type="text"
                                       value={lead.Address || ''}
                                       onChange={(e) => handleEditLead(index, 'Address', e.target.value)}
                                       placeholder="Enter address"
-                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
+                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
-                                  <div className="grid grid-cols-2 gap-4">
+                                  <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                      <label className="block text-sm font-bold text-gray-700 mb-2">Postal Code</label>
+                                      <label className="block text-xs font-bold text-gray-700 mb-1">Postal Code</label>
                                       <input
                                         type="text"
                                         value={lead.Postal_Code || ''}
                                         onChange={(e) => handleEditLead(index, 'Postal_Code', e.target.value)}
                                         placeholder="Zip code"
-                                        className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
+                                        className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                       />
                                     </div>
                                     <div>
-                                      <label className="block text-sm font-bold text-gray-700 mb-2">City</label>
+                                      <label className="block text-xs font-bold text-gray-700 mb-1">City</label>
                                       <input
                                         type="text"
                                         value={lead.City || ''}
                                         onChange={(e) => handleEditLead(index, 'City', e.target.value)}
                                         placeholder="City"
-                                        className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
+                                        className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                       />
                                     </div>
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Date of Birth</label>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1">Date of Birth</label>
                                     <input
                                       type="text"
                                       value={lead.Date_of_Birth || ''}
                                       onChange={(e) => handleEditLead(index, 'Date_of_Birth', e.target.value)}
                                       placeholder="DD/MM/YYYY"
-                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
+                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
 
@@ -2333,12 +2333,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 </div>
 
                 <button
-                  className="w-full rounded-2xl bg-gradient-harx p-5 text-white font-black text-lg hover:brightness-110 disabled:opacity-50 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-harx-500/30 flex items-center justify-center group"
+                  className="w-full rounded-xl bg-gradient-harx p-3 text-white font-black text-base hover:brightness-110 disabled:opacity-50 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-harx-500/30 flex items-center justify-center group"
                   onClick={handleSaveLeads}
                   disabled={isSavingLeads}
                 >
                   <div className="flex items-center justify-center">
-                    <UserPlus className="mr-3 h-6 w-6 transition-transform duration-300 group-hover:rotate-12" />
+                    <UserPlus className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
                     Save {parsedLeads.length} Contacts to Database
                   </div>
                 </button>
@@ -2369,20 +2369,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         </div>
                       </div>
                     </div>
-
-                    <button
-                      className="w-full rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-3 text-white font-bold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                      disabled
-                    >
-                      <div className="flex items-center justify-center">
-                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                        Saving {savedLeadsCount}/{parsedLeads.length} Contacts...
-                      </div>
-                    </button>
                   </div>
                 )}
-
-
               </div>
             )}
           </div>
@@ -2390,22 +2378,21 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Channel Filter */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-          <Globe className="mr-2 h-5 w-5 text-blue-600" />
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
+        <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center tracking-tight">
+          <Globe className="mr-2 h-5 w-5 text-harx-500" />
           Channel Filter
         </h3>
         <div className="flex flex-wrap gap-2">
           {channels.map((channel) => {
             const Icon = channel.icon;
             const isSelected = selectedChannels.includes(channel.id);
-
             return (
               <button
                 key={channel.id}
-                className={`flex items-center space-x-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${isSelected
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                className={`flex items-center space-x-2 rounded-full px-3 py-1.5 text-sm font-bold transition-all duration-200 transform hover:scale-105 ${isSelected
+                  ? 'bg-gradient-harx text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
                   }`}
                 onClick={() => toggleChannel(channel.id)}
               >
@@ -2418,66 +2405,66 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Contact List */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100">
-        <div className="border-b border-gray-200 p-4">
-          <div className="flex items-center justify-between">
+      <div className="bg-white rounded-xl shadow-md border border-gray-100">
+        <div className="border-b border-gray-200 p-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                <FileText className="mr-2 h-5 w-5 text-blue-600" />
+              <h3 className="text-lg font-bold text-gray-900 flex items-center tracking-tight">
+                <FileText className="mr-2 h-5 w-5 text-harx-500" />
                 Leads List
               </h3>
-              <div className="mt-2">
+              <div className="mt-1">
                 {selectedGigId ? (
-                  <div className="text-sm text-gray-600">
+                  <div className="text-xs text-gray-600">
                     {parsedLeads.length > 0 ? (
-                      <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                      <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">
                         {isSavingLeads
                           ? `Saving ${savedLeadsCount}/${parsedLeads.length + savedLeadsCount} contacts...`
                           : `${parsedLeads.length} leads ready to save`}
                       </span>
                     ) : leads.length > 0 ? (
-                      <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
+                      <span className="bg-harx-50 text-harx-700 px-2 py-0.5 rounded-full font-bold">
                         Showing {filteredLeads.length} of {totalCount} leads {searchQuery && `(filtered by "${searchQuery}")`}
                       </span>
                     ) : (
-                      <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
+                      <span className="bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full font-bold">
                         No leads found
                       </span>
                     )}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">Please select a gig to view leads</p>
+                  <p className="text-xs text-gray-500">Please select a gig to view leads</p>
                 )}
               </div>
             </div>
             <div className="flex items-center space-x-2">
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Search className="h-5 w-5 text-gray-400" />
+                  <Search className="h-4 w-4 text-gray-400" />
                 </div>
                 <input
                   type="text"
-                  className="block w-full rounded-lg border-gray-300 pl-10 focus:border-blue-600 focus:ring-blue-600 sm:text-sm shadow-sm"
+                  className="block w-full rounded-xl border-gray-200 pl-9 py-1.5 focus:border-harx-500 focus:ring-harx-500 text-sm shadow-sm"
                   placeholder="Search leads..."
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                 />
               </div>
               <select
-                className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-600 focus:outline-none focus:ring-blue-600 sm:text-sm shadow-sm"
+                className="rounded-xl border-gray-200 py-1.5 pl-3 pr-8 text-sm focus:border-harx-500 focus:outline-none focus:ring-harx-500 shadow-sm"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <option value="all">All Status</option>
-                <option value="active">Active (Not Closed)</option>
-                <option value="inactive">Inactive (Closed)</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
               </select>
               <button
                 onClick={() => {
                   setSearchQuery('');
                   fetchLeads(1);
                 }}
-                className="flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105"
+                className="flex items-center rounded-xl bg-gradient-harx px-3 py-1.5 text-sm font-bold text-white shadow-md hover:brightness-110 transition-all duration-200 transform hover:scale-105"
                 disabled={isLoadingLeads || !selectedGigId}
               >
                 {isLoadingLeads ? (
@@ -2499,28 +2486,28 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         <div>
           <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
             <div className="relative">
-              <table className="w-full table-fixed divide-y divide-gray-200">
+              <table className="w-full table-fixed divide-y divide-gray-100">
                 <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm text-center">
                   <tr>
-                    <th scope="col" className="w-[10%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
+                    <th scope="col" className="w-[10%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
                       Nom
                     </th>
-                    <th scope="col" className="w-[10%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
+                    <th scope="col" className="w-[10%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
                       Prénom
                     </th>
-                    <th scope="col" className="w-[22%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
+                    <th scope="col" className="w-[22%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
                       Email
                     </th>
-                    <th scope="col" className="w-[22%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
+                    <th scope="col" className="w-[22%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
                       Adresse
                     </th>
-                    <th scope="col" className="w-[14%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
+                    <th scope="col" className="w-[14%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
                       Ville
                     </th>
-                    <th scope="col" className="w-[10%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
+                    <th scope="col" className="w-[10%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
                       Code Postal
                     </th>
-                    <th scope="col" className="w-[12%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
+                    <th scope="col" className="w-[12%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
                       Mobile
                     </th>
                   </tr>
@@ -2536,59 +2523,59 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     <tr>
                       <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex items-center justify-center py-8">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-harx-500 mr-3"></div>
                           Loading leads...
                         </div>
                       </td>
                     </tr>
                   ) : (filteredLeads && filteredLeads.length > 0) ? (
                     filteredLeads.map((lead, index) => lead && (
-                      <tr key={lead._id || `filtered-${index}`} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
-                        <td className="px-2 py-4 text-sm text-gray-900 border-r border-gray-100 truncate max-w-0">
+                      <tr key={lead._id || `filtered-${index}`} className={`hover:bg-harx-50/30 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-amber-400' : ''}`}>
+                        <td className="px-2 py-2 text-xs font-bold text-gray-900 border-r border-gray-100 truncate max-w-0">
                           {lead.Last_Name || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm text-gray-900 border-r border-gray-100 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs font-bold text-gray-900 border-r border-gray-100 truncate max-w-0">
                           {lead.First_Name || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm italic text-blue-600 border-r border-gray-100 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs italic font-bold text-harx-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Email_1 || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Address || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.City || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Postal_Code || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm font-semibold text-gray-900 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs font-black text-gray-900 truncate max-w-0">
                           {lead.Phone || '-'}
                         </td>
                       </tr>
                     ))
                   ) : (realtimeLeads && realtimeLeads.length > 0) ? (
                     realtimeLeads.map((lead, index) => lead && (
-                      <tr key={lead._id || `realtime-${index}`} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                        <td className="px-2 py-4 text-sm text-gray-900 border-r border-gray-100 truncate max-w-0">
+                      <tr key={lead._id || `realtime-${index}`} className={`hover:bg-harx-50/30 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+                        <td className="px-2 py-2 text-xs font-bold text-gray-900 border-r border-gray-100 truncate max-w-0">
                           {lead.Last_Name || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm text-gray-900 border-r border-gray-100 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs font-bold text-gray-900 border-r border-gray-100 truncate max-w-0">
                           {lead.First_Name || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm italic text-blue-600 border-r border-gray-100 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs italic font-bold text-harx-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Email_1 || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Address || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.City || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Postal_Code || '-'}
                         </td>
-                        <td className="px-2 py-4 text-sm font-semibold text-gray-900 truncate max-w-0">
+                        <td className="px-2 py-2 text-xs font-black text-gray-900 truncate max-w-0">
                           {lead.Phone || '-'}
                         </td>
                       </tr>
@@ -2611,44 +2598,38 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         </div>
         {/* Pagination Controls */}
         {(filteredLeads.length > 0 || realtimeLeads.length > 0) && (
-          <div className="bg-white px-4 py-3 border-t border-gray-200">
+          <div className="bg-white px-4 py-2 border-t border-gray-100">
             <div className="flex items-center justify-between">
-              <div className="flex items-center text-sm text-gray-700">
+              <div className="flex items-center text-xs font-bold text-gray-500">
                 <span>
                   {searchQuery ? (
-                    // Mode recherche : afficher tous les résultats
                     <>
-                      Showing <span className="font-medium">{filteredLeads.length}</span> results for "{searchQuery}"
+                      <span className="font-black">{filteredLeads.length}</span> results for "{searchQuery}"
                     </>
                   ) : (
-                    // Mode normal : afficher avec pagination
                     <>
-                      Showing <span className="font-medium">{filteredLeads.length > 0 ? filteredLeads.length : realtimeLeads.length}</span> of{' '}
-                      <span className="font-medium">{totalCount > 0 ? totalCount : realtimeLeads.length}</span> leads
+                      <span className="font-black">{filteredLeads.length > 0 ? filteredLeads.length : realtimeLeads.length}</span> of{' '}
+                      <span className="font-black">{totalCount > 0 ? totalCount : realtimeLeads.length}</span> leads
                     </>
                   )}
                 </span>
               </div>
-
-              {/* Pagination Buttons - seulement si pas en mode recherche */}
               {!searchQuery && totalPages > 1 && (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1.5">
                   <button
                     onClick={() => fetchLeads(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative inline-flex items-center px-2 py-1 text-xs font-bold text-gray-600 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-50"
                   >
-                    Previous
+                    Prev
                   </button>
-
                   <div className="flex items-center space-x-1">
                     {renderPaginationButtons()}
                   </div>
-
                   <button
                     onClick={() => fetchLeads(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative inline-flex items-center px-2 py-1 text-xs font-bold text-gray-600 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-50"
                   >
                     Next
                   </button>
@@ -2661,23 +2642,23 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       {/* Ajout d'une section pour afficher les leads en temps réel */}
       {realtimeLeads.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
-          <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center">
-            <RefreshCw className="mr-2 h-5 w-5 text-blue-600 animate-spin" />
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
+          <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center">
+            <RefreshCw className="mr-2 h-5 w-5 text-harx-500 animate-spin" />
             Leads en temps réel
           </h3>
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 mb-3">
-            <p className="text-sm font-medium text-blue-700">
-              Nombre de leads reçus: <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">{realtimeLeads.length}</span>
+          <div className="bg-gradient-to-r from-harx-50 to-harx-100 border border-harx-100 rounded-lg p-2 mb-2">
+            <p className="text-xs font-bold text-harx-700">
+              Nombre de leads reçus: <span className="bg-white text-harx-800 px-2 py-0.5 rounded-full text-xs font-black">{realtimeLeads.length}</span>
             </p>
           </div>
-          <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
-            <div className="min-w-full divide-y divide-gray-200">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
-                <div className="grid grid-cols-3 px-6 py-3">
-                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
-                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
-                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Lead</div>
+          <div className="max-h-48 overflow-y-auto border border-gray-100 rounded-lg">
+            <div className="min-w-full divide-y divide-gray-100">
+              <div className="bg-gradient-to-r from-harx-50 to-harx-100 sticky top-0">
+                <div className="grid grid-cols-3 px-4 py-2">
+                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">Email</div>
+                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">Téléphone</div>
+                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">Lead</div>
                 </div>
               </div>
               <div className="bg-white divide-y divide-gray-100">
@@ -2696,32 +2677,31 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       {/* Import Choice Modal */}
       {showImportChoiceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="relative w-full max-w-md transform rounded-lg bg-white p-6 text-left shadow-xl transition-all">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-sm transform rounded-2xl bg-white p-6 text-left shadow-2xl transition-all border border-harx-100">
             <div className="absolute right-4 top-4">
               <button
                 onClick={handleCancelModal}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-harx-500 transition-colors"
               >
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5" />
               </button>
             </div>
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                <Cloud className="h-6 w-6 text-blue-700" />
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-harx-50">
+                <Cloud className="h-6 w-6 text-harx-500" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                Choose your import method
+              <h3 className="mb-2 text-xl font-black text-gray-900 tracking-tight">
+                Import Method
               </h3>
-              <p className="mb-6 text-sm text-gray-600">
-                You can import your leads using <b>Zoho CRM</b> or by uploading an <b>Excel/CSV file</b>.<br />
-                Click Next to continue.
+              <p className="mb-6 text-sm text-gray-600 font-medium">
+                Sync with <b>Zoho CRM</b> or upload an <b>Excel/CSV</b> file.
               </p>
             </div>
-            <div className="mt-6 flex justify-between space-x-3">
+            <div className="mt-6 flex justify-between gap-3">
               <button
                 onClick={handleCancelModal}
-                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 rounded-xl border-2 border-gray-100 bg-white px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all"
               >
                 Cancel
               </button>
@@ -2730,7 +2710,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   localStorage.setItem('hasSeenImportChoiceModal', 'true');
                   setShowImportChoiceModal(false);
                 }}
-                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="flex-1 rounded-xl bg-gradient-harx px-4 py-2 text-sm font-black text-white hover:brightness-110 shadow-lg shadow-harx-500/20 transition-all"
               >
                 Next
               </button>
@@ -2742,5 +2722,4 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   );
 });
 
-// cooment
 export default UploadContacts;
