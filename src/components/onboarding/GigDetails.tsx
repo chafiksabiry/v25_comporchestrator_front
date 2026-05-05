@@ -357,9 +357,9 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
           <p className="text-gray-500 font-medium">Initialize your first gig to start the matching process.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="h-[calc(100vh-320px)] flex flex-col overflow-hidden min-h-[400px]">
           {/* Header Row */}
-          <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-gray-900 rounded-2xl text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shadow-xl italic">
+          <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-gray-900 rounded-2xl text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shadow-xl italic shrink-0">
             <div className="col-span-1">Status</div>
             <div className="col-span-6 pl-4 border-l border-white/10">Gig & Category</div>
             <div className="col-span-2 pl-4 border-l border-white/10">Commitment</div>
@@ -367,7 +367,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
           </div>
 
           {/* List Items */}
-          <div className="space-y-3">
+          <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 mt-4 space-y-3 min-h-0">
             {gigs.map((gig) => {
               const statusColors = getStatusColor(gig.status);
 

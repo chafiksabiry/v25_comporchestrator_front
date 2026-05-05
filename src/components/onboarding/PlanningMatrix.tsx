@@ -167,9 +167,9 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
     };
 
     return (
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden h-[calc(100vh-280px)] flex flex-col min-h-[400px]">
             {/* Header */}
-            <div className="bg-gradient-harx px-3 py-2 flex items-center justify-between">
+            <div className="bg-gradient-harx px-3 py-2 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4 text-white">
                     <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl">
                         <Calendar className="w-5 h-5" />
@@ -204,9 +204,9 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             </div>
 
             {/* Matrix Table */}
-            <div className="overflow-x-auto p-1">
+            <div className="flex-1 overflow-y-auto scrollbar-auto p-1 min-h-0">
                 <table className="w-full border-collapse">
-                    <thead>
+                    <thead className="sticky top-0 z-10 bg-white">
                         <tr>
                             <th className="p-1.5 text-left text-gray-400 font-semibold text-[10px] border-b border-gray-100 w-16">Time</th>
                             {DAYS.map(day => {
