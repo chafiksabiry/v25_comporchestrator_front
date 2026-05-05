@@ -90,7 +90,7 @@ export default function CallsDashboardPage() {
         </div>
       </div>
 
-      <div className="bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-320px)] flex flex-col overflow-hidden min-h-[400px]">
+      <div className="bg-white/40 backdrop-blur-xl rounded-3xl border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-320px)] flex flex-col overflow-hidden min-h-[400px]">
         <div className="flex-1 overflow-y-auto scrollbar-auto min-h-0">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 z-10 bg-slate-50/80 backdrop-blur-sm">

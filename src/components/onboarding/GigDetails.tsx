@@ -322,7 +322,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
   return (
     <div className="w-full py-2 space-y-4 animate-in fade-in duration-500">
       {/* Header Area - Branded Gradient */}
-      <div className="relative overflow-hidden rounded-[40px] bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex items-center justify-between font-black">
           <div className="space-y-1.5">
             <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Gig Details</h1>
@@ -357,9 +357,9 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
           <p className="text-gray-500 font-medium">Initialize your first gig to start the matching process.</p>
         </div>
       ) : (
-        <div className="h-[calc(100vh-320px)] flex flex-col overflow-hidden min-h-[400px]">
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden h-[calc(100vh-280px)] flex flex-col min-h-[400px]">
           {/* Header Row */}
-          <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-gray-900 rounded-[40px] text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shadow-xl italic shrink-0">
+          <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-gray-900 rounded-t-3xl text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shadow-xl italic shrink-0">
             <div className="col-span-1">Status</div>
             <div className="col-span-6 pl-4 border-l border-white/10">Gig & Category</div>
             <div className="col-span-2 pl-4 border-l border-white/10">Commitment</div>
