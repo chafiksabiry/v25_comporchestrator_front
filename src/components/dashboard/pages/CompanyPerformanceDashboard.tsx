@@ -55,6 +55,7 @@ interface PerformanceStats {
     callsOver90s: number;
     answeringMachineCalls: number;
     callsByStatus: Record<string, number>;
+    registeredReps: number;
 }
 
 export function CompanyPerformanceDashboard() {
@@ -69,7 +70,8 @@ export function CompanyPerformanceDashboard() {
         validNumbers: 0,
         callsOver90s: 0,
         answeringMachineCalls: 0,
-        callsByStatus: {}
+        callsByStatus: {},
+        registeredReps: 0
     });
     const [callsList, setCallsList] = useState<any[]>([]);
 
@@ -119,7 +121,7 @@ export function CompanyPerformanceDashboard() {
 
                     allCalls.forEach((call: any) => {
                         // Status breakdown
-                        const status = call.status || 'Unknown';
+                        const status = call.status || 'Inconnu';
                         statusCount[status] = (statusCount[status] || 0) + 1;
 
                         // Contacted (successful calls)
@@ -150,9 +152,26 @@ export function CompanyPerformanceDashboard() {
                         validNumbers: valid,
                         callsOver90s: over90s,
                         answeringMachineCalls: machines,
-                        callsByStatus: statusCount
+                        callsByStatus: statusCount,
+                        registeredReps: 0 // Will be updated below
                     });
                 }
+
+                // 4. Fetch Active Agents
+                const agentsData = await getActiveAgentsForCompany(companyId);
+                const agentsArray = Array.isArray(agentsData) ? agentsData : [];
+                
+                // If a specific gig is selected, filter agents by that gig
+                let filteredAgents = agentsArray;
+                if (selectedGig !== 'all') {
+                    filteredAgents = agentsArray.filter(agent => agent.gigId === selectedGig);
+                }
+
+                setStats(prev => ({
+                    ...prev,
+                    registeredReps: filteredAgents.length
+                }));
+
             } catch (error) {
                 console.error("Error fetching performance data:", error);
             } finally {
@@ -177,7 +196,7 @@ export function CompanyPerformanceDashboard() {
             const date = new Date(call.createdAt || call.date);
             let key = '';
             if (timeRange === 'daily') key = date.toLocaleDateString('fr-FR', { weekday: 'short' });
-            else if (timeRange === 'weekly') key = `Week ${Math.ceil(date.getDate() / 7)}`;
+            else if (timeRange === 'weekly') key = `Semaine ${Math.ceil(date.getDate() / 7)}`;
             else if (timeRange === 'monthly') key = date.toLocaleDateString('fr-FR', { month: 'short' });
             else key = date.getFullYear().toString();
 
@@ -191,16 +210,16 @@ export function CompanyPerformanceDashboard() {
         const contactsData = labels.map(l => groups[l].contacts);
 
         return {
-            labels: labels.length > 0 ? labels : ['No Data'],
+            labels: labels.length > 0 ? labels : ['Aucune Donnée'],
             datasets: [
                 {
-                    label: 'Number of Calls',
+                    label: "Nombre d'Appels",
                     data: callsData.length > 0 ? callsData : [0],
                     backgroundColor: 'rgba(255, 77, 77, 0.8)',
                     borderRadius: 8,
                 },
                 {
-                    label: 'Leads Contacted',
+                    label: 'Leads Contactés',
                     data: contactsData.length > 0 ? contactsData : [0],
                     backgroundColor: 'rgba(15, 23, 42, 0.8)',
                     borderRadius: 8,
@@ -267,8 +286,8 @@ export function CompanyPerformanceDashboard() {
                             <BarChart3 className="w-8 h-8 text-harx-500" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Company Analytics</h1>
-                            <p className="text-slate-500 font-medium">Performance monitoring & call metrics</p>
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Analyses Entreprise</h1>
+                            <p className="text-slate-500 font-medium">Suivi de performance & métriques d'appels</p>
                         </div>
                     </div>
                 </div>
@@ -281,7 +300,7 @@ export function CompanyPerformanceDashboard() {
                             onChange={(e) => setSelectedGig(e.target.value)}
                             className="appearance-none bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 pr-12 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 transition-all cursor-pointer shadow-sm hover:bg-white"
                         >
-                            <option value="all">All Gigs</option>
+                            <option value="all">Tous les Gigs</option>
                             {gigs.map(gig => (
                                 <option key={gig._id} value={gig._id}>{gig.title}</option>
                             ))}
@@ -291,55 +310,67 @@ export function CompanyPerformanceDashboard() {
 
                     {/* Time Range Selector */}
                     <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shadow-sm">
-                        {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((range) => (
-                            <button
-                                key={range}
-                                onClick={() => setTimeRange(range)}
-                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                                    timeRange === range 
-                                    ? 'bg-white text-harx-500 shadow-md ring-1 ring-black/5' 
-                                    : 'text-slate-400 hover:text-slate-600'
-                                }`}
-                            >
-                                {range}
-                            </button>
-                        ))}
+                        {(['Quotidien', 'Hebdomadaire', 'Mensuel', 'Annuel'] as const).map((label, idx) => {
+                            const ranges = ['daily', 'weekly', 'monthly', 'yearly'] as const;
+                            const range = ranges[idx];
+                            return (
+                                <button
+                                    key={range}
+                                    onClick={() => setTimeRange(range)}
+                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                                        timeRange === range 
+                                        ? 'bg-white text-harx-500 shadow-md ring-1 ring-black/5' 
+                                        : 'text-slate-400 hover:text-slate-600'
+                                    }`}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
 
             {/* Top KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                <MetricCard 
+                    title="REPS Inscrits" 
+                    value={stats.registeredReps.toLocaleString()} 
+                    icon={<Briefcase className="w-6 h-6" />}
+                    color="purple"
+                    trend="Reps affectés au(x) Gig(s)"
+                    isPositive={true}
+                />
                 <MetricCard 
                     title="Total Leads" 
                     value={stats.totalLeads.toLocaleString()} 
                     icon={<Users className="w-6 h-6" />}
                     color="blue"
-                    trend="+12% vs last month"
+                    trend="+12% vs mois dernier"
                     isPositive={true}
                 />
                 <MetricCard 
-                    title="Total Calls" 
+                    title="Total Appels" 
                     value={stats.totalCalls.toLocaleString()} 
                     icon={<Phone className="w-6 h-6" />}
                     color="harx"
-                    trend="+8% vs last month"
+                    trend="+8% vs mois dernier"
                     isPositive={true}
                 />
                 <MetricCard 
-                    title="Contacted Leads" 
+                    title="Leads Contactés" 
                     value={stats.contactedLeads.toLocaleString()} 
                     icon={<Target className="w-6 h-6" />}
                     color="emerald"
-                    trend="+15% vs last month"
+                    trend="+15% vs mois dernier"
                     isPositive={true}
                 />
                 <MetricCard 
-                    title="Valid Numbers" 
+                    title="Numéros Valides" 
                     value={stats.validNumbers.toLocaleString()} 
                     icon={<CheckCircle2 className="w-6 h-6" />}
                     color="amber"
-                    trend="+5% vs last month"
+                    trend="+5% vs mois dernier"
                     isPositive={true}
                 />
             </div>
@@ -347,26 +378,26 @@ export function CompanyPerformanceDashboard() {
             {/* Performance Ratios */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <RatioCard 
-                    title="Coverage Rate" 
-                    subtitle="Leads Contacted / Total Leads"
+                    title="Taux de Couverture" 
+                    subtitle="Leads Contactés / Total Leads"
                     value={coverageRate} 
                     color="harx"
                 />
                 <RatioCard 
-                    title="Reachability Rate" 
-                    subtitle="Valid Numbers / Total Calls"
+                    title="Taux de Joignabilité" 
+                    subtitle="Numéros Valides / Total Appels"
                     value={reachabilityRate} 
                     color="emerald"
                 />
                 <RatioCard 
-                    title="Argumentation Rate" 
-                    subtitle="Calls > 1min30 / Contacted Leads"
+                    title="Taux d'Argumentation" 
+                    subtitle="Appels > 1min30 / Leads Joints"
                     value={argumentationRate} 
                     color="blue"
                 />
                 <RatioCard 
-                    title="Answering Machine Rate" 
-                    subtitle="Machine Calls / Total Calls"
+                    title="Taux de Répondeur" 
+                    subtitle="Appels Répondeur / Total Appels"
                     value={machineRate} 
                     color="amber"
                 />
@@ -378,12 +409,12 @@ export function CompanyPerformanceDashboard() {
                 <div className="lg:col-span-2 bg-white p-8 rounded-3xl shadow-xl border border-slate-100 flex flex-col">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Call Volume Activity</h3>
-                            <p className="text-slate-500 text-sm font-medium italic">Tracking calls vs successful contacts</p>
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Activité du Volume d'Appels</h3>
+                            <p className="text-slate-500 text-sm font-medium italic">Suivi des appels vs contacts réussis</p>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-200">
                             <Clock className="w-4 h-4 text-slate-400" />
-                            <span className="text-[10px] font-black text-slate-500 uppercase">Live Data</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase">Données Directes</span>
                         </div>
                     </div>
                     <div className="flex-1 min-h-[350px]">
@@ -394,8 +425,8 @@ export function CompanyPerformanceDashboard() {
                 {/* Status Breakdown */}
                 <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 flex flex-col">
                     <div className="mb-8">
-                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Call Status Breakdown</h3>
-                        <p className="text-slate-500 text-sm font-medium italic">Distribution by outcome</p>
+                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Répartition des Statuts d'Appel</h3>
+                        <p className="text-slate-500 text-sm font-medium italic">Distribution par résultat</p>
                     </div>
                     <div className="flex-1 flex flex-col items-center justify-center">
                         <div className="w-full max-w-[280px] mb-8">
@@ -425,12 +456,13 @@ export function CompanyPerformanceDashboard() {
     );
 }
 
-function MetricCard({ title, value, icon, color, trend, isPositive }: { title: string, value: string, icon: React.ReactNode, color: 'harx' | 'blue' | 'emerald' | 'amber', trend: string, isPositive: boolean }) {
+function MetricCard({ title, value, icon, color, trend, isPositive }: { title: string, value: string, icon: React.ReactNode, color: 'harx' | 'blue' | 'emerald' | 'amber' | 'purple', trend: string, isPositive: boolean }) {
     const colorClasses = {
         harx: 'bg-harx-500/10 text-harx-500 ring-harx-500/20',
         blue: 'bg-blue-500/10 text-blue-500 ring-blue-500/20',
         emerald: 'bg-emerald-500/10 text-emerald-500 ring-emerald-500/20',
-        amber: 'bg-amber-500/10 text-amber-500 ring-amber-500/20'
+        amber: 'bg-amber-500/10 text-amber-500 ring-amber-500/20',
+        purple: 'bg-purple-500/10 text-purple-500 ring-purple-500/20'
     };
 
     return (
