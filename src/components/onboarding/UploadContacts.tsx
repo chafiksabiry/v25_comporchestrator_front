@@ -1694,7 +1694,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
   return (
-    <div className="w-full min-h-screen flex flex-col py-1 space-y-3 animate-in fade-in duration-500">
+    <div className="w-full py-1 space-y-3 animate-in fade-in duration-500">
       {/* Header Area - Branded Gradient */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-4 mb-2 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -2405,8 +2405,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Contact List */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-100 flex-1 flex flex-col">
-        <div className="border-b border-gray-200 p-3">
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 h-[calc(100vh-250px)] flex flex-col overflow-hidden">
+        <div className="border-b border-gray-200 p-3 flex-shrink-0">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-bold text-gray-900 flex items-center tracking-tight">
@@ -2483,8 +2483,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           </div>
         </div>
         {/* Tableau d'affichage des leads */}
-        <div className="flex-1 flex flex-col min-h-[600px]">
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 h-[calc(100vh-300px)]">
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
             <div className="relative">
               <table className="w-full table-fixed divide-y divide-gray-100">
                 <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm text-center">
@@ -2598,7 +2598,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         </div>
         {/* Pagination Controls */}
         {(filteredLeads.length > 0 || realtimeLeads.length > 0) && (
-          <div className="bg-white px-4 py-2 border-t border-gray-100">
+          <div className="bg-white px-4 py-2 border-t border-gray-100 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center text-xs font-bold text-gray-500">
                 <span>
