@@ -5,6 +5,7 @@ import apiClient from '../api/knowledgeClient';
 import ScriptListPanel from './script-generator/ScriptListPanel';
 import ScriptChatPanel from './script-generator/ScriptChatPanel';
 import ScriptViewPage from './script-generator/ScriptViewPage';
+import { InteractiveScriptCockpit } from './script-generator/InteractiveScriptCockpit';
 
 interface Gig {
   _id: string;
@@ -218,7 +219,8 @@ const ScriptGenerator: React.FC = () => {
   const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
-  const [currentView, setCurrentView] = useState<'list' | 'view' | 'chat'>('list');
+  const [currentView, setCurrentView] = useState<'list' | 'view' | 'chat' | 'cockpit'>('list');
+  const [cockpitData, setCockpitData] = useState<{ title: string, phases: any[] } | null>(null);
   const [editModal, setEditModal] = useState<EditModalState>({
     open: false,
     mode: 'manual',
@@ -594,39 +596,68 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
-  const handleGenerateScript = async () => {
+  const handleGenerateScript = async (customPrompt?: string) => {
     if (!selectedGigSummary) return;
-    setCurrentView('chat');
 
-    const autoPrompt = [
-      'You are generating a structured sales call script.',
-      'CRITICAL REQUIREMENTS:',
-      '1. CONTEXT: This is a TELE-SALES call (Télévente). The agent is a salesperson, NOT a recruiter. DO NOT mention job opportunities or interviews.',
-      '2. The script MUST be written in the same language as the Gig Details provided below (e.g., if the gig is in French, generate in French).',
-      '3. The script MUST include ALL of the following 8 steps in this EXACT order:',
-      '   - "Context & Preparation"',
-      '   - "SBAM & Opening"',
-      '   - "Legal & Compliance"',
-      '   - "Need Discovery"',
-      '   - "Value Proposition"',
-      '   - "Documents/Quote"',
-      '   - "Objection Handling"',
-      '   - "Confirmation & Closing"',
-      '2. Each step MUST have at least one dialogue exchange.',
-      'DIALOGUE STRUCTURE:',
-      '1. Each line MUST start with the step name in brackets followed by the role, exactly like this:',
-      '   - [Step Name] Agent: ...',
-      '   - [Step Name] Lead: ...',
-      '',
-      'Context:',
+    const cockpitPrompt = [
+      customPrompt || 'Générer un script de vente dynamique et interactif sous forme de phases structurées.',
+      'Le script doit être un outil que le commercial utilise en temps réel.',
+      'Structure suggérée : 1. Ouverture, 2. Brise-glace, 3. Découverte, 4. Argumentation, 5. Closing, 6. Conclusion.',
+      'Inclure des éléments de conformité réglementaire (DDA/ORIAS) si pertinent.',
       'Mission Details:',
       `- Title: ${selectedGigSummary.title}`,
       `- Description: ${selectedGigSummary.description}`,
       '',
-      'Return ONLY the script lines.',
+      'IMPORTANT: Renvoyer le script au format JSON suivant :',
+      '{',
+      '  "title": "Nom du script",',
+      '  "phases": [',
+      '    {',
+      '      "id": "p1",',
+      '      "title": "Nom de la phase",',
+      '      "content": "Texte à dire au client",',
+      '      "suggestions": ["Option de réponse A", "Option de réponse B"],',
+      '      "compliance": "Info légale obligatoire (optionnel)"',
+      '    }',
+      '  ]',
+      '}',
+      'Renvoyer UNIQUEMENT le JSON.'
     ].join('\n');
 
-    await sendMessageToApi(autoPrompt, false);
+    setIsSending(true);
+    try {
+      const companyId = getCompanyId();
+      const payload = {
+        companyId,
+        gig: selectedGig,
+        typeClient: 'general',
+        langueTon: 'professionnel et dynamique',
+        contexte: cockpitPrompt,
+      };
+      const { data: body } = (await apiClient.post('/rag/generate-script', payload)) as { data: any };
+      const rawResponse = body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
+      
+      try {
+        const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawResponse);
+        if (parsed.phases && Array.isArray(parsed.phases)) {
+          setCockpitData({
+            title: parsed.title || selectedGigSummary.title,
+            phases: parsed.phases
+          });
+          setCurrentView('cockpit');
+        } else {
+          throw new Error('Format JSON invalide');
+        }
+      } catch (e) {
+        console.error('Failed to parse cockpit JSON, falling back to chat', e);
+        await sendMessageToApi(cockpitPrompt, false);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Erreur lors de la génération');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const sendMessage = async (e: React.FormEvent) => {
@@ -1201,6 +1232,14 @@ const ScriptGenerator: React.FC = () => {
             onView={handleViewSavedScript}
             onEdit={handleEditSavedScript}
             onDelete={handleDeleteSavedScript}
+          />
+        )}
+
+        {currentView === 'cockpit' && cockpitData && (
+          <InteractiveScriptCockpit 
+            scriptTitle={cockpitData.title}
+            phases={cockpitData.phases}
+            onClose={() => setCurrentView('list')}
           />
         )}
 
