@@ -1694,7 +1694,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
   return (
-    <div className="w-full py-1 space-y-3 animate-in fade-in duration-500">
+    <div className="w-full min-h-screen flex flex-col py-1 space-y-3 animate-in fade-in duration-500">
       {/* Header Area - Branded Gradient */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-4 mb-2 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -2405,7 +2405,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Contact List */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-100">
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 flex-1 flex flex-col">
         <div className="border-b border-gray-200 p-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
@@ -2483,8 +2483,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           </div>
         </div>
         {/* Tableau d'affichage des leads */}
-        <div>
-          <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+        <div className="flex-1 flex flex-col min-h-[600px]">
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 h-[calc(100vh-300px)]">
             <div className="relative">
               <table className="w-full table-fixed divide-y divide-gray-100">
                 <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm text-center">
@@ -2652,7 +2652,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               Nombre de leads reçus: <span className="bg-white text-harx-800 px-2 py-0.5 rounded-full text-xs font-black">{realtimeLeads.length}</span>
             </p>
           </div>
-          <div className="max-h-48 overflow-y-auto border border-gray-100 rounded-lg">
+          <div className="max-h-96 overflow-y-auto border border-gray-100 rounded-lg">
             <div className="min-w-full divide-y divide-gray-100">
               <div className="bg-gradient-to-r from-harx-50 to-harx-100 sticky top-0">
                 <div className="grid grid-cols-3 px-4 py-2">
