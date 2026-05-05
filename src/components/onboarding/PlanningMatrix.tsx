@@ -167,7 +167,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
     };
 
     return (
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden h-[calc(100vh-280px)] flex flex-col min-h-[400px]">
+        <div className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden h-[calc(100vh-280px)] flex flex-col min-h-[400px]">
             {/* Header */}
             <div className="bg-gradient-harx px-3 py-2 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4 text-white">
