@@ -19,7 +19,8 @@ export default function PremiumDashboardPage() {
   }, []);
 
   const companyName = localStorage.getItem('companyName');
-  const userType = localStorage.getItem('userType') === 'company' || localStorage.getItem('role') === 'company' ? 'company' : 'rep';
+  const userRole = localStorage.getItem('role') || localStorage.getItem('userType');
+  const userType = userRole === 'company' || userRole === 'admin' || (Cookies.get('companyId') && !Cookies.get('agentId')) ? 'company' : 'rep';
   const companyId = Cookies.get('companyId');
   const userId = Cookies.get('userId');
 
