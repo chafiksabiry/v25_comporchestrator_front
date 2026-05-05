@@ -82,11 +82,11 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 md:p-8 overflow-hidden animate-in fade-in zoom-in duration-300">
-            <div className="bg-slate-50 w-full h-full max-w-7xl rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden border border-white/20">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-2 md:p-4 overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div className="bg-slate-50 w-full h-full max-w-7xl rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/20">
                 
                 {/* Header Section */}
-                <div className="bg-white px-8 py-6 flex items-center justify-between border-b border-slate-100">
+                <div className="bg-white px-6 py-4 flex items-center justify-between border-b border-slate-100">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-harx-500/10 rounded-2xl">
                             <MessageSquare className="w-6 h-6 text-harx-500" />
@@ -134,78 +134,78 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                 <div className="flex-1 flex overflow-hidden">
                     
                     {/* Script Area (Left/Center) */}
-                    <div className="flex-1 p-8 overflow-y-auto space-y-8 scroll-smooth">
+                    <div className="flex-1 p-6 overflow-y-auto space-y-4 scroll-smooth">
                         
                         {/* Current Phase Title */}
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                             <span className="text-[10px] font-black text-harx-500 uppercase tracking-[0.2em]">Phase actuelle</span>
-                            <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tight">{currentPhase.title}</h3>
+                            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{currentPhase.title}</h3>
                         </div>
 
 
                         {/* Dialogue Card */}
-                        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 relative group overflow-hidden">
-                            <div className="absolute top-0 left-0 w-2 h-full bg-harx-500 opacity-20" />
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <MessageSquare size={16} className="text-harx-500" />
-                                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Script à l'oral</span>
+                        <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 relative group overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1.5 h-full bg-harx-500 opacity-20" />
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <MessageSquare size={14} className="text-harx-500" />
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Script à l'oral</span>
                                 </div>
-                                <p className="text-2xl font-bold text-slate-800 leading-snug italic">
+                                <p className="text-xl font-bold text-slate-800 leading-snug italic">
                                     « {currentPhase.content} »
                                 </p>
                             </div>
                         </div>
 
                         {/* Suggestions / Branches */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {currentPhase.suggestions.map((s, idx) => (
                                 <button 
                                     key={idx}
                                     onClick={() => handleJumpToPhase(s.nextPhaseId)}
-                                    className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-harx-200 text-left transition-all group"
+                                    className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-harx-200 text-left transition-all group"
                                 >
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-bold text-slate-700 group-hover:text-harx-600 transition-colors">{s.text}</span>
-                                        <ChevronRight size={18} className="text-slate-300 group-hover:text-harx-500 group-hover:translate-x-1 transition-all" />
+                                        <span className="text-xs font-bold text-slate-700 group-hover:text-harx-600 transition-colors">{s.text}</span>
+                                        <ChevronRight size={16} className="text-slate-300 group-hover:text-harx-500 group-hover:translate-x-1 transition-all" />
                                     </div>
                                 </button>
                             ))}
                         </div>
 
                         {/* Bottom Navigation */}
-                        <div className="flex items-center justify-between pt-8 border-t border-slate-200">
+                        <div className="flex items-center justify-between pt-4 border-t border-slate-200">
                             <button 
                                 onClick={handlePrev}
                                 disabled={currentPhaseIdx === 0}
-                                className="flex items-center gap-2 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 disabled:opacity-30 transition-all"
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 disabled:opacity-30 transition-all text-xs"
                             >
-                                <ChevronLeft size={20} />
+                                <ChevronLeft size={16} />
                                 Précédent
                             </button>
                             {currentPhaseIdx === phases.length - 1 ? (
                                 <button 
                                     onClick={onValidate}
                                     disabled={isValidating}
-                                    className="flex items-center gap-2 bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-emerald-700 hover:shadow-lg transition-all disabled:opacity-30"
+                                    className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-black uppercase tracking-widest hover:bg-emerald-700 hover:shadow-lg transition-all disabled:opacity-30 text-xs"
                                 >
-                                    <CheckCircle2 size={20} />
+                                    <CheckCircle2 size={16} />
                                     {isValidating ? 'Validation...' : 'Valider et Enregistrer'}
                                 </button>
                             ) : (
                                 <button 
                                     onClick={handleNext}
-                                    className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-harx-600 hover:shadow-lg transition-all disabled:opacity-30"
+                                    className="flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-xl font-black uppercase tracking-widest hover:bg-harx-600 hover:shadow-lg transition-all disabled:opacity-30 text-xs"
                                 >
                                     Suivant
-                                    <ChevronRight size={20} />
+                                    <ChevronRight size={16} />
                                 </button>
                             )}
                         </div>
                     </div>
 
                     {/* Sidebar (Right) */}
-                    <div className="w-80 bg-white border-l border-slate-100 p-8 flex flex-col gap-8 overflow-y-auto">
+                    <div className="w-72 bg-white border-l border-slate-100 p-6 flex flex-col gap-6 overflow-y-auto">
                         
 
                         {/* Quick Notes */}
