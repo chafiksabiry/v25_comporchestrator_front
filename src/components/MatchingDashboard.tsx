@@ -542,9 +542,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         });
     };
     return (
-        <div className="h-full bg-slate-50/50 w-full max-w-full overflow-hidden text-slate-900 flex flex-col">
+        <div className="h-full bg-slate-50/50 w-full max-w-full overflow-hidden text-slate-900 flex flex-col rounded-[40px]">
             {/* Header with Navigation Tabs */}
-            <header className="bg-gradient-harx border-b border-harx-600 shadow-lg">
+            <header className="bg-gradient-harx border-b border-harx-600 shadow-lg rounded-t-[40px]">
                 {/* Top Header */}
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex justify-between items-center">
@@ -559,7 +559,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         </div>
 
                         {/* Quick Stats */}
-                        <div className="hidden lg:flex items-center space-x-6 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-sm">
+                        <div className="hidden lg:flex items-center space-x-6 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-sm">
                             <div className="text-center">
                                 <div className="font-bold text-lg text-white">{reps.length}</div>
                                 <div className="text-harx-50 text-xs">Total Reps</div>

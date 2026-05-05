@@ -322,7 +322,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
   return (
     <div className="w-full py-2 space-y-4 animate-in fade-in duration-500">
       {/* Header Area - Branded Gradient */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
+      <div className="relative overflow-hidden rounded-[40px] bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex items-center justify-between font-black">
           <div className="space-y-1.5">
             <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Gig Details</h1>
