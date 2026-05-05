@@ -359,7 +359,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
       ) : (
         <div className="h-[calc(100vh-320px)] flex flex-col overflow-hidden min-h-[400px]">
           {/* Header Row */}
-          <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-gray-900 rounded-2xl text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shadow-xl italic shrink-0">
+          <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-gray-900 rounded-[40px] text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shadow-xl italic shrink-0">
             <div className="col-span-1">Status</div>
             <div className="col-span-6 pl-4 border-l border-white/10">Gig & Category</div>
             <div className="col-span-2 pl-4 border-l border-white/10">Commitment</div>
