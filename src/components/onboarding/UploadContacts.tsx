@@ -2405,7 +2405,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Contact List */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-100 flex-1 flex flex-col overflow-hidden min-h-[700px]">
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 h-[850px] flex flex-col overflow-hidden">
         <div className="border-b border-gray-200 p-3 flex-shrink-0">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
