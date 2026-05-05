@@ -1694,7 +1694,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
   return (
-    <div className="w-full h-screen flex flex-col p-3 gap-3 animate-in fade-in duration-500 overflow-hidden">
+    <div className="w-full py-1 space-y-3 animate-in fade-in duration-500">
       {/* Header Area - Branded Gradient */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-4 mb-2 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -2405,7 +2405,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Contact List */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-100 flex-1 flex flex-col overflow-hidden min-h-0">
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 flex-1 flex flex-col overflow-hidden min-h-[700px]">
         <div className="border-b border-gray-200 p-3 flex-shrink-0">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
