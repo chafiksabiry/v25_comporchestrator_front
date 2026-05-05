@@ -1694,9 +1694,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
   return (
-    <div className="w-full py-2 space-y-4 animate-in fade-in duration-500">
+    <div className="w-full py-1 space-y-3 animate-in fade-in duration-500">
       {/* Header Area - Branded Gradient */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-4 mb-2 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-4">
@@ -1704,10 +1704,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <UserPlus className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-4xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+                <h2 className="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
                   Upload Contacts
                 </h2>
-                <p className="text-[16px] font-medium text-white/90">Import, manage, and organize your leads efficiently with AI precision.</p>
+                <p className="text-[14px] font-medium text-white/90">Import, manage, and organize your leads efficiently with AI precision.</p>
               </div>
             </div>
           </div>
@@ -1721,9 +1721,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
       {/* Gigs Selection Dropdown */}
-      <div className="bg-white rounded-3xl shadow-xl border border-harx-100 p-6 transition-all duration-300">
-        <h4 className="text-xl font-bold text-gray-900 mb-4 flex items-center tracking-tight">
-          <Settings className="mr-3 h-6 w-6 text-harx-500" />
+      <div className="bg-white rounded-2xl shadow-xl border border-harx-100 p-4 transition-all duration-300">
+        <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center tracking-tight">
+          <Settings className="mr-2 h-5 w-5 text-harx-500" />
           Select a Gig
         </h4>
         {isLoadingGigs ? (
@@ -1744,18 +1744,18 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             <button
               type="button"
               onClick={() => setGigDropdownOpen(prev => !prev)}
-              className={`w-full flex items-center justify-between gap-4 rounded-2xl border-2 py-5 px-6 text-lg font-bold shadow-lg transition-all duration-300 focus:outline-none ${gigDropdownOpen
+              className={`w-full flex items-center justify-between gap-3 rounded-xl border-2 py-3 px-4 text-lg font-bold shadow-md transition-all duration-300 focus:outline-none ${gigDropdownOpen
                 ? 'border-harx-500 bg-harx-50 ring-4 ring-harx-500/10'
-                : 'border-harx-100 bg-white hover:border-harx-400 hover:shadow-xl'
+                : 'border-harx-100 bg-white hover:border-harx-400 hover:shadow-lg'
                 }`}
             >
 
-              <span className="flex items-center gap-4 min-w-0">
-                <span className={`flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl ${selectedGigId ? 'bg-gradient-harx text-white' : 'bg-gray-100 text-gray-400'
+              <span className="flex items-center gap-3 min-w-0">
+                <span className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg ${selectedGigId ? 'bg-gradient-harx text-white' : 'bg-gray-100 text-gray-400'
                   }`}>
-                  <Settings className="w-5 h-5" />
+                  <Settings className="w-4 h-4" />
                 </span>
-                <span className={`truncate text-xl ${selectedGigId ? 'text-gray-900' : 'text-gray-400'
+                <span className={`truncate text-lg ${selectedGigId ? 'text-gray-900' : 'text-gray-400'
                   }`}>
 
                   {selectedGigId
@@ -1777,7 +1777,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 style={{ animation: 'fadeSlideDown 0.15s ease' }}
               >
                 {/* Header row */}
-                <div className="px-6 pt-5 pb-3 border-b border-gray-100 bg-gray-50/50">
+                <div className="px-4 pt-3 pb-2 border-b border-gray-100 bg-gray-50/50">
                   <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Available Gigs</p>
                 </div>
 
@@ -1794,7 +1794,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                             setSelectedGigId(gig._id);
                             setGigDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center gap-4 px-6 py-4 text-base font-bold transition-all duration-200 ${isSelected
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-base font-bold transition-all duration-200 ${isSelected
                             ? 'bg-gradient-harx text-white shadow-lg'
                             : 'text-gray-700 hover:bg-harx-50 hover:text-harx-600'
                             }`}
@@ -1851,33 +1851,33 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Import Methods Section */}
-      <div className="bg-white rounded-3xl shadow-xl border border-harx-100 p-8">
-        <div className="mb-8">
-          <h3 className="text-2xl font-bold text-gray-900 flex items-center tracking-tight">
-            <Cloud className="mr-3 h-7 w-7 text-harx-500" />
+      <div className="bg-white rounded-2xl shadow-xl border border-harx-100 p-6">
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center tracking-tight">
+            <Cloud className="mr-2 h-6 w-6 text-harx-500" />
             Import Leads
           </h3>
-          <p className="mt-2 text-lg text-gray-600">Choose your preferred method to import leads into your selected gig.</p>
+          <p className="mt-1 text-base text-gray-600">Choose your preferred method to import leads into your selected gig.</p>
         </div>
 
         {/* Import Methods Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Zoho Import Card - DISABLED FOR NOW */}
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-3xl p-8 flex flex-col h-full grayscale opacity-60 pointer-events-none relative overflow-hidden group">
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-2xl p-6 flex flex-col h-full grayscale opacity-60 pointer-events-none relative overflow-hidden group">
             {/* Overlay to ensure it's not clickable and shows disabled cursor */}
             <div className="absolute inset-0 z-10 cursor-not-allowed" title="Zoho CRM Integration is currently disabled" />
             {/* Header */}
-            <div className="flex items-center mb-6">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mr-6 border-2 border-gray-100 shadow-sm relative z-20">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-gray-100 shadow-sm relative z-20">
                 <img
                   src={zohoLogo}
                   alt="Zoho CRM"
-                  className="h-10 w-10 object-contain"
+                  className="h-8 w-8 object-contain"
                 />
               </div>
               <div className="flex-1 relative z-20">
-                <h4 className="text-2xl font-bold text-gray-900">Zoho CRM Integration</h4>
-                <p className="text-base text-gray-600 font-medium">Connect and sync with your Zoho CRM</p>
+                <h4 className="text-xl font-bold text-gray-900">Zoho CRM Integration</h4>
+                <p className="text-sm text-gray-600 font-medium">Connect and sync with your Zoho CRM</p>
               </div>
             </div>
 
@@ -1922,7 +1922,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   await handleImportFromZoho();
                 }}
                 disabled={!hasZohoAccessToken || isImportingZoho}
-                className="w-full bg-gray-200 text-gray-500 font-black py-5 px-8 rounded-2xl transition-all duration-500"
+                className="w-full bg-gray-200 text-gray-500 font-black py-4 px-6 rounded-xl transition-all duration-500"
               >
                 {isImportingZoho ? (
                   <>
@@ -1943,16 +1943,16 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           </div>
 
           {/* File Upload Card */}
-          <div className="bg-gradient-to-br from-harx-50/50 to-harx-100/30 border-2 border-harx-100 rounded-3xl p-8 hover:border-harx-300 hover:shadow-2xl hover:shadow-harx-500/10 transition-all duration-500 group relative overflow-hidden" data-file-upload>
+          <div className="bg-gradient-to-br from-harx-50/50 to-harx-100/30 border-2 border-harx-100 rounded-2xl p-6 hover:border-harx-300 hover:shadow-2xl hover:shadow-harx-500/10 transition-all duration-500 group relative overflow-hidden" data-file-upload>
             <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-harx-100/50 rounded-full blur-3xl group-hover:bg-harx-200 transition-colors duration-700"></div>
             {/* Header */}
-            <div className="flex items-center mb-6 relative z-10">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mr-6 border-2 border-harx-100 shadow-sm transition-transform duration-500 group-hover:scale-110">
-                <FileSpreadsheet className="h-8 w-8 text-harx-600" />
+            <div className="flex items-center mb-4 relative z-10">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-harx-100 shadow-sm transition-transform duration-500 group-hover:scale-110">
+                <FileSpreadsheet className="h-6 w-6 text-harx-600" />
               </div>
               <div className="flex-1">
-                <h4 className="text-2xl font-bold text-gray-900">File Upload</h4>
-                <p className="text-base text-gray-600 font-medium">Upload and process contact files</p>
+                <h4 className="text-xl font-bold text-gray-900">File Upload</h4>
+                <p className="text-sm text-gray-600 font-medium">Upload and process contact files</p>
               </div>
             </div>
 
@@ -1966,13 +1966,13 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
             {/* Upload Button - Pushed to bottom */}
             <div className="mt-auto relative z-10">
-              <div className="w-full bg-gradient-harx text-white font-black py-5 px-8 rounded-2xl hover:brightness-110 transition-all duration-300 transform hover:scale-[1.03] active:scale-[0.98] shadow-xl shadow-harx-500/30 cursor-pointer flex items-center justify-center">
+              <div className="w-full bg-gradient-harx text-white font-black py-4 px-6 rounded-xl hover:brightness-110 transition-all duration-300 transform hover:scale-[1.03] active:scale-[0.98] shadow-xl shadow-harx-500/30 cursor-pointer flex items-center justify-center">
                 <label htmlFor="file-upload" className="cursor-pointer flex items-center justify-center w-full">
-                  <FileSpreadsheet className="h-6 w-6 mr-3 text-white" />
-                  <span className="text-lg">
+                  <FileSpreadsheet className="h-5 w-5 mr-3 text-white" />
+                  <span className="text-base">
                     {isProcessing ? (
                       <div className="flex items-center font-black">
-                        <RefreshCw className="mr-3 h-6 w-6 animate-spin" />
+                        <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
                         Processing...
                       </div>
                     ) : (
