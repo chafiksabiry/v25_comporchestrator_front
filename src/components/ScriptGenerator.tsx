@@ -466,7 +466,7 @@ const ScriptGenerator: React.FC = () => {
         if (updateMessageId) {
           return filtered.map((m) => {
             if (m.id !== updateMessageId) return m;
-            
+
             if (appendMode && m.playbook?.turns) {
               // Append new turns to existing ones
               const existingTurns = Array.isArray(m.playbook.turns) ? m.playbook.turns : [];
@@ -479,7 +479,7 @@ const ScriptGenerator: React.FC = () => {
                 }
               };
             }
-            
+
             return generatedMessage;
           });
         }
@@ -505,7 +505,7 @@ const ScriptGenerator: React.FC = () => {
 
   const handleSelectLeadOption = async (messageId: string, turnIdx: number, optIdx: number, leadReply: string) => {
     if (isSending) return;
-    
+
     // Visual update: select the option
     const turnKey = `${messageId}-${turnIdx}`;
     setSelectedLeadOptionByTurnKey((prev) => {
@@ -603,7 +603,7 @@ const ScriptGenerator: React.FC = () => {
       customPrompt || 'Générer un script de vente dynamique et interactif sous forme de phases structurées.',
       'Le script doit être un outil que le commercial utilise en temps réel.',
       'Structure suggérée : 1. Ouverture, 2. Brise-glace, 3. Découverte, 4. Argumentation, 5. Closing, 6. Conclusion.',
-      'Inclure des éléments de conformité réglementaire (DDA/ORIAS) si pertinent.',
+      'Inclure des éléments de conformité réglementaire.',
       'Mission Details:',
       `- Title: ${selectedGigSummary.title}`,
       `- Description: ${selectedGigSummary.description}`,
@@ -645,7 +645,7 @@ const ScriptGenerator: React.FC = () => {
       };
       const { data: body } = (await apiClient.post('/rag/generate-script', payload)) as { data: any };
       const rawResponse = body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
-      
+
       try {
         const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
         const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawResponse);
@@ -746,10 +746,10 @@ const ScriptGenerator: React.FC = () => {
 
   const handleSaveCockpitScript = async () => {
     if (!cockpitData || !selectedGig?._id || validatingScriptId) return;
-    
+
     setValidatingScriptId('cockpit-save');
     setError(null);
-    
+
     try {
       // Map cockpit phases to the linear script format for DB compatibility
       const scriptSteps = cockpitData.phases.map(phase => ({
@@ -774,7 +774,7 @@ const ScriptGenerator: React.FC = () => {
 
       const { data } = (await apiClient.post('/rag/scripts', payload)) as { data: any };
       const savedId = data?.data?._id || data?._id;
-      
+
       if (!savedId) throw new Error('Failed to save cockpit script');
 
       setValidatedScriptIds(prev => ({ ...prev, [String(savedId)]: true }));
@@ -1147,8 +1147,8 @@ const ScriptGenerator: React.FC = () => {
                             });
                           }}
                           className={`text-left rounded-lg border px-3 py-2 transition-colors cursor-pointer ${active
-                              ? 'border-emerald-400 bg-emerald-100 text-emerald-900'
-                              : 'border-emerald-200 bg-white text-slate-700 hover:bg-emerald-50'
+                            ? 'border-emerald-400 bg-emerald-100 text-emerald-900'
+                            : 'border-emerald-200 bg-white text-slate-700 hover:bg-emerald-50'
                             }`}
                         >
                           <span className="mr-1 text-[10px] font-bold uppercase text-emerald-700">Lead:</span>
@@ -1213,18 +1213,18 @@ const ScriptGenerator: React.FC = () => {
           <div
             key={`${row.label}-${idx}`}
             className={`rounded-xl px-3 py-2 ${row.side === 'agent'
-                ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200'
-                : row.side === 'lead'
-                  ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200'
-                  : 'bg-gray-50 border border-gray-200'
+              ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200'
+              : row.side === 'lead'
+                ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200'
+                : 'bg-gray-50 border border-gray-200'
               }`}
           >
             <p
               className={`text-[11px] font-bold uppercase tracking-wide ${row.side === 'agent'
-                  ? 'text-blue-700'
-                  : row.side === 'lead'
-                    ? 'text-emerald-700'
-                    : 'text-gray-600'
+                ? 'text-blue-700'
+                : row.side === 'lead'
+                  ? 'text-emerald-700'
+                  : 'text-gray-600'
                 }`}
             >
               {row.label}
@@ -1325,7 +1325,7 @@ const ScriptGenerator: React.FC = () => {
         )}
 
         {currentView === 'cockpit' && cockpitData && (
-          <InteractiveScriptCockpit 
+          <InteractiveScriptCockpit
             scriptTitle={cockpitData.title}
             phases={cockpitData.phases}
             onClose={() => setCurrentView('list')}
