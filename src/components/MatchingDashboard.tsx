@@ -932,7 +932,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             <span>{selectedGig ? `Matches for "${selectedGig.title}"` : 'Select a Gig to See Matches'}</span>
                                         </h3>
 
-                                        {!selectedGig ? (
+                                        <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
+                                            {!selectedGig ? (
                                             <div className="text-center py-12">
                                                 <div className="bg-slate-50/50 rounded-xl p-8 max-w-md mx-auto border border-slate-200">
                                                     <Briefcase size={48} className="text-slate-500 mx-auto mb-4" />
@@ -950,7 +951,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 </div>
                                             </div>
                                         ) : filteredMatches.length > 0 ? (
-                                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                                            <div className="space-y-3">
                                                 {filteredMatches.map((match: Match, index: any) => {
                                                     // Check if agent is already enrolled in this specific gig
                                                     const isAlreadyEnrolledInThisGig = activeAgentsList.some(
@@ -1377,6 +1378,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 <p className="text-sm text-slate-500">All invitations have been responded to.</p>
                                             </div>
                                         </div>
+                                    )}
                                     </div>
                                 </div>
                             </div>
