@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Sparkles, MessageSquare, Plus, Loader2 } from 'lucide-react';
 
 type SavedScript = {
   _id: string;
@@ -11,7 +12,7 @@ interface ScriptListPanelProps {
   isLoadingSavedScripts: boolean;
   savedScripts: SavedScript[];
   showGenerateButton?: boolean;
-  onGenerate: () => void;
+  onGenerate: (prompt?: string) => void;
   onView: (scriptId: string) => void;
   onEdit: (scriptId: string) => void;
   onDelete: (scriptId: string) => void;
@@ -28,70 +29,102 @@ const ScriptListPanel: React.FC<ScriptListPanelProps> = ({
   onEdit,
   onDelete,
 }) => {
-  return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 md:p-6 space-y-4">
-      <div className="flex items-center justify-between gap-3 border-b border-gray-100 pb-4">
-        <div>
-          <p className="text-base font-semibold text-gray-800">Scripts</p>
-          <p className="text-xs text-gray-500 mt-1">Gerer vos scripts valides pour le gig selectionne</p>
-        </div>
-        {showGenerateButton && (
-          <button
-            type="button"
-            onClick={onGenerate}
-            disabled={!selectedGigId || isSending}
-            className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Generer un script
-          </button>
-        )}
-      </div>
+  const [prompt, setPrompt] = useState('');
 
-      {isLoadingSavedScripts ? (
-        <p className="text-sm text-gray-500">Loading scripts...</p>
-      ) : savedScripts.length === 0 ? (
-        <p className="text-sm text-gray-500">Aucun script pour ce gig.</p>
-      ) : (
-        <div className="space-y-3">
-          {savedScripts.map((item, idx) => (
-            <div key={item._id} className="rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium text-gray-800">Script {savedScripts.length - idx}</span>
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full ${
-                    item?.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                  }`}
-                >
-                  {item?.isActive ? 'Valide' : 'Brouillon'}
-                </span>
-              </div>
-              <div className="mt-3 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onView(item._id)}
-                  className="px-3 py-1.5 text-xs rounded-lg border border-blue-200 text-blue-700 bg-white hover:bg-blue-50"
-                >
-                  View script
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onEdit(item._id)}
-                  className="px-3 py-1.5 text-xs rounded-lg border border-emerald-200 text-emerald-700 bg-white hover:bg-emerald-50"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDelete(item._id)}
-                  className="px-3 py-1.5 text-xs rounded-lg border border-red-200 text-red-700 bg-white hover:bg-red-50"
-                >
-                  Delete
-                </button>
-              </div>
+  const handleGenerate = () => {
+    onGenerate(prompt);
+  };
+
+  return (
+    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="p-8 space-y-8">
+        
+        {/* Generation Area */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-harx-500/10 rounded-xl">
+              <Sparkles className="w-5 h-5 text-harx-500" />
             </div>
-          ))}
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Générateur de Script Intelligent</h3>
+          </div>
+          
+          <div className="relative group">
+            <textarea 
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Ex: Générer un script dynamique pour vendre des mutuelles à des particuliers en france en respectant la réglementation..."
+              className="w-full h-32 bg-slate-50 border border-slate-200 rounded-3xl p-6 text-base font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-harx-500/10 focus:border-harx-500 transition-all resize-none shadow-inner"
+              disabled={!selectedGigId || isSending}
+            />
+            <div className="absolute bottom-4 right-4">
+              <button
+                onClick={handleGenerate}
+                disabled={!selectedGigId || isSending}
+                className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-harx-600 hover:shadow-lg transition-all disabled:opacity-30 flex items-center gap-2"
+              >
+                {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Générer Cockpit
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Saved Scripts List */}
+        <div className="space-y-6 pt-8 border-t border-slate-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-slate-100 rounded-xl">
+                <MessageSquare className="w-5 h-5 text-slate-500" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Scripts Enregistrés</h3>
+            </div>
+            <span className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black text-slate-500 uppercase">{savedScripts.length} Scripts</span>
+          </div>
+
+          {isLoadingSavedScripts ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
+            </div>
+          ) : savedScripts.length === 0 ? (
+            <div className="text-center py-12 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
+              <p className="text-sm font-bold text-slate-400">Aucun script disponible pour ce Gig.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {savedScripts.map((item, idx) => (
+                <div key={item._id} className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm font-black text-slate-900 uppercase">Script #{savedScripts.length - idx}</span>
+                    <span
+                      className={`text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-wider ${
+                        item?.isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                      }`}
+                    >
+                      {item?.isActive ? 'Validé' : 'Brouillon'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onView(item._id)}
+                      className="flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors"
+                    >
+                      Ouvrir
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(item._id)}
+                      className="p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                    >
+                      <Loader2 size={16} className="rotate-45" /> {/* Use as cross icon if needed or import X */}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
