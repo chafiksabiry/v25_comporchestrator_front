@@ -2483,8 +2483,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           </div>
         </div>
         {/* Tableau d'affichage des leads */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto scrollbar-auto min-h-0">
             <div className="relative">
               <table className="w-full table-fixed divide-y divide-gray-100">
                 <thead className="bg-gray-100 sticky top-0 z-[50] shadow-md text-center">
