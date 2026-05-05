@@ -2405,8 +2405,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Contact List */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-100 h-[800px] flex flex-col">
-        <div className="border-b border-gray-200 p-3 flex-shrink-0">
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 h-[calc(100vh-180px)] flex flex-col overflow-hidden relative">
+        <div className="border-b border-gray-200 p-3 flex-shrink-0 sticky top-0 z-[60] bg-white rounded-t-xl">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-bold text-gray-900 flex items-center tracking-tight">
@@ -2487,7 +2487,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
             <div className="relative">
               <table className="w-full table-fixed divide-y divide-gray-100">
-                <thead className="bg-gray-100 sticky top-0 z-50 shadow-md text-center">
+                <thead className="bg-gray-100 sticky top-0 z-[50] shadow-md text-center">
                   <tr>
                     <th scope="col" className="w-[10%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
                       Nom
