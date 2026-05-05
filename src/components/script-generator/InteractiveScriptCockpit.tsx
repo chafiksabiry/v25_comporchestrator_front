@@ -31,6 +31,8 @@ interface InteractiveScriptCockpitProps {
     scriptTitle: string;
     phases: ScriptPhase[];
     onClose: () => void;
+    onValidate?: () => void;
+    isValidating?: boolean;
 }
 
 export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: InteractiveScriptCockpitProps) {
@@ -181,14 +183,24 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                                 <ChevronLeft size={20} />
                                 Précédent
                             </button>
-                            <button 
-                                onClick={handleNext}
-                                disabled={currentPhaseIdx === phases.length - 1}
-                                className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-harx-600 hover:shadow-lg transition-all disabled:opacity-30"
-                            >
-                                Suivant
-                                <ChevronRight size={20} />
-                            </button>
+                            {currentPhaseIdx === phases.length - 1 ? (
+                                <button 
+                                    onClick={onValidate}
+                                    disabled={isValidating}
+                                    className="flex items-center gap-2 bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-emerald-700 hover:shadow-lg transition-all disabled:opacity-30"
+                                >
+                                    <CheckCircle2 size={20} />
+                                    {isValidating ? 'Validation...' : 'Valider et Enregistrer'}
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={handleNext}
+                                    className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest hover:bg-harx-600 hover:shadow-lg transition-all disabled:opacity-30"
+                                >
+                                    Suivant
+                                    <ChevronRight size={20} />
+                                </button>
+                            )}
                         </div>
                     </div>
 
