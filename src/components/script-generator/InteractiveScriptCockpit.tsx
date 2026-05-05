@@ -94,18 +94,7 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                         <div>
                             <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">{scriptTitle}</h2>
                             <div className="flex items-center gap-2">
-                                <div className="flex gap-1">
-                                    {phases.map((_, idx) => (
-                                        <div 
-                                            key={idx} 
-                                            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                                                idx === currentPhaseIdx ? 'w-6 bg-harx-500' : 
-                                                idx < currentPhaseIdx ? 'bg-slate-300' : 'bg-slate-100'
-                                            }`} 
-                                        />
-                                    ))}
-                                </div>
-                                <span className="text-xs font-bold text-slate-400 ml-2 uppercase">Étape {currentPhaseIdx + 1}/{phases.length}</span>
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Navigation par graphe dynamique</span>
                             </div>
                         </div>
                     </div>
@@ -192,14 +181,18 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                                     <CheckCircle2 size={16} />
                                     {isValidating ? 'Validation...' : 'Valider et Enregistrer'}
                                 </button>
-                            ) : (
+                            ) : currentPhase.suggestions.length === 0 ? (
                                 <button 
                                     onClick={handleNext}
                                     className="flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-xl font-black uppercase tracking-widest hover:bg-harx-600 hover:shadow-lg transition-all disabled:opacity-30 text-xs"
                                 >
-                                    Suivant
+                                    Continuer
                                     <ChevronRight size={16} />
                                 </button>
+                            ) : (
+                                <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                                    Choisissez une option ci-dessus
+                                </div>
                             )}
                         </div>
                     </div>
