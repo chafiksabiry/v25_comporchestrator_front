@@ -63,66 +63,151 @@ export function CompanyPerformanceDashboard() {
     const [gigs, setGigs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<PerformanceStats>({
-        totalLeads: 12450,
-        totalCalls: 8940,
-        contactedLeads: 5670,
-        validNumbers: 7820,
-        callsOver90s: 3420,
-        answeringMachineCalls: 1240,
-        callsByStatus: {
-            'Completed': 4500,
-            'Busy': 800,
-            'No Answer': 1200,
-            'Failed': 340,
-            'Canceled': 100,
-            'Machine': 1240,
-            'Other': 760
-        }
+        totalLeads: 0,
+        totalCalls: 0,
+        contactedLeads: 0,
+        validNumbers: 0,
+        callsOver90s: 0,
+        answeringMachineCalls: 0,
+        callsByStatus: {}
     });
+    const [callsList, setCallsList] = useState<any[]>([]);
 
     useEffect(() => {
-        const fetchGigs = async () => {
+        const fetchData = async () => {
             const companyId = Cookies.get('companyId');
-            if (companyId) {
-                try {
-                    const gigsData = await getGigsByCompanyId(companyId);
-                    setGigs(Array.isArray(gigsData) ? gigsData : []);
-                } catch (error) {
-                    console.error("Error fetching gigs:", error);
+            if (!companyId) return;
+
+            setLoading(true);
+            try {
+                // 1. Fetch Gigs
+                const gigsData = await getGigsByCompanyId(companyId);
+                const gigsArray = Array.isArray(gigsData) ? gigsData : [];
+                setGigs(gigsArray);
+
+                // 2. Fetch Leads Count
+                const leadsUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`;
+                const leadsRes = await fetch(leadsUrl);
+                let totalLeads = 0;
+                if (leadsRes.ok) {
+                    const leadsData = await leadsRes.json();
+                    totalLeads = leadsData.count || 0;
                 }
+
+                // 3. Fetch Calls
+                const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
+                const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
+                let callsUrl = `${callsBase}/calls?companyId=${companyId}&limit=10000`; 
+                
+                if (selectedGig !== 'all') {
+                    callsUrl += `&gigId=${selectedGig}`;
+                }
+
+                const callsRes = await fetch(callsUrl);
+                
+                if (callsRes.ok) {
+                    const callsDataRaw = await callsRes.json();
+                    const allCalls = Array.isArray(callsDataRaw.data) ? callsDataRaw.data : (Array.isArray(callsDataRaw) ? callsDataRaw : []);
+                    setCallsList(allCalls);
+
+                    // Process Stats
+                    const statusCount: Record<string, number> = {};
+                    let valid = 0;
+                    let over90s = 0;
+                    let machines = 0;
+                    let contacted = 0;
+
+                    allCalls.forEach((call: any) => {
+                        // Status breakdown
+                        const status = call.status || 'Unknown';
+                        statusCount[status] = (statusCount[status] || 0) + 1;
+
+                        // Contacted (successful calls)
+                        if (status === 'completed' || status === 'Completed') {
+                            contacted++;
+                        }
+
+                        // Valid Numbers (assuming any call that isn't failed/invalid is valid)
+                        if (status !== 'Failed' && status !== 'invalid') {
+                            valid++;
+                        }
+
+                        // Argumentation (> 90s)
+                        if (call.duration >= 90) {
+                            over90s++;
+                        }
+
+                        // Answering Machine
+                        if (status.toLowerCase().includes('machine')) {
+                            machines++;
+                        }
+                    });
+
+                    setStats({
+                        totalLeads,
+                        totalCalls: allCalls.length,
+                        contactedLeads: contacted,
+                        validNumbers: valid,
+                        callsOver90s: over90s,
+                        answeringMachineCalls: machines,
+                        callsByStatus: statusCount
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching performance data:", error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
-        fetchGigs();
-    }, []);
+        fetchData();
+    }, [selectedGig]);
 
     // Calculated Metrics
-    const coverageRate = useMemo(() => (stats.contactedLeads / stats.totalLeads) * 100, [stats]);
-    const reachabilityRate = useMemo(() => (stats.validNumbers / stats.totalCalls) * 100, [stats]);
-    const argumentationRate = useMemo(() => (stats.callsOver90s / stats.contactedLeads) * 100, [stats]);
-    const machineRate = useMemo(() => (stats.answeringMachineCalls / stats.totalCalls) * 100, [stats]);
+    const coverageRate = useMemo(() => stats.totalLeads > 0 ? (stats.contactedLeads / stats.totalLeads) * 100 : 0, [stats]);
+    const reachabilityRate = useMemo(() => stats.totalCalls > 0 ? (stats.validNumbers / stats.totalCalls) * 100 : 0, [stats]);
+    const argumentationRate = useMemo(() => stats.contactedLeads > 0 ? (stats.callsOver90s / stats.contactedLeads) * 100 : 0, [stats]);
+    const machineRate = useMemo(() => stats.totalCalls > 0 ? (stats.answeringMachineCalls / stats.totalCalls) * 100 : 0, [stats]);
 
     // Chart Data
-    const histogramData = {
-        labels: timeRange === 'monthly' ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] : 
-                timeRange === 'daily' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] :
-                timeRange === 'weekly' ? ['Week 1', 'Week 2', 'Week 3', 'Week 4'] :
-                ['2023', '2024', '2025'],
-        datasets: [
-            {
-                label: 'Number of Calls',
-                data: [450, 590, 800, 810, 560, 550, 400, 700, 900, 1100, 1200, 1000],
-                backgroundColor: 'rgba(255, 77, 77, 0.8)',
-                borderRadius: 8,
-            },
-            {
-                label: 'Leads Contacted',
-                data: [300, 400, 500, 600, 400, 350, 250, 500, 650, 800, 850, 750],
-                backgroundColor: 'rgba(15, 23, 42, 0.8)',
-                borderRadius: 8,
-            }
-        ]
-    };
+    const histogramData = useMemo(() => {
+        // Group calls by date based on timeRange
+        const groups: Record<string, { calls: number, contacts: number }> = {};
+        
+        callsList.forEach(call => {
+            const date = new Date(call.createdAt || call.date);
+            let key = '';
+            if (timeRange === 'daily') key = date.toLocaleDateString('fr-FR', { weekday: 'short' });
+            else if (timeRange === 'weekly') key = `Week ${Math.ceil(date.getDate() / 7)}`;
+            else if (timeRange === 'monthly') key = date.toLocaleDateString('fr-FR', { month: 'short' });
+            else key = date.getFullYear().toString();
+
+            if (!groups[key]) groups[key] = { calls: 0, contacts: 0 };
+            groups[key].calls++;
+            if (call.status === 'completed' || call.status === 'Completed') groups[key].contacts++;
+        });
+
+        const labels = Object.keys(groups);
+        const callsData = labels.map(l => groups[l].calls);
+        const contactsData = labels.map(l => groups[l].contacts);
+
+        return {
+            labels: labels.length > 0 ? labels : ['No Data'],
+            datasets: [
+                {
+                    label: 'Number of Calls',
+                    data: callsData.length > 0 ? callsData : [0],
+                    backgroundColor: 'rgba(255, 77, 77, 0.8)',
+                    borderRadius: 8,
+                },
+                {
+                    label: 'Leads Contacted',
+                    data: contactsData.length > 0 ? contactsData : [0],
+                    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                    borderRadius: 8,
+                }
+            ]
+        };
+    }, [callsList, timeRange]);
 
     const statusChartData = {
         labels: Object.keys(stats.callsByStatus),
