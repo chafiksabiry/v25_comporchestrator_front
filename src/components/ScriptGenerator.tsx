@@ -788,6 +788,42 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
+  const handleEditCockpitPhase = (phaseId: string, newContent: string) => {
+    if (!cockpitData) return;
+    setCockpitData(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        phases: prev.phases.map(p => p.id === phaseId ? { ...p, content: newContent } : p)
+      };
+    });
+  };
+
+  const handleRefineCockpitPhase = async (phaseId: string, currentContent: string): Promise<string> => {
+    const companyId = getCompanyId();
+    if (!companyId || !selectedGig) return currentContent;
+
+    try {
+      const prompt = `Reformule cette réplique de script de vente pour la rendre plus percutante, naturelle et professionnelle. 
+      Réplique actuelle: "${currentContent}"
+      
+      Instructions:
+      1. Retourne UNIQUEMENT le nouveau texte reformulé.
+      2. Pas d'explications, pas de guillemets.`;
+
+      const response = await apiClient.post('/rag/query', {
+        companyId,
+        query: prompt
+      }) as { data: any };
+
+      let text = response.data?.text || response.data?.data || currentContent;
+      return text.replace(/^["']|["']$/g, '').trim();
+    } catch (err) {
+      console.error('Refinement error:', err);
+      return currentContent;
+    }
+  };
+
   const rewriteLineWithPrompt = async (line: string, role: 'agent' | 'lead', prompt: string): Promise<string> => {
     const companyId = getCompanyId();
     if (!companyId || !selectedGig) return line;
@@ -1295,6 +1331,8 @@ const ScriptGenerator: React.FC = () => {
             onClose={() => setCurrentView('list')}
             onValidate={handleSaveCockpitScript}
             isValidating={validatingScriptId === 'cockpit-save'}
+            onEditPhase={handleEditCockpitPhase}
+            onRefinePhase={handleRefineCockpitPhase}
           />
         )}
 
