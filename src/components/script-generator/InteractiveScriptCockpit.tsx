@@ -33,6 +33,8 @@ interface InteractiveScriptCockpitProps {
     onClose: () => void;
     onValidate?: () => void;
     isValidating?: boolean;
+    onRefinePhase?: (phaseId: string, currentContent: string) => Promise<string>;
+    onEditPhase?: (phaseId: string, newContent: string) => void;
 }
 
 export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: InteractiveScriptCockpitProps) {
@@ -41,6 +43,9 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
     const [notes, setNotes] = useState('');
     const [seconds, setSeconds] = useState(0);
     const [isActive, setIsActive] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState('');
+    const [isRefining, setIsRefining] = useState(false);
 
     const currentPhase = phases[currentPhaseIdx];
 
@@ -83,6 +88,33 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
             const lastIdx = history[history.length - 1];
             setHistory(prev => prev.slice(0, -1));
             setCurrentPhaseIdx(lastIdx);
+        }
+    };
+
+    const startEditing = () => {
+        setEditValue(currentPhase.content);
+        setIsEditing(true);
+    };
+
+    const saveEdit = () => {
+        if (onEditPhase) {
+            onEditPhase(currentPhase.id, editValue);
+        }
+        setIsEditing(false);
+    };
+
+    const handleRefine = async () => {
+        if (!onRefinePhase || isRefining) return;
+        setIsRefining(true);
+        try {
+            const newContent = await onRefinePhase(currentPhase.id, currentPhase.content);
+            if (newContent && onEditPhase) {
+                onEditPhase(currentPhase.id, newContent);
+            }
+        } catch (err) {
+            console.error('Refinement failed:', err);
+        } finally {
+            setIsRefining(false);
         }
     };
 
@@ -141,13 +173,57 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                         <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 relative group overflow-hidden">
                             <div className="absolute top-0 left-0 w-1.5 h-full bg-harx-500 opacity-20" />
                             <div className="space-y-4">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <MessageSquare size={14} className="text-harx-500" />
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Script à l'oral</span>
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2">
+                                        <MessageSquare size={14} className="text-harx-500" />
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Script à l'oral</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button 
+                                            onClick={startEditing}
+                                            className="p-1.5 text-slate-400 hover:text-harx-500 hover:bg-harx-50 rounded-lg transition-all"
+                                            title="Modifier manuellement"
+                                        >
+                                            <Save size={14} />
+                                        </button>
+                                        <button 
+                                            onClick={handleRefine}
+                                            disabled={isRefining}
+                                            className={`p-1.5 text-slate-400 hover:text-fuchsia-500 hover:bg-fuchsia-50 rounded-lg transition-all ${isRefining ? 'animate-pulse' : ''}`}
+                                            title="Raffiner avec l'IA"
+                                        >
+                                            <Sparkles size={14} />
+                                        </button>
+                                    </div>
                                 </div>
-                                <p className="text-xl font-bold text-slate-800 leading-snug italic">
-                                    « {currentPhase.content} »
-                                </p>
+                                
+                                {isEditing ? (
+                                    <div className="space-y-3">
+                                        <textarea 
+                                            value={editValue}
+                                            onChange={(e) => setEditValue(e.target.value)}
+                                            className="w-full h-32 p-4 text-lg font-bold text-slate-800 bg-slate-50 border border-harx-100 rounded-2xl focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 outline-none resize-none"
+                                        />
+                                        <div className="flex justify-end gap-2">
+                                            <button 
+                                                onClick={() => setIsEditing(false)}
+                                                className="px-4 py-2 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 transition-all"
+                                            >
+                                                Annuler
+                                            </button>
+                                            <button 
+                                                onClick={saveEdit}
+                                                className="px-4 py-2 bg-harx-500 text-white text-[10px] font-black uppercase rounded-xl shadow-md hover:bg-harx-600 transition-all"
+                                            >
+                                                Appliquer
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-xl font-bold text-slate-800 leading-snug italic">
+                                        « {currentPhase.content} »
+                                    </p>
+                                )}
                             </div>
                         </div>
 
