@@ -90,11 +90,11 @@ export default function CallsDashboardPage() {
         </div>
       </div>
 
-      <div className="bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/60 shadow-2xl shadow-slate-200/40 overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-320px)] flex flex-col overflow-hidden min-h-[400px]">
+        <div className="flex-1 overflow-y-auto scrollbar-auto min-h-0">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-200/50">
+            <thead className="sticky top-0 z-10 bg-slate-50/80 backdrop-blur-sm">
+              <tr className="border-b border-slate-200/50">
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Lead / Agent</th>
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Duration</th>
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">AI Score</th>

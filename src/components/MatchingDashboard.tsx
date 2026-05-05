@@ -542,7 +542,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         });
     };
     return (
-        <div className="min-h-screen bg-slate-50/50 w-full max-w-full overflow-x-hidden text-slate-900">
+        <div className="h-full bg-slate-50/50 w-full max-w-full overflow-hidden text-slate-900 flex flex-col">
             {/* Header with Navigation Tabs */}
             <header className="bg-gradient-harx border-b border-harx-600 shadow-lg">
                 {/* Top Header */}
@@ -615,7 +615,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             </header>
 
             {/* Main Content */}
-            <main className="container mx-auto p-4 w-full max-w-full overflow-hidden">
+            <main className="flex-1 overflow-hidden p-4 w-full max-w-full flex flex-col min-h-0">
 
                 {/* Error Message */}
                 {error && (
@@ -685,10 +685,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 )}
 
                                 {/* Two Column Layout: Gigs and Reps */}
-                                <div className="resizable-container flex gap-4 w-full max-w-full overflow-hidden">
+                                <div className="resizable-container flex gap-4 w-full max-w-full h-[calc(100vh-320px)] min-h-0 overflow-hidden">
                                     {/* Left Column: Gig Selection */}
                                     <div
-                                        className="bg-white rounded-xl shadow-xl p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-harx-100/50 backdrop-blur-sm"
+                                        className="bg-white rounded-xl shadow-xl p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-harx-100/50 backdrop-blur-sm flex flex-col"
                                         style={{ width: `${leftColumnWidth}%`, minWidth: '280px', maxWidth: '50%' }}
                                     >
                                         <div className="flex items-center justify-between mb-6">
@@ -703,7 +703,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             </span>
                                         </div>
 
-                                        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                        <div className="space-y-3 flex-1 overflow-y-auto pr-2 scrollbar-auto min-h-0">
                                             {gigs.map((gig: Gig) => {
                                                 const isGigExpanded = expandedGigs.has(gig._id || '');
 
@@ -925,7 +925,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
                                     {/* Right Column: Matching Results */}
                                     <div
-                                        className="bg-white rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 border border-gray-100"
+                                        className="bg-white rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 border border-gray-100 flex flex-col"
                                     >
                                         <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center space-x-2">
                                             <Users size={20} className="text-harx-500" />
@@ -1317,6 +1317,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 </div>
                                             </div>
                                         )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1333,8 +1334,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 </div>
                                 <p className="text-gray-500">Reps who have been invited but haven't responded yet</p>
 
-                                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-                                    {invitedAgentsList.length > 0 ? (
+                                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
+                                    <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
+                                        {invitedAgentsList.length > 0 ? (
                                         <div className="space-y-4">
                                             {(invitedAgentsList || []).map((agent: any, index: number) => {
                                                 if (!agent) return null;
@@ -1375,7 +1377,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 <p className="text-sm text-slate-500">All invitations have been responded to.</p>
                                             </div>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -1391,8 +1393,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 </div>
                                 <p className="text-gray-500">Reps who accepted invitations and are requesting to join</p>
 
-                                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-                                    {enrollmentRequests.length > 0 ? (
+                                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
+                                    <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
+                                        {enrollmentRequests.length > 0 ? (
                                         <div className="space-y-4">
                                             {(enrollmentRequests || []).map((agent: any, index: number) => agent && (
                                                 <div key={`enrollment-${agent._id || index}`} className="bg-blue-50 border border-blue-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
@@ -1477,6 +1480,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             </div>
                                         </div>
                                     )}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -1492,8 +1496,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 </div>
                                 <p className="text-gray-500">Reps who are approved and actively working</p>
 
-                                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-                                    {activeAgentsList.length > 0 ? (
+                                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
+                                    <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
+                                        {activeAgentsList.length > 0 ? (
                                         <div className="space-y-4">
                                             {(activeAgentsList || []).map((agent: any, index: number) => agent && (
                                                 <div key={`active-${agent._id || index}`} className="bg-green-50 border border-green-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
@@ -1569,6 +1574,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             </div>
                                         </div>
                                     )}
+                                    </div>
                                 </div>
                             </div>
                         )}
