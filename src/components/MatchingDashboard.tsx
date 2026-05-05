@@ -648,35 +648,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         {activeSection === 'matching' && (
                             <div className="space-y-6">
 
-                                {/* Search Input - Only show when a gig is selected */}
-                                {selectedGig && (
-                                    <div className="mb-6">
-                                        <div className="relative max-w-md mx-auto">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                                </svg>
-                                            </div>
-                                            <input
-                                                type="text"
-                                                placeholder="Search reps..."
-                                                value={searchTerm}
-                                                onChange={(e: { target: { value: any; }; }) => setSearchTerm(e.target.value)}
-                                                className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg leading-5 bg-antigravity-surface placeholder-antigravity-muted focus:outline-none focus:placeholder-antigravity-text/50 focus:ring-2 focus:ring-antigravity-primary focus:border-harx-500 text-sm text-slate-900 transition-all duration-200"
-                                            />
-                                            {searchTerm && (
-                                                <button
-                                                    onClick={() => setSearchTerm('')}
-                                                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                                                >
-                                                    <svg className="h-5 w-5 text-slate-500 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
 
                                 {/* Two Column Layout: Gigs and Reps */}
                                 <div className="resizable-container flex gap-4 w-full max-w-full h-[calc(100vh-320px)] min-h-0 overflow-hidden">
@@ -921,10 +892,29 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                     <div
                                         className="bg-white rounded-3xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 border border-gray-100 flex flex-col"
                                     >
-                                        <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-                                            <Users size={20} className="text-harx-500" />
-                                            <span>{selectedGig ? `Matches for "${selectedGig.title}"` : 'Select a Gig to See Matches'}</span>
-                                        </h3>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
+                                                <Users size={20} className="text-harx-500" />
+                                                <span>{selectedGig ? `Matches for "${selectedGig.title}"` : 'Select a Gig to See Matches'}</span>
+                                            </h3>
+                                            
+                                            {selectedGig && (
+                                                <div className="relative w-64">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                        </svg>
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search reps..."
+                                                        value={searchTerm}
+                                                        onChange={(e: any) => setSearchTerm(e.target.value)}
+                                                        className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
 
                                         <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
                                             {!selectedGig ? (
@@ -1323,10 +1313,38 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                             <div className="space-y-6">
 
                                 <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
+                                    <div className="flex items-center justify-between mb-4 shrink-0">
+                                        <div className="flex items-center space-x-3">
+                                            <h2 className="text-xl font-bold text-gray-900">📧 Invited Reps</h2>
+                                            <span className="px-3 py-1 bg-harx-alt-100 text-harx-alt-600 rounded-full text-xs font-medium border border-harx-alt-200">
+                                                {invitedAgentsList.length} Pending
+                                            </span>
+                                        </div>
+                                        <div className="relative w-64">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                </svg>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="Search invited reps..."
+                                                value={searchTerm}
+                                                onChange={(e: any) => setSearchTerm(e.target.value)}
+                                                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
+                                            />
+                                        </div>
+                                    </div>
                                     <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
-                                        {invitedAgentsList.length > 0 ? (
+                                        {invitedAgentsList.filter((a: any) => 
+                                            (a.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                            (a.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                        ).length > 0 ? (
                                         <div className="space-y-4">
-                                            {(invitedAgentsList || []).map((agent: any, index: number) => {
+                                            {(invitedAgentsList || []).filter((a: any) => 
+                                                (a.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                                (a.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                            ).map((agent: any, index: number) => {
                                                 if (!agent) return null;
                                                 
 
@@ -1376,10 +1394,38 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                             <div className="space-y-6">
 
                                 <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
+                                    <div className="flex items-center justify-between mb-4 shrink-0">
+                                        <div className="flex items-center space-x-3">
+                                            <h2 className="text-xl font-bold text-gray-900">📋 Enrollment Requests</h2>
+                                            <span className="px-3 py-1 bg-harx-50 text-harx-600 rounded-full text-xs font-medium border border-harx-100">
+                                                {enrollmentRequests.length} Requests
+                                            </span>
+                                        </div>
+                                        <div className="relative w-64">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                </svg>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="Search requests..."
+                                                value={searchTerm}
+                                                onChange={(e: any) => setSearchTerm(e.target.value)}
+                                                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
+                                            />
+                                        </div>
+                                    </div>
                                     <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
-                                        {enrollmentRequests.length > 0 ? (
+                                        {enrollmentRequests.filter((a: any) => 
+                                            (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                            (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                        ).length > 0 ? (
                                         <div className="space-y-4">
-                                            {(enrollmentRequests || []).map((agent: any, index: number) => agent && (
+                                            {(enrollmentRequests || []).filter((a: any) => 
+                                                (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                                (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                            ).map((agent: any, index: number) => agent && (
                                                 <div key={`enrollment-${agent._id || index}`} className="bg-blue-50 border border-blue-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
@@ -1472,10 +1518,38 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                             <div className="space-y-6">
 
                                 <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
+                                    <div className="flex items-center justify-between mb-4 shrink-0">
+                                        <div className="flex items-center space-x-3">
+                                            <h2 className="text-xl font-bold text-gray-900">✅ Active Reps</h2>
+                                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200">
+                                                {activeAgentsList.length} Active
+                                            </span>
+                                        </div>
+                                        <div className="relative w-64">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                </svg>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="Search active reps..."
+                                                value={searchTerm}
+                                                onChange={(e: any) => setSearchTerm(e.target.value)}
+                                                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
+                                            />
+                                        </div>
+                                    </div>
                                     <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
-                                        {activeAgentsList.length > 0 ? (
+                                        {activeAgentsList.filter((a: any) => 
+                                            (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                            (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                        ).length > 0 ? (
                                         <div className="space-y-4">
-                                            {(activeAgentsList || []).map((agent: any, index: number) => agent && (
+                                            {(activeAgentsList || []).filter((a: any) => 
+                                                (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                                (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                            ).map((agent: any, index: number) => agent && (
                                                 <div key={`active-${agent._id || index}`} className="bg-green-50 border border-green-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
