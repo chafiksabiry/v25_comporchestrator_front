@@ -23,6 +23,7 @@ import OverviewDashboardPage from './pages/OverviewDashboardPage';
 import CompanyDashboardPage from './pages/CompanyDashboardPage';
 import PremiumDashboardPage from './pages/PremiumDashboardPage';
 import CallsDashboardPage from './pages/CallsDashboardPage';
+import { CompanyPerformanceDashboard } from './pages/CompanyPerformanceDashboard';
 
 function App() {
   return (
@@ -32,7 +33,7 @@ function App() {
         <Route path="/dashboard/overview" element={<OverviewDashboardPage />} />
         <Route path="/company" element={<Navigate to="/dashboard/profile" replace />} />
         <Route path="/dashboard" element={<CompanyDashboardPage />} />
-        <Route path="/dashboard/profile" element={<CompanyProfilePanel />} />
+        <Route path="/dashboard/profile" element={<CompanyPerformanceDashboard />} />
         <Route path="/dashboard/leads" element={<LeadManagementPanel />} />
         <Route path="/dashboard/rep-matching" element={<RepMatchingPanel />} />
         <Route path="/dashboard/scheduler" element={<SchedulerPanel />} />
@@ -45,7 +46,7 @@ function App() {
         <Route path="/dashboard/gigs/:gigId" element={<GigDetailsPanel />} />
         <Route path="/dashboard/quality-assurance" element={<QualityAssurancePanel />} />
         <Route path="/dashboard/operations" element={<OperationsPanel />} />
-        <Route path="/dashboard/analytics" element={<AnalyticsPanel />} />
+        <Route path="/dashboard/analytics" element={<CompanyPerformanceDashboard />} />
         <Route path="/dashboard/integrations" element={<IntegrationsPanel />} />
         <Route path="/dashboard/settings" element={<SettingsPanel />} />
         <Route path="/dashboard/knowledge-base" element={<KnowledgeBase />} />
