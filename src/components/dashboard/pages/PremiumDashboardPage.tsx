@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PremiumDashboard from '../../training/components/Dashboard/PremiumDashboard';
 import { getActiveAgentsForCompany } from '../../../api/matching';
+import { CompanyPerformanceDashboard } from './CompanyPerformanceDashboard';
 import Cookies from 'js-cookie';
 
 export default function PremiumDashboardPage() {
@@ -156,6 +157,14 @@ export default function PremiumDashboardPage() {
     totalModules: 20,
     overallProgress: 65
   };
+
+  if (userType === 'company') {
+    return (
+      <div className="p-8">
+        <CompanyPerformanceDashboard />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
