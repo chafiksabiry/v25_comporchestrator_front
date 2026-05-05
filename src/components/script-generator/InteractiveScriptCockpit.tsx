@@ -20,7 +20,10 @@ interface ScriptPhase {
     id: string;
     title: string;
     content: string;
-    suggestions: string[];
+    suggestions: Array<{
+        text: string;
+        nextPhaseId: string;
+    }>;
     compliance?: string;
 }
 
@@ -59,6 +62,13 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
         const mins = Math.floor(totalSeconds / 60);
         const secs = totalSeconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const handleJumpToPhase = (id: string) => {
+        const idx = phases.findIndex(p => p.id === id);
+        if (idx !== -1) {
+            setCurrentPhaseIdx(idx);
+        }
     };
 
     const handleNext = () => {
@@ -176,11 +186,11 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                             {currentPhase.suggestions.map((s, idx) => (
                                 <button 
                                     key={idx}
-                                    onClick={handleNext}
+                                    onClick={() => handleJumpToPhase(s.nextPhaseId)}
                                     className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-harx-200 text-left transition-all group"
                                 >
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-bold text-slate-700 group-hover:text-harx-600 transition-colors">{s}</span>
+                                        <span className="text-sm font-bold text-slate-700 group-hover:text-harx-600 transition-colors">{s.text}</span>
                                         <ChevronRight size={18} className="text-slate-300 group-hover:text-harx-500 group-hover:translate-x-1 transition-all" />
                                     </div>
                                 </button>
