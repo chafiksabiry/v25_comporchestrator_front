@@ -1,19 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronUp, Check } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 
-interface LanguageSwitcherProps {
-  isCollapsed?: boolean;
-}
-
-export function LanguageSwitcher({ isCollapsed = false }: LanguageSwitcherProps) {
+export function LanguageSwitcher() {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const languages = [
-    { code: 'en', label: 'English', short: 'EN' },
-    { code: 'fr', label: 'Français', short: 'FR' }
+    { code: 'en', label: 'English', flagUrl: 'https://flagcdn.com/w320/gb.png' },
+    { code: 'fr', label: 'Français', flagUrl: 'https://flagcdn.com/w320/fr.png' }
   ];
 
   const currentLang = languages.find(l => i18n.language.startsWith(l.code)) || languages[0];
@@ -34,61 +30,43 @@ export function LanguageSwitcher({ isCollapsed = false }: LanguageSwitcherProps)
   };
 
   return (
-    <div className="relative w-full" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isOpen ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'} ${isCollapsed ? 'justify-center' : 'justify-between'}`}
+        className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 group ${isOpen ? 'bg-white/10' : 'hover:bg-white/5'}`}
         title="Change Language"
       >
-        <div className="flex items-center gap-4">
-          <div className="shrink-0 flex items-center justify-center w-5 h-5 rounded bg-white/10 text-[10px] font-bold uppercase tracking-widest group-hover:bg-white/20 transition-colors duration-300">
-            {currentLang.short}
-          </div>
-          {!isCollapsed && (
-            <span className="font-medium whitespace-nowrap overflow-hidden text-sm transition-all duration-300">
-              {currentLang.label}
-            </span>
-          )}
+        <div className="w-6 h-4 rounded-sm overflow-hidden shadow-sm">
+          <img src={currentLang.flagUrl} alt={currentLang.label} className="w-full h-full object-cover" />
         </div>
-        {!isCollapsed && (
-          <ChevronUp className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-        )}
+        <span className="font-medium text-sm text-white transition-colors duration-300">
+          {currentLang.label}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-full bg-slate-900 border border-white/10 rounded-2xl p-2 shadow-2xl z-50 flex flex-col gap-1 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+        <div className="absolute top-full right-0 mt-2 w-40 bg-slate-900 border border-white/10 rounded-2xl p-2 shadow-2xl z-50 flex flex-col gap-1 overflow-hidden animate-in fade-in slide-in-from-top-2">
           {languages.map((lang) => {
             const isActive = i18n.language.startsWith(lang.code);
             return (
               <button
                 key={lang.code}
                 onClick={() => selectLanguage(lang.code)}
-                className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium ${
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium ${
                   isActive 
                     ? 'bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-md' 
                     : 'text-slate-300 hover:bg-white/5 hover:text-white'
                 }`}
                 title={lang.label}
               >
-                {isCollapsed ? (
-                  <div className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold uppercase ${
-                    isActive ? 'bg-white/20' : 'bg-white/5'
-                  }`}>
-                    {lang.short}
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-3.5 rounded-sm overflow-hidden shadow-sm shrink-0">
+                    <img src={lang.flagUrl} alt={lang.label} className="w-full h-full object-cover" />
                   </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold uppercase ${
-                        isActive ? 'bg-white/20' : 'bg-white/5'
-                      }`}>
-                        {lang.short}
-                      </div>
-                      {lang.label}
-                    </div>
-                    {isActive && <Check className="w-4 h-4" />}
-                  </>
-                )}
+                  {lang.label}
+                </div>
+                {isActive && <Check className="w-4 h-4" />}
               </button>
             );
           })}

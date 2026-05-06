@@ -24,6 +24,7 @@ import DashboardApp from './components/dashboard/App';
 import PremiumDashboard from './components/training/components/Dashboard/PremiumDashboard';
 import MasterSidebar from './components/layout/MasterSidebar';
 import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwitch';
+import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
 
 function AppContent() {
   const location = useLocation();
@@ -319,6 +320,7 @@ function AppContent() {
                 )}
               </div>
               <div className="flex items-center space-x-4 ml-auto">
+                <LanguageSwitcher />
                 <div className="flex items-center space-x-3 bg-white/5 p-1.5 pr-4 rounded-2xl border border-white/10 shadow-sm">
                   <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-black shadow-md overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
                     {companyLogo && !logoError ? (
