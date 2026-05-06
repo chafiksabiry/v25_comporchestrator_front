@@ -17,7 +17,11 @@ i18n
         translation: frTranslation,
       },
     },
-    fallbackLng: 'fr', // Use French as fallback
+    fallbackLng: 'en',
+    detection: {
+      order: ['localStorage'],
+      caches: ['localStorage'],
+    },
     interpolation: {
       escapeValue: false, // React already safe from XSS
     },
