@@ -108,7 +108,6 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  let autoTurn: 'agent' | 'lead' = 'agent';
   return lines.map((line) => {
     const normalized = line
       .replace(/^\[[^\]]+\]\s*/, '')
@@ -116,21 +115,17 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
       .trim();
     const match = normalized.match(/^(agent|lead|candidate|client)\s*:\s*(.+)$/i);
     if (!match) {
-      const inferredSide: 'agent' | 'lead' = autoTurn;
-      autoTurn = autoTurn === 'agent' ? 'lead' : 'agent';
       return {
-        side: inferredSide,
-        label: inferredSide === 'agent' ? 'Agent' : 'Lead',
-        text: normalized || line,
+        side: 'other',
+        label: '',
+        text: line,
       };
     }
     const actor = String(match[1] || '').toLowerCase();
     const text = String(match[2] || '').trim();
     if (actor === 'agent') {
-      autoTurn = 'lead';
       return { side: 'agent', label: 'Agent', text };
     }
-    autoTurn = 'agent';
     return { side: 'lead', label: 'Lead', text };
   });
 };
@@ -150,7 +145,6 @@ const ScriptGenerator: React.FC = () => {
   const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
-  const [currentView, setCurrentView] = useState<'chat'>('chat');
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -179,7 +173,7 @@ const ScriptGenerator: React.FC = () => {
     const apiUrl =
       import.meta.env.VITE_COMPANY_API_URL ||
       'https://v25searchcompanywizardbackend-production.up.railway.app/api';
-    const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding`;
+    const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/`;
     const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`;
 
     try {
@@ -450,11 +444,13 @@ const ScriptGenerator: React.FC = () => {
 
   const buildScriptStepsFromMessage = (message: ChatMessage): ScriptStep[] => {
     const rows = parseStyledDialogue(message.content);
-    return rows.map((row) => ({
-      phase: 'General',
-      actor: row.side === 'agent' ? 'agent' : 'lead',
-      replica: row.text,
-    }));
+    return rows
+      .filter((row) => row.side === 'agent' || row.side === 'lead')
+      .map((row) => ({
+        phase: 'General',
+        actor: row.side === 'agent' ? 'agent' : 'lead',
+        replica: row.text,
+      }));
   };
 
   const validateScript = async (message: ChatMessage) => {
@@ -510,7 +506,7 @@ const ScriptGenerator: React.FC = () => {
     sendMessageToApi(input, true);
   };
 
-  const renderAssistantMessage = (messageId: string, content: string, playbook?: ChatMessage['playbook']) => {
+  const renderAssistantMessage = (content: string) => {
     const rows = parseStyledDialogue(content);
     const hasStructured = rows.some((row) => row.side !== 'other');
     if (!hasStructured) {
@@ -527,19 +523,19 @@ const ScriptGenerator: React.FC = () => {
           <div
             key={`${row.label}-${idx}`}
             className={`rounded-2xl p-4 transition-all duration-200 hover:shadow-sm ${row.side === 'agent'
-                ? 'bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border border-blue-100/60'
-                : row.side === 'lead'
-                  ? 'bg-gradient-to-r from-emerald-50/50 to-teal-50/50 border border-emerald-100/60'
-                  : 'bg-slate-50 border border-slate-100'
+              ? 'bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border border-blue-100/60'
+              : row.side === 'lead'
+                ? 'bg-gradient-to-r from-emerald-50/50 to-teal-50/50 border border-emerald-100/60'
+                : 'bg-slate-50 border border-slate-100'
               }`}
           >
             <div className="flex items-center gap-2 mb-1">
               <span
                 className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full ${row.side === 'agent'
-                    ? 'bg-blue-100 text-blue-700'
-                    : row.side === 'lead'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-slate-200 text-slate-700'
+                  ? 'bg-blue-100 text-blue-700'
+                  : row.side === 'lead'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-slate-200 text-slate-700'
                   }`}
               >
                 {row.side === 'agent' ? 'Agent' : row.side === 'lead' ? 'Lead' : 'Autre'}
@@ -651,8 +647,8 @@ const ScriptGenerator: React.FC = () => {
                       <div
                         key={script._id}
                         className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-2 group ${isScriptActive
-                            ? 'bg-emerald-50/50 border-emerald-100 hover:border-emerald-200'
-                            : 'bg-slate-50 border-slate-100 hover:border-slate-200'
+                          ? 'bg-emerald-50/50 border-emerald-100 hover:border-emerald-200'
+                          : 'bg-slate-50 border-slate-100 hover:border-slate-200'
                           }`}
                       >
                         <div className="min-w-0 flex-1">
