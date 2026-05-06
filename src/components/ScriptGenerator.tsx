@@ -604,104 +604,21 @@ const ScriptGenerator: React.FC = () => {
           {gigsError && <p className="text-xs font-bold text-red-500 mt-3">{gigsError}</p>}
         </div>
 
-        {/* Unified Chat & History Dashboard */}
+        {/* Unified Chat Dashboard */}
         {selectedGig ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-            {/* Left Column: Saved Scripts & New Session */}
-            <div className="lg:col-span-4 bg-white rounded-[2rem] border border-slate-100 shadow-xl p-6 space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-slate-100 rounded-lg text-slate-600">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Scripts Enregistrés</h3>
-                </div>
-                <span className="px-2.5 py-1 bg-slate-100 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-wider">
-                  {savedScripts.length}
-                </span>
-              </div>
-
-              <button
-                onClick={handleStartNewChat}
-                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-md shadow-slate-900/10 active:scale-[0.98]"
-              >
-                <Plus className="w-4 h-4" />
-                Nouveau Script
-              </button>
-
-              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
-                {isLoadingSavedScripts ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-slate-300" />
-                  </div>
-                ) : savedScripts.length === 0 ? (
-                  <div className="text-center py-8 border border-dashed border-slate-100 rounded-2xl">
-                    <p className="text-xs text-slate-400 font-bold">Aucun script disponible</p>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5 px-4">Utilisez le chat pour générer votre premier script.</p>
-                  </div>
-                ) : (
-                  savedScripts.map((script, idx) => {
-                    const isScriptActive = Boolean(script?.isActive);
-                    return (
-                      <div
-                        key={script._id}
-                        className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-2 group ${isScriptActive
-                          ? 'bg-emerald-50/50 border-emerald-100 hover:border-emerald-200'
-                          : 'bg-slate-50 border-slate-100 hover:border-slate-200'
-                          }`}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs font-black text-slate-800 truncate">Script #{savedScripts.length - idx}</p>
-                            {isScriptActive && (
-                              <span className="px-2 py-0.5 bg-emerald-500 text-white rounded-full text-[7px] font-black uppercase tracking-wider shrink-0">
-                                Validé
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[10px] text-slate-400 font-bold mt-0.5">
-                            {script.createdAt ? new Date(script.createdAt).toLocaleDateString() : 'Date inconnue'}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => openSavedScript(script)}
-                            className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900 transition-all shadow-sm"
-                          >
-                            Ouvrir
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSavedScript(script._id)}
-                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* Right Column: Dynamic Conversational Chat */}
-            <div className="lg:col-span-8">
-              <ScriptChatPanel
-                messages={messages}
-                input={input}
-                isSending={isSending}
-                validatingScriptId={validatingScriptId}
-                validatedScriptIds={validatedScriptIds}
-                selectedGigId={selectedGig?._id}
-                onInputChange={setInput}
-                onSubmit={sendMessage}
-                onValidateScript={validateScript}
-                renderAssistantMessage={renderAssistantMessage}
-              />
-            </div>
-
+          <div className="w-full">
+            <ScriptChatPanel
+              messages={messages}
+              input={input}
+              isSending={isSending}
+              validatingScriptId={validatingScriptId}
+              validatedScriptIds={validatedScriptIds}
+              selectedGigId={selectedGig?._id}
+              onInputChange={setInput}
+              onSubmit={sendMessage}
+              onValidateScript={validateScript}
+              renderAssistantMessage={renderAssistantMessage}
+            />
           </div>
         ) : (
           <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] p-12 text-center max-w-xl mx-auto">
