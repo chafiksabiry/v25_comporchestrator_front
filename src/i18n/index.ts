@@ -23,7 +23,7 @@ i18n
       caches: ['localStorage'],
     },
     interpolation: {
-      escapeValue: false, // React already safe from XSS
+      escapeValue: false,
     },
   });
 
