@@ -22,6 +22,15 @@
   },
   "dashboard": {
     "title": "Smart Orchestrator Dashboard",
+    "overview": {
+      "badge": "Overview",
+      "title": "Dashboard",
+      "titleHighlight": "Overview",
+      "description": "Return to the orchestrator to manage your setup and onboarding.",
+      "returnTo": "Return to",
+      "orchestrator": "Orchestrator",
+      "footerHint": "Streamlined Access System"
+    },
     "newProfile": "New Profile",
     "newGig": "New Gig",
     "stats": {

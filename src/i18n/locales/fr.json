@@ -21,7 +21,16 @@
     "logout": "Déconnexion"
   },
   "dashboard": {
-    "title": "Tableau de Bord Orchestrateur",
+    "title": "Tableau de Bord Smart Orchestrator",
+    "overview": {
+      "badge": "Vue d'ensemble",
+      "title": "Tableau de bord",
+      "titleHighlight": "Vue d'ensemble",
+      "description": "Retournez à l'orchestrateur pour gérer votre configuration et intégration.",
+      "returnTo": "Retour vers",
+      "orchestrator": "L'Orchestrateur",
+      "footerHint": "Système d'accès optimisé"
+    },
     "newProfile": "Nouveau Profil",
     "newGig": "Nouvelle Mission",
     "stats": {
