@@ -1,7 +1,9 @@
 import React from 'react';
 import { LayoutDashboard, ArrowRight, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function OverviewDashboardPage() {
+  const { t } = useTranslation();
   const handleRedirect = () => {
     window.dispatchEvent(new CustomEvent('openComporchestrator'));
   };
@@ -16,17 +18,17 @@ export function OverviewDashboardPage() {
         <div className="flex justify-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-harx-500/10 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-harx-600 border border-harx-500/20 shadow-sm animate-in fade-in zoom-in duration-700">
             <Sparkles className="h-3.5 w-3.5" />
-            Overview
+            {t('dashboard.overview.badge')}
           </div>
         </div>
 
         {/* Content */}
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
           <h1 className="text-5xl font-black tracking-tight text-slate-900 uppercase">
-            Dashboard <span className="text-transparent bg-clip-text bg-gradient-harx">Overview</span>
+            {t('dashboard.overview.title')} <span className="text-transparent bg-clip-text bg-gradient-harx">{t('dashboard.overview.titleHighlight')}</span>
           </h1>
           <p className="text-lg text-slate-500 font-medium max-w-md mx-auto leading-relaxed italic">
-            Return to the orchestrator to manage your setup and onboarding.
+            {t('dashboard.overview.description')}
           </p>
         </div>
 
@@ -45,9 +47,9 @@ export function OverviewDashboardPage() {
             
             <div className="flex flex-col items-start leading-none text-left">
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-harx-400 transition-colors">
-                Return to
+                {t('dashboard.overview.returnTo')}
               </span>
-              <span className="text-2xl font-black mt-1">Orchestrator</span>
+              <span className="text-2xl font-black mt-1">{t('dashboard.overview.orchestrator')}</span>
             </div>
             
             <div className="ml-4 p-2 rounded-full bg-white/5 transition-transform duration-300 group-hover:translate-x-2">
@@ -58,7 +60,7 @@ export function OverviewDashboardPage() {
 
         {/* Footer Hint */}
         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] animate-in fade-in duration-1000 delay-500">
-          Streamlined Access System
+          {t('dashboard.overview.footerHint')}
         </p>
       </div>
     </div>
