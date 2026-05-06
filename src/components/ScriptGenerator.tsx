@@ -1,11 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
-import { ArrowLeft, Brain, Pencil, Sparkles } from 'lucide-react';
+import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2 } from 'lucide-react';
 import apiClient from '../api/knowledgeClient';
-import ScriptListPanel from './script-generator/ScriptListPanel';
 import ScriptChatPanel from './script-generator/ScriptChatPanel';
-import ScriptViewPage from './script-generator/ScriptViewPage';
-import { InteractiveScriptCockpit } from './script-generator/InteractiveScriptCockpit';
 import { useTranslation } from 'react-i18next';
 
 interface Gig {
@@ -25,10 +22,6 @@ interface ChatMessage {
       role?: 'agent' | 'lead';
       text?: string;
     }>;
-    leadGuidance?: Array<{
-      leadLine?: string;
-      suggestedAgentReplies?: string[];
-    }>;
     turns?: Array<{
       id?: string;
       agentLine?: string;
@@ -40,16 +33,6 @@ interface ChatMessage {
     }>;
     title?: string;
     format?: string;
-    stages?: Array<{
-      id: string;
-      label: string;
-      agent: string;
-      responses?: Array<{
-        text: string;
-        nextStageId: string;
-      }>;
-      compliance?: string;
-    }>;
   };
 }
 
@@ -72,17 +55,6 @@ interface SavedScript {
   playbook?: ChatMessage['playbook'];
   createdAt?: string;
   isActive?: boolean;
-}
-
-interface EditModalState {
-  open: boolean;
-  mode: 'manual' | 'ai';
-  messageId: string;
-  turnIdx: number;
-  role: 'agent' | 'lead';
-  optionIdx?: number;
-  value: string;
-  title: string;
 }
 
 const formatScriptSteps = (steps: ScriptStep[]): string => {
@@ -110,7 +82,6 @@ const normalizeScriptText = (value: any): string => {
   if (typeof value === 'string') {
     const trimmed = value.trim();
     if (!trimmed) return '';
-    // Some backends return a JSON string instead of parsed JSON.
     const looksLikeJson = trimmed.startsWith('[') || trimmed.startsWith('{');
     if (looksLikeJson) {
       try {
@@ -123,7 +94,7 @@ const normalizeScriptText = (value: any): string => {
           return JSON.stringify(parsed, null, 2);
         }
       } catch {
-        // Keep original text when string is not valid JSON.
+        // Keep original text
       }
     }
     return trimmed;
@@ -145,7 +116,6 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
       .trim();
     const match = normalized.match(/^(agent|lead|candidate|client)\s*:\s*(.+)$/i);
     if (!match) {
-      // If line looks like dialogue text without label, auto-assign alternating roles.
       const inferredSide: 'agent' | 'lead' = autoTurn;
       autoTurn = autoTurn === 'agent' ? 'lead' : 'agent';
       return {
@@ -165,57 +135,6 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
   });
 };
 
-const buildLeadAgentSuggestions = (rows: StyledDialogueLine[]): Record<number, string[]> => {
-  const suggestions: Record<number, string[]> = {};
-  const fallbackSuggestions = [
-    'Merci pour votre retour. Je vous explique rapidement les points cles du poste.',
-    'Tres bien, est-ce que je peux vous poser 2 questions pour confirmer votre adequation ?',
-    'Parfait. Si vous etes d accord, on planifie un court entretien de suivi.',
-  ];
-
-  rows.forEach((row, idx) => {
-    if (row.side !== 'lead') return;
-    const nextAgentLines: string[] = [];
-    for (let i = idx + 1; i < rows.length; i += 1) {
-      const candidate = rows[i];
-      if (candidate.side === 'lead') break;
-      if (candidate.side === 'agent' && candidate.text) {
-        nextAgentLines.push(candidate.text);
-      }
-      if (nextAgentLines.length >= 3) break;
-    }
-    suggestions[idx] = nextAgentLines.length > 0 ? nextAgentLines : fallbackSuggestions;
-  });
-
-  return suggestions;
-};
-
-const buildLeadAgentSuggestionsFromPlaybook = (
-  rows: StyledDialogueLine[],
-  playbook?: {
-    leadGuidance?: Array<{
-      leadLine?: string;
-      suggestedAgentReplies?: string[];
-    }>;
-  }
-): Record<number, string[]> => {
-  const suggestions: Record<number, string[]> = {};
-  const guidance = Array.isArray(playbook?.leadGuidance) ? playbook!.leadGuidance! : [];
-  if (guidance.length === 0) return suggestions;
-
-  rows.forEach((row, idx) => {
-    if (row.side !== 'lead') return;
-    const leadText = String(row.text || '').trim().toLowerCase();
-    const match = guidance.find((g) => String(g?.leadLine || '').trim().toLowerCase() === leadText);
-    if (match && Array.isArray(match.suggestedAgentReplies) && match.suggestedAgentReplies.length > 0) {
-      suggestions[idx] = match.suggestedAgentReplies.map((s) => String(s || '').trim()).filter(Boolean).slice(0, 4);
-    }
-  });
-
-  return suggestions;
-};
-
-
 const ScriptGenerator: React.FC = () => {
   const { t } = useTranslation();
   const [isSending, setIsSending] = useState(false);
@@ -228,31 +147,18 @@ const ScriptGenerator: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [validatingScriptId, setValidatingScriptId] = useState<string | null>(null);
   const [validatedScriptIds, setValidatedScriptIds] = useState<Record<string, boolean>>({});
-  const [selectedLeadOptionByTurnKey, setSelectedLeadOptionByTurnKey] = useState<Record<string, number>>({});
-  const [rewritingKey, setRewritingKey] = useState<string | null>(null);
   const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
-  const [currentView, setCurrentView] = useState<'list' | 'view' | 'chat' | 'cockpit'>('list');
-  const [cockpitData, setCockpitData] = useState<{ title: string, stages: any[] } | null>(null);
-  const [editModal, setEditModal] = useState<EditModalState>({
-    open: false,
-    mode: 'manual',
-    messageId: '',
-    turnIdx: 0,
-    role: 'agent',
-    value: '',
-    title: 'Modifier',
-  });
+  const [currentView, setCurrentView] = useState<'chat'>('chat');
+
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const getCompanyId = () => {
     const runMode = import.meta.env.VITE_RUN_MODE || 'in-app';
     if (runMode === 'standalone') {
-      // Utilise la variable d'environnement en standalone
       return import.meta.env.VITE_STANDALONE_COMPANY_ID;
     } else {
-      // Utilise le cookie en in-app
       return Cookies.get('companyId');
     }
   };
@@ -268,7 +174,6 @@ const ScriptGenerator: React.FC = () => {
     const companyId = getCompanyId();
     if (!companyId) return;
 
-    // Keep configurable for environments where the script step ID differs.
     const phaseId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_PHASE_ID || 3);
     const stepId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_STEP_ID || 10);
     const apiUrl =
@@ -318,7 +223,6 @@ const ScriptGenerator: React.FC = () => {
 
   const fetchGigs = async () => {
     const companyId = getCompanyId();
-
     if (!companyId) {
       setGigsError('Company ID not found');
       return;
@@ -339,7 +243,6 @@ const ScriptGenerator: React.FC = () => {
       }
 
       const data = await response.json();
-
       setGigs(Array.isArray(data.data) ? data.data : []);
     } catch (err: any) {
       console.error('[GIGS] Error fetching gigs:', err);
@@ -372,12 +275,22 @@ const ScriptGenerator: React.FC = () => {
     }
   }, [messages, isSending]);
 
+  // Handle start fresh conversation
+  const handleStartNewChat = () => {
+    if (!selectedGig) return;
+    const welcomeMsg: ChatMessage = {
+      id: `welcome-${Date.now()}`,
+      role: 'assistant',
+      content: `Bonjour ! Je suis l'assistant HARX AI. 🤖\n\nJe vais vous aider à concevoir le script de vente idéal pour votre mission : **${selectedGig.title}**.\n\nJe peux générer une première version complète du script pour vous, ou vous pouvez me donner des consignes particulières (style de communication, objections spécifiques, etc.).\n\nQue souhaitez-vous faire ?`,
+    };
+    setMessages([welcomeMsg]);
+    setActiveScriptMessage(null);
+    setError(null);
+  };
+
   useEffect(() => {
     if (!selectedGig) return;
-    setMessages([]);
-    setError(null);
-    setActiveScriptMessage(null);
-    setCurrentView('list');
+    handleStartNewChat();
     fetchSavedScripts(selectedGig._id);
   }, [selectedGig?._id]);
 
@@ -390,14 +303,9 @@ const ScriptGenerator: React.FC = () => {
     };
   }, [selectedGig]);
 
-  const sendMessageToApi = async (rawMessage: string, addUserBubble: boolean, updateMessageId?: string, appendMode: boolean = false) => {
+  const sendMessageToApi = async (rawMessage: string, addUserBubble: boolean) => {
     const trimmedMessage = rawMessage.trim();
     if (!trimmedMessage || !selectedGigSummary) return;
-    const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
-    if (!backendUrl) {
-      setError('Backend API URL not configured');
-      return;
-    }
 
     const companyId = getCompanyId();
     if (!companyId) {
@@ -456,20 +364,16 @@ const ScriptGenerator: React.FC = () => {
           }))
           .filter((m) => m.content),
       };
-      // KB API only (no training chat endpoint)
+
       const { data: body } = (await apiClient.post('/rag/generate-script', scriptPayload)) as { data: any };
       const assistantText =
         body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
       const generatedPlaybook = body?.data?.playbook;
       const normalizedText = normalizeScriptText(assistantText);
-      const assistantTextSafe =
-        normalizedText || 'Je n’ai pas pu générer de réponse.';
-
-      console.log('[ScriptGenerator] Generated script:', assistantTextSafe);
-      console.log('[ScriptGenerator] Generated playbook:', generatedPlaybook);
+      const assistantTextSafe = normalizedText || 'Je n’ai pas pu générer de réponse.';
 
       const generatedMessage: ChatMessage = {
-        id: updateMessageId || `assistant-${Date.now()}`,
+        id: `assistant-${Date.now()}`,
         role: 'assistant',
         content: assistantTextSafe,
         playbook: generatedPlaybook,
@@ -477,67 +381,15 @@ const ScriptGenerator: React.FC = () => {
 
       setMessages((prev) => {
         const filtered = prev.filter((m) => !m.id.startsWith('assistant-pending-'));
-        if (updateMessageId) {
-          return filtered.map((m) => {
-            if (m.id !== updateMessageId) return m;
-
-            if (appendMode && m.playbook?.turns) {
-              // Append new turns to existing ones
-              const existingTurns = Array.isArray(m.playbook.turns) ? m.playbook.turns : [];
-              const newTurns = Array.isArray(generatedPlaybook?.turns) ? generatedPlaybook.turns : [];
-              return {
-                ...m,
-                playbook: {
-                  ...m.playbook,
-                  turns: [...existingTurns, ...newTurns]
-                }
-              };
-            }
-
-            return generatedMessage;
-          });
-        }
         return [...filtered, generatedMessage];
       });
 
-      if (updateMessageId === activeScriptMessage?.id || !updateMessageId) {
-        // If appending, we need to update activeScriptMessage with the merged state
-        setMessages((currentMessages) => {
-          const updated = currentMessages.find(m => m.id === (updateMessageId || generatedMessage.id));
-          if (updated) setActiveScriptMessage(updated);
-          return currentMessages;
-        });
-      }
-      setCurrentView('chat');
+      setActiveScriptMessage(generatedMessage);
     } catch (err: any) {
-      setMessages((prev) => prev.filter((m) => !m.id.startsWith('assistant-pending-')));
       setError(err?.response?.data?.error || err?.message || 'Failed to generate response');
     } finally {
       setIsSending(false);
     }
-  };
-
-  const handleSelectLeadOption = async (messageId: string, turnIdx: number, optIdx: number, leadReply: string) => {
-    if (isSending) return;
-
-    // Visual update: select the option
-    const turnKey = `${messageId}-${turnIdx}`;
-    setSelectedLeadOptionByTurnKey((prev) => {
-      const next = { ...prev, [turnKey]: optIdx };
-      // Reset downstream choices
-      Object.keys(next).forEach((k) => {
-        if (!k.startsWith(`${messageId}-`)) return;
-        const idxToken = Number(String(k).split('-').pop());
-        if (Number.isFinite(idxToken) && idxToken > turnIdx) {
-          delete next[k];
-        }
-      });
-      return next;
-    });
-
-    // API call: trigger next scenario generation (incremental)
-    const nextScenarioPrompt = `Le lead a répondu : "${leadReply}". Continuez le scénario avec les 3 prochaines étapes logiques pour l'agent.`;
-    await sendMessageToApi(nextScenarioPrompt, false, messageId, true);
   };
 
   const fetchSavedScripts = async (gigId: string) => {
@@ -572,22 +424,9 @@ const ScriptGenerator: React.FC = () => {
       scriptId: item._id,
       playbook: item.playbook,
     };
-    setMessages((prev) => [...prev, message]);
+    setMessages([message]);
     setActiveScriptMessage(message);
-    setCurrentView('view');
     setValidatedScriptIds((prev) => ({ ...prev, [item._id]: Boolean(item?.isActive) }));
-  };
-
-  const handleViewSavedScript = (scriptId: string) => {
-    const item = savedScripts.find((s) => s._id === scriptId);
-    if (!item) return;
-    openSavedScript(item);
-  };
-
-  const handleEditSavedScript = (scriptId: string) => {
-    const item = savedScripts.find((s) => s._id === scriptId);
-    if (!item) return;
-    openSavedScript(item);
   };
 
   const handleDeleteSavedScript = async (scriptId: string) => {
@@ -602,118 +441,20 @@ const ScriptGenerator: React.FC = () => {
         return next;
       });
       if (activeScriptMessage?.scriptId === scriptId) {
-        setActiveScriptMessage(null);
-        setCurrentView('list');
+        handleStartNewChat();
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Failed to delete script');
     }
   };
 
-  const handleGenerateScript = async (customPrompt?: string) => {
-    if (!selectedGigSummary) return;
-
-    const cockpitPrompt = [
-      customPrompt || 'Générer un script de vente dynamique et interactif sous forme de phases structurées.',
-      'The script should guide a full phone conversation.',
-      '',
-      'Requirements:',
-      '* Structure the call into stages (introduction, purpose, discovery, response, closing)',
-      '* Include both agent lines and possible customer replies',
-      '* Add variations for different customer reactions (interested, hesitant, not available, not interested)',
-      '* Keep sentences short, natural, and suitable for spoken conversation',
-      '* Make the flow realistic',
-      '',
-      'Mission Details:',
-      `- Title: ${selectedGigSummary.title}`,
-      `- Description: ${selectedGigSummary.description}`,
-      '',
-      'IMPORTANT: Renvoyer le script au format JSON de type "graphe" (branching).',
-      'Chaque suggestion de réponse du client doit pointer vers une étape spécifique.',
-      '{',
-      '  "title": "Nom du script",',
-      '  "stages": [',
-      '    {',
-      '      "id": "intro",',
-      '      "label": "Ouverture",',
-      '      "agent": "Bonjour...",',
-      '      "responses": [',
-      '        { "text": "Oui, je vous écoute", "nextStageId": "besoins" },',
-      '        { "text": "C\'est quoi ?", "nextStageId": "explication" },',
-      '        { "text": "Pas le temps", "nextStageId": "rappel" }',
-      '      ],',
-      '      "compliance": "Mention DDA obligatoire"',
-      '    },',
-      '    { "id": "besoins", "label": "Découverte", "agent": "...", "responses": [...] },',
-      '    { "id": "explication", "label": "Présentation", "agent": "...", "responses": [...] },',
-      '    { "id": "rappel", "label": "Fixer rappel", "agent": "...", "responses": [...] }',
-      '  ]',
-      '}',
-      'Générer au moins 8 phases pour couvrir les différents scénarios (objections, questions, accord).',
-      'Renvoyer UNIQUEMENT le JSON.'
-    ].join('\n');
-
-    setIsSending(true);
-    try {
-      const companyId = getCompanyId();
-      const payload = {
-        companyId,
-        gig: selectedGig,
-        typeClient: 'general',
-        langueTon: 'professionnel et dynamique',
-        contexte: cockpitPrompt,
-      };
-      const { data: body } = (await apiClient.post('/rag/generate-script', payload)) as { data: any };
-      const rawResponse = body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
-
-      try {
-        const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
-        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawResponse);
-        if (parsed.stages && Array.isArray(parsed.stages)) {
-          setCockpitData({
-            title: parsed.title || selectedGigSummary.title,
-            stages: parsed.stages
-          });
-          setCurrentView('cockpit');
-        } else {
-          throw new Error('Format JSON invalide');
-        }
-      } catch (e) {
-        console.error('Failed to parse cockpit JSON, falling back to chat', e);
-        await sendMessageToApi(cockpitPrompt, false);
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Erreur lors de la génération');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await sendMessageToApi(input, true);
-  };
-
   const buildScriptStepsFromMessage = (message: ChatMessage): ScriptStep[] => {
-    const dialogue = Array.isArray(message?.playbook?.dialogue) ? message.playbook!.dialogue! : [];
-    if (dialogue.length > 0) {
-      return dialogue
-        .map((row) => ({
-          phase: 'Dialogue',
-          actor: row?.role === 'lead' ? 'lead' : 'agent',
-          replica: String(row?.text || '').trim(),
-        }))
-        .filter((row) => row.replica);
-    }
-
-    const rows = parseStyledDialogue(String(message?.content || ''));
-    return rows
-      .filter((r) => r.text)
-      .map((r) => ({
-        phase: 'Dialogue',
-        actor: r.side === 'lead' ? 'lead' : 'agent',
-        replica: String(r.text || '').trim(),
-      }));
+    const rows = parseStyledDialogue(message.content);
+    return rows.map((row) => ({
+      phase: 'General',
+      actor: row.side === 'agent' ? 'agent' : 'lead',
+      replica: row.text,
+    }));
   };
 
   const validateScript = async (message: ChatMessage) => {
@@ -764,565 +505,47 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
-  const handleSaveCockpitScript = async () => {
-    if (!cockpitData || !selectedGig?._id || validatingScriptId) return;
-
-    setValidatingScriptId('cockpit-save');
-    setError(null);
-
-    try {
-      // Map cockpit stages to the linear script format for DB compatibility
-      const scriptSteps: any[] = [];
-      cockpitData.stages.forEach(stage => {
-        scriptSteps.push({
-          phase: stage.label || 'Dialogue',
-          actor: 'agent' as const,
-          replica: stage.agent
-        });
-
-        if (Array.isArray(stage.responses)) {
-          stage.responses.forEach(resp => {
-            if (resp.text) {
-              scriptSteps.push({
-                phase: stage.label || 'Dialogue',
-                actor: 'lead' as const,
-                replica: resp.text
-              });
-            }
-          });
-        }
-      });
-
-      const payload = {
-        gigId: selectedGig._id,
-        targetClient: 'general',
-        language: 'Professionnel et interactif',
-        details: 'Généré via Interactive Cockpit',
-        script: scriptSteps,
-        playbook: {
-          title: cockpitData.title,
-          stages: cockpitData.stages,
-          format: 'cockpit'
-        },
-        isActive: true
-      };
-
-      const { data } = (await apiClient.post('/rag/scripts', payload)) as { data: any };
-      const savedId = data?.data?._id || data?._id;
-
-      if (!savedId) throw new Error('Failed to save cockpit script');
-
-      setValidatedScriptIds(prev => ({ ...prev, [String(savedId)]: true }));
-      fetchSavedScripts(selectedGig._id);
-      setCurrentView('list');
-      await markOnboardingScriptStepCompleted();
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Failed to save script');
-    } finally {
-      setValidatingScriptId(null);
-    }
-  };
-
-  const handleEditCockpitStage = (stageId: string, newContent: string) => {
-    if (!cockpitData) return;
-    setCockpitData(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        stages: prev.stages.map(s => s.id === stageId ? { ...s, agent: newContent } : s)
-      };
-    });
-  };
-
-  const handleRefineCockpitStage = async (
-    stageId: string, 
-    currentContent: string, 
-    phase?: string, 
-    actor?: string
-  ): Promise<string> => {
-    const companyId = getCompanyId();
-    if (!companyId || !selectedGig) return currentContent;
-
-    try {
-      const prompt = [
-        'You are improving a line from a phone call script.',
-        '',
-        'Context:',
-        '',
-        `* Call stage: ${phase || 'Sales stage'}`,
-        `* Speaker: ${actor || 'Agent'}`,
-        '',
-        'Original line:',
-        currentContent,
-        '',
-        'Instruction:',
-        'Reformuler la réplique pour la rendre plus naturelle, fluide, chaleureuse et engageante pour une conversation téléphonique commerciale.',
-        '',
-        'Rules:',
-        '',
-        '* Keep the same meaning',
-        '* Make it more natural and fluid for a phone conversation',
-        '* Make it clear, polite, and engaging',
-        '* Keep it concise',
-        '',
-        'Return ONLY the improved line. No explanations. No formatting.'
-      ].join('\n');
-
-      const response = await apiClient.post('/rag/query', {
-        companyId,
-        query: prompt
-      }) as { data: any };
-
-      let text = response.data?.text || response.data?.data || currentContent;
-      return text.replace(/^["']|["']$/g, '').trim();
-    } catch (err) {
-      console.error('Refinement error:', err);
-      return currentContent;
-    }
-  };
-
-  const rewriteLineWithPrompt = async (line: string, role: 'agent' | 'lead', prompt: string): Promise<string> => {
-    const companyId = getCompanyId();
-    if (!companyId || !selectedGig) return line;
-    const rewritePrompt = [
-      'Rewrite exactly one dialogue line.',
-      `Role: ${role === 'agent' ? 'Agent' : 'Lead'}`,
-      `Original line: ${line}`,
-      `Instruction: ${prompt}`,
-      'Return ONLY one line with the same role prefix format:',
-      role === 'agent' ? 'Agent: ...' : 'Lead: ...',
-    ].join('\n');
-
-    const scriptPayload = {
-      companyId,
-      gig: selectedGig,
-      typeClient: 'general',
-      langueTon: 'simple et direct',
-      contexte: rewritePrompt,
-    };
-    const { data: body } = (await apiClient.post('/rag/generate-script', scriptPayload)) as { data: any };
-    const raw = String(body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text || '').trim();
-    const firstLine = raw.split(/\r?\n/).map((l: string) => l.trim()).find(Boolean) || '';
-    const match = firstLine.match(/^(agent|lead)\s*:\s*(.+)$/i);
-    if (match) return String(match[2] || '').trim() || line;
-    return firstLine || line;
-  };
-
-  const applyPromptEdit = async (params: {
-    messageId: string;
-    turnIdx: number;
-    role: 'agent' | 'lead';
-    optionIdx?: number;
-    prompt: string;
-  }) => {
-    const { messageId, turnIdx, role, optionIdx, prompt } = params;
-    const key = role === 'agent' ? `${messageId}-${turnIdx}-agent` : `${messageId}-${turnIdx}-lead-${optionIdx}`;
-    const safePrompt = String(prompt || '').trim();
-    if (!safePrompt) return;
-    setRewritingKey(key);
-    setError(null);
-    try {
-      const targetMessage = messages.find((m) => m.id === messageId);
-      const turns = Array.isArray(targetMessage?.playbook?.turns) ? targetMessage!.playbook!.turns! : [];
-      const turn = turns[turnIdx];
-      if (!turn) return;
-      const options = Array.isArray(turn.leadOptions) ? turn.leadOptions : [];
-      const selectedIdx = Number.isFinite(optionIdx as number) ? Number(optionIdx) : 0;
-      const sourceLine =
-        role === 'agent'
-          ? String(turn.agentLine || '').trim()
-          : String(options[selectedIdx]?.leadReply || '').trim();
-      if (!sourceLine) return;
-
-      const rewritten = await rewriteLineWithPrompt(sourceLine, role, safePrompt);
-      setMessages((prev) =>
-        prev.map((m) => {
-          if (m.id !== messageId || !m.playbook?.turns) return m;
-          const nextTurns = m.playbook.turns.map((t, idx) => {
-            if (idx !== turnIdx) return t;
-            if (role === 'agent') {
-              return { ...t, agentLine: rewritten };
-            }
-            const leadOptions = Array.isArray(t.leadOptions)
-              ? t.leadOptions.map((opt, oi) => (oi === selectedIdx ? { ...opt, leadReply: rewritten } : opt))
-              : t.leadOptions;
-            return { ...t, leadOptions };
-          });
-          return { ...m, playbook: { ...m.playbook, turns: nextTurns } };
-        })
-      );
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Failed to apply prompt modification');
-    } finally {
-      setRewritingKey(null);
-    }
-  };
-
-  const applyManualEditWithValue = (params: {
-    messageId: string;
-    turnIdx: number;
-    role: 'agent' | 'lead';
-    optionIdx?: number;
-    value: string;
-  }) => {
-    const { messageId, turnIdx, role, optionIdx, value } = params;
-    const nextValue = String(value || '').trim();
-    if (!nextValue) return;
-    const selectedIdx = Number.isFinite(optionIdx as number) ? Number(optionIdx) : 0;
-
-    setMessages((prev) =>
-      prev.map((m) => {
-        if (m.id !== messageId || !m.playbook?.turns) return m;
-        const nextTurns = m.playbook.turns.map((t, idx) => {
-          if (idx !== turnIdx) return t;
-          if (role === 'agent') {
-            return { ...t, agentLine: nextValue };
-          }
-          const leadOptions = Array.isArray(t.leadOptions)
-            ? t.leadOptions.map((opt, oi) => (oi === selectedIdx ? { ...opt, leadReply: nextValue } : opt))
-            : t.leadOptions;
-          return { ...t, leadOptions };
-        });
-        return { ...m, playbook: { ...m.playbook, turns: nextTurns } };
-      })
-    );
-  };
-
-  const getSourceLine = (params: {
-    messageId: string;
-    turnIdx: number;
-    role: 'agent' | 'lead';
-    optionIdx?: number;
-  }): string => {
-    const { messageId, turnIdx, role, optionIdx } = params;
-    const targetMessage = messages.find((m) => m.id === messageId);
-    const turns = Array.isArray(targetMessage?.playbook?.turns) ? targetMessage!.playbook!.turns! : [];
-    const turn = turns[turnIdx];
-    if (!turn) return '';
-    const options = Array.isArray(turn.leadOptions) ? turn.leadOptions : [];
-    const selectedIdx = Number.isFinite(optionIdx as number) ? Number(optionIdx) : 0;
-    return role === 'agent'
-      ? String(turn.agentLine || '').trim()
-      : String(options[selectedIdx]?.leadReply || '').trim();
-  };
-
-  const openEditModal = (params: {
-    mode: 'manual' | 'ai';
-    messageId: string;
-    turnIdx: number;
-    role: 'agent' | 'lead';
-    optionIdx?: number;
-  }) => {
-    const source = getSourceLine(params);
-    if (!source) return;
-    setEditModal({
-      open: true,
-      mode: params.mode,
-      messageId: params.messageId,
-      turnIdx: params.turnIdx,
-      role: params.role,
-      optionIdx: params.optionIdx,
-      value: params.mode === 'manual' ? source : '',
-      title:
-        params.mode === 'manual'
-          ? t('scriptGenerator.editModal.titleManual')
-          : params.role === 'agent'
-            ? t('scriptGenerator.editModal.titleAIAgent')
-            : t('scriptGenerator.editModal.titleAILead'),
-    });
-  };
-
-  const submitEditModal = async () => {
-    const payload = { ...editModal };
-    const value = String(payload.value || '').trim();
-    if (!value) return;
-    if (payload.mode === 'manual') {
-      applyManualEditWithValue({
-        messageId: payload.messageId,
-        turnIdx: payload.turnIdx,
-        role: payload.role,
-        optionIdx: payload.optionIdx,
-        value,
-      });
-      setEditModal((prev) => ({ ...prev, open: false }));
-      return;
-    }
-    await applyPromptEdit({
-      messageId: payload.messageId,
-      turnIdx: payload.turnIdx,
-      role: payload.role,
-      optionIdx: payload.optionIdx,
-      prompt: value,
-    });
-    setEditModal((prev) => ({ ...prev, open: false }));
+  const sendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessageToApi(input, true);
   };
 
   const renderAssistantMessage = (messageId: string, content: string, playbook?: ChatMessage['playbook']) => {
-    let turns = Array.isArray(playbook?.turns) ? playbook?.turns : [];
-    if (turns.length === 0 && Array.isArray(playbook?.stages)) {
-      const stages = playbook.stages;
-      turns = stages.map((stage) => ({
-        id: stage.id,
-        agentLine: stage.agent,
-        leadOptions: (stage.responses || []).map((res) => {
-          const targetStage = stages.find((s) => s.id === res.nextStageId);
-          return {
-            leadReply: res.text,
-            agentReply: targetStage ? targetStage.agent : '',
-            nextTurnId: res.nextStageId,
-          };
-        }),
-      }));
-    }
-    if (turns && turns.length > 0) {
-      const normalizeLine = (text?: string) =>
-        String(text || '')
-          .toLowerCase()
-          .replace(/\s+/g, ' ')
-          .trim();
-      const isClosingReply = (text?: string) => {
-        const t = normalizeLine(text);
-        if (!t) return false;
-        return (
-          t.includes('au revoir') ||
-          t.includes('bonne journee') ||
-          t.includes('bonne journée') ||
-          t.includes('merci de votre temps') ||
-          t.includes('je vous souhaite') ||
-          t.includes('merci quand meme') ||
-          t.includes('merci quand même')
-        );
-      };
-      const byTurnId = new Map<string, number>();
-      turns.forEach((turn, idx) => {
-        const key = String(turn?.id || '').trim();
-        if (key) byTurnId.set(key, idx);
-      });
-
-      // Show only the active scenario branch based on selected lead options.
-      const visibleTurnIndexes: number[] = [];
-      const visited = new Set<number>();
-      let terminalAgentReply = '';
-      let cursor = 0;
-      while (
-        Number.isFinite(cursor) &&
-        cursor >= 0 &&
-        cursor < turns.length &&
-        !visited.has(cursor) &&
-        visibleTurnIndexes.length < 30
-      ) {
-        visibleTurnIndexes.push(cursor);
-        visited.add(cursor);
-        const turn = turns[cursor];
-        const options = Array.isArray(turn?.leadOptions)
-          ? turn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply)
-          : [];
-        if (options.length === 0) break;
-        const turnKey = `${messageId}-${cursor}`;
-        const selectedIdx = Number.isFinite(selectedLeadOptionByTurnKey[turnKey])
-          ? selectedLeadOptionByTurnKey[turnKey]
-          : 0;
-        const safeIdx = Math.max(0, Math.min(selectedIdx, options.length - 1));
-        const selected = options[safeIdx];
-        const nextTurnId = String(selected?.nextTurnId || '').trim();
-        const nextIdxFromLink = nextTurnId ? byTurnId.get(nextTurnId) : undefined;
-        const selectedAgentReplyKey = normalizeLine(selected?.agentReply);
-        const nextIdxFromReply =
-          selectedAgentReplyKey
-            ? turns.findIndex((t) => normalizeLine(t?.agentLine) === selectedAgentReplyKey)
-            : -1;
-        const nextIdx =
-          typeof nextIdxFromLink === 'number'
-            ? nextIdxFromLink
-            : nextIdxFromReply >= 0
-              ? nextIdxFromReply
-              : !isClosingReply(selected?.agentReply) && cursor + 1 < turns.length
-                ? cursor + 1
-                : undefined;
-        if (typeof nextIdx !== 'number') {
-          terminalAgentReply = String(selected?.agentReply || '').trim();
-          break;
-        }
-        cursor = nextIdx;
-      }
-
-      return (
-        <div className="space-y-3">
-          {visibleTurnIndexes.map((turnIdx) => {
-            const turn = turns[turnIdx];
-            const options = Array.isArray(turn?.leadOptions) ? turn!.leadOptions!.filter((o) => o?.leadReply && o?.agentReply) : [];
-            if (!turn?.agentLine || options.length === 0) return null;
-            const turnKey = `${messageId}-${turnIdx}`;
-            const selectedIdx = Number.isFinite(selectedLeadOptionByTurnKey[turnKey])
-              ? selectedLeadOptionByTurnKey[turnKey]
-              : 0;
-            const safeIdx = Math.max(0, Math.min(selectedIdx, options.length - 1));
-            return (
-              <div key={turnKey} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">{t('scriptGenerator.roleAgent')}</p>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => openEditModal({ mode: 'manual', messageId, turnIdx, role: 'agent' })}
-                        title="Edit"
-                        aria-label="Edit"
-                        className="inline-flex items-center justify-center w-7 h-7 text-[11px] rounded-md border border-blue-200 bg-white text-blue-700 hover:bg-blue-50"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openEditModal({ mode: 'ai', messageId, turnIdx, role: 'agent' })}
-                        disabled={rewritingKey === `${messageId}-${turnIdx}-agent`}
-                        title="Edit with AI"
-                        aria-label="Edit with AI"
-                        className="inline-flex items-center justify-center w-7 h-7 text-[11px] rounded-md border border-blue-200 bg-white text-blue-700 hover:bg-blue-50 disabled:opacity-60"
-                      >
-                        <Brain className="w-3 h-3" />
-                        {rewritingKey === `${messageId}-${turnIdx}-agent` ? '...' : null}
-                      </button>
-                    </div>
-                  </div>
-                  <p className="mt-1 text-slate-800">{String(turn.agentLine)}</p>
-                </div>
-                <div className="mt-2 space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">{t('scriptGenerator.chooseLeadResponse')}</p>
-                  <div className="grid gap-1.5">
-                    {options.map((opt, optIdx) => {
-                      const active = optIdx === safeIdx;
-                      return (
-                        <div
-                          key={`${turnKey}-opt-${optIdx}`}
-                          role="button"
-                          tabIndex={0}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleSelectLeadOption(messageId, turnIdx, optIdx, String(opt.leadReply));
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key !== 'Enter' && e.key !== ' ') return;
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSelectedLeadOptionByTurnKey((prev) => {
-                              const next = { ...prev, [turnKey]: optIdx };
-                              Object.keys(next).forEach((k) => {
-                                if (!k.startsWith(`${messageId}-`)) return;
-                                const idxToken = Number(String(k).split('-').pop());
-                                if (Number.isFinite(idxToken) && idxToken > turnIdx) {
-                                  delete next[k];
-                                }
-                              });
-                              return next;
-                            });
-                          }}
-                          className={`text-left rounded-lg border px-3 py-2 transition-colors cursor-pointer ${active
-                            ? 'border-emerald-400 bg-emerald-100 text-emerald-900'
-                            : 'border-emerald-200 bg-white text-slate-700 hover:bg-emerald-50'
-                            }`}
-                        >
-                          <span className="mr-1 text-[10px] font-bold uppercase text-emerald-700">{t('scriptGenerator.roleLead')}</span>
-                          {String(opt.leadReply)}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openEditModal({ mode: 'manual', messageId, turnIdx, role: 'lead', optionIdx: safeIdx })}
-                      title="Edit lead"
-                      aria-label="Edit lead"
-                      className="inline-flex items-center justify-center w-7 h-7 text-[11px] rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
-                    >
-                      <Pencil className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openEditModal({ mode: 'ai', messageId, turnIdx, role: 'lead', optionIdx: safeIdx })}
-                      disabled={rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}`}
-                      title="Edit lead with AI"
-                      aria-label="Edit lead with AI"
-                      className="inline-flex items-center justify-center w-7 h-7 text-[11px] rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 disabled:opacity-60"
-                    >
-                      <Brain className="w-3 h-3" />
-                      {rewritingKey === `${messageId}-${turnIdx}-lead-${safeIdx}` ? '...' : null}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          {terminalAgentReply && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">{t('scriptGenerator.roleAgent')}</p>
-                <p className="mt-1 text-slate-800">{terminalAgentReply}</p>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
     const rows = parseStyledDialogue(content);
     const hasStructured = rows.some((row) => row.side !== 'other');
     if (!hasStructured) {
       return (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <span className="whitespace-pre-wrap text-slate-800">{content}</span>
+        <div className="prose max-w-none text-slate-800 leading-relaxed text-sm">
+          {content}
         </div>
       );
     }
-    const byPlaybook = buildLeadAgentSuggestionsFromPlaybook(rows, playbook);
-    const byFallback = buildLeadAgentSuggestions(rows);
-    const leadAgentSuggestions: Record<number, string[]> = { ...byFallback, ...byPlaybook };
+
     return (
-      <div className="space-y-3">
+      <div className="space-y-3 mt-2">
         {rows.map((row, idx) => (
           <div
             key={`${row.label}-${idx}`}
-            className={`rounded-xl px-3 py-2 ${row.side === 'agent'
-              ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200'
-              : row.side === 'lead'
-                ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200'
-                : 'bg-gray-50 border border-gray-200'
+            className={`rounded-2xl p-4 transition-all duration-200 hover:shadow-sm ${row.side === 'agent'
+                ? 'bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border border-blue-100/60'
+                : row.side === 'lead'
+                  ? 'bg-gradient-to-r from-emerald-50/50 to-teal-50/50 border border-emerald-100/60'
+                  : 'bg-slate-50 border border-slate-100'
               }`}
           >
-            <p
-              className={`text-[11px] font-bold uppercase tracking-wide ${row.side === 'agent'
-                ? 'text-blue-700'
-                : row.side === 'lead'
-                  ? 'text-emerald-700'
-                  : 'text-gray-600'
-                }`}
-            >
-              {row.label}
-            </p>
-            <p className="mt-1 whitespace-pre-wrap text-slate-800">{row.text}</p>
-            {row.side === 'lead' && (
-              <div className="mt-2">
-                <details className="group rounded-lg border border-emerald-200 bg-white/90 px-2 py-1">
-                  <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-wide text-emerald-700 flex items-center justify-between">
-                    <span>{t('scriptGenerator.probableAgentResponse')}</span>
-                    <span className="text-emerald-600 group-open:rotate-180 transition-transform">▼</span>
-                  </summary>
-                  <div className="mt-2 space-y-1.5">
-                    {(leadAgentSuggestions[idx] || []).map((suggestion, sIdx) => (
-                      <div
-                        key={`lead-${idx}-agent-${sIdx}`}
-                        className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-slate-700"
-                      >
-                        <span className="mr-1 text-[10px] font-bold text-blue-700">{t('scriptGenerator.roleAgent')}</span>
-                        <span>{suggestion}</span>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              </div>
-            )}
+            <div className="flex items-center gap-2 mb-1">
+              <span
+                className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full ${row.side === 'agent'
+                    ? 'bg-blue-100 text-blue-700'
+                    : row.side === 'lead'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-slate-200 text-slate-700'
+                  }`}
+              >
+                {row.side === 'agent' ? 'Agent' : row.side === 'lead' ? 'Lead' : 'Autre'}
+              </span>
+            </div>
+            <p className="text-slate-800 text-sm font-semibold leading-relaxed mt-1.5">{row.text}</p>
           </div>
         ))}
       </div>
@@ -1331,35 +554,38 @@ const ScriptGenerator: React.FC = () => {
 
   return (
     <div className="w-full py-4 min-h-[calc(100vh-100px)]">
-      <div className="max-w-6xl mx-auto px-2 md:px-4 space-y-5">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-harx px-6 py-5 shadow-md shadow-harx-500/20">
+      <div className="max-w-6xl mx-auto px-2 md:px-4 space-y-6">
+
+        {/* Top Header Card */}
+        <div className="relative overflow-hidden rounded-3xl bg-slate-900 px-6 py-6 shadow-xl shadow-slate-900/10 border border-slate-800/50">
           <div className="relative z-10 flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                <Sparkles className="h-5 w-5 text-white" />
+              <div className="w-11 h-11 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner">
+                <Sparkles className="h-5 w-5 text-indigo-400" />
               </div>
               <div>
-                <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">{t('scriptGenerator.title')}</h2>
-                <p className="text-sm font-medium text-white/90">
-                  {t('scriptGenerator.subtitle')}
+                <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">Script d'Appel Intelligent</h2>
+                <p className="text-xs font-bold text-slate-400 mt-0.5">
+                  Concevez et validez votre script de vente idéal en dialoguant avec l'IA
                 </p>
               </div>
             </div>
             <button
-              className="px-4 py-2 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-bold rounded-xl border border-white/20 transition-all duration-200 uppercase tracking-wide text-[10px] flex items-center gap-2"
+              className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-extrabold rounded-2xl border border-white/10 transition-all duration-200 uppercase tracking-wider text-[10px] flex items-center gap-2"
               onClick={handleBackToOrchestrator}
             >
               <ArrowLeft className="w-4 h-4" />
-              {t('scriptGenerator.back')}
+              Retour
             </button>
           </div>
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/10 rounded-full blur-2xl" />
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-fuchsia-500/5 rounded-full blur-2xl" />
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 md:p-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-2.5">
-            {t('scriptGenerator.selectGig')} <span className="text-red-500">*</span>
+        {/* Selection Card */}
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl p-6 md:p-8">
+          <label className="block text-xs font-black text-slate-800 uppercase tracking-widest mb-3">
+            Sélectionnez une mission / Gig <span className="text-red-500">*</span>
           </label>
           <select
             value={selectedGig?._id || ''}
@@ -1367,10 +593,10 @@ const ScriptGenerator: React.FC = () => {
               const gig = gigs.find((g) => g._id === e.target.value) || null;
               setSelectedGig(gig);
             }}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+            className="w-full px-5 py-4 border border-slate-200 rounded-2xl font-bold text-slate-700 bg-slate-50/50 focus:ring-4 focus:ring-slate-900/5 focus:border-slate-800 focus:bg-white transition-all text-sm outline-none cursor-pointer"
             disabled={isLoadingGigs}
           >
-            <option value="">{t('scriptGenerator.chooseGig')}</option>
+            <option value="">Sélectionnez un Gig...</option>
             {gigs.map((gig) => (
               <option key={gig._id} value={gig._id}>
                 {gig.title || 'Untitled gig'}
@@ -1378,123 +604,125 @@ const ScriptGenerator: React.FC = () => {
             ))}
           </select>
 
-          {isLoadingGigs && <p className="text-sm text-gray-500 mt-2.5">{t('scriptGenerator.loadingGigs')}</p>}
-          {gigsError && <p className="text-sm text-red-600 mt-2.5">{gigsError}</p>}
+          {isLoadingGigs && <p className="text-xs font-bold text-slate-400 mt-3 flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Chargement des missions...</p>}
+          {gigsError && <p className="text-xs font-bold text-red-500 mt-3">{gigsError}</p>}
         </div>
 
-        {currentView === 'list' && (
-          <ScriptListPanel
-            selectedGigId={selectedGig?._id}
-            isSending={isSending}
-            isLoadingSavedScripts={isLoadingSavedScripts}
-            savedScripts={savedScripts}
-            showGenerateButton={savedScripts.length === 0}
-            onGenerate={handleGenerateScript}
-            onView={handleViewSavedScript}
-            onEdit={handleEditSavedScript}
-            onDelete={handleDeleteSavedScript}
-          />
-        )}
+        {/* Unified Chat & History Dashboard */}
+        {selectedGig ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        {currentView === 'cockpit' && cockpitData && (
-          <InteractiveScriptCockpit
-            scriptTitle={cockpitData.title}
-            stages={cockpitData.stages}
-            onClose={() => setCurrentView('list')}
-            onValidate={handleSaveCockpitScript}
-            isValidating={validatingScriptId === 'cockpit-save'}
-            onEditStage={handleEditCockpitStage}
-            onRefineStage={handleRefineCockpitStage}
-          />
-        )}
-
-        {currentView === 'view' ? (
-          <ScriptViewPage
-            hasActiveScript={Boolean(activeScriptMessage)}
-            content={
-              activeScriptMessage ? (
-                <div className="space-y-3">
-                  {renderAssistantMessage(
-                    activeScriptMessage.id,
-                    activeScriptMessage.content,
-                    activeScriptMessage.playbook
-                  )}
+            {/* Left Column: Saved Scripts & New Session */}
+            <div className="lg:col-span-4 bg-white rounded-[2rem] border border-slate-100 shadow-xl p-6 space-y-6">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-slate-100 rounded-lg text-slate-600">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Scripts Enregistrés</h3>
                 </div>
-              ) : (
-                <p className="text-sm text-gray-500">{t('scriptGenerator.selectOrGenerate')}</p>
-              )
-            }
-            onBackToList={() => setCurrentView('list')}
-            onValidate={activeScriptMessage ? () => validateScript(activeScriptMessage) : undefined}
-            validateDisabled={
-              !activeScriptMessage ||
-              Boolean(validatedScriptIds[activeScriptMessage.scriptId || activeScriptMessage.id]) ||
-              validatingScriptId === (activeScriptMessage.scriptId || activeScriptMessage.id)
-            }
-            validateLabel={
-              !activeScriptMessage
-                ? t('scriptGenerator.validateScript')
-                : validatedScriptIds[activeScriptMessage.scriptId || activeScriptMessage.id]
-                  ? t('scriptGenerator.scriptValid')
-                  : validatingScriptId === (activeScriptMessage.scriptId || activeScriptMessage.id)
-                    ? t('scriptGenerator.validating')
-                    : t('scriptGenerator.validateScript')
-            }
-          />
-        ) : currentView === 'chat' ? (
-          <ScriptChatPanel
-            messages={messages}
-            input={input}
-            isSending={isSending}
-            validatingScriptId={validatingScriptId}
-            validatedScriptIds={validatedScriptIds}
-            selectedGigId={selectedGig?._id}
-            onInputChange={setInput}
-            onSubmit={sendMessage}
-            onValidateScript={validateScript}
-            renderAssistantMessage={renderAssistantMessage}
-          />
-        ) : null}
-
-        {editModal.open && (
-          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-4">
-            <div className="w-full max-w-2xl bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden">
-              <div className="px-6 py-4 bg-gradient-to-r from-harx-500 to-fuchsia-500">
-                <p className="text-sm font-semibold text-white tracking-wide">{editModal.title}</p>
-                <p className="text-xs text-white/90 mt-1">{t('scriptGenerator.editModal.subtitle')}</p>
+                <span className="px-2.5 py-1 bg-slate-100 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-wider">
+                  {savedScripts.length}
+                </span>
               </div>
-              <div className="p-6 space-y-4 bg-gradient-to-b from-white to-slate-50">
-                <textarea
-                  value={editModal.value}
-                  onChange={(e) => setEditModal((prev) => ({ ...prev, value: e.target.value }))}
-                  rows={editModal.mode === 'manual' ? 5 : 4}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 text-sm text-slate-800 bg-white shadow-sm resize-y"
-                  placeholder={editModal.mode === 'manual' ? t('scriptGenerator.editModal.placeholderManual') : t('scriptGenerator.editModal.placeholderAI')}
-                />
-                <div className="flex items-center justify-end gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setEditModal((prev) => ({ ...prev, open: false }))}
-                    className="px-4 py-2 text-sm rounded-xl border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
-                  >
-                    {t('scriptGenerator.editModal.cancel')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={submitEditModal}
-                    className="px-4 py-2 text-sm rounded-xl text-white bg-gradient-to-r from-harx-500 to-fuchsia-500 hover:opacity-95 shadow-sm"
-                  >
-                    {t('scriptGenerator.editModal.apply')}
-                  </button>
-                </div>
+
+              <button
+                onClick={handleStartNewChat}
+                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-md shadow-slate-900/10 active:scale-[0.98]"
+              >
+                <Plus className="w-4 h-4" />
+                Nouveau Script
+              </button>
+
+              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                {isLoadingSavedScripts ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-slate-300" />
+                  </div>
+                ) : savedScripts.length === 0 ? (
+                  <div className="text-center py-8 border border-dashed border-slate-100 rounded-2xl">
+                    <p className="text-xs text-slate-400 font-bold">Aucun script disponible</p>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5 px-4">Utilisez le chat pour générer votre premier script.</p>
+                  </div>
+                ) : (
+                  savedScripts.map((script, idx) => {
+                    const isScriptActive = Boolean(script?.isActive);
+                    return (
+                      <div
+                        key={script._id}
+                        className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-2 group ${isScriptActive
+                            ? 'bg-emerald-50/50 border-emerald-100 hover:border-emerald-200'
+                            : 'bg-slate-50 border-slate-100 hover:border-slate-200'
+                          }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-black text-slate-800 truncate">Script #{savedScripts.length - idx}</p>
+                            {isScriptActive && (
+                              <span className="px-2 py-0.5 bg-emerald-500 text-white rounded-full text-[7px] font-black uppercase tracking-wider shrink-0">
+                                Validé
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-bold mt-0.5">
+                            {script.createdAt ? new Date(script.createdAt).toLocaleDateString() : 'Date inconnue'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => openSavedScript(script)}
+                            className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900 transition-all shadow-sm"
+                          >
+                            Ouvrir
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSavedScript(script._id)}
+                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
+
+            {/* Right Column: Dynamic Conversational Chat */}
+            <div className="lg:col-span-8">
+              <ScriptChatPanel
+                messages={messages}
+                input={input}
+                isSending={isSending}
+                validatingScriptId={validatingScriptId}
+                validatedScriptIds={validatedScriptIds}
+                selectedGigId={selectedGig?._id}
+                onInputChange={setInput}
+                onSubmit={sendMessage}
+                onValidateScript={validateScript}
+                renderAssistantMessage={renderAssistantMessage}
+              />
+            </div>
+
+          </div>
+        ) : (
+          <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] p-12 text-center max-w-xl mx-auto">
+            <div className="w-16 h-16 bg-slate-100 text-slate-400 flex items-center justify-center rounded-full mx-auto mb-4">
+              <Bot className="w-8 h-8" />
+            </div>
+            <p className="font-extrabold text-slate-800 uppercase tracking-tight">Aucun Gig sélectionné</p>
+            <p className="text-xs text-slate-400 font-bold leading-relaxed mt-1">
+              Veuillez sélectionner une mission / Gig dans la liste déroulante ci-dessus pour commencer à concevoir votre script avec l'assistant.
+            </p>
           </div>
         )}
 
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm">
-            <p className="text-red-700 text-sm">{error}</p>
+          <div className="p-4 bg-red-50 border border-red-200 rounded-2xl shadow-sm flex items-start gap-2.5">
+            <div className="w-5 h-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0 font-bold text-xs">!</div>
+            <p className="red-700 text-xs font-bold leading-normal">{error}</p>
           </div>
         )}
       </div>
@@ -1502,4 +730,4 @@ const ScriptGenerator: React.FC = () => {
   );
 };
 
-export default ScriptGenerator; 
+export default ScriptGenerator;
