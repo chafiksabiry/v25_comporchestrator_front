@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  LogOut,
   ChevronRight,
-  ChevronLeft,
-  Sparkles,
-  Info,
-  Building2
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation } from 'react-router-dom';
@@ -255,11 +250,11 @@ function AppContent() {
       case 'dashboard':
         return (
           <div className="p-4">
-            <PremiumDashboard 
-              profile={{ personalInfo: { name: userFullName }, fullName: userFullName }} 
+            <PremiumDashboard
+              profile={{ personalInfo: { name: userFullName }, fullName: userFullName }}
               companyName={companyName}
               userType={localStorage.getItem('role') === 'company' ? 'company' : 'rep'}
-              trainingStats={{ completed: 12, inProgress: 5, pending: 3, totalModules: 20, overallProgress: 65 }} 
+              trainingStats={{ completed: 12, inProgress: 5, pending: 3, totalModules: 20, overallProgress: 65 }}
               companyStats={{ gigs: 8, calls: 142, gigsEnrolled: 12, activeLeads: 45 }}
             />
           </div>
