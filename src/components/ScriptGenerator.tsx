@@ -38,6 +38,18 @@ interface ChatMessage {
         nextTurnId?: string | null;
       }>;
     }>;
+    title?: string;
+    format?: string;
+    stages?: Array<{
+      id: string;
+      label: string;
+      agent: string;
+      responses?: Array<{
+        text: string;
+        nextStageId: string;
+      }>;
+      compliance?: string;
+    }>;
   };
 }
 
@@ -760,11 +772,26 @@ const ScriptGenerator: React.FC = () => {
 
     try {
       // Map cockpit stages to the linear script format for DB compatibility
-      const scriptSteps = cockpitData.stages.map(stage => ({
-        phase: stage.label || 'Dialogue',
-        actor: 'agent' as const,
-        replica: stage.agent
-      }));
+      const scriptSteps: any[] = [];
+      cockpitData.stages.forEach(stage => {
+        scriptSteps.push({
+          phase: stage.label || 'Dialogue',
+          actor: 'agent' as const,
+          replica: stage.agent
+        });
+
+        if (Array.isArray(stage.responses)) {
+          stage.responses.forEach(resp => {
+            if (resp.text) {
+              scriptSteps.push({
+                phase: stage.label || 'Dialogue',
+                actor: 'lead' as const,
+                replica: resp.text
+              });
+            }
+          });
+        }
+      });
 
       const payload = {
         gigId: selectedGig._id,
@@ -1031,7 +1058,22 @@ const ScriptGenerator: React.FC = () => {
   };
 
   const renderAssistantMessage = (messageId: string, content: string, playbook?: ChatMessage['playbook']) => {
-    const turns = Array.isArray(playbook?.turns) ? playbook?.turns : [];
+    let turns = Array.isArray(playbook?.turns) ? playbook?.turns : [];
+    if (turns.length === 0 && Array.isArray(playbook?.stages)) {
+      const stages = playbook.stages;
+      turns = stages.map((stage) => ({
+        id: stage.id,
+        agentLine: stage.agent,
+        leadOptions: (stage.responses || []).map((res) => {
+          const targetStage = stages.find((s) => s.id === res.nextStageId);
+          return {
+            leadReply: res.text,
+            agentReply: targetStage ? targetStage.agent : '',
+            nextTurnId: res.nextStageId,
+          };
+        }),
+      }));
+    }
     if (turns && turns.length > 0) {
       const normalizeLine = (text?: string) =>
         String(text || '')
