@@ -6,6 +6,7 @@ import ScriptListPanel from './script-generator/ScriptListPanel';
 import ScriptChatPanel from './script-generator/ScriptChatPanel';
 import ScriptViewPage from './script-generator/ScriptViewPage';
 import { InteractiveScriptCockpit } from './script-generator/InteractiveScriptCockpit';
+import { useTranslation } from 'react-i18next';
 
 interface Gig {
   _id: string;
@@ -204,6 +205,7 @@ const buildLeadAgentSuggestionsFromPlaybook = (
 
 
 const ScriptGenerator: React.FC = () => {
+  const { t } = useTranslation();
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState('');
@@ -701,7 +703,7 @@ const ScriptGenerator: React.FC = () => {
     if (!key || validatingScriptId) return;
     const alreadyValidatedId = savedScripts.find((s) => Boolean((s as any)?.isActive))?._id;
     if (alreadyValidatedId && (!message.scriptId || String(message.scriptId) !== String(alreadyValidatedId))) {
-      setError('Un script est deja valide pour ce gig. Supprimez-le ou modifiez-le avant de valider un autre script.');
+      setError(t('scriptGenerator.scriptAlreadyValidated'));
       return;
     }
     setValidatingScriptId(key);
@@ -968,10 +970,10 @@ const ScriptGenerator: React.FC = () => {
       value: params.mode === 'manual' ? source : '',
       title:
         params.mode === 'manual'
-          ? 'Modifier la ligne'
+          ? t('scriptGenerator.editModal.titleManual')
           : params.role === 'agent'
-            ? 'Instruction IA pour modifier la ligne agent'
-            : 'Instruction IA pour modifier la reponse lead selectionnee',
+            ? t('scriptGenerator.editModal.titleAIAgent')
+            : t('scriptGenerator.editModal.titleAILead'),
     });
   };
 
@@ -1089,7 +1091,7 @@ const ScriptGenerator: React.FC = () => {
               <div key={turnKey} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">Agent</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">{t('scriptGenerator.roleAgent')}</p>
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
@@ -1116,7 +1118,7 @@ const ScriptGenerator: React.FC = () => {
                   <p className="mt-1 text-slate-800">{String(turn.agentLine)}</p>
                 </div>
                 <div className="mt-2 space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Choisir la reponse du lead</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">{t('scriptGenerator.chooseLeadResponse')}</p>
                   <div className="grid gap-1.5">
                     {options.map((opt, optIdx) => {
                       const active = optIdx === safeIdx;
@@ -1151,7 +1153,7 @@ const ScriptGenerator: React.FC = () => {
                             : 'border-emerald-200 bg-white text-slate-700 hover:bg-emerald-50'
                             }`}
                         >
-                          <span className="mr-1 text-[10px] font-bold uppercase text-emerald-700">Lead:</span>
+                          <span className="mr-1 text-[10px] font-bold uppercase text-emerald-700">{t('scriptGenerator.roleLead')}</span>
                           {String(opt.leadReply)}
                         </div>
                       );
@@ -1186,7 +1188,7 @@ const ScriptGenerator: React.FC = () => {
           {terminalAgentReply && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
               <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">Agent</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">{t('scriptGenerator.roleAgent')}</p>
                 <p className="mt-1 text-slate-800">{terminalAgentReply}</p>
               </div>
             </div>
@@ -1234,7 +1236,7 @@ const ScriptGenerator: React.FC = () => {
               <div className="mt-2">
                 <details className="group rounded-lg border border-emerald-200 bg-white/90 px-2 py-1">
                   <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-wide text-emerald-700 flex items-center justify-between">
-                    <span>Reponse agent probable</span>
+                    <span>{t('scriptGenerator.probableAgentResponse')}</span>
                     <span className="text-emerald-600 group-open:rotate-180 transition-transform">▼</span>
                   </summary>
                   <div className="mt-2 space-y-1.5">
@@ -1243,7 +1245,7 @@ const ScriptGenerator: React.FC = () => {
                         key={`lead-${idx}-agent-${sIdx}`}
                         className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-slate-700"
                       >
-                        <span className="mr-1 text-[10px] font-bold text-blue-700">Agent:</span>
+                        <span className="mr-1 text-[10px] font-bold text-blue-700">{t('scriptGenerator.roleAgent')}</span>
                         <span>{suggestion}</span>
                       </div>
                     ))}
@@ -1267,9 +1269,9 @@ const ScriptGenerator: React.FC = () => {
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">Call Script</h2>
+                <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">{t('scriptGenerator.title')}</h2>
                 <p className="text-sm font-medium text-white/90">
-                  Call scripts Agent/Lead
+                  {t('scriptGenerator.subtitle')}
                 </p>
               </div>
             </div>
@@ -1278,7 +1280,7 @@ const ScriptGenerator: React.FC = () => {
               onClick={handleBackToOrchestrator}
             >
               <ArrowLeft className="w-4 h-4" />
-              Back
+              {t('scriptGenerator.back')}
             </button>
           </div>
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
@@ -1287,7 +1289,7 @@ const ScriptGenerator: React.FC = () => {
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 md:p-6">
           <label className="block text-sm font-semibold text-gray-700 mb-2.5">
-            Select Gig <span className="text-red-500">*</span>
+            {t('scriptGenerator.selectGig')} <span className="text-red-500">*</span>
           </label>
           <select
             value={selectedGig?._id || ''}
@@ -1298,7 +1300,7 @@ const ScriptGenerator: React.FC = () => {
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
             disabled={isLoadingGigs}
           >
-            <option value="">Choose a gig...</option>
+            <option value="">{t('scriptGenerator.chooseGig')}</option>
             {gigs.map((gig) => (
               <option key={gig._id} value={gig._id}>
                 {gig.title || 'Untitled gig'}
@@ -1306,7 +1308,7 @@ const ScriptGenerator: React.FC = () => {
             ))}
           </select>
 
-          {isLoadingGigs && <p className="text-sm text-gray-500 mt-2.5">Loading gigs...</p>}
+          {isLoadingGigs && <p className="text-sm text-gray-500 mt-2.5">{t('scriptGenerator.loadingGigs')}</p>}
           {gigsError && <p className="text-sm text-red-600 mt-2.5">{gigsError}</p>}
         </div>
 
@@ -1349,7 +1351,7 @@ const ScriptGenerator: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">Selectionne un script depuis la liste, ou genere un nouveau script.</p>
+                <p className="text-sm text-gray-500">{t('scriptGenerator.selectOrGenerate')}</p>
               )
             }
             onBackToList={() => setCurrentView('list')}
@@ -1361,12 +1363,12 @@ const ScriptGenerator: React.FC = () => {
             }
             validateLabel={
               !activeScriptMessage
-                ? 'Valider le script'
+                ? t('scriptGenerator.validateScript')
                 : validatedScriptIds[activeScriptMessage.scriptId || activeScriptMessage.id]
-                  ? 'Script valide'
+                  ? t('scriptGenerator.scriptValid')
                   : validatingScriptId === (activeScriptMessage.scriptId || activeScriptMessage.id)
-                    ? 'Validation...'
-                    : 'Valider le script'
+                    ? t('scriptGenerator.validating')
+                    : t('scriptGenerator.validateScript')
             }
           />
         ) : currentView === 'chat' ? (
@@ -1389,7 +1391,7 @@ const ScriptGenerator: React.FC = () => {
             <div className="w-full max-w-2xl bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden">
               <div className="px-6 py-4 bg-gradient-to-r from-harx-500 to-fuchsia-500">
                 <p className="text-sm font-semibold text-white tracking-wide">{editModal.title}</p>
-                <p className="text-xs text-white/90 mt-1">Ajustez la reponse avec un style professionnel HARX.</p>
+                <p className="text-xs text-white/90 mt-1">{t('scriptGenerator.editModal.subtitle')}</p>
               </div>
               <div className="p-6 space-y-4 bg-gradient-to-b from-white to-slate-50">
                 <textarea
@@ -1397,7 +1399,7 @@ const ScriptGenerator: React.FC = () => {
                   onChange={(e) => setEditModal((prev) => ({ ...prev, value: e.target.value }))}
                   rows={editModal.mode === 'manual' ? 5 : 4}
                   className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 text-sm text-slate-800 bg-white shadow-sm resize-y"
-                  placeholder={editModal.mode === 'manual' ? 'Modifier la ligne...' : "Ecrire l'instruction IA..."}
+                  placeholder={editModal.mode === 'manual' ? t('scriptGenerator.editModal.placeholderManual') : t('scriptGenerator.editModal.placeholderAI')}
                 />
                 <div className="flex items-center justify-end gap-3 pt-1">
                   <button
@@ -1405,14 +1407,14 @@ const ScriptGenerator: React.FC = () => {
                     onClick={() => setEditModal((prev) => ({ ...prev, open: false }))}
                     className="px-4 py-2 text-sm rounded-xl border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
                   >
-                    Annuler
+                    {t('scriptGenerator.editModal.cancel')}
                   </button>
                   <button
                     type="button"
                     onClick={submitEditModal}
                     className="px-4 py-2 text-sm rounded-xl text-white bg-gradient-to-r from-harx-500 to-fuchsia-500 hover:opacity-95 shadow-sm"
                   >
-                    Appliquer
+                    {t('scriptGenerator.editModal.apply')}
                   </button>
                 </div>
               </div>

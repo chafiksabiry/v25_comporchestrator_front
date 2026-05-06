@@ -34,6 +34,7 @@ import KnowledgeBase from "./onboarding/KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
 import PrompAI from "./gigsaicreation/components/PrompAI";
+import { useTranslation } from "react-i18next";
 
 interface BaseStep {
   id: number;
@@ -239,6 +240,7 @@ interface GigResponse {
 }
 
 const CompanyOnboarding = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   // Remove early return - we need to render the component to show onboarding interface
 
@@ -269,7 +271,7 @@ const CompanyOnboarding = () => {
     const isAnyFocusedViewActive = showGigDetails || showGigCreation || showTelephonySetup || showKnowledgeBase || showUploadContacts || activeStep !== null;
 
     if (isAnyFocusedViewActive) {
-      let label = 'Back to onboarding';
+      let label = t('companyOnboarding.ui.backToOnboarding');
       let action = () => { };
 
       if (showGigDetails) {
@@ -739,8 +741,8 @@ const CompanyOnboarding = () => {
     if (currentStep) {
       window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
         detail: {
-          title: currentStep.title,
-          description: currentStep.description
+          title: t(`companyOnboarding.phases.${displayedPhase}.steps.${currentStep.id}.title`, currentStep.title),
+          description: t(`companyOnboarding.phases.${displayedPhase}.steps.${currentStep.id}.description`, currentStep.description)
         }
       }));
     } else {
@@ -748,10 +750,10 @@ const CompanyOnboarding = () => {
       const isLastPhase = displayedPhase === 4;
       window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
         detail: {
-          title: phases[displayedPhase - 1]?.title,
+          title: t(`companyOnboarding.phases.${displayedPhase}.title`, phases[displayedPhase - 1]?.title),
           description: isLastPhase
-            ? "All steps in this phase are completed. Congratulations, all onboarding phases are now successfully completed! 👏🎺🎊"
-            : "All steps in this phase are completed. You can proceed to the next phase."
+            ? t('companyOnboarding.ui.allPhasesCompleted')
+            : t('companyOnboarding.ui.phaseCompleted')
         }
       }));
     }
@@ -860,7 +862,7 @@ const CompanyOnboarding = () => {
 
       // Handle the specific 400 error regarding previous phases
       if (error.response && error.response.status === 400) {
-        alert("Unable to start this step because previous phases are not fully completed. \n\nPlease try the 'Reset Onboarding' button at the bottom of the page to fix potential data inconsistencies.");
+        alert(t('companyOnboarding.ui.unableToStart'));
       }
 
       // Afficher un message d'erreur plus informatif
@@ -1238,7 +1240,7 @@ const CompanyOnboarding = () => {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Redirecting to authentication...</p>
+          <p className="text-gray-600 font-medium">{t('companyOnboarding.ui.redirecting')}</p>
         </div>
       </div>
     );
@@ -1313,7 +1315,7 @@ const CompanyOnboarding = () => {
   if (!displayedPhaseData) {
     return (
       <div className="text-center text-red-600">
-        Error: Phase data not found. Please try refreshing the page.
+        {t('companyOnboarding.ui.errorPhaseData')}
       </div>
     );
   }
@@ -1417,9 +1419,9 @@ const CompanyOnboarding = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`text-xs font-black uppercase tracking-widest ${isCompleted ? "text-green-600" : isActive ? "text-harx-600" : "text-gray-400"}`}>
-                    Phase {phase.id}
+                    {t('companyOnboarding.ui.phaseLabel')} {phase.id}
                   </p>
-                  <p className={`text-sm font-bold truncate ${isActive ? "text-gray-900" : "text-gray-600"}`}>{phase.title}</p>
+                  <p className={`text-sm font-bold truncate ${isActive ? "text-gray-900" : "text-gray-600"}`}>{t(`companyOnboarding.phases.${phase.id}.title`, phase.title)}</p>
                 </div>
               </div>
 
@@ -1445,12 +1447,12 @@ const CompanyOnboarding = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-3xl font-black text-gray-900 tracking-tight">
-                Phase {displayedPhase}: <span className={`text-transparent bg-clip-text ${isPhaseCompleted(displayedPhase) ? "bg-green-600" : "bg-gradient-harx"}`}>{phases[displayedPhase - 1]?.title}</span>
+                {t('companyOnboarding.ui.phaseLabel')} {displayedPhase}: <span className={`text-transparent bg-clip-text ${isPhaseCompleted(displayedPhase) ? "bg-green-600" : "bg-gradient-harx"}`}>{t(`companyOnboarding.phases.${displayedPhase}.title`, phases[displayedPhase - 1]?.title)}</span>
               </h2>
               <p className="text-gray-500 mt-2 font-medium max-w-2xl">
                 {isPhaseAccessible(displayedPhaseData.id)
-                  ? "Follow the sequence to complete your company setup and unlock premium features."
-                  : "This phase is currently locked. Please complete the previous phase to continue."}
+                  ? t('companyOnboarding.ui.accessibleDesc')
+                  : t('companyOnboarding.ui.lockedDesc')}
               </p>
             </div>
             <div className={`px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${
@@ -1460,7 +1462,7 @@ const CompanyOnboarding = () => {
                   ? "bg-harx-50 text-harx-600"
                   : "bg-gray-100 text-gray-400"
               }`}>
-              {isPhaseCompleted(displayedPhase) ? "Completed" : isPhaseAccessible(displayedPhaseData.id) ? "Progressing" : "Locked"}
+              {isPhaseCompleted(displayedPhase) ? t('companyOnboarding.ui.completed') : isPhaseAccessible(displayedPhaseData.id) ? t('companyOnboarding.ui.progressing') : t('companyOnboarding.ui.locked')}
             </div>
           </div>
         </div>
@@ -1525,34 +1527,34 @@ const CompanyOnboarding = () => {
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-medium text-gray-900">
-                        {step.title}
+                        {t(`companyOnboarding.phases.${displayedPhase}.steps.${step.id}.title`, step.title)}
                       </h3>
                       {!canAccessPhase ? (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                          Locked
+                          {t('companyOnboarding.ui.locked')}
                         </span>
                       ) : step.disabled ? (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                          Coming Soon
+                          {t('companyOnboarding.ui.comingSoon')}
                         </span>
                       ) : isCompleted ? (
                         <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                           <CheckCircle className="mr-1 h-3 w-3" />
-                          Completed
+                          {t('companyOnboarding.ui.completed')}
                         </span>
                       ) : isCurrentStep ? (
                         <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
                           <AlertCircle className="mr-1 h-3 w-3" />
-                          Current Step
+                          {t('companyOnboarding.ui.currentStep')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                          Locked
+                          {t('companyOnboarding.ui.locked')}
                         </span>
                       )}
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
-                      {step.description}
+                      {t(`companyOnboarding.phases.${displayedPhase}.steps.${step.id}.description`, step.description)}
                     </p>
                     {isClickable && !step.disabled && canAccessStep && (
                       <button
@@ -1562,7 +1564,7 @@ const CompanyOnboarding = () => {
                           isCompleted ? handleReviewStep(step.id) : handleStartStep(step.id);
                         }}
                       >
-                        {isCompleted ? "Review Step" : "Start Step"}
+                        {isCompleted ? t('companyOnboarding.ui.reviewStep') : t('companyOnboarding.ui.startStep')}
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     )}
@@ -1579,14 +1581,14 @@ const CompanyOnboarding = () => {
             disabled={displayedPhase === 1}
             onClick={handlePreviousPhase}
           >
-            Previous Phase
+            {t('companyOnboarding.ui.previousPhase')}
           </button>
           <button
             className="px-10 py-4 rounded-2xl bg-gray-900 text-sm font-black text-white shadow-xl hover:bg-black transition-all group flex items-center gap-3"
             disabled={false}
             onClick={handleNextPhase}
           >
-            {displayedPhase === 4 ? "Go to Dashboard" : "Next Phase"}
+            {displayedPhase === 4 ? t('companyOnboarding.ui.goToDashboard') : t('companyOnboarding.ui.nextPhase')}
             <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>

@@ -15,6 +15,7 @@ import {
     StickyNote,
     Flag
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface ScriptPhase {
     id: string;
@@ -38,6 +39,7 @@ interface InteractiveScriptCockpitProps {
 }
 
 export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: InteractiveScriptCockpitProps) {
+    const { t } = useTranslation();
     const [currentPhaseIdx, setCurrentPhaseIdx] = useState(0);
     const [history, setHistory] = useState<number[]>([]);
     const [notes, setNotes] = useState('');
@@ -131,7 +133,7 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                         <div>
                             <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">{scriptTitle}</h2>
                             <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Navigation par graphe dynamique</span>
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('scriptGenerator.cockpit.dynamicNavigation')}</span>
                             </div>
                         </div>
                     </div>
@@ -164,7 +166,7 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                         
                         {/* Current Phase Title */}
                         <div className="space-y-0.5">
-                            <span className="text-[10px] font-black text-harx-500 uppercase tracking-[0.2em]">Phase actuelle</span>
+                            <span className="text-[10px] font-black text-harx-500 uppercase tracking-[0.2em]">{t('scriptGenerator.cockpit.currentPhase')}</span>
                             <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{currentPhase.title}</h3>
                         </div>
 
@@ -176,13 +178,13 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                                 <div className="flex items-center justify-between mb-1">
                                     <div className="flex items-center gap-2">
                                         <MessageSquare size={14} className="text-harx-500" />
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Script à l'oral</span>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('scriptGenerator.cockpit.oralScript')}</span>
                                     </div>
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button 
                                             onClick={startEditing}
                                             className="p-1.5 text-slate-400 hover:text-harx-500 hover:bg-harx-50 rounded-lg transition-all"
-                                            title="Modifier manuellement"
+                                            title={t('scriptGenerator.cockpit.manualEdit')}
                                         >
                                             <Save size={14} />
                                         </button>
@@ -190,7 +192,7 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                                             onClick={handleRefine}
                                             disabled={isRefining}
                                             className={`p-1.5 text-slate-400 hover:text-fuchsia-500 hover:bg-fuchsia-50 rounded-lg transition-all ${isRefining ? 'animate-pulse' : ''}`}
-                                            title="Raffiner avec l'IA"
+                                            title={t('scriptGenerator.cockpit.refineWithAI')}
                                         >
                                             <Sparkles size={14} />
                                         </button>
@@ -209,13 +211,13 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                                                 onClick={() => setIsEditing(false)}
                                                 className="px-4 py-2 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 transition-all"
                                             >
-                                                Annuler
+                                                {t('scriptGenerator.cockpit.cancel')}
                                             </button>
                                             <button 
                                                 onClick={saveEdit}
                                                 className="px-4 py-2 bg-harx-500 text-white text-[10px] font-black uppercase rounded-xl shadow-md hover:bg-harx-600 transition-all"
                                             >
-                                                Appliquer
+                                                {t('scriptGenerator.cockpit.apply')}
                                             </button>
                                         </div>
                                     </div>
@@ -251,7 +253,7 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 disabled:opacity-30 transition-all text-xs"
                             >
                                 <ChevronLeft size={16} />
-                                Précédent
+                                {t('scriptGenerator.cockpit.previous')}
                             </button>
                             {currentPhaseIdx === phases.length - 1 ? (
                                 <button 
@@ -260,19 +262,19 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                                     className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-black uppercase tracking-widest hover:bg-emerald-700 hover:shadow-lg transition-all disabled:opacity-30 text-xs"
                                 >
                                     <CheckCircle2 size={16} />
-                                    {isValidating ? 'Validation...' : 'Valider et Enregistrer'}
+                                    {isValidating ? t('scriptGenerator.cockpit.validating') : t('scriptGenerator.cockpit.validateAndSave')}
                                 </button>
                             ) : currentPhase.suggestions.length === 0 ? (
                                 <button 
                                     onClick={handleNext}
                                     className="flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-xl font-black uppercase tracking-widest hover:bg-harx-600 hover:shadow-lg transition-all disabled:opacity-30 text-xs"
                                 >
-                                    Continuer
+                                    {t('scriptGenerator.cockpit.continue')}
                                     <ChevronRight size={16} />
                                 </button>
                             ) : (
                                 <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                                    Choisissez une option ci-dessus
+                                    {t('scriptGenerator.cockpit.chooseOption')}
                                 </div>
                             )}
                         </div>
@@ -286,12 +288,12 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                         <div className="space-y-4 flex-1">
                             <div className="flex items-center gap-2">
                                 <StickyNote size={16} className="text-harx-500" />
-                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Notes Rapides</h4>
+                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('scriptGenerator.cockpit.quickNotes')}</h4>
                             </div>
                             <textarea 
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                placeholder="Saisir des notes ici..."
+                                placeholder={t('scriptGenerator.cockpit.notesPlaceholder')}
                                 className="w-full h-40 bg-slate-50 border border-slate-100 rounded-3xl p-4 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 transition-all resize-none shadow-inner"
                             />
                            </div>
@@ -300,7 +302,7 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                         <div className="pt-4 border-t border-slate-100">
                             <button className="w-full py-4 bg-harx-500 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 group">
                                 <Save size={18} />
-                                Enregistrer & Terminer
+                                {t('scriptGenerator.cockpit.saveAndFinish')}
                             </button>
                         </div>
                     </div>

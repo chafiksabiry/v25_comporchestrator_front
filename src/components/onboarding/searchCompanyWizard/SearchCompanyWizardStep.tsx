@@ -8,6 +8,7 @@ import { generateCompanyProfile, type CompanyProfileData } from "./api/openai";
 import { CompanyLogo } from "./CompanyLogo";
 import { CompanyProfile } from "./CompanyProfile";
 import ExistingCompanyProfile from "../CompanyProfile";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   onBack?: () => void;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<GoogleSearchResult[]>([]);
@@ -54,7 +56,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
     return (
       <div className="mx-auto max-w-5xl p-6">
         <div className="rounded-2xl border border-harx-100 bg-white p-6 text-sm text-gray-500">
-          Loading company profile...
+          {t('searchCompanyWizard.loadingProfile')}
         </div>
       </div>
     );
@@ -73,7 +75,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
       const data = await googleApi.search(query.trim());
       setResults(data);
     } catch (e: any) {
-      setError(e?.message || "Failed to search companies");
+      setError(e?.message || t('searchCompanyWizard.errors.searchFailed'));
     } finally {
       setLoading(false);
     }
@@ -103,7 +105,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
       if (!generated.logo && logoUrl) generated.logo = logoUrl;
       setProfile(generated);
     } catch (e: any) {
-      setError(e?.message || "Failed to generate profile");
+      setError(e?.message || t('searchCompanyWizard.errors.generateFailed'));
     } finally {
       setLoading(false);
     }
@@ -124,8 +126,8 @@ export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
   return (
     <div className="mx-auto max-w-5xl p-6">
       <div className="mb-5">
-        <h1 className="text-2xl font-extrabold text-harx-600">Company Profile Search</h1>
-        <p className="text-sm text-gray-500">Search a company and generate profile data for step 1.</p>
+        <h1 className="text-2xl font-extrabold text-harx-600">{t('searchCompanyWizard.title')}</h1>
+        <p className="text-sm text-gray-500">{t('searchCompanyWizard.subtitle')}</p>
       </div>
 
       <div className="rounded-2xl border border-harx-100 bg-white p-5">
@@ -134,7 +136,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="Enter company name..."
+            placeholder={t('searchCompanyWizard.placeholder')}
             className="w-full rounded-xl border border-gray-200 px-4 py-3 pr-12 outline-none focus:border-harx-400"
           />
           <button
@@ -150,7 +152,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
 
         <div className="mt-5 space-y-3">
           {loading ? (
-            <div className="py-6 text-sm text-gray-500">Loading...</div>
+            <div className="py-6 text-sm text-gray-500">{t('searchCompanyWizard.loading')}</div>
           ) : (
             results.map((result, idx) => (
               <div key={`${result.link}-${idx}`} className="rounded-xl border border-gray-100 p-4">
@@ -163,7 +165,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
                       onClick={() => handleGenerate(result)}
                       className="mt-3 rounded-lg bg-gradient-harx px-4 py-2 text-xs font-bold text-white"
                     >
-                      Generate Profile
+                      {t('searchCompanyWizard.generateBtn')}
                     </button>
                   </div>
                 </div>

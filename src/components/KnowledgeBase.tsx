@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, Sparkles, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
@@ -98,6 +99,7 @@ const dropdownStyles = `
 `;
 
 const KnowledgeBase: React.FC = () => {
+  const { t } = useTranslation();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadGigId, setUploadGigId] = useState<string>('all');
   const [isUploadGigDropdownOpen, setIsUploadGigDropdownOpen] = useState(false);
@@ -840,9 +842,9 @@ const KnowledgeBase: React.FC = () => {
                   <Languages size={18} className="text-harx-500" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest">Language Hub</h4>
+                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest">{t('knowledgeBase.analysis.languageHub')}</h4>
                   <p className="text-[10px] text-gray-500 font-bold italic">
-                    {hasTranslation ? 'View in English' : 'Need translation?'}
+                    {hasTranslation ? t('knowledgeBase.analysis.viewInEnglish') : t('knowledgeBase.analysis.needTranslation')}
                   </p>
                 </div>
               </div>
@@ -854,9 +856,9 @@ const KnowledgeBase: React.FC = () => {
                     className="flex items-center px-4 py-2 bg-harx-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-600 shadow-lg shadow-harx-500/20 transition-all disabled:opacity-50"
                   >
                     {translatingDocument === documentId ? (
-                      <><RefreshCw size={14} className="mr-2 animate-spin" />Translating...</>
+                      <><RefreshCw size={14} className="mr-2 animate-spin" />{t('knowledgeBase.analysis.translating')}</>
                     ) : (
-                      <><Languages size={14} className="mr-2" />Translate to English</>
+                      <><Languages size={14} className="mr-2" />{t('knowledgeBase.analysis.translateToEnglish')}</>
                     )}
                   </button>
                 )}
@@ -869,7 +871,7 @@ const KnowledgeBase: React.FC = () => {
                     })}
                     className="text-[10px] font-black text-harx-500 uppercase tracking-widest hover:underline px-2"
                   >
-                    Show Original
+                    {t('knowledgeBase.analysis.showOriginal')}
                   </button>
                 )}
               </div>
@@ -881,7 +883,7 @@ const KnowledgeBase: React.FC = () => {
             <div className="group/item">
               <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight flex items-center gap-2 mb-4">
                 <Sparkles size={20} className="text-harx-500" />
-                Executive Intelligence Summary
+                {t('knowledgeBase.analysis.executiveIntelligenceSummary')}
               </h3>
               <div className="bg-white p-6 rounded-[2rem] border border-harx-100 shadow-sm hover:shadow-md transition-all">
                 <p className="text-sm text-gray-700 leading-relaxed font-medium">
@@ -893,19 +895,19 @@ const KnowledgeBase: React.FC = () => {
             {/* Document Context Overview */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-harx-50/30 p-4 rounded-2xl border border-harx-100/50">
-                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">Domain</h4>
+                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">{t('knowledgeBase.analysis.domain')}</h4>
                 <p className="text-[10px] font-black text-gray-900 uppercase truncate">{displayAnalysis.domain}</p>
               </div>
               <div className="bg-harx-50/30 p-4 rounded-2xl border border-harx-100/50">
-                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">Core Theme</h4>
+                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">{t('knowledgeBase.analysis.coreTheme')}</h4>
                 <p className="text-[10px] font-black text-gray-900 uppercase truncate">{displayAnalysis.theme}</p>
               </div>
               <div className="bg-harx-50/30 p-4 rounded-2xl border border-harx-100/50">
-                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">Technical Level</h4>
+                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">{t('knowledgeBase.analysis.technicalLevel')}</h4>
                 <p className="text-[10px] font-black text-gray-900 uppercase truncate">{displayAnalysis.technicalLevel}</p>
               </div>
               <div className="bg-harx-50/30 p-4 rounded-2xl border border-harx-100/50">
-                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">Target Audience</h4>
+                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">{t('knowledgeBase.analysis.targetAudience')}</h4>
                 <p className="text-[10px] font-black text-gray-900 uppercase truncate">{displayAnalysis.targetAudience}</p>
               </div>
             </div>
@@ -914,7 +916,7 @@ const KnowledgeBase: React.FC = () => {
             <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-harx-100 shadow-sm">
               <h3 className="text-xs font-black text-gray-900 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                 <div className="w-2 h-2 bg-gradient-harx rounded-full" />
-                Strategic Insights & Key Takeaways
+                {t('knowledgeBase.analysis.strategicInsights')}
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 {displayAnalysis.mainPoints.map((point: string, idx: number) => (
@@ -933,7 +935,7 @@ const KnowledgeBase: React.FC = () => {
               <div className="space-y-4">
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-2 flex items-center gap-2">
                   <Brain size={14} className="text-harx-400" />
-                  Technical Lexicon & Key Terms
+                  {t('knowledgeBase.analysis.technicalLexicon')}
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {displayAnalysis.keyTerms.map((term: string, idx: number) => (
@@ -950,7 +952,7 @@ const KnowledgeBase: React.FC = () => {
               <div className="space-y-4 pt-4">
                 <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
                   <CheckCircle size={20} className="text-harx-500" />
-                  Strategic Guidance
+                  {t('knowledgeBase.analysis.strategicGuidance')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {displayAnalysis.recommendations.map((rec: string, idx: number) => (
@@ -973,7 +975,7 @@ const KnowledgeBase: React.FC = () => {
         <div className="space-y-6">
           <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
             <Sparkles size={20} className="text-harx-500" />
-            Executive Call Summary
+            {t('knowledgeBase.analysis.executiveCallSummary')}
           </h3>
           <div className="grid grid-cols-1 gap-4">
             {callAnalysis.summary.keyIdeas.map((idea, idx) => (
@@ -988,7 +990,7 @@ const KnowledgeBase: React.FC = () => {
             <div className="mt-8 space-y-4">
               <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
                 <CheckCircle size={20} className="text-green-500" />
-                Performance Intelligence
+                {t('knowledgeBase.analysis.performanceIntelligence')}
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 {Object.entries(callAnalysis.scoring.result).map(([key, metric]) => (
@@ -1021,7 +1023,7 @@ const KnowledgeBase: React.FC = () => {
                   {showTranscription[documentId || ''] ? <X size={18} /> : <FileText size={18} />}
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest">
-                  {showTranscription[documentId || ''] ? 'Hide Full Transcription' : 'View Full Transcription'}
+                  {showTranscription[documentId || ''] ? t('knowledgeBase.analysis.hideTranscription') : t('knowledgeBase.analysis.viewTranscription')}
                 </span>
                 <ChevronRight size={18} className={`transition-transform duration-300 ${showTranscription[documentId || ''] ? 'rotate-90' : 'group-hover/toggle:translate-x-1'}`}  />
               </button>
@@ -1056,7 +1058,7 @@ const KnowledgeBase: React.FC = () => {
                           }))}
                           className="px-6 py-2 bg-white text-harx-500 rounded-full border border-harx-100 text-[10px] font-black uppercase tracking-widest hover:bg-harx-50 transition-all shadow-sm group/more px-8"
                         >
-                          Load More Insights
+                          {t('knowledgeBase.analysis.loadMoreInsights')}
                         </button>
                       )}
                       
@@ -1068,7 +1070,7 @@ const KnowledgeBase: React.FC = () => {
                           }))}
                           className="px-6 py-2 bg-white text-gray-400 rounded-full border border-gray-100 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm"
                         >
-                          Show Less
+                          {t('knowledgeBase.analysis.showLess')}
                         </button>
                       )}
                     </div>
@@ -1088,16 +1090,16 @@ const KnowledgeBase: React.FC = () => {
       return (
         <div className="bg-white/50 backdrop-blur-sm p-16 rounded-[3rem] border border-gray-100 text-center shadow-sm">
           <Brain size={48} className="mx-auto text-gray-300 mb-6" />
-          <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tight">Intelligence Stream Empty</h3>
+          <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tight">{t('knowledgeBase.empty.title')}</h3>
           <p className="text-gray-500 max-w-sm mx-auto font-medium italic mb-10 leading-relaxed">
-            Your enterprise knowledge has not been synchronized yet. Initiate data ingestion to empower your REPS.
+            {t('knowledgeBase.empty.subtitle')}
           </p>
           <button
             className="mt-4 bg-gradient-harx text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-harx-500/30 hover:scale-105 active:scale-95 transition-all"
             onClick={() => setShowUploadModal(true)}
           >
             <Plus size={18} className="mr-3 inline-block" />
-            Ingest First Resource
+            {t('knowledgeBase.empty.ingestFirst')}
           </button>
         </div>
       );
@@ -1188,9 +1190,9 @@ const KnowledgeBase: React.FC = () => {
                           <Brain size={24} className="text-harx-500" />
                         </div>
                         <div>
-                          <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Intelligence Dashboard</h3>
+                          <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">{t('knowledgeBase.intelligenceDashboard.title')}</h3>
                           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest italic leading-none mt-1">
-                            Multimodal analysis for {item.name}
+                            {t('knowledgeBase.intelligenceDashboard.subtitle')} {item.name}
                           </p>
                         </div>
                       </div>
@@ -1202,7 +1204,7 @@ const KnowledgeBase: React.FC = () => {
                           className="flex items-center gap-2 px-4 py-2 bg-white text-harx-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-50 border border-harx-100 transition-all shadow-sm"
                         >
                           <Eye size={14} />
-                          View File
+                          {t('knowledgeBase.intelligenceDashboard.viewFile')}
                         </a>
                         <button onClick={() => setSelectedItem(null)} className="p-2 hover:bg-white rounded-xl transition-colors text-gray-400 hover:text-harx-500"><X size={24} /></button>
                       </div>
@@ -1220,7 +1222,7 @@ const KnowledgeBase: React.FC = () => {
                           <div className="absolute top-4 left-4 pointer-events-none transition-opacity duration-300">
                              <div className="bg-harx-500/90 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2 border border-white/20 shadow-lg">
                                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                               <span className="text-[10px] font-black text-white uppercase tracking-widest">Master Video Stream</span>
+                               <span className="text-[10px] font-black text-white uppercase tracking-widest">{t('knowledgeBase.intelligenceDashboard.masterVideoStream')}</span>
                              </div>
                           </div>
                         </div>
@@ -1236,7 +1238,7 @@ const KnowledgeBase: React.FC = () => {
                             <div className="flex justify-between items-center mb-2 px-1">
                                <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest italic flex items-center gap-2">
                                  <div className="w-2 h-2 bg-harx-500 rounded-full animate-pulse" />
-                                 Live Content Stream
+                                 {t('knowledgeBase.intelligenceDashboard.liveContentStream')}
                                </span>
                                <span className="text-[10px] font-black text-gray-400 tabular-nums">
                                 {playingCallId === item.id ? formatTime(currentTime) : '0:00'} / {playingCallId === item.id ? formatTime(duration) : '0:00'}
@@ -1264,7 +1266,7 @@ const KnowledgeBase: React.FC = () => {
                       <div className="flex flex-col items-center justify-center py-12 bg-white/40 rounded-3xl border border-white shadow-inner">
                         <Loader2 className="animate-spin text-harx-500 mb-4" size={32} />
                         <p className="text-xs font-black text-gray-500 uppercase tracking-widest animate-pulse">
-                          Generating Strategic Insights...
+                          {t('knowledgeBase.intelligenceDashboard.generatingInsights')}
                         </p>
                       </div>
                     )}
@@ -1275,9 +1277,9 @@ const KnowledgeBase: React.FC = () => {
                   <div className="bg-white border border-harx-100 p-8 rounded-3xl shadow-2xl ml-4 mb-8">
                     <div className="flex justify-between items-start mb-8">
                       <div className="flex flex-col">
-                        <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Analysis Output</h3>
+                        <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">{t('knowledgeBase.analysisOutput.title')}</h3>
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest italic leading-none mt-1">
-                          Enterprise Intelligence Extract
+                          {t('knowledgeBase.analysisOutput.subtitle')}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
@@ -1288,13 +1290,13 @@ const KnowledgeBase: React.FC = () => {
                             className="flex items-center gap-2 px-4 py-2 bg-harx-50 text-harx-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-100 transition-all"
                           >
                             <Eye size={14} />
-                            View Source File
+                            {t('knowledgeBase.analysisOutput.viewSourceFile')}
                           </a>
                         <button onClick={() => setSelectedDocumentForAnalysis(null)} className="text-gray-400 hover:text-harx-500 transition-colors"><X size={24} /></button>
                       </div>
                     </div>
                     {analyzingDocument === item.id ? (
-                      <div className="text-center py-16"><Loader2 className="animate-spin text-harx-500 mx-auto" size={48} /><p className="mt-4 font-black text-gray-900 uppercase tracking-widest">Processing Intelligence...</p></div>
+                      <div className="text-center py-16"><Loader2 className="animate-spin text-harx-500 mx-auto" size={48} /><p className="mt-4 font-black text-gray-900 uppercase tracking-widest">{t('knowledgeBase.analysisOutput.processing')}</p></div>
                     ) : (
                       <>
                         {item.type === 'video' && (
@@ -1307,7 +1309,7 @@ const KnowledgeBase: React.FC = () => {
                             <div className="absolute top-4 left-4 pointer-events-none transition-opacity duration-300">
                                <div className="bg-harx-500/90 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2 border border-white/20 shadow-lg">
                                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                                 <span className="text-[10px] font-black text-white uppercase tracking-widest">Raw Video Intelligence</span>
+                                 <span className="text-[10px] font-black text-white uppercase tracking-widest">{t('knowledgeBase.analysisOutput.rawVideoIntelligence')}</span>
                                </div>
                             </div>
                           </div>
@@ -1315,7 +1317,7 @@ const KnowledgeBase: React.FC = () => {
                         {documentAnalysis[item.id] ? (
                           renderAnalysisContent(documentAnalysis[item.id], item.id)
                         ) : (
-                          <div className="text-center py-16"><button onClick={() => analyzeDocument(item.id)} className="px-8 py-4 bg-gradient-harx text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl">Analyze Now</button></div>
+                          <div className="text-center py-16"><button onClick={() => analyzeDocument(item.id)} className="px-8 py-4 bg-gradient-harx text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl">{t('knowledgeBase.analysisOutput.analyzeNow')}</button></div>
                         )}
                       </>
                     )}
@@ -1335,7 +1337,7 @@ const KnowledgeBase: React.FC = () => {
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-xl overflow-hidden animate-fade-in">
           <div className="p-8 border-b border-gray-100 flex justify-between items-center">
-            <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Integrate Intelligence</h3>
+            <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">{t('knowledgeBase.uploadModal.title')}</h3>
             <button onClick={handleUploadModalClose} className="text-gray-400 hover:text-gray-600 focus:outline-none text-2xl font-bold">×</button>
           </div>
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
@@ -1343,7 +1345,7 @@ const KnowledgeBase: React.FC = () => {
             <div className="space-y-3 relative z-[100]">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                 <Sparkles size={12} className="text-harx-500" />
-                Select Target Gig
+                {t('knowledgeBase.uploadModal.selectTargetGig')}
               </label>
               
               <div className="relative">
@@ -1357,10 +1359,10 @@ const KnowledgeBase: React.FC = () => {
                       <Sparkles size={16} />
                     </div>
                     <div className="text-left">
-                      <p className="text-[9px] font-black text-harx-400 uppercase tracking-widest leading-none mb-1">Target Gig</p>
+                      <p className="text-[9px] font-black text-harx-400 uppercase tracking-widest leading-none mb-1">{t('knowledgeBase.uploadModal.targetGig')}</p>
                       <p className="text-xs font-black text-gray-900 uppercase tracking-tight">
                         {uploadGigId === 'all' 
-                          ? 'General Resource' 
+                          ? t('knowledgeBase.uploadModal.generalResource') 
                           : gigs.find(g => (g._id || g.id) === uploadGigId)?.title || 'Selected Gig'}
                       </p>
                     </div>
@@ -1385,7 +1387,7 @@ const KnowledgeBase: React.FC = () => {
                               : 'text-gray-600 hover:bg-harx-50 hover:text-harx-600'
                           }`}
                         >
-                          <span>General Resource</span>
+                          <span>{t('knowledgeBase.uploadModal.generalResource')}</span>
                           {uploadGigId === 'all' && <CheckCircle size={14} className="text-white" />}
                         </button>
                         
@@ -1424,15 +1426,15 @@ const KnowledgeBase: React.FC = () => {
               <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} multiple accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,audio/*,video/*" />
               <div className="flex flex-col items-center">
                 <Upload size={24} className="text-gray-300 group-hover:text-harx-500 transition-colors mb-2" />
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Click or drag to add items</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('knowledgeBase.uploadModal.dragDrop')}</p>
               </div>
             </div>
 
             {uploadFiles.length > 0 && (
               <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest">{uploadFiles.length} item(s) staged</span>
-                  <button type="button" onClick={() => setUploadFiles([])} className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-600">Clear All</button>
+                  <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest">{uploadFiles.length} {t('knowledgeBase.uploadModal.itemsStaged')}</span>
+                  <button type="button" onClick={() => setUploadFiles([])} className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-600">{t('knowledgeBase.uploadModal.clearAll')}</button>
                 </div>
                 {uploadFiles.map((file, idx) => (
                   <div key={`${file.name}-${idx}`} className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm group/file">
@@ -1453,9 +1455,9 @@ const KnowledgeBase: React.FC = () => {
               </div>
             )}
             <div className="flex gap-4 pt-4">
-              <button type="button" onClick={handleUploadModalClose} className="flex-1 py-4 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors">Cancel</button>
+              <button type="button" onClick={handleUploadModalClose} className="flex-1 py-4 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors">{t('knowledgeBase.uploadModal.cancel')}</button>
               <button type="submit" disabled={isUploading} className="flex-1 bg-gradient-harx py-4 rounded-xl text-white text-xs font-black uppercase tracking-widest shadow-xl shadow-harx-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center">
-                {isUploading ? <Loader2 className="animate-spin" size={18} /> : 'Synchronize'}
+                {isUploading ? <Loader2 className="animate-spin" size={18} /> : t('knowledgeBase.uploadModal.synchronize')}
               </button>
             </div>
           </form>
@@ -1476,12 +1478,11 @@ const KnowledgeBase: React.FC = () => {
       <div className="mb-10">
         <div className="flex items-center gap-3 mb-3">
           <div className="h-px w-8 bg-harx-500" />
-          <span className="text-[10px] font-black text-harx-500 uppercase tracking-[0.3em]">Knowledge System</span>
+          <span className="text-[10px] font-black text-harx-500 uppercase tracking-[0.3em]">{t('knowledgeBase.systemName')}</span>
         </div>
-        <h1 className="text-4xl font-black bg-gradient-harx bg-clip-text text-transparent mb-3 tracking-tight uppercase">Knowledge Base</h1>
+        <h1 className="text-4xl font-black bg-gradient-harx bg-clip-text text-transparent mb-3 tracking-tight uppercase">{t('knowledgeBase.title')}</h1>
         <p className="text-gray-500 max-w-2xl font-medium leading-relaxed italic">
-          Power your AI with enterprise intelligence. Synchronize documents and call recordings 
-          to build a high-fidelity knowledge graph for your HARX REPS.
+          {t('knowledgeBase.subtitle')}
         </p>
       </div>
 
@@ -1499,8 +1500,8 @@ const KnowledgeBase: React.FC = () => {
                   </div>
                   <span className="text-xs font-black text-gray-900 uppercase tracking-widest pl-1 pr-2 max-w-[150px] md:max-w-[250px] truncate">
                     {selectedGigId === 'all' 
-                      ? 'Select a Gig' 
-                      : `Gig: ${gigs.find(g => (g._id || g.id) === selectedGigId)?.title || 'Selected Gig'}`}
+                      ? t('knowledgeBase.selectGig') 
+                      : `${t('knowledgeBase.gigPrefix')} ${gigs.find(g => (g._id || g.id) === selectedGigId)?.title || 'Selected Gig'}`}
                   </span>
                   <ChevronRight size={16} className={`text-gray-400 mr-2 transition-transform duration-300 ${isGigDropdownOpen ? 'rotate-90' : ''}`} />
                 </button>
@@ -1528,7 +1529,7 @@ const KnowledgeBase: React.FC = () => {
                             <div className={`p-1.5 rounded-lg transition-colors ${selectedGigId === 'all' ? 'bg-white/20' : 'bg-harx-50 group-hover:bg-harx-100'}`}>
                               <Sparkles size={14} className={selectedGigId === 'all' ? 'text-white' : 'text-harx-500'} />
                             </div>
-                            <span>All Gigs</span>
+                            <span>{t('knowledgeBase.allGigs')}</span>
                           </div>
                           {selectedGigId === 'all' && <CheckCircle size={14} className="text-white animate-in zoom-in" />}
                         </button>
@@ -1577,7 +1578,7 @@ const KnowledgeBase: React.FC = () => {
             }}
           >
             <Plus size={18} className="mr-3 group-hover:rotate-90 transition-transform" />
-            Integrate Resource
+            {t('knowledgeBase.integrateResource')}
           </button>
         </div>
       </div>

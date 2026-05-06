@@ -28,6 +28,8 @@ import { getHiddenSections } from '../dashboard/config/sections';
 import Cookies from 'js-cookie';
 import { useAuth } from '../dashboard/contexts/AuthContext';
 import type { ProjectView } from '../../App';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 
 interface MasterSidebarProps {
   isCollapsed: boolean;
@@ -59,6 +61,7 @@ export function MasterSidebar({
   const [hasLeads, setHasLeads] = useState(false);
   const [hasKb, setHasKb] = useState(false);
   const [hasRepMatching, setHasRepMatching] = useState(false);
+  const { t } = useTranslation();
 
   const hiddenSections = getHiddenSections();
 
@@ -118,30 +121,30 @@ export function MasterSidebar({
   }, [location.pathname, activeProject]);
 
   const dashboardItems = [
-    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard/main', key: 'premium-dashboard', alwaysShow: true },
-    { icon: <TrendingUp size={20} />, label: 'Overview', path: '/dashboard/overview', key: 'overview', alwaysShow: true },
+    { icon: <LayoutDashboard size={20} />, label: t('sidebar.dashboard'), path: '/dashboard/main', key: 'premium-dashboard', alwaysShow: true },
+    { icon: <TrendingUp size={20} />, label: t('sidebar.overview'), path: '/dashboard/overview', key: 'overview', alwaysShow: true },
     {
       icon: <Building2 size={20} />,
-      label: 'Company',
+      label: t('sidebar.company'),
       path: '/dashboard/profile',
       key: 'company',
       alwaysShow: true,
     },
-    { icon: <Briefcase size={20} />, label: 'Gigs', path: '/dashboard/gigs', key: 'gigs', requiresGigs: true },
-    { icon: <UserPlus size={20} />, label: 'Leads', path: '/dashboard/leads', key: 'leads', requiresLeads: true },
-    { icon: <Phone size={20} />, label: 'Calls', path: '/dashboard/calls', key: 'calls', alwaysShow: true },
-    { icon: <Users size={20} />, label: 'Rep Matching', path: '/dashboard/rep-matching', key: 'rep-matching', requiresRepMatching: true },
-    { icon: <Calendar size={20} />, label: 'Scheduler', path: '/dashboard/scheduler', key: 'scheduler', requiresRepMatching: true },
-    { icon: <Mail size={20} />, label: 'Emails', path: '/dashboard/emails', key: 'emails', requiresRepMatching: true },
-    { icon: <MessageSquare size={20} />, label: 'Live Chat', path: '/dashboard/chat', key: 'live-chat', requiresRepMatching: true },
-    { icon: <ClipboardCheck size={20} />, label: 'Quality Assurance', path: '/dashboard/quality-assurance', key: 'quality-assurance', requiresRepMatching: true },
-    { icon: <ScrollText size={20} />, label: 'Operations', path: '/dashboard/operations', key: 'operations', requiresRepMatching: true },
-    { icon: <TrendingUp size={20} />, label: 'Analytics', path: '/dashboard/analytics', key: 'analytics', requiresRepMatching: true },
-    { icon: <Plug size={20} />, label: 'Integrations', path: '/dashboard/integrations', key: 'integrations', alwaysShow: true },
+    { icon: <Briefcase size={20} />, label: t('sidebar.gigs'), path: '/dashboard/gigs', key: 'gigs', requiresGigs: true },
+    { icon: <UserPlus size={20} />, label: t('sidebar.leads'), path: '/dashboard/leads', key: 'leads', requiresLeads: true },
+    { icon: <Phone size={20} />, label: t('sidebar.calls'), path: '/dashboard/calls', key: 'calls', alwaysShow: true },
+    { icon: <Users size={20} />, label: t('sidebar.repMatching'), path: '/dashboard/rep-matching', key: 'rep-matching', requiresRepMatching: true },
+    { icon: <Calendar size={20} />, label: t('sidebar.scheduler'), path: '/dashboard/scheduler', key: 'scheduler', requiresRepMatching: true },
+    { icon: <Mail size={20} />, label: t('sidebar.emails'), path: '/dashboard/emails', key: 'emails', requiresRepMatching: true },
+    { icon: <MessageSquare size={20} />, label: t('sidebar.liveChat'), path: '/dashboard/chat', key: 'live-chat', requiresRepMatching: true },
+    { icon: <ClipboardCheck size={20} />, label: t('sidebar.qualityAssurance'), path: '/dashboard/quality-assurance', key: 'quality-assurance', requiresRepMatching: true },
+    { icon: <ScrollText size={20} />, label: t('sidebar.operations'), path: '/dashboard/operations', key: 'operations', requiresRepMatching: true },
+    { icon: <TrendingUp size={20} />, label: t('sidebar.analytics'), path: '/dashboard/analytics', key: 'analytics', requiresRepMatching: true },
+    { icon: <Plug size={20} />, label: t('sidebar.integrations'), path: '/dashboard/integrations', key: 'integrations', alwaysShow: true },
   ];
 
   const orchestratorItems = [
-    { icon: <Building2 size={20} />, label: 'Company Onboarding', key: 'company-onboarding' },
+    { icon: <Building2 size={20} />, label: t('sidebar.companyOnboarding'), key: 'company-onboarding' },
   ];
 
   const filteredDashboardItems = dashboardItems.filter(item => {
@@ -263,10 +266,10 @@ export function MasterSidebar({
                   <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
                     <Book size={20} />
                   </div>
-                  {!isCollapsed && <span className="font-medium text-sm transition-all duration-300">Knowledge Base</span>}
+                  {!isCollapsed && <span className="font-medium text-sm transition-all duration-300">{t('sidebar.knowledgeBase')}</span>}
                   {isCollapsed && (
                     <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
-                      Knowledge Base
+                      {t('sidebar.knowledgeBase')}
                     </div>
                   )}
                 </NavLink>
@@ -291,7 +294,7 @@ export function MasterSidebar({
                   <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-inner">
                     <div className="flex items-center gap-2 mb-2 text-rose-400">
                       <Sparkles className="h-4 w-4" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Active Guide</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">{t('sidebar.activeGuide')}</span>
                     </div>
                     <h4 className="text-xs font-bold text-white mb-1">{currentStepGuide.title}</h4>
                     <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-3">
@@ -299,7 +302,7 @@ export function MasterSidebar({
                     </p>
                     <div className="mt-2 flex items-center gap-1.5 text-[9px] text-rose-500/80 font-bold uppercase tracking-tighter">
                       <Info className="h-3 w-3" />
-                      <span>Interactive Step</span>
+                      <span>{t('sidebar.interactiveStep')}</span>
                     </div>
                   </div>
                 </div>
@@ -310,7 +313,8 @@ export function MasterSidebar({
       </div>
 
       {/* Sidebar Footer */}
-      <div className={`mt-auto pt-6 border-t border-white/5 transition-all duration-300 ${isCollapsed ? 'px-3' : 'px-4 pb-8'}`}>
+      <div className={`mt-auto pt-6 border-t border-white/5 space-y-2 transition-all duration-300 ${isCollapsed ? 'px-3' : 'px-4 pb-8'}`}>
+        <LanguageSwitcher isCollapsed={isCollapsed} />
         <button
           onClick={handleLogoutMaster}
           className={`flex items-center gap-4 w-full p-4 rounded-2xl transition-all duration-300 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 group relative ${isCollapsed ? 'justify-center' : ''}`}
@@ -318,11 +322,11 @@ export function MasterSidebar({
           <div className="p-2 bg-rose-500/10 rounded-xl group-hover:scale-110 transition-transform duration-300 shrink-0">
             <LogOut size={18} />
           </div>
-          {!isCollapsed && <span className="font-bold text-sm tracking-tight">Logout</span>}
+          {!isCollapsed && <span className="font-bold text-sm tracking-tight">{t('sidebar.logout')}</span>}
 
           {isCollapsed && (
             <div className="absolute left-16 bg-rose-500 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl">
-              Logout
+              {t('sidebar.logout')}
             </div>
           )}
         </button>

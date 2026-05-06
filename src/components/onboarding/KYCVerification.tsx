@@ -20,8 +20,10 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { useTranslation } from 'react-i18next';
 
 const KYCVerification = () => {
+  const { t } = useTranslation();
   const [verificationMethod, setVerificationMethod] = useState('automatic');
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'in_progress' | 'completed' | 'failed'>('pending');
@@ -196,43 +198,43 @@ const KYCVerification = () => {
 
   const requiredDocuments = [
     {
-      title: 'Certificate of Incorporation',
-      description: 'Official document proving company registration',
+      title: t('kyc.manualVerification.documents.incorpCert.title'),
+      description: t('kyc.manualVerification.documents.incorpCert.desc'),
       format: 'PDF or Image',
       required: true,
       type: 'company'
     },
     {
-      title: 'Proof of Address',
-      description: 'Recent utility bill or bank statement (less than 3 months old)',
+      title: t('kyc.manualVerification.documents.proofOfAddress.title'),
+      description: t('kyc.manualVerification.documents.proofOfAddress.desc'),
       format: 'PDF or Image',
       required: true,
       type: 'company'
     },
     {
-      title: 'Director ID',
-      description: 'Government-issued ID of company director',
+      title: t('kyc.manualVerification.documents.directorId.title'),
+      description: t('kyc.manualVerification.documents.directorId.desc'),
       format: 'PDF or Image',
       required: true,
       type: 'personal'
     },
     {
-      title: 'Bank Statement',
-      description: 'Recent bank statement for account verification',
+      title: t('kyc.manualVerification.documents.bankStatement.title'),
+      description: t('kyc.manualVerification.documents.bankStatement.desc'),
       format: 'PDF',
       required: true,
       type: 'financial'
     },
     {
-      title: 'Tax Registration',
-      description: 'Company tax registration certificate',
+      title: t('kyc.manualVerification.documents.taxReg.title'),
+      description: t('kyc.manualVerification.documents.taxReg.desc'),
       format: 'PDF',
       required: true,
       type: 'company'
     },
     {
-      title: 'Ownership Structure',
-      description: 'Document showing company ownership structure',
+      title: t('kyc.manualVerification.documents.ownershipStruct.title'),
+      description: t('kyc.manualVerification.documents.ownershipStruct.desc'),
       format: 'PDF',
       required: true,
       type: 'company'
@@ -241,23 +243,23 @@ const KYCVerification = () => {
 
   const verificationSteps = [
     {
-      title: 'Document Collection',
-      description: 'Upload all required documents',
+      title: t('kyc.roadmapSteps.docCollection.title'),
+      description: t('kyc.roadmapSteps.docCollection.desc'),
       status: currentStep > 1 ? 'completed' : currentStep === 1 ? 'current' : 'pending'
     },
     {
-      title: 'Identity Verification',
-      description: 'Verify company director identity',
+      title: t('kyc.roadmapSteps.idVerification.title'),
+      description: t('kyc.roadmapSteps.idVerification.desc'),
       status: currentStep > 2 ? 'completed' : currentStep === 2 ? 'current' : 'pending'
     },
     {
-      title: 'Business Verification',
-      description: 'Verify business details and operations',
+      title: t('kyc.roadmapSteps.bizVerification.title'),
+      description: t('kyc.roadmapSteps.bizVerification.desc'),
       status: currentStep > 3 ? 'completed' : currentStep === 3 ? 'current' : 'pending'
     },
     {
-      title: 'Final Review',
-      description: 'Review and confirm all information',
+      title: t('kyc.roadmapSteps.finalReview.title'),
+      description: t('kyc.roadmapSteps.finalReview.desc'),
       status: currentStep > 4 ? 'completed' : currentStep === 4 ? 'current' : 'pending'
     }
   ];
@@ -278,15 +280,15 @@ const KYCVerification = () => {
             </div>
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">KYC/KYB Verification</h2>
+                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">{t('kyc.title')}</h2>
                 {isStepCompleted && (
                   <div className="flex items-center gap-2 bg-emerald-100 text-emerald-800 px-4 py-1 rounded-full text-sm font-black uppercase tracking-widest shadow-sm">
                     <CheckCircle2 className="w-4 h-4" />
-                    Verified
+                    {t('kyc.verified')}
                   </div>
                 )}
               </div>
-              <p className="text-lg text-gray-500 mt-1">Complete identity verification for your company to unlock all features.</p>
+              <p className="text-lg text-gray-500 mt-1">{t('kyc.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -298,12 +300,12 @@ const KYCVerification = () => {
               disabled={!hasBasicInfo()}
             >
               <CheckCircle className="mr-2 h-6 w-6 inline-block" />
-              Submit Verification
+              {t('kyc.submitBtn')}
             </button>
           ) : (
             <button className="rounded-2xl bg-emerald-600 px-8 py-4 text-lg font-black text-white shadow-xl shadow-emerald-500/20 cursor-not-allowed opacity-90">
               <CheckCircle2 className="mr-2 h-6 w-6 inline-block" />
-              Verified Successfully
+              {t('kyc.verifiedSuccess')}
             </button>
           )}
         </div>
@@ -313,8 +315,8 @@ const KYCVerification = () => {
       {/* Progress Steps */}
       <div className="rounded-3xl bg-white p-10 shadow-xl border border-harx-100">
         <div className="flex items-center justify-between mb-10">
-          <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Verification Roadmap</h3>
-          <span className="text-base font-bold text-harx-500 bg-harx-50 px-4 py-1 rounded-full border border-harx-100">Step {currentStep} of 4</span>
+          <h3 className="text-2xl font-bold text-gray-900 tracking-tight">{t('kyc.roadmapTitle')}</h3>
+          <span className="text-base font-bold text-harx-500 bg-harx-50 px-4 py-1 rounded-full border border-harx-100">{t('kyc.stepProgress', { current: currentStep, total: 4 })}</span>
         </div>
         <div className="mt-4">
           <div className="relative">
@@ -359,7 +361,7 @@ const KYCVerification = () => {
 
       {/* Verification Method Selection */}
       <div className="rounded-3xl bg-white p-8 shadow-xl border border-harx-100">
-        <h3 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">Choose Verification Method</h3>
+        <h3 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">{t('kyc.chooseMethod')}</h3>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <button
             className={`flex items-center justify-between rounded-2xl border-2 p-6 transition-all duration-500 group relative overflow-hidden ${verificationMethod === 'automatic'
@@ -373,8 +375,8 @@ const KYCVerification = () => {
                 <Shield className="h-7 w-7" />
               </div>
               <div className="text-left">
-                <p className={`text-xl font-bold transition-colors duration-500 ${verificationMethod === 'automatic' ? 'text-gray-900' : 'text-gray-500'}`}>Automatic</p>
-                <p className="text-base text-gray-500 mt-1">Verified partner network</p>
+                <p className={`text-xl font-bold transition-colors duration-500 ${verificationMethod === 'automatic' ? 'text-gray-900' : 'text-gray-500'}`}>{t('kyc.automaticTitle')}</p>
+                <p className="text-base text-gray-500 mt-1">{t('kyc.automaticDesc')}</p>
               </div>
             </div>
             {verificationMethod === 'automatic' && (
@@ -395,8 +397,8 @@ const KYCVerification = () => {
                 <Upload className="h-7 w-7" />
               </div>
               <div className="text-left">
-                <p className={`text-xl font-bold transition-colors duration-500 ${verificationMethod === 'manual' ? 'text-gray-900' : 'text-gray-500'}`}>Manual Review</p>
-                <p className="text-base text-gray-500 mt-1">Direct document upload</p>
+                <p className={`text-xl font-bold transition-colors duration-500 ${verificationMethod === 'manual' ? 'text-gray-900' : 'text-gray-500'}`}>{t('kyc.manualTitle')}</p>
+                <p className="text-base text-gray-500 mt-1">{t('kyc.manualDesc')}</p>
               </div>
             </div>
             {verificationMethod === 'manual' && (
@@ -412,7 +414,7 @@ const KYCVerification = () => {
         <div className="rounded-3xl bg-white p-8 shadow-xl border border-harx-100">
           <div className="flex items-center gap-3 mb-6">
             <Shield className="h-7 w-7 text-harx-500" />
-            <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Automatic Verification</h3>
+            <h3 className="text-2xl font-bold text-gray-900 tracking-tight">{t('kyc.autoVerification.title')}</h3>
           </div>
           <div className="mt-4 space-y-6">
             <div className="rounded-2xl bg-gray-50 p-6 border border-gray-100 group hover:border-harx-200 transition-all duration-300">
@@ -421,14 +423,14 @@ const KYCVerification = () => {
                   <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center mr-4 shadow-sm group-hover:bg-harx-100 transition-colors">
                     <Camera className="h-5 w-5 text-harx-500" />
                   </div>
-                  <span className="text-xl font-bold text-gray-900 tracking-tight">Identity Verification</span>
+                  <span className="text-xl font-bold text-gray-900 tracking-tight">{t('kyc.autoVerification.identityTitle')}</span>
                 </div>
                 <button className="rounded-xl bg-gradient-harx px-6 py-3 text-sm font-black text-white shadow-lg shadow-harx-500/20 hover:brightness-110 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                  Start Verification
+                  {t('kyc.autoVerification.identityStartBtn')}
                 </button>
               </div>
               <p className="mt-3 text-base text-gray-500 font-medium">
-                Complete the verification process through our secure partner platform using your camera.
+                {t('kyc.autoVerification.identityDesc')}
               </p>
             </div>
 
@@ -438,25 +440,25 @@ const KYCVerification = () => {
                   <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center mr-4 shadow-sm group-hover:bg-harx-100 transition-colors">
                     <Building2 className="h-5 w-5 text-harx-500" />
                   </div>
-                  <span className="text-xl font-bold text-gray-900 tracking-tight">Business Verification</span>
+                  <span className="text-xl font-bold text-gray-900 tracking-tight">{t('kyc.autoVerification.businessTitle')}</span>
                 </div>
                 <button className="rounded-xl bg-gradient-harx px-6 py-3 text-sm font-black text-white shadow-lg shadow-harx-500/20 hover:brightness-110 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                  Verify Business
+                  {t('kyc.autoVerification.businessStartBtn')}
                 </button>
               </div>
               <p className="mt-3 text-base text-gray-500 font-medium">
-                Verify your business through official registries and databases automatically.
+                {t('kyc.autoVerification.businessDesc')}
               </p>
             </div>
 
             <div className="rounded-2xl border-2 border-dashed border-harx-100 p-6 bg-harx-50/20">
-              <h4 className="text-lg font-black text-harx-900 mb-4 uppercase tracking-widest">Verification Steps</h4>
+              <h4 className="text-lg font-black text-harx-900 mb-4 uppercase tracking-widest">{t('kyc.autoVerification.stepsTitle')}</h4>
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  'Prepare valid government-issued ID',
-                  'Ensure good lighting for photo capture',
-                  'Follow on-screen instructions',
-                  'Complete facial recognition check'
+                  t('kyc.autoVerification.steps.step1'),
+                  t('kyc.autoVerification.steps.step2'),
+                  t('kyc.autoVerification.steps.step3'),
+                  t('kyc.autoVerification.steps.step4')
                 ].map((step, i) => (
                   <li key={i} className="flex items-center text-sm text-gray-600 font-bold bg-white p-3 rounded-xl border border-harx-100 shadow-sm">
                     <CheckCircle className="mr-3 h-5 w-5 text-harx-500" />
@@ -473,10 +475,10 @@ const KYCVerification = () => {
           {/* Document Categories */}
           <div className="rounded-3xl bg-white p-8 shadow-xl border border-harx-100">
             <div className="mb-8 flex items-center justify-between">
-              <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Required Documents</h3>
+              <h3 className="text-2xl font-bold text-gray-900 tracking-tight">{t('kyc.manualVerification.requiredDocsTitle')}</h3>
               <div className="flex flex-col items-end">
                 <span className="text-base font-bold text-gray-600 mb-2">
-                  <span className="text-harx-600">{uploadedFiles.length}</span> of {requiredDocuments.length} uploaded
+                  <span className="text-harx-600">{uploadedFiles.length}</span> {t('kyc.manualVerification.uploadProgress', { uploaded: '', total: requiredDocuments.length }).replace(' ', '')}
                 </span>
                 <div className="h-3 w-48 rounded-full bg-gray-100 shadow-inner overflow-hidden border border-gray-200">
                   <div
@@ -490,7 +492,7 @@ const KYCVerification = () => {
             <div className="space-y-8">
               {['company', 'personal', 'financial'].map((category) => (
                 <div key={category} className="rounded-2xl border border-gray-100 p-6 bg-gray-50/30">
-                  <h4 className="mb-6 text-lg font-black text-gray-900 uppercase tracking-widest border-b-2 border-harx-100 pb-2 inline-block capitalize">{category} Documents</h4>
+                  <h4 className="mb-6 text-lg font-black text-gray-900 uppercase tracking-widest border-b-2 border-harx-100 pb-2 inline-block capitalize">{t('kyc.manualVerification.categoryDocs', { category: t(`kyc.manualVerification.categories.${category}`) })}</h4>
                   <div className="space-y-4">
                     {requiredDocuments
                       .filter(doc => doc.type === category)
@@ -504,7 +506,7 @@ const KYCVerification = () => {
                               <div>
                                 <h4 className="text-lg font-bold text-gray-900 tracking-tight group-hover:text-harx-600 transition-colors">{doc.title}</h4>
                                 <p className="text-sm text-gray-500 font-medium">{doc.description}</p>
-                                <p className="mt-2 text-xs font-black text-harx-400 uppercase tracking-tighter">Format: {doc.format}</p>
+                                <p className="mt-2 text-xs font-black text-harx-400 uppercase tracking-tighter">{t('kyc.manualVerification.format', { format: doc.format })}</p>
                               </div>
                             </div>
                             <div className="flex items-center space-x-3">
@@ -518,7 +520,7 @@ const KYCVerification = () => {
                                   </button>
                                   <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-sm font-black border border-emerald-100">
                                     <CheckCircle className="h-5 w-5" />
-                                    <span>UPLOADED</span>
+                                    <span>{t('kyc.manualVerification.uploadedStatus')}</span>
                                   </div>
                                 </div>
                               ) : (
@@ -526,7 +528,7 @@ const KYCVerification = () => {
                                   onClick={() => document.getElementById(`file-${index}`)?.click()}
                                   className="rounded-xl bg-white px-6 py-3 text-sm font-black text-harx-600 shadow-sm ring-2 ring-inset ring-harx-100 hover:bg-harx-50 hover:ring-harx-200 transition-all duration-300"
                                 >
-                                  Upload
+                                  {t('kyc.manualVerification.uploadBtn')}
                                 </button>
                               )}
                             </div>
@@ -586,15 +588,15 @@ const KYCVerification = () => {
                 <AlertCircle className="h-6 w-6 text-amber-500" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-black text-amber-900 tracking-tight uppercase">Document Guidelines</h3>
+                <h3 className="text-lg font-black text-amber-900 tracking-tight uppercase">{t('kyc.manualVerification.guidelinesTitle')}</h3>
                 <div className="mt-3 text-base text-amber-800 font-medium">
                   <ul className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-8 list-none">
                     {[
-                      'All documents must be clear and legible',
-                      'Files should not exceed 5MB in size',
-                      'Supported formats: PDF, JPG, PNG',
-                      'Documents must be in color',
-                      'No expired documents will be accepted'
+                      t('kyc.manualVerification.guidelines.guide1'),
+                      t('kyc.manualVerification.guidelines.guide2'),
+                      t('kyc.manualVerification.guidelines.guide3'),
+                      t('kyc.manualVerification.guidelines.guide4'),
+                      t('kyc.manualVerification.guidelines.guide5')
                     ].map((item, i) => (
                       <li key={i} className="flex items-center">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-2 flex-shrink-0"></span>
@@ -613,7 +615,7 @@ const KYCVerification = () => {
 
       {/* Verification Status */}
       <div className="rounded-3xl bg-white p-8 shadow-xl border border-harx-100">
-        <h3 className="text-2xl font-bold text-gray-900 tracking-tight mb-8">Verification Status</h3>
+        <h3 className="text-2xl font-bold text-gray-900 tracking-tight mb-8">{t('kyc.status.title')}</h3>
         <div className="mt-4">
           <div className="flex items-center justify-between rounded-2xl bg-gray-50 p-8 border border-gray-100 relative overflow-hidden">
             <div className={`absolute left-0 top-0 bottom-0 w-2 ${verificationStatus === 'completed' ? 'bg-emerald-500' :
@@ -638,28 +640,28 @@ const KYCVerification = () => {
               <div>
                 <p className="text-2xl font-black text-gray-900 tracking-tight">
                   {verificationStatus === 'completed'
-                    ? 'Verification Complete'
+                    ? t('kyc.status.complete')
                     : verificationStatus === 'failed'
-                      ? 'Verification Failed'
+                      ? t('kyc.status.failed')
                       : verificationStatus === 'in_progress'
-                        ? 'Verification in Progress'
-                        : 'Verification Pending'}
+                        ? t('kyc.status.inProgress')
+                        : t('kyc.status.pending')}
                 </p>
                 <p className="text-base text-gray-500 font-medium mt-1">
                   {verificationStatus === 'completed'
-                    ? 'Your company has been successfully verified.'
+                    ? t('kyc.status.completeDesc')
                     : verificationStatus === 'failed'
-                      ? 'Please review and resubmit your documents.'
+                      ? t('kyc.status.failedDesc')
                       : verificationStatus === 'in_progress'
-                        ? 'This process may take 1-2 business days.'
-                        : 'Please submit all required documents.'}
+                        ? t('kyc.status.inProgressDesc')
+                        : t('kyc.status.pendingDesc')}
                 </p>
               </div>
             </div>
             {verificationStatus === 'completed' && (
               <button className="flex items-center rounded-xl bg-white px-6 py-3 text-sm font-black text-harx-600 shadow-md ring-1 ring-inset ring-harx-100 hover:bg-harx-50 transition-all duration-300 transform hover:scale-105">
                 <Download className="mr-2 h-5 w-5" />
-                Get Certificate
+                {t('kyc.status.getCertBtn')}
               </button>
             )}
           </div>
@@ -674,16 +676,15 @@ const KYCVerification = () => {
             <HelpCircle className="h-6 w-6 text-gray-400 group-hover:text-harx-500 transition-colors" />
           </div>
           <div className="ml-5">
-            <h3 className="text-xl font-bold text-gray-900 tracking-tight">Need Assistance?</h3>
+            <h3 className="text-xl font-bold text-gray-900 tracking-tight">{t('kyc.help.title')}</h3>
             <div className="mt-2 text-base text-gray-500 font-medium leading-relaxed">
               <p>
-                If you're having trouble with the verification process, our dedicated support team is here to help.
-                Contact us through our support portal or schedule a call with our verification specialists.
+                {t('kyc.help.desc')}
               </p>
             </div>
             <div className="mt-4">
               <a href="#" className="inline-flex items-center text-sm font-black text-harx-500 hover:text-harx-700 transition-colors tracking-widest uppercase">
-                Contact Support <ChevronRight className="ml-2 h-4 w-4" />
+                {t('kyc.help.contactBtn')} <ChevronRight className="ml-2 h-4 w-4" />
               </a>
             </div>
           </div>

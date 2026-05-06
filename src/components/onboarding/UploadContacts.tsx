@@ -27,6 +27,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
+import { useTranslation } from 'react-i18next';
 
 interface Lead {
   _id: string;
@@ -72,6 +73,7 @@ interface UploadContactsProps {
 }
 
 const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyId }: UploadContactsProps) => {
+  const { t } = useTranslation();
   // Component will render normally - no early return needed
 
   // Function to cancel processing
@@ -563,11 +565,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       const companyId = Cookies.get('companyId');
 
       if (!gigId) {
-        throw new Error('Please select a gig first');
+        throw new Error(t('uploadContacts.errors.selectGigFirst'));
       }
 
       if (!userId || !companyId) {
-        throw new Error('Missing user or company information');
+        throw new Error(t('uploadContacts.errors.userIdNotFound'));
       }
 
       // Create FormData for file upload
@@ -644,7 +646,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     if (file) {
       // Check if a gig is selected before processing
       if (!selectedGigId) {
-        toast.error('Please select a gig first before uploading a file');
+        toast.error(t('uploadContacts.errors.selectGigFirst'));
         return;
       }
 
@@ -697,8 +699,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         const result = await processFileWithBackend(file);
 
         if (result.leads.length === 0) {
-          toast.error('No valid leads found in the file. Please check the file format and content.');
-          setUploadError('No valid leads found');
+          toast.error(t('uploadContacts.errors.noValidLeads'));
+          setUploadError(t('uploadContacts.errors.noValidLeads'));
           setIsProcessing(false);
           setUploadProgress(0);
           return;
@@ -745,7 +747,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         }
       } catch (error: any) {
         console.error('Error uploading file:', error);
-        const errorMessage = error.message || 'Error uploading file';
+        const errorMessage = error.message || t('uploadContacts.errors.uploadError');
         setUploadError(errorMessage);
         toast.error(errorMessage);
         setUploadProgress(0);
@@ -882,7 +884,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         // Tous les leads ont été sauvegardés (ou tentative faite)
         setUploadSuccess(true);
         setUploadProgress(100);
-        toast.success(`Successfully saved ${savedCount} contacts!`);
+        toast.success(t('uploadContacts.success.savedContacts', { count: savedCount }));
 
         // Les leads sont maintenant ajoutés, on peut mettre à jour l'état local si nécessaire
         // Pour l'instant, on se fie au rechargement ou à la réponse
@@ -930,7 +932,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
     } catch (error: any) {
       console.error('Error in handleSaveLeads:', error);
-      const errorMessage = error.message || 'Error saving leads';
+      const errorMessage = error.message || t('uploadContacts.errors.saveError');
       setUploadError(errorMessage);
       toast.error(errorMessage);
 
@@ -981,7 +983,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       if (!userId) {
         console.error('No userId found in cookies');
-        toast.error('User ID not found. Please log in again.');
+        toast.error(t('uploadContacts.errors.userIdNotFound'));
         return;
       }
 
@@ -1032,7 +1034,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       if (!userId) {
         console.error('No userId found in cookies');
-        toast.error('User ID not found. Please log in again.');
+        toast.error(t('uploadContacts.errors.userIdNotFound'));
         return;
       }
 
@@ -1179,7 +1181,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         // Réessayer la requête initiale
         response = await fetch(url, { ...options, headers });
       } else {
-        toast.error('Session Zoho expirée. Veuillez vous reconnecter.');
+        toast.error(t('uploadContacts.errors.zohoTokenExpired'));
         throw new Error('Zoho token expired');
       }
     }
@@ -1199,19 +1201,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       const userId = Cookies.get('userId');
       const companyId = Cookies.get('companyId');
       if (!companyId) {
-        toast.error('Configuration de l\'entreprise non trouvée. Veuillez vous reconnecter.');
+        toast.error(t('uploadContacts.errors.companyConfigNotFound'));
         return;
       }
       const zohoService = ZohoService.getInstance();
       const accessToken = await zohoService.getValidAccessToken();
       if (!accessToken) {
-        toast.error('Configuration Zoho non trouvée. Veuillez configurer Zoho CRM d\'abord.');
+        toast.error(t('uploadContacts.errors.zohoConfigNotFound'));
         return;
       }
       setParsedLeads([]);
       const selectedGig = gigs.find(gig => gig._id === selectedGigId);
       if (!selectedGig) {
-        toast.error('Gig sélectionné non trouvé');
+        toast.error(t('uploadContacts.errors.gigNotFound'));
         return;
       }
       const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
@@ -1266,7 +1268,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       }
     } catch (error: any) {
       console.error('Error in handleImportFromZoho:', error);
-      toast.error(error.message || 'Une erreur est survenue lors de l\'importation');
+      toast.error(error.message || t('uploadContacts.errors.importError'));
     } finally {
       setIsImportingZoho(false);
     }
@@ -1705,9 +1707,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               </div>
               <div>
                 <h2 className="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
-                  Upload Contacts
+                  {t('uploadContacts.title')}
                 </h2>
-                <p className="text-[14px] font-medium text-white/90">Import, manage, and organize your leads efficiently with AI precision.</p>
+                <p className="text-[14px] font-medium text-white/90">{t('uploadContacts.subtitle')}</p>
               </div>
             </div>
           </div>
@@ -1724,19 +1726,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       <div className="bg-white rounded-2xl shadow-xl border border-harx-100 p-4 transition-all duration-300">
         <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center tracking-tight">
           <Settings className="mr-2 h-5 w-5 text-harx-500" />
-          Select a Gig
+          {t('uploadContacts.gigs.selectTitle')}
         </h4>
         {isLoadingGigs ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-harx-500"></div>
-            <span className="ml-4 text-lg text-gray-600 font-semibold">Loading gigs...</span>
+            <span className="ml-4 text-lg text-gray-600 font-semibold">{t('uploadContacts.gigs.loading')}</span>
           </div>
         ) : gigs.length === 0 ? (
           <div className="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
             <div className="mx-auto h-20 w-20 text-gray-300 mb-6">
               <Settings className="h-20 w-20" />
             </div>
-            <p className="text-xl text-gray-500 font-bold">No gigs available.</p>
+            <p className="text-xl text-gray-500 font-bold">{t('uploadContacts.gigs.empty')}</p>
           </div>
         ) : (
           <div className="max-w-2xl relative" ref={gigDropdownRef}>
@@ -1759,8 +1761,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   }`}>
 
                   {selectedGigId
-                    ? gigs.find(g => g._id === selectedGigId)?.title ?? 'Select a gig…'
-                    : 'Select a gig…'}
+                    ? gigs.find(g => g._id === selectedGigId)?.title ?? t('uploadContacts.gigs.placeholder')
+                    : t('uploadContacts.gigs.placeholder')}
                 </span>
               </span>
               <ChevronDown
@@ -1778,7 +1780,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               >
                 {/* Header row */}
                 <div className="px-4 pt-3 pb-2 border-b border-gray-100 bg-gray-50/50">
-                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Available Gigs</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{t('uploadContacts.gigs.available')}</p>
                 </div>
 
 
@@ -1855,9 +1857,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         <div className="mb-6">
           <h3 className="text-xl font-bold text-gray-900 flex items-center tracking-tight">
             <Cloud className="mr-2 h-6 w-6 text-harx-500" />
-            Import Leads
+            {t('uploadContacts.import.title')}
           </h3>
-          <p className="mt-1 text-base text-gray-600">Choose your preferred method to import leads into your selected gig.</p>
+          <p className="mt-1 text-base text-gray-600">{t('uploadContacts.import.subtitle')}</p>
         </div>
 
         {/* Import Methods Cards */}
@@ -1876,8 +1878,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 />
               </div>
               <div className="flex-1 relative z-20">
-                <h4 className="text-xl font-bold text-gray-900">Zoho CRM Integration</h4>
-                <p className="text-sm text-gray-600 font-medium">Connect and sync with your Zoho CRM</p>
+                <h4 className="text-xl font-bold text-gray-900">{t('uploadContacts.import.zohoTitle')}</h4>
+                <p className="text-sm text-gray-600 font-medium">{t('uploadContacts.import.zohoSubtitle')}</p>
               </div>
             </div>
 
@@ -1886,26 +1888,26 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               {hasZohoAccessToken ? (
                 <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl p-4">
                   <span className="text-base font-bold text-emerald-800 flex items-center">
-                    <CheckCircle className="mr-2 h-5 w-5" /> Connected to Zoho CRM
+                    <CheckCircle className="mr-2 h-5 w-5" /> {t('uploadContacts.import.zohoConnected')}
                   </span>
                   <button
                     onClick={handleZohoDisconnect}
                     disabled={isDisconnectingZoho}
                     className="px-4 py-2 text-sm font-bold text-red-700 bg-red-100/50 hover:bg-red-200 rounded-xl transition-all duration-300 disabled:opacity-50"
                   >
-                    {isDisconnectingZoho ? 'Disconnecting...' : 'Disconnect'}
+                    {isDisconnectingZoho ? t('uploadContacts.import.disconnecting') : t('uploadContacts.import.disconnect')}
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl p-4">
                   <span className="text-base font-bold text-amber-800 flex items-center">
-                    <AlertTriangle className="mr-2 h-5 w-5" /> Not connected
+                    <AlertTriangle className="mr-2 h-5 w-5" /> {t('uploadContacts.import.zohoNotConnected')}
                   </span>
                   <button
                     onClick={handleZohoConnect}
                     className="px-4 py-2 text-sm font-bold text-harx-700 bg-harx-100/50 hover:bg-harx-200 rounded-xl transition-all duration-300"
                   >
-                    Connect
+                    {t('uploadContacts.import.connect')}
                   </button>
                 </div>
               )}
@@ -1927,15 +1929,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 {isImportingZoho ? (
                   <>
                     <RefreshCw className="mr-3 h-6 w-6 animate-spin" />
-                    Importing from Zoho...
+                    {t('uploadContacts.import.importingZoho')}
                   </>
                 ) : !hasZohoAccessToken ? (
                   <>
-                    Connect to Zoho CRM First
+                    {t('uploadContacts.import.connectFirst')}
                   </>
                 ) : (
                   <>
-                    Sync with Zoho CRM
+                    {t('uploadContacts.import.syncZoho')}
                   </>
                 )}
               </button>
@@ -1951,16 +1953,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <FileSpreadsheet className="h-6 w-6 text-harx-600" />
               </div>
               <div className="flex-1">
-                <h4 className="text-xl font-bold text-gray-900">File Upload</h4>
-                <p className="text-sm text-gray-600 font-medium">Upload and process contact files</p>
+                <h4 className="text-xl font-bold text-gray-900">{t('uploadContacts.import.fileTitle')}</h4>
+                <p className="text-sm text-gray-600 font-medium">{t('uploadContacts.import.fileSubtitle')}</p>
               </div>
             </div>
 
-            {/* File Info */}
             <div className="mb-6 relative z-10">
               <div className="bg-white/80 backdrop-blur-sm border border-harx-100 rounded-xl p-4 flex items-center transition-all duration-300 group-hover:border-harx-200">
                 <div className="w-2 h-2 rounded-full bg-harx-500 mr-3 animate-ping"></div>
-                <span className="text-base font-bold text-harx-800">Supported: CSV, Excel (XLSX, XLS)</span>
+                <span className="text-base font-bold text-harx-800">{t('uploadContacts.import.supportedFiles')}</span>
               </div>
             </div>
 
@@ -1973,10 +1974,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     {isProcessing ? (
                       <div className="flex items-center font-black">
                         <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
-                        Processing...
+                        {t('uploadContacts.import.processing')}
                       </div>
                     ) : (
-                      'Click to upload or drag & drop'
+                      t('uploadContacts.import.clickToUpload')
                     )}
                   </span>
                   <input
@@ -2080,23 +2081,23 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             {parsedLeads.length > 0 && !uploadSuccess && !isProcessing && showSaveButton && (
               <div className="mt-3 space-y-3">
                 {validationResults && (
-                  <div className="bg-gradient-to-r from-harx-50 to-harx-100/50 border border-harx-100 rounded-2xl p-4 shadow-sm">
+                    <div className="bg-gradient-to-r from-harx-50 to-harx-100/50 border border-harx-100 rounded-2xl p-4 shadow-sm">
                     <h4 className="text-lg font-bold text-harx-900 mb-3 flex items-center tracking-tight">
                       <Info className="mr-2 h-5 w-5 text-harx-500" />
-                      AI Processing Analysis
+                      {t('uploadContacts.analysis.title')}
                     </h4>
                     <div className="grid grid-cols-2 gap-4 text-base">
                       <div className="bg-white/60 backdrop-blur-sm p-2 rounded-xl border border-harx-100">
-                        <span className="text-gray-500 font-bold block text-xs uppercase tracking-widest mb-1">Total Found</span> 
+                        <span className="text-gray-500 font-bold block text-xs uppercase tracking-widest mb-1">{t('uploadContacts.analysis.totalFound')}</span> 
                         <span className="text-xl font-black text-gray-900">{validationResults.totalRows}</span>
                       </div>
                       <div className="bg-white/60 backdrop-blur-sm p-2 rounded-xl border border-harx-100">
-                        <span className="text-emerald-600 font-bold block text-xs uppercase tracking-widest mb-1">Verified</span> 
+                        <span className="text-emerald-600 font-bold block text-xs uppercase tracking-widest mb-1">{t('uploadContacts.analysis.verified')}</span> 
                         <span className="text-xl font-black text-emerald-700">{validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}</span>
                       </div>
                       {validationResults.invalidRows > 0 && (
                         <div className="col-span-2 bg-red-50 p-2 rounded-xl border border-red-100">
-                          <span className="text-red-500 font-bold block text-xs uppercase tracking-widest mb-1">Requiring Attention</span> 
+                          <span className="text-red-500 font-bold block text-xs uppercase tracking-widest mb-1">{t('uploadContacts.analysis.requiringAttention')}</span> 
                           <span className="text-xl font-black text-red-700">{validationResults.invalidRows}</span>
                         </div>
                       )}
@@ -2107,8 +2108,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                       <div className="mt-2">
                         <details className="text-sm group">
                           <summary className="cursor-pointer text-harx-600 hover:text-harx-800 font-bold flex items-center transition-colors duration-300">
-                            <span className="bg-harx-100 px-2 py-0.5 rounded-lg mr-2 group-hover:bg-harx-200">View Details</span>
-                            ({validationResults.errors.length} issues identified)
+                            <span className="bg-harx-100 px-2 py-0.5 rounded-lg mr-2 group-hover:bg-harx-200">{t('uploadContacts.analysis.viewDetails')}</span>
+                            ({validationResults.errors.length} {t('uploadContacts.analysis.issuesIdentified')})
                           </summary>
                           <div className="mt-3 space-y-2">
                             {validationResults.errors.map((error: string, index: number) => (
@@ -2132,12 +2133,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         <CheckCircle className="h-4 w-4 text-harx-500" />
                       </div>
                       <h4 className="text-lg font-bold text-gray-900 tracking-tight">
-                        Confirm & Edit Leads <span className="text-harx-500 ml-1">({parsedLeads.length})</span>
+                        {t('uploadContacts.preview.title')} <span className="text-harx-500 ml-1">({parsedLeads.length})</span>
                       </h4>
                       {dataTooLarge && (
                         <span className="ml-4 inline-flex items-center rounded-full px-3 py-1 text-xs font-black bg-amber-100 text-amber-800 uppercase tracking-tighter shadow-sm">
                           <AlertTriangle className="mr-1 h-3 w-3" />
-                          Memory Only
+                          {t('uploadContacts.preview.memoryOnly')}
                         </span>
                       )}
                     </div>
@@ -2156,7 +2157,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   </div>
                   {showLeadsPreview && (
                     <>
-                      <p className="text-sm text-gray-500 mb-3 font-medium leading-relaxed">Review and edit your leads before saving. Click the edit icon to modify any field to ensure data integrity.</p>
+                      <p className="text-sm text-gray-500 mb-3 font-medium leading-relaxed">{t('uploadContacts.preview.subtitle')}</p>
                       <div className="max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                         <div className="space-y-3">
                           {(parsedLeads || []).map((lead: any, index: number) => lead && (
@@ -2167,7 +2168,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                     <span className="text-xs font-black text-harx-600">{index + 1}</span>
                                   </div>
                                   <span className="text-sm font-bold text-gray-900 group-hover:text-harx-700 transition-colors duration-300">
-                                    {lead.Deal_Name || 'Unnamed Lead'}
+                                    {lead.Deal_Name || t('uploadContacts.preview.unnamedLead')}
                                   </span>
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -2247,7 +2248,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                   </div>
                                   <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                      <label className="block text-xs font-bold text-gray-700 mb-1">Postal Code</label>
+                                      <label className="block text-xs font-bold text-gray-700 mb-1">{t('uploadContacts.preview.postalCode')}</label>
                                       <input
                                         type="text"
                                         value={lead.Postal_Code || ''}
@@ -2257,7 +2258,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                       />
                                     </div>
                                     <div>
-                                      <label className="block text-xs font-bold text-gray-700 mb-1">City</label>
+                                      <label className="block text-xs font-bold text-gray-700 mb-1">{t('uploadContacts.preview.city')}</label>
                                       <input
                                         type="text"
                                         value={lead.City || ''}
@@ -2268,7 +2269,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                     </div>
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">Date of Birth</label>
+                                    <label className="block text-xs font-bold text-gray-700 mb-1">{t('uploadContacts.preview.dob')}</label>
                                     <input
                                       type="text"
                                       value={lead.Date_of_Birth || ''}
@@ -2283,7 +2284,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                       onClick={() => setEditingLeadIndex(null)}
                                       className="px-6 py-2 text-sm font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all duration-300 border border-gray-200"
                                     >
-                                      Discard
+                                      {t('uploadContacts.preview.discard')}
                                     </button>
                                     <button
                                       onClick={() => {
@@ -2291,7 +2292,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                       }}
                                       className="px-6 py-2 text-sm font-black text-white bg-gradient-harx rounded-xl hover:brightness-110 transition-all duration-300 shadow-md shadow-harx-500/20"
                                     >
-                                      Confirm Changes
+                                      {t('uploadContacts.preview.confirmChanges')}
                                     </button>
                                   </div>
 
@@ -2301,13 +2302,13 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                   <div className="flex items-center space-x-2">
                                     <Mail className="h-4 w-4 text-gray-400" />
                                     <span className="text-gray-600 truncate">
-                                      <span className="font-medium">Email:</span> {lead.Email_1 || 'No email'}
+                                      <span className="font-medium">{t('uploadContacts.preview.email')}:</span> {lead.Email_1 || t('uploadContacts.preview.noEmail')}
                                     </span>
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <Phone className="h-4 w-4 text-gray-400" />
                                     <span className="text-gray-600">
-                                      <span className="font-medium">Phone:</span> {lead.Phone || 'No phone'}
+                                      <span className="font-medium">{t('uploadContacts.preview.phone')}:</span> {lead.Phone || t('uploadContacts.preview.noPhone')}
                                     </span>
                                   </div>
                                   <div className="flex items-center space-x-2">
@@ -2339,7 +2340,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 >
                   <div className="flex items-center justify-center">
                     <UserPlus className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
-                    Save {parsedLeads.length} Contacts to Database
+                    {t('uploadContacts.save.buttonText', { count: parsedLeads.length })}
                   </div>
                 </button>
 
@@ -2352,9 +2353,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         <div className="flex items-center">
                           <RefreshCw className="mr-3 h-5 w-5 text-green-600 animate-spin" />
                           <div>
-                            <h4 className="text-sm font-semibold text-green-800">Saving Contacts...</h4>
+                            <h4 className="text-sm font-semibold text-green-800">{t('uploadContacts.save.savingTitle')}</h4>
                             <p className="text-xs text-green-600">
-                              {savedLeadsCount} of {parsedLeads.length} contacts saved
+                              {t('uploadContacts.save.savingProgress', { saved: savedLeadsCount, total: parsedLeads.length })}
                             </p>
                           </div>
                         </div>
@@ -2381,7 +2382,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
         <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center tracking-tight">
           <Globe className="mr-2 h-5 w-5 text-harx-500" />
-          Channel Filter
+          {t('uploadContacts.filter.title')}
         </h3>
         <div className="flex flex-wrap gap-2">
           {channels.map((channel) => {
@@ -2411,7 +2412,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             <div>
               <h3 className="text-lg font-bold text-gray-900 flex items-center tracking-tight">
                 <FileText className="mr-2 h-5 w-5 text-harx-500" />
-                Leads List
+                {t('uploadContacts.list.title')}
               </h3>
               <div className="mt-1">
                 {selectedGigId ? (
@@ -2419,21 +2420,21 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     {parsedLeads.length > 0 ? (
                       <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">
                         {isSavingLeads
-                          ? `Saving ${savedLeadsCount}/${parsedLeads.length + savedLeadsCount} contacts...`
-                          : `${parsedLeads.length} leads ready to save`}
+                          ? t('uploadContacts.list.saving', { saved: savedLeadsCount, total: parsedLeads.length + savedLeadsCount })
+                          : t('uploadContacts.list.ready', { count: parsedLeads.length })}
                       </span>
                     ) : leads.length > 0 ? (
                       <span className="bg-harx-50 text-harx-700 px-2 py-0.5 rounded-full font-bold">
-                        Showing {filteredLeads.length} of {totalCount} leads {searchQuery && `(filtered by "${searchQuery}")`}
+                        {t('uploadContacts.list.showing', { filtered: filteredLeads.length, total: totalCount })} {searchQuery && `(filtered by "${searchQuery}")`}
                       </span>
                     ) : (
                       <span className="bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full font-bold">
-                        No leads found
+                        {t('uploadContacts.list.empty')}
                       </span>
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500">Please select a gig to view leads</p>
+                  <p className="text-xs text-gray-500">{t('uploadContacts.list.selectGig')}</p>
                 )}
               </div>
             </div>
@@ -2445,7 +2446,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <input
                   type="text"
                   className="block w-full rounded-xl border-gray-200 pl-9 py-1.5 focus:border-harx-500 focus:ring-harx-500 text-sm shadow-sm"
-                  placeholder="Search leads..."
+                  placeholder={t('uploadContacts.list.search')}
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                 />
@@ -2455,9 +2456,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="all">{t('uploadContacts.list.statusAll')}</option>
+                <option value="active">{t('uploadContacts.list.statusActive')}</option>
+                <option value="inactive">{t('uploadContacts.list.statusInactive')}</option>
               </select>
               <button
                 onClick={() => {
@@ -2470,12 +2471,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 {isLoadingLeads ? (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Loading...
+                    {t('uploadContacts.list.loading')}
                   </>
                 ) : (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh
+                    {t('uploadContacts.list.refresh')}
                   </>
                 )}
               </button>
@@ -2490,25 +2491,25 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <thead className="bg-gray-100 sticky top-0 z-[50] shadow-md text-center">
                   <tr>
                     <th scope="col" className="w-[10%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
-                      Nom
+                      {t('uploadContacts.list.table.lastName')}
                     </th>
                     <th scope="col" className="w-[10%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
-                      Prénom
+                      {t('uploadContacts.list.table.firstName')}
                     </th>
                     <th scope="col" className="w-[22%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
-                      Email
+                      {t('uploadContacts.list.table.email')}
                     </th>
                     <th scope="col" className="w-[22%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
-                      Adresse
+                      {t('uploadContacts.list.table.address')}
                     </th>
                     <th scope="col" className="w-[14%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
-                      Ville
+                      {t('uploadContacts.list.table.city')}
                     </th>
                     <th scope="col" className="w-[10%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
-                      Code Postal
+                      {t('uploadContacts.list.table.postalCode')}
                     </th>
                     <th scope="col" className="w-[12%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
-                      Mobile
+                      {t('uploadContacts.list.table.mobile')}
                     </th>
                   </tr>
                 </thead>
@@ -2585,8 +2586,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                       <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
                           <FileText className="h-12 w-12 text-gray-300 mb-2" />
-                          <p>No leads found</p>
-                          <p className="text-xs text-gray-400 mt-1">Try importing some leads or check your filters</p>
+                          <p>{t('uploadContacts.list.empty')}</p>
+                          <p className="text-xs text-gray-400 mt-1">{t('uploadContacts.list.emptyHint')}</p>
                         </div>
                       </td>
                     </tr>
@@ -2604,12 +2605,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <span>
                   {searchQuery ? (
                     <>
-                      <span className="font-black">{filteredLeads.length}</span> results for "{searchQuery}"
+                      <span className="font-black">{filteredLeads.length}</span> {t('uploadContacts.list.resultsFor')} "{searchQuery}"
                     </>
                   ) : (
                     <>
-                      <span className="font-black">{filteredLeads.length > 0 ? filteredLeads.length : realtimeLeads.length}</span> of{' '}
-                      <span className="font-black">{totalCount > 0 ? totalCount : realtimeLeads.length}</span> leads
+                      <span className="font-black">{filteredLeads.length > 0 ? filteredLeads.length : realtimeLeads.length}</span> {t('uploadContacts.list.of')}{' '}
+                      <span className="font-black">{totalCount > 0 ? totalCount : realtimeLeads.length}</span> {t('uploadContacts.list.leads')}
                     </>
                   )}
                 </span>
@@ -2621,7 +2622,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     disabled={currentPage === 1}
                     className="relative inline-flex items-center px-2 py-1 text-xs font-bold text-gray-600 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-50"
                   >
-                    Prev
+                    {t('uploadContacts.list.prev')}
                   </button>
                   <div className="flex items-center space-x-1">
                     {renderPaginationButtons()}
@@ -2631,7 +2632,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     disabled={currentPage === totalPages}
                     className="relative inline-flex items-center px-2 py-1 text-xs font-bold text-gray-600 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-50"
                   >
-                    Next
+                    {t('uploadContacts.list.next')}
                   </button>
                 </div>
               )}
@@ -2645,20 +2646,20 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
           <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center">
             <RefreshCw className="mr-2 h-5 w-5 text-harx-500 animate-spin" />
-            Leads en temps réel
+            {t('uploadContacts.realtime.title')}
           </h3>
           <div className="bg-gradient-to-r from-harx-50 to-harx-100 border border-harx-100 rounded-lg p-2 mb-2">
             <p className="text-xs font-bold text-harx-700">
-              Nombre de leads reçus: <span className="bg-white text-harx-800 px-2 py-0.5 rounded-full text-xs font-black">{realtimeLeads.length}</span>
+              {t('uploadContacts.realtime.count')} <span className="bg-white text-harx-800 px-2 py-0.5 rounded-full text-xs font-black">{realtimeLeads.length}</span>
             </p>
           </div>
           <div className="max-h-96 overflow-y-auto border border-gray-100 rounded-lg">
             <div className="min-w-full divide-y divide-gray-100">
               <div className="bg-gradient-to-r from-harx-50 to-harx-100 sticky top-0">
                 <div className="grid grid-cols-3 px-4 py-2">
-                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">Email</div>
-                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">Téléphone</div>
-                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">Lead</div>
+                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">{t('uploadContacts.list.table.email')}</div>
+                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">{t('uploadContacts.realtime.phone')}</div>
+                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">{t('uploadContacts.realtime.lead')}</div>
                 </div>
               </div>
               <div className="bg-white divide-y divide-gray-100">
@@ -2692,18 +2693,16 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <Cloud className="h-6 w-6 text-harx-500" />
               </div>
               <h3 className="mb-2 text-xl font-black text-gray-900 tracking-tight">
-                Import Method
+                {t('uploadContacts.modal.title')}
               </h3>
-              <p className="mb-6 text-sm text-gray-600 font-medium">
-                Sync with <b>Zoho CRM</b> or upload an <b>Excel/CSV</b> file.
-              </p>
+              <p className="mb-6 text-sm text-gray-600 font-medium" dangerouslySetInnerHTML={{ __html: t('uploadContacts.modal.subtitle') }} />
             </div>
             <div className="mt-6 flex justify-between gap-3">
               <button
                 onClick={handleCancelModal}
                 className="flex-1 rounded-xl border-2 border-gray-100 bg-white px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all"
               >
-                Cancel
+                {t('uploadContacts.modal.cancel')}
               </button>
               <button
                 onClick={() => {
@@ -2712,7 +2711,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 }}
                 className="flex-1 rounded-xl bg-gradient-harx px-4 py-2 text-sm font-black text-white hover:brightness-110 shadow-lg shadow-harx-500/20 transition-all"
               >
-                Next
+                {t('uploadContacts.modal.next')}
               </button>
             </div>
           </div>

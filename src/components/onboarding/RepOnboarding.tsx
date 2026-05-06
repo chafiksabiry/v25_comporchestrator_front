@@ -20,10 +20,9 @@ import {
   BarChart3,
   Laptop,
   ChevronLeft,
-  ChevronRight,
-  Image,
-} from 'lucide-react';
+import { ChevronRight, Image as ImageIcon } from 'lucide-react';
 import { PremiumAudioPlayer } from '../dashboard/components/PremiumAudioPlayer';
+import { useTranslation } from 'react-i18next';
 
 import { AppContent } from '../training/App';
 import { getGigsByCompanyId } from '../../api/matching';
@@ -36,6 +35,7 @@ import '../training/index.css';
 interface RepOnboardingProps { }
 
 const RepOnboarding: React.FC<RepOnboardingProps> = () => {
+  const { t } = useTranslation();
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -820,7 +820,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 onClick={closeTrainingViewer}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-600 transition-all hover:border-harx-200 hover:text-harx-600"
               >
-                Back to trainings list
+                {t('repOnboarding.viewer.backBtn')}
               </button>
             </div>
           </header>
@@ -881,7 +881,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   }}
                 >
                   <ChevronLeft className="h-3.5 w-3.5 opacity-90" />
-                  Back to training
+                  {t('repOnboarding.viewer.backToTraining')}
                 </button>
                 <div className="flex flex-1 flex-wrap items-center justify-end gap-3">
                   {selectedImageSet.items.length > 0 ? (
@@ -890,7 +890,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       {selectedImageSet.items.length}
                     </span>
                   ) : (
-                    <span className="text-xs font-semibold text-white/60">No images</span>
+                    <span className="text-xs font-semibold text-white/60">{t('repOnboarding.viewer.noImages')}</span>
                   )}
                   <div className="flex items-center gap-2">
                     <button
@@ -928,12 +928,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   <div className="relative z-10 mx-auto max-w-md space-y-5 rounded-2xl border border-harx-500/30 bg-harx-950/70 p-8 text-center shadow-[0_0_40px_-10px_rgba(236,72,153,0.35)] backdrop-blur-md">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-harx p-[2px] shadow-lg shadow-harx-500/25">
                       <div className="flex h-full w-full items-center justify-center rounded-[0.9rem] bg-harx-950/90">
-                        <Image className="h-7 w-7 text-harx-200" aria-hidden />
+                        <ImageIcon className="h-7 w-7 text-harx-200" aria-hidden />
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed text-harx-50/90">
-                      No images yet. Open the REP training chat and use the{' '}
-                      <span className="font-semibold text-white">Presentation</span> action to generate them.
+                      {t('repOnboarding.viewer.noImagesDesc')}{' '}
+                      <span className="font-semibold text-white">{t('repOnboarding.viewer.presentationAction')}</span> {t('repOnboarding.viewer.generateThem')}
                     </p>
                     {previewJourney ? (
                       <button
@@ -948,7 +948,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-3 text-xs font-bold text-white shadow-lg shadow-harx-600/35 transition hover:brightness-110"
                       >
                         <MessageSquare className="h-4 w-4" />
-                        Open training chat
+                        {t('repOnboarding.viewer.openChatBtn')}
                       </button>
                     ) : null}
                   </div>
@@ -972,7 +972,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               />
                             ) : (
                               <div className="flex min-h-[240px] items-center justify-center bg-harx-950 px-6 py-16 text-sm text-harx-200/80">
-                                Image unavailable.
+                                {t('repOnboarding.viewer.imageUnavailable')}
                               </div>
                             )}
                           </div>
@@ -1030,14 +1030,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             <div className="min-w-0" />
             <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-gray-500">Gig:</span>
+                <span className="text-xs font-black uppercase tracking-wider text-gray-500">{t('repOnboarding.header.gigFilter')}</span>
                 <select
                   id="gig-filter-dropdown"
                   value={filterGigId}
                   onChange={(e) => setFilterGigId(e.target.value)}
                   className="min-w-[170px] rounded-xl border-2 border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
                 >
-                  <option value="all">All gigs</option>
+                  <option value="all">{t('repOnboarding.header.allGigs')}</option>
                   {companyGigs.map((gig: any) => (
                     <option key={gig._id || gig.id} value={gig._id || gig.id}>
                       {gig.title}
@@ -1051,7 +1051,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 transition-all hover:-translate-y-0.5 hover:shadow-harx-500/40 sm:w-auto"
               >
                 <Plus className="h-4 w-4" />
-                <span>New training journey</span>
+                <span>{t('repOnboarding.header.newJourneyBtn')}</span>
               </button>
             </div>
           </div>
@@ -1071,8 +1071,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         <BookOpen className="h-6 w-6" />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-black tracking-tight text-gray-900">Training</h2>
-                        <p className="text-sm font-medium text-gray-500">Skills development and validation</p>
+                        <h2 className="text-2xl font-black tracking-tight text-gray-900">{t('repOnboarding.trainingSection.title')}</h2>
+                        <p className="text-sm font-medium text-gray-500">{t('repOnboarding.trainingSection.subtitle')}</p>
                       </div>
                     </div>
                   </div>
@@ -1081,7 +1081,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   <div className="mt-4 overflow-hidden rounded-2xl border border-harx-100 bg-white shadow-sm">
                     <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                       <div className="min-w-0">
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-harx-600">HARX Training Viewer</p>
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-harx-600">{t('repOnboarding.viewer.title')}</p>
                         <h3 className="truncate text-sm font-semibold text-slate-700">
                           {String(selectedJourneyForContent?.title || selectedJourneyForContent?.name || 'Formation')}
                         </h3>
@@ -1095,34 +1095,34 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                       >
                         <ChevronLeft className="h-3.5 w-3.5" />
-                        Back to trainings
+                        {t('repOnboarding.viewer.backList')}
                       </button>
                     </div>
                     {repViewerHtml ? (
                       <iframe
                         key={repViewerIframeKey}
-                        title="HARX Training Viewer"
+                        title={t('repOnboarding.viewer.title')}
                         srcDoc={repViewerHtml}
                         sandbox="allow-scripts"
                         className="h-[70vh] w-full border-0 bg-white"
                       />
                     ) : (
-                      <div className="p-4 text-sm text-slate-600">Viewer indisponible.</div>
+                      <div className="p-4 text-sm text-slate-600">{t('repOnboarding.viewer.unavailable')}</div>
                     )}
                   </div>
                 ) : loadingTrainings ? (
                   <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-harx-100 py-12">
                     <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
-                    <p className="mt-4 text-sm font-medium text-gray-600">Loading available trainings...</p>
+                    <p className="mt-4 text-sm font-medium text-gray-600">{t('repOnboarding.trainingSection.loading')}</p>
                   </div>
                 ) : trainings.length === 0 ? (
                   <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-harx-200 py-12 p-8 text-center">
                     <div className="mb-4 rounded-2xl border border-harx-100 bg-white p-3">
                       <Plus className="h-6 w-6 text-harx-500" />
                     </div>
-                    <h3 className="text-base font-bold text-gray-900">No training journeys yet</h3>
+                    <h3 className="text-base font-bold text-gray-900">{t('repOnboarding.trainingSection.emptyTitle')}</h3>
                     <p className="mx-auto mt-2 max-w-xs text-sm text-gray-600">
-                      Add your first training journey to start onboarding your REPs.
+                      {t('repOnboarding.trainingSection.emptyDesc')}
                     </p>
                     <button
                       type="button"
@@ -1130,7 +1130,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"
                     >
                       <Plus className="h-4 w-4" />
-                      <span>Create First Journey</span>
+                      <span>{t('repOnboarding.trainingSection.createFirstBtn')}</span>
                     </button>
                   </div>
                 ) : (
@@ -1194,10 +1194,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               </div>
                               <div className="rounded-xl border border-gray-100 bg-white/90 px-3 py-2 text-xs font-semibold text-gray-600 shadow-sm backdrop-blur">
                                 <FileText className="mr-1.5 inline h-3.5 w-3.5 text-harx-alt-500" />
-                                {formatted.modulesCount} modules
+                                {formatted.modulesCount} {t('repOnboarding.trainingSection.modules')}
                               </div>
                               <div className="col-span-2 truncate rounded-xl border border-harx-100 bg-harx-50/50 px-3 py-2 text-xs font-semibold text-harx-700">
-                                Formation content: modules + sections + quizzes
+                                {t('repOnboarding.trainingSection.contentDesc')}
                               </div>
                             </div>
                             <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
@@ -1213,7 +1213,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 >
                                   <Play className="h-4 w-4" />
                                   <span>
-                                    {formatted.status === 'completed' ? 'Review' : formatted.status === 'in_progress' ? 'Continue' : 'Start'}
+                                    {formatted.status === 'completed' ? t('repOnboarding.trainingSection.reviewBtn') : formatted.status === 'in_progress' ? t('repOnboarding.trainingSection.continueBtn') : t('repOnboarding.trainingSection.startBtn')}
                                   </span>
                                 </button>
                                 <button
@@ -1223,7 +1223,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-xs font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   <FileText className="h-4 w-4" />
-                                  Content
+                                  {t('repOnboarding.trainingSection.contentBtn')}
                                 </button>
                               </div>
 
@@ -1279,8 +1279,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       <BookOpen className="h-6 w-6" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black tracking-tight text-gray-900">Saved podcasts</h2>
-                      <p className="text-sm font-medium text-gray-500">Generated and saved from REP training chat</p>
+                      <h2 className="text-2xl font-black tracking-tight text-gray-900">{t('repOnboarding.podcastSection.title')}</h2>
+                      <p className="text-sm font-medium text-gray-500">{t('repOnboarding.podcastSection.subtitle')}</p>
                     </div>
                   </div>
                   <button
@@ -1289,20 +1289,20 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${loadingPodcasts ? 'animate-spin' : ''}`} />
-                    Refresh
+                    {t('repOnboarding.podcastSection.refreshBtn')}
                   </button>
                 </div>
 
                 {loadingPodcasts ? (
                   <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-harx-100 py-10">
                     <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
-                    <p className="mt-4 text-sm font-medium text-gray-600">Loading saved podcasts...</p>
+                    <p className="mt-4 text-sm font-medium text-gray-600">{t('repOnboarding.podcastSection.loading')}</p>
                   </div>
                 ) : savedPodcasts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-harx-200 py-10 p-8 text-center">
-                    <h3 className="text-base font-bold text-gray-900">No saved podcasts yet</h3>
+                    <h3 className="text-base font-bold text-gray-900">{t('repOnboarding.podcastSection.emptyTitle')}</h3>
                     <p className="mx-auto mt-2 max-w-xs text-sm text-gray-600">
-                      Generate and save a podcast from the training chat, it will appear here.
+                      {t('repOnboarding.podcastSection.emptyDesc')}
                     </p>
                   </div>
                 ) : (
@@ -1313,13 +1313,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         className="rounded-2xl border border-[#f2d8e1] bg-white p-4 shadow-[0_10px_24px_rgba(25,35,60,0.08)]"
                       >
                         <h3 className="line-clamp-2 text-base font-black text-gray-900">
-                          {podcast.title || 'Untitled podcast'}
+                          {podcast.title || t('repOnboarding.podcastSection.untitled')}
                         </h3>
                         <p className="mt-1 line-clamp-1 text-xs font-medium text-gray-600">
-                          {podcast.trainingTitle || 'Training podcast'}
+                          {podcast.trainingTitle || t('repOnboarding.podcastSection.defaultDesc')}
                         </p>
                         <p className="mt-2 text-[11px] text-gray-500">
-                          {podcast.createdAt ? new Date(podcast.createdAt).toLocaleString() : 'Date unavailable'}
+                          {podcast.createdAt ? new Date(podcast.createdAt).toLocaleString() : t('repOnboarding.podcastSection.dateUnavailable')}
                         </p>
                         <div className="mt-3 flex items-center gap-2">
                           <button
@@ -1328,7 +1328,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                             className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                           >
                             {playingPodcastId === podcast._id ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                            {playingPodcastId === podcast._id ? 'Stop audio' : 'Play audio'}
+                            {playingPodcastId === podcast._id ? t('repOnboarding.podcastSection.stopAudio') : t('repOnboarding.podcastSection.playAudio')}
                           </button>
                         </div>
                         {podcast.audioUrl ? (
@@ -1351,7 +1351,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-xl rounded-2xl border border-harx-100 bg-white p-5 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-black text-gray-900">Training settings</h3>
+              <h3 className="text-lg font-black text-gray-900">{t('repOnboarding.settings.title')}</h3>
               <button
                 type="button"
                 onClick={() => {
@@ -1361,34 +1361,34 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 }}
                 className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-50"
               >
-                Close
+                {t('repOnboarding.settings.closeBtn')}
               </button>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Title</label>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">{t('repOnboarding.settings.titleLabel')}</label>
                 <input
                   value={settingsForm.title}
                   onChange={(e) => setSettingsForm((prev) => ({ ...prev, title: e.target.value }))}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
-                  placeholder="Training title"
+                  placeholder={t('repOnboarding.settings.titlePlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Description</label>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">{t('repOnboarding.settings.descLabel')}</label>
                 <textarea
                   value={settingsForm.description}
                   onChange={(e) => setSettingsForm((prev) => ({ ...prev, description: e.target.value }))}
                   rows={3}
                   className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
-                  placeholder="Training description"
+                  placeholder={t('repOnboarding.settings.descPlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Training logo</label>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">{t('repOnboarding.settings.logoLabel')}</label>
                 <input
                   ref={logoInputRef}
                   type="file"
@@ -1410,14 +1410,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     className="inline-flex items-center gap-2 rounded-xl border border-harx-200 px-3 py-2 text-sm font-semibold text-harx-700 hover:bg-harx-50 disabled:opacity-60"
                   >
                     {isUploadingLogo ? <RefreshCw className="h-4 w-4 animate-spin" /> : null}
-                    {isUploadingLogo ? 'Uploading...' : 'Import image'}
+                    {isUploadingLogo ? t('repOnboarding.settings.uploading') : t('repOnboarding.settings.importImageBtn')}
                   </button>
                   {settingsForm.logoUrl ? (
                     <button
                       type="button"
                       onClick={() => setSettingsForm((prev) => ({ ...prev, logoUrl: '' }))}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50"
-                      title="Remove logo"
+                      title={t('repOnboarding.settings.removeLogoBtn')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -1426,10 +1426,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 {settingsForm.logoUrl ? (
                   <div className="mt-3 inline-flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
                     <img src={settingsForm.logoUrl} alt="Training logo preview" className="h-10 w-10 rounded-lg object-cover" />
-                    <span className="text-xs font-semibold text-gray-600">Logo imported successfully</span>
+                    <span className="text-xs font-semibold text-gray-600">{t('repOnboarding.settings.logoSuccess')}</span>
                   </div>
                 ) : (
-                  <p className="mt-2 text-xs text-gray-500">No logo selected. Import an image to set your training logo.</p>
+                  <p className="mt-2 text-xs text-gray-500">{t('repOnboarding.settings.noLogo')}</p>
                 )}
               </div>
             </div>
@@ -1444,7 +1444,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 }}
                 className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
               >
-                Cancel
+                {t('repOnboarding.settings.cancelBtn')}
               </button>
               <button
                 type="button"
@@ -1453,7 +1453,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-harx px-4 py-2 text-sm font-bold text-white shadow-sm disabled:opacity-60"
               >
                 {isSavingSettings ? <RefreshCw className="h-4 w-4 animate-spin" /> : null}
-                Save changes
+                {t('repOnboarding.settings.saveBtn')}
               </button>
             </div>
           </div>
