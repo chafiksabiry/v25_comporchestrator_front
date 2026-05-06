@@ -506,7 +506,7 @@ const ScriptGenerator: React.FC = () => {
     sendMessageToApi(input, true);
   };
 
-  const renderAssistantMessage = (content: string) => {
+  const renderAssistantMessage = (messageId: string, content: string, playbook?: any) => {
     const rows = parseStyledDialogue(content);
     const hasStructured = rows.some((row) => row.side !== 'other');
     if (!hasStructured) {
