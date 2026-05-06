@@ -314,7 +314,6 @@ export function MasterSidebar({
 
       {/* Sidebar Footer */}
       <div className={`mt-auto pt-6 border-t border-white/5 space-y-2 transition-all duration-300 ${isCollapsed ? 'px-3' : 'px-4 pb-8'}`}>
-        <LanguageSwitcher isCollapsed={isCollapsed} />
         <button
           onClick={handleLogoutMaster}
           className={`flex items-center gap-4 w-full p-4 rounded-2xl transition-all duration-300 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 group relative ${isCollapsed ? 'justify-center' : ''}`}
