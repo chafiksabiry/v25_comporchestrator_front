@@ -108,26 +108,46 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  return lines.map((line) => {
+  const parsed: StyledDialogueLine[] = [];
+
+  for (const line of lines) {
     const normalized = line
       .replace(/^\[[^\]]+\]\s*/, '')
       .replace(/^\[?\s*r[ée]ponse\s+du\s+candidat\s*\]?\s*:?\s*/i, '')
       .trim();
-    const match = normalized.match(/^(agent|lead|candidate|client)\s*:\s*(.+)$/i);
-    if (!match) {
-      return {
-        side: 'other',
-        label: '',
-        text: line,
-      };
+    const match = normalized.match(/^(agent|lead)\s*:\s*(.+)$/i);
+
+    let currentSide: 'agent' | 'lead' | 'other' = 'other';
+    let currentLabel = '';
+    let currentText = line;
+
+    if (match) {
+      const actor = String(match[1] || '').toLowerCase();
+      const text = String(match[2] || '').trim();
+      if (actor === 'agent') {
+        currentSide = 'agent';
+        currentLabel = 'Agent';
+        currentText = text;
+      } else {
+        currentSide = 'lead';
+        currentLabel = 'Lead';
+        currentText = text;
+      }
     }
-    const actor = String(match[1] || '').toLowerCase();
-    const text = String(match[2] || '').trim();
-    if (actor === 'agent') {
-      return { side: 'agent', label: 'Agent', text };
+
+    const last = parsed[parsed.length - 1];
+    if (last && last.side !== 'other' && last.side === currentSide) {
+      last.text = `${last.text}\n${currentText}`;
+    } else {
+      parsed.push({
+        side: currentSide,
+        label: currentLabel,
+        text: currentText,
+      });
     }
-    return { side: 'lead', label: 'Lead', text };
-  });
+  }
+
+  return parsed;
 };
 
 const ScriptGenerator: React.FC = () => {
