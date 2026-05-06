@@ -603,9 +603,15 @@ const ScriptGenerator: React.FC = () => {
 
     const cockpitPrompt = [
       customPrompt || 'Générer un script de vente dynamique et interactif sous forme de phases structurées.',
-      'Le script doit être un outil que le commercial utilise en temps réel.',
-      'Structure suggérée : 1. Ouverture, 2. Brise-glace, 3. Découverte, 4. Argumentation, 5. Closing, 6. Conclusion.',
-      'Inclure des éléments de conformité réglementaire.',
+      'The script should guide a full phone conversation.',
+      '',
+      'Requirements:',
+      '* Structure the call into stages (introduction, purpose, discovery, response, closing)',
+      '* Include both agent lines and possible customer replies',
+      '* Add variations for different customer reactions (interested, hesitant, not available, not interested)',
+      '* Keep sentences short, natural, and suitable for spoken conversation',
+      '* Make the flow realistic',
+      '',
       'Mission Details:',
       `- Title: ${selectedGigSummary.title}`,
       `- Description: ${selectedGigSummary.description}`,
@@ -801,17 +807,39 @@ const ScriptGenerator: React.FC = () => {
     });
   };
 
-  const handleRefineCockpitStage = async (stageId: string, currentContent: string): Promise<string> => {
+  const handleRefineCockpitStage = async (
+    stageId: string, 
+    currentContent: string, 
+    phase?: string, 
+    actor?: string
+  ): Promise<string> => {
     const companyId = getCompanyId();
     if (!companyId || !selectedGig) return currentContent;
 
     try {
-      const prompt = `Reformule cette réplique de script de vente pour la rendre plus percutante, naturelle et professionnelle. 
-      Réplique actuelle: "${currentContent}"
-      
-      Instructions:
-      1. Retourne UNIQUEMENT le nouveau texte reformulé.
-      2. Pas d'explications, pas de guillemets.`;
+      const prompt = [
+        'You are improving a line from a phone call script.',
+        '',
+        'Context:',
+        '',
+        `* Call stage: ${phase || 'Sales stage'}`,
+        `* Speaker: ${actor || 'Agent'}`,
+        '',
+        'Original line:',
+        currentContent,
+        '',
+        'Instruction:',
+        'Reformuler la réplique pour la rendre plus naturelle, fluide, chaleureuse et engageante pour une conversation téléphonique commerciale.',
+        '',
+        'Rules:',
+        '',
+        '* Keep the same meaning',
+        '* Make it more natural and fluid for a phone conversation',
+        '* Make it clear, polite, and engaging',
+        '* Keep it concise',
+        '',
+        'Return ONLY the improved line. No explanations. No formatting.'
+      ].join('\n');
 
       const response = await apiClient.post('/rag/query', {
         companyId,
