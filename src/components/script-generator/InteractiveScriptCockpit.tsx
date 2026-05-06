@@ -34,7 +34,7 @@ interface InteractiveScriptCockpitProps {
     onClose: () => void;
     onValidate?: () => void;
     isValidating?: boolean;
-    onRefineStage?: (stageId: string, currentContent: string) => Promise<string>;
+    onRefineStage?: (stageId: string, currentContent: string, phase?: string, actor?: string) => Promise<string>;
     onEditStage?: (stageId: string, newContent: string) => void;
 }
 
@@ -117,7 +117,7 @@ export function InteractiveScriptCockpit({
         if (!onRefineStage || isRefining) return;
         setIsRefining(true);
         try {
-            const newContent = await onRefineStage(currentStage.id, currentStage.agent);
+            const newContent = await onRefineStage(currentStage.id, currentStage.agent, currentStage.label, 'Agent');
             if (newContent && onEditStage) {
                 onEditStage(currentStage.id, newContent);
             }
