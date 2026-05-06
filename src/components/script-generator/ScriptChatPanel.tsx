@@ -230,12 +230,12 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
                       {renderAssistantMessage(message.id, message.content, message.playbook)}
                       
                       {/* Validate Script Button inside Assistant Balloon (for non-welcome messages) */}
-                      {!isWelcome && (
+                       {!isWelcome && (
                         <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             {hasValidatedScriptForGig && !isValidated ? (
                               <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-1.5 font-bold leading-normal">
-                                {t('scriptGenerator.chatPanel.alreadyValidatedWarning')}
+                                En validant ce script, il remplacera et écrasera l'ancien script actif de cette mission.
                               </p>
                             ) : (
                               <p className="text-[10px] text-slate-400 font-semibold">
@@ -249,27 +249,22 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
                             onClick={() => onValidateScript(message)}
                             disabled={
                               Boolean(isValidated) ||
-                              validatingScriptId === scriptIdToValidate ||
-                              (hasValidatedScriptForGig && !isValidated)
+                              validatingScriptId === scriptIdToValidate
                             }
                             className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shrink-0 ${
                               isValidated
                                 ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 animate-none'
-                                : hasValidatedScriptForGig
-                                  ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                                  : validatingScriptId === scriptIdToValidate
-                                    ? 'bg-slate-50 text-slate-600 border border-slate-200 animate-pulse'
-                                    : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20 active:scale-95'
+                                : validatingScriptId === scriptIdToValidate
+                                  ? 'bg-slate-50 text-slate-600 border border-slate-200 animate-pulse'
+                                  : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20 active:scale-95'
                             }`}
                           >
                             {isValidated && <CheckCircle className="w-3.5 h-3.5" />}
                             {isValidated
                               ? t('scriptGenerator.chatPanel.statusValid')
-                              : hasValidatedScriptForGig
-                                ? t('scriptGenerator.chatPanel.statusValidationBlocked')
-                                : validatingScriptId === scriptIdToValidate
-                                  ? t('scriptGenerator.chatPanel.statusValidating')
-                                  : t('scriptGenerator.chatPanel.validateScript')}
+                              : validatingScriptId === scriptIdToValidate
+                                ? t('scriptGenerator.chatPanel.statusValidating')
+                                : t('scriptGenerator.chatPanel.validateScript')}
                           </button>
                         </div>
                       )}

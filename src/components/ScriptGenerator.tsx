@@ -451,11 +451,6 @@ const ScriptGenerator: React.FC = () => {
   const validateScript = async (message: ChatMessage) => {
     const key = message.scriptId || message.id;
     if (!key || validatingScriptId) return;
-    const alreadyValidatedId = savedScripts.find((s) => Boolean((s as any)?.isActive))?._id;
-    if (alreadyValidatedId && (!message.scriptId || String(message.scriptId) !== String(alreadyValidatedId))) {
-      setError(t('scriptGenerator.scriptAlreadyValidated'));
-      return;
-    }
     setValidatingScriptId(key);
     setError(null);
     try {
