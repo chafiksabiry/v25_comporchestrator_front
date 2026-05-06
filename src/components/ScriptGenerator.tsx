@@ -222,7 +222,7 @@ const ScriptGenerator: React.FC = () => {
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
   const [currentView, setCurrentView] = useState<'list' | 'view' | 'chat' | 'cockpit'>('list');
-  const [cockpitData, setCockpitData] = useState<{ title: string, phases: any[] } | null>(null);
+  const [cockpitData, setCockpitData] = useState<{ title: string, stages: any[] } | null>(null);
   const [editModal, setEditModal] = useState<EditModalState>({
     open: false,
     mode: 'manual',
@@ -614,21 +614,21 @@ const ScriptGenerator: React.FC = () => {
       'Chaque suggestion de réponse du client doit pointer vers une étape spécifique.',
       '{',
       '  "title": "Nom du script",',
-      '  "phases": [',
+      '  "stages": [',
       '    {',
       '      "id": "intro",',
-      '      "title": "Ouverture",',
-      '      "content": "Bonjour...",',
-      '      "suggestions": [',
-      '        { "text": "Oui, je vous écoute", "nextPhaseId": "besoins" },',
-      '        { "text": "C\'est quoi ?", "nextPhaseId": "explication" },',
-      '        { "text": "Pas le temps", "nextPhaseId": "rappel" }',
+      '      "label": "Ouverture",',
+      '      "agent": "Bonjour...",',
+      '      "responses": [',
+      '        { "text": "Oui, je vous écoute", "nextStageId": "besoins" },',
+      '        { "text": "C\'est quoi ?", "nextStageId": "explication" },',
+      '        { "text": "Pas le temps", "nextStageId": "rappel" }',
       '      ],',
       '      "compliance": "Mention DDA obligatoire"',
       '    },',
-      '    { "id": "besoins", "title": "Découverte", "content": "...", "suggestions": [...] },',
-      '    { "id": "explication", "title": "Présentation", "content": "...", "suggestions": [...] },',
-      '    { "id": "rappel", "title": "Fixer rappel", "content": "...", "suggestions": [...] }',
+      '    { "id": "besoins", "label": "Découverte", "agent": "...", "responses": [...] },',
+      '    { "id": "explication", "label": "Présentation", "agent": "...", "responses": [...] },',
+      '    { "id": "rappel", "label": "Fixer rappel", "agent": "...", "responses": [...] }',
       '  ]',
       '}',
       'Générer au moins 8 phases pour couvrir les différents scénarios (objections, questions, accord).',
@@ -651,10 +651,10 @@ const ScriptGenerator: React.FC = () => {
       try {
         const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
         const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawResponse);
-        if (parsed.phases && Array.isArray(parsed.phases)) {
+        if (parsed.stages && Array.isArray(parsed.stages)) {
           setCockpitData({
             title: parsed.title || selectedGigSummary.title,
-            phases: parsed.phases
+            stages: parsed.stages
           });
           setCurrentView('cockpit');
         } else {
@@ -753,11 +753,11 @@ const ScriptGenerator: React.FC = () => {
     setError(null);
 
     try {
-      // Map cockpit phases to the linear script format for DB compatibility
-      const scriptSteps = cockpitData.phases.map(phase => ({
-        phase: phase.title || 'Dialogue',
+      // Map cockpit stages to the linear script format for DB compatibility
+      const scriptSteps = cockpitData.stages.map(stage => ({
+        phase: stage.label || 'Dialogue',
         actor: 'agent' as const,
-        replica: phase.content
+        replica: stage.agent
       }));
 
       const payload = {
@@ -768,7 +768,7 @@ const ScriptGenerator: React.FC = () => {
         script: scriptSteps,
         playbook: {
           title: cockpitData.title,
-          phases: cockpitData.phases,
+          stages: cockpitData.stages,
           format: 'cockpit'
         },
         isActive: true
@@ -790,18 +790,18 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
-  const handleEditCockpitPhase = (phaseId: string, newContent: string) => {
+  const handleEditCockpitStage = (stageId: string, newContent: string) => {
     if (!cockpitData) return;
     setCockpitData(prev => {
       if (!prev) return null;
       return {
         ...prev,
-        phases: prev.phases.map(p => p.id === phaseId ? { ...p, content: newContent } : p)
+        stages: prev.stages.map(s => s.id === stageId ? { ...s, agent: newContent } : s)
       };
     });
   };
 
-  const handleRefineCockpitPhase = async (phaseId: string, currentContent: string): Promise<string> => {
+  const handleRefineCockpitStage = async (stageId: string, currentContent: string): Promise<string> => {
     const companyId = getCompanyId();
     if (!companyId || !selectedGig) return currentContent;
 
@@ -1329,12 +1329,12 @@ const ScriptGenerator: React.FC = () => {
         {currentView === 'cockpit' && cockpitData && (
           <InteractiveScriptCockpit
             scriptTitle={cockpitData.title}
-            phases={cockpitData.phases}
+            stages={cockpitData.stages}
             onClose={() => setCurrentView('list')}
             onValidate={handleSaveCockpitScript}
             isValidating={validatingScriptId === 'cockpit-save'}
-            onEditPhase={handleEditCockpitPhase}
-            onRefinePhase={handleRefineCockpitPhase}
+            onEditStage={handleEditCockpitStage}
+            onRefineStage={handleRefineCockpitStage}
           />
         )}
 

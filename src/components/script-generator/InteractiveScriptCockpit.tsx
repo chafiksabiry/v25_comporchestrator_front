@@ -17,30 +17,38 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-interface ScriptPhase {
+interface ScriptStage {
     id: string;
-    title: string;
-    content: string;
-    suggestions: Array<{
+    label: string;
+    agent: string;
+    responses: Array<{
         text: string;
-        nextPhaseId: string;
+        nextStageId: string;
     }>;
     compliance?: string;
 }
 
 interface InteractiveScriptCockpitProps {
     scriptTitle: string;
-    phases: ScriptPhase[];
+    stages: ScriptStage[];
     onClose: () => void;
     onValidate?: () => void;
     isValidating?: boolean;
-    onRefinePhase?: (phaseId: string, currentContent: string) => Promise<string>;
-    onEditPhase?: (phaseId: string, newContent: string) => void;
+    onRefineStage?: (stageId: string, currentContent: string) => Promise<string>;
+    onEditStage?: (stageId: string, newContent: string) => void;
 }
 
-export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: InteractiveScriptCockpitProps) {
+export function InteractiveScriptCockpit({ 
+    scriptTitle, 
+    stages, 
+    onClose,
+    onValidate,
+    isValidating,
+    onRefineStage,
+    onEditStage
+}: InteractiveScriptCockpitProps) {
     const { t } = useTranslation();
-    const [currentPhaseIdx, setCurrentPhaseIdx] = useState(0);
+    const [currentStageIdx, setCurrentStageIdx] = useState(0);
     const [history, setHistory] = useState<number[]>([]);
     const [notes, setNotes] = useState('');
     const [seconds, setSeconds] = useState(0);
@@ -49,7 +57,7 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
     const [editValue, setEditValue] = useState('');
     const [isRefining, setIsRefining] = useState(false);
 
-    const currentPhase = phases[currentPhaseIdx];
+    const currentStage = stages[currentStageIdx];
 
     // Timer logic
     useEffect(() => {
@@ -70,18 +78,18 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const handleJumpToPhase = (id: string) => {
-        const idx = phases.findIndex(p => p.id === id);
+    const handleJumpToStage = (id: string) => {
+        const idx = stages.findIndex(s => s.id === id);
         if (idx !== -1) {
-            setHistory(prev => [...prev, currentPhaseIdx]);
-            setCurrentPhaseIdx(idx);
+            setHistory(prev => [...prev, currentStageIdx]);
+            setCurrentStageIdx(idx);
         }
     };
 
     const handleNext = () => {
-        if (currentPhaseIdx < phases.length - 1) {
-            setHistory(prev => [...prev, currentPhaseIdx]);
-            setCurrentPhaseIdx(currentPhaseIdx + 1);
+        if (currentStageIdx < stages.length - 1) {
+            setHistory(prev => [...prev, currentStageIdx]);
+            setCurrentStageIdx(currentStageIdx + 1);
         }
     };
 
@@ -89,29 +97,29 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
         if (history.length > 0) {
             const lastIdx = history[history.length - 1];
             setHistory(prev => prev.slice(0, -1));
-            setCurrentPhaseIdx(lastIdx);
+            setCurrentStageIdx(lastIdx);
         }
     };
 
     const startEditing = () => {
-        setEditValue(currentPhase.content);
+        setEditValue(currentStage.agent);
         setIsEditing(true);
     };
 
     const saveEdit = () => {
-        if (onEditPhase) {
-            onEditPhase(currentPhase.id, editValue);
+        if (onEditStage) {
+            onEditStage(currentStage.id, editValue);
         }
         setIsEditing(false);
     };
 
     const handleRefine = async () => {
-        if (!onRefinePhase || isRefining) return;
+        if (!onRefineStage || isRefining) return;
         setIsRefining(true);
         try {
-            const newContent = await onRefinePhase(currentPhase.id, currentPhase.content);
-            if (newContent && onEditPhase) {
-                onEditPhase(currentPhase.id, newContent);
+            const newContent = await onRefineStage(currentStage.id, currentStage.agent);
+            if (newContent && onEditStage) {
+                onEditStage(currentStage.id, newContent);
             }
         } catch (err) {
             console.error('Refinement failed:', err);
@@ -167,7 +175,7 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                         {/* Current Phase Title */}
                         <div className="space-y-0.5">
                             <span className="text-[10px] font-black text-harx-500 uppercase tracking-[0.2em]">{t('scriptGenerator.cockpit.currentPhase')}</span>
-                            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{currentPhase.title}</h3>
+                            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{currentStage.label}</h3>
                         </div>
 
 
@@ -223,7 +231,7 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                                     </div>
                                 ) : (
                                     <p className="text-xl font-bold text-slate-800 leading-snug italic">
-                                        « {currentPhase.content} »
+                                        « {currentStage.agent} »
                                     </p>
                                 )}
                             </div>
@@ -231,10 +239,10 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
 
                         {/* Suggestions / Branches */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {currentPhase.suggestions.map((s, idx) => (
+                            {currentStage.responses.map((s, idx) => (
                                 <button 
                                     key={idx}
-                                    onClick={() => handleJumpToPhase(s.nextPhaseId)}
+                                    onClick={() => handleJumpToStage(s.nextStageId)}
                                     className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-harx-200 text-left transition-all group"
                                 >
                                     <div className="flex items-center justify-between">
@@ -249,13 +257,13 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                         <div className="flex items-center justify-between pt-4 border-t border-slate-200">
                             <button 
                                 onClick={handlePrev}
-                                disabled={currentPhaseIdx === 0}
+                                disabled={currentStageIdx === 0}
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 disabled:opacity-30 transition-all text-xs"
                             >
                                 <ChevronLeft size={16} />
                                 {t('scriptGenerator.cockpit.previous')}
                             </button>
-                            {currentPhaseIdx === phases.length - 1 ? (
+                            {currentStageIdx === stages.length - 1 ? (
                                 <button 
                                     onClick={onValidate}
                                     disabled={isValidating}
@@ -264,7 +272,7 @@ export function InteractiveScriptCockpit({ scriptTitle, phases, onClose }: Inter
                                     <CheckCircle2 size={16} />
                                     {isValidating ? t('scriptGenerator.cockpit.validating') : t('scriptGenerator.cockpit.validateAndSave')}
                                 </button>
-                            ) : currentPhase.suggestions.length === 0 ? (
+                            ) : currentStage.responses.length === 0 ? (
                                 <button 
                                     onClick={handleNext}
                                     className="flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-xl font-black uppercase tracking-widest hover:bg-harx-600 hover:shadow-lg transition-all disabled:opacity-30 text-xs"
