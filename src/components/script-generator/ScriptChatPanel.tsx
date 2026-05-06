@@ -183,18 +183,26 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
       {/* Input area */}
       <form onSubmit={onSubmit} className="border-t border-slate-100 bg-white p-5">
         <div className="flex items-center gap-3">
-          <input
-            type="text"
+          <textarea
             value={input}
             onChange={(e) => onInputChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (input.trim() && !isSending && selectedGigId) {
+                  onSubmit(e as any);
+                }
+              }
+            }}
             placeholder={t('scriptGenerator.chatPanel.inputPlaceholder')}
-            className="flex-1 px-5 py-3.5 border border-slate-200 rounded-2xl font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-800 transition-all text-sm bg-slate-50/50"
+            className="flex-1 px-5 py-3.5 border border-slate-200 rounded-2xl font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-800 transition-all text-sm bg-slate-50/50 resize-none"
             disabled={!selectedGigId || isSending}
+            rows={2}
           />
           <button
             type="submit"
             disabled={!selectedGigId || !input.trim() || isSending}
-            className="px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 font-black uppercase tracking-widest text-xs transition-all shadow-md shadow-slate-900/10 active:scale-95 shrink-0"
+            className="px-6 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 font-black uppercase tracking-widest text-xs transition-all shadow-md shadow-slate-900/10 active:scale-95 shrink-0 h-[56px]"
           >
             {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             {t('scriptGenerator.chatPanel.send')}
