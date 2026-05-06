@@ -613,6 +613,11 @@ const ScriptGenerator: React.FC = () => {
               onSubmit={sendMessage}
               onValidateScript={validateScript}
               renderAssistantMessage={renderAssistantMessage}
+              savedScripts={savedScripts}
+              isLoadingSavedScripts={isLoadingSavedScripts}
+              onOpenSavedScript={openSavedScript}
+              onDeleteSavedScript={handleDeleteSavedScript}
+              onStartNewChat={handleStartNewChat}
             />
           </div>
         ) : (

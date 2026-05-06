@@ -1,5 +1,5 @@
-import React from 'react';
-import { Bot, Loader2, Send, User, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bot, Loader2, Send, User, CheckCircle, History, Trash2, Plus, X, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 type ChatMessage = {
@@ -21,6 +21,13 @@ interface ScriptChatPanelProps {
   onSubmit: (e: React.FormEvent) => void;
   onValidateScript: (message: ChatMessage) => Promise<void>;
   renderAssistantMessage: (messageId: string, content: string, playbook?: any) => React.ReactNode;
+  
+  // New props for saved scripts
+  savedScripts: any[];
+  isLoadingSavedScripts: boolean;
+  onOpenSavedScript: (script: any) => void;
+  onDeleteSavedScript: (scriptId: string) => Promise<void>;
+  onStartNewChat: () => void;
 }
 
 const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
@@ -34,22 +41,137 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
   onSubmit,
   onValidateScript,
   renderAssistantMessage,
+  savedScripts,
+  isLoadingSavedScripts,
+  onOpenSavedScript,
+  onDeleteSavedScript,
+  onStartNewChat,
 }) => {
   const { t } = useTranslation();
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const hasValidatedScriptForGig = Object.values(validatedScriptIds).some(Boolean);
 
   return (
     <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden flex flex-col min-h-[580px] animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Header section of Chat Panel */}
-      <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+      <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between relative">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-xs font-black text-slate-800 uppercase tracking-wider">Assistant Script HARX AI</span>
         </div>
-        <span className="text-[10px] font-black text-slate-400 bg-slate-200/60 px-2.5 py-1 rounded-full uppercase tracking-wide">
-          En ligne
-        </span>
+
+        <div className="flex items-center gap-2 relative z-50">
+          {selectedGigId && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onStartNewChat}
+                className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+              >
+                <Plus className="w-3 h-3" />
+                Nouveau
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                className={`px-3.5 py-1.5 border rounded-xl font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm active:scale-95 ${
+                  isHistoryOpen 
+                    ? 'bg-slate-200 text-slate-950 border-slate-300' 
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <History className="w-3 h-3" />
+                Scripts ({savedScripts.length})
+                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isHistoryOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+          )}
+
+          <span className="text-[10px] font-black text-slate-400 bg-slate-200/60 px-2.5 py-1 rounded-full uppercase tracking-wide">
+            En ligne
+          </span>
+
+          {/* Floating Dropdown for Saved Scripts */}
+          {isHistoryOpen && selectedGigId && (
+            <div className="absolute top-10 right-0 w-80 bg-white border border-slate-100 rounded-2xl shadow-2xl p-4 mt-2 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[420px] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Scripts enregistrés</span>
+                <button 
+                  type="button"
+                  onClick={() => setIsHistoryOpen(false)}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {isLoadingSavedScripts ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="w-5 h-5 animate-spin text-slate-300" />
+                  </div>
+                ) : savedScripts.length === 0 ? (
+                  <div className="text-center py-6 border border-dashed border-slate-100 rounded-xl">
+                    <p className="text-[10px] text-slate-400 font-bold">Aucun script disponible</p>
+                    <p className="text-[9px] text-slate-400 font-medium mt-0.5 px-2">Validez un script pour le sauvegarder ici.</p>
+                  </div>
+                ) : (
+                  savedScripts.map((script, idx) => {
+                    const isScriptActive = Boolean(script?.isActive);
+                    return (
+                      <div
+                        key={script._id}
+                        className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-2 group ${
+                          isScriptActive
+                            ? 'bg-emerald-50/40 border-emerald-100/60 hover:border-emerald-200'
+                            : 'bg-slate-50 border-slate-100/60 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[10px] font-black text-slate-800 truncate">Script #{savedScripts.length - idx}</p>
+                            {isScriptActive && (
+                              <span className="px-1.5 py-0.5 bg-emerald-500 text-white rounded-full text-[6px] font-black uppercase tracking-wider shrink-0">
+                                Validé
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[8px] text-slate-400 font-semibold mt-0.5">
+                            {script.createdAt ? new Date(script.createdAt).toLocaleDateString() : 'Date inconnue'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onOpenSavedScript(script);
+                              setIsHistoryOpen(false);
+                            }}
+                            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-[8px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900 transition-all shadow-sm"
+                          >
+                            Ouvrir
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await onDeleteSavedScript(script._id);
+                            }}
+                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Messages Scroll Area */}
