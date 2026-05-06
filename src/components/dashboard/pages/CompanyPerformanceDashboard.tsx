@@ -34,6 +34,7 @@ import { Bar, Line, Pie } from 'react-chartjs-2';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { getActiveAgentsForCompany, getGigsByCompanyId } from '../matching';
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(
     CategoryScale,
@@ -59,6 +60,7 @@ interface PerformanceStats {
 }
 
 export function CompanyPerformanceDashboard() {
+    const { t } = useTranslation();
     const [selectedGig, setSelectedGig] = useState<string>('all');
     const [timeRange, setTimeRange] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
     const [gigs, setGigs] = useState<any[]>([]);
@@ -210,23 +212,23 @@ export function CompanyPerformanceDashboard() {
         const contactsData = labels.map(l => groups[l].contacts);
 
         return {
-            labels: labels.length > 0 ? labels : ['Aucune Donnée'],
+            labels: labels.length > 0 ? labels : [t('performanceDashboard.charts.noData')],
             datasets: [
                 {
-                    label: "Nombre d'Appels",
+                    label: t('performanceDashboard.charts.callCount'),
                     data: callsData.length > 0 ? callsData : [0],
                     backgroundColor: 'rgba(255, 77, 77, 0.8)',
                     borderRadius: 8,
                 },
                 {
-                    label: 'Leads Contactés',
+                    label: t('performanceDashboard.charts.contactedLeads'),
                     data: contactsData.length > 0 ? contactsData : [0],
                     backgroundColor: 'rgba(15, 23, 42, 0.8)',
                     borderRadius: 8,
                 }
             ]
         };
-    }, [callsList, timeRange]);
+    }, [callsList, timeRange, t]);
 
     const statusChartData = {
         labels: Object.keys(stats.callsByStatus),
@@ -286,8 +288,8 @@ export function CompanyPerformanceDashboard() {
                             <BarChart3 className="w-8 h-8 text-harx-500" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Analyses Entreprise</h1>
-                            <p className="text-slate-500 font-medium">Suivi de performance & métriques d'appels</p>
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">{t('performanceDashboard.title')}</h1>
+                            <p className="text-slate-500 font-medium">{t('performanceDashboard.subtitle')}</p>
                         </div>
                     </div>
                 </div>
@@ -300,7 +302,7 @@ export function CompanyPerformanceDashboard() {
                             onChange={(e) => setSelectedGig(e.target.value)}
                             className="appearance-none bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 pr-12 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 transition-all cursor-pointer shadow-sm hover:bg-white"
                         >
-                            <option value="all">Tous les Gigs</option>
+                            <option value="all">{t('performanceDashboard.allGigs')}</option>
                             {gigs.map(gig => (
                                 <option key={gig._id} value={gig._id}>{gig.title}</option>
                             ))}
@@ -310,9 +312,7 @@ export function CompanyPerformanceDashboard() {
 
                     {/* Time Range Selector */}
                     <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shadow-sm">
-                        {(['Quotidien', 'Hebdomadaire', 'Mensuel', 'Annuel'] as const).map((label, idx) => {
-                            const ranges = ['daily', 'weekly', 'monthly', 'yearly'] as const;
-                            const range = ranges[idx];
+                        {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((range) => {
                             return (
                                 <button
                                     key={range}
@@ -322,7 +322,7 @@ export function CompanyPerformanceDashboard() {
                                             : 'text-slate-400 hover:text-slate-600'
                                         }`}
                                 >
-                                    {label}
+                                    {t(`performanceDashboard.timeRange.${range}`)}
                                 </button>
                             );
                         })}
@@ -333,43 +333,43 @@ export function CompanyPerformanceDashboard() {
             {/* Top KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <MetricCard
-                    title="REPS Inscrits"
+                    title={t('performanceDashboard.metrics.repsRegistered')}
                     value={stats.registeredReps.toLocaleString()}
                     icon={<Briefcase className="w-6 h-6" />}
                     color="purple"
-                    trend="Reps affectés au(x) Gig(s)"
+                    trend={t('performanceDashboard.metrics.repsAssigned')}
                     isPositive={true}
                 />
                 <MetricCard
-                    title="Total Leads"
+                    title={t('performanceDashboard.metrics.totalLeads')}
                     value={stats.totalLeads.toLocaleString()}
                     icon={<Users className="w-6 h-6" />}
                     color="blue"
-                    trend="+12% vs mois dernier"
+                    trend={t('performanceDashboard.metrics.vsLastMonth12')}
                     isPositive={true}
                 />
                 <MetricCard
-                    title="Total Appels"
+                    title={t('performanceDashboard.metrics.totalCalls')}
                     value={stats.totalCalls.toLocaleString()}
                     icon={<Phone className="w-6 h-6" />}
                     color="harx"
-                    trend="+8% vs mois dernier"
+                    trend={t('performanceDashboard.metrics.vsLastMonth8')}
                     isPositive={true}
                 />
                 <MetricCard
-                    title="Leads Contactés"
+                    title={t('performanceDashboard.metrics.contactedLeads')}
                     value={stats.contactedLeads.toLocaleString()}
                     icon={<Target className="w-6 h-6" />}
                     color="emerald"
-                    trend="+15% vs mois dernier"
+                    trend={t('performanceDashboard.metrics.vsLastMonth15')}
                     isPositive={true}
                 />
                 <MetricCard
-                    title="Numéros Valides"
+                    title={t('performanceDashboard.metrics.validNumbers')}
                     value={stats.validNumbers.toLocaleString()}
                     icon={<CheckCircle2 className="w-6 h-6" />}
                     color="amber"
-                    trend="+5% vs mois dernier"
+                    trend={t('performanceDashboard.metrics.vsLastMonth5')}
                     isPositive={true}
                 />
             </div>
@@ -377,26 +377,26 @@ export function CompanyPerformanceDashboard() {
             {/* Performance Ratios */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <RatioCard
-                    title="Taux de Couverture"
-                    subtitle="Leads Contactés / Total Leads"
+                    title={t('performanceDashboard.ratios.coverageRate')}
+                    subtitle={t('performanceDashboard.ratios.coverageSubtitle')}
                     value={coverageRate}
                     color="harx"
                 />
                 <RatioCard
-                    title="Taux de Joignabilité"
-                    subtitle="Numéros Valides / Total Appels"
+                    title={t('performanceDashboard.ratios.reachabilityRate')}
+                    subtitle={t('performanceDashboard.ratios.reachabilitySubtitle')}
                     value={reachabilityRate}
                     color="emerald"
                 />
                 <RatioCard
-                    title="Taux d'Argumentation"
-                    subtitle="Appels > 1min30 / Leads Joints"
+                    title={t('performanceDashboard.ratios.argumentationRate')}
+                    subtitle={t('performanceDashboard.ratios.argumentationSubtitle')}
                     value={argumentationRate}
                     color="blue"
                 />
                 <RatioCard
-                    title="Taux de Répondeur"
-                    subtitle="Appels Répondeur / Total Appels"
+                    title={t('performanceDashboard.ratios.machineRate')}
+                    subtitle={t('performanceDashboard.ratios.machineSubtitle')}
                     value={machineRate}
                     color="amber"
                 />
@@ -408,12 +408,12 @@ export function CompanyPerformanceDashboard() {
                 <div className="lg:col-span-2 bg-white p-8 rounded-3xl shadow-xl border border-slate-100 flex flex-col">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Activité du Volume d'Appels</h3>
-                            <p className="text-slate-500 text-sm font-medium italic">Suivi des appels vs contacts réussis</p>
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{t('performanceDashboard.charts.activityTitle')}</h3>
+                            <p className="text-slate-500 text-sm font-medium italic">{t('performanceDashboard.charts.activitySubtitle')}</p>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-200">
                             <Clock className="w-4 h-4 text-slate-400" />
-                            <span className="text-[10px] font-black text-slate-500 uppercase">Données Directes</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase">{t('performanceDashboard.charts.liveData')}</span>
                         </div>
                     </div>
                     <div className="flex-1 min-h-[350px]">
@@ -424,8 +424,8 @@ export function CompanyPerformanceDashboard() {
                 {/* Status Breakdown */}
                 <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 flex flex-col">
                     <div className="mb-8">
-                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Répartition des Statuts d'Appel</h3>
-                        <p className="text-slate-500 text-sm font-medium italic">Distribution par résultat</p>
+                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{t('performanceDashboard.charts.statusBreakdownTitle')}</h3>
+                        <p className="text-slate-500 text-sm font-medium italic">{t('performanceDashboard.charts.statusBreakdownSubtitle')}</p>
                     </div>
                     <div className="flex-1 flex flex-col items-center justify-center">
                         <div className="w-full max-w-[280px] mb-8">

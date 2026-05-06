@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { PlanningMatrix } from './PlanningMatrix';
+import { useTranslation } from 'react-i18next';
 
 // Helper to generate a consistent color from a string
 const stringToColor = (str: string) => {
@@ -216,6 +217,7 @@ const updateOnboardingProgress = async () => {
 };
 
 export default function SessionPlanning() {
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
@@ -687,12 +689,12 @@ export default function SessionPlanning() {
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4 italic uppercase">
-                Session Strategic Planning
+                {t('sessionPlanning.header.title')}
                 <span className="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-2xl text-[10px] uppercase font-black tracking-[0.2em] border border-emerald-100 not-italic">
-                  Real-time Sync
+                  {t('sessionPlanning.header.realTimeSync')}
                 </span>
               </h1>
-              <p className="text-base text-gray-400 font-medium">Orchestrate field operations with surgical precision and AI-backed slot optimization.</p>
+              <p className="text-base text-gray-400 font-medium">{t('sessionPlanning.header.description')}</p>
             </div>
           </div>
         </header>
@@ -700,11 +702,11 @@ export default function SessionPlanning() {
         <div className="flex justify-start">
           <div className="bg-white p-1.5 rounded-2xl border border-harx-100 shadow-xl">
             <PremiumDropdown
-              label="Strategic Project Focus"
+              label={t('sessionPlanning.header.projectFocus')}
               options={projects}
               value={selectedGigId || ''}
               onChange={(val) => setSelectedGigId(val)}
-              placeholder="Select Project Target..."
+              placeholder={t('sessionPlanning.header.selectProject')}
               triggerClassName="!min-w-[280px]"
             />
           </div>
@@ -755,8 +757,8 @@ export default function SessionPlanning() {
                         <Brain className="w-7 h-7 text-indigo-400" />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">CORTEX Intelligence</h2>
-                        <p className="text-xs font-black text-indigo-400 uppercase tracking-[0.3em]">Predictive Analytics</p>
+                        <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{t('sessionPlanning.cortex.intelligence')}</h2>
+                        <p className="text-xs font-black text-indigo-400 uppercase tracking-[0.3em]">{t('sessionPlanning.cortex.predictiveAnalytics')}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-10">
@@ -785,18 +787,18 @@ export default function SessionPlanning() {
                   />
                 </div>
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <h2 className="text-base font-semibold text-gray-900 mb-4">Weekly Overview</h2>
+                  <h2 className="text-base font-semibold text-gray-900 mb-4">{t('sessionPlanning.weeklyOverview.title')}</h2>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-500">Available Slots</span>
+                      <span className="text-gray-500">{t('sessionPlanning.weeklyOverview.availableSlots')}</span>
                       <span className="font-semibold text-gray-900">{weeklyStats.availableSlots}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-500">Reserved Slots</span>
+                      <span className="text-gray-500">{t('sessionPlanning.weeklyOverview.reservedSlots')}</span>
                       <span className="font-semibold text-gray-900">{weeklyStats.reservedSlots}</span>
                     </div>
                     <hr className="my-4 border-gray-100" />
-                    <h3 className="text-sm font-semibold text-gray-900 mb-2">Gig Hours</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2">{t('sessionPlanning.weeklyOverview.gigHours')}</h3>
                     {Object.entries(weeklyStats.projectBreakdown).map(([gigId, hours]) => {
                       const project = projects.find(p => p.id === gigId);
                       return (

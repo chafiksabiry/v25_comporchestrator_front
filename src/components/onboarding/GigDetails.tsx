@@ -4,6 +4,7 @@ import Cookies from 'js-cookie';
 import Swal from 'sweetalert2';
 import { GigReview } from '../gigsaicreation/components/GigReview';
 import { Clock, Users, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Gig {
   _id: string;
@@ -124,6 +125,7 @@ interface GigDetailsProps {
 }
 
 const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
+  const { t } = useTranslation();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +137,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
   useEffect(() => {
     const fetchGigs = async () => {
       if (!companyId) {
-        setError('Company ID not found');
+        setError(t('gigDetails.errors.companyId'));
         setIsLoading(false);
         return;
       }
@@ -144,7 +146,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
         const response = await axios.get<GigResponse>(`${import.meta.env.VITE_API_URL_GIGS}/gigs/company/${companyId}?populate=companyId`);
         setGigs(response.data.data);
       } catch (err) {
-        setError('Failed to fetch gigs');
+        setError(t('gigDetails.errors.fetchFailed'));
         console.error('Error fetching gigs:', err);
       } finally {
         setIsLoading(false);
@@ -198,13 +200,13 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
 
 
   const getAvailabilityText = (availability: Gig['availability']) => {
-    if (!availability) return 'Not specified';
+    if (!availability) return t('gigDetails.availability.notSpecified');
 
     if (availability.schedule && availability.schedule.length > 0) {
       const days = availability.schedule.length;
-      return `${days} day${days > 1 ? 's' : ''}/week`;
+      return `${days} ${t('gigDetails.availability.daysPerWeek')}`;
     }
-    return 'Flexible';
+    return t('gigDetails.availability.flexible');
   };
 
   if (isLoading) {
@@ -301,7 +303,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
       });
       Toast.fire({
         icon: 'success',
-        title: 'Gig deleted successfully'
+        title: t('gigDetails.success.deleted')
       });
 
     } catch (err) {
@@ -314,7 +316,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
       });
       Toast.fire({
         icon: 'error',
-        title: 'Failed to delete gig'
+        title: t('gigDetails.errors.deleteFailed')
       });
     }
   };
@@ -325,8 +327,8 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
       <div className="relative overflow-hidden rounded-3xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex items-center justify-between font-black">
           <div className="space-y-1.5">
-            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Gig Details</h1>
-            <p className="text-[14px] font-medium text-white/90">Define and manage your multi-channel intelligence assets</p>
+            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">{t('gigDetails.title')}</h1>
+            <p className="text-[14px] font-medium text-white/90">{t('gigDetails.subtitle')}</p>
           </div>
           <button
             className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black px-5 py-2.5 rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px]"
@@ -339,7 +341,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
             }}
           >
             <Plus className="w-5 h-5" />
-            Add New Gig
+            {t('gigDetails.addNew')}
           </button>
         </div>
         {/* Abstract background pattern */}
@@ -353,17 +355,17 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h3 className="text-xl font-black text-gray-900 mb-2 uppercase tracking-tight">No intelligence assets found</h3>
-          <p className="text-gray-500 font-medium">Initialize your first gig to start the matching process.</p>
+          <h3 className="text-xl font-black text-gray-900 mb-2 uppercase tracking-tight">{t('gigDetails.empty.title')}</h3>
+          <p className="text-gray-500 font-medium">{t('gigDetails.empty.subtitle')}</p>
         </div>
       ) : (
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden h-[calc(100vh-280px)] flex flex-col min-h-[400px]">
           {/* Header Row */}
           <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-gray-900 rounded-t-3xl text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shadow-xl italic shrink-0">
-            <div className="col-span-1">Status</div>
-            <div className="col-span-6 pl-4 border-l border-white/10">Gig & Category</div>
-            <div className="col-span-2 pl-4 border-l border-white/10">Commitment</div>
-            <div className="col-span-3 text-right">Strategic Actions</div>
+            <div className="col-span-1">{t('gigDetails.table.status')}</div>
+            <div className="col-span-6 pl-4 border-l border-white/10">{t('gigDetails.table.gigAndCategory')}</div>
+            <div className="col-span-2 pl-4 border-l border-white/10">{t('gigDetails.table.commitment')}</div>
+            <div className="col-span-3 text-right">{t('gigDetails.table.strategicActions')}</div>
           </div>
 
           {/* List Items */}
@@ -390,7 +392,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
                     </h3>
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest bg-harx-50 px-2 py-0.5 rounded-md border border-harx-100 italic">
-                        {gig.category || 'Standard'}
+                        {gig.category || t('gigDetails.standard')}
                       </span>
                     </div>
                   </div>
@@ -404,7 +406,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Users className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-xs font-bold text-gray-700">{gig.team?.size || '1'} reps</span>
+                        <span className="text-xs font-bold text-gray-700">{gig.team?.size || '1'} {t('gigDetails.reps')}</span>
                       </div>
                     </div>
                   </div>
@@ -414,7 +416,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
                     <button
                       className="p-3 rounded-2xl bg-gray-50 text-gray-400 hover:text-rose-600 hover:bg-rose-50 border border-gray-100 transition-all duration-300 shadow-sm"
                       onClick={(e) => handleDelete(e, gig._id)}
-                      title="Terminate Intelligence Asset"
+                      title={t('gigDetails.terminate')}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -428,7 +430,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
                         setSelectedGig(gig);
                       }}
                     >
-                      Details
+                      {t('gigDetails.detailsBtn')}
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>

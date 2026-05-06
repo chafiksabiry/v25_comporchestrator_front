@@ -30,6 +30,7 @@ import {
 } from '../api/matching';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 
 export type MatchingDashboardProps = {
   /** When embedded in Company Onboarding (step 13), closes the step — tab is already company-onboarding. */
@@ -37,6 +38,7 @@ export type MatchingDashboardProps = {
 };
 
 export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps = {}) => {
+    const { t } = useTranslation();
     const onBackToOnboardingRef = React.useRef(onBackToOnboarding);
     onBackToOnboardingRef.current = onBackToOnboarding;
     const [reps, setReps] = useState<Rep[]>([]);
@@ -553,8 +555,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 <Users size={24} className="text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-white">Reps Management System</h1>
-                                <p className="text-harx-50 text-sm">Manage reps through their complete lifecycle</p>
+                                <h1 className="text-2xl font-bold text-white">{t('matchingDashboard.header.title')}</h1>
+                                <p className="text-harx-50 text-sm">{t('matchingDashboard.header.subtitle')}</p>
                             </div>
                         </div>
 
@@ -562,19 +564,19 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         <div className="hidden lg:flex items-center space-x-6 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-sm">
                             <div className="text-center">
                                 <div className="font-bold text-lg text-white">{reps.length}</div>
-                                <div className="text-harx-50 text-xs">Total Reps</div>
+                                <div className="text-harx-50 text-xs">{t('matchingDashboard.header.totalReps')}</div>
                             </div>
                             <div className="text-center">
                                 <div className="font-bold text-lg text-white">{invitedAgentsList.length}</div>
-                                <div className="text-harx-50 text-xs">Invited</div>
+                                <div className="text-harx-50 text-xs">{t('matchingDashboard.header.invited')}</div>
                             </div>
                             <div className="text-center">
                                 <div className="font-bold text-lg text-white">{enrollmentRequests.length}</div>
-                                <div className="text-harx-50 text-xs">Requests</div>
+                                <div className="text-harx-50 text-xs">{t('matchingDashboard.header.requests')}</div>
                             </div>
                             <div className="text-center">
                                 <div className="font-bold text-lg text-white">{activeAgentsList.length}</div>
-                                <div className="text-harx-50 text-xs">Active</div>
+                                <div className="text-harx-50 text-xs">{t('matchingDashboard.header.active')}</div>
                             </div>
                         </div>
                     </div>
@@ -585,10 +587,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                     <div className="container mx-auto px-4">
                         <nav className="flex space-x-0">
                             {[
-                                { id: 'matching', label: 'Smart Matching System', icon: '🎯', description: 'Find & match perfect reps' },
-                                { id: 'invited', label: 'Invited Reps', icon: '📧', description: 'Pending invitations' },
-                                { id: 'enrollment', label: 'Enrollment Requests', icon: '📋', description: 'Rep applications' },
-                                { id: 'active', label: 'Active Reps', icon: '✅', description: 'Working reps' }
+                                { id: 'matching', label: t('matchingDashboard.tabs.matching'), icon: '🎯', description: t('matchingDashboard.tabs.matchingDesc') },
+                                { id: 'invited', label: t('matchingDashboard.tabs.invited'), icon: '📧', description: t('matchingDashboard.tabs.invitedDesc') },
+                                { id: 'enrollment', label: t('matchingDashboard.tabs.enrollment'), icon: '📋', description: t('matchingDashboard.tabs.enrollmentDesc') },
+                                { id: 'active', label: t('matchingDashboard.tabs.active'), icon: '✅', description: t('matchingDashboard.tabs.activeDesc') }
                             ].map(section => (
                                 <button
                                     key={section.id}
@@ -661,7 +663,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 <div className="p-2 bg-harx-50 rounded-lg">
                                                     <Briefcase size={20} className="text-harx-600" />
                                                 </div>
-                                                <span className="bg-clip-text text-transparent bg-gradient-harx">Available Gigs</span>
+                                                <span className="bg-clip-text text-transparent bg-gradient-harx">{t('matchingDashboard.matching.availableGigs')}</span>
                                             </h3>
                                             <span className="bg-harx-50 text-harx-600 py-1 px-3 rounded-full text-xs font-bold border border-harx-100">
                                                 {gigs.length}
@@ -718,7 +720,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     ? "bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm"
                                                                     : "bg-harx-50/50 hover:bg-harx-100 text-harx-700"}`}
                                                             >
-                                                                <span>View Details</span>
+                                                                <span>{t('matchingDashboard.matching.viewDetails')}</span>
                                                                 <svg
                                                                     className={`w-4 h-4 transform transition-transform duration-200 ${isGigExpanded ? 'rotate-180' : ''}`}
                                                                     fill="none"
@@ -738,7 +740,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     {/* 1. Industries */}
                                                                     {gig.industries && gig.industries.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-500 font-medium mb-2">Industries:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">{t('matchingDashboard.matching.industries')}</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.industries.map((industry: any, i: number) => {
                                                                                     const displayName = industry.name ||
@@ -756,7 +758,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     {/* 2. Activities */}
                                                                     {gig.activities && gig.activities.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-500 font-medium mb-2">Activities:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">{t('matchingDashboard.matching.activities')}</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.activities.map((activity: any, i: number) => {
                                                                                     const displayName = activity.name ||
@@ -773,14 +775,14 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
                                                                     {/* 3. Experience */}
                                                                     <div className="flex items-center justify-between">
-                                                                        <span className="text-gray-500 font-medium">Experience:</span>
-                                                                        <span className="font-semibold text-gray-900">{gig.seniority?.yearsExperience || 'N/A'} years</span>
+                                                                        <span className="text-gray-500 font-medium">{t('matchingDashboard.matching.experience')}</span>
+                                                                        <span className="font-semibold text-gray-900">{gig.seniority?.yearsExperience || 'N/A'} {t('matchingDashboard.matching.years')}</span>
                                                                     </div>
 
                                                                     {/* 4. Languages */}
                                                                     {gig.skills?.languages && gig.skills.languages.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-500 font-medium mb-2">Languages:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">{t('matchingDashboard.matching.languages')}</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.languages.map((lang: any, i: number) => (
                                                                                     <span key={i} className="px-2 py-1 px-2.5 py-1 bg-harx-50 text-harx-700 border border-harx-200/30 rounded-lg text-xs font-bold">
@@ -795,12 +797,12 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     {/* 5. Availability */}
                                                                     {gig.availability && (
                                                                         <div>
-                                                                            <span className="text-gray-500 font-medium">Availability:</span>
+                                                                            <span className="text-gray-500 font-medium">{t('matchingDashboard.matching.availability')}</span>
                                                                             <p className="font-semibold text-gray-900">
-                                                                                {gig.availability.schedule ? `${gig.availability.schedule.length} days/week` :
-                                                                                    gig.availability.hoursPerWeek ? `${gig.availability.hoursPerWeek}h/week` :
+                                                                                {gig.availability.schedule ? `${gig.availability.schedule.length} ${t('matchingDashboard.matching.daysWeek')}` :
+                                                                                    gig.availability.hoursPerWeek ? `${gig.availability.hoursPerWeek}${t('matchingDashboard.matching.hoursWeek')}` :
                                                                                         (gig.availability as any).workingHours && typeof (gig.availability as any).workingHours === 'string' ? (gig.availability as any).workingHours :
-                                                                                            'Flexible'}
+                                                                                            t('matchingDashboard.matching.flexible')}
                                                                             </p>
                                                                         </div>
                                                                     )}
@@ -808,7 +810,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     {/* 6. Skills - Professional */}
                                                                     {gig.skills?.professional && gig.skills.professional.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-500 font-medium mb-2">Professional Skills:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">{t('matchingDashboard.matching.professionalSkills')}</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.professional.map((skillItem: any, i: number) => (
                                                                                     <span key={`prof-${i}`} className="px-2 py-1 px-2.5 py-1 bg-harx-50 text-harx-600 border border-harx-100/30 rounded-lg text-xs font-bold">
@@ -822,7 +824,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     {/* 6. Skills - Technical */}
                                                                     {gig.skills?.technical && gig.skills.technical.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-500 font-medium mb-2">Technical Skills:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">{t('matchingDashboard.matching.technicalSkills')}</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.technical.map((skillItem: any, i: number) => (
                                                                                     <span key={`tech-${i}`} className="px-2 py-1 px-2.5 py-1 bg-harx-alt-50 text-harx-alt-600 border border-harx-alt-100/30 rounded-lg text-xs font-bold">
@@ -836,7 +838,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     {/* 6. Skills - Soft */}
                                                                     {gig.skills?.soft && gig.skills.soft.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-500 font-medium mb-2">Soft Skills:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">{t('matchingDashboard.matching.softSkills')}</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.soft.map((skillItem: any, i: number) => (
                                                                                     <span key={`soft-${i}`} className="px-2 py-1 px-2.5 py-1 bg-harx-50 text-harx-500 border border-harx-100/30 rounded-lg text-xs font-bold">
@@ -852,19 +854,19 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                                                         {gig.region && (
                                                                             <div>
-                                                                                <span className="text-slate-500 font-medium">Region:</span>
+                                                                                <span className="text-slate-500 font-medium">{t('matchingDashboard.matching.region')}</span>
                                                                                 <p className="font-semibold text-slate-900">
-                                                                                    {typeof gig.region === 'string' ? gig.region : (gig.region as any).name || 'Unknown Region'}
+                                                                                    {typeof gig.region === 'string' ? gig.region : (gig.region as any).name || t('matchingDashboard.matching.unknownRegion')}
                                                                                 </p>
                                                                             </div>
                                                                         )}
                                                                         {gig.timezone && (
                                                                             <div>
-                                                                                <span className="text-slate-500 font-medium">Timezone:</span>
+                                                                                <span className="text-slate-500 font-medium">{t('matchingDashboard.matching.timezone')}</span>
                                                                                 <p className="font-semibold text-slate-900">
                                                                                     {typeof gig.timezone === 'string'
                                                                                         ? gig.timezone
-                                                                                        : (gig.timezone as any).name || (gig.timezone as any).timezoneName || 'Unknown Timezone'}
+                                                                                        : (gig.timezone as any).name || (gig.timezone as any).timezoneName || t('matchingDashboard.matching.unknownTimezone')}
                                                                                 </p>
                                                                             </div>
                                                                         )}
@@ -895,7 +897,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         <div className="flex items-center justify-between mb-4">
                                             <h3 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
                                                 <Users size={20} className="text-harx-500" />
-                                                <span>{selectedGig ? `Matches for "${selectedGig.title}"` : 'Select a Gig to See Matches'}</span>
+                                                <span>{selectedGig ? `${t('matchingDashboard.matching.matchesFor')} "${selectedGig.title}"` : t('matchingDashboard.matching.selectGig')}</span>
                                             </h3>
                                             
                                             {selectedGig && (
@@ -907,7 +909,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                     </div>
                                                     <input
                                                         type="text"
-                                                        placeholder="Search reps..."
+                                                        placeholder={t('matchingDashboard.matching.searchReps')}
                                                         value={searchTerm}
                                                         onChange={(e: any) => setSearchTerm(e.target.value)}
                                                         className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
@@ -921,8 +923,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             <div className="text-center py-12">
                                                 <div className="bg-slate-50/50 rounded-xl p-8 max-w-md mx-auto border border-slate-200">
                                                     <Briefcase size={48} className="text-slate-500 mx-auto mb-4" />
-                                                    <p className="text-slate-900 text-lg mb-2">No gig selected</p>
-                                                    <p className="text-sm text-slate-500">Choose a gig from the left to see matching reps</p>
+                                                    <p className="text-slate-900 text-lg mb-2">{t('matchingDashboard.matching.noGigSelected')}</p>
+                                                    <p className="text-sm text-slate-500">{t('matchingDashboard.matching.chooseGigDesc')}</p>
                                                 </div>
                                             </div>
                                         ) : loading ? (
@@ -979,7 +981,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                             matchScore >= 50 ? 'bg-yellow-500 text-white' :
                                                                                 'bg-red-500 text-white'
                                                                             }`}>
-                                                                            {matchScore}% Match
+                                                                            {matchScore}% {t('matchingDashboard.matching.match')}
                                                                         </div>
                                                                     </div>
                                                                     <p className="text-sm text-gray-500 truncate">{match.agentInfo?.email}</p>
@@ -991,10 +993,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                             <span>🕒 {match.agentInfo.timezone.gmtDisplay}</span>
                                                                         )}
                                                                         {match.agentInfo?.professionalSummary?.yearsOfExperience && (
-                                                                            <span>💼 {match.agentInfo.professionalSummary.yearsOfExperience.toString().replace(/\s+years?/gi, '')} years exp.</span>
+                                                                            <span>💼 {match.agentInfo.professionalSummary.yearsOfExperience.toString().replace(/\s*years?\s*/gi, '')} {t('matchingDashboard.matching.yearsExp')}</span>
                                                                         )}
                                                                         {match.agentInfo?.personalInfo?.languages && match.agentInfo.personalInfo.languages.length > 0 && (
-                                                                            <span>🗣️ {match.agentInfo.personalInfo.languages.length} languages</span>
+                                                                            <span>🗣️ {match.agentInfo.personalInfo.languages.length} {t('matchingDashboard.matching.languages').replace(':', '')}</span>
                                                                         )}
                                                                     </div>
                                                                 </div>
@@ -1002,15 +1004,15 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                 <div className="flex-shrink-0 ml-4">
                                                                     {isEnrolled ? (
                                                                         <span className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                                                                            Enrolled
+                                                                            {t('matchingDashboard.matching.enrolled')}
                                                                         </span>
                                                                     ) : match.alreadyEnrolled ? (
                                                                         <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
-                                                                            Already Enrolled
+                                                                            {t('matchingDashboard.matching.alreadyEnrolled')}
                                                                         </span>
                                                                     ) : isInvited ? (
                                                                         <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                                                                            Invited
+                                                                            {t('matchingDashboard.matching.invited')}
                                                                         </span>
                                                                     ) : (
                                                                         <button
@@ -1019,7 +1021,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                             disabled={creatingGigAgent}
                                                                         >
                                                                             <Zap className="w-4 h-4" />
-                                                                            Invite
+                                                                            {t('matchingDashboard.matching.invite')}
                                                                         </button>
                                                                     )}
                                                                 </div>
@@ -1031,7 +1033,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     onClick={() => toggleRepDetails(match.agentId)}
                                                                     className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-harx-600 to-harx-700 hover:from-harx-700 hover:to-harx-800 text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                                                                 >
-                                                                    <span>{isExpanded ? 'Hide Details' : 'View Details'}</span>
+                                                                    <span>{isExpanded ? t('matchingDashboard.matching.hideDetails') : t('matchingDashboard.matching.viewDetails')}</span>
                                                                     <svg
                                                                         className={`w-4 h-4 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                                                                         fill="none"
@@ -1051,7 +1053,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         {match.skillsMatch && (
                                                                             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-900">Skills</h5>
+                                                                                    <h5 className="font-semibold text-gray-900">{t('matchingDashboard.matching.skills')}</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.skillsMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.skillsMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1061,7 +1063,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                 </div>
                                                                                 {match.skillsMatch.details?.matchingSkills && match.skillsMatch.details.matchingSkills.length > 0 && (
                                                                                     <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-500 mb-2">Matched Skills:</p>
+                                                                                        <p className="text-xs text-gray-500 mb-2">{t('matchingDashboard.matching.matchedSkills')}</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.skillsMatch.details.matchingSkills.slice(0, 3).map((skill: any, i: number) => (
                                                                                                 <span key={i} className="px-2 py-1 bg-harx-50 text-harx-600 rounded text-xs font-medium border border-harx-100">
@@ -1070,7 +1072,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                             ))}
                                                                                             {match.skillsMatch.details.matchingSkills.length > 3 && (
                                                                                                 <span className="px-2 py-1 bg-gray-50 text-gray-400 rounded text-xs border border-gray-100">
-                                                                                                    +{match.skillsMatch.details.matchingSkills.length - 3}
+                                                                                                    +{match.skillsMatch.details.matchingSkills.length - 3} {t('matchingDashboard.matching.more')}
                                                                                                 </span>
                                                                                             )}
                                                                                         </div>
@@ -1083,7 +1085,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         {match.languageMatch && (
                                                                             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-900">Languages</h5>
+                                                                                    <h5 className="font-semibold text-gray-900">{t('matchingDashboard.matching.languages').replace(':', '')}</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.languageMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.languageMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1093,7 +1095,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                 </div>
                                                                                 {match.languageMatch.details?.matchingLanguages && match.languageMatch.details.matchingLanguages.length > 0 && (
                                                                                     <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-500 mb-2">Matched Languages:</p>
+                                                                                        <p className="text-xs text-gray-500 mb-2">{t('matchingDashboard.matching.matchedLanguages')}</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.languageMatch.details.matchingLanguages.slice(0, 3).map((lang: any, i: number) => (
                                                                                                 <span key={i} className="px-2 py-1 bg-harx-alt-50 text-harx-alt-600 rounded text-xs font-medium border border-harx-alt-100">
@@ -1103,7 +1105,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                             ))}
                                                                                             {match.languageMatch.details.matchingLanguages.length > 3 && (
                                                                                                 <span className="px-2 py-1 bg-gray-50 text-gray-400 rounded text-xs border border-gray-100">
-                                                                                                    +{match.languageMatch.details.matchingLanguages.length - 3}
+                                                                                                    +{match.languageMatch.details.matchingLanguages.length - 3} {t('matchingDashboard.matching.more')}
                                                                                                 </span>
                                                                                             )}
                                                                                         </div>
@@ -1116,7 +1118,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         {match.industryMatch && (
                                                                             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-900">Industry</h5>
+                                                                                    <h5 className="font-semibold text-gray-900">{t('matchingDashboard.matching.industry')}</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.industryMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.industryMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1126,7 +1128,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                 </div>
                                                                                 {match.industryMatch.details?.matchingIndustries && match.industryMatch.details.matchingIndustries.length > 0 && (
                                                                                     <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-500 mb-2">Matched Industries:</p>
+                                                                                        <p className="text-xs text-gray-500 mb-2">{t('matchingDashboard.matching.matchedIndustries')}</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.industryMatch.details.matchingIndustries.slice(0, 2).map((industry: any, i: number) => (
                                                                                                 <span key={i} className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs font-medium border border-blue-100">
@@ -1135,7 +1137,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                             ))}
                                                                                             {match.industryMatch.details.matchingIndustries.length > 2 && (
                                                                                                 <span className="px-2 py-1 bg-gray-50 text-gray-400 rounded text-xs border border-gray-100">
-                                                                                                    +{match.industryMatch.details.matchingIndustries.length - 2}
+                                                                                                    +{match.industryMatch.details.matchingIndustries.length - 2} {t('matchingDashboard.matching.more')}
                                                                                                 </span>
                                                                                             )}
                                                                                         </div>
@@ -1148,7 +1150,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         {match.experienceMatch && (
                                                                             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-900">Experience</h5>
+                                                                                    <h5 className="font-semibold text-gray-900">{t('matchingDashboard.matching.experience').replace(':', '')}</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.experienceMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.experienceMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1157,8 +1159,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                     </span>
                                                                                 </div>
                                                                                 <div className="text-xs text-gray-500">
-                                                                                    <p>Rep: {match.agentInfo?.professionalSummary?.yearsOfExperience || 'N/A'} years</p>
-                                                                                    <p>Required: {selectedGig?.seniority?.yearsExperience || 'N/A'} years</p>
+                                                                                    <p>{t('matchingDashboard.matching.rep')} {match.agentInfo?.professionalSummary?.yearsOfExperience || 'N/A'} {t('matchingDashboard.matching.years')}</p>
+                                                                                    <p>{t('matchingDashboard.matching.required')} {selectedGig?.seniority?.yearsExperience || 'N/A'} {t('matchingDashboard.matching.years')}</p>
                                                                                 </div>
                                                                             </div>
                                                                         )}
@@ -1170,7 +1172,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         {match.timezoneMatch && (
                                                                             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-900">Timezone</h5>
+                                                                                    <h5 className="font-semibold text-gray-900">{t('matchingDashboard.matching.timezone').replace(':', '')}</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.timezoneMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.timezoneMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1179,9 +1181,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                     </span>
                                                                                 </div>
                                                                                 <div className="text-xs text-gray-500">
-                                                                                    <p>Rep: {match.agentInfo?.timezone?.gmtDisplay || 'N/A'}</p>
-                                                                                    <p>Zone: {match.agentInfo?.timezone?.timezoneName || match.agentInfo?.availability?.timeZone?.zoneName || 'N/A'}</p>
-                                                                                    <p>Location: {match.agentInfo?.timezone?.countryName || match.agentInfo?.personalInfo?.country?.name || match.agentInfo?.location || 'N/A'}</p>
+                                                                                    <p>{t('matchingDashboard.matching.rep')} {match.agentInfo?.timezone?.gmtDisplay || 'N/A'}</p>
+                                                                                    <p>{t('matchingDashboard.matching.zone')} {match.agentInfo?.timezone?.timezoneName || match.agentInfo?.availability?.timeZone?.zoneName || 'N/A'}</p>
+                                                                                    <p>{t('matchingDashboard.matching.location')} {match.agentInfo?.timezone?.countryName || match.agentInfo?.personalInfo?.country?.name || match.agentInfo?.location || 'N/A'}</p>
                                                                                 </div>
                                                                             </div>
                                                                         )}
@@ -1190,7 +1192,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         {match.regionMatch && (
                                                                             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-900">Region</h5>
+                                                                                    <h5 className="font-semibold text-gray-900">{t('matchingDashboard.matching.region').replace(':', '')}</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.regionMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.regionMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1199,8 +1201,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                     </span>
                                                                                 </div>
                                                                                 <div className="text-xs text-gray-500">
-                                                                                    <p>Country: {match.agentInfo?.timezone?.countryName || match.agentInfo?.personalInfo?.country?.name || 'N/A'}</p>
-                                                                                    <p>Code: {match.agentInfo?.timezone?.countryCode || match.agentInfo?.personalInfo?.country?.code || 'N/A'}</p>
+                                                                                    <p>{t('matchingDashboard.matching.country')} {match.agentInfo?.timezone?.countryName || match.agentInfo?.personalInfo?.country?.name || 'N/A'}</p>
+                                                                                    <p>{t('matchingDashboard.matching.code')} {match.agentInfo?.timezone?.countryCode || match.agentInfo?.personalInfo?.country?.code || 'N/A'}</p>
                                                                                 </div>
                                                                             </div>
                                                                         )}
@@ -1209,7 +1211,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         {match.availabilityMatch && (
                                                                             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-900">Availability</h5>
+                                                                                    <h5 className="font-semibold text-gray-900">{t('matchingDashboard.matching.availability').replace(':', '')}</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.availabilityMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.availabilityMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1218,7 +1220,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                     </span>
                                                                                 </div>
                                                                                 <div className="text-xs text-gray-500">
-                                                                                    <p>Schedule: {match.agentInfo?.availability?.schedule?.length || 0} days/week</p>
+                                                                                    <p>{t('matchingDashboard.matching.schedule')} {match.agentInfo?.availability?.schedule?.length || 0} {t('matchingDashboard.matching.daysWeek')}</p>
                                                                                 </div>
                                                                             </div>
                                                                         )}
@@ -1227,7 +1229,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         {match.activityMatch && (
                                                                             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-900">Activities</h5>
+                                                                                    <h5 className="font-semibold text-gray-900">{t('matchingDashboard.matching.activities').replace(':', '')}</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.activityMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.activityMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1237,7 +1239,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                 </div>
                                                                                 {match.activityMatch.details?.matchingActivities && match.activityMatch.details.matchingActivities.length > 0 && (
                                                                                     <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-500 mb-2">Matched Activities:</p>
+                                                                                        <p className="text-xs text-gray-500 mb-2">{t('matchingDashboard.matching.matchedActivities')}</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.activityMatch.details.matchingActivities.slice(0, 2).map((activity: any, i: number) => (
                                                                                                 <span key={i} className="px-2 py-1 bg-teal-50 text-teal-700 rounded text-xs font-medium border border-teal-100">
@@ -1246,7 +1248,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                             ))}
                                                                                             {match.activityMatch.details.matchingActivities.length > 2 && (
                                                                                                 <span className="px-2 py-1 bg-gray-50 text-gray-400 rounded text-xs border border-gray-100">
-                                                                                                    +{match.activityMatch.details.matchingActivities.length - 2}
+                                                                                                    +{match.activityMatch.details.matchingActivities.length - 2} {t('matchingDashboard.matching.more')}
                                                                                                 </span>
                                                                                             )}
                                                                                         </div>
@@ -1267,15 +1269,15 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                     <svg className="w-12 h-12 text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                                     </svg>
-                                                    <p className="text-slate-900 mb-2">No reps found for "{searchTerm}"</p>
-                                                    <p className="text-sm text-slate-500">Try adjusting your search terms</p>
+                                                    <p className="text-slate-900 mb-2">{t('matchingDashboard.matching.noRepsFound')} "{searchTerm}"</p>
+                                                    <p className="text-sm text-slate-500">{t('matchingDashboard.matching.tryAdjusting')}</p>
                                                 </div>
                                             </div>
                                         ) : (
                                             <div className="text-center py-8">
                                                 <div className="bg-antigravity-surface rounded-xl p-6 max-w-md mx-auto">
                                                     <Briefcase size={24} className="text-slate-500 mx-auto mb-2" />
-                                                    <p className="text-slate-900">No matches found for this gig.</p>
+                                                    <p className="text-slate-900">{t('matchingDashboard.matching.noMatchesFound')}</p>
                                                 </div>
                                             </div>
                                         )}
@@ -1315,9 +1317,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
                                     <div className="flex items-center justify-between mb-4 shrink-0">
                                         <div className="flex items-center space-x-3">
-                                            <h2 className="text-xl font-bold text-gray-900">📧 Invited Reps</h2>
+                                            <h2 className="text-xl font-bold text-gray-900">📧 {t('matchingDashboard.invited.title')}</h2>
                                             <span className="px-3 py-1 bg-harx-alt-100 text-harx-alt-600 rounded-full text-xs font-medium border border-harx-alt-200">
-                                                {invitedAgentsList.length} Pending
+                                                {invitedAgentsList.length} {t('matchingDashboard.invited.pending')}
                                             </span>
                                         </div>
                                         <div className="relative w-64">
@@ -1328,7 +1330,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             </div>
                                             <input
                                                 type="text"
-                                                placeholder="Search invited reps..."
+                                                placeholder={t('matchingDashboard.invited.search')}
                                                 value={searchTerm}
                                                 onChange={(e: any) => setSearchTerm(e.target.value)}
                                                 className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
@@ -1352,22 +1354,22 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                     <div key={`invited-${agent._id || index}`} className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex-1">
-                                                                <h3 className="text-lg font-bold text-gray-900">{agent.personalInfo?.name || 'Unnamed Agent'}</h3>
-                                                                <p className="text-slate-500">{agent.personalInfo?.email || 'No email'}</p>
+                                                                <h3 className="text-lg font-bold text-gray-900">{agent.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
+                                                                <p className="text-slate-500">{agent.personalInfo?.email || t('matchingDashboard.invited.noEmail')}</p>
                                                                 <div className="mt-2 space-y-1">
                                                                     <p className="text-sm text-yellow-600 font-medium bg-yellow-100/50 inline-block px-2 py-0.5 rounded">
-                                                                        Invited • Waiting for response
+                                                                        {t('matchingDashboard.invited.waitingResponse')}
                                                                     </p>
                                                                     {(agent.gigId?.title || agent.gig?.title) && (
                                                                         <p className="text-sm text-slate-500">
-                                                                            <span className="font-medium">Gig:</span> {agent.gigId?.title || agent.gig?.title}
+                                                                            <span className="font-medium">{t('matchingDashboard.invited.gig')}</span> {agent.gigId?.title || agent.gig?.title}
                                                                         </p>
                                                                     )}
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center space-x-2">
                                                                 <span className="inline-flex items-center px-3 py-2 bg-yellow-900/40 text-yellow-300 rounded-lg text-sm font-medium">
-                                                                    📧 Pending
+                                                                    📧 {t('matchingDashboard.invited.pending')}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -1379,8 +1381,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         <div className="text-center py-12">
                                             <div className="bg-slate-50/50 rounded-xl p-8 max-w-md mx-auto border border-slate-200">
                                                 <div className="text-6xl mb-4">📧</div>
-                                                <p className="text-slate-900 text-lg mb-2">No pending invitations</p>
-                                                <p className="text-sm text-slate-500">All invitations have been responded to.</p>
+                                                <p className="text-slate-900 text-lg mb-2">{t('matchingDashboard.invited.noPending')}</p>
+                                                <p className="text-sm text-slate-500">{t('matchingDashboard.invited.allResponded')}</p>
                                             </div>
                                         </div>
                                     )}
@@ -1396,9 +1398,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
                                     <div className="flex items-center justify-between mb-4 shrink-0">
                                         <div className="flex items-center space-x-3">
-                                            <h2 className="text-xl font-bold text-gray-900">📋 Enrollment Requests</h2>
+                                            <h2 className="text-xl font-bold text-gray-900">📋 {t('matchingDashboard.enrollment.title')}</h2>
                                             <span className="px-3 py-1 bg-harx-50 text-harx-600 rounded-full text-xs font-medium border border-harx-100">
-                                                {enrollmentRequests.length} Requests
+                                                {enrollmentRequests.length} {t('matchingDashboard.enrollment.requests')}
                                             </span>
                                         </div>
                                         <div className="relative w-64">
@@ -1409,7 +1411,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             </div>
                                             <input
                                                 type="text"
-                                                placeholder="Search requests..."
+                                                placeholder={t('matchingDashboard.enrollment.search')}
                                                 value={searchTerm}
                                                 onChange={(e: any) => setSearchTerm(e.target.value)}
                                                 className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
@@ -1429,15 +1431,15 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 <div key={`enrollment-${agent._id || index}`} className="bg-blue-50 border border-blue-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
-                                                            <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name || 'Unnamed Agent'}</h3>
-                                                            <p className="text-slate-500">{agent.agentId?.personalInfo?.email || 'No email'}</p>
+                                                            <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
+                                                            <p className="text-slate-500">{agent.agentId?.personalInfo?.email || t('matchingDashboard.invited.noEmail')}</p>
                                                             <div className="mt-2 space-y-1">
                                                                 <p className="text-sm text-blue-600 font-medium">
-                                                                    <span className="font-medium">Status:</span> {agent.enrollmentStatus || 'Pending'}
+                                                                    <span className="font-medium">{t('matchingDashboard.enrollment.status')}</span> {agent.enrollmentStatus || 'Pending'}
                                                                 </p>
                                                                 {(agent.gigId?.title || agent.gig?.title) && (
                                                                     <p className="text-sm text-slate-500">
-                                                                        <span className="font-medium">Gig:</span> {agent.gigId?.title || agent.gig?.title}
+                                                                        <span className="font-medium">{t('matchingDashboard.invited.gig')}</span> {agent.gigId?.title || agent.gig?.title}
                                                                     </p>
                                                                 )}
                                                                 {agent.notes && (
@@ -1469,7 +1471,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                 }}
                                                                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 text-sm font-medium"
                                                             >
-                                                                ✅ Approve
+                                                                ✅ {t('matchingDashboard.enrollment.approve')}
                                                             </button>
                                                             <button
                                                                 onClick={async () => {
@@ -1492,7 +1494,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                 }}
                                                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 text-sm font-medium"
                                                             >
-                                                                ❌ Reject
+                                                                ❌ {t('matchingDashboard.enrollment.reject')}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -1503,8 +1505,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         <div className="text-center py-12">
                                             <div className="bg-slate-50/50 rounded-xl p-8 max-w-md mx-auto border border-slate-200">
                                                 <div className="text-6xl mb-4">📋</div>
-                                                <p className="text-slate-900 text-lg mb-2">No enrollment requests</p>
-                                                <p className="text-sm text-slate-500">No reps are waiting for approval.</p>
+                                                <p className="text-slate-900 text-lg mb-2">{t('matchingDashboard.enrollment.noRequests')}</p>
+                                                <p className="text-sm text-slate-500">{t('matchingDashboard.enrollment.noWaiting')}</p>
                                             </div>
                                         </div>
                                     )}
@@ -1520,9 +1522,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
                                     <div className="flex items-center justify-between mb-4 shrink-0">
                                         <div className="flex items-center space-x-3">
-                                            <h2 className="text-xl font-bold text-gray-900">✅ Active Reps</h2>
+                                            <h2 className="text-xl font-bold text-gray-900">✅ {t('matchingDashboard.active.title')}</h2>
                                             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200">
-                                                {activeAgentsList.length} Active
+                                                {activeAgentsList.length} {t('matchingDashboard.active.active')}
                                             </span>
                                         </div>
                                         <div className="relative w-64">
@@ -1533,7 +1535,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             </div>
                                             <input
                                                 type="text"
-                                                placeholder="Search active reps..."
+                                                placeholder={t('matchingDashboard.active.search')}
                                                 value={searchTerm}
                                                 onChange={(e: any) => setSearchTerm(e.target.value)}
                                                 className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
@@ -1554,27 +1556,27 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-3 mb-2">
-                                                                <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name || 'Unnamed Agent'}</h3>
+                                                                <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
                                                                 <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
-                                                                    ✅ Active
+                                                                    ✅ {t('matchingDashboard.active.active')}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-slate-500 mb-2">{agent.agentId?.personalInfo?.email || 'No email'}</p>
+                                                            <p className="text-slate-500 mb-2">{agent.agentId?.personalInfo?.email || t('matchingDashboard.invited.noEmail')}</p>
 
                                                             <div className="mt-3 space-y-2">
                                                                 {(agent.gigId?.title || agent.gig?.title) && (
                                                                     <div className="mb-2">
                                                                         <p className="text-sm text-slate-500">
-                                                                            <span className="font-medium">Gig:</span> {agent.gigId?.title || agent.gig?.title}
+                                                                            <span className="font-medium">{t('matchingDashboard.invited.gig')}</span> {agent.gigId?.title || agent.gig?.title}
                                                                         </p>
                                                                     </div>
                                                                 )}
                                                                 <div className="flex items-center gap-4 text-sm">
                                                                     <span className="text-slate-500">
-                                                                        <span className="font-medium">Experience:</span> {agent.agentId?.professionalSummary?.yearsOfExperience || 0} years
+                                                                        <span className="font-medium">{t('matchingDashboard.active.experience')}</span> {agent.agentId?.professionalSummary?.yearsOfExperience || 0} {t('matchingDashboard.matching.years')}
                                                                     </span>
                                                                     <span className="text-slate-500">
-                                                                        <span className="font-medium">Role:</span> {agent.agentId?.professionalSummary?.currentRole || 'N/A'}
+                                                                        <span className="font-medium">{t('matchingDashboard.active.role')}</span> {agent.agentId?.professionalSummary?.currentRole || t('matchingDashboard.active.na')}
                                                                     </span>
                                                                 </div>
 
@@ -1593,13 +1595,13 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
                                                                 <div className="flex flex-wrap gap-4 text-sm text-slate-500">
                                                                     <div>
-                                                                        <span className="font-medium">Availability:</span> {agent.agentId?.availability?.schedule?.length || 0} days/week
+                                                                        <span className="font-medium">{t('matchingDashboard.active.availability')}</span> {agent.agentId?.availability?.schedule?.length || 0} {t('matchingDashboard.matching.daysWeek')}
                                                                     </div>
                                                                     <div>
-                                                                        <span className="font-medium">Status:</span> {agent.agentId?.onboardingProgress?.currentPhase === 4 ? 'Fully Onboarded' : 'In Progress'}
+                                                                        <span className="font-medium">{t('matchingDashboard.active.status')}</span> {agent.agentId?.onboardingProgress?.currentPhase === 4 ? t('matchingDashboard.active.fullyOnboarded') : t('matchingDashboard.active.inProgress')}
                                                                     </div>
                                                                     <div>
-                                                                        <span className="font-medium">Languages:</span> {agent.agentId?.personalInfo?.languages?.length || 0}
+                                                                        <span className="font-medium">{t('matchingDashboard.active.languages')}</span> {agent.agentId?.personalInfo?.languages?.length || 0}
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1607,7 +1609,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
                                                         <div className="flex flex-col items-end space-y-2">
                                                             <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm font-medium">
-                                                                Manage Profile
+                                                                {t('matchingDashboard.active.manageProfile')}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -1618,8 +1620,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         <div className="text-center py-12">
                                             <div className="bg-slate-50/50 rounded-xl p-8 max-w-md mx-auto border border-slate-200">
                                                 <div className="text-6xl mb-4">✅</div>
-                                                <p className="text-slate-900 text-lg mb-2">No active reps</p>
-                                                <p className="text-sm text-slate-500">Start by finding matches and inviting reps.</p>
+                                                <p className="text-slate-900 text-lg mb-2">{t('matchingDashboard.active.noActive')}</p>
+                                                <p className="text-sm text-slate-500">{t('matchingDashboard.active.startFinding')}</p>
                                             </div>
                                         </div>
                                     )}

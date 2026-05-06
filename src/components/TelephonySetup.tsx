@@ -5,9 +5,10 @@ import {
   Globe,
   CheckCircle,
   AlertCircle,
-  ChevronDown,
-  Briefcase
+  Briefcase,
+  ChevronDown
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
 import twilioIcon from '../assets/twilio-icon.svg';
 
@@ -77,6 +78,7 @@ interface Gig {
 }
 
 const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | null }): JSX.Element => {
+  const { t } = useTranslation();
   const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(propCompanyId || null);
@@ -90,7 +92,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     const readCookies = () => {
       const newCompanyId = Cookies.get('companyId');
 
-      
+
 
       if (newCompanyId) {
         setCompanyId(newCompanyId);
@@ -109,15 +111,15 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
     // Première lecture
     if (!readCookies()) {
-      
+
 
       // Si le cookie n'est pas trouvé, réessayer toutes les 2 secondes
       const interval = setInterval(() => {
         if (readCookies()) {
-          
+
           clearInterval(interval);
         } else {
-          
+
           setCookieError('Required company ID not found. Please refresh the page if this persists.');
         }
       }, 2000);
@@ -192,7 +194,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   const teamSize = selectedGig ? parseInt(selectedGig.team?.size?.toString() || '1') : 1;
   const purchasedNumbersCount = Array.isArray(phoneNumbers) ? phoneNumbers.length : 0;
   const isQuotaReached = purchasedNumbersCount >= teamSize;
-  
+
   // Helper to convert country names to flag emojis
   const getFlagEmoji = (countryName: string) => {
     if (!countryName) return '';
@@ -209,11 +211,11 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
   useEffect(() => {
     if (!companyId) {
-      
+
       return;
     }
 
-    
+
     fetchGigs();
     checkCompletedSteps();
   }, [companyId]);
@@ -221,7 +223,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   // Effet pour récupérer les numéros existants quand un gig est sélectionné
   useEffect(() => {
     if (selectedGigId) {
-      
+
       fetchExistingNumbers();
     }
   }, [selectedGigId]);
@@ -231,7 +233,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     if (selectedGigId && Array.isArray(gigs) && gigs.length > 0) {
       const selectedGig = gigs.find((gig: Gig) => gig._id === selectedGigId);
       if (selectedGig?.destination_zone?.cca2) {
-        
+
         setDestinationZone(selectedGig.destination_zone.cca2);
       }
     } else {
@@ -244,7 +246,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     const hasPendingNumbers = phoneNumbers.some((number: PhoneNumber) => number.status === 'pending');
 
     if (hasPendingNumbers) {
-      
+
       const interval = setInterval(fetchExistingNumbers, 30000);
       return () => clearInterval(interval);
     }
@@ -264,12 +266,12 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     const zone = zoneOverride || selectedGig?.destination_zone?.cca2;
 
     try {
-      
+
       const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
 
       if (result?.hasNumber && result.numbers && result.numbers.length > 0) {
         // Case 1.1: Gig already has number(s)
-        
+
         setPhoneNumbers(result.numbers);
         setRequirementStatus({
           isChecking: false,
@@ -312,7 +314,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       setRequirementStatus((prev: any) => ({ ...prev, isChecking: true }));
       const response = await phoneNumberService.getTwilioRequirements(destZone);
 
-      
+
 
       if (response && response.requirements) {
         // Map Twilio requirements to frontend structure
@@ -401,7 +403,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
       // If no numbers available, don't proceed with requirements
       if (!Array.isArray(numbers) || numbers.length === 0) {
-        
+
         setRequirementStatus({
           isChecking: false,
           hasRequirements: false,
@@ -613,27 +615,27 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     try {
       if (!companyId) return;
 
-      
+
 
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
         );
 
-        
+
 
         if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
           const completedSteps = (response.data as any).completedSteps;
           if (completedSteps.includes(4)) {
-            
+
             setCompletedSteps(completedSteps);
             return;
           } else {
-            
+
           }
         }
       } catch (apiError) {
-        
+
       }
 
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
@@ -641,7 +643,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         try {
           const progress = JSON.parse(storedProgress);
           if (progress.completedSteps && Array.isArray(progress.completedSteps)) {
-            
+
             setCompletedSteps(progress.completedSteps);
           }
         } catch (e) {
@@ -659,18 +661,18 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
     try {
       setIsLoadingGigs(true);
-      
+
 
       const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
-      
+
 
       const responseData = response.data as { data: Gig[] };
       if (responseData && Array.isArray(responseData.data)) {
         setGigs(responseData.data);
-        
+
       } else {
         setGigs([]);
-        
+
       }
     } catch (error) {
       console.error('❌ Error fetching gigs:', error);
@@ -688,9 +690,9 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         return;
       }
 
-      
+
       const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
-      
+
 
       // Met à jour la liste des numéros (supporte maintenant plusieurs numéros s'ils existent)
       if (result?.hasNumber && result.numbers && Array.isArray(result.numbers)) {
@@ -716,12 +718,12 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       return;
     }
 
-    
-    
+
+
 
     try {
       const data = await phoneNumberService.searchPhoneNumbers(zone, provider);
-      
+
       setAvailableNumbers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error searching numbers:', error);
@@ -738,8 +740,8 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     }
 
     try {
-      
-      
+
+
 
       if (provider === 'telnyx') {
         // 1. Vérifier si les requirements sont en cours de vérification
@@ -791,17 +793,17 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         type: options?.type
       };
 
-      
+
 
       const response = await phoneNumberService.purchasePhoneNumber(purchaseData);
-      
+
 
       if (!response || (response as any).error) {
         const errorMessage = (response as any)?.message || (response as any)?.error || 'Failed to purchase number';
         throw new Error(errorMessage);
       }
 
-      
+
       setAvailableNumbers((prev: AvailablePhoneNumber[]) => prev.filter((num: AvailablePhoneNumber) => getPhoneNumber(num) !== phoneNumber));
       await fetchExistingNumbers(); // Wait for numbers to be fetched
       setPurchaseStatus('success');
@@ -818,7 +820,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       });
 
       // --- Auto-Complete Onboarding Step 4 Here ---
-      
+
       try {
         const onboardingResponse = await axios.get(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
@@ -834,17 +836,17 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
             currentPhase: 2
           }
         );
-        
+
       } catch (apiError) {
-        
+
         try {
           const response = await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
             { status: 'completed' }
           );
-          
+
         } catch (stepError) {
-          
+
         }
       }
 
@@ -876,7 +878,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
   const handleSubmitRequirements = async (values: Record<string, any>) => {
     try {
-      
+
       if (!companyId) throw new Error('Company ID is required');
 
       if (provider === 'twilio') {
@@ -898,7 +900,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
             }
           });
           endUserSid = endUser.sid;
-          
+
         }
 
         // 2. Create Bundle
@@ -909,7 +911,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
           isoCountry: destinationZone
         });
         const bundleSid = bundle.sid;
-        
+
 
         // 3. Assign End User to Bundle
         if (endUserSid) {
@@ -928,14 +930,14 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
               docType, // Simplified type
               {} // attributes
             );
-            
+
             await phoneNumberService.assignItemToBundle(bundleSid, doc.sid);
           }
         }
 
         // 5. Submit Bundle
         await phoneNumberService.submitTwilioBundle(bundleSid);
-        
+
 
         // 6. Handle Address creation if needed (simplified check)
         let addressSid = twilioRegulatorySids.addressSid;
@@ -949,7 +951,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
             isoCountry: destinationZone
           });
           addressSid = address.sid;
-          
+
         }
 
         // Store SIDs for Purchase
@@ -964,9 +966,9 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         if (!groupId) {
           const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
           groupId = group._id;
-          
+
         } else {
-          
+
         }
 
         // 2. Soumettre chaque requirement
@@ -980,7 +982,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
         // 3. Valider les requirements
         const validation = await requirementService.validateRequirements(groupId);
-        
+
 
         if (validation.isValid) {
           setRequirementStatus(prev => ({
@@ -1002,8 +1004,8 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   const handleConfirmPurchase = async (sids?: { bundleSid?: string; addressSid?: string }, phoneNumberOverride?: string, type?: string) => {
     const numberToPurchase = phoneNumberOverride || selectedNumber;
     if (!numberToPurchase) return;
-    
-    
+
+
     setPurchaseStatus('purchasing');
     try {
       // Filter out empty strings and merge with default twilioRegulatorySids
@@ -1013,7 +1015,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         ...(sids?.addressSid ? { addressSid: sids.addressSid } : {}),
         type: type // Include the type
       };
-      
+
       await purchaseNumber(numberToPurchase, purchaseSids);
       // Success state is already set in purchaseNumber function
     } catch (error) {
@@ -1028,8 +1030,8 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex items-center justify-between">
           <div className="space-y-1.5">
-            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Telephony Setup</h1>
-            <p className="text-[14px] font-medium text-white/90">Manage and configure your global network entry points</p>
+            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">{t('telephonySetup.title')}</h1>
+            <p className="text-[14px] font-medium text-white/90">{t('telephonySetup.subtitle')}</p>
           </div>
           {completedSteps.includes(5) && (
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-xl self-start">
@@ -1047,8 +1049,8 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
           <div className="flex text-[14px]">
             <AlertCircle className="h-4 w-4 text-red-400" />
             <div className="ml-3">
-              <h3 className="font-bold text-red-800 uppercase tracking-widest">Configuration Error</h3>
-              <p className="mt-1 text-red-700 font-medium">{cookieError}</p>
+              <h3 className="font-bold text-red-800 uppercase tracking-widest">{t('telephonySetup.errors.configurationTitle')}</h3>
+              <p className="mt-1 text-red-700 font-medium">{t('telephonySetup.errors.companyIdMissing')}</p>
             </div>
           </div>
         </div>
@@ -1058,47 +1060,46 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       <div className="relative bg-white rounded-lg border-[0.5px] border-gray-200 p-4 shadow-sm pl-8">
         {/* Huawei-style Blue Side Acceleration Bar */}
         <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600 rounded-l-lg shadow-[2px_0_8px_rgba(37,99,235,0.2)]"></div>
-        
+
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center space-x-2">
-            <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em]">Select Gig Profile</span>
+            <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em]">{t('telephonySetup.selectGigProfile')}</span>
             <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] bg-blue-50 text-blue-700 text-[10px] font-bold uppercase tracking-wider border border-blue-100">
-              Required
+              {t('telephonySetup.required')}
             </span>
           </div>
         </div>
-        <p className="text-[14px] text-gray-500 mb-5">Associate a primary intelligence gig with your global telephony entry points</p>
+        <p className="text-[14px] text-gray-500 mb-5">{t('telephonySetup.associateGig')}</p>
 
         {isLoadingGigs ? (
           <div className="w-full h-12 bg-gray-50 rounded-lg flex items-center justify-center border-[0.5px] border-gray-100">
             <div className="animate-spin h-4 w-4 border-2 border-blue-200 border-t-blue-600 rounded-full mr-3" />
-            <span className="text-[13px] font-medium text-gray-500 uppercase tracking-widest">Hydrating profiles...</span>
+            <span className="text-[13px] font-medium text-gray-500 uppercase tracking-widest">{t('telephonySetup.hydratingProfiles')}</span>
           </div>
         ) : (
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`flex items-center justify-between w-full px-5 py-3.5 bg-gray-50/50 rounded-lg border-[0.5px] transition-all duration-300 ${
-                isDropdownOpen ? 'border-blue-400 ring-4 ring-blue-900/5 bg-white' : 'border-gray-200 hover:border-blue-200 hover:bg-white'
-              }`}
+              className={`flex items-center justify-between w-full px-5 py-3.5 bg-gray-50/50 rounded-lg border-[0.5px] transition-all duration-300 ${isDropdownOpen ? 'border-blue-400 ring-4 ring-blue-900/5 bg-white' : 'border-gray-200 hover:border-blue-200 hover:bg-white'
+                }`}
             >
               <div className="flex items-center space-x-3">
                 <Briefcase className={`h-5 w-5 ${selectedGigId ? 'text-blue-600' : 'text-gray-400'}`} />
                 {selectedGigId ? (
-                   (() => {
+                  (() => {
                     const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
                     return selectedGig ? (
                       <div className="flex items-center space-x-3">
                         <span className="text-[16px] font-black text-gray-900 leading-none tracking-tight">{selectedGig.title}</span>
                         <span className="text-gray-300 font-light">|</span>
                         <span className="text-[12px] font-black text-blue-600 uppercase tracking-[0.15em] leading-none">
-                          {selectedGig.destination_zone?.name?.common || 'Global Zone'}
+                          {selectedGig.destination_zone?.name?.common || t('telephonySetup.globalZone')}
                         </span>
                       </div>
-                    ) : <span className="text-[15px] text-gray-400 font-black uppercase tracking-widest">Select Intelligence Profile</span>;
+                    ) : <span className="text-[15px] text-gray-400 font-black uppercase tracking-widest">{t('telephonySetup.selectIntelligenceProfile')}</span>;
                   })()
                 ) : (
-                  <span className="text-[15px] text-gray-400 font-bold italic">Choose an active gig profile...</span>
+                  <span className="text-[15px] text-gray-400 font-bold italic">{t('telephonySetup.chooseActiveGigProfile')}</span>
                 )}
               </div>
               <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
@@ -1114,23 +1115,20 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                         setSelectedGigId(g._id);
                         setIsDropdownOpen(false);
                       }}
-                      className={`relative flex items-center justify-between w-full px-7 py-5.5 text-left transition-all duration-300 group border-b-[0.5px] border-gray-50 last:border-0 ${
-                        selectedGigId === g._id ? 'bg-blue-50/70 shadow-inner' : 'hover:bg-blue-50/40'
-                      }`}
+                      className={`relative flex items-center justify-between w-full px-7 py-5.5 text-left transition-all duration-300 group border-b-[0.5px] border-gray-50 last:border-0 ${selectedGigId === g._id ? 'bg-blue-50/70 shadow-inner' : 'hover:bg-blue-50/40'
+                        }`}
                     >
-                      <div className={`absolute left-0 w-2 transition-all duration-500 ${
-                        selectedGigId === g._id ? 'h-full bg-blue-600 opacity-100' : 'h-0 bg-blue-400 opacity-0 group-hover:h-12 group-hover:opacity-60'
-                      }`} />
-                      
+                      <div className={`absolute left-0 w-2 transition-all duration-500 ${selectedGigId === g._id ? 'h-full bg-blue-600 opacity-100' : 'h-0 bg-blue-400 opacity-0 group-hover:h-12 group-hover:opacity-60'
+                        }`} />
+
                       <div className="flex flex-col items-start pl-4">
-                        <span className={`text-[17px] font-black tracking-tighter transition-all duration-300 ${
-                          selectedGigId === g._id ? 'text-blue-700 translate-x-1' : 'text-gray-900 group-hover:text-blue-600'
-                        }`}>
+                        <span className={`text-[17px] font-black tracking-tighter transition-all duration-300 ${selectedGigId === g._id ? 'text-blue-700 translate-x-1' : 'text-gray-900 group-hover:text-blue-600'
+                          }`}>
                           {g.title}
                         </span>
                         <div className="flex items-center space-x-2 mt-1.5">
                           <span className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] bg-blue-50 px-2 py-0.5 rounded">
-                            {g.destination_zone?.name?.common || 'Unknown Region'}
+                            {g.destination_zone?.name?.common || t('telephonySetup.unknownRegion')}
                           </span>
                         </div>
                       </div>
@@ -1142,7 +1140,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                         )}
                         {selectedGigId === g._id && (
                           <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.4)] animate-in zoom-in spin-in-90 duration-700">
-                             <CheckCircle className="h-4 w-4 text-white" />
+                            <CheckCircle className="h-4 w-4 text-white" />
                           </div>
                         )}
                       </div>
@@ -1151,7 +1149,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                 ) : (
                   <div className="px-8 py-16 text-center">
                     <Globe className="h-10 w-10 text-gray-200 mx-auto mb-4 animate-pulse" />
-                    <p className="text-[15px] text-gray-400 font-black uppercase tracking-widest italic">No Global Profiles found</p>
+                    <p className="text-[15px] text-gray-400 font-black uppercase tracking-widest italic">{t('telephonySetup.noGlobalProfilesFound')}</p>
                   </div>
                 )}
               </div>
@@ -1165,27 +1163,26 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
           {/* Section: Select Provider */}
           <div className="relative bg-white rounded-lg border-[0.5px] border-gray-200 p-4 shadow-sm pl-8">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600 rounded-l-lg shadow-[2px_0_8px_rgba(37,99,235,0.2)]"></div>
-            
-            <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em] block mb-1.5">Network Provider</span>
-            <p className="text-[14px] text-gray-500 mb-6">Choose a carrier-grade partner for stable low-latency routing</p>
-            
+
+            <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em] block mb-1.5">{t('telephonySetup.networkProvider')}</span>
+            <p className="text-[14px] text-gray-500 mb-6">{t('telephonySetup.chooseCarrier')}</p>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {providers.map((p) => {
                 const isSelected = provider === p.id;
                 const isDisabled = p.id === 'telnyx';
-                
+
                 return (
                   <button
                     key={p.id}
                     disabled={isDisabled}
                     onClick={() => setProvider(p.id)}
-                    className={`relative flex items-center justify-between px-6 py-5 rounded-xl border-[0.5px] transition-all duration-500 h-24 ${
-                      isDisabled 
-                        ? 'opacity-40 bg-gray-50 border-gray-100 cursor-not-allowed' 
+                    className={`relative flex items-center justify-between px-6 py-5 rounded-xl border-[0.5px] transition-all duration-500 h-24 ${isDisabled
+                        ? 'opacity-40 bg-gray-50 border-gray-100 cursor-not-allowed'
                         : isSelected
                           ? 'bg-blue-50/40 border-blue-500 shadow-md ring-4 ring-blue-500/5'
                           : 'bg-white border-gray-200 hover:border-blue-400 hover:shadow-sm'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center space-x-6">
                       {p.id === 'twilio' ? (
@@ -1203,18 +1200,18 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                         </span>
                         {isDisabled && (
                           <span className="bg-gray-200 text-gray-600 text-[10px] font-bold uppercase px-2 py-0.5 rounded-[4px] tracking-widest mt-1">
-                            Pending
+                            {t('telephonySetup.pending')}
                           </span>
                         )}
                         {!isDisabled && isSelected && (
-                          <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest mt-1">Active Partner</span>
+                          <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest mt-1">{t('telephonySetup.activePartner')}</span>
                         )}
                       </div>
                     </div>
                     {isSelected && !isDisabled && (
-                       <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
-                         <CheckCircle className="h-4 w-4 text-white" />
-                       </div>
+                      <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
+                        <CheckCircle className="h-4 w-4 text-white" />
+                      </div>
                     )}
                   </button>
                 );
@@ -1225,19 +1222,19 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
           {/* Section: Phone Nodes */}
           <div className="relative bg-white rounded-lg border-[0.5px] border-gray-200 p-4 shadow-sm pl-8">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600 rounded-l-lg shadow-[2px_0_8px_rgba(37,99,235,0.2)]"></div>
-            
+
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em]">Network Entries</span>
+              <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em]">{t('telephonySetup.networkEntries')}</span>
               {destinationZone && selectedGigId && (
                 <div className="flex items-center space-x-2 px-3 py-1 rounded-[4px] bg-blue-50 border-[0.5px] border-blue-200 shadow-sm transition-all duration-300 hover:bg-blue-100">
                   <div className={`w-2.5 h-2.5 rounded-full ${isQuotaReached ? 'bg-emerald-500' : 'bg-blue-600 pulse'}`} />
                   <span className="text-[12px] font-black text-blue-700 uppercase tracking-widest">
-                    {purchasedNumbersCount} / {teamSize} Active
+                    {purchasedNumbersCount} / {teamSize} {t('telephonySetup.active')}
                   </span>
                 </div>
               )}
             </div>
-            <p className="text-[14px] text-gray-500 mb-6">Provision and manage secure access points for your global intelligence nodes</p>
+            <p className="text-[14px] text-gray-500 mb-6">{t('telephonySetup.provisionNodes')}</p>
 
             {/* Combined Active & Available List */}
             <div className="space-y-4">
@@ -1250,16 +1247,15 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[18px] font-black text-gray-900 group-hover:text-blue-700 transition-colors tracking-tight">{number.phoneNumber}</span>
-                      <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] italic">{number.metadata?.type || 'STATIC'} INFRASTRUCTURE</span>
+                      <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] italic">{number.metadata?.type || t('telephonySetup.static')} {t('telephonySetup.infrastructure')}</span>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
-                    <span className={`px-4 py-1.5 text-[11px] font-black uppercase rounded-lg border-[0.5px] shadow-sm transition-all ${
-                      number.status === 'active' 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100 group-hover:bg-emerald-500 group-hover:text-white' 
+                    <span className={`px-4 py-1.5 text-[11px] font-black uppercase rounded-lg border-[0.5px] shadow-sm transition-all ${number.status === 'active'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100 group-hover:bg-emerald-500 group-hover:text-white'
                         : 'bg-amber-50 text-amber-700 border-amber-100 animate-pulse'
-                    }`}>
-                      {number.status === 'active' ? 'Operational' : 'Syncing'}
+                      }`}>
+                      {number.status === 'active' ? t('telephonySetup.operational') : t('telephonySetup.syncing')}
                     </span>
                   </div>
                 </div>
@@ -1267,47 +1263,46 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
               {/* Available Numbers (If searched) */}
               {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
-                 <div className="space-y-3 mt-6">
-                   <div className="flex items-center space-x-3 text-[11px] uppercase font-black tracking-widest text-gray-300">
-                     <div className="h-[1px] flex-1 bg-gray-100" />
-                     <span className="flex items-center space-x-2">
-                       <Globe className="h-3 w-3 text-blue-400" />
-                       <span>Regional Nodes Available</span>
-                     </span>
-                     <div className="h-[1px] flex-1 bg-gray-100" />
-                   </div>
-                   {availableNumbers.map((number) => {
-                      const phoneNumber = getPhoneNumber(number);
-                      const isDisabled = isQuotaReached;
-                      return (
-                        <div key={phoneNumber} className="flex items-center justify-between p-4 rounded-xl border-[0.5px] border-gray-100 bg-white hover:border-blue-500 hover:shadow-xl transition-all group animate-in slide-in-from-right-4 duration-300">
-                          <div className="flex flex-col">
-                             <div className="flex items-center space-x-3">
-                               <span className="text-[18px] font-black text-gray-900 group-hover:text-blue-600 transition-colors tracking-tight">{phoneNumber}</span>
-                               <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest">{number.type}</span>
-                             </div>
-                             <span className="text-[12px] font-bold text-gray-400 uppercase italic mt-1 leading-none">{number.locality || 'Regional'} Global Gateway</span>
+                <div className="space-y-3 mt-6">
+                  <div className="flex items-center space-x-3 text-[11px] uppercase font-black tracking-widest text-gray-300">
+                    <div className="h-[1px] flex-1 bg-gray-100" />
+                    <span className="flex items-center space-x-2">
+                      <Globe className="h-3 w-3 text-blue-400" />
+                      <span>{t('telephonySetup.regionalNodesAvailable')}</span>
+                    </span>
+                    <div className="h-[1px] flex-1 bg-gray-100" />
+                  </div>
+                  {availableNumbers.map((number) => {
+                    const phoneNumber = getPhoneNumber(number);
+                    const isDisabled = isQuotaReached;
+                    return (
+                      <div key={phoneNumber} className="flex items-center justify-between p-4 rounded-xl border-[0.5px] border-gray-100 bg-white hover:border-blue-500 hover:shadow-xl transition-all group animate-in slide-in-from-right-4 duration-300">
+                        <div className="flex flex-col">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-[18px] font-black text-gray-900 group-hover:text-blue-600 transition-colors tracking-tight">{phoneNumber}</span>
+                            <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest">{number.type}</span>
                           </div>
-                          <button
-                            disabled={isDisabled}
-                            onClick={() => {
-                              setSelectedNumber(phoneNumber);
-                              setPurchaseStatus('confirming');
-                              setPurchaseType(number.type);
-                              setShowPurchaseModal(true);
-                            }}
-                            className={`px-6 py-2.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
-                              isDisabled 
-                                ? 'bg-gray-50 text-gray-300 cursor-not-allowed border-[0.5px] border-gray-200' 
-                                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95'
-                            }`}
-                          >
-                            Purchase
-                          </button>
+                          <span className="text-[12px] font-bold text-gray-400 uppercase italic mt-1 leading-none">{number.locality || t('telephonySetup.regional')} {t('telephonySetup.globalGateway')}</span>
                         </div>
-                      );
-                   })}
-                 </div>
+                        <button
+                          disabled={isDisabled}
+                          onClick={() => {
+                            setSelectedNumber(phoneNumber);
+                            setPurchaseStatus('confirming');
+                            setPurchaseType(number.type);
+                            setShowPurchaseModal(true);
+                          }}
+                          className={`px-6 py-2.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${isDisabled
+                              ? 'bg-gray-50 text-gray-300 cursor-not-allowed border-[0.5px] border-gray-200'
+                              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95'
+                            }`}
+                        >
+                          {t('telephonySetup.purchase')}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
 
               {/* Centered Empty State */}
@@ -1316,14 +1311,14 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                   <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-6 shadow-sm border-[0.5px] border-blue-100">
                     <Phone className="h-7 w-7 text-blue-300" />
                   </div>
-                  <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-[0.15em] mb-2 leading-none">Infrastructure Offline</h4>
-                  <p className="text-[14px] text-gray-300 font-medium mb-8 max-w-[280px]">Begin by prioritizing regional entry points for your intelligence network</p>
-                  <button 
+                  <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-[0.15em] mb-2 leading-none">{t('telephonySetup.empty.title')}</h4>
+                  <p className="text-[14px] text-gray-300 font-medium mb-8 max-w-[280px]">{t('telephonySetup.empty.subtitle')}</p>
+                  <button
                     onClick={() => searchAvailableNumbers()}
                     className="flex items-center space-x-3 px-8 py-3 rounded-xl bg-white border-[0.5px] border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:shadow-xl text-[12px] font-black uppercase tracking-widest transition-all group"
                   >
                     <Globe className="h-4 w-4 text-blue-400 transition-transform group-hover:rotate-180 duration-1000" />
-                    <span>Scan Regional Gateways</span>
+                    <span>{t('telephonySetup.empty.scan')}</span>
                   </button>
                 </div>
               )}

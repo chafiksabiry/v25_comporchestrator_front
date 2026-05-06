@@ -1,0 +1,857 @@
+{
+  "sidebar": {
+    "dashboard": "Tableau de Bord",
+    "overview": "Vue d'ensemble",
+    "company": "Entreprise",
+    "gigs": "Missions",
+    "leads": "Prospects",
+    "calls": "Appels",
+    "repMatching": "Rep Matching",
+    "scheduler": "Planificateur",
+    "emails": "Emails",
+    "liveChat": "Chat en Direct",
+    "qualityAssurance": "Assurance Qualité",
+    "operations": "Opérations",
+    "analytics": "Analyses",
+    "integrations": "Intégrations",
+    "companyOnboarding": "Onboarding Entreprise",
+    "knowledgeBase": "Base de Connaissances",
+    "activeGuide": "Guide Actif",
+    "interactiveStep": "Étape Interactive",
+    "logout": "Déconnexion"
+  },
+  "dashboard": {
+    "title": "Tableau de Bord Orchestrateur",
+    "newProfile": "Nouveau Profil",
+    "newGig": "Nouvelle Mission",
+    "stats": {
+      "activeProfiles": "Profils Actifs",
+      "activeGigs": "Missions Actives",
+      "successfulMatches": "Matchs Réussis",
+      "pendingApprovals": "Approbations en Attente",
+      "vsLastMonth": "vs mois dernier",
+      "requiresAttention": "Nécessite votre attention",
+      "actionRequired": "Action Requise"
+    },
+    "intelligenceStream": {
+      "title": "Flux d'Intelligence",
+      "profileSynchronized": "Profil Synchronisé",
+      "profileSynchronizedDesc": "Le neuro-profil de John Smith a été généré automatiquement",
+      "time10m": "il y a 10m",
+      "gigDeployment": "Déploiement de Mission",
+      "gigDeploymentDesc": "Le projet de développement web pour XYZ Corp est en ligne",
+      "time1h": "il y a 1h",
+      "algorithmMatch": "Match Algorithmique",
+      "algorithmMatchDesc": "5 HARX REPS correspondent à la campagne de Marketing Digital",
+      "time2h": "il y a 2h",
+      "strategicApproval": "Approbation Stratégique",
+      "strategicApprovalDesc": "Développement d'application mobile pour ABC Inc validé",
+      "time3h": "il y a 3h"
+    },
+    "quickActions": {
+      "profileUnit": "Unité de Profil",
+      "profileUnitDesc": "Génération de neuro-profils",
+      "gigForge": "Forge de Missions",
+      "gigForgeDesc": "Moteur d'optimisation",
+      "matchMatrix": "Matrice de Match",
+      "matchMatrixDesc": "Jumelage algorithmique",
+      "validator": "Validateur",
+      "validatorDesc": "Publication & conformité",
+      "growthLab": "Laboratoire de Croissance",
+      "growthLabDesc": "Échelonnement des performances"
+    }
+  },
+  "performanceDashboard": {
+    "title": "Analyses Entreprise",
+    "subtitle": "Suivi de performance & métriques d'appels",
+    "allGigs": "Tous les Gigs",
+    "timeRange": {
+      "daily": "Quotidien",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuel",
+      "yearly": "Annuel"
+    },
+    "metrics": {
+      "repsRegistered": "REPS Inscrits",
+      "repsAssigned": "Reps affectés au(x) Gig(s)",
+      "totalLeads": "Total Leads",
+      "vsLastMonth12": "+12% vs mois dernier",
+      "totalCalls": "Total Appels",
+      "vsLastMonth8": "+8% vs mois dernier",
+      "contactedLeads": "Leads Contactés",
+      "vsLastMonth15": "+15% vs mois dernier",
+      "validNumbers": "Numéros Valides",
+      "vsLastMonth5": "+5% vs mois dernier"
+    },
+    "ratios": {
+      "coverageRate": "Taux de Couverture",
+      "coverageSubtitle": "Leads Contactés / Total Leads",
+      "reachabilityRate": "Taux de Joignabilité",
+      "reachabilitySubtitle": "Numéros Valides / Total Appels",
+      "argumentationRate": "Taux d'Argumentation",
+      "argumentationSubtitle": "Appels > 1min30 / Leads Joints",
+      "machineRate": "Taux de Répondeur",
+      "machineSubtitle": "Appels Répondeur / Total Appels"
+    },
+    "charts": {
+      "noData": "Aucune Donnée",
+      "callCount": "Nombre d'Appels",
+      "contactedLeads": "Leads Contactés",
+      "activityTitle": "Activité du Volume d'Appels",
+      "activitySubtitle": "Suivi des appels vs contacts réussis",
+      "liveData": "Données Directes",
+      "statusBreakdownTitle": "Répartition des Statuts d'Appel",
+      "statusBreakdownSubtitle": "Distribution par résultat"
+    }
+  },
+  "scriptGenerator": {
+    "title": "Script d'Appel",
+    "subtitle": "Scripts d'appel Agent/Lead",
+    "back": "Retour",
+    "selectGig": "Sélectionner un Gig",
+    "chooseGig": "Choisir un gig...",
+    "loadingGigs": "Chargement des gigs...",
+    "selectOrGenerate": "Sélectionnez un script depuis la liste, ou générez un nouveau script.",
+    "validateScript": "Valider le script",
+    "scriptValid": "Script valide",
+    "validating": "Validation...",
+    "scriptAlreadyValidated": "Un script est déjà validé pour ce gig. Supprimez-le ou modifiez-le avant d'en valider un autre.",
+    "roleAgent": "Agent",
+    "roleLead": "Lead:",
+    "chooseLeadResponse": "Choisir la réponse du lead",
+    "probableAgentResponse": "Réponse agent probable",
+    "editModal": {
+      "placeholderManual": "Modifier la ligne...",
+      "placeholderAI": "Écrire l'instruction IA...",
+      "cancel": "Annuler",
+      "apply": "Appliquer",
+      "titleManual": "Modifier la ligne",
+      "titleAIAgent": "Instruction IA pour modifier la ligne agent",
+      "titleAILead": "Instruction IA pour modifier la réponse lead sélectionnée",
+      "subtitle": "Ajustez la réponse avec un style professionnel HARX."
+    },
+    "listPanel": {
+      "generatorTitle": "Générateur de Script Intelligent",
+      "promptPlaceholder": "Ex: Générer un script dynamique pour vendre des mutuelles à des particuliers en france en respectant la réglementation...",
+      "generateCockpit": "Générer Cockpit",
+      "savedScriptsTitle": "Scripts Enregistrés",
+      "scriptsCount": "Scripts",
+      "noScripts": "Aucun script disponible pour ce Gig.",
+      "scriptNumber": "Script #",
+      "statusValidated": "Validé",
+      "statusDraft": "Brouillon",
+      "openScript": "Ouvrir"
+    },
+    "chatPanel": {
+      "startConversation": "Commencez la conversation pour générer le script.",
+      "alreadyValidatedWarning": "Un script est déjà validé pour ce gig.",
+      "statusValid": "Script valide",
+      "statusValidationBlocked": "Validation bloquée",
+      "statusValidating": "Validation...",
+      "validateScript": "Valider le script",
+      "generatingScript": "Génération du script...",
+      "inputPlaceholder": "Demandez une ligne de script, une ouverture, une réponse à une objection...",
+      "send": "Envoyer"
+    },
+    "viewPage": {
+      "title": "Visionneur de script",
+      "backToList": "Retour à la liste",
+      "viewScript": "Voir le script"
+    },
+    "cockpit": {
+      "dynamicNavigation": "Navigation par graphe dynamique",
+      "currentPhase": "Phase actuelle",
+      "oralScript": "Script à l'oral",
+      "manualEdit": "Modifier manuellement",
+      "refineWithAI": "Raffiner avec l'IA",
+      "cancel": "Annuler",
+      "apply": "Appliquer",
+      "previous": "Précédent",
+      "validating": "Validation...",
+      "validateAndSave": "Valider et Enregistrer",
+      "continue": "Continuer",
+      "chooseOption": "Choisissez une option ci-dessus",
+      "quickNotes": "Notes Rapides",
+      "notesPlaceholder": "Saisir des notes ici...",
+      "saveAndFinish": "Enregistrer & Terminer"
+    }
+  },
+  "knowledgeBase": {
+    "systemName": "Système de Connaissance",
+    "title": "Base de Connaissances",
+    "subtitle": "Propulsez votre IA avec l'intelligence d'entreprise. Synchronisez vos documents et enregistrements d'appels pour construire un graphe de connaissances haute fidélité pour vos REPS HARX.",
+    "selectGig": "Sélectionner un Gig",
+    "gigPrefix": "Gig :",
+    "allGigs": "Tous les Gigs",
+    "integrateResource": "Intégrer une Ressource",
+    "empty": {
+      "title": "Flux d'Intelligence Vide",
+      "subtitle": "Vos connaissances d'entreprise n'ont pas encore été synchronisées. Initiez l'ingestion de données pour donner les moyens à vos REPS.",
+      "ingestFirst": "Ingérer la Première Ressource"
+    },
+    "analysis": {
+      "languageHub": "Centre Linguistique",
+      "viewInEnglish": "Voir en Anglais",
+      "needTranslation": "Besoin de traduction ?",
+      "translating": "Traduction...",
+      "translateToEnglish": "Traduire en Anglais",
+      "showOriginal": "Afficher l'Original",
+      "executiveIntelligenceSummary": "Résumé Exécutif d'Intelligence",
+      "domain": "Domaine",
+      "coreTheme": "Thème Principal",
+      "technicalLevel": "Niveau Technique",
+      "targetAudience": "Public Cible",
+      "strategicInsights": "Insights Stratégiques & Points Clés",
+      "technicalLexicon": "Lexique Technique & Mots Clés",
+      "strategicGuidance": "Orientation Stratégique",
+      "executiveCallSummary": "Résumé Exécutif d'Appel",
+      "performanceIntelligence": "Intelligence de Performance",
+      "hideTranscription": "Masquer la Transcription",
+      "viewTranscription": "Voir la Transcription",
+      "loadMoreInsights": "Charger Plus d'Insights",
+      "showLess": "Voir Moins"
+    },
+    "intelligenceDashboard": {
+      "title": "Tableau de Bord d'Intelligence",
+      "subtitle": "Analyse multimodale pour",
+      "viewFile": "Voir le Fichier",
+      "masterVideoStream": "Flux Vidéo Principal",
+      "liveContentStream": "Flux de Contenu en Direct",
+      "generatingInsights": "Génération des Insights Stratégiques..."
+    },
+    "analysisOutput": {
+      "title": "Résultat de l'Analyse",
+      "subtitle": "Extrait d'Intelligence d'Entreprise",
+      "viewSourceFile": "Voir le Fichier Source",
+      "processing": "Traitement de l'Intelligence...",
+      "rawVideoIntelligence": "Intelligence Vidéo Brute",
+      "analyzeNow": "Analyser Maintenant"
+    },
+    "uploadModal": {
+      "title": "Intégrer l'Intelligence",
+      "selectTargetGig": "Sélectionner le Gig Cible",
+      "targetGig": "Gig Cible",
+      "generalResource": "Ressource Générale",
+      "dragDrop": "Cliquez ou glissez pour ajouter",
+      "itemsStaged": "élément(s) préparé(s)",
+      "clearAll": "Tout Effacer",
+      "cancel": "Annuler",
+      "synchronize": "Synchroniser"
+    }
+  },
+  "telephonySetup": {
+    "title": "Configuration Téléphonique",
+    "subtitle": "Gérez et configurez vos points d'entrée réseau mondiaux",
+    "errors": {
+      "configurationTitle": "Erreur de Configuration",
+      "companyIdMissing": "ID d'entreprise requis introuvable. Veuillez rafraîchir la page si le problème persiste."
+    },
+    "selectGigProfile": "Sélectionner un Profil Gig",
+    "required": "Requis",
+    "associateGig": "Associez un gig d'intelligence principal à vos points d'entrée téléphoniques mondiaux",
+    "hydratingProfiles": "Hydratation des profils...",
+    "globalZone": "Zone Mondiale",
+    "selectIntelligenceProfile": "Sélectionner le Profil d'Intelligence",
+    "chooseActiveGigProfile": "Choisissez un profil gig actif...",
+    "unknownRegion": "Région Inconnue",
+    "noGlobalProfilesFound": "Aucun profil mondial trouvé",
+    "networkProvider": "Fournisseur Réseau",
+    "chooseCarrier": "Choisissez un partenaire de classe opérateur pour un routage stable à faible latence",
+    "pending": "En Attente",
+    "activePartner": "Partenaire Actif",
+    "networkEntries": "Entrées Réseau",
+    "active": "Actif(s)",
+    "provisionNodes": "Provisionnez et gérez des points d'accès sécurisés pour vos nœuds d'intelligence mondiaux",
+    "static": "STATIQUE",
+    "infrastructure": "INFRASTRUCTURE",
+    "operational": "Opérationnel",
+    "syncing": "Synchronisation",
+    "regionalNodesAvailable": "Nœuds Régionaux Disponibles",
+    "regional": "Régional",
+    "globalGateway": "Passerelle Mondiale",
+    "purchase": "Acheter",
+    "empty": {
+      "title": "Infrastructure Hors Ligne",
+      "subtitle": "Commencez par prioriser les points d'entrée régionaux pour votre réseau d'intelligence",
+      "scan": "Scanner les Passerelles Régionales"
+    }
+  },
+  "companyOnboarding": {
+    "phases": {
+      "1": {
+        "title": "Configuration du Compte & Identité",
+        "steps": {
+          "1": {
+            "title": "Créer le Profil de l'Entreprise",
+            "description": "Détails juridiques et commerciaux, contacts clés, acceptation des conditions"
+          },
+          "2": {
+            "title": "Vérification KYC / KYB",
+            "description": "Vérification d'identité via Stripe Identity ou Sumsub"
+          }
+        }
+      },
+      "2": {
+        "title": "Configuration Opérationnelle",
+        "steps": {
+          "3": {
+            "title": "Créer des Gigs",
+            "description": "Définir des gigs multicanaux et leurs prérequis"
+          },
+          "4": {
+            "title": "Configuration Téléphonique",
+            "description": "Numéros de téléphone, suivi des appels et configuration du composeur"
+          },
+          "5": {
+            "title": "Importer des Contacts",
+            "description": "Importer des contacts pour un engagement multicanal"
+          },
+          "6": {
+            "title": "Script d'Appel",
+            "description": "Définir le script et les flux de conversation"
+          },
+          "7": {
+            "title": "Configuration des Rapports",
+            "description": "Configurer les KPI et les préférences de reporting"
+          }
+        }
+      },
+      "3": {
+        "title": "Engagement des REPS",
+        "steps": {
+          "8": {
+            "title": "Base de Connaissances",
+            "description": "Créer des supports de formation et une FAQ"
+          },
+          "9": {
+            "title": "Onboarding des REPS",
+            "description": "Formation, validation et acceptation du contrat"
+          },
+          "10": {
+            "title": "Planification des Sessions",
+            "description": "Planifier les créneaux d'appel et prioriser les prospects"
+          }
+        }
+      },
+      "4": {
+        "title": "Activation",
+        "steps": {
+          "11": {
+            "title": "Plan d'Abonnement",
+            "description": "Sélectionner un plan : Gratuit, Standard ou Premium"
+          },
+          "12": {
+            "title": "Activation du Gig",
+            "description": "Lancer les opérations multicanales"
+          },
+          "13": {
+            "title": "MATCH HARX REPS",
+            "description": "Se connecter avec des REPS qualifiés selon les besoins"
+          }
+        }
+      }
+    },
+    "ui": {
+      "redirecting": "Redirection vers l'authentification...",
+      "errorPhaseData": "Erreur : Données de phase introuvables. Veuillez rafraîchir la page.",
+      "phaseLabel": "Phase",
+      "completed": "Complété",
+      "progressing": "En cours",
+      "locked": "Verrouillé",
+      "comingSoon": "Bientôt",
+      "currentStep": "Étape Actuelle",
+      "reviewStep": "Revoir l'Étape",
+      "startStep": "Démarrer l'Étape",
+      "previousPhase": "Phase Précédente",
+      "goToDashboard": "Aller au Tableau de Bord",
+      "nextPhase": "Phase Suivante",
+      "accessibleDesc": "Suivez la séquence pour terminer la configuration de votre entreprise et débloquer les fonctionnalités premium.",
+      "lockedDesc": "Cette phase est actuellement verrouillée. Veuillez terminer la phase précédente pour continuer.",
+      "allPhasesCompleted": "Toutes les étapes de cette phase sont terminées. Félicitations, toutes les phases d'onboarding sont maintenant complétées ! 👏🎺🎊",
+      "phaseCompleted": "Toutes les étapes de cette phase sont terminées. Vous pouvez passer à la phase suivante.",
+      "backToOnboarding": "Retour à l'onboarding",
+      "unableToStart": "Impossible de démarrer cette étape car les phases précédentes ne sont pas complètement terminées. \n\nVeuillez essayer le bouton 'Réinitialiser l'Onboarding' en bas de la page pour corriger les éventuelles incohérences de données."
+    }
+  },
+  "gigDetails": {
+    "title": "Détails du Gig",
+    "subtitle": "Définissez et gérez vos actifs d'intelligence multicanaux",
+    "addNew": "Ajouter un Gig",
+    "errors": {
+      "companyId": "ID d'entreprise introuvable",
+      "fetchFailed": "Échec de la récupération des gigs",
+      "deleteFailed": "Échec de la suppression du gig"
+    },
+    "success": {
+      "deleted": "Gig supprimé avec succès"
+    },
+    "availability": {
+      "notSpecified": "Non spécifié",
+      "flexible": "Flexible"
+    },
+    "empty": {
+      "title": "Aucun actif d'intelligence trouvé",
+      "subtitle": "Initialisez votre premier gig pour démarrer le processus de matching."
+    },
+    "table": {
+      "status": "Statut",
+      "gigAndCategory": "Gig & Catégorie",
+      "commitment": "Engagement",
+      "strategicActions": "Actions Stratégiques"
+    },
+    "standard": "Standard",
+    "reps": "reps",
+    "terminate": "Terminer l'actif d'intelligence",
+    "detailsBtn": "Détails"
+  },
+  "uploadContacts": {
+    "title": "Importer des Contacts",
+    "subtitle": "Importez, gérez et organisez vos leads efficacement avec la précision de l'IA.",
+    "errors": {
+      "selectGigFirst": "Veuillez d'abord sélectionner un gig avant d'importer un fichier",
+      "noValidLeads": "Aucun lead valide trouvé dans le fichier. Veuillez vérifier le format et le contenu du fichier.",
+      "uploadError": "Erreur lors de l'importation du fichier",
+      "saveError": "Erreur lors de la sauvegarde des leads",
+      "userIdNotFound": "ID d'utilisateur introuvable. Veuillez vous reconnecter.",
+      "zohoTokenExpired": "Session Zoho expirée. Veuillez vous reconnecter.",
+      "companyConfigNotFound": "Configuration de l'entreprise non trouvée. Veuillez vous reconnecter.",
+      "zohoConfigNotFound": "Configuration Zoho non trouvée. Veuillez d'abord configurer Zoho CRM.",
+      "gigNotFound": "Gig sélectionné introuvable",
+      "importError": "Une erreur est survenue lors de l'importation"
+    },
+    "success": {
+      "savedContacts": "{{count}} contacts sauvegardés avec succès !"
+    },
+    "gigs": {
+      "selectTitle": "Sélectionner un Gig",
+      "loading": "Chargement des gigs...",
+      "empty": "Aucun gig disponible.",
+      "placeholder": "Sélectionner un gig…",
+      "available": "Gigs Disponibles"
+    },
+    "import": {
+      "title": "Importer des Leads",
+      "subtitle": "Choisissez votre méthode préférée pour importer des leads dans votre gig sélectionné.",
+      "zohoTitle": "Intégration Zoho CRM",
+      "zohoSubtitle": "Connectez et synchronisez avec votre Zoho CRM",
+      "zohoConnected": "Connecté à Zoho CRM",
+      "zohoNotConnected": "Non connecté",
+      "disconnecting": "Déconnexion...",
+      "disconnect": "Déconnecter",
+      "connect": "Connecter",
+      "importingZoho": "Importation depuis Zoho...",
+      "connectFirst": "Connectez-vous d'abord à Zoho CRM",
+      "syncZoho": "Synchroniser avec Zoho CRM",
+      "fileTitle": "Importation de Fichier",
+      "fileSubtitle": "Importer et traiter des fichiers de contacts",
+      "supportedFiles": "Supporté : CSV, Excel (XLSX, XLS)",
+      "processing": "Traitement en cours...",
+      "clickToUpload": "Cliquez pour uploader ou glissez-déposez"
+    },
+    "analysis": {
+      "title": "Analyse du Traitement IA",
+      "totalFound": "Total Trouvé",
+      "verified": "Vérifiés",
+      "requiringAttention": "Nécessite Attention",
+      "viewDetails": "Voir les Détails",
+      "issuesIdentified": "problèmes identifiés"
+    },
+    "preview": {
+      "title": "Confirmer & Éditer les Leads",
+      "memoryOnly": "En Mémoire Uniquement",
+      "subtitle": "Révisez et éditez vos leads avant de les sauvegarder. Cliquez sur l'icône d'édition pour modifier n'importe quel champ afin de garantir l'intégrité des données.",
+      "unnamedLead": "Lead Sans Nom",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "email": "Email",
+      "phone": "Téléphone",
+      "address": "Adresse",
+      "postalCode": "Code Postal",
+      "city": "Ville",
+      "dob": "Date de Naissance",
+      "discard": "Annuler",
+      "confirmChanges": "Confirmer les Changements",
+      "noEmail": "Pas d'email",
+      "noPhone": "Pas de téléphone"
+    },
+    "save": {
+      "buttonText": "Sauvegarder {{count}} Contacts dans la Base de Données",
+      "savingTitle": "Sauvegarde des Contacts...",
+      "savingProgress": "{{saved}} sur {{total}} contacts sauvegardés"
+    },
+    "filter": {
+      "title": "Filtre par Canal"
+    },
+    "list": {
+      "title": "Liste des Leads",
+      "saving": "Sauvegarde de {{saved}}/{{total}} contacts...",
+      "ready": "{{count}} leads prêts à être sauvegardés",
+      "showing": "Affichage de {{filtered}} sur {{total}} leads",
+      "empty": "Aucun lead trouvé",
+      "selectGig": "Veuillez sélectionner un gig pour voir les leads",
+      "search": "Rechercher des leads...",
+      "statusAll": "Tous les Statuts",
+      "statusActive": "Actifs",
+      "statusInactive": "Inactifs",
+      "loading": "Chargement...",
+      "refresh": "Rafraîchir",
+      "emptyHint": "Essayez d'importer des leads ou vérifiez vos filtres",
+      "resultsFor": "résultats pour",
+      "of": "sur",
+      "leads": "leads",
+      "prev": "Préc",
+      "next": "Suiv",
+      "table": {
+        "lastName": "Nom",
+        "firstName": "Prénom",
+        "email": "Email",
+        "address": "Adresse",
+        "city": "Ville",
+        "postalCode": "Code Postal",
+        "mobile": "Mobile"
+      }
+    },
+    "realtime": {
+      "title": "Leads en temps réel",
+      "count": "Nombre de leads reçus:",
+      "phone": "Téléphone",
+      "lead": "Lead"
+    },
+    "modal": {
+      "title": "Méthode d'Importation",
+      "subtitle": "Synchronisez avec Zoho CRM ou importez un fichier Excel/CSV.",
+      "cancel": "Annuler",
+      "next": "Suivant"
+    }
+  },
+  "searchCompanyWizard": {
+    "title": "Recherche de Profil d'Entreprise",
+    "subtitle": "Recherchez une entreprise et générez des données de profil pour l'étape 1.",
+    "placeholder": "Entrez le nom de l'entreprise...",
+    "loading": "Chargement...",
+    "loadingProfile": "Chargement du profil de l'entreprise...",
+    "generateBtn": "Générer le Profil",
+    "errors": {
+      "searchFailed": "Échec de la recherche d'entreprises",
+      "generateFailed": "Échec de la génération du profil",
+      "publishFailed": "Échec de la publication de l'entreprise. Veuillez réessayer."
+    },
+    "profile": {
+      "backBtn": "Retour à l'intégration",
+      "contactInfo": "Coordonnées",
+      "getDirections": "Obtenir l'Itinéraire",
+      "mapNotAvailable": "Carte non disponible",
+      "digitalPresence": "Présence Numérique",
+      "editLogo": "Modifier le Logo",
+      "logoUrl": "URL du Logo",
+      "enterLogoUrl": "Entrer l'URL du logo...",
+      "cancel": "Annuler",
+      "save": "Sauvegarder",
+      "companyOverview": "Aperçu de l'Entreprise",
+      "ourMission": "Notre Mission",
+      "publishBtn": "Publier l'Entreprise",
+      "errorTitle": "Erreur",
+      "close": "Fermer"
+    }
+  },
+  "kyc": {
+    "title": "Vérification KYC/KYB",
+    "verified": "Vérifié",
+    "subtitle": "Complétez la vérification d'identité pour votre entreprise afin de débloquer toutes les fonctionnalités.",
+    "submitBtn": "Soumettre la Vérification",
+    "verifiedSuccess": "Vérifié avec Succès",
+    "roadmapTitle": "Feuille de Route de Vérification",
+    "stepProgress": "Étape {{current}} sur {{total}}",
+    "chooseMethod": "Choisir la Méthode de Vérification",
+    "automaticTitle": "Automatique",
+    "automaticDesc": "Réseau de partenaires vérifié",
+    "manualTitle": "Examen Manuel",
+    "manualDesc": "Importation directe de documents",
+    "autoVerification": {
+      "title": "Vérification Automatique",
+      "identityTitle": "Vérification d'Identité",
+      "identityStartBtn": "Démarrer la Vérification",
+      "identityDesc": "Complétez le processus de vérification via notre plateforme partenaire sécurisée en utilisant votre caméra.",
+      "businessTitle": "Vérification d'Entreprise",
+      "businessStartBtn": "Vérifier l'Entreprise",
+      "businessDesc": "Vérifiez votre entreprise via les registres officiels et bases de données automatiquement.",
+      "stepsTitle": "Étapes de Vérification",
+      "steps": {
+        "step1": "Préparez une pièce d'identité officielle valide",
+        "step2": "Assurez-vous d'un bon éclairage pour la capture photo",
+        "step3": "Suivez les instructions à l'écran",
+        "step4": "Complétez le contrôle de reconnaissance faciale"
+      }
+    },
+    "manualVerification": {
+      "requiredDocsTitle": "Documents Requis",
+      "uploadProgress": "{{uploaded}} sur {{total}} importés",
+      "categoryDocs": "Documents de type {{category}}",
+      "format": "Format : {{format}}",
+      "uploadedStatus": "IMPORTÉ",
+      "uploadBtn": "Importer",
+      "categories": {
+        "company": "Entreprise",
+        "personal": "Personnel",
+        "financial": "Financier"
+      },
+      "documents": {
+        "incorpCert": {
+          "title": "Certificat de Constitution",
+          "desc": "Document officiel prouvant l'enregistrement de l'entreprise"
+        },
+        "proofOfAddress": {
+          "title": "Justificatif de Domicile",
+          "desc": "Facture d'électricité ou relevé bancaire récent (moins de 3 mois)"
+        },
+        "directorId": {
+          "title": "Pièce d'Identité du Directeur",
+          "desc": "Pièce d'identité officielle du directeur de l'entreprise"
+        },
+        "bankStatement": {
+          "title": "Relevé Bancaire",
+          "desc": "Relevé bancaire récent pour vérification du compte"
+        },
+        "taxReg": {
+          "title": "Enregistrement Fiscal",
+          "desc": "Certificat d'enregistrement fiscal de l'entreprise"
+        },
+        "ownershipStruct": {
+          "title": "Structure de Propriété",
+          "desc": "Document indiquant la structure de propriété de l'entreprise"
+        }
+      },
+      "guidelinesTitle": "Directives sur les Documents",
+      "guidelines": {
+        "guide1": "Tous les documents doivent être clairs et lisibles",
+        "guide2": "La taille des fichiers ne doit pas dépasser 5 Mo",
+        "guide3": "Formats pris en charge : PDF, JPG, PNG",
+        "guide4": "Les documents doivent être en couleur",
+        "guide5": "Aucun document expiré ne sera accepté"
+      }
+    },
+    "roadmapSteps": {
+      "docCollection": {
+        "title": "Collecte de Documents",
+        "desc": "Importez tous les documents requis"
+      },
+      "idVerification": {
+        "title": "Vérification d'Identité",
+        "desc": "Vérifiez l'identité du directeur de l'entreprise"
+      },
+      "bizVerification": {
+        "title": "Vérification d'Entreprise",
+        "desc": "Vérifiez les détails et les opérations de l'entreprise"
+      },
+      "finalReview": {
+        "title": "Examen Final",
+        "desc": "Examinez et confirmez toutes les informations"
+      }
+    },
+    "status": {
+      "title": "Statut de Vérification",
+      "complete": "Vérification Terminée",
+      "failed": "Vérification Échouée",
+      "inProgress": "Vérification en Cours",
+      "pending": "Vérification en Attente",
+      "completeDesc": "Votre entreprise a été vérifiée avec succès.",
+      "failedDesc": "Veuillez revoir et soumettre à nouveau vos documents.",
+      "inProgressDesc": "Ce processus peut prendre de 1 à 2 jours ouvrables.",
+      "pendingDesc": "Veuillez soumettre tous les documents requis.",
+      "getCertBtn": "Obtenir le Certificat"
+    },
+    "help": {
+      "title": "Besoin d'Assistance ?",
+      "desc": "Si vous rencontrez des problèmes avec le processus de vérification, notre équipe de support dédiée est là pour vous aider. Contactez-nous via notre portail de support ou planifiez un appel avec nos spécialistes de la vérification.",
+      "contactBtn": "Contacter le Support"
+    }
+  },
+  "repOnboarding": {
+    "header": {
+      "gigFilter": "Gig :",
+      "allGigs": "Tous les gigs",
+      "newJourneyBtn": "Nouveau parcours de formation"
+    },
+    "viewer": {
+      "backBtn": "Retour à la liste des formations",
+      "backToTraining": "Retour à la formation",
+      "noImages": "Pas d'images",
+      "noImagesDesc": "Pas encore d'images. Ouvrez le chat de formation REP et utilisez l'action",
+      "presentationAction": "Présentation",
+      "generateThem": "pour les générer.",
+      "openChatBtn": "Ouvrir le chat de formation",
+      "imageUnavailable": "Image indisponible.",
+      "title": "Visionneuse de Formation HARX",
+      "backList": "Retour aux formations",
+      "unavailable": "Visionneuse indisponible."
+    },
+    "trainingSection": {
+      "title": "Formation",
+      "subtitle": "Développement et validation des compétences",
+      "loading": "Chargement des formations disponibles...",
+      "emptyTitle": "Pas encore de parcours de formation",
+      "emptyDesc": "Ajoutez votre premier parcours de formation pour commencer l'intégration de vos REPs.",
+      "createFirstBtn": "Créer le premier parcours",
+      "modules": "modules",
+      "contentDesc": "Contenu de la formation : modules + sections + quiz",
+      "reviewBtn": "Revoir",
+      "continueBtn": "Continuer",
+      "startBtn": "Démarrer",
+      "contentBtn": "Contenu"
+    },
+    "podcastSection": {
+      "title": "Podcasts enregistrés",
+      "subtitle": "Générés et sauvegardés depuis le chat de formation REP",
+      "refreshBtn": "Rafraîchir",
+      "loading": "Chargement des podcasts sauvegardés...",
+      "emptyTitle": "Aucun podcast enregistré",
+      "emptyDesc": "Générez et sauvegardez un podcast depuis le chat de formation, il apparaîtra ici.",
+      "untitled": "Podcast sans titre",
+      "defaultDesc": "Podcast de formation",
+      "dateUnavailable": "Date indisponible",
+      "stopAudio": "Arrêter l'audio",
+      "playAudio": "Lire l'audio"
+    },
+    "settings": {
+      "title": "Paramètres de la formation",
+      "closeBtn": "Fermer",
+      "titleLabel": "Titre",
+      "titlePlaceholder": "Titre de la formation",
+      "descLabel": "Description",
+      "descPlaceholder": "Description de la formation",
+      "logoLabel": "Logo de la formation",
+      "uploading": "Téléchargement...",
+      "importImageBtn": "Importer une image",
+      "removeLogoBtn": "Supprimer le logo",
+      "logoSuccess": "Logo importé avec succès",
+      "noLogo": "Aucun logo sélectionné. Importez une image pour définir le logo de votre formation.",
+      "cancelBtn": "Annuler",
+      "saveBtn": "Enregistrer les modifications"
+    }
+  },
+  "matchingDashboard": {
+    "header": {
+      "title": "Système de Gestion des REPs",
+      "subtitle": "Gérez les REPs tout au long de leur cycle de vie",
+      "totalReps": "Total des REPs",
+      "invited": "Invités",
+      "requests": "Demandes",
+      "active": "Actifs"
+    },
+    "tabs": {
+      "matching": "Système de Matching Intelligent",
+      "matchingDesc": "Trouvez et faites correspondre les REPs parfaits",
+      "invited": "REPs Invités",
+      "invitedDesc": "Invitations en attente",
+      "enrollment": "Demandes d'Inscription",
+      "enrollmentDesc": "Candidatures des REPs",
+      "active": "REPs Actifs",
+      "activeDesc": "REPs en activité"
+    },
+    "matching": {
+      "availableGigs": "Gigs Disponibles",
+      "viewDetails": "Voir les Détails",
+      "industries": "Secteurs :",
+      "activities": "Activités :",
+      "experience": "Expérience :",
+      "years": "ans",
+      "languages": "Langues :",
+      "availability": "Disponibilité :",
+      "daysWeek": "jours/semaine",
+      "hoursWeek": "h/semaine",
+      "flexible": "Flexible",
+      "professionalSkills": "Compétences Professionnelles :",
+      "technicalSkills": "Compétences Techniques :",
+      "softSkills": "Savoir-être :",
+      "region": "Région :",
+      "unknownRegion": "Région inconnue",
+      "timezone": "Fuseau horaire :",
+      "unknownTimezone": "Fuseau horaire inconnu",
+      "matchesFor": "Correspondances pour",
+      "selectGig": "Sélectionnez un Gig pour voir les correspondances",
+      "searchReps": "Rechercher des REPs...",
+      "noGigSelected": "Aucun gig sélectionné",
+      "chooseGigDesc": "Choisissez un gig à gauche pour voir les REPs correspondants",
+      "match": "Correspondance",
+      "yearsExp": "ans d'exp.",
+      "enrolled": "Inscrit",
+      "alreadyEnrolled": "Déjà Inscrit",
+      "invited": "Invité",
+      "invite": "Inviter",
+      "hideDetails": "Masquer les Détails",
+      "skills": "Compétences",
+      "matchedSkills": "Compétences Correspondantes :",
+      "more": "plus",
+      "matchedLanguages": "Langues Correspondantes :",
+      "industry": "Secteur",
+      "matchedIndustries": "Secteurs Correspondants :",
+      "rep": "REP :",
+      "required": "Requis :",
+      "zone": "Zone :",
+      "location": "Lieu :",
+      "country": "Pays :",
+      "code": "Code :",
+      "schedule": "Emploi du temps :",
+      "matchedActivities": "Activités Correspondantes :",
+      "noRepsFound": "Aucun REP trouvé pour",
+      "tryAdjusting": "Essayez d'ajuster vos termes de recherche",
+      "noMatchesFound": "Aucune correspondance trouvée pour ce gig."
+    },
+    "invited": {
+      "title": "REPs Invités",
+      "pending": "En attente",
+      "search": "Rechercher des REPs invités...",
+      "unnamedAgent": "Agent non nommé",
+      "noEmail": "Pas d'email",
+      "waitingResponse": "Invité • En attente de réponse",
+      "gig": "Gig :",
+      "noPending": "Aucune invitation en attente",
+      "allResponded": "Toutes les invitations ont reçu une réponse."
+    },
+    "enrollment": {
+      "title": "Demandes d'Inscription",
+      "requests": "Demandes",
+      "search": "Rechercher des demandes...",
+      "status": "Statut :",
+      "approve": "Approuver",
+      "reject": "Rejeter",
+      "noRequests": "Aucune demande d'inscription",
+      "noWaiting": "Aucun REP n'est en attente d'approbation."
+    },
+    "active": {
+      "title": "REPs Actifs",
+      "active": "Actifs",
+      "search": "Rechercher des REPs actifs...",
+      "experience": "Expérience :",
+      "role": "Rôle :",
+      "na": "N/D",
+      "availability": "Disponibilité :",
+      "status": "Statut :",
+      "fullyOnboarded": "Entièrement Intégré",
+      "inProgress": "En Cours",
+      "languages": "Langues :",
+      "manageProfile": "Gérer le Profil",
+      "noActive": "Aucun REP actif",
+      "startFinding": "Commencez par trouver des correspondances et inviter des REPs."
+    }
+  },
+  "sessionPlanning": {
+    "header": {
+      "title": "Planification Stratégique des Sessions",
+      "realTimeSync": "Synchronisation en Temps Réel",
+      "description": "Orchestrez les opérations sur le terrain avec une précision chirurgicale et une optimisation des créneaux basée sur l'IA.",
+      "projectFocus": "Focus de Projet Stratégique",
+      "selectProject": "Sélectionner la Cible du Projet..."
+    },
+    "cortex": {
+      "intelligence": "Intelligence CORTEX",
+      "predictiveAnalytics": "Analyses Prédictives"
+    },
+    "weeklyOverview": {
+      "title": "Aperçu Hebdomadaire",
+      "availableSlots": "Créneaux Disponibles",
+      "reservedSlots": "Créneaux Réservés",
+      "gigHours": "Heures de Gig"
+    }
+  }
+}

@@ -9,18 +9,20 @@ import {
   Users,
   Clock
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Smart Orchestrator Dashboard</h1>
+        <h1 className="text-2xl font-black text-gray-900 tracking-tight uppercase">{t('dashboard.title')}</h1>
         <div className="flex space-x-3">
           <button className="rounded-xl bg-white border border-harx-100 px-6 py-2.5 text-harx-600 font-black text-xs uppercase tracking-widest hover:bg-harx-50 transition-all shadow-sm">
-            New Profile
+            {t('dashboard.newProfile')}
           </button>
           <button className="rounded-xl bg-gradient-harx px-6 py-2.5 text-white font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-harx-500/20">
-            New Gig
+            {t('dashboard.newGig')}
           </button>
         </div>
       </div>
@@ -28,10 +30,10 @@ const Dashboard = () => {
       {/* Stats Overview */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Active Profiles', value: '248', icon: <Users className="h-6 w-6" />, trend: '+12%', subtext: 'vs last month' },
-          { label: 'Active Gigs', value: '156', icon: <Briefcase className="h-6 w-6" />, trend: '+8%', subtext: 'vs last month' },
-          { label: 'Successful Matches', value: '89', icon: <ArrowRightLeft className="h-6 w-6" />, trend: '+15%', subtext: 'vs last month' },
-          { label: 'Pending Approvals', value: '24', icon: <Clock className="h-6 w-6" />, trend: null, subtext: 'Requires attention' }
+          { label: t('dashboard.stats.activeProfiles'), value: '248', icon: <Users className="h-6 w-6" />, trend: '+12%', subtext: t('dashboard.stats.vsLastMonth') },
+          { label: t('dashboard.stats.activeGigs'), value: '156', icon: <Briefcase className="h-6 w-6" />, trend: '+8%', subtext: t('dashboard.stats.vsLastMonth') },
+          { label: t('dashboard.stats.successfulMatches'), value: '89', icon: <ArrowRightLeft className="h-6 w-6" />, trend: '+15%', subtext: t('dashboard.stats.vsLastMonth') },
+          { label: t('dashboard.stats.pendingApprovals'), value: '24', icon: <Clock className="h-6 w-6" />, trend: null, subtext: t('dashboard.stats.requiresAttention') }
         ].map((stat, i) => (
           <div key={i} className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100 group hover:border-harx-100 transition-all">
             <div className="flex items-center justify-between mb-4">
@@ -45,7 +47,7 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center text-[10px] font-black uppercase tracking-widest">
               {stat.trend && <TrendingUp className="h-3 w-3 text-green-500 mr-1" />}
-              <span className={stat.trend ? "text-green-500" : "text-harx-500"}>{stat.trend || "Action Required"}</span>
+              <span className={stat.trend ? "text-green-500" : "text-harx-500"}>{stat.trend || t('dashboard.stats.actionRequired')}</span>
               <span className="ml-1.5 text-gray-400 font-bold">{stat.subtext}</span>
             </div>
           </div>
@@ -55,32 +57,32 @@ const Dashboard = () => {
       {/* Recent Activity */}
       <div className="rounded-[2rem] bg-white p-8 border border-gray-100 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-harx-50/30 blur-3xl rounded-full -mr-16 -mt-16" />
-        <h2 className="mb-8 text-xl font-black text-gray-900 uppercase tracking-tight relative z-10">Intelligence Stream</h2>
+        <h2 className="mb-8 text-xl font-black text-gray-900 uppercase tracking-tight relative z-10">{t('dashboard.intelligenceStream.title')}</h2>
         <div className="space-y-6 relative z-10">
           {[
             {
               icon: <UserCircle className="h-5 w-5 text-harx-600" />,
-              title: "Profile Synchronized",
-              description: "John Smith's neuro-profile was automatically generated",
-              time: "10m ago"
+              title: t('dashboard.intelligenceStream.profileSynchronized'),
+              description: t('dashboard.intelligenceStream.profileSynchronizedDesc'),
+              time: t('dashboard.intelligenceStream.time10m')
             },
             {
               icon: <Briefcase className="h-5 w-5 text-harx-600" />,
-              title: "Gig Deployment",
-              description: "Web Development Project for XYZ Corp is now live",
-              time: "1h ago"
+              title: t('dashboard.intelligenceStream.gigDeployment'),
+              description: t('dashboard.intelligenceStream.gigDeploymentDesc'),
+              time: t('dashboard.intelligenceStream.time1h')
             },
             {
               icon: <ArrowRightLeft className="h-5 w-5 text-harx-600" />,
-              title: "Algorithm Match",
-              description: "5 HARX REPS matched with Digital Marketing Campaign",
-              time: "2h ago"
+              title: t('dashboard.intelligenceStream.algorithmMatch'),
+              description: t('dashboard.intelligenceStream.algorithmMatchDesc'),
+              time: t('dashboard.intelligenceStream.time2h')
             },
             {
               icon: <CheckCircle className="h-5 w-5 text-harx-600" />,
-              title: "Strategic Approval",
-              description: "Mobile App Development for ABC Inc validated",
-              time: "3h ago"
+              title: t('dashboard.intelligenceStream.strategicApproval'),
+              description: t('dashboard.intelligenceStream.strategicApprovalDesc'),
+              time: t('dashboard.intelligenceStream.time3h')
             }
           ].map((item, index) => (
             <div key={index} className="flex items-start space-x-4 group/item">
@@ -98,11 +100,11 @@ const Dashboard = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
-          { icon: <UserCircle className="h-6 w-6" />, title: "Profile Unit", description: "Neuro-profile generation" },
-          { icon: <Briefcase className="h-6 w-6" />, title: "Gig Forge", description: "Optimization engine" },
-          { icon: <ArrowRightLeft className="h-6 w-6" />, title: "Match Matrix", description: "Algorithmic pairing" },
-          { icon: <CheckCircle className="h-6 w-6" />, title: "Validator", description: "Publishing & compliance" },
-          { icon: <BarChart2 className="h-6 w-6" />, title: "Growth Lab", description: "Performance scaling" }
+          { icon: <UserCircle className="h-6 w-6" />, title: t('dashboard.quickActions.profileUnit'), description: t('dashboard.quickActions.profileUnitDesc') },
+          { icon: <Briefcase className="h-6 w-6" />, title: t('dashboard.quickActions.gigForge'), description: t('dashboard.quickActions.gigForgeDesc') },
+          { icon: <ArrowRightLeft className="h-6 w-6" />, title: t('dashboard.quickActions.matchMatrix'), description: t('dashboard.quickActions.matchMatrixDesc') },
+          { icon: <CheckCircle className="h-6 w-6" />, title: t('dashboard.quickActions.validator'), description: t('dashboard.quickActions.validatorDesc') },
+          { icon: <BarChart2 className="h-6 w-6" />, title: t('dashboard.quickActions.growthLab'), description: t('dashboard.quickActions.growthLabDesc') }
         ].map((item, index) => (
           <div key={index} className="flex flex-col items-center rounded-2xl bg-white p-6 text-center border border-gray-100 shadow-sm hover:border-harx-200 hover:shadow-xl hover:shadow-harx-500/5 hover:-translate-y-1 cursor-pointer transition-all group">
             <div className="mb-4 rounded-xl bg-harx-50 p-4 text-harx-600 group-hover:bg-gradient-harx group-hover:text-white transition-all">

@@ -21,9 +21,9 @@ import {
   ArrowLeft,
   Upload,
 } from "lucide-react";
-import type { CompanyProfile as CompanyProfileType } from "./api/openai";
 import { saveCompanyData } from "./api/companyApi";
 import { LucideProps } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   profile: CompanyProfileType;
@@ -33,6 +33,7 @@ interface Props {
 const userId = Cookies.get("userId");
 
 export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
+  const { t } = useTranslation();
   const defaultProfile = {
     userId: userId || "",
     name: initialProfile.name || "",
@@ -149,7 +150,7 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
       }
       window.location.href = "/#/orchestrator";
     } catch (error: any) {
-      setPublishError(error.response?.data?.message || "Failed to publish company. Please try again.");
+      setPublishError(error.response?.data?.message || t('searchCompanyWizard.errors.publishFailed'));
     }
   };
 
@@ -280,7 +281,7 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
         className="absolute left-6 top-6 z-20 inline-flex items-center gap-2 rounded-xl border border-harx-100 bg-white/95 px-3 py-2 text-xs font-black uppercase tracking-wider text-harx-600 shadow-sm transition-all hover:bg-white hover:border-harx-200"
       >
         <ArrowLeft size={14} />
-        Back to onboarding
+        {t('searchCompanyWizard.profile.backBtn')}
       </button>
 
       <div className="w-80 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 overflow-y-auto">
@@ -289,7 +290,7 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Mail className="text-harx-600" size={20} />
-                Contact Information
+                {t('searchCompanyWizard.profile.contactInfo')}
               </h3>
 
               <div className="space-y-3">
@@ -350,13 +351,13 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
                             className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-sm text-blue-600 rounded-lg shadow-lg backdrop-blur-sm flex items-center gap-1.5 transition-all hover:scale-105"
                           >
                             <MapPin size={14} />
-                            Get Directions
+                            {t('searchCompanyWizard.profile.getDirections')}
                           </a>
                         )}
                       </>
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
-                        <span>Map not available</span>
+                        <span>{t('searchCompanyWizard.profile.mapNotAvailable')}</span>
                       </div>
                     )}
                   </div>
@@ -369,7 +370,7 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Globe className="text-harx-600" size={20} />
-                Digital Presence
+                {t('searchCompanyWizard.profile.digitalPresence')}
               </h3>
               <div className="flex gap-3">
                 {profile.socialMedia?.linkedin && (
@@ -428,7 +429,7 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="text-white text-center">
                         <Upload size={20} className="mx-auto mb-1" />
-                        <span className="text-xs">Edit Logo</span>
+                        <span className="text-xs">{t('searchCompanyWizard.profile.editLogo')}</span>
                       </div>
                     </div>
                   )}
@@ -436,17 +437,17 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
                 {editMode && editingField === "logo" && (
                   <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-3 border border-gray-200">
                     <div className="space-y-2">
-                      <label className="text-sm text-gray-600 block">Logo URL</label>
+                      <label className="text-sm text-gray-600 block">{t('searchCompanyWizard.profile.logoUrl')}</label>
                       <input
                         type="text"
                         value={logoUrl}
                         onChange={handleLogoChange}
-                        placeholder="Enter logo URL..."
+                        placeholder={t('searchCompanyWizard.profile.enterLogoUrl')}
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                       />
                       <div className="flex justify-end gap-2 mt-2">
-                        <button onClick={() => setEditingField(null)} className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-                        <button onClick={() => setEditingField(null)} className="px-3 py-1 text-sm bg-harx-600 text-white rounded-md hover:bg-harx-700 transition-colors">Save</button>
+                        <button onClick={() => setEditingField(null)} className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800">{t('searchCompanyWizard.profile.cancel')}</button>
+                        <button onClick={() => setEditingField(null)} className="px-3 py-1 text-sm bg-harx-600 text-white rounded-md hover:bg-harx-700 transition-colors">{t('searchCompanyWizard.profile.save')}</button>
                       </div>
                     </div>
                   </div>
@@ -486,7 +487,7 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
                     <Building2 className="text-harx-600" size={24} />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Company Overview</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('searchCompanyWizard.profile.companyOverview')}</h2>
                     <EditableField value={profile.overview} field="overview" className="text-gray-700 leading-relaxed text-lg" />
                   </div>
                 </div>
@@ -498,7 +499,7 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
                         <Target className="text-white" size={24} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-harx-700 mb-3">Our Mission</h3>
+                        <h3 className="text-xl font-bold text-harx-700 mb-3">{t('searchCompanyWizard.profile.ourMission')}</h3>
                         <EditableField value={profile.mission} field="mission" className="text-gray-700" />
                       </div>
                     </div>
@@ -513,7 +514,7 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
                 className="px-8 py-4 bg-gradient-harx text-white rounded-2xl hover:shadow-2xl hover:shadow-harx-500/30 transition-all duration-300 flex items-center gap-3 group text-lg font-bold w-full sm:w-auto justify-center transform hover:-translate-y-1"
               >
                 <Check size={24} className="text-white" />
-                <span>Publish Company</span>
+                <span>{t('searchCompanyWizard.profile.publishBtn')}</span>
                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
@@ -537,10 +538,10 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-sm">
             <XCircle className="text-red-500 mx-auto" size={40} />
-            <h2 className="text-xl font-bold text-gray-900 mt-4">Error</h2>
+            <h2 className="text-xl font-bold text-gray-900 mt-4">{t('searchCompanyWizard.profile.errorTitle')}</h2>
             <p className="text-gray-600 mt-2">{publishError}</p>
             <button onClick={handleCloseError} className="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
-              Close
+              {t('searchCompanyWizard.profile.close')}
             </button>
           </div>
         </div>

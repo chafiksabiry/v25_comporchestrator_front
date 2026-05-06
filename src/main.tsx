@@ -5,7 +5,7 @@ import { qiankunWindow } from 'vite-plugin-qiankun/dist/helper';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
-
+import './i18n';
 
 
 // Store the root instance for proper unmounting

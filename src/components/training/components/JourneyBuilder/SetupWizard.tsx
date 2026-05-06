@@ -44,10 +44,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const industryMenuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
   const [thumbnailUrl, setThumbnailUrl] = useState('');
-  const [thumbnailUploading, setThumbnailUploading] = useState(false);
-  const [thumbnailGenerating, setThumbnailGenerating] = useState(false);
-  const [thumbnailPrompt, setThumbnailPrompt] = useState('');
-  const [thumbnailAiPromptOpen, setThumbnailAiPromptOpen] = useState(false);
   const [visionTitleGenerating, setVisionTitleGenerating] = useState(false);
   const [visionDescriptionGenerating, setVisionDescriptionGenerating] = useState(false);
   const autoRolesSuggestionKeyRef = useRef('');
@@ -183,9 +179,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
         targetRoles: journey.targetRoles || [],
         trainingLogo: thumbnailUrl
           ? {
-              type: 'image',
-              value: thumbnailUrl
-            }
+            type: 'image',
+            value: thumbnailUrl
+          }
           : undefined,
       };
       onComplete(completeCompany, completeJourney, selectedMethodology || undefined, selectedGig?._id);
@@ -331,18 +327,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const handleMethodologyApply = (m: TrainingMethodology) => { setSelectedMethodology(m); setShowMethodologyBuilder(false); setCurrentStep(5); };
   const handleCustomMethodology = () => { setCurrentStep(5); };
 
-  const handleThumbnailUpload = async (file: File) => {
-    try {
-      setThumbnailUploading(true);
-      const uploaded = await cloudinaryService.uploadImage(file, 'trainings/thumbnails');
-      setThumbnailUrl(uploaded.secureUrl || uploaded.url);
-    } catch (error: any) {
-      console.error('[SetupWizard] Failed thumbnail upload:', error);
-      alert(error?.message || 'Could not upload thumbnail.');
-    } finally {
-      setThumbnailUploading(false);
-    }
-  };
 
   const getTrainingBackendUrl = (): string => {
     if (import.meta.env.VITE_API_TRAINING_URL) return import.meta.env.VITE_API_TRAINING_URL;
@@ -354,30 +338,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
     return 'http://localhost:5010';
   };
 
-  const handleGenerateThumbnailWithAI = async () => {
-    try {
-      setThumbnailGenerating(true);
-      const trainingBackendUrl = getTrainingBackendUrl();
-      const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
-      const response = await axios.post(`${baseUrl}/training_journeys/generate-thumbnail`, {
-        prompt: thumbnailPrompt.trim(),
-        gigTitle: selectedGig?.title || trainingDetails?.trainingName || '',
-        industry: industries.find(i => i._id === company.industry)?.name || String(company.industry || '')
-      });
-      const url = String((response?.data as any)?.url || '').trim();
-      if (!url) throw new Error('No image URL returned');
-      setThumbnailUrl(url);
-    } catch (error: any) {
-      console.error('[SetupWizard] Failed AI thumbnail generation:', error);
-      const backendMessage =
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        error?.message;
-      alert(backendMessage || 'Could not generate thumbnail with AI.');
-    } finally {
-      setThumbnailGenerating(false);
-    }
-  };
 
   const handleSuggestVision = async (target: 'title' | 'description') => {
     if (!selectedGig) {
@@ -579,327 +539,251 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
           padding: bodyPadding,
           width: '100%',
         }}>
-        <div style={{
-          flex: 1,
-          maxWidth: setupContentMaxWidth,
-          margin: '0 auto',
-          width: '100%',
-          minHeight: uniformStepBodyMinHeight,
-          height: '100%',
-          borderRadius: 18,
-          border: WIZARD_CARD_BORDER,
-          background: WIZARD_CARD_BG,
-          boxShadow: WIZARD_CARD_SHADOW,
-          padding: embedCompact ? '12px 14px' : '18px 20px',
-          animation: 'wizardFadeUp 260ms ease-out',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-start',
-        }}>
-          {currentStep === 1 && (
-            <>
-              {loadingCompany ? (
-                <div style={{ textAlign: 'center', padding: '32px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1 }}>
-                  <Loader2 className="animate-spin" style={{ width: 24, height: 24, color: HARX, margin: '0 auto 10px' }} />
-                  <p style={{ fontSize: 13, color: '#6b7280' }}>Loading company information...</p>
-                </div>
-              ) : companyData ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, justifyContent: 'center', flex: 1 }}>
-                  <div style={{ display: 'none' }}>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
-                      Training industry <span style={{ color: HARX }}>*</span>
-                    </label>
-                    {loadingIndustries ? (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px dashed #d1d5db', borderRadius: 10, padding: '12px 14px' }}>
-                        <Loader2 className="animate-spin" style={{ width: 16, height: 16, color: HARX }} />
-                        <span style={{ fontSize: 13, color: '#6b7280' }}>Loading...</span>
-                      </div>
-                    ) : (
-                      <div>
-                        <button
-                          ref={industryBtnRef}
-                          type="button"
-                          onClick={() => { setIndustryOpen(!industryOpen); setIndustrySearch(''); }}
-                          style={{
-                            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            border: industryOpen ? `1.5px solid ${HARX}` : '1px solid #d1d5db',
-                            borderRadius: 8, padding: '9px 12px', fontSize: 13, background: '#fff',
-                            color: company.industry ? '#111827' : '#9ca3af', cursor: 'pointer',
-                            boxShadow: industryOpen ? `0 0 0 3px rgba(255,77,77,0.08)` : 'none',
-                            transition: 'all 150ms',
-                          }}
-                        >
-                          <span>{company.industry ? (industries.find(i => i._id === company.industry)?.name || 'Select industry...') : 'Select industry...'}</span>
-                          <ChevronDown style={{ width: 16, height: 16, color: '#9ca3af', transition: 'transform 200ms', transform: industryOpen ? 'rotate(180deg)' : 'none' }} />
-                        </button>
-                        {industryOpen && createPortal(
-                          <div
-                            ref={industryMenuRef}
+          <div style={{
+            flex: 1,
+            maxWidth: setupContentMaxWidth,
+            margin: '0 auto',
+            width: '100%',
+            minHeight: uniformStepBodyMinHeight,
+            height: '100%',
+            borderRadius: 18,
+            border: WIZARD_CARD_BORDER,
+            background: WIZARD_CARD_BG,
+            boxShadow: WIZARD_CARD_SHADOW,
+            padding: embedCompact ? '12px 14px' : '18px 20px',
+            animation: 'wizardFadeUp 260ms ease-out',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+          }}>
+            {currentStep === 1 && (
+              <>
+                {loadingCompany ? (
+                  <div style={{ textAlign: 'center', padding: '32px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1 }}>
+                    <Loader2 className="animate-spin" style={{ width: 24, height: 24, color: HARX, margin: '0 auto 10px' }} />
+                    <p style={{ fontSize: 13, color: '#6b7280' }}>Loading company information...</p>
+                  </div>
+                ) : companyData ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14, justifyContent: 'center', flex: 1 }}>
+                    <div style={{ display: 'none' }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
+                        Training industry <span style={{ color: HARX }}>*</span>
+                      </label>
+                      {loadingIndustries ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px dashed #d1d5db', borderRadius: 10, padding: '12px 14px' }}>
+                          <Loader2 className="animate-spin" style={{ width: 16, height: 16, color: HARX }} />
+                          <span style={{ fontSize: 13, color: '#6b7280' }}>Loading...</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <button
+                            ref={industryBtnRef}
+                            type="button"
+                            onClick={() => { setIndustryOpen(!industryOpen); setIndustrySearch(''); }}
                             style={{
-                              position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width, zIndex: 99999,
-                              background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb',
-                              boxShadow: '0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
-                              overflow: 'hidden',
+                              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              border: industryOpen ? `1.5px solid ${HARX}` : '1px solid #d1d5db',
+                              borderRadius: 8, padding: '9px 12px', fontSize: 13, background: '#fff',
+                              color: company.industry ? '#111827' : '#9ca3af', cursor: 'pointer',
+                              boxShadow: industryOpen ? `0 0 0 3px rgba(255,77,77,0.08)` : 'none',
+                              transition: 'all 150ms',
                             }}
                           >
-                            <div style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f9fafb', borderRadius: 8, padding: '7px 10px' }}>
-                                <Search style={{ width: 14, height: 14, color: '#9ca3af', flexShrink: 0 }} />
-                                <input
-                                  autoFocus
-                                  value={industrySearch}
-                                  onChange={(e) => setIndustrySearch(e.target.value)}
-                                  placeholder="Search industries..."
-                                  style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: '#111827', width: '100%' }}
-                                />
+                            <span>{company.industry ? (industries.find(i => i._id === company.industry)?.name || 'Select industry...') : 'Select industry...'}</span>
+                            <ChevronDown style={{ width: 16, height: 16, color: '#9ca3af', transition: 'transform 200ms', transform: industryOpen ? 'rotate(180deg)' : 'none' }} />
+                          </button>
+                          {industryOpen && createPortal(
+                            <div
+                              ref={industryMenuRef}
+                              style={{
+                                position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width, zIndex: 99999,
+                                background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb',
+                                boxShadow: '0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              <div style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f9fafb', borderRadius: 8, padding: '7px 10px' }}>
+                                  <Search style={{ width: 14, height: 14, color: '#9ca3af', flexShrink: 0 }} />
+                                  <input
+                                    autoFocus
+                                    value={industrySearch}
+                                    onChange={(e) => setIndustrySearch(e.target.value)}
+                                    placeholder="Search industries..."
+                                    style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: '#111827', width: '100%' }}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                            <div style={{ maxHeight: 240, overflowY: 'auto', padding: '4px 0' }}>
-                              {industries.filter(ind => ind.name.toLowerCase().includes(industrySearch.toLowerCase())).map(ind => {
-                                const sel = company.industry === ind._id;
-                                return (
-                                  <button
-                                    key={ind._id}
-                                    type="button"
-                                    onClick={() => { setCompany({ ...company, industry: ind._id }); setIndustryOpen(false); }}
-                                    style={{
-                                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                      padding: '9px 14px', border: 'none', background: sel ? '#fff5f5' : 'transparent',
-                                      fontSize: 13, color: sel ? HARX : '#374151', fontWeight: sel ? 600 : 400,
-                                      cursor: 'pointer', transition: 'background 100ms',
-                                    }}
-                                    onMouseEnter={(e) => { if (!sel) (e.currentTarget.style.background = '#f9fafb'); }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.background = sel ? '#fff5f5' : 'transparent'; }}
-                                  >
-                                    <span>{ind.name}</span>
-                                    {sel && <Check style={{ width: 14, height: 14, color: HARX }} />}
-                                  </button>
-                                );
-                              })}
-                              {industries.filter(ind => ind.name.toLowerCase().includes(industrySearch.toLowerCase())).length === 0 && (
-                                <div style={{ padding: '14px', textAlign: 'center', fontSize: 13, color: '#9ca3af' }}>No results</div>
-                              )}
-                            </div>
-                          </div>,
-                          document.body
-                        )}
+                              <div style={{ maxHeight: 240, overflowY: 'auto', padding: '4px 0' }}>
+                                {industries.filter(ind => ind.name.toLowerCase().includes(industrySearch.toLowerCase())).map(ind => {
+                                  const sel = company.industry === ind._id;
+                                  return (
+                                    <button
+                                      key={ind._id}
+                                      type="button"
+                                      onClick={() => { setCompany({ ...company, industry: ind._id }); setIndustryOpen(false); }}
+                                      style={{
+                                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: '9px 14px', border: 'none', background: sel ? '#fff5f5' : 'transparent',
+                                        fontSize: 13, color: sel ? HARX : '#374151', fontWeight: sel ? 600 : 400,
+                                        cursor: 'pointer', transition: 'background 100ms',
+                                      }}
+                                      onMouseEnter={(e) => { if (!sel) (e.currentTarget.style.background = '#f9fafb'); }}
+                                      onMouseLeave={(e) => { e.currentTarget.style.background = sel ? '#fff5f5' : 'transparent'; }}
+                                    >
+                                      <span>{ind.name}</span>
+                                      {sel && <Check style={{ width: 14, height: 14, color: HARX }} />}
+                                    </button>
+                                  );
+                                })}
+                                {industries.filter(ind => ind.name.toLowerCase().includes(industrySearch.toLowerCase())).length === 0 && (
+                                  <div style={{ padding: '14px', textAlign: 'center', fontSize: 13, color: '#9ca3af' }}>No results</div>
+                                )}
+                              </div>
+                            </div>,
+                            document.body
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ width: '100%', maxWidth: 980, margin: '0 auto', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 12, padding: embedCompact ? '10px' : '12px', background: 'linear-gradient(180deg, #ffffff 0%, #fafbff 100%)' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
+                        <Briefcase style={{ width: 13, height: 13, color: HARX }} />
+                        Your gig <span style={{ color: HARX }}>*</span>
+                      </label>
+                      <GigSelector
+                        industryFilter=""
+                        industryName=""
+                        onGigSelect={handleGigSelect}
+                        selectedGigId={selectedGig?._id}
+                      />
+                    </div>
+
+                    {selectedGig && (
+                      <div style={{ width: '100%', maxWidth: 980, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#065f46', border: '1px solid #a7f3d0', background: '#ecfdf5' }}>
+                        <CheckCircle style={{ width: 14, height: 14, color: '#059669', flexShrink: 0 }} />
+                        <span style={{ fontWeight: 600 }}>{selectedGig.title}</span>
                       </div>
                     )}
                   </div>
-
-                  <div style={{ width: '100%', maxWidth: 980, margin: '0 auto', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 12, padding: embedCompact ? '10px' : '12px', background: 'linear-gradient(180deg, #ffffff 0%, #fafbff 100%)' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
-                      <Briefcase style={{ width: 13, height: 13, color: HARX }} />
-                      Your gig <span style={{ color: HARX }}>*</span>
-                    </label>
-                    <GigSelector
-                      industryFilter=""
-                      industryName=""
-                      onGigSelect={handleGigSelect}
-                      selectedGigId={selectedGig?._id}
-                    />
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <AlertCircle style={{ width: 28, height: 28, color: HARX, margin: '0 auto 8px' }} />
+                    <p style={{ fontSize: 14, color: '#dc2626' }}>Failed to load company data</p>
                   </div>
+                )}
+              </>
+            )}
 
-                  {selectedGig && (
-                    <div style={{ width: '100%', maxWidth: 980, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#065f46', border: '1px solid #a7f3d0', background: '#ecfdf5' }}>
-                      <CheckCircle style={{ width: 14, height: 14, color: '#059669', flexShrink: 0 }} />
-                      <span style={{ fontWeight: 600 }}>{selectedGig.title}</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <AlertCircle style={{ width: 28, height: 28, color: HARX, margin: '0 auto 8px' }} />
-                  <p style={{ fontSize: 14, color: '#dc2626' }}>Failed to load company data</p>
-                </div>
-              )}
-            </>
-          )}
+            {isVisionStep && (
+              <TrainingDetailsForm
+                subStep={visionSubStep}
+                trainingName={visionName}
+                trainingDescription={visionDesc}
+                estimatedDuration={visionDuration}
+                onTrainingNameChange={setVisionName}
+                onTrainingDescriptionChange={setVisionDesc}
+                onEstimatedDurationChange={setVisionDuration}
+                gigData={selectedGig}
+                onSuggestTitle={() => void handleSuggestVision('title')}
+                onSuggestDescription={() => void handleSuggestVision('description')}
+                generatingTitle={visionTitleGenerating}
+                generatingDescription={visionDescriptionGenerating}
+              />
+            )}
 
-          {isVisionStep && (
-            <TrainingDetailsForm
-              subStep={visionSubStep}
-              trainingName={visionName}
-              trainingDescription={visionDesc}
-              estimatedDuration={visionDuration}
-              onTrainingNameChange={setVisionName}
-              onTrainingDescriptionChange={setVisionDesc}
-              onEstimatedDurationChange={setVisionDuration}
-              gigData={selectedGig}
-              onSuggestTitle={() => void handleSuggestVision('title')}
-              onSuggestDescription={() => void handleSuggestVision('description')}
-              generatingTitle={visionTitleGenerating}
-              generatingDescription={visionDescriptionGenerating}
-            />
-          )}
-
-          {isTeamStep && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937' }}>
-                    Target roles & departments <span style={{ color: HARX }}>*</span>
-                  </label>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-                  {roleOptions.map(item => {
-                    const checked = journey.targetRoles?.includes(item.role) || false;
-                    return (
-                      <label key={item.role} style={{ display: 'flex', alignItems: 'center', padding: 10, border: `1.5px solid ${checked ? HARX : '#e5e7eb'}`, borderRadius: 12, cursor: 'pointer', transition: 'all 150ms', background: checked ? '#fef2f2' : '#ffffff', boxShadow: checked ? '0 4px 12px rgba(185,28,28,0.10)' : 'none' }}>
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => {
-                            const cur = journey.targetRoles || [];
-                            setJourney({ ...journey, targetRoles: e.target.checked ? [...cur, item.role] : cur.filter(r => r !== item.role) });
-                          }}
-                          style={{ marginRight: 8, accentColor: HARX }}
-                        />
-                        <span style={{ fontSize: 14, marginRight: 6 }}>{item.icon}</span>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>{item.role}</div>
-                          <div style={{ fontSize: 10, color: '#6b7280' }}>{item.dept}</div>
-                        </div>
-                      </label>
-                    );
-                  })}
+            {isTeamStep && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937' }}>
+                      Target roles & departments <span style={{ color: HARX }}>*</span>
+                    </label>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                    {roleOptions.map(item => {
+                      const checked = journey.targetRoles?.includes(item.role) || false;
+                      return (
+                        <label key={item.role} style={{ display: 'flex', alignItems: 'center', padding: 10, border: `1.5px solid ${checked ? HARX : '#e5e7eb'}`, borderRadius: 12, cursor: 'pointer', transition: 'all 150ms', background: checked ? '#fef2f2' : '#ffffff', boxShadow: checked ? '0 4px 12px rgba(185,28,28,0.10)' : 'none' }}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              const cur = journey.targetRoles || [];
+                              setJourney({ ...journey, targetRoles: e.target.checked ? [...cur, item.role] : cur.filter(r => r !== item.role) });
+                            }}
+                            style={{ marginRight: 8, accentColor: HARX }}
+                          />
+                          <span style={{ fontSize: 14, marginRight: 6 }}>{item.icon}</span>
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>{item.role}</div>
+                            <div style={{ fontSize: 10, color: '#6b7280' }}>{item.dept}</div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {isMethodologyStep && (
-            <MethodologySelector
-              onMethodologySelect={handleMethodologySelect}
-              onCustomMethodology={handleCustomMethodology}
-              onBack={() => setCurrentStep(2)}
-              hideBackButton
-            />
-          )}
+            {isMethodologyStep && (
+              <MethodologySelector
+                onMethodologySelect={handleMethodologySelect}
+                onCustomMethodology={handleCustomMethodology}
+                onBack={() => setCurrentStep(2)}
+                hideBackButton
+              />
+            )}
 
-          {isCompleteStep && (
-            <div
-              style={{
-                flex: 1,
-                minHeight: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-                overflow: 'hidden',
-                width: '100%',
-              }}
-            >
-              <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                <h3
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 900,
-                    color: '#111827',
-                    margin: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <CheckCircle style={{ width: 18, height: 18, color: '#059669' }} />
-                  Setup complete
-                </h3>
-                <p style={{ fontSize: 11, color: '#6b7280', marginTop: 3, lineHeight: 1.35 }}>
-                  360° methodology applied. Upload and transform content next.
-                </p>
-              </div>
-
+            {isCompleteStep && (
               <div
                 style={{
                   flex: 1,
                   minHeight: 0,
-                  border: '1px solid rgba(255, 77, 77, 0.22)',
-                  borderRadius: 12,
-                  overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  background: 'linear-gradient(180deg, #fffafa 0%, #ffffff 48px)',
-                  boxShadow: '0 2px 12px rgba(255, 77, 77, 0.08)',
+                  gap: 8,
+                  overflow: 'hidden',
+                  width: '100%',
                 }}
               >
-                <div style={{ padding: '8px 12px', borderBottom: '1px solid #fce8e8', flexShrink: 0 }}>
-                  <h5
+                <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                  <h3
                     style={{
-                      fontSize: 9,
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      color: HARX,
-                      marginBottom: 4,
+                      fontSize: 18,
+                      fontWeight: 900,
+                      color: '#111827',
+                      margin: 0,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 5,
+                      justifyContent: 'center',
+                      gap: 6,
                     }}
                   >
-                    <Building2 style={{ width: 12, height: 12, color: HARX }} />
-                    Gig
-                  </h5>
-                  <p style={{ fontSize: 13, color: '#111827', margin: 0, fontWeight: 600, lineHeight: 1.25 }}>
-                    {selectedGig?.title || 'No gig selected'}
+                    <CheckCircle style={{ width: 18, height: 18, color: '#059669' }} />
+                    Setup complete
+                  </h3>
+                  <p style={{ fontSize: 11, color: '#6b7280', marginTop: 3, lineHeight: 1.35 }}>
+                    360° methodology applied. Upload and transform content next.
                   </p>
                 </div>
 
-                <div style={{ padding: '8px 12px', borderBottom: '1px solid #fce8e8', flexShrink: 0 }}>
-                  <h5
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      color: HARX,
-                      marginBottom: 4,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 5,
-                    }}
-                  >
-                    <Target style={{ width: 12, height: 12, color: HARX }} />
-                    Training program
-                  </h5>
-                  <p style={{ fontSize: 13, color: '#111827', margin: 0, fontWeight: 600, lineHeight: 1.25 }}>
-                    {trainingDetails?.trainingName || selectedGig?.title || 'N/A'}
-                  </p>
-                  {trainingDetails?.trainingDescription?.trim() ? (
-                    <p
-                      style={{
-                        fontSize: 10,
-                        color: '#6b7280',
-                        margin: '4px 0 0',
-                        lineHeight: 1.35,
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {trainingDetails.trainingDescription.trim()}
-                    </p>
-                  ) : null}
-                  <p style={{ fontSize: 10, color: '#9ca3af', margin: '4px 0 0', fontWeight: 600 }}>
-                    {formatVisionDuration(trainingDetails?.estimatedDuration) || journey.estimatedDuration || 'N/A'}
-                    {' · '}
-                    {journey.targetRoles?.length || 0} target roles
-                  </p>
-                </div>
-
-                {selectedMethodology ? (
-                  <div
-                    style={{
-                      padding: '8px 12px',
-                      flex: 1,
-                      minHeight: 0,
-                      overflowY: 'auto',
-                      overflowX: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column',
-                    }}
-                  >
+                <div
+                  style={{
+                    flex: 1,
+                    minHeight: 0,
+                    border: '1px solid rgba(255, 77, 77, 0.22)',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    background: 'linear-gradient(180deg, #fffafa 0%, #ffffff 48px)',
+                    boxShadow: '0 2px 12px rgba(255, 77, 77, 0.08)',
+                  }}
+                >
+                  <div style={{ padding: '8px 12px', borderBottom: '1px solid #fce8e8', flexShrink: 0 }}>
                     <h5
                       style={{
                         fontSize: 9,
@@ -907,128 +791,204 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                         textTransform: 'uppercase',
                         letterSpacing: '0.06em',
                         color: HARX,
-                        marginBottom: 6,
+                        marginBottom: 4,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 5,
-                        flexShrink: 0,
                       }}
                     >
-                      <Sparkles style={{ width: 12, height: 12, color: HARX }} />
-                      Methodology
+                      <Building2 style={{ width: 12, height: 12, color: HARX }} />
+                      Gig
                     </h5>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignContent: 'start', flexShrink: 0 }}>
-                      {(selectedMethodology.components || []).map((c: MethodologyComponent, i: number) => (
-                        <div key={c.id || i} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, minWidth: 0 }}>
-                          <CheckCircle style={{ width: 11, height: 11, color: '#059669', flexShrink: 0, marginTop: 2 }} />
-                          <span
-                            style={{
-                              fontSize: 10,
-                              color: '#374151',
-                              lineHeight: 1.3,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              display: '-webkit-box',
-                              WebkitLineClamp: 3,
-                              WebkitBoxOrient: 'vertical',
-                            }}
-                          >
-                            {c.title}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                    <p style={{ fontSize: 13, color: '#111827', margin: 0, fontWeight: 600, lineHeight: 1.25 }}>
+                      {selectedGig?.title || 'No gig selected'}
+                    </p>
                   </div>
-                ) : null}
+
+                  <div style={{ padding: '8px 12px', borderBottom: '1px solid #fce8e8', flexShrink: 0 }}>
+                    <h5
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        color: HARX,
+                        marginBottom: 4,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                      }}
+                    >
+                      <Target style={{ width: 12, height: 12, color: HARX }} />
+                      Training program
+                    </h5>
+                    <p style={{ fontSize: 13, color: '#111827', margin: 0, fontWeight: 600, lineHeight: 1.25 }}>
+                      {trainingDetails?.trainingName || selectedGig?.title || 'N/A'}
+                    </p>
+                    {trainingDetails?.trainingDescription?.trim() ? (
+                      <p
+                        style={{
+                          fontSize: 10,
+                          color: '#6b7280',
+                          margin: '4px 0 0',
+                          lineHeight: 1.35,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {trainingDetails.trainingDescription.trim()}
+                      </p>
+                    ) : null}
+                    <p style={{ fontSize: 10, color: '#9ca3af', margin: '4px 0 0', fontWeight: 600 }}>
+                      {formatVisionDuration(trainingDetails?.estimatedDuration) || journey.estimatedDuration || 'N/A'}
+                      {' · '}
+                      {journey.targetRoles?.length || 0} target roles
+                    </p>
+                  </div>
+
+                  {selectedMethodology ? (
+                    <div
+                      style={{
+                        padding: '8px 12px',
+                        flex: 1,
+                        minHeight: 0,
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      <h5
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          color: HARX,
+                          marginBottom: 6,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Sparkles style={{ width: 12, height: 12, color: HARX }} />
+                        Methodology
+                      </h5>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignContent: 'start', flexShrink: 0 }}>
+                        {(selectedMethodology.components || []).map((c: MethodologyComponent, i: number) => (
+                          <div key={c.id || i} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, minWidth: 0 }}>
+                            <CheckCircle style={{ width: 11, height: 11, color: '#059669', flexShrink: 0, marginTop: 2 }} />
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: '#374151',
+                                lineHeight: 1.3,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                              }}
+                            >
+                              {c.title}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               </div>
-            </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Footer (always bottom of wizard — same bar for all steps) ── */}
+        <div
+          style={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: embedCompact ? '8px 20px' : '10px 28px',
+            borderTop: '1px solid rgba(15,23,42,0.08)',
+            background: '#ffffff',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          {isVisionStep ? (
+            <>
+              <button
+                type="button"
+                onClick={handleVisionFooterBack}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '8px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                  border: '1px solid #d1d5db', background: '#fff', color: '#374151',
+                  cursor: 'pointer',
+                }}
+              >
+                <ArrowLeft style={{ width: 14, height: 14 }} />
+                Back
+              </button>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {visionSubStep + 1}/2 · Step 3 of 5</span>
+              <button
+                type="button"
+                onClick={handleVisionFooterContinue}
+                disabled={visionContinueDisabled}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 800,
+                  border: 'none', color: '#fff', cursor: visionContinueDisabled ? 'not-allowed' : 'pointer',
+                  background: visionContinueDisabled ? '#d1d5db' : HARX_GRADIENT,
+                  boxShadow: visionContinueDisabled ? 'none' : '0 6px 16px rgba(185,28,28,0.22)',
+                }}
+              >
+                {visionContinueLabel}
+                <ArrowRight style={{ width: 14, height: 14 }} />
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => { if (currentStep === 5) setCurrentStep(4); else if (currentStep > 1) setCurrentStep(currentStep - 1); }}
+                disabled={currentStep === 1}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '8px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                  border: currentStep === 1 ? 'none' : '1px solid #d1d5db',
+                  background: currentStep === 1 ? 'transparent' : '#fff', color: currentStep === 1 ? '#d1d5db' : '#374151',
+                  cursor: currentStep === 1 ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <ArrowLeft style={{ width: 14, height: 14 }} />
+                Back
+              </button>
+
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Step {stepNum} of {steps.length}</span>
+
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!isStepValid()}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 800,
+                  border: 'none', color: '#fff', cursor: isStepValid() ? 'pointer' : 'not-allowed',
+                  background: isStepValid() ? HARX_GRADIENT : '#d1d5db',
+                  boxShadow: isStepValid() ? '0 6px 16px rgba(185,28,28,0.22)' : 'none',
+                }}
+              >
+                {currentStep === 5 ? 'Start building' : 'Continue'}
+                <ArrowRight style={{ width: 14, height: 14 }} />
+              </button>
+            </>
           )}
         </div>
-      </div>
-
-      {/* ── Footer (always bottom of wizard — same bar for all steps) ── */}
-      <div
-        style={{
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: embedCompact ? '8px 20px' : '10px 28px',
-          borderTop: '1px solid rgba(15,23,42,0.08)',
-          background: '#ffffff',
-          backdropFilter: 'blur(10px)',
-        }}
-      >
-        {isVisionStep ? (
-          <>
-            <button
-              type="button"
-              onClick={handleVisionFooterBack}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '8px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
-                border: '1px solid #d1d5db', background: '#fff', color: '#374151',
-                cursor: 'pointer',
-              }}
-            >
-              <ArrowLeft style={{ width: 14, height: 14 }} />
-              Back
-            </button>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {visionSubStep + 1}/2 · Step 3 of 5</span>
-            <button
-              type="button"
-              onClick={handleVisionFooterContinue}
-              disabled={visionContinueDisabled}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 800,
-                border: 'none', color: '#fff', cursor: visionContinueDisabled ? 'not-allowed' : 'pointer',
-                background: visionContinueDisabled ? '#d1d5db' : HARX_GRADIENT,
-                boxShadow: visionContinueDisabled ? 'none' : '0 6px 16px rgba(185,28,28,0.22)',
-              }}
-            >
-              {visionContinueLabel}
-              <ArrowRight style={{ width: 14, height: 14 }} />
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => { if (currentStep === 5) setCurrentStep(4); else if (currentStep > 1) setCurrentStep(currentStep - 1); }}
-              disabled={currentStep === 1}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '8px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
-                border: currentStep === 1 ? 'none' : '1px solid #d1d5db',
-                background: currentStep === 1 ? 'transparent' : '#fff', color: currentStep === 1 ? '#d1d5db' : '#374151',
-                cursor: currentStep === 1 ? 'not-allowed' : 'pointer',
-              }}
-            >
-              <ArrowLeft style={{ width: 14, height: 14 }} />
-              Back
-            </button>
-
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Step {stepNum} of {steps.length}</span>
-
-            <button
-              type="button"
-              onClick={handleNext}
-              disabled={!isStepValid()}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 800,
-                border: 'none', color: '#fff', cursor: isStepValid() ? 'pointer' : 'not-allowed',
-                background: isStepValid() ? HARX_GRADIENT : '#d1d5db',
-                boxShadow: isStepValid() ? '0 6px 16px rgba(185,28,28,0.22)' : 'none',
-              }}
-            >
-              {currentStep === 5 ? 'Start building' : 'Continue'}
-              <ArrowRight style={{ width: 14, height: 14 }} />
-            </button>
-          </>
-        )}
-      </div>
       </div>
     </div>
   );

@@ -1,0 +1,857 @@
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "overview": "Overview",
+    "company": "Company",
+    "gigs": "Gigs",
+    "leads": "Leads",
+    "calls": "Calls",
+    "repMatching": "Rep Matching",
+    "scheduler": "Scheduler",
+    "emails": "Emails",
+    "liveChat": "Live Chat",
+    "qualityAssurance": "Quality Assurance",
+    "operations": "Operations",
+    "analytics": "Analytics",
+    "integrations": "Integrations",
+    "companyOnboarding": "Company Onboarding",
+    "knowledgeBase": "Knowledge Base",
+    "activeGuide": "Active Guide",
+    "interactiveStep": "Interactive Step",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "Smart Orchestrator Dashboard",
+    "newProfile": "New Profile",
+    "newGig": "New Gig",
+    "stats": {
+      "activeProfiles": "Active Profiles",
+      "activeGigs": "Active Gigs",
+      "successfulMatches": "Successful Matches",
+      "pendingApprovals": "Pending Approvals",
+      "vsLastMonth": "vs last month",
+      "requiresAttention": "Requires attention",
+      "actionRequired": "Action Required"
+    },
+    "intelligenceStream": {
+      "title": "Intelligence Stream",
+      "profileSynchronized": "Profile Synchronized",
+      "profileSynchronizedDesc": "John Smith's neuro-profile was automatically generated",
+      "time10m": "10m ago",
+      "gigDeployment": "Gig Deployment",
+      "gigDeploymentDesc": "Web Development Project for XYZ Corp is now live",
+      "time1h": "1h ago",
+      "algorithmMatch": "Algorithm Match",
+      "algorithmMatchDesc": "5 HARX REPS matched with Digital Marketing Campaign",
+      "time2h": "2h ago",
+      "strategicApproval": "Strategic Approval",
+      "strategicApprovalDesc": "Mobile App Development for ABC Inc validated",
+      "time3h": "3h ago"
+    },
+    "quickActions": {
+      "profileUnit": "Profile Unit",
+      "profileUnitDesc": "Neuro-profile generation",
+      "gigForge": "Gig Forge",
+      "gigForgeDesc": "Optimization engine",
+      "matchMatrix": "Match Matrix",
+      "matchMatrixDesc": "Algorithmic pairing",
+      "validator": "Validator",
+      "validatorDesc": "Publishing & compliance",
+      "growthLab": "Growth Lab",
+      "growthLabDesc": "Performance scaling"
+    }
+  },
+  "performanceDashboard": {
+    "title": "Company Analytics",
+    "subtitle": "Performance tracking & call metrics",
+    "allGigs": "All Gigs",
+    "timeRange": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    },
+    "metrics": {
+      "repsRegistered": "Registered REPS",
+      "repsAssigned": "Reps assigned to Gig(s)",
+      "totalLeads": "Total Leads",
+      "vsLastMonth12": "+12% vs last month",
+      "totalCalls": "Total Calls",
+      "vsLastMonth8": "+8% vs last month",
+      "contactedLeads": "Contacted Leads",
+      "vsLastMonth15": "+15% vs last month",
+      "validNumbers": "Valid Numbers",
+      "vsLastMonth5": "+5% vs last month"
+    },
+    "ratios": {
+      "coverageRate": "Coverage Rate",
+      "coverageSubtitle": "Contacted Leads / Total Leads",
+      "reachabilityRate": "Reachability Rate",
+      "reachabilitySubtitle": "Valid Numbers / Total Calls",
+      "argumentationRate": "Argumentation Rate",
+      "argumentationSubtitle": "Calls > 1min30 / Reached Leads",
+      "machineRate": "Answering Machine Rate",
+      "machineSubtitle": "Answering Machine Calls / Total Calls"
+    },
+    "charts": {
+      "noData": "No Data",
+      "callCount": "Number of Calls",
+      "contactedLeads": "Contacted Leads",
+      "activityTitle": "Call Volume Activity",
+      "activitySubtitle": "Tracking calls vs successful contacts",
+      "liveData": "Live Data",
+      "statusBreakdownTitle": "Call Status Breakdown",
+      "statusBreakdownSubtitle": "Distribution by result"
+    }
+  },
+  "scriptGenerator": {
+    "title": "Call Script",
+    "subtitle": "Agent/Lead call scripts",
+    "back": "Back",
+    "selectGig": "Select Gig",
+    "chooseGig": "Choose a gig...",
+    "loadingGigs": "Loading gigs...",
+    "selectOrGenerate": "Select a script from the list, or generate a new one.",
+    "validateScript": "Validate script",
+    "scriptValid": "Valid script",
+    "validating": "Validating...",
+    "scriptAlreadyValidated": "A script is already validated for this gig. Delete or modify it before validating another one.",
+    "roleAgent": "Agent",
+    "roleLead": "Lead",
+    "chooseLeadResponse": "Choose lead response",
+    "probableAgentResponse": "Probable agent response",
+    "editModal": {
+      "placeholderManual": "Edit line...",
+      "placeholderAI": "Write AI instruction...",
+      "cancel": "Cancel",
+      "apply": "Apply",
+      "titleManual": "Edit line",
+      "titleAIAgent": "AI instruction to edit agent line",
+      "titleAILead": "AI instruction to edit selected lead response",
+      "subtitle": "Adjust the response with a professional style."
+    },
+    "listPanel": {
+      "generatorTitle": "Intelligent Script Generator",
+      "promptPlaceholder": "Ex: Generate a dynamic script to sell insurance to individuals while respecting regulations...",
+      "generateCockpit": "Generate Cockpit",
+      "savedScriptsTitle": "Saved Scripts",
+      "scriptsCount": "Scripts",
+      "noScripts": "No script available for this Gig.",
+      "scriptNumber": "Script #",
+      "statusValidated": "Validated",
+      "statusDraft": "Draft",
+      "openScript": "Open"
+    },
+    "chatPanel": {
+      "startConversation": "Start the conversation to generate the script.",
+      "alreadyValidatedWarning": "A script is already validated for this gig.",
+      "statusValid": "Valid script",
+      "statusValidationBlocked": "Validation blocked",
+      "statusValidating": "Validating...",
+      "validateScript": "Validate script",
+      "generatingScript": "Generating script...",
+      "inputPlaceholder": "Ask for a script line, opening, objection answer...",
+      "send": "Send"
+    },
+    "viewPage": {
+      "title": "Script viewer",
+      "backToList": "Back to list",
+      "viewScript": "View script"
+    },
+    "cockpit": {
+      "dynamicNavigation": "Dynamic graph navigation",
+      "currentPhase": "Current phase",
+      "oralScript": "Oral script",
+      "manualEdit": "Edit manually",
+      "refineWithAI": "Refine with AI",
+      "cancel": "Cancel",
+      "apply": "Apply",
+      "previous": "Previous",
+      "validating": "Validating...",
+      "validateAndSave": "Validate and Save",
+      "continue": "Continue",
+      "chooseOption": "Choose an option above",
+      "quickNotes": "Quick Notes",
+      "notesPlaceholder": "Enter notes here...",
+      "saveAndFinish": "Save & Finish"
+    }
+  },
+  "knowledgeBase": {
+    "systemName": "Knowledge System",
+    "title": "Knowledge Base",
+    "subtitle": "Power your AI with enterprise intelligence. Synchronize documents and call recordings to build a high-fidelity knowledge graph for your HARX REPS.",
+    "selectGig": "Select a Gig",
+    "gigPrefix": "Gig:",
+    "allGigs": "All Gigs",
+    "integrateResource": "Integrate Resource",
+    "empty": {
+      "title": "Intelligence Stream Empty",
+      "subtitle": "Your enterprise knowledge has not been synchronized yet. Initiate data ingestion to empower your REPS.",
+      "ingestFirst": "Ingest First Resource"
+    },
+    "analysis": {
+      "languageHub": "Language Hub",
+      "viewInEnglish": "View in English",
+      "needTranslation": "Need translation?",
+      "translating": "Translating...",
+      "translateToEnglish": "Translate to English",
+      "showOriginal": "Show Original",
+      "executiveIntelligenceSummary": "Executive Intelligence Summary",
+      "domain": "Domain",
+      "coreTheme": "Core Theme",
+      "technicalLevel": "Technical Level",
+      "targetAudience": "Target Audience",
+      "strategicInsights": "Strategic Insights & Key Takeaways",
+      "technicalLexicon": "Technical Lexicon & Key Terms",
+      "strategicGuidance": "Strategic Guidance",
+      "executiveCallSummary": "Executive Call Summary",
+      "performanceIntelligence": "Performance Intelligence",
+      "hideTranscription": "Hide Full Transcription",
+      "viewTranscription": "View Full Transcription",
+      "loadMoreInsights": "Load More Insights",
+      "showLess": "Show Less"
+    },
+    "intelligenceDashboard": {
+      "title": "Intelligence Dashboard",
+      "subtitle": "Multimodal analysis for",
+      "viewFile": "View File",
+      "masterVideoStream": "Master Video Stream",
+      "liveContentStream": "Live Content Stream",
+      "generatingInsights": "Generating Strategic Insights..."
+    },
+    "analysisOutput": {
+      "title": "Analysis Output",
+      "subtitle": "Enterprise Intelligence Extract",
+      "viewSourceFile": "View Source File",
+      "processing": "Processing Intelligence...",
+      "rawVideoIntelligence": "Raw Video Intelligence",
+      "analyzeNow": "Analyze Now"
+    },
+    "uploadModal": {
+      "title": "Integrate Intelligence",
+      "selectTargetGig": "Select Target Gig",
+      "targetGig": "Target Gig",
+      "generalResource": "General Resource",
+      "dragDrop": "Click or drag to add items",
+      "itemsStaged": "item(s) staged",
+      "clearAll": "Clear All",
+      "cancel": "Cancel",
+      "synchronize": "Synchronize"
+    }
+  },
+  "telephonySetup": {
+    "title": "Telephony Setup",
+    "subtitle": "Manage and configure your global network entry points",
+    "errors": {
+      "configurationTitle": "Configuration Error",
+      "companyIdMissing": "Required company ID not found. Please refresh the page if this persists."
+    },
+    "selectGigProfile": "Select Gig Profile",
+    "required": "Required",
+    "associateGig": "Associate a primary intelligence gig with your global telephony entry points",
+    "hydratingProfiles": "Hydrating profiles...",
+    "globalZone": "Global Zone",
+    "selectIntelligenceProfile": "Select Intelligence Profile",
+    "chooseActiveGigProfile": "Choose an active gig profile...",
+    "unknownRegion": "Unknown Region",
+    "noGlobalProfilesFound": "No Global Profiles found",
+    "networkProvider": "Network Provider",
+    "chooseCarrier": "Choose a carrier-grade partner for stable low-latency routing",
+    "pending": "Pending",
+    "activePartner": "Active Partner",
+    "networkEntries": "Network Entries",
+    "active": "Active",
+    "provisionNodes": "Provision and manage secure access points for your global intelligence nodes",
+    "static": "STATIC",
+    "infrastructure": "INFRASTRUCTURE",
+    "operational": "Operational",
+    "syncing": "Syncing",
+    "regionalNodesAvailable": "Regional Nodes Available",
+    "regional": "Regional",
+    "globalGateway": "Global Gateway",
+    "purchase": "Purchase",
+    "empty": {
+      "title": "Infrastructure Offline",
+      "subtitle": "Begin by prioritizing regional entry points for your intelligence network",
+      "scan": "Scan Regional Gateways"
+    }
+  },
+  "companyOnboarding": {
+    "phases": {
+      "1": {
+        "title": "Company Account Setup & Identity",
+        "steps": {
+          "1": {
+            "title": "Create Company Profile",
+            "description": "Legal and commercial details, key contacts, terms agreement"
+          },
+          "2": {
+            "title": "KYC / KYB Verification",
+            "description": "Identity verification through Stripe Identity or Sumsub"
+          }
+        }
+      },
+      "2": {
+        "title": "Operational Setup",
+        "steps": {
+          "3": {
+            "title": "Create Gigs",
+            "description": "Define multi-channel gigs and requirements"
+          },
+          "4": {
+            "title": "Telephony Setup",
+            "description": "Phone numbers, call tracking, and dialer configuration"
+          },
+          "5": {
+            "title": "Upload Contacts",
+            "description": "Import contacts for multi-channel engagement"
+          },
+          "6": {
+            "title": "Call Script",
+            "description": "Define script and conversation flows"
+          },
+          "7": {
+            "title": "Reporting Setup",
+            "description": "Configure KPIs and reporting preferences"
+          }
+        }
+      },
+      "3": {
+        "title": "REPS Engagement",
+        "steps": {
+          "8": {
+            "title": "Knowledge Base",
+            "description": "Create training materials and FAQs"
+          },
+          "9": {
+            "title": "REP Onboarding",
+            "description": "Training, validation, and contract acceptance"
+          },
+          "10": {
+            "title": "Session Planning",
+            "description": "Schedule call slots and prioritize leads"
+          }
+        }
+      },
+      "4": {
+        "title": "Activation",
+        "steps": {
+          "11": {
+            "title": "Subscription Plan",
+            "description": "Select plan: Free, Standard, or Premium"
+          },
+          "12": {
+            "title": "Gig Activation",
+            "description": "Launch multi-channel operations"
+          },
+          "13": {
+            "title": "MATCH HARX REPS",
+            "description": "Connect with qualified REPS based on requirements"
+          }
+        }
+      }
+    },
+    "ui": {
+      "redirecting": "Redirecting to authentication...",
+      "errorPhaseData": "Error: Phase data not found. Please try refreshing the page.",
+      "phaseLabel": "Phase",
+      "completed": "Completed",
+      "progressing": "Progressing",
+      "locked": "Locked",
+      "comingSoon": "Coming Soon",
+      "currentStep": "Current Step",
+      "reviewStep": "Review Step",
+      "startStep": "Start Step",
+      "previousPhase": "Previous Phase",
+      "goToDashboard": "Go to Dashboard",
+      "nextPhase": "Next Phase",
+      "accessibleDesc": "Follow the sequence to complete your company setup and unlock premium features.",
+      "lockedDesc": "This phase is currently locked. Please complete the previous phase to continue.",
+      "allPhasesCompleted": "All steps in this phase are completed. Congratulations, all onboarding phases are now successfully completed! 👏🎺🎊",
+      "phaseCompleted": "All steps in this phase are completed. You can proceed to the next phase.",
+      "backToOnboarding": "Back to onboarding",
+      "unableToStart": "Unable to start this step because previous phases are not fully completed. \n\nPlease try the 'Reset Onboarding' button at the bottom of the page to fix potential data inconsistencies."
+    }
+  },
+  "gigDetails": {
+    "title": "Gig Details",
+    "subtitle": "Define and manage your multi-channel intelligence assets",
+    "addNew": "Add New Gig",
+    "errors": {
+      "companyId": "Company ID not found",
+      "fetchFailed": "Failed to fetch gigs",
+      "deleteFailed": "Failed to delete gig"
+    },
+    "success": {
+      "deleted": "Gig deleted successfully"
+    },
+    "availability": {
+      "notSpecified": "Not specified",
+      "flexible": "Flexible"
+    },
+    "empty": {
+      "title": "No intelligence assets found",
+      "subtitle": "Initialize your first gig to start the matching process."
+    },
+    "table": {
+      "status": "Status",
+      "gigAndCategory": "Gig & Category",
+      "commitment": "Commitment",
+      "strategicActions": "Strategic Actions"
+    },
+    "standard": "Standard",
+    "reps": "reps",
+    "terminate": "Terminate Intelligence Asset",
+    "detailsBtn": "Details"
+  },
+  "uploadContacts": {
+    "title": "Upload Contacts",
+    "subtitle": "Import, manage, and organize your leads efficiently with AI precision.",
+    "errors": {
+      "selectGigFirst": "Please select a gig first before uploading a file",
+      "noValidLeads": "No valid leads found in the file. Please check the file format and content.",
+      "uploadError": "Error uploading file",
+      "saveError": "Error saving leads",
+      "userIdNotFound": "User ID not found. Please log in again.",
+      "zohoTokenExpired": "Zoho session expired. Please log in again.",
+      "companyConfigNotFound": "Company configuration not found. Please log in again.",
+      "zohoConfigNotFound": "Zoho configuration not found. Please configure Zoho CRM first.",
+      "gigNotFound": "Selected gig not found",
+      "importError": "An error occurred during import"
+    },
+    "success": {
+      "savedContacts": "Successfully saved {{count}} contacts!"
+    },
+    "gigs": {
+      "selectTitle": "Select a Gig",
+      "loading": "Loading gigs...",
+      "empty": "No gigs available.",
+      "placeholder": "Select a gig…",
+      "available": "Available Gigs"
+    },
+    "import": {
+      "title": "Import Leads",
+      "subtitle": "Choose your preferred method to import leads into your selected gig.",
+      "zohoTitle": "Zoho CRM Integration",
+      "zohoSubtitle": "Connect and sync with your Zoho CRM",
+      "zohoConnected": "Connected to Zoho CRM",
+      "zohoNotConnected": "Not connected",
+      "disconnecting": "Disconnecting...",
+      "disconnect": "Disconnect",
+      "connect": "Connect",
+      "importingZoho": "Importing from Zoho...",
+      "connectFirst": "Connect to Zoho CRM First",
+      "syncZoho": "Sync with Zoho CRM",
+      "fileTitle": "File Upload",
+      "fileSubtitle": "Upload and process contact files",
+      "supportedFiles": "Supported: CSV, Excel (XLSX, XLS)",
+      "processing": "Processing...",
+      "clickToUpload": "Click to upload or drag & drop"
+    },
+    "analysis": {
+      "title": "AI Processing Analysis",
+      "totalFound": "Total Found",
+      "verified": "Verified",
+      "requiringAttention": "Requiring Attention",
+      "viewDetails": "View Details",
+      "issuesIdentified": "issues identified"
+    },
+    "preview": {
+      "title": "Confirm & Edit Leads",
+      "memoryOnly": "Memory Only",
+      "subtitle": "Review and edit your leads before saving. Click the edit icon to modify any field to ensure data integrity.",
+      "unnamedLead": "Unnamed Lead",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address",
+      "postalCode": "Postal Code",
+      "city": "City",
+      "dob": "Date of Birth",
+      "discard": "Discard",
+      "confirmChanges": "Confirm Changes",
+      "noEmail": "No email",
+      "noPhone": "No phone"
+    },
+    "save": {
+      "buttonText": "Save {{count}} Contacts to Database",
+      "savingTitle": "Saving Contacts...",
+      "savingProgress": "{{saved}} of {{total}} contacts saved"
+    },
+    "filter": {
+      "title": "Channel Filter"
+    },
+    "list": {
+      "title": "Leads List",
+      "saving": "Saving {{saved}}/{{total}} contacts...",
+      "ready": "{{count}} leads ready to save",
+      "showing": "Showing {{filtered}} of {{total}} leads",
+      "empty": "No leads found",
+      "selectGig": "Please select a gig to view leads",
+      "search": "Search leads...",
+      "statusAll": "All Status",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "loading": "Loading...",
+      "refresh": "Refresh",
+      "emptyHint": "Try importing some leads or check your filters",
+      "resultsFor": "results for",
+      "of": "of",
+      "leads": "leads",
+      "prev": "Prev",
+      "next": "Next",
+      "table": {
+        "lastName": "Last Name",
+        "firstName": "First Name",
+        "email": "Email",
+        "address": "Address",
+        "city": "City",
+        "postalCode": "Postal Code",
+        "mobile": "Mobile"
+      }
+    },
+    "realtime": {
+      "title": "Real-time Leads",
+      "count": "Leads received:",
+      "phone": "Phone",
+      "lead": "Lead"
+    },
+    "modal": {
+      "title": "Import Method",
+      "subtitle": "Sync with Zoho CRM or upload an Excel/CSV file.",
+      "cancel": "Cancel",
+      "next": "Next"
+    }
+  },
+  "searchCompanyWizard": {
+    "title": "Company Profile Search",
+    "subtitle": "Search a company and generate profile data for step 1.",
+    "placeholder": "Enter company name...",
+    "loading": "Loading...",
+    "loadingProfile": "Loading company profile...",
+    "generateBtn": "Generate Profile",
+    "errors": {
+      "searchFailed": "Failed to search companies",
+      "generateFailed": "Failed to generate profile",
+      "publishFailed": "Failed to publish company. Please try again."
+    },
+    "profile": {
+      "backBtn": "Back to onboarding",
+      "contactInfo": "Contact Information",
+      "getDirections": "Get Directions",
+      "mapNotAvailable": "Map not available",
+      "digitalPresence": "Digital Presence",
+      "editLogo": "Edit Logo",
+      "logoUrl": "Logo URL",
+      "enterLogoUrl": "Enter logo URL...",
+      "cancel": "Cancel",
+      "save": "Save",
+      "companyOverview": "Company Overview",
+      "ourMission": "Our Mission",
+      "publishBtn": "Publish Company",
+      "errorTitle": "Error",
+      "close": "Close"
+    }
+  },
+  "kyc": {
+    "title": "KYC/KYB Verification",
+    "verified": "Verified",
+    "subtitle": "Complete identity verification for your company to unlock all features.",
+    "submitBtn": "Submit Verification",
+    "verifiedSuccess": "Verified Successfully",
+    "roadmapTitle": "Verification Roadmap",
+    "stepProgress": "Step {{current}} of {{total}}",
+    "chooseMethod": "Choose Verification Method",
+    "automaticTitle": "Automatic",
+    "automaticDesc": "Verified partner network",
+    "manualTitle": "Manual Review",
+    "manualDesc": "Direct document upload",
+    "autoVerification": {
+      "title": "Automatic Verification",
+      "identityTitle": "Identity Verification",
+      "identityStartBtn": "Start Verification",
+      "identityDesc": "Complete the verification process through our secure partner platform using your camera.",
+      "businessTitle": "Business Verification",
+      "businessStartBtn": "Verify Business",
+      "businessDesc": "Verify your business through official registries and databases automatically.",
+      "stepsTitle": "Verification Steps",
+      "steps": {
+        "step1": "Prepare valid government-issued ID",
+        "step2": "Ensure good lighting for photo capture",
+        "step3": "Follow on-screen instructions",
+        "step4": "Complete facial recognition check"
+      }
+    },
+    "manualVerification": {
+      "requiredDocsTitle": "Required Documents",
+      "uploadProgress": "{{uploaded}} of {{total}} uploaded",
+      "categoryDocs": "{{category}} Documents",
+      "format": "Format: {{format}}",
+      "uploadedStatus": "UPLOADED",
+      "uploadBtn": "Upload",
+      "categories": {
+        "company": "Company",
+        "personal": "Personal",
+        "financial": "Financial"
+      },
+      "documents": {
+        "incorpCert": {
+          "title": "Certificate of Incorporation",
+          "desc": "Official document proving company registration"
+        },
+        "proofOfAddress": {
+          "title": "Proof of Address",
+          "desc": "Recent utility bill or bank statement (less than 3 months old)"
+        },
+        "directorId": {
+          "title": "Director ID",
+          "desc": "Government-issued ID of company director"
+        },
+        "bankStatement": {
+          "title": "Bank Statement",
+          "desc": "Recent bank statement for account verification"
+        },
+        "taxReg": {
+          "title": "Tax Registration",
+          "desc": "Company tax registration certificate"
+        },
+        "ownershipStruct": {
+          "title": "Ownership Structure",
+          "desc": "Document showing company ownership structure"
+        }
+      },
+      "guidelinesTitle": "Document Guidelines",
+      "guidelines": {
+        "guide1": "All documents must be clear and legible",
+        "guide2": "Files should not exceed 5MB in size",
+        "guide3": "Supported formats: PDF, JPG, PNG",
+        "guide4": "Documents must be in color",
+        "guide5": "No expired documents will be accepted"
+      }
+    },
+    "roadmapSteps": {
+      "docCollection": {
+        "title": "Document Collection",
+        "desc": "Upload all required documents"
+      },
+      "idVerification": {
+        "title": "Identity Verification",
+        "desc": "Verify company director identity"
+      },
+      "bizVerification": {
+        "title": "Business Verification",
+        "desc": "Verify business details and operations"
+      },
+      "finalReview": {
+        "title": "Final Review",
+        "desc": "Review and confirm all information"
+      }
+    },
+    "status": {
+      "title": "Verification Status",
+      "complete": "Verification Complete",
+      "failed": "Verification Failed",
+      "inProgress": "Verification in Progress",
+      "pending": "Verification Pending",
+      "completeDesc": "Your company has been successfully verified.",
+      "failedDesc": "Please review and resubmit your documents.",
+      "inProgressDesc": "This process may take 1-2 business days.",
+      "pendingDesc": "Please submit all required documents.",
+      "getCertBtn": "Get Certificate"
+    },
+    "help": {
+      "title": "Need Assistance?",
+      "desc": "If you're having trouble with the verification process, our dedicated support team is here to help. Contact us through our support portal or schedule a call with our verification specialists.",
+      "contactBtn": "Contact Support"
+    }
+  },
+  "repOnboarding": {
+    "header": {
+      "gigFilter": "Gig:",
+      "allGigs": "All gigs",
+      "newJourneyBtn": "New training journey"
+    },
+    "viewer": {
+      "backBtn": "Back to trainings list",
+      "backToTraining": "Back to training",
+      "noImages": "No images",
+      "noImagesDesc": "No images yet. Open the REP training chat and use the",
+      "presentationAction": "Presentation",
+      "generateThem": "action to generate them.",
+      "openChatBtn": "Open training chat",
+      "imageUnavailable": "Image unavailable.",
+      "title": "HARX Training Viewer",
+      "backList": "Back to trainings",
+      "unavailable": "Viewer unavailable."
+    },
+    "trainingSection": {
+      "title": "Training",
+      "subtitle": "Skills development and validation",
+      "loading": "Loading available trainings...",
+      "emptyTitle": "No training journeys yet",
+      "emptyDesc": "Add your first training journey to start onboarding your REPs.",
+      "createFirstBtn": "Create First Journey",
+      "modules": "modules",
+      "contentDesc": "Formation content: modules + sections + quizzes",
+      "reviewBtn": "Review",
+      "continueBtn": "Continue",
+      "startBtn": "Start",
+      "contentBtn": "Content"
+    },
+    "podcastSection": {
+      "title": "Saved podcasts",
+      "subtitle": "Generated and saved from REP training chat",
+      "refreshBtn": "Refresh",
+      "loading": "Loading saved podcasts...",
+      "emptyTitle": "No saved podcasts yet",
+      "emptyDesc": "Generate and save a podcast from the training chat, it will appear here.",
+      "untitled": "Untitled podcast",
+      "defaultDesc": "Training podcast",
+      "dateUnavailable": "Date unavailable",
+      "stopAudio": "Stop audio",
+      "playAudio": "Play audio"
+    },
+    "settings": {
+      "title": "Training settings",
+      "closeBtn": "Close",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Training title",
+      "descLabel": "Description",
+      "descPlaceholder": "Training description",
+      "logoLabel": "Training logo",
+      "uploading": "Uploading...",
+      "importImageBtn": "Import image",
+      "removeLogoBtn": "Remove logo",
+      "logoSuccess": "Logo imported successfully",
+      "noLogo": "No logo selected. Import an image to set your training logo.",
+      "cancelBtn": "Cancel",
+      "saveBtn": "Save changes"
+    }
+  },
+  "matchingDashboard": {
+    "header": {
+      "title": "Reps Management System",
+      "subtitle": "Manage reps through their complete lifecycle",
+      "totalReps": "Total Reps",
+      "invited": "Invited",
+      "requests": "Requests",
+      "active": "Active"
+    },
+    "tabs": {
+      "matching": "Smart Matching System",
+      "matchingDesc": "Find & match perfect reps",
+      "invited": "Invited Reps",
+      "invitedDesc": "Pending invitations",
+      "enrollment": "Enrollment Requests",
+      "enrollmentDesc": "Rep applications",
+      "active": "Active Reps",
+      "activeDesc": "Working reps"
+    },
+    "matching": {
+      "availableGigs": "Available Gigs",
+      "viewDetails": "View Details",
+      "industries": "Industries:",
+      "activities": "Activities:",
+      "experience": "Experience:",
+      "years": "years",
+      "languages": "Languages:",
+      "availability": "Availability:",
+      "daysWeek": "days/week",
+      "hoursWeek": "h/week",
+      "flexible": "Flexible",
+      "professionalSkills": "Professional Skills:",
+      "technicalSkills": "Technical Skills:",
+      "softSkills": "Soft Skills:",
+      "region": "Region:",
+      "unknownRegion": "Unknown Region",
+      "timezone": "Timezone:",
+      "unknownTimezone": "Unknown Timezone",
+      "matchesFor": "Matches for",
+      "selectGig": "Select a Gig to See Matches",
+      "searchReps": "Search reps...",
+      "noGigSelected": "No gig selected",
+      "chooseGigDesc": "Choose a gig from the left to see matching reps",
+      "match": "Match",
+      "yearsExp": "years exp.",
+      "enrolled": "Enrolled",
+      "alreadyEnrolled": "Already Enrolled",
+      "invited": "Invited",
+      "invite": "Invite",
+      "hideDetails": "Hide Details",
+      "skills": "Skills",
+      "matchedSkills": "Matched Skills:",
+      "more": "more",
+      "matchedLanguages": "Matched Languages:",
+      "industry": "Industry",
+      "matchedIndustries": "Matched Industries:",
+      "rep": "Rep:",
+      "required": "Required:",
+      "zone": "Zone:",
+      "location": "Location:",
+      "country": "Country:",
+      "code": "Code:",
+      "schedule": "Schedule:",
+      "matchedActivities": "Matched Activities:",
+      "noRepsFound": "No reps found for",
+      "tryAdjusting": "Try adjusting your search terms",
+      "noMatchesFound": "No matches found for this gig."
+    },
+    "invited": {
+      "title": "Invited Reps",
+      "pending": "Pending",
+      "search": "Search invited reps...",
+      "unnamedAgent": "Unnamed Agent",
+      "noEmail": "No email",
+      "waitingResponse": "Invited • Waiting for response",
+      "gig": "Gig:",
+      "noPending": "No pending invitations",
+      "allResponded": "All invitations have been responded to."
+    },
+    "enrollment": {
+      "title": "Enrollment Requests",
+      "requests": "Requests",
+      "search": "Search requests...",
+      "status": "Status:",
+      "approve": "Approve",
+      "reject": "Reject",
+      "noRequests": "No enrollment requests",
+      "noWaiting": "No reps are waiting for approval."
+    },
+    "active": {
+      "title": "Active Reps",
+      "active": "Active",
+      "search": "Search active reps...",
+      "experience": "Experience:",
+      "role": "Role:",
+      "na": "N/A",
+      "availability": "Availability:",
+      "status": "Status:",
+      "fullyOnboarded": "Fully Onboarded",
+      "inProgress": "In Progress",
+      "languages": "Languages:",
+      "manageProfile": "Manage Profile",
+      "noActive": "No active reps",
+      "startFinding": "Start by finding matches and inviting reps."
+    }
+  },
+  "sessionPlanning": {
+    "header": {
+      "title": "Session Strategic Planning",
+      "realTimeSync": "Real-time Sync",
+      "description": "Orchestrate field operations with surgical precision and AI-backed slot optimization.",
+      "projectFocus": "Strategic Project Focus",
+      "selectProject": "Select Project Target..."
+    },
+    "cortex": {
+      "intelligence": "CORTEX Intelligence",
+      "predictiveAnalytics": "Predictive Analytics"
+    },
+    "weeklyOverview": {
+      "title": "Weekly Overview",
+      "availableSlots": "Available Slots",
+      "reservedSlots": "Reserved Slots",
+      "gigHours": "Gig Hours"
+    }
+  }
+}

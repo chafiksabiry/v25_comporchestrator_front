@@ -1,5 +1,6 @@
 import React from 'react';
 import { Bot, Loader2, Send, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type ChatMessage = {
   id: string;
@@ -34,6 +35,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
   onValidateScript,
   renderAssistantMessage,
 }) => {
+  const { t } = useTranslation();
   const hasValidatedScriptForGig = Object.values(validatedScriptIds).some(Boolean);
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
@@ -42,7 +44,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
           <div className="h-full flex items-center justify-center text-center text-gray-500">
             <div>
               <Bot className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p>Commencez la conversation pour generer le script.</p>
+              <p>{t('scriptGenerator.chatPanel.startConversation')}</p>
             </div>
           </div>
         )}
@@ -59,7 +61,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
                   {renderAssistantMessage(message.id, message.content, message.playbook)}
                   {hasValidatedScriptForGig && !validatedScriptIds[message.scriptId || message.id] && (
                     <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
-                      Un script est deja valide pour ce gig.
+                      {t('scriptGenerator.chatPanel.alreadyValidatedWarning')}
                     </p>
                   )}
                   <button
@@ -73,12 +75,12 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
                     className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {validatedScriptIds[message.scriptId || message.id]
-                      ? 'Script valide'
+                      ? t('scriptGenerator.chatPanel.statusValid')
                       : hasValidatedScriptForGig
-                        ? 'Validation bloquee'
+                        ? t('scriptGenerator.chatPanel.statusValidationBlocked')
                         : validatingScriptId === (message.scriptId || message.id)
-                          ? 'Validation...'
-                          : 'Valider le script'}
+                          ? t('scriptGenerator.chatPanel.statusValidating')
+                          : t('scriptGenerator.chatPanel.validateScript')}
                   </button>
                 </div>
               ) : (
@@ -95,7 +97,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
         {isSending && (
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 flex items-center gap-2 w-fit shadow-sm">
             <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
-            Generating script...
+            {t('scriptGenerator.chatPanel.generatingScript')}
           </div>
         )}
       </div>
@@ -106,7 +108,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
               type="text"
               value={input}
               onChange={(e) => onInputChange(e.target.value)}
-              placeholder="Ask for a script line, opening, objection answer..."
+              placeholder={t('scriptGenerator.chatPanel.inputPlaceholder')}
               className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               disabled={!selectedGigId || isSending}
             />
@@ -116,7 +118,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
               className="px-5 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
             >
               {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Send
+              {t('scriptGenerator.chatPanel.send')}
             </button>
           </div>
         </div>
