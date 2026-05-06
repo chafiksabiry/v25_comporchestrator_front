@@ -272,12 +272,7 @@ const ScriptGenerator: React.FC = () => {
   // Handle start fresh conversation
   const handleStartNewChat = () => {
     if (!selectedGig) return;
-    const welcomeMsg: ChatMessage = {
-      id: `welcome-${Date.now()}`,
-      role: 'assistant',
-      content: `Bonjour ! Je suis l'assistant HARX AI. 🤖\n\nJe vais vous aider à concevoir le script de vente idéal pour votre mission : **${selectedGig.title}**.\n\nJe peux générer une première version complète du script pour vous, ou vous pouvez me donner des consignes particulières (style de communication, objections spécifiques, etc.).\n\nQue souhaitez-vous faire ?`,
-    };
-    setMessages([welcomeMsg]);
+    setMessages([]);
     setActiveScriptMessage(null);
     setError(null);
   };
