@@ -20,7 +20,9 @@ import {
   BarChart3,
   Laptop,
   ChevronLeft,
-import { ChevronRight, Image as ImageIcon } from 'lucide-react';
+  ChevronRight,
+  Image as ImageIcon
+} from 'lucide-react';
 import { PremiumAudioPlayer } from '../dashboard/components/PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
 
