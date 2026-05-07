@@ -572,16 +572,16 @@ const ScriptGenerator: React.FC = () => {
           <div
             key={`${row.label}-${idx}`}
             className={`rounded-2xl p-4 transition-all duration-200 hover:shadow-sm ${row.side === 'agent'
-              ? 'bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border border-blue-100/60'
+              ? 'bg-gradient-to-r from-red-50/50 to-rose-50/40 border border-red-100/60'
               : row.side === 'lead'
-                ? 'bg-gradient-to-r from-emerald-50/50 to-teal-50/50 border border-emerald-100/60'
+                ? 'bg-gradient-to-r from-emerald-50/40 to-teal-50/30 border border-emerald-100/40'
                 : 'bg-slate-50 border border-slate-100'
               }`}
           >
             <div className="flex items-center gap-2 mb-1">
               <span
-                className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full ${row.side === 'agent'
-                  ? 'bg-blue-100 text-blue-700'
+                className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full ${row.side === 'agent'
+                  ? 'bg-red-100 text-red-700'
                   : row.side === 'lead'
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-slate-200 text-slate-700'

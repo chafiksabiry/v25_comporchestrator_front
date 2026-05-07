@@ -55,10 +55,10 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
     <div className="bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden flex flex-col h-full min-h-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Header section of Chat Panel */}
-      <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between relative shrink-0">
+      <div className="px-4 py-2.5 bg-[#111111] border-b border-neutral-800 flex items-center justify-between relative shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-          <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider">Assistant Script HARX AI</span>
+          <span className="text-[11px] font-black text-white uppercase tracking-wider">Assistant Script HARX AI</span>
         </div>
 
         <div className="flex items-center gap-2 relative z-50">
@@ -67,7 +67,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
               <button
                 type="button"
                 onClick={onStartNewChat}
-                className="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-black text-[9px] uppercase tracking-wider transition-all flex items-center gap-1 shadow-sm active:scale-95"
+                className="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-black text-[9px] uppercase tracking-wider transition-all flex items-center gap-1 shadow-sm active:scale-95 border border-red-500/20"
               >
                 <Plus className="w-3 h-3" />
                 Nouveau
@@ -78,18 +78,18 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
                 onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                 className={`px-2.5 py-1.5 border rounded-lg font-black text-[9px] uppercase tracking-wider transition-all flex items-center gap-1 shadow-sm active:scale-95 ${
                   isHistoryOpen 
-                    ? 'bg-slate-200 text-slate-950 border-slate-300' 
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    ? 'bg-neutral-800 text-white border-neutral-700' 
+                    : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:bg-neutral-800 hover:text-white'
                 }`}
               >
-                <History className="w-3 h-3" />
+                <History className="w-3 h-3 text-red-500" />
                 Scripts ({savedScripts.length})
                 <ChevronDown className={`w-2.5 h-2.5 transition-transform duration-200 ${isHistoryOpen ? 'rotate-180' : ''}`} />
               </button>
             </div>
           )}
 
-          <span className="text-[9px] font-black text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full uppercase tracking-wide">
+          <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full uppercase tracking-wide">
             En ligne
           </span>
 
@@ -176,17 +176,19 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-white to-slate-50/50 min-h-0">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-slate-50/30 via-slate-50/50 to-slate-100/40 min-h-0 custom-scrollbar">
         {messages.length === 0 && (
-          <div className="h-full flex items-center justify-center text-center text-slate-500 py-12">
-            <div className="max-w-md space-y-3">
-              <div className="w-16 h-16 bg-slate-100 text-slate-500 flex items-center justify-center rounded-full mx-auto shadow-sm animate-pulse">
+          <div className="h-full flex items-center justify-center text-center py-12">
+            <div className="max-w-md space-y-4 animate-in fade-in zoom-in-95 duration-500">
+              <div className="w-16 h-16 bg-gradient-to-br from-red-50 to-red-100/40 border border-red-200/50 text-red-600 flex items-center justify-center rounded-2xl mx-auto shadow-md animate-bounce">
                 <Bot className="w-8 h-8" />
               </div>
-              <p className="font-extrabold text-slate-800 text-lg uppercase tracking-tight">Générateur de Script conversationnel</p>
-              <p className="text-sm text-slate-400 font-bold leading-relaxed">
-                {t('scriptGenerator.chatPanel.startConversation')}
-              </p>
+              <div className="space-y-1.5">
+                <p className="font-black text-slate-900 text-lg uppercase tracking-tight">Générateur de Script conversationnel</p>
+                <p className="text-xs text-slate-400 font-bold max-w-xs mx-auto leading-relaxed">
+                  {t('scriptGenerator.chatPanel.startConversation')}
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -205,21 +207,21 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
               } animate-in fade-in slide-in-from-bottom-2 duration-300`}
             >
               {isAI && (
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white flex items-center justify-center shrink-0 shadow-md">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-600 to-red-800 text-white flex items-center justify-center shrink-0 shadow-md border border-red-500/20">
                   <Bot className="w-5 h-5" />
                 </div>
               )}
               
               <div
-                className={`max-w-[85%] rounded-[1.8rem] p-5 shadow-sm text-sm leading-relaxed ${
+                className={`max-w-[85%] rounded-2xl p-5 shadow-sm text-sm leading-relaxed ${
                   isAI
                     ? 'bg-white border border-slate-100 text-slate-800 rounded-tl-none'
-                    : 'bg-slate-900 text-white rounded-tr-none shadow-lg'
+                    : 'bg-[#111111] border border-neutral-800 text-white rounded-tr-none shadow-md'
                 }`}
               >
                 {isAI && (
                   <div className="flex items-center gap-1.5 mb-2.5">
-                    <span className="text-[9px] font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                    <span className="text-[9px] font-black text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded-md uppercase tracking-wider">
                       HARX AI
                     </span>
                   </div>
@@ -277,8 +279,8 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
               </div>
 
               {!isAI && (
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-md">
-                  <User className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neutral-900 to-neutral-800 border border-neutral-700 text-white flex items-center justify-center shrink-0 shadow-md">
+                  <User className="w-5 h-5 text-red-500" />
                 </div>
               )}
             </div>
