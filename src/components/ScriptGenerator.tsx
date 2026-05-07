@@ -167,7 +167,7 @@ const ScriptGenerator: React.FC = () => {
   const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
   const [isGigSelectorOpen, setIsGigSelectorOpen] = useState(false);
   const [allSavedScripts, setAllSavedScripts] = useState<any[]>([]);
-  const [isLoadingAllSavedScripts, setIsLoadingAllSavedScripts] = useState(false);
+  const [isLoadingAllSavedScripts, setIsLoadingAllSavedScripts] = useState(true);
   const [showNewScriptSelection, setShowNewScriptSelection] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -769,7 +769,18 @@ const ScriptGenerator: React.FC = () => {
         ) : (
           /* Empty / Onboarding state */
           <div className="max-w-3xl mx-auto py-4 px-4 flex-1 flex flex-col justify-center min-h-0 overflow-hidden w-full">
-            {allSavedScripts.length > 0 && !showNewScriptSelection ? (
+            {isLoadingAllSavedScripts ? (
+              /* Sleek initial loading state */
+              <div className="relative overflow-hidden bg-white border border-slate-100 rounded-2xl shadow-xl p-8 text-center flex flex-col items-center justify-center space-y-4 max-w-sm mx-auto w-full">
+                <div className="w-16 h-16 bg-red-50 border border-red-100 text-red-600 flex items-center justify-center rounded-2xl shadow-inner">
+                  <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+                </div>
+                <div className="space-y-1.5">
+                  <h3 className="text-xs font-black text-slate-950 uppercase tracking-widest">Initialisation du cockpit...</h3>
+                  <p className="text-[10px] text-slate-400 font-bold">Vérification de vos scripts en cours</p>
+                </div>
+              </div>
+            ) : allSavedScripts.length > 0 && !showNewScriptSelection ? (
               /* Screen 1: Existing Scripts List Dashboard */
               <div className="relative overflow-hidden bg-white border border-slate-100 rounded-2xl shadow-xl p-5 text-center flex flex-col h-full max-h-[500px] w-full">
                 
