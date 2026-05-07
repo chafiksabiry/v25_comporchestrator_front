@@ -462,6 +462,14 @@ const ScriptGenerator: React.FC = () => {
         if (item?._id && item?.isActive) nextValidated[item._id] = true;
       });
       setValidatedScriptIds(nextValidated);
+      
+      // If the Gig already has saved scripts, automatically load the active/first one and deactivate the wizard
+      if (items.length > 0) {
+        const activeItem = items.find((item: any) => item.isActive) || items[0];
+        openSavedScript(activeItem);
+      } else {
+        setIsAutoGenerateWizardActive(true);
+      }
     } catch (err: any) {
       setSavedScripts([]);
       setError(err?.response?.data?.error || err?.message || 'Failed to load scripts');
