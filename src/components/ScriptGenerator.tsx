@@ -169,6 +169,7 @@ const ScriptGenerator: React.FC = () => {
   const [allSavedScripts, setAllSavedScripts] = useState<any[]>([]);
   const [isLoadingAllSavedScripts, setIsLoadingAllSavedScripts] = useState(true);
   const [showNewScriptSelection, setShowNewScriptSelection] = useState(false);
+  const [isAutoGenerateWizardActive, setIsAutoGenerateWizardActive] = useState(true);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -334,6 +335,12 @@ const ScriptGenerator: React.FC = () => {
     setMessages([]);
     setActiveScriptMessage(null);
     setError(null);
+    setIsAutoGenerateWizardActive(true);
+  };
+
+  const handleAutoGenerateInitialScript = () => {
+    setIsAutoGenerateWizardActive(false);
+    sendMessageToApi("Génère un script d'appel complet pour cette mission", false);
   };
 
   useEffect(() => {
@@ -475,6 +482,7 @@ const ScriptGenerator: React.FC = () => {
     setMessages([message]);
     setActiveScriptMessage(message);
     setValidatedScriptIds((prev) => ({ ...prev, [item._id]: Boolean(item?.isActive) }));
+    setIsAutoGenerateWizardActive(false);
   };
 
   const handleDeleteSavedScript = async (scriptId: string) => {
@@ -763,6 +771,9 @@ const ScriptGenerator: React.FC = () => {
                 onOpenSavedScript={openSavedScript}
                 onDeleteSavedScript={handleDeleteSavedScript}
                 onStartNewChat={handleStartNewChat}
+                onAutoGenerate={handleAutoGenerateInitialScript}
+                isAutoGenerateWizardActive={isAutoGenerateWizardActive}
+                setIsAutoGenerateWizardActive={setIsAutoGenerateWizardActive}
               />
             </div>
 
