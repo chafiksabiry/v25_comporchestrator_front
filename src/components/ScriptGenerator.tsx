@@ -869,24 +869,50 @@ const ScriptGenerator: React.FC = () => {
 
                 {/* Beautiful Clickable Grid of Gigs */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
-                  {gigs.map((gig) => (
-                    <button
-                      key={gig._id}
-                      onClick={() => setSelectedGig(gig)}
-                      className="p-3 text-left bg-slate-50 hover:bg-red-50/15 border border-slate-200/80 hover:border-red-500 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md flex flex-col gap-1 active:scale-[0.98] group"
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="px-2 py-0.5 bg-red-50/50 text-red-600 rounded text-[8px] font-black uppercase tracking-widest border border-red-100">
-                          {gig.category || 'Général'}
-                        </span>
-                        <Compass className="w-3.5 h-3.5 text-slate-400 group-hover:text-red-600 transition-colors" />
-                      </div>
-                      <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-tight mt-1 truncate w-full group-hover:text-red-600 transition-colors">{gig.title}</h4>
-                      <p className="text-[9px] text-slate-400 font-bold truncate w-full">
-                        {gig.description || 'Détails de la mission'}
-                      </p>
-                    </button>
-                  ))}
+                  {gigs.map((gig) => {
+                    const existingScript = allSavedScripts.find((s) => s.gigId === gig._id);
+                    return (
+                      <button
+                        key={gig._id}
+                        onClick={() => {
+                          setSelectedGig(gig);
+                          if (existingScript) {
+                            openSavedScript(existingScript);
+                          } else {
+                            handleStartNewChat();
+                          }
+                        }}
+                        className={`p-3 text-left bg-slate-50 hover:bg-red-50/15 border rounded-xl transition-all duration-200 shadow-sm hover:shadow-md flex flex-col gap-1 active:scale-[0.98] group ${
+                          existingScript ? 'border-amber-200 hover:border-amber-400' : 'border-slate-200/80 hover:border-red-500'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span className="px-2 py-0.5 bg-red-50/50 text-red-600 rounded text-[8px] font-black uppercase tracking-widest border border-red-100">
+                            {gig.category || 'Général'}
+                          </span>
+                          
+                          {/* Premium Action Indicator */}
+                          {existingScript ? (
+                            <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded text-[7px] font-black uppercase tracking-widest flex items-center gap-1">
+                              Éditer
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 bg-red-600 text-white rounded text-[7px] font-black uppercase tracking-widest flex items-center gap-1">
+                              Nouveau
+                            </span>
+                          )}
+                        </div>
+                        <h4 className={`text-[11px] font-black uppercase tracking-tight mt-1 truncate w-full transition-colors ${
+                          existingScript ? 'text-slate-800 group-hover:text-amber-600' : 'text-slate-800 group-hover:text-red-600'
+                        }`}>
+                          {gig.title}
+                        </h4>
+                        <p className="text-[9px] text-slate-400 font-bold truncate w-full">
+                          {existingScript ? 'Un script est déjà enregistré' : (gig.description || 'Détails de la mission')}
+                        </p>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* If user clicked New and we have existing scripts, allow Cancel / Go Back to list */}
