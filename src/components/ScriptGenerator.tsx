@@ -483,6 +483,7 @@ const ScriptGenerator: React.FC = () => {
     try {
       await apiClient.delete(`/rag/scripts/${scriptId}`);
       setSavedScripts((prev) => prev.filter((s) => s._id !== scriptId));
+      setAllSavedScripts((prev) => prev.filter((s) => s._id !== scriptId));
       setValidatedScriptIds((prev) => {
         const next = { ...prev };
         delete next[scriptId];
@@ -850,6 +851,18 @@ const ScriptGenerator: React.FC = () => {
                             className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:border-red-500 hover:text-red-600 font-extrabold text-[9px] rounded-lg transition-all duration-200 uppercase tracking-wider shadow-sm active:scale-95 flex items-center gap-1"
                           >
                             Ouvrir
+                          </button>
+                          
+                          <button
+                            onClick={async () => {
+                              if (confirm("Êtes-vous sûr de vouloir supprimer ce script ?")) {
+                                await handleDeleteSavedScript(script._id);
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 border border-slate-200/40 hover:border-red-100"
+                            title="Supprimer le script"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
