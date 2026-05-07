@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   ChevronRight,
+  Coins,
+  DollarSign,
+  Sparkles,
+  X,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation } from 'react-router-dom';
@@ -25,6 +29,7 @@ import PremiumDashboard from './components/training/components/Dashboard/Premium
 import MasterSidebar from './components/layout/MasterSidebar';
 import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwitch';
 import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
+import Subscription from './components/Subscription';
 
 function AppContent() {
   const location = useLocation();
@@ -45,6 +50,7 @@ function AppContent() {
   const [globalBackConfig, setGlobalBackConfig] = useState<{ label: string; action: () => void } | null>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => localStorage.getItem('companyLogo'));
   const [logoError, setLogoError] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const unwrapPayload = (body: any) => {
     if (!body) return null;
@@ -320,6 +326,27 @@ function AppContent() {
                 )}
               </div>
               <div className="flex items-center space-x-4 ml-auto">
+                {/* Credit Widget */}
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-300 shadow-sm hover:bg-white/10 transition-all duration-300">
+                  <Coins size={14} className="text-yellow-500 animate-pulse-subtle shrink-0" />
+                  <span className="whitespace-nowrap">Credits: <span className="text-white font-black">0</span></span>
+                </div>
+
+                {/* Balance Widget */}
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-300 shadow-sm hover:bg-white/10 transition-all duration-300">
+                  <DollarSign size={14} className="text-emerald-500 shrink-0" />
+                  <span className="whitespace-nowrap">Balance: <span className="text-white font-black">0</span></span>
+                </div>
+
+                {/* Upgrade Button */}
+                <button
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-harx hover:opacity-90 active:scale-95 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-harx-500/20 transition-all duration-300 group shrink-0"
+                >
+                  <Sparkles size={14} className="animate-pulse text-white group-hover:scale-110 transition-transform shrink-0" />
+                  <span className="whitespace-nowrap">Upgrade</span>
+                </button>
+
                 <LanguageSwitcher />
                 <div className="flex items-center space-x-3 bg-white/5 p-1.5 pr-4 rounded-2xl border border-white/10 shadow-sm">
                   <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-black shadow-md overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
@@ -359,6 +386,28 @@ function AppContent() {
           </main>
         </div>
       </div>
+
+      {/* Upgrade Plan Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-7xl h-[85vh] bg-[#F8FAFC] rounded-[2.5rem] shadow-2xl overflow-y-auto border border-gray-100 flex flex-col">
+            {/* Modal dismiss button */}
+            <div className="absolute top-6 right-6 z-[90]">
+              <button 
+                onClick={() => setShowUpgradeModal(false)}
+                className="p-3 bg-gray-100 hover:bg-gray-200 rounded-2xl transition-all duration-300 text-gray-500 hover:text-gray-900 shadow-sm"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="flex-grow">
+              <Subscription />
+            </div>
+          </div>
+        </div>
+      )}
     </StripeContainer>
   );
 }
