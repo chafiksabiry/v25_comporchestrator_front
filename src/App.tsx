@@ -329,23 +329,23 @@ function AppContent() {
               {/* Centered Credits, Balance, and Upgrade Widgets */}
               <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-3">
                 {/* Credit Widget */}
-                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:bg-white/10 transition-all duration-300">
-                  <Coins size={14} className="text-yellow-500 animate-pulse-subtle shrink-0" />
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:bg-yellow-500/10 hover:border-yellow-500/30 hover:text-white transition-all duration-300 cursor-pointer group">
+                  <Coins size={14} className="text-yellow-500 animate-pulse-subtle group-hover:scale-110 group-hover:text-yellow-400 transition-all duration-300 shrink-0" />
                   <span className="whitespace-nowrap">Credits: <span className="text-white font-black">0</span></span>
                 </div>
 
                 {/* Balance Widget */}
-                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:bg-white/10 transition-all duration-300">
-                  <DollarSign size={14} className="text-emerald-500 shrink-0" />
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-white transition-all duration-300 cursor-pointer group">
+                  <DollarSign size={14} className="text-emerald-500 group-hover:scale-110 group-hover:text-emerald-400 transition-all duration-300 shrink-0" />
                   <span className="whitespace-nowrap">Balance: <span className="text-white font-black">0</span></span>
                 </div>
 
                 {/* Upgrade Button */}
                 <button
                   onClick={() => setShowUpgradeModal(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-harx hover:opacity-90 active:scale-95 text-white text-xs font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-harx-500/20 transition-all duration-300 group shrink-0"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-harx hover:bg-none hover:bg-white text-white hover:text-harx-500 text-xs font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-harx-500/20 hover:shadow-harx-500/40 active:scale-95 transition-all duration-300 group shrink-0"
                 >
-                  <Sparkles size={14} className="animate-pulse text-white group-hover:scale-110 transition-transform shrink-0" />
+                  <Sparkles size={14} className="animate-pulse text-white group-hover:text-harx-500 group-hover:scale-110 transition-all duration-300 shrink-0" />
                   <span className="whitespace-nowrap">Upgrade</span>
                 </button>
               </div>
