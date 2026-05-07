@@ -52,22 +52,22 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
   const hasValidatedScriptForGig = Object.values(validatedScriptIds).some(Boolean);
 
   return (
-    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden flex flex-col min-h-[580px] animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden flex flex-col h-full min-h-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Header section of Chat Panel */}
-      <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between relative">
+      <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between relative shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-black text-slate-800 uppercase tracking-wider">Assistant Script HARX AI</span>
+          <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+          <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider">Assistant Script HARX AI</span>
         </div>
 
         <div className="flex items-center gap-2 relative z-50">
           {selectedGigId && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={onStartNewChat}
-                className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                className="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-black text-[9px] uppercase tracking-wider transition-all flex items-center gap-1 shadow-sm active:scale-95"
               >
                 <Plus className="w-3 h-3" />
                 Nouveau
@@ -76,7 +76,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                className={`px-3.5 py-1.5 border rounded-xl font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm active:scale-95 ${
+                className={`px-2.5 py-1.5 border rounded-lg font-black text-[9px] uppercase tracking-wider transition-all flex items-center gap-1 shadow-sm active:scale-95 ${
                   isHistoryOpen 
                     ? 'bg-slate-200 text-slate-950 border-slate-300' 
                     : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
@@ -84,18 +84,19 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
               >
                 <History className="w-3 h-3" />
                 Scripts ({savedScripts.length})
-                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isHistoryOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-2.5 h-2.5 transition-transform duration-200 ${isHistoryOpen ? 'rotate-180' : ''}`} />
               </button>
             </div>
           )}
 
-          <span className="text-[10px] font-black text-slate-400 bg-slate-200/60 px-2.5 py-1 rounded-full uppercase tracking-wide">
+          <span className="text-[9px] font-black text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full uppercase tracking-wide">
             En ligne
           </span>
 
           {/* Floating Dropdown for Saved Scripts */}
           {isHistoryOpen && selectedGigId && (
-            <div className="absolute top-10 right-0 w-80 bg-white border border-slate-100 rounded-2xl shadow-2xl p-4 mt-2 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[420px] overflow-y-auto">
+            <div className="absolute top-9 right-0 w-80 bg-white border border-slate-100 rounded-xl shadow-2xl p-3.5 mt-1 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[380px] overflow-y-auto">
+
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Scripts enregistrés</span>
                 <button 
@@ -175,7 +176,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 h-[450px] overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-white to-slate-50/50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-white to-slate-50/50 min-h-0">
         {messages.length === 0 && (
           <div className="h-full flex items-center justify-center text-center text-slate-500 py-12">
             <div className="max-w-md space-y-3">
@@ -298,8 +299,8 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
       </div>
 
       {/* Input area */}
-      <form onSubmit={onSubmit} className="border-t border-slate-100 bg-white p-5">
-        <div className="flex items-center gap-3">
+      <form onSubmit={onSubmit} className="border-t border-slate-100 bg-white p-3 shrink-0">
+        <div className="flex items-center gap-2">
           <textarea
             value={input}
             onChange={(e) => onInputChange(e.target.value)}
@@ -312,16 +313,16 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
               }
             }}
             placeholder={t('scriptGenerator.chatPanel.inputPlaceholder')}
-            className="flex-1 px-5 py-3.5 border border-slate-200 rounded-2xl font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-800 transition-all text-sm bg-slate-50/50 resize-none"
+            className="flex-1 px-4 py-2 border border-slate-200 rounded-xl font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-600 transition-all text-xs bg-slate-50/30 resize-none h-[42px]"
             disabled={!selectedGigId || isSending}
-            rows={2}
+            rows={1}
           />
           <button
             type="submit"
             disabled={!selectedGigId || !input.trim() || isSending}
-            className="px-6 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 font-black uppercase tracking-widest text-xs transition-all shadow-md shadow-slate-900/10 active:scale-95 shrink-0 h-[56px]"
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 font-black uppercase tracking-wider text-[10px] transition-all shadow-sm active:scale-95 shrink-0 h-[42px]"
           >
-            {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {isSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             {t('scriptGenerator.chatPanel.send')}
           </button>
         </div>
