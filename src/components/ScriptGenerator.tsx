@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
-import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2, Briefcase, FileText, CheckCircle, Shield, Compass, BookOpen } from 'lucide-react';
 import apiClient from '../api/knowledgeClient';
 import ScriptChatPanel from './script-generator/ScriptChatPanel';
 import { useTranslation } from 'react-i18next';
@@ -559,98 +559,246 @@ const ScriptGenerator: React.FC = () => {
   };
 
   return (
-    <div className="w-full py-4 min-h-[calc(100vh-100px)]">
-      <div className="max-w-6xl mx-auto px-2 md:px-4 space-y-6">
+    <div className="w-full py-6 min-h-[calc(100vh-100px)] bg-slate-50/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
         {/* Top Header Card */}
-        <div className="relative overflow-hidden rounded-3xl bg-slate-900 px-6 py-6 shadow-xl shadow-slate-900/10 border border-slate-800/50">
-          <div className="relative z-10 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner">
-                <Sparkles className="h-5 w-5 text-indigo-400" />
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-950 px-8 py-8 shadow-2xl border border-slate-800/60">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-3xl bg-white/10 flex items-center justify-center border border-white/10 shadow-lg backdrop-blur-md">
+                <Sparkles className="h-6 w-6 text-indigo-400 animate-pulse" />
               </div>
               <div>
-                <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">Script d'Appel Intelligent</h2>
-                <p className="text-xs font-bold text-slate-400 mt-0.5">
-                  Concevez et validez votre script de vente idéal en dialoguant avec l'IA
+                <span className="px-3 py-1 bg-indigo-500/10 text-indigo-300 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-400/20">
+                  COCKPIT DE CONCEPTION
+                </span>
+                <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight mt-1">Script d'Appel Intelligent</h2>
+                <p className="text-xs font-bold text-slate-400 mt-0.5 leading-relaxed">
+                  Concevez et validez votre script de vente idéal en dialoguant avec l'IA HARX
                 </p>
               </div>
             </div>
             <button
-              className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white font-extrabold rounded-2xl border border-white/10 transition-all duration-200 uppercase tracking-wider text-[10px] flex items-center gap-2"
+              className="px-5 py-3 bg-white/5 hover:bg-white/10 text-white font-extrabold rounded-2xl border border-white/10 transition-all duration-200 uppercase tracking-wider text-[11px] flex items-center justify-center gap-2.5 shadow-md active:scale-95"
               onClick={handleBackToOrchestrator}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Retour
+              <ArrowLeft className="w-4 h-4 text-slate-400" />
+              Retour à l'onboarding
             </button>
           </div>
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-fuchsia-500/5 rounded-full blur-2xl" />
         </div>
 
-        {/* Selection Card */}
-        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl p-6 md:p-8">
-          <label className="block text-xs font-black text-slate-800 uppercase tracking-widest mb-3">
-            Sélectionnez une mission / Gig <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={selectedGig?._id || ''}
-            onChange={(e) => {
-              const gig = gigs.find((g) => g._id === e.target.value) || null;
-              setSelectedGig(gig);
-            }}
-            className="w-full px-5 py-4 border border-slate-200 rounded-2xl font-bold text-slate-700 bg-slate-50/50 focus:ring-4 focus:ring-slate-900/5 focus:border-slate-800 focus:bg-white transition-all text-sm outline-none cursor-pointer"
-            disabled={isLoadingGigs}
-          >
-            <option value="">Sélectionnez un Gig...</option>
-            {gigs.map((gig) => (
-              <option key={gig._id} value={gig._id}>
-                {gig.title || 'Untitled gig'}
-              </option>
-            ))}
-          </select>
-
-          {isLoadingGigs && <p className="text-xs font-bold text-slate-400 mt-3 flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Chargement des missions...</p>}
-          {gigsError && <p className="text-xs font-bold text-red-500 mt-3">{gigsError}</p>}
-        </div>
-
-        {/* Unified Chat Dashboard */}
-        {selectedGig ? (
-          <div className="w-full">
-            <ScriptChatPanel
-              messages={messages}
-              input={input}
-              isSending={isSending}
-              validatingScriptId={validatingScriptId}
-              validatedScriptIds={validatedScriptIds}
-              selectedGigId={selectedGig?._id}
-              onInputChange={setInput}
-              onSubmit={sendMessage}
-              onValidateScript={validateScript}
-              renderAssistantMessage={renderAssistantMessage}
-              savedScripts={savedScripts}
-              isLoadingSavedScripts={isLoadingSavedScripts}
-              onOpenSavedScript={openSavedScript}
-              onDeleteSavedScript={handleDeleteSavedScript}
-              onStartNewChat={handleStartNewChat}
-            />
-          </div>
-        ) : (
-          <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] p-12 text-center max-w-xl mx-auto">
-            <div className="w-16 h-16 bg-slate-100 text-slate-400 flex items-center justify-center rounded-full mx-auto mb-4">
-              <Bot className="w-8 h-8" />
+        {/* Global Error Display */}
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-2xl shadow-sm flex items-start gap-3">
+            <div className="w-6 h-6 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 font-extrabold text-xs">!</div>
+            <div>
+              <p className="text-xs font-black text-red-800 uppercase tracking-wider">Une erreur est survenue</p>
+              <p className="text-xs font-bold text-red-600 mt-0.5 leading-relaxed">{error}</p>
             </div>
-            <p className="font-extrabold text-slate-800 uppercase tracking-tight">Aucun Gig sélectionné</p>
-            <p className="text-xs text-slate-400 font-bold leading-relaxed mt-1">
-              Veuillez sélectionner une mission / Gig dans la liste déroulante ci-dessus pour commencer à concevoir votre script avec l'assistant.
-            </p>
           </div>
         )}
 
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-2xl shadow-sm flex items-start gap-2.5">
-            <div className="w-5 h-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0 font-bold text-xs">!</div>
-            <p className="red-700 text-xs font-bold leading-normal">{error}</p>
+        {/* Main Work Area */}
+        {selectedGig ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left Column: Context Card & Selector */}
+            <div className="lg:col-span-4 space-y-6">
+              
+              {/* Mission Selector Card */}
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl p-6 md:p-8 space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <Compass className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Mission Active</h3>
+                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Changez de Gig à tout moment</p>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <select
+                    value={selectedGig?._id || ''}
+                    onChange={(e) => {
+                      const gig = gigs.find((g) => g._id === e.target.value) || null;
+                      setSelectedGig(gig);
+                    }}
+                    className="w-full px-5 py-4 border border-slate-200 rounded-2xl font-bold text-slate-700 bg-slate-50/50 focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 focus:bg-white transition-all text-sm outline-none cursor-pointer appearance-none animate-none"
+                    disabled={isLoadingGigs}
+                  >
+                    <option value="">Sélectionnez un Gig...</option>
+                    {gigs.map((gig) => (
+                      <option key={gig._id} value={gig._id}>
+                        {gig.title || 'Untitled gig'}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                    </svg>
+                  </div>
+                </div>
+
+                {isLoadingGigs && (
+                  <p className="text-xs font-bold text-slate-400 flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" /> Chargement des missions...
+                  </p>
+                )}
+                {gigsError && <p className="text-xs font-bold text-red-500">{gigsError}</p>}
+              </div>
+
+              {/* Selected Gig Informational Details Card */}
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
+                <div className="p-6 md:p-8 space-y-6">
+                  
+                  {/* Category / Industry Badge */}
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="px-3.5 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+                      {selectedGig.category || 'Général'}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      Sélectionné
+                    </span>
+                  </div>
+
+                  {/* Title & Description */}
+                  <div className="space-y-2">
+                    <h4 className="text-lg font-black text-slate-900 leading-snug">{selectedGig.title}</h4>
+                    <p className="text-xs text-slate-400 font-bold flex items-center gap-1.5">
+                      <Briefcase className="w-3.5 h-3.5 text-slate-400" /> Détails de la mission
+                    </p>
+                  </div>
+
+                  <hr className="border-slate-100" />
+
+                  {/* Long Description scrollable summary */}
+                  <div className="space-y-2">
+                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Description & Contexte</h5>
+                    <div className="text-slate-600 text-xs font-semibold leading-relaxed max-h-48 overflow-y-auto pr-2 custom-scrollbar whitespace-pre-line">
+                      {selectedGig.description || 'Aucune description disponible.'}
+                    </div>
+                  </div>
+
+                  <hr className="border-slate-100" />
+
+                  {/* Sales Compliance Checklist */}
+                  <div className="space-y-3.5">
+                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-indigo-500" /> Exigences Légales & Conseils
+                    </h5>
+                    
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-2 text-xs font-bold text-slate-600">
+                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span>Avis d'enregistrement obligatoire (RGPD France)</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-xs font-bold text-slate-600">
+                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span>Alternance stricte : 1 réplique Agent pour 1 réplique Lead</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-xs font-bold text-slate-600">
+                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span>Compact et dynamique (limite totale de 8 messages)</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right Column: Interactive Chat Panel */}
+            <div className="lg:col-span-8">
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
+                <ScriptChatPanel
+                  messages={messages}
+                  input={input}
+                  isSending={isSending}
+                  validatingScriptId={validatingScriptId}
+                  validatedScriptIds={validatedScriptIds}
+                  selectedGigId={selectedGig?._id}
+                  onInputChange={setInput}
+                  onSubmit={sendMessage}
+                  onValidateScript={validateScript}
+                  renderAssistantMessage={renderAssistantMessage}
+                  savedScripts={savedScripts}
+                  isLoadingSavedScripts={isLoadingSavedScripts}
+                  onOpenSavedScript={openSavedScript}
+                  onDeleteSavedScript={handleDeleteSavedScript}
+                  onStartNewChat={handleStartNewChat}
+                />
+              </div>
+            </div>
+
+          </div>
+        ) : (
+          /* Empty / Onboarding state */
+          <div className="max-w-2xl mx-auto py-12 px-6">
+            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[3rem] shadow-2xl p-8 md:p-12 text-center space-y-8">
+              
+              {/* Mascot / Icon Container */}
+              <div className="relative w-24 h-24 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl shadow-indigo-500/20">
+                <Bot className="w-12 h-12 text-white animate-bounce mt-1" />
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white" />
+              </div>
+
+              {/* Informative text */}
+              <div className="space-y-3">
+                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+                  ASSISTANT HARX AI
+                </span>
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Prêt à créer votre script d'appel ?</h3>
+                <p className="text-xs text-slate-400 font-bold max-w-md mx-auto leading-relaxed">
+                  Sélectionnez une de vos missions (Gigs) ci-dessous pour charger son contexte. L'assistant concevra instantanément un script de vente linéaire, ultra-performant et 100% conforme.
+                </p>
+              </div>
+
+              {/* Dropdown Selector card */}
+              <div className="max-w-md mx-auto p-1.5 bg-slate-50 border border-slate-200/60 rounded-3xl flex flex-col md:flex-row items-stretch gap-2 shadow-inner">
+                <div className="relative flex-1">
+                  <select
+                    value={selectedGig?._id || ''}
+                    onChange={(e) => {
+                      const gig = gigs.find((g) => g._id === e.target.value) || null;
+                      setSelectedGig(gig);
+                    }}
+                    className="w-full h-full px-5 py-4 border-0 rounded-2xl font-bold text-slate-700 bg-transparent focus:ring-0 text-sm outline-none cursor-pointer appearance-none"
+                    disabled={isLoadingGigs}
+                  >
+                    <option value="">Sélectionnez un Gig...</option>
+                    {gigs.map((gig) => (
+                      <option key={gig._id} value={gig._id}>
+                        {gig.title || 'Untitled gig'}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {isLoadingGigs && (
+                <p className="text-xs font-bold text-slate-400 flex items-center justify-center gap-2">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" /> Chargement des missions...
+                </p>
+              )}
+              {gigsError && <p className="text-xs font-bold text-red-500">{gigsError}</p>}
+
+              {/* Background Glow effects */}
+              <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl -ml-10 -mt-10" />
+              <div className="absolute bottom-0 right-0 w-32 h-32 bg-violet-500/5 rounded-full blur-2xl -mr-10 -mb-10" />
+            </div>
           </div>
         )}
       </div>
