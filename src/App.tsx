@@ -325,15 +325,17 @@ function AppContent() {
                   </button>
                 )}
               </div>
-              <div className="flex items-center space-x-4 ml-auto">
+
+              {/* Centered Credits, Balance, and Upgrade Widgets */}
+              <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-3">
                 {/* Credit Widget */}
-                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-300 shadow-sm hover:bg-white/10 transition-all duration-300">
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:bg-white/10 transition-all duration-300">
                   <Coins size={14} className="text-yellow-500 animate-pulse-subtle shrink-0" />
                   <span className="whitespace-nowrap">Credits: <span className="text-white font-black">0</span></span>
                 </div>
 
                 {/* Balance Widget */}
-                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-300 shadow-sm hover:bg-white/10 transition-all duration-300">
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:bg-white/10 transition-all duration-300">
                   <DollarSign size={14} className="text-emerald-500 shrink-0" />
                   <span className="whitespace-nowrap">Balance: <span className="text-white font-black">0</span></span>
                 </div>
@@ -341,12 +343,14 @@ function AppContent() {
                 {/* Upgrade Button */}
                 <button
                   onClick={() => setShowUpgradeModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-harx hover:opacity-90 active:scale-95 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-harx-500/20 transition-all duration-300 group shrink-0"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-harx hover:opacity-90 active:scale-95 text-white text-xs font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-harx-500/20 transition-all duration-300 group shrink-0"
                 >
                   <Sparkles size={14} className="animate-pulse text-white group-hover:scale-110 transition-transform shrink-0" />
                   <span className="whitespace-nowrap">Upgrade</span>
                 </button>
+              </div>
 
+              <div className="flex items-center space-x-4 ml-auto">
                 <LanguageSwitcher />
                 <div className="flex items-center space-x-3 bg-white/5 p-1.5 pr-4 rounded-2xl border border-white/10 shadow-sm">
                   <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-black shadow-md overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
