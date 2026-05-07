@@ -166,6 +166,9 @@ const ScriptGenerator: React.FC = () => {
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
   const [isGigSelectorOpen, setIsGigSelectorOpen] = useState(false);
+  const [allSavedScripts, setAllSavedScripts] = useState<any[]>([]);
+  const [isLoadingAllSavedScripts, setIsLoadingAllSavedScripts] = useState(false);
+  const [showNewScriptSelection, setShowNewScriptSelection] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -267,9 +270,44 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
+  const fetchAllSavedScriptsForGigs = async (gigsList: Gig[]) => {
+    if (!gigsList || gigsList.length === 0) return;
+    setIsLoadingAllSavedScripts(true);
+    try {
+      const allItems: any[] = [];
+      for (const g of gigsList) {
+        try {
+          const { data } = await apiClient.get('/rag/scripts', { params: { gigId: g._id } });
+          const items = Array.isArray(data?.data) ? data.data : [];
+          items.forEach((item: any) => {
+            allItems.push({
+              ...item,
+              gigTitle: g.title,
+              category: g.category,
+              gig: g,
+            });
+          });
+        } catch (e) {
+          console.error("Error fetching scripts for gig:", g._id, e);
+        }
+      }
+      setAllSavedScripts(allItems);
+    } catch (err) {
+      console.error("Error in fetchAllSavedScriptsForGigs:", err);
+    } finally {
+      setIsLoadingAllSavedScripts(false);
+    }
+  };
+
   useEffect(() => {
     fetchGigs();
   }, []);
+
+  useEffect(() => {
+    if (gigs && gigs.length > 0) {
+      fetchAllSavedScriptsForGigs(gigs);
+    }
+  }, [gigs]);
 
   useEffect(() => {
     const event = new CustomEvent('setGlobalBack', {
@@ -700,29 +738,6 @@ const ScriptGenerator: React.FC = () => {
                     </div>
                   </div>
 
-                  <hr className="border-slate-100" />
-
-                  {/* Checklist */}
-                  <div className="space-y-2">
-                    <h5 className="text-[9px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
-                      <Shield className="w-3 h-3 text-red-600" /> Exigences Légales & Conseils
-                    </h5>
-                    <ul className="space-y-1.5">
-                      <li className="flex items-start gap-1.5 text-[10px] font-bold text-slate-600">
-                        <CheckCircle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
-                        <span>Avis d'enregistrement obligatoire (RGPD France)</span>
-                      </li>
-                      <li className="flex items-start gap-1.5 text-[10px] font-bold text-slate-600">
-                        <CheckCircle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
-                        <span>Alternance stricte : 1 réplique Agent pour 1 réplique Lead</span>
-                      </li>
-                      <li className="flex items-start gap-1.5 text-[10px] font-bold text-slate-600">
-                        <CheckCircle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
-                        <span>Compact et dynamique (limite totale de 8 messages)</span>
-                      </li>
-                    </ul>
-                  </div>
-
                 </div>
 
               </div>
@@ -753,59 +768,151 @@ const ScriptGenerator: React.FC = () => {
           </div>
         ) : (
           /* Empty / Onboarding state */
-          <div className="max-w-xl mx-auto py-4 px-4 flex-1 flex flex-col justify-center min-h-0 overflow-hidden">
-            <div className="relative overflow-hidden bg-white border border-slate-100 rounded-2xl shadow-xl p-6 text-center space-y-6">
-              
-              {/* Mascot / Icon Container */}
-              <div className="relative w-16 h-16 bg-red-600 rounded-xl flex items-center justify-center mx-auto shadow-md">
-                <Bot className="w-8 h-8 text-white animate-bounce mt-0.5" />
-                <div className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-emerald-500 rounded-full border-2 border-white" />
-              </div>
-
-              {/* Informative text */}
-              <div className="space-y-1.5">
-                <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-red-100">
-                  ASSISTANT HARX AI
-                </span>
-                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Prêt à créer votre script d'appel ?</h3>
-                <p className="text-[11px] text-slate-400 font-bold max-w-sm mx-auto leading-relaxed">
-                  Sélectionnez une de vos missions (Gigs) ci-dessous pour charger son contexte. L'assistant concevra instantanément un script de vente linéaire, ultra-performant et 100% conforme.
-                </p>
-              </div>
-
-              {/* Beautiful Clickable Grid of Gigs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
-                {gigs.map((gig) => (
-                  <button
-                    key={gig._id}
-                    onClick={() => setSelectedGig(gig)}
-                    className="p-3 text-left bg-slate-50 hover:bg-red-50/15 border border-slate-200/80 hover:border-red-500 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md flex flex-col gap-1 active:scale-[0.98] group"
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span className="px-2 py-0.5 bg-red-50/50 text-red-600 rounded text-[8px] font-black uppercase tracking-widest border border-red-100">
-                        {gig.category || 'Général'}
-                      </span>
-                      <Compass className="w-3.5 h-3.5 text-slate-400 group-hover:text-red-600 transition-colors" />
+          <div className="max-w-3xl mx-auto py-4 px-4 flex-1 flex flex-col justify-center min-h-0 overflow-hidden w-full">
+            {allSavedScripts.length > 0 && !showNewScriptSelection ? (
+              /* Existing Scripts List Dashboard */
+              <div className="relative overflow-hidden bg-white border border-slate-100 rounded-2xl shadow-xl p-5 text-center flex flex-col h-full max-h-[500px]">
+                
+                {/* Header Row */}
+                <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-3 mb-4 shrink-0">
+                  <div className="flex items-center gap-2.5 text-left">
+                    <div className="w-9 h-9 bg-red-600 rounded-lg flex items-center justify-center text-white shadow-md">
+                      <FileText className="w-5 h-5" />
                     </div>
-                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-tight mt-1 truncate w-full group-hover:text-red-600 transition-colors">{gig.title}</h4>
-                    <p className="text-[9px] text-slate-400 font-bold truncate w-full">
-                      {gig.description || 'Détails de la mission'}
-                    </p>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Vos Scripts Enregistrés</h3>
+                      <p className="text-[10px] text-slate-400 font-bold">Sélectionnez un script validé ou concevez-en un nouveau</p>
+                    </div>
+                  </div>
+                  
+                  {/* Action button "New Script" */}
+                  <button
+                    onClick={() => setShowNewScriptSelection(true)}
+                    className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-[10px] rounded-lg shadow-md hover:shadow-red-500/10 transition-all duration-200 uppercase tracking-wider flex items-center gap-1.5 active:scale-95"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Nouveau Script
                   </button>
-                ))}
+                </div>
+
+                {isLoadingAllSavedScripts ? (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-6 h-6 animate-spin text-red-600" />
+                    <p className="text-xs font-bold text-slate-400">Chargement de vos scripts...</p>
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 custom-scrollbar text-left">
+                    {allSavedScripts.map((script) => (
+                      <div
+                        key={script._id}
+                        className="p-3 bg-slate-50 hover:bg-red-50/10 border border-slate-200/60 hover:border-red-500 rounded-xl transition-all duration-200 flex items-center justify-between gap-4 group"
+                      >
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-[8px] font-black uppercase tracking-widest border border-red-100">
+                              {script.category || 'Général'}
+                            </span>
+                            <span className="text-[9px] text-slate-400 font-bold">
+                              Mis à jour le {new Date(script.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                            </span>
+                            {script.isActive && (
+                              <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-[7px] font-extrabold uppercase tracking-widest flex items-center gap-1">
+                                <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                                Actif
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight truncate">
+                            {script.gigTitle || 'Sans titre'}
+                          </h4>
+                          <p className="text-[10px] text-slate-500 font-semibold truncate">
+                            {script.details || 'Aucune consigne spécifique'}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => {
+                              setSelectedGig(script.gig);
+                              openSavedScript(script);
+                            }}
+                            className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:border-red-500 hover:text-red-600 font-extrabold text-[9px] rounded-lg transition-all duration-200 uppercase tracking-wider shadow-sm active:scale-95 flex items-center gap-1"
+                          >
+                            Ouvrir
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+            ) : (
+              /* Gigs grid selection screen (for New Script) */
+              <div className="relative overflow-hidden bg-white border border-slate-100 rounded-2xl shadow-xl p-6 text-center space-y-5 w-full">
+                
+                {/* Mascot / Icon Container */}
+                <div className="relative w-16 h-16 bg-red-600 rounded-xl flex items-center justify-center mx-auto shadow-md">
+                  <Bot className="w-8 h-8 text-white animate-bounce mt-0.5" />
+                  <div className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-emerald-500 rounded-full border-2 border-white" />
+                </div>
 
-              {isLoadingGigs && (
-                <p className="text-[10px] font-bold text-slate-400 flex items-center justify-center gap-1.5">
-                  <Loader2 className="w-3 h-3 animate-spin text-red-600" /> Chargement des missions...
-                </p>
-              )}
-              {gigsError && <p className="text-[10px] font-bold text-red-500">{gigsError}</p>}
+                {/* Informative text */}
+                <div className="space-y-1.5">
+                  <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-red-100">
+                    ASSISTANT HARX AI
+                  </span>
+                  <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Prêt à créer votre script d'appel ?</h3>
+                  <p className="text-[11px] text-slate-400 font-bold max-w-sm mx-auto leading-relaxed">
+                    Sélectionnez une de vos missions (Gigs) ci-dessous pour charger son contexte. L'assistant concevra instantanément un script de vente linéaire, ultra-performant et 100% conforme.
+                  </p>
+                </div>
 
-              {/* Background Glow effects */}
-              <div className="absolute top-0 left-0 w-32 h-32 bg-red-500/5 rounded-full blur-2xl -ml-10 -mt-10" />
-              <div className="absolute bottom-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-2xl -mr-10 -mb-10" />
-            </div>
+                {/* Beautiful Clickable Grid of Gigs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
+                  {gigs.map((gig) => (
+                    <button
+                      key={gig._id}
+                      onClick={() => setSelectedGig(gig)}
+                      className="p-3 text-left bg-slate-50 hover:bg-red-50/15 border border-slate-200/80 hover:border-red-500 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md flex flex-col gap-1 active:scale-[0.98] group"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="px-2 py-0.5 bg-red-50/50 text-red-600 rounded text-[8px] font-black uppercase tracking-widest border border-red-100">
+                          {gig.category || 'Général'}
+                        </span>
+                        <Compass className="w-3.5 h-3.5 text-slate-400 group-hover:text-red-600 transition-colors" />
+                      </div>
+                      <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-tight mt-1 truncate w-full group-hover:text-red-600 transition-colors">{gig.title}</h4>
+                      <p className="text-[9px] text-slate-400 font-bold truncate w-full">
+                        {gig.description || 'Détails de la mission'}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+
+                {/* If user clicked New and we have existing scripts, allow Cancel / Go Back to list */}
+                {allSavedScripts.length > 0 && (
+                  <div className="pt-2">
+                    <button
+                      onClick={() => setShowNewScriptSelection(false)}
+                      className="px-4 py-1.5 border border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-700 font-extrabold text-[10px] rounded-lg transition-all duration-200 uppercase tracking-wider shadow-sm active:scale-95"
+                    >
+                      Retour aux scripts
+                    </button>
+                  </div>
+                )}
+
+                {isLoadingGigs && (
+                  <p className="text-[10px] font-bold text-slate-400 flex items-center justify-center gap-1.5">
+                    <Loader2 className="w-3 h-3 animate-spin text-red-600" /> Chargement des missions...
+                  </p>
+                )}
+                {gigsError && <p className="text-[10px] font-bold text-red-500">{gigsError}</p>}
+
+                {/* Background Glow effects */}
+                <div className="absolute top-0 left-0 w-32 h-32 bg-red-500/5 rounded-full blur-2xl -ml-10 -mt-10" />
+                <div className="absolute bottom-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-2xl -mr-10 -mb-10" />
+              </div>
+            )}
           </div>
         )}
       </div>
