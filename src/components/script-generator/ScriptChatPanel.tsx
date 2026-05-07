@@ -189,7 +189,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
           isAutoGenerateWizardActive ? (
             /* Auto-Generation Wizard card */
             <div className="h-full flex items-center justify-center text-center py-6">
-              <div className="max-w-md bg-white border border-slate-100/80 rounded-2xl p-6 shadow-xl space-y-5 animate-in fade-in zoom-in-95 duration-500 text-left">
+              <div className="max-w-xs bg-white border border-slate-100/80 rounded-2xl p-6 shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-500 text-left">
                 {/* Header */}
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                   <div className="w-10 h-10 bg-red-50 border border-red-100 text-red-600 flex items-center justify-center rounded-xl shadow-inner shrink-0">
@@ -201,52 +201,21 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
                   </div>
                 </div>
 
-                {/* Indicators / Steps list */}
-                <div className="space-y-2.5">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Éléments analysés par l'IA :</p>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2.5 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight">Contexte de la mission</p>
-                        <p className="text-[9px] text-slate-400 font-semibold">Analyse automatique de la fiche de poste et des objectifs du Gig.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight">Modèle standard conformité</p>
-                        <p className="text-[9px] text-slate-400 font-semibold">Génération d'un dialogue fluide alterné de 8 répliques de vente.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight">Optimisation du ton</p>
-                        <p className="text-[9px] text-slate-400 font-semibold">Langue française et ton commercial simple, direct et engageant.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Actions */}
-                <div className="pt-2 flex flex-col gap-2">
+                <div className="flex flex-col gap-2">
                   <button
                     type="button"
                     onClick={onAutoGenerate}
                     className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-[10px] uppercase tracking-wider shadow-md hover:shadow-red-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 border border-red-500/20"
                   >
                     <Sparkles className="w-4 h-4" />
-                    Générer le script automatiquement
+                    Générer le script
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setIsAutoGenerateWizardActive(false)}
-                    className="w-full py-2 text-slate-400 hover:text-slate-600 font-extrabold text-[9px] uppercase tracking-wider active:scale-95 transition-all text-center"
+                    className="w-full py-1.5 text-slate-400 hover:text-slate-600 font-extrabold text-[9px] uppercase tracking-wider active:scale-95 transition-all text-center"
                   >
                     Sauter et prompter manuellement
                   </button>
