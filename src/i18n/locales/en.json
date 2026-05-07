@@ -20,6 +20,11 @@
     "interactiveStep": "Interactive Step",
     "logout": "Logout"
   },
+  "navbar": {
+    "credits": "Credits",
+    "balance": "Balance",
+    "upgrade": "Upgrade"
+  },
   "dashboard": {
     "title": "Smart Orchestrator Dashboard",
     "overview": {

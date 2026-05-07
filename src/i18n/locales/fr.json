@@ -20,6 +20,11 @@
     "interactiveStep": "Étape Interactive",
     "logout": "Déconnexion"
   },
+  "navbar": {
+    "credits": "Crédits",
+    "balance": "Solde",
+    "upgrade": "Upgrade"
+  },
   "dashboard": {
     "title": "Tableau de Bord Smart Orchestrator",
     "overview": {
