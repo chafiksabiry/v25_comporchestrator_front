@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
-import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2, Briefcase, FileText, CheckCircle, Shield, Compass, BookOpen } from 'lucide-react';
+import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2, Briefcase, FileText, CheckCircle, Shield, Compass, BookOpen, Check, ChevronDown } from 'lucide-react';
 import apiClient from '../api/knowledgeClient';
 import ScriptChatPanel from './script-generator/ScriptChatPanel';
 import { useTranslation } from 'react-i18next';
@@ -165,6 +165,7 @@ const ScriptGenerator: React.FC = () => {
   const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
+  const [isGigSelectorOpen, setIsGigSelectorOpen] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -619,27 +620,41 @@ const ScriptGenerator: React.FC = () => {
                   </div>
 
                   <div className="relative">
-                    <select
-                      value={selectedGig?._id || ''}
-                      onChange={(e) => {
-                        const gig = gigs.find((g) => g._id === e.target.value) || null;
-                        setSelectedGig(gig);
-                      }}
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-xl font-bold text-slate-700 bg-slate-50/50 focus:ring-4 focus:ring-red-500/5 focus:border-red-600 focus:bg-white transition-all text-xs outline-none cursor-pointer appearance-none"
+                    <button
+                      type="button"
+                      onClick={() => setIsGigSelectorOpen(!isGigSelectorOpen)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl font-extrabold text-slate-700 bg-slate-50/50 hover:bg-slate-100/50 focus:border-red-600 transition-all text-xs flex items-center justify-between cursor-pointer"
                       disabled={isLoadingGigs}
                     >
-                      <option value="">Sélectionnez un Gig...</option>
-                      {gigs.map((gig) => (
-                        <option key={gig._id} value={gig._id}>
-                          {gig.title || 'Untitled gig'}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
-                      <svg className="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                      </svg>
-                    </div>
+                      <span className="truncate">{selectedGig?.title || 'Sélectionnez un Gig...'}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ml-2 ${isGigSelectorOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isGigSelectorOpen && (
+                      <>
+                        <div className="fixed inset-0 z-[100]" onClick={() => setIsGigSelectorOpen(false)} />
+                        <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-100 rounded-xl shadow-2xl p-1 z-[110] max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-1.5 duration-150">
+                          {gigs.map((gig) => (
+                            <button
+                              key={gig._id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedGig(gig);
+                                setIsGigSelectorOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-between gap-2 ${
+                                selectedGig?._id === gig._id
+                                  ? 'bg-red-50 text-red-600'
+                                  : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              <span className="truncate">{gig.title}</span>
+                              {selectedGig?._id === gig._id && <Check className="w-3.5 h-3.5 shrink-0 text-red-600" />}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {isLoadingGigs && (
@@ -758,31 +773,26 @@ const ScriptGenerator: React.FC = () => {
                 </p>
               </div>
 
-              {/* Dropdown Selector card */}
-              <div className="max-w-xs mx-auto p-1 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center shadow-inner">
-                <div className="relative flex-1">
-                  <select
-                    value={selectedGig?._id || ''}
-                    onChange={(e) => {
-                      const gig = gigs.find((g) => g._id === e.target.value) || null;
-                      setSelectedGig(gig);
-                    }}
-                    className="w-full px-4 py-2 bg-transparent border-0 rounded-lg font-bold text-slate-700 focus:ring-0 text-xs outline-none cursor-pointer appearance-none"
-                    disabled={isLoadingGigs}
+              {/* Beautiful Clickable Grid of Gigs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
+                {gigs.map((gig) => (
+                  <button
+                    key={gig._id}
+                    onClick={() => setSelectedGig(gig)}
+                    className="p-3 text-left bg-slate-50 hover:bg-red-50/15 border border-slate-200/80 hover:border-red-500 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md flex flex-col gap-1 active:scale-[0.98] group"
                   >
-                    <option value="">Sélectionnez un Gig...</option>
-                    {gigs.map((gig) => (
-                      <option key={gig._id} value={gig._id}>
-                        {gig.title || 'Untitled gig'}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
-                    <svg className="fill-current h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
-                  </div>
-                </div>
+                    <div className="flex items-center justify-between w-full">
+                      <span className="px-2 py-0.5 bg-red-50/50 text-red-600 rounded text-[8px] font-black uppercase tracking-widest border border-red-100">
+                        {gig.category || 'Général'}
+                      </span>
+                      <Compass className="w-3.5 h-3.5 text-slate-400 group-hover:text-red-600 transition-colors" />
+                    </div>
+                    <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-tight mt-1 truncate w-full group-hover:text-red-600 transition-colors">{gig.title}</h4>
+                    <p className="text-[9px] text-slate-400 font-bold truncate w-full">
+                      {gig.description || 'Détails de la mission'}
+                    </p>
+                  </button>
+                ))}
               </div>
 
               {isLoadingGigs && (
