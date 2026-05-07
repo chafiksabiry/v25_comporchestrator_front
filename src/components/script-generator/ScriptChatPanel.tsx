@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Loader2, Send, User, CheckCircle, History, Trash2, Plus, X, ChevronDown } from 'lucide-react';
+import { Bot, Loader2, Send, User, CheckCircle, History, Trash2, Plus, X, ChevronDown, Sparkles, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 type ChatMessage = {
@@ -28,6 +28,11 @@ interface ScriptChatPanelProps {
   onOpenSavedScript: (script: any) => void;
   onDeleteSavedScript: (scriptId: string) => Promise<void>;
   onStartNewChat: () => void;
+
+  // Wizard auto-generation props
+  onAutoGenerate: () => void;
+  isAutoGenerateWizardActive: boolean;
+  setIsAutoGenerateWizardActive: (val: boolean) => void;
 }
 
 const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
@@ -46,6 +51,9 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
   onOpenSavedScript,
   onDeleteSavedScript,
   onStartNewChat,
+  onAutoGenerate,
+  isAutoGenerateWizardActive,
+  setIsAutoGenerateWizardActive,
 }) => {
   const { t } = useTranslation();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -178,19 +186,89 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
       {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-slate-50/30 via-slate-50/50 to-slate-100/40 min-h-0 custom-scrollbar">
         {messages.length === 0 && (
-          <div className="h-full flex items-center justify-center text-center py-12">
-            <div className="max-w-md space-y-4 animate-in fade-in zoom-in-95 duration-500">
-              <div className="w-16 h-16 bg-gradient-to-br from-red-50 to-red-100/40 border border-red-200/50 text-red-600 flex items-center justify-center rounded-2xl mx-auto shadow-md animate-bounce">
-                <Bot className="w-8 h-8" />
-              </div>
-              <div className="space-y-1.5">
-                <p className="font-black text-slate-900 text-lg uppercase tracking-tight">Générateur de Script conversationnel</p>
-                <p className="text-xs text-slate-400 font-bold max-w-xs mx-auto leading-relaxed">
-                  {t('scriptGenerator.chatPanel.startConversation')}
-                </p>
+          isAutoGenerateWizardActive ? (
+            /* Auto-Generation Wizard card */
+            <div className="h-full flex items-center justify-center text-center py-6">
+              <div className="max-w-md bg-white border border-slate-100/80 rounded-2xl p-6 shadow-xl space-y-5 animate-in fade-in zoom-in-95 duration-500 text-left">
+                {/* Header */}
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                  <div className="w-10 h-10 bg-red-50 border border-red-100 text-red-600 flex items-center justify-center rounded-xl shadow-inner shrink-0">
+                    <Sparkles className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Générateur Automatique</h3>
+                    <p className="text-[10px] text-slate-400 font-bold">Initialisez votre script en un clic</p>
+                  </div>
+                </div>
+
+                {/* Indicators / Steps list */}
+                <div className="space-y-2.5">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Éléments analysés par l'IA :</p>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2.5 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight">Contexte de la mission</p>
+                        <p className="text-[9px] text-slate-400 font-semibold">Analyse automatique de la fiche de poste et des objectifs du Gig.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2.5 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight">Modèle standard conformité</p>
+                        <p className="text-[9px] text-slate-400 font-semibold">Génération d'un dialogue fluide alterné de 8 répliques de vente.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2.5 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight">Optimisation du ton</p>
+                        <p className="text-[9px] text-slate-400 font-semibold">Langue française et ton commercial simple, direct et engageant.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="pt-2 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={onAutoGenerate}
+                    className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-[10px] uppercase tracking-wider shadow-md hover:shadow-red-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 border border-red-500/20"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Générer le script automatiquement
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsAutoGenerateWizardActive(false)}
+                    className="w-full py-2 text-slate-400 hover:text-slate-600 font-extrabold text-[9px] uppercase tracking-wider active:scale-95 transition-all text-center"
+                  >
+                    Sauter et prompter manuellement
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            /* Original empty state */
+            <div className="h-full flex items-center justify-center text-center py-12">
+              <div className="max-w-md space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                <div className="w-16 h-16 bg-gradient-to-br from-red-50 to-red-100/40 border border-red-200/50 text-red-600 flex items-center justify-center rounded-2xl mx-auto shadow-md animate-bounce">
+                  <Bot className="w-8 h-8" />
+                </div>
+                <div className="space-y-1.5">
+                  <p className="font-black text-slate-900 text-lg uppercase tracking-tight">Générateur de Script conversationnel</p>
+                  <p className="text-xs text-slate-400 font-bold max-w-xs mx-auto leading-relaxed">
+                    {t('scriptGenerator.chatPanel.startConversation')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )
         )}
         
         {messages.map((message) => {
@@ -301,7 +379,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
       </div>
 
       {/* Input area */}
-      <form onSubmit={onSubmit} className="border-t border-slate-100 bg-white p-3 shrink-0">
+      <form onSubmit={onSubmit} className={`border-t border-slate-100 bg-white p-3 shrink-0 transition-opacity duration-300 ${isAutoGenerateWizardActive ? 'opacity-40 pointer-events-none' : ''}`}>
         <div className="flex items-center gap-2">
           <textarea
             value={input}
@@ -314,14 +392,14 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
                 }
               }
             }}
-            placeholder={t('scriptGenerator.chatPanel.inputPlaceholder')}
+            placeholder={isAutoGenerateWizardActive ? "Choisissez une option de génération ci-dessus..." : t('scriptGenerator.chatPanel.inputPlaceholder')}
             className="flex-1 px-4 py-2 border border-slate-200 rounded-xl font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-600 transition-all text-xs bg-slate-50/30 resize-none h-[42px]"
-            disabled={!selectedGigId || isSending}
+            disabled={!selectedGigId || isSending || isAutoGenerateWizardActive}
             rows={1}
           />
           <button
             type="submit"
-            disabled={!selectedGigId || !input.trim() || isSending}
+            disabled={!selectedGigId || !input.trim() || isSending || isAutoGenerateWizardActive}
             className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 font-black uppercase tracking-wider text-[10px] transition-all shadow-sm active:scale-95 shrink-0 h-[42px]"
           >
             {isSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
