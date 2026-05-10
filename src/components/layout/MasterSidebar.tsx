@@ -153,6 +153,8 @@ export function MasterSidebar({
 
   const orchestratorItems = [
     { icon: <Building2 size={20} />, label: t('sidebar.companyOnboarding'), key: 'company-onboarding' },
+    { icon: <ScrollText size={20} />, label: t('sidebar.scriptGenerator'), key: 'script-generator' },
+    { icon: <Book size={20} />, label: t('sidebar.training'), key: 'training' },
   ];
 
   const filteredDashboardItems = dashboardItems.filter(item => {
