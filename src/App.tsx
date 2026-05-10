@@ -23,6 +23,7 @@ import ZohoCallback from './components/onboarding/ZohoCallback';
 import ZohoAuth from './components/onboarding/ZohoAuth';
 import KnowledgeBase from './components/KnowledgeBase';
 import ScriptGenerator from './components/ScriptGenerator';
+import { AppContent as TrainingSection } from './components/training/App';
 import ZohoService from './services/zohoService';
 import StripeContainer from './components/stripe/StripeContainer';
 import DashboardApp from './components/dashboard/App';
@@ -322,6 +323,7 @@ function AppContent() {
       case 'optimization': return <Optimization />;
       case 'knowledge-base': return <KnowledgeBase />;
       case 'script-generator': return <ScriptGenerator />;
+      case 'training': return <TrainingSection isEmbedded={true} />;
       case 'company-onboarding':
       default:
         return <CompanyOnboarding />;
