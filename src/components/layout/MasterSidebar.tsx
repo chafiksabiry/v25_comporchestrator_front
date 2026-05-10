@@ -141,6 +141,8 @@ export function MasterSidebar({
     { icon: <Briefcase size={20} />, label: t('sidebar.gigs'), path: '/dashboard/gigs', key: 'gigs', requiresGigs: true },
     { icon: <UserPlus size={20} />, label: t('sidebar.leads'), path: '/dashboard/leads', key: 'leads', requiresLeads: true },
     { icon: <Phone size={20} />, label: t('sidebar.calls'), path: '/dashboard/calls', key: 'calls', alwaysShow: true },
+    { icon: <ScrollText size={20} />, label: t('sidebar.scriptGenerator'), path: '/dashboard/script-generator', key: 'script-generator', alwaysShow: true },
+    { icon: <Book size={20} />, label: t('sidebar.training'), path: '/dashboard/training', key: 'training', alwaysShow: true },
     { icon: <Users size={20} />, label: t('sidebar.repMatching'), path: '/dashboard/rep-matching', key: 'rep-matching', requiresRepMatching: true },
     { icon: <Calendar size={20} />, label: t('sidebar.scheduler'), path: '/dashboard/scheduler', key: 'scheduler', requiresRepMatching: true },
     { icon: <Mail size={20} />, label: t('sidebar.emails'), path: '/dashboard/emails', key: 'emails', requiresRepMatching: true },
