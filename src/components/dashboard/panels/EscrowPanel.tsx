@@ -72,12 +72,26 @@ export function EscrowPanel() {
 
   const [showLockModal, setShowLockModal] = useState(false);
   const [lockAmount, setLockAmount] = useState('250');
-  const [lockGigId, setLockGigId] = useState('gig_custom_101');
-  const [lockGigTitle, setLockGigTitle] = useState('Outbound Solar Campaign');
-  const [lockAgentId, setLockAgentId] = useState('rep_michael_55');
-  const [lockAgentName, setLockAgentName] = useState('Michael Chang');
+  const [lockGigId, setLockGigId] = useState('');
+  const [lockGigTitle, setLockGigTitle] = useState('');
+  const [lockAgentId, setLockAgentId] = useState('');
+  const [lockAgentName, setLockAgentName] = useState('');
   const [lockPurpose, setLockPurpose] = useState('Weekly milestone performance guarantee');
   const [submittingLock, setSubmittingLock] = useState(false);
+
+  interface EnrolledRep {
+    agentId: string;
+    name: string;
+  }
+
+  interface GigAndReps {
+    gigId: string;
+    title: string;
+    enrolledReps: EnrolledRep[];
+  }
+
+  const [gigsAndReps, setGigsAndReps] = useState<GigAndReps[]>([]);
+  const [gigsLoading, setGigsLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'contracts' | 'history'>('contracts');
 
@@ -129,6 +143,50 @@ export function EscrowPanel() {
       window.removeEventListener('refreshBalance', handleRefreshRequest);
     };
   }, [companyId]);
+
+  useEffect(() => {
+    const fetchGigsAndReps = async () => {
+      setGigsLoading(true);
+      try {
+        const res = await fetch(`${apiBaseUrl}/escrow/gigs-and-reps/${companyId}`);
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && result.data) {
+            setGigsAndReps(result.data);
+            
+            // Set initial defaults if available
+            if (result.data.length > 0) {
+              const firstGig = result.data[0];
+              setLockGigId(firstGig.gigId);
+              setLockGigTitle(firstGig.title);
+              
+              if (firstGig.enrolledReps.length > 0) {
+                const firstRep = firstGig.enrolledReps[0];
+                setLockAgentId(firstRep.agentId);
+                setLockAgentName(firstRep.name);
+              } else {
+                setLockAgentId('');
+                setLockAgentName('');
+              }
+            } else {
+              setLockGigId('');
+              setLockGigTitle('');
+              setLockAgentId('');
+              setLockAgentName('');
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching gigs and reps dropdown data:', err);
+      } finally {
+        setGigsLoading(false);
+      }
+    };
+
+    if (companyId) {
+      fetchGigsAndReps();
+    }
+  }, [companyId, showLockModal]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -608,44 +666,39 @@ export function EscrowPanel() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/10">
-                    <th className="px-6 py-4">Transaction</th>
-                    <th className="px-6 py-4">Type</th>
+                    <th className="px-6 py-4">Activité / Type</th>
                     <th className="px-6 py-4 text-right">Montant</th>
                     <th className="px-6 py-4">Statut</th>
-                    <th className="px-6 py-4">Référence</th>
                     <th className="px-6 py-4">Date de transaction</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
                   {transactions.map((tx) => (
                     <tr key={tx._id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-slate-800">{tx.description}</div>
-                      </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 font-bold text-slate-800">
                         {tx.type === 'deposit' && (
-                          <span className="inline-flex items-center gap-1 text-emerald-600 font-bold uppercase text-[9px] tracking-wide">
-                            <ArrowDownLeft className="w-3 h-3" /> Dépôt / Alimentation
+                          <span className="inline-flex items-center gap-1.5 text-emerald-600 font-bold uppercase text-[10px] tracking-wide">
+                            <ArrowDownLeft className="w-3.5 h-3.5 bg-emerald-50 p-0.5 rounded" /> Dépôt / Alimentation
                           </span>
                         )}
                         {tx.type === 'withdrawal' && (
-                          <span className="inline-flex items-center gap-1 text-slate-600 font-bold uppercase text-[9px] tracking-wide">
-                            <ArrowUpRight className="w-3 h-3" /> Retrait
+                          <span className="inline-flex items-center gap-1.5 text-slate-600 font-bold uppercase text-[10px] tracking-wide">
+                            <ArrowUpRight className="w-3.5 h-3.5 bg-slate-50 p-0.5 rounded" /> Retrait / Remboursement
                           </span>
                         )}
                         {tx.type === 'escrow_lock' && (
-                          <span className="inline-flex items-center gap-1 text-amber-600 font-bold uppercase text-[9px] tracking-wide">
-                            <Lock className="w-3 h-3" /> Séquestre Bloqué
+                          <span className="inline-flex items-center gap-1.5 text-amber-600 font-bold uppercase text-[10px] tracking-wide">
+                            <Lock className="w-3.5 h-3.5 bg-amber-50 p-0.5 rounded" /> Séquestre Bloqué
                           </span>
                         )}
                         {tx.type === 'escrow_release' && (
-                          <span className="inline-flex items-center gap-1 text-emerald-500 font-bold uppercase text-[9px] tracking-wide">
-                            <Unlock className="w-3 h-3" /> Séquestre Libéré
+                          <span className="inline-flex items-center gap-1.5 text-emerald-500 font-bold uppercase text-[10px] tracking-wide">
+                            <Unlock className="w-3.5 h-3.5 bg-emerald-50 p-0.5 rounded" /> Séquestre Libéré
                           </span>
                         )}
                         {tx.type === 'escrow_refund' && (
-                          <span className="inline-flex items-center gap-1 text-indigo-600 font-bold uppercase text-[9px] tracking-wide">
-                            <X className="w-3 h-3" /> Restitution
+                          <span className="inline-flex items-center gap-1.5 text-indigo-600 font-bold uppercase text-[10px] tracking-wide">
+                            <X className="w-3.5 h-3.5 bg-indigo-50 p-0.5 rounded" /> Restitution
                           </span>
                         )}
                       </td>
@@ -669,9 +722,6 @@ export function EscrowPanel() {
                             Success
                           </span>
                         )}
-                      </td>
-                      <td className="px-6 py-4 font-mono text-[10px] text-slate-400">
-                        {tx.referenceId || 'No ref'}
                       </td>
                       <td className="px-6 py-4 text-slate-500 font-medium">
                         {new Date(tx.createdAt).toLocaleDateString('en-US', {
@@ -867,23 +917,73 @@ export function EscrowPanel() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Campagne / Gig</label>
-                  <input
-                    type="text"
-                    value={lockGigTitle}
-                    onChange={(e) => setLockGigTitle(e.target.value)}
-                    required
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-2.5 px-3.5 text-slate-800 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
-                  />
+                  {gigsLoading ? (
+                    <div className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-slate-400 text-xs font-bold animate-pulse">Chargement...</div>
+                  ) : gigsAndReps.length === 0 ? (
+                    <div className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-slate-400 text-xs font-bold">Aucune campagne disponible</div>
+                  ) : (
+                    <select
+                      value={lockGigId}
+                      onChange={(e) => {
+                        const selectedGig = gigsAndReps.find(g => g.gigId === e.target.value);
+                        if (selectedGig) {
+                          setLockGigId(selectedGig.gigId);
+                          setLockGigTitle(selectedGig.title);
+                          if (selectedGig.enrolledReps.length > 0) {
+                            setLockAgentId(selectedGig.enrolledReps[0].agentId);
+                            setLockAgentName(selectedGig.enrolledReps[0].name);
+                          } else {
+                            setLockAgentId('');
+                            setLockAgentName('');
+                          }
+                        }
+                      }}
+                      required
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-2.5 px-3.5 text-slate-800 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all cursor-pointer"
+                    >
+                      {gigsAndReps.map((gig) => (
+                        <option key={gig.gigId} value={gig.gigId}>
+                          {gig.title}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Nom du Représentant</label>
-                  <input
-                    type="text"
-                    value={lockAgentName}
-                    onChange={(e) => setLockAgentName(e.target.value)}
-                    required
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-2.5 px-3.5 text-slate-800 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
-                  />
+                  {gigsLoading ? (
+                    <div className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-slate-400 text-xs font-bold animate-pulse">Chargement...</div>
+                  ) : !lockGigId ? (
+                    <div className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-slate-400 text-xs font-bold">Sélectionnez une campagne</div>
+                  ) : (
+                    (() => {
+                      const currentGig = gigsAndReps.find(g => g.gigId === lockGigId);
+                      const reps = currentGig?.enrolledReps || [];
+                      if (reps.length === 0) {
+                        return <div className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-slate-400 text-xs font-bold">Aucun représentant inscrit</div>;
+                      }
+                      return (
+                        <select
+                          value={lockAgentId}
+                          onChange={(e) => {
+                            const selectedRep = reps.find(r => r.agentId === e.target.value);
+                            if (selectedRep) {
+                              setLockAgentId(selectedRep.agentId);
+                              setLockAgentName(selectedRep.name);
+                            }
+                          }}
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-2.5 px-3.5 text-slate-800 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all cursor-pointer"
+                        >
+                          {reps.map((rep) => (
+                            <option key={rep.agentId} value={rep.agentId}>
+                              {rep.name}
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    })()
+                  )}
                 </div>
               </div>
 
