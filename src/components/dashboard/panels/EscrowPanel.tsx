@@ -153,7 +153,7 @@ export function EscrowPanel() {
         body: JSON.stringify({
           companyId,
           amount: parsed,
-          description: depositDesc
+          description: 'Balance Top-up (Stripe Payment)'
         })
       });
 
@@ -717,17 +717,7 @@ export function EscrowPanel() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Méthode de Paiement / Description</label>
-                <input
-                  type="text"
-                  value={depositDesc}
-                  onChange={(e) => setDepositDesc(e.target.value)}
-                  placeholder="e.g. Visa corporate payment"
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-2.5 px-3.5 text-slate-800 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
-                />
-              </div>
+
 
               <div className="grid grid-cols-3 gap-2 pt-1">
                 {['250', '500', '1000'].map((amt) => (
