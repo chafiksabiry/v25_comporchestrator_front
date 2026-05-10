@@ -653,10 +653,22 @@ export function EscrowPanel() {
                         ${tx.amount.toFixed(2)}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-100">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                          Success
-                        </span>
+                        {tx.status === 'pending' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            Pending / En attente
+                          </span>
+                        ) : tx.status === 'failed' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-200">
+                            <X className="w-3 h-3 text-rose-500" />
+                            Failed
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            Success
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 font-mono text-[10px] text-slate-400">
                         {tx.referenceId || 'No ref'}
