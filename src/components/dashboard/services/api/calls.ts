@@ -40,6 +40,12 @@ export interface Call {
   };
   createdAt: string;
   updatedAt: string;
+  transactionOccurred?: boolean | null;
+  transaction?: {
+    validByReps: boolean | null;
+    validByCompany: boolean | null;
+    valid: boolean | null;
+  } | null;
 
 }
 

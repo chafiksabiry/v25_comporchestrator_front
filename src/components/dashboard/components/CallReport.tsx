@@ -46,6 +46,25 @@ function CallReportCard() {
 
 
 
+    const handleValidateByCompany = async (isValidByCompany: boolean) => {
+        if (!call) return;
+        try {
+            const currentRepsVal = call.transaction?.validByReps ?? call.transactionOccurred ?? null;
+            const updatedTransaction = {
+                validByReps: currentRepsVal,
+                validByCompany: isValidByCompany,
+                valid: (currentRepsVal === true && isValidByCompany === true)
+            };
+            const response = await callsApi.update(call._id, { transaction: updatedTransaction });
+            if (response) {
+                const updatedCall = response.data || response;
+                setCall(updatedCall);
+            }
+        } catch (err) {
+            console.error("Failed to update transaction validation:", err);
+        }
+    };
+
     useEffect(() => {
         if (!call) return; // Ensure the call object exists
 
@@ -174,6 +193,87 @@ function CallReportCard() {
                         )}
                         <span><strong>Status:</strong> {call?.status || 'N/A'}</span>
                     </div>
+                </div>
+            </div>
+
+            {/* Transaction Dual-Validation Panel */}
+            <div className="border border-slate-200 rounded-lg p-5 bg-slate-50/50">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                        <Target className="h-5 w-5 text-indigo-500" />
+                        <h3 className="text-sm font-semibold text-indigo-900">Validation de la Transaction</h3>
+                    </div>
+                    {call?.transaction?.valid ? (
+                        <span className="px-3 py-1 bg-emerald-500 text-white rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-emerald-500/25">
+                            <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                            Validation Globale OK
+                        </span>
+                    ) : (
+                        <span className="px-3 py-1 bg-amber-500 text-white rounded-full text-xs font-bold uppercase tracking-wider">
+                            En cours de validation
+                        </span>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* Reps Validation */}
+                    <div className="bg-white p-4 rounded-lg border border-slate-100 flex items-center justify-between shadow-sm">
+                        <div>
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Commercial (Rep)</p>
+                            <p className="text-sm font-semibold text-slate-700">DÉCISION COMMERCIALE :</p>
+                        </div>
+                        <div>
+                            {call?.transaction?.validByReps === true || call?.transactionOccurred === true ? (
+                                <span className="px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl text-xs font-black uppercase tracking-wider">
+                                    TRANSACTION CONFIRMÉE
+                                </span>
+                            ) : call?.transaction?.validByReps === false || call?.transactionOccurred === false ? (
+                                <span className="px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl text-xs font-black uppercase tracking-wider">
+                                    AUCUNE TRANSACTION
+                                </span>
+                            ) : (
+                                <span className="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-wider">
+                                    NON SPÉCIFIÉE
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Company Validation */}
+                    <div className="bg-white p-4 rounded-lg border border-slate-100 flex items-center justify-between shadow-sm">
+                        <div>
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Entreprise (Company)</p>
+                            <p className="text-sm font-semibold text-slate-700">VOTRE VALIDATION :</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => handleValidateByCompany(true)}
+                                className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 ${
+                                    call?.transaction?.validByCompany === true
+                                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25'
+                                        : 'bg-white hover:bg-slate-50 text-emerald-600 border border-emerald-200'
+                                }`}
+                            >
+                                Approuver
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleValidateByCompany(false)}
+                                className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 ${
+                                    call?.transaction?.validByCompany === false
+                                        ? 'bg-rose-500 text-white shadow-md shadow-rose-500/25'
+                                        : 'bg-white hover:bg-slate-50 text-rose-600 border border-rose-200'
+                                }`}
+                            >
+                                Refuser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="text-xs text-slate-400 italic">
+                    💡 La transaction est considérée comme globalement valide uniquement lorsque le représentant ET l'entreprise ont tous deux marqué la transaction comme approuvée / confirmée.
                 </div>
             </div>
 
