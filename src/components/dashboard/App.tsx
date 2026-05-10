@@ -26,7 +26,7 @@ import CallsDashboardPage from './pages/CallsDashboardPage';
 import { CompanyPerformanceDashboard } from './pages/CompanyPerformanceDashboard';
 import { EscrowPanel } from './panels/EscrowPanel';
 import ScriptGenerator from '../ScriptGenerator';
-import { AppContent as TrainingSection } from '../training/App';
+import RepOnboarding from '../onboarding/RepOnboarding';
 
 function App() {
   return (
@@ -43,7 +43,7 @@ function App() {
         <Route path="/dashboard/scheduler" element={<SchedulerPanel />} />
         <Route path="/dashboard/calls" element={<CallsDashboardPage />} />
         <Route path="/dashboard/script-generator" element={<ScriptGenerator />} />
-        <Route path="/dashboard/training" element={<TrainingSection isEmbedded={true} />} />
+        <Route path="/dashboard/training" element={<RepOnboarding />} />
         <Route path="/dashboard/telnyx-call-test" element={<TelnyxCallTest />} />
         <Route path="/dashboard/call-report" element={<CallReportCard />} />
         <Route path="/dashboard/emails" element={<EmailsPanel />} />
