@@ -1112,47 +1112,58 @@ export function EscrowPanel() {
       )}
       {/* 4. Modal: Custom Confirmation for releasing funds */}
       {showReleaseConfirmModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999999] animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom-4 p-6 text-center space-y-4">
-            <div className="mx-auto w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/10 animate-bounce-subtle">
-              <Sparkles className="w-7 h-7" />
-            </div>
-            
-            <div className="space-y-1.5">
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">Confirmer le Déblocage de Fonds</h3>
-              <p className="text-xs text-slate-500 font-medium px-4">
-                Êtes-vous sûr de vouloir libérer <span className="font-extrabold text-emerald-600">${releaseAmount.toFixed(2)}</span> à <span className="font-extrabold text-slate-800">{releaseAgentName}</span> ?
-              </p>
-            </div>
-
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 text-[11px] text-slate-500 text-left leading-relaxed">
-              ⚠️ <span className="font-bold text-slate-700">Action Irréversible :</span> Cette transaction transfère immédiatement et définitivement les fonds du compte séquestre de l'entreprise vers le solde disponible du représentant.
-            </div>
-
-            <div className="flex items-center justify-center space-x-2.5 pt-2">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999999] overflow-y-auto animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 my-auto relative">
+            <div className="bg-gradient-to-r from-orange-400 to-rose-500 p-6 text-white relative">
               <button
-                type="button"
-                disabled={releasingInProcess}
                 onClick={() => setShowReleaseConfirmModal(false)}
-                className="px-5 py-2.5 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all active:scale-95"
+                className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all"
               >
-                Annuler
+                <X className="w-4 h-4" />
               </button>
-              <button
-                type="button"
-                disabled={releasingInProcess}
-                onClick={executeReleaseEscrow}
-                className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-1.5"
-              >
-                {releasingInProcess ? (
-                  <>
-                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-white"></div>
-                    <span>Transfert...</span>
-                  </>
-                ) : (
-                  <span>Libérer les Fonds</span>
-                )}
-              </button>
+              <div className="flex items-center gap-2.5 mb-2">
+                <Sparkles className="w-5 h-5 animate-pulse" />
+                <span className="text-[10px] bg-white/20 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Disbursal Validation</span>
+              </div>
+              <h3 className="text-lg font-black tracking-tight leading-none">Libérer les Fonds</h3>
+              <p className="text-xs text-white/80 mt-1">Disburse secure milestone payout directly to representative's available balance.</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4 text-xs text-slate-600 space-y-3">
+                <p className="font-bold text-slate-700 leading-snug">
+                  Êtes-vous sûr de vouloir libérer <span className="font-black text-rose-500 text-sm block mt-0.5">${releaseAmount.toFixed(2)}</span> à <span className="font-black text-slate-950">{releaseAgentName}</span> ?
+                </p>
+                <div className="text-[10px] bg-white border border-rose-500/15 rounded-xl p-3 text-slate-500 leading-relaxed">
+                  ⚠️ <span className="font-extrabold text-slate-700">Action Irréversible :</span> Cette action transfère définitivement et immédiatement les fonds vers le solde disponible du représentant.
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-end space-x-2.5">
+                <button
+                  type="button"
+                  disabled={releasingInProcess}
+                  onClick={() => setShowReleaseConfirmModal(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all active:scale-95"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  disabled={releasingInProcess}
+                  onClick={executeReleaseEscrow}
+                  className="px-5 py-2 bg-gradient-to-r from-orange-400 to-rose-500 text-white hover:from-orange-500 hover:to-rose-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-1.5"
+                >
+                  {releasingInProcess ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-white"></div>
+                      <span>Transfert...</span>
+                    </>
+                  ) : (
+                    <span>Libérer les Fonds</span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1160,47 +1171,58 @@ export function EscrowPanel() {
 
       {/* 5. Modal: Custom Confirmation for refunding/canceling escrow */}
       {showRefundConfirmModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999999] animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom-4 p-6 text-center space-y-4">
-            <div className="mx-auto w-14 h-14 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/10 animate-bounce-subtle">
-              <RefreshCw className="w-7 h-7" />
-            </div>
-            
-            <div className="space-y-1.5">
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">Annuler & Restituer les Fonds</h3>
-              <p className="text-xs text-slate-500 font-medium px-4">
-                Êtes-vous sûr de vouloir annuler ce contrat et restituer <span className="font-extrabold text-rose-600">${refundAmount.toFixed(2)}</span> sur votre solde disponible ?
-              </p>
-            </div>
-
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 text-[11px] text-slate-500 text-left leading-relaxed">
-              🔄 <span className="font-bold text-slate-700">Restitution Immédiate :</span> La garantie séquestre sera annulée et la somme sera instantanément créditée à nouveau sur votre portefeuille disponible d'entreprise.
-            </div>
-
-            <div className="flex items-center justify-center space-x-2.5 pt-2">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999999] overflow-y-auto animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 my-auto relative">
+            <div className="bg-gradient-to-r from-orange-400 to-rose-500 p-6 text-white relative">
               <button
-                type="button"
-                disabled={refundingInProcess}
                 onClick={() => setShowRefundConfirmModal(false)}
-                className="px-5 py-2.5 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all active:scale-95"
+                className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all"
               >
-                Annuler
+                <X className="w-4 h-4" />
               </button>
-              <button
-                type="button"
-                disabled={refundingInProcess}
-                onClick={executeRefundEscrow}
-                className="px-6 py-2.5 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-1.5"
-              >
-                {refundingInProcess ? (
-                  <>
-                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-white"></div>
-                    <span>Restitution...</span>
-                  </>
-                ) : (
-                  <span>Restituer Solde</span>
-                )}
-              </button>
+              <div className="flex items-center gap-2.5 mb-2">
+                <RefreshCw className="w-5 h-5 animate-pulse" />
+                <span className="text-[10px] bg-white/20 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Secure Capital Return</span>
+              </div>
+              <h3 className="text-lg font-black tracking-tight leading-none">Restituer Solde</h3>
+              <p className="text-xs text-white/80 mt-1">Cancel secure milestone guarantee and return capital to your available balance.</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4 text-xs text-slate-600 space-y-3">
+                <p className="font-bold text-slate-700 leading-snug">
+                  Êtes-vous sûr de vouloir annuler ce contrat et restituer <span className="font-black text-rose-500 text-sm block mt-0.5">${refundAmount.toFixed(2)}</span> sur votre solde disponible ?
+                </p>
+                <div className="text-[10px] bg-white border border-rose-500/15 rounded-xl p-3 text-slate-500 leading-relaxed">
+                  🔄 <span className="font-extrabold text-slate-700">Restitution Immédiate :</span> La garantie séquestre sera annulée et la somme sera instantanément recréditée sur votre portefeuille disponible d'entreprise.
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-end space-x-2.5">
+                <button
+                  type="button"
+                  disabled={refundingInProcess}
+                  onClick={() => setShowRefundConfirmModal(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all active:scale-95"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  disabled={refundingInProcess}
+                  onClick={executeRefundEscrow}
+                  className="px-5 py-2 bg-gradient-to-r from-orange-400 to-rose-500 text-white hover:from-orange-500 hover:to-rose-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-1.5"
+                >
+                  {refundingInProcess ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-white"></div>
+                      <span>Restitution...</span>
+                    </>
+                  ) : (
+                    <span>Restituer les Fonds</span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
