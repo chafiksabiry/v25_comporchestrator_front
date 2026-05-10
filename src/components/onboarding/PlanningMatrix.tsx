@@ -16,7 +16,6 @@ interface PlanningMatrixProps {
     availabilitySchedule?: { day: string; start: string; end: string }[];
 }
 
-const HOURS = Array.from({ length: 15 }, (_, i) => i + 9); // 9:00 to 23:00
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
 /** Lundi … dimanche de la semaine calendaire qui contient `anchor` (semaine ISO lundi) */
@@ -31,6 +30,25 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
     const [isSaving, setIsSaving] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [dragValue, setDragValue] = useState<number | null>(null);
+
+    const hoursList = useMemo(() => {
+        let minH = 9;
+        let maxH = 23;
+        if (availabilitySchedule && availabilitySchedule.length > 0) {
+            availabilitySchedule.forEach((entry: any) => {
+                const startHour = Number.parseInt(String(entry.start || '').slice(0, 2), 10);
+                const endHour = Number.parseInt(String(entry.end || '').slice(0, 2), 10);
+                if (!Number.isNaN(startHour) && startHour < minH) {
+                    minH = startHour;
+                }
+                if (!Number.isNaN(endHour) && endHour > maxH) {
+                    maxH = endHour;
+                }
+            });
+        }
+        const length = maxH - minH + 1;
+        return Array.from({ length: length > 0 ? length : 15 }, (_, i) => i + minH);
+    }, [availabilitySchedule]);
 
     useEffect(() => {
         const handlePointerUp = () => {
@@ -47,7 +65,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
 
         DAYS.forEach(dayName => {
             matrix[dayName] = {};
-            HOURS.forEach(hour => {
+            hoursList.forEach(hour => {
                 const timeStr = `${hour.toString().padStart(2, '0')}:00`;
                 const slot = slots.find(s => s.date === dayName && s.startTime === timeStr && s.gigId === gigId);
                 const available = isHourAvailable(dayName, hour);
@@ -66,7 +84,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             });
             return next;
         });
-    }, [slots, gigId, availabilitySchedule]);
+    }, [slots, gigId, availabilitySchedule, hoursList]);
     // Removed old sync logic
 
     const handleCellChange = (dateStr: string, hour: number, value: string) => {
@@ -86,7 +104,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             const slotsToUpdate: Partial<TimeSlot>[] = [];
 
             for (const dayName of Object.keys(localMatrix)) {
-                for (const hour of HOURS) {
+                for (const hour of hoursList) {
                     const capacity = localMatrix[dayName][hour];
                     const timeStr = `${hour.toString().padStart(2, '0')}:00`;
                     const endTimeStr = `${(hour + 1).toString().padStart(2, '0')}:00`;
@@ -143,13 +161,13 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
         return DAYS.map(dayName => {
             const dayData = localMatrix[dayName] || {};
             // Sum all hours for this day
-            return HOURS.reduce((sum, hour) => {
+            return hoursList.reduce((sum, hour) => {
                 if (!isHourAvailable(dayName, hour)) return sum;
                 const val = Number(dayData[hour]) || 0;
                 return sum + val;
             }, 0);
         });
-    }, [localMatrix, availabilitySchedule]);
+    }, [localMatrix, availabilitySchedule, hoursList]);
 
     const todayWeekdayEnglish = useMemo(
         () => format(new Date(), 'EEEE', { locale: enUS }),
@@ -275,7 +293,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                         </tr>
                     </thead>
                     <tbody>
-                        {HOURS.map(hour => (
+                        {hoursList.map(hour => (
                             <tr key={hour} className="group hover:bg-gray-50/50 transition-colors">
                                 <td className="p-1 border-b border-gray-50 text-gray-500 font-bold text-xs">
                                     <div className="flex items-center gap-1">
