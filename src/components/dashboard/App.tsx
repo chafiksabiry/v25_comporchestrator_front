@@ -24,6 +24,7 @@ import CompanyDashboardPage from './pages/CompanyDashboardPage';
 import PremiumDashboardPage from './pages/PremiumDashboardPage';
 import CallsDashboardPage from './pages/CallsDashboardPage';
 import { CompanyPerformanceDashboard } from './pages/CompanyPerformanceDashboard';
+import { EscrowPanel } from './panels/EscrowPanel';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
         <Route path="/dashboard/overview" element={<OverviewDashboardPage />} />
         <Route path="/company" element={<Navigate to="/dashboard/profile" replace />} />
         <Route path="/dashboard" element={<CompanyDashboardPage />} />
+        <Route path="/dashboard/escrow" element={<EscrowPanel />} />
         <Route path="/dashboard/profile" element={<CompanyProfilePanel />} />
         <Route path="/dashboard/leads" element={<LeadManagementPanel />} />
         <Route path="/dashboard/rep-matching" element={<RepMatchingPanel />} />

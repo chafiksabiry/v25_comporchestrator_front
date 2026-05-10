@@ -8,7 +8,7 @@ import {
   X,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
-import { HashRouter, useLocation } from 'react-router-dom';
+import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './components/dashboard/store';
 import { AuthProvider } from './components/dashboard/contexts/AuthContext';
@@ -53,6 +53,46 @@ function AppContent() {
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => localStorage.getItem('companyLogo'));
   const [logoError, setLogoError] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [balance, setBalance] = useState<number>(0);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      const compId = Cookies.get('companyId') || 'demo_company_id';
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
+      try {
+        const res = await fetch(`${apiBaseUrl}/escrow/wallet/${compId}`);
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && result.data) {
+            setBalance(result.data.balance);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch balance in header:', err);
+      }
+    };
+
+    fetchBalance();
+
+    const handleBalanceUpdateEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && typeof customEvent.detail.balance === 'number') {
+        setBalance(customEvent.detail.balance);
+      }
+    };
+
+    window.addEventListener('balanceUpdated', handleBalanceUpdateEvent);
+    return () => {
+      window.removeEventListener('balanceUpdated', handleBalanceUpdateEvent);
+    };
+  }, []);
+
+  const handleBalanceClick = () => {
+    setActiveProject('dashboard');
+    navigate('/dashboard/escrow');
+  };
 
   const unwrapPayload = (body: any) => {
     if (!body) return null;
@@ -337,9 +377,12 @@ function AppContent() {
                 </div>
 
                 {/* Balance Widget */}
-                <div className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-emerald-500/10 hover:to-emerald-500/5 hover:border-emerald-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-300 cursor-pointer group">
+                <div 
+                  onClick={handleBalanceClick}
+                  className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-emerald-500/10 hover:to-emerald-500/5 hover:border-emerald-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-300 cursor-pointer group"
+                >
                   <DollarSign size={14} className="text-emerald-500 group-hover:scale-110 group-hover:text-emerald-400 transition-all duration-300 shrink-0" />
-                  <span className="whitespace-nowrap">{t('navbar.balance')}: <span className="text-white font-black">0</span></span>
+                  <span className="whitespace-nowrap">{t('navbar.balance')}: <span className="text-white font-black">${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
                 </div>
 
                 {/* Upgrade Button */}

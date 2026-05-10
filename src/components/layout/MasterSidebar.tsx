@@ -22,7 +22,8 @@ import {
   LogOut,
   BarChart2,
   Sparkles,
-  Info
+  Info,
+  Wallet
 } from 'lucide-react';
 import { getHiddenSections } from '../dashboard/config/sections';
 import Cookies from 'js-cookie';
@@ -128,6 +129,13 @@ export function MasterSidebar({
       label: t('sidebar.company'),
       path: '/dashboard/profile',
       key: 'company',
+      alwaysShow: true,
+    },
+    {
+      icon: <Wallet size={20} />,
+      label: t('sidebar.escrow', 'Escrow & Solde'),
+      path: '/dashboard/escrow',
+      key: 'escrow',
       alwaysShow: true,
     },
     { icon: <Briefcase size={20} />, label: t('sidebar.gigs'), path: '/dashboard/gigs', key: 'gigs', requiresGigs: true },
