@@ -54,6 +54,7 @@ function AppContent() {
   const [logoError, setLogoError] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [balance, setBalance] = useState<number>(0);
+  const [escrow, setEscrow] = useState<number>(0);
 
   const navigate = useNavigate();
 
@@ -67,6 +68,7 @@ function AppContent() {
           const result = await res.json();
           if (result.success && result.data) {
             setBalance(result.data.balance);
+            setEscrow(result.data.escrow || 0);
           }
         }
       } catch (err) {
@@ -78,8 +80,13 @@ function AppContent() {
 
     const handleBalanceUpdateEvent = (e: Event) => {
       const customEvent = e as CustomEvent;
-      if (customEvent.detail && typeof customEvent.detail.balance === 'number') {
-        setBalance(customEvent.detail.balance);
+      if (customEvent.detail) {
+        if (typeof customEvent.detail.balance === 'number') {
+          setBalance(customEvent.detail.balance);
+        }
+        if (typeof customEvent.detail.escrow === 'number') {
+          setEscrow(customEvent.detail.escrow);
+        }
       }
     };
 
@@ -371,9 +378,12 @@ function AppContent() {
               {/* Centered Credits, Balance, and Upgrade Widgets */}
               <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-3">
                 {/* Credit Widget */}
-                <div className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-yellow-500/10 hover:to-yellow-500/5 hover:border-yellow-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow-500/5 transition-all duration-300 cursor-pointer group">
+                <div 
+                  onClick={handleBalanceClick}
+                  className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-yellow-500/10 hover:to-yellow-500/5 hover:border-yellow-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow-500/5 transition-all duration-300 cursor-pointer group"
+                >
                   <Coins size={14} className="text-yellow-500 animate-pulse-subtle group-hover:scale-110 group-hover:text-yellow-400 transition-all duration-300 shrink-0" />
-                  <span className="whitespace-nowrap">{t('navbar.credits')}: <span className="text-white font-black">0</span></span>
+                  <span className="whitespace-nowrap">{t('navbar.credits')}: <span className="text-white font-black">${escrow.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
                 </div>
 
                 {/* Balance Widget */}

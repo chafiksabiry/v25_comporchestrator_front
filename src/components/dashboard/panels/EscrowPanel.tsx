@@ -95,6 +95,21 @@ export function EscrowPanel() {
 
   const [activeTab, setActiveTab] = useState<'contracts' | 'history'>('contracts');
 
+  const [isGigDropdownOpen, setIsGigDropdownOpen] = useState(false);
+  const [isRepDropdownOpen, setIsRepDropdownOpen] = useState(false);
+
+  // Custom Confirmation Popups
+  const [showReleaseConfirmModal, setShowReleaseConfirmModal] = useState(false);
+  const [releaseContractId, setReleaseContractId] = useState('');
+  const [releaseAmount, setReleaseAmount] = useState(0);
+  const [releaseAgentName, setReleaseAgentName] = useState('');
+  const [releasingInProcess, setReleasingInProcess] = useState(false);
+
+  const [showRefundConfirmModal, setShowRefundConfirmModal] = useState(false);
+  const [refundContractId, setRefundContractId] = useState('');
+  const [refundAmount, setRefundAmount] = useState(0);
+  const [refundingInProcess, setRefundingInProcess] = useState(false);
+
   const companyId = Cookies.get('companyId') || 'demo_company_id';
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
 
@@ -108,8 +123,12 @@ export function EscrowPanel() {
         if (walletData.success && walletData.data) {
           setWallet(walletData.data);
           
-          // Propagate dynamic event to update App.tsx header balance
-          const event = new CustomEvent('balanceUpdated', { detail: { balance: walletData.data.balance } });
+          const event = new CustomEvent('balanceUpdated', {
+            detail: {
+              balance: walletData.data.balance,
+              escrow: walletData.data.escrow || 0
+            }
+          });
           window.dispatchEvent(event);
         }
       }
@@ -318,20 +337,26 @@ export function EscrowPanel() {
     }
   };
 
-  // Release Escrow Contract (Payout to agent)
-  const handleReleaseEscrow = async (contractId: string, amount: number, agentName: string) => {
-    const confirmRelease = window.confirm(`Are you sure you want to release $${amount.toFixed(2)} to ${agentName}? This action is irreversible and transfers funds directly to the representative.`);
-    if (!confirmRelease) return;
+  // Trigger custom confirmation modal for release
+  const handleReleaseEscrow = (contractId: string, amount: number, agentName: string) => {
+    setReleaseContractId(contractId);
+    setReleaseAmount(amount);
+    setReleaseAgentName(agentName);
+    setShowReleaseConfirmModal(true);
+  };
 
+  const executeReleaseEscrow = async () => {
+    setReleasingInProcess(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/escrow/release/${contractId}`, {
+      const res = await fetch(`${apiBaseUrl}/escrow/release/${releaseContractId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyId })
       });
 
       if (res.ok) {
-        toast.success(`Payment disbursed successfully! $${amount.toFixed(2)} transferred to ${agentName}.`);
+        toast.success(`Payment disbursed successfully! $${releaseAmount.toFixed(2)} transferred to ${releaseAgentName}.`);
+        setShowReleaseConfirmModal(false);
         fetchWalletData(true);
       } else {
         const errorData = await res.json();
@@ -340,23 +365,30 @@ export function EscrowPanel() {
     } catch (err) {
       console.error(err);
       toast.error('Could not disburse escrow payment.');
+    } finally {
+      setReleasingInProcess(false);
     }
   };
 
-  // Refund Escrow Contract (Return to company balance)
-  const handleRefundEscrow = async (contractId: string, amount: number) => {
-    const confirmRefund = window.confirm(`Are you sure you want to cancel and refund this $${amount.toFixed(2)} escrow guarantee? Funds will be instantly restored to your available wallet balance.`);
-    if (!confirmRefund) return;
+  // Trigger custom confirmation modal for refund
+  const handleRefundEscrow = (contractId: string, amount: number) => {
+    setRefundContractId(contractId);
+    setRefundAmount(amount);
+    setShowRefundConfirmModal(true);
+  };
 
+  const executeRefundEscrow = async () => {
+    setRefundingInProcess(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/escrow/refund/${contractId}`, {
+      const res = await fetch(`${apiBaseUrl}/escrow/refund/${refundContractId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyId })
       });
 
       if (res.ok) {
-        toast.success(`Escrow cancelled. $${amount.toFixed(2)} restored to your available balance.`);
+        toast.success(`Escrow cancelled. $${refundAmount.toFixed(2)} restored to your available balance.`);
+        setShowRefundConfirmModal(false);
         fetchWalletData(true);
       } else {
         const errorData = await res.json();
@@ -365,6 +397,8 @@ export function EscrowPanel() {
     } catch (err) {
       console.error(err);
       toast.error('Could not refund escrow contract.');
+    } finally {
+      setRefundingInProcess(false);
     }
   };
 
@@ -888,11 +922,15 @@ export function EscrowPanel() {
 
       {/* 3. Modal: Lock Escrow / Nouveau Séquestre */}
       {showLockModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[999] animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4">
-            <div className="bg-gradient-to-r from-orange-400 to-rose-500 p-6 text-white relative">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999999] overflow-y-auto animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-lg overflow-visible shadow-2xl animate-in slide-in-from-bottom-4 my-auto relative">
+            <div className="bg-gradient-to-r from-orange-400 to-rose-500 p-6 text-white relative rounded-t-[2rem]">
               <button
-                onClick={() => setShowLockModal(false)}
+                onClick={() => {
+                  setShowLockModal(false);
+                  setIsGigDropdownOpen(false);
+                  setIsRepDropdownOpen(false);
+                }}
                 className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all"
               >
                 <X className="w-4 h-4" />
@@ -915,41 +953,56 @@ export function EscrowPanel() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+                <div className="relative">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Campagne / Gig</label>
                   {gigsLoading ? (
                     <div className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-slate-400 text-xs font-bold animate-pulse">Chargement...</div>
                   ) : gigsAndReps.length === 0 ? (
                     <div className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-slate-400 text-xs font-bold">Aucune campagne disponible</div>
                   ) : (
-                    <select
-                      value={lockGigId}
-                      onChange={(e) => {
-                        const selectedGig = gigsAndReps.find(g => g.gigId === e.target.value);
-                        if (selectedGig) {
-                          setLockGigId(selectedGig.gigId);
-                          setLockGigTitle(selectedGig.title);
-                          if (selectedGig.enrolledReps.length > 0) {
-                            setLockAgentId(selectedGig.enrolledReps[0].agentId);
-                            setLockAgentName(selectedGig.enrolledReps[0].name);
-                          } else {
-                            setLockAgentId('');
-                            setLockAgentName('');
-                          }
-                        }
-                      }}
-                      required
-                      className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-2.5 px-3.5 text-slate-800 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all cursor-pointer"
-                    >
-                      {gigsAndReps.map((gig) => (
-                        <option key={gig.gigId} value={gig.gigId}>
-                          {gig.title}
-                        </option>
-                      ))}
-                    </select>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsGigDropdownOpen(!isGigDropdownOpen);
+                          setIsRepDropdownOpen(false);
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-2.5 px-3.5 text-slate-800 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all flex items-center justify-between cursor-pointer"
+                      >
+                        <span className="truncate">{lockGigTitle || 'Sélectionnez un Gig'}</span>
+                        <span className={`text-[9px] text-slate-400 transition-transform duration-200 ${isGigDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                      </button>
+                      
+                      {isGigDropdownOpen && (
+                        <div className="absolute top-full left-0 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto py-1 z-[9999999] animate-in fade-in-50 slide-in-from-top-2">
+                          {gigsAndReps.map((gig) => (
+                            <button
+                              key={gig.gigId}
+                              type="button"
+                              onClick={() => {
+                                setLockGigId(gig.gigId);
+                                setLockGigTitle(gig.title);
+                                setIsGigDropdownOpen(false);
+                                if (gig.enrolledReps.length > 0) {
+                                  setLockAgentId(gig.enrolledReps[0].agentId);
+                                  setLockAgentName(gig.enrolledReps[0].name);
+                                } else {
+                                  setLockAgentId('');
+                                  setLockAgentName('');
+                                }
+                              }}
+                              className={`w-full px-3.5 py-2 text-xs text-left cursor-pointer transition-colors flex items-center justify-between ${lockGigId === gig.gigId ? 'bg-orange-50 text-orange-600 font-extrabold' : 'text-slate-700 hover:bg-slate-50 font-bold'}`}
+                            >
+                              <span className="truncate">{gig.title}</span>
+                              {lockGigId === gig.gigId && <span className="text-orange-500">✓</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
-                <div>
+                <div className="relative">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Nom du Représentant</label>
                   {gigsLoading ? (
                     <div className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-slate-400 text-xs font-bold animate-pulse">Chargement...</div>
@@ -963,24 +1016,39 @@ export function EscrowPanel() {
                         return <div className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-slate-400 text-xs font-bold">Aucun représentant inscrit</div>;
                       }
                       return (
-                        <select
-                          value={lockAgentId}
-                          onChange={(e) => {
-                            const selectedRep = reps.find(r => r.agentId === e.target.value);
-                            if (selectedRep) {
-                              setLockAgentId(selectedRep.agentId);
-                              setLockAgentName(selectedRep.name);
-                            }
-                          }}
-                          required
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-2.5 px-3.5 text-slate-800 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all cursor-pointer"
-                        >
-                          {reps.map((rep) => (
-                            <option key={rep.agentId} value={rep.agentId}>
-                              {rep.name}
-                            </option>
-                          ))}
-                        </select>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsRepDropdownOpen(!isRepDropdownOpen);
+                              setIsGigDropdownOpen(false);
+                            }}
+                            className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-2.5 px-3.5 text-slate-800 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all flex items-center justify-between cursor-pointer"
+                          >
+                            <span className="truncate">{lockAgentName || 'Sélectionnez un Rep'}</span>
+                            <span className={`text-[9px] text-slate-400 transition-transform duration-200 ${isRepDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                          </button>
+                          
+                          {isRepDropdownOpen && (
+                            <div className="absolute top-full left-0 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto py-1 z-[9999999] animate-in fade-in-50 slide-in-from-top-2">
+                              {reps.map((rep) => (
+                                <button
+                                  key={rep.agentId}
+                                  type="button"
+                                  onClick={() => {
+                                    setLockAgentId(rep.agentId);
+                                    setLockAgentName(rep.name);
+                                    setIsRepDropdownOpen(false);
+                                  }}
+                                  className={`w-full px-3.5 py-2 text-xs text-left cursor-pointer transition-colors flex items-center justify-between ${lockAgentId === rep.agentId ? 'bg-orange-50 text-orange-600 font-extrabold' : 'text-slate-700 hover:bg-slate-50 font-bold'}`}
+                                >
+                                  <span className="truncate">{rep.name}</span>
+                                  {lockAgentId === rep.agentId && <span className="text-orange-500">✓</span>}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
                       );
                     })()
                   )}
@@ -1021,7 +1089,11 @@ export function EscrowPanel() {
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2.5">
                 <button
                   type="button"
-                  onClick={() => setShowLockModal(false)}
+                  onClick={() => {
+                    setShowLockModal(false);
+                    setIsGigDropdownOpen(false);
+                    setIsRepDropdownOpen(false);
+                  }}
                   className="px-4 py-2 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all"
                 >
                   Annuler
@@ -1035,6 +1107,101 @@ export function EscrowPanel() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* 4. Modal: Custom Confirmation for releasing funds */}
+      {showReleaseConfirmModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999999] animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom-4 p-6 text-center space-y-4">
+            <div className="mx-auto w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/10 animate-bounce-subtle">
+              <Sparkles className="w-7 h-7" />
+            </div>
+            
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">Confirmer le Déblocage de Fonds</h3>
+              <p className="text-xs text-slate-500 font-medium px-4">
+                Êtes-vous sûr de vouloir libérer <span className="font-extrabold text-emerald-600">${releaseAmount.toFixed(2)}</span> à <span className="font-extrabold text-slate-800">{releaseAgentName}</span> ?
+              </p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 text-[11px] text-slate-500 text-left leading-relaxed">
+              ⚠️ <span className="font-bold text-slate-700">Action Irréversible :</span> Cette transaction transfère immédiatement et définitivement les fonds du compte séquestre de l'entreprise vers le solde disponible du représentant.
+            </div>
+
+            <div className="flex items-center justify-center space-x-2.5 pt-2">
+              <button
+                type="button"
+                disabled={releasingInProcess}
+                onClick={() => setShowReleaseConfirmModal(false)}
+                className="px-5 py-2.5 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all active:scale-95"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={releasingInProcess}
+                onClick={executeReleaseEscrow}
+                className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-1.5"
+              >
+                {releasingInProcess ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-white"></div>
+                    <span>Transfert...</span>
+                  </>
+                ) : (
+                  <span>Libérer les Fonds</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Modal: Custom Confirmation for refunding/canceling escrow */}
+      {showRefundConfirmModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999999] animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom-4 p-6 text-center space-y-4">
+            <div className="mx-auto w-14 h-14 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/10 animate-bounce-subtle">
+              <RefreshCw className="w-7 h-7" />
+            </div>
+            
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">Annuler & Restituer les Fonds</h3>
+              <p className="text-xs text-slate-500 font-medium px-4">
+                Êtes-vous sûr de vouloir annuler ce contrat et restituer <span className="font-extrabold text-rose-600">${refundAmount.toFixed(2)}</span> sur votre solde disponible ?
+              </p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 text-[11px] text-slate-500 text-left leading-relaxed">
+              🔄 <span className="font-bold text-slate-700">Restitution Immédiate :</span> La garantie séquestre sera annulée et la somme sera instantanément créditée à nouveau sur votre portefeuille disponible d'entreprise.
+            </div>
+
+            <div className="flex items-center justify-center space-x-2.5 pt-2">
+              <button
+                type="button"
+                disabled={refundingInProcess}
+                onClick={() => setShowRefundConfirmModal(false)}
+                className="px-5 py-2.5 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all active:scale-95"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={refundingInProcess}
+                onClick={executeRefundEscrow}
+                className="px-6 py-2.5 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-1.5"
+              >
+                {refundingInProcess ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-white"></div>
+                    <span>Restitution...</span>
+                  </>
+                ) : (
+                  <span>Restituer Solde</span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
