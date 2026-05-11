@@ -1688,16 +1688,6 @@ const ScriptGenerator: React.FC = () => {
           </div>
         )}
       </div>
-      {activeInteractiveStages && (
-        <InteractiveScriptCockpit
-          scriptTitle={activeInteractiveTitle}
-          stages={activeInteractiveStages}
-          onClose={() => setActiveInteractiveStages(null)}
-          onValidate={() => {
-            setActiveInteractiveStages(null);
-          }}
-        />
-      )}
     </div>
   );
 };
