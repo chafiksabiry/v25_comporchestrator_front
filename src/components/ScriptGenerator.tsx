@@ -855,13 +855,32 @@ const ScriptGenerator: React.FC = () => {
     setError(null);
     try {
       const companyId = getCompanyId();
+      
+      // On-the-fly fetch of linked training modules to ensure they are synchronized
+      let currentTrainings = relatedTrainings;
+      if (!currentTrainings || currentTrainings.length === 0) {
+        try {
+          const res = await JourneyService.getJourneysByCompanyAndGig(companyId, selectedGig._id);
+          const journey = res?.data?.[0] || res?.[0];
+          if (journey?.modules) {
+            currentTrainings = journey.modules.map((m: any) => ({
+              title: m.title,
+              learningObjectives: m.learningObjectives || []
+            }));
+            setRelatedTrainings(currentTrainings);
+          }
+        } catch (e) {
+          console.error('[ScriptGenerator] Failed to fetch on-the-fly trainings:', e);
+        }
+      }
+
       const payload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
         langueTon: 'professionnel et direct',
         contexte: 'Générer un script interactif structuré en 8 étapes basées sur la mission.',
-        trainings: relatedTrainings,
+        trainings: currentTrainings,
         isInteractiveRequest: true
       };
 
@@ -889,13 +908,32 @@ const ScriptGenerator: React.FC = () => {
     setError(null);
     try {
       const companyId = getCompanyId();
+      
+      // On-the-fly fetch of linked training modules to ensure they are synchronized
+      let currentTrainings = relatedTrainings;
+      if (!currentTrainings || currentTrainings.length === 0) {
+        try {
+          const res = await JourneyService.getJourneysByCompanyAndGig(companyId, selectedGig._id);
+          const journey = res?.data?.[0] || res?.[0];
+          if (journey?.modules) {
+            currentTrainings = journey.modules.map((m: any) => ({
+              title: m.title,
+              learningObjectives: m.learningObjectives || []
+            }));
+            setRelatedTrainings(currentTrainings);
+          }
+        } catch (e) {
+          console.error('[ScriptGenerator] Failed to fetch on-the-fly trainings:', e);
+        }
+      }
+
       const payload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
         langueTon: 'professionnel et direct',
         contexte: promptText,
-        trainings: relatedTrainings,
+        trainings: currentTrainings,
         isInteractiveRequest: true
       };
 
@@ -1074,6 +1112,8 @@ const ScriptGenerator: React.FC = () => {
         openSavedScript(activeItem);
       } else {
         setIsAutoGenerateWizardActive(true);
+        // Automatically trigger interactive script generation from scratch!
+        handleGenerateInteractiveScriptFromScratch();
       }
     } catch (err: any) {
       setSavedScripts([]);
