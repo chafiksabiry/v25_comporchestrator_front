@@ -992,8 +992,6 @@ const ScriptGenerator: React.FC = () => {
       setValidatedScriptIds(prev => ({ ...prev, [String(savedScriptId)]: true }));
       
       await markOnboardingScriptStepCompleted();
-      
-      alert('Le script interactif a été sauvegardé et activé avec succès pour cette mission !');
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Échec de l’enregistrement du script');
     } finally {
