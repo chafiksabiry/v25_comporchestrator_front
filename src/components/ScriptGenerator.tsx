@@ -177,6 +177,7 @@ const ScriptGenerator: React.FC = () => {
   const [activeInteractiveStages, setActiveInteractiveStages] = useState<InteractiveStage[] | null>(null);
   const [activeInteractiveTitle, setActiveInteractiveTitle] = useState<string>('');
   const [relatedTrainings, setRelatedTrainings] = useState<any[]>([]);
+  const [relatedTrainingTitle, setRelatedTrainingTitle] = useState<string>('');
   const [isLoadingTrainings, setIsLoadingTrainings] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -203,24 +204,32 @@ const ScriptGenerator: React.FC = () => {
       const companyId = getCompanyId();
       if (!companyId || !selectedGig?._id) {
         setRelatedTrainings([]);
+        setRelatedTrainingTitle('');
         return;
       }
       setIsLoadingTrainings(true);
       try {
         const res = await JourneyService.getJourneysByCompanyAndGig(companyId, selectedGig._id);
         const journey = res?.data?.[0] || res?.[0];
-        if (journey?.modules) {
-          const formatted = journey.modules.map((m: any) => ({
-            title: m.title,
-            learningObjectives: m.learningObjectives || []
-          }));
-          setRelatedTrainings(formatted);
+        if (journey) {
+          setRelatedTrainingTitle(journey.title || journey.name || '');
+          if (journey.modules) {
+            const formatted = journey.modules.map((m: any) => ({
+              title: m.title,
+              learningObjectives: m.learningObjectives || []
+            }));
+            setRelatedTrainings(formatted);
+          } else {
+            setRelatedTrainings([]);
+          }
         } else {
+          setRelatedTrainingTitle('');
           setRelatedTrainings([]);
         }
       } catch (err) {
         console.error('[ScriptGenerator] Failed to fetch related trainings:', err);
         setRelatedTrainings([]);
+        setRelatedTrainingTitle('');
       } finally {
         setIsLoadingTrainings(false);
       }
@@ -1442,7 +1451,7 @@ const ScriptGenerator: React.FC = () => {
                   </div>
                 ) : (
                   /* Elegant placeholder screen when there are no active stages */
-                  <div className="flex-1 flex flex-col justify-center items-center p-8 bg-slate-50/50 text-center space-y-5">
+                  <div className="flex-1 flex flex-col justify-center items-center p-8 bg-slate-50/50 text-center space-y-5 overflow-y-auto custom-scrollbar">
                     <div className="relative">
                       <div className="w-16 h-16 bg-gradient-to-tr from-red-500 to-rose-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-500/10">
                         <Sparkles className="w-8 h-8 text-white" />
@@ -1463,25 +1472,21 @@ const ScriptGenerator: React.FC = () => {
                     <div className="w-full max-w-md bg-white border border-slate-150 rounded-xl p-3.5 text-left space-y-2.5 shadow-sm">
                       <div className="flex items-center gap-2">
                         <GraduationCap className="w-4 h-4 text-red-600" />
-                        <span className="text-[9px] font-black text-slate-800 uppercase tracking-wider font-extrabold">Formations liées à la mission :</span>
+                        <span className="text-[9px] font-black text-slate-800 uppercase tracking-wider font-extrabold">Formation liée à la mission :</span>
                       </div>
                       {isLoadingTrainings ? (
                         <div className="flex items-center gap-1.5 py-1 text-[10px] text-slate-400 font-bold">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-red-600" /> Chargement des modules...
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-red-600" /> Chargement...
                         </div>
-                      ) : relatedTrainings.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {relatedTrainings.map((t, idx) => (
-                            <div key={idx} className="flex items-start gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                              <span className="w-4 h-4 rounded-full bg-red-50 text-red-600 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
-                              <div>
-                                <h4 className="text-[10px] font-black text-slate-800 leading-tight">{t.title}</h4>
-                                {t.learningObjectives?.length > 0 && (
-                                  <p className="text-[9px] text-slate-400 font-bold mt-0.5 line-clamp-1">Obj : {t.learningObjectives.join(', ')}</p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
+                      ) : relatedTrainingTitle ? (
+                        <div className="bg-red-50/50 p-3 rounded-lg border border-red-100/60 flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                            <BookOpen className="w-4 h-4 text-red-600" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black text-slate-800 leading-tight uppercase tracking-tight">{relatedTrainingTitle}</h4>
+                            <p className="text-[9px] text-slate-400 font-bold mt-0.5">Parcours d'entraînement validé</p>
+                          </div>
                         </div>
                       ) : (
                         <p className="text-[10px] text-slate-400 font-bold italic">Aucune formation liée trouvée pour cette mission. L'IA HARX utilisera les standards de l'industrie.</p>
