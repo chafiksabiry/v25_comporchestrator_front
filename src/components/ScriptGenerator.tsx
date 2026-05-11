@@ -3,6 +3,7 @@ import Cookies from 'js-cookie';
 import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2, Briefcase, FileText, CheckCircle, Shield, Compass, BookOpen, Check, ChevronDown } from 'lucide-react';
 import apiClient from '../api/knowledgeClient';
 import ScriptChatPanel from './script-generator/ScriptChatPanel';
+import { ClaudePromptToolkit } from './script-generator/ClaudePromptToolkit';
 import { useTranslation } from 'react-i18next';
 
 interface Gig {
@@ -170,6 +171,7 @@ const ScriptGenerator: React.FC = () => {
   const [isLoadingAllSavedScripts, setIsLoadingAllSavedScripts] = useState(true);
   const [showNewScriptSelection, setShowNewScriptSelection] = useState(false);
   const [isAutoGenerateWizardActive, setIsAutoGenerateWizardActive] = useState(true);
+  const [activeToolkitView, setActiveToolkitView] = useState<'chat' | 'expert'>('chat');
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -761,28 +763,74 @@ const ScriptGenerator: React.FC = () => {
 
             </div>
 
-            {/* Right Column: Interactive Chat Panel */}
-            <div className="lg:col-span-8 h-full flex flex-col overflow-hidden min-h-0">
-              <ScriptChatPanel
-                messages={messages}
-                input={input}
-                isSending={isSending}
-                validatingScriptId={validatingScriptId}
-                validatedScriptIds={validatedScriptIds}
-                selectedGigId={selectedGig?._id}
-                onInputChange={setInput}
-                onSubmit={sendMessage}
-                onValidateScript={validateScript}
-                renderAssistantMessage={renderAssistantMessage}
-                savedScripts={savedScripts}
-                isLoadingSavedScripts={isLoadingSavedScripts}
-                onOpenSavedScript={openSavedScript}
-                onDeleteSavedScript={handleDeleteSavedScript}
-                onStartNewChat={handleStartNewChat}
-                onAutoGenerate={handleAutoGenerateInitialScript}
-                isAutoGenerateWizardActive={isAutoGenerateWizardActive}
-                setIsAutoGenerateWizardActive={setIsAutoGenerateWizardActive}
-              />
+            {/* Right Column: Interactive Chat Panel or Claude Prompt Toolkit */}
+            <div className="lg:col-span-8 h-full flex flex-col overflow-hidden min-h-0 space-y-2">
+              
+              {/* Working Mode Switch */}
+              <div className="bg-[#111111] p-1 rounded-xl border border-slate-800 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2 pl-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Mode de travail</span>
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setActiveToolkitView('chat')}
+                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 ${
+                      activeToolkitView === 'chat'
+                        ? 'bg-red-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                    }`}
+                  >
+                    <Bot className="w-3.5 h-3.5" />
+                    Assistant Conversationnel
+                  </button>
+                  <button
+                    onClick={() => setActiveToolkitView('expert')}
+                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 ${
+                      activeToolkitView === 'expert'
+                        ? 'bg-red-600 text-white shadow-md border border-red-500/20'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    Expert Claude Toolkit 🛠️
+                  </button>
+                </div>
+              </div>
+
+              {/* Conditional View */}
+              {activeToolkitView === 'chat' ? (
+                <ScriptChatPanel
+                  messages={messages}
+                  input={input}
+                  isSending={isSending}
+                  validatingScriptId={validatingScriptId}
+                  validatedScriptIds={validatedScriptIds}
+                  selectedGigId={selectedGig?._id}
+                  onInputChange={setInput}
+                  onSubmit={sendMessage}
+                  onValidateScript={validateScript}
+                  renderAssistantMessage={renderAssistantMessage}
+                  savedScripts={savedScripts}
+                  isLoadingSavedScripts={isLoadingSavedScripts}
+                  onOpenSavedScript={openSavedScript}
+                  onDeleteSavedScript={handleDeleteSavedScript}
+                  onStartNewChat={handleStartNewChat}
+                  onAutoGenerate={handleAutoGenerateInitialScript}
+                  isAutoGenerateWizardActive={isAutoGenerateWizardActive}
+                  setIsAutoGenerateWizardActive={setIsAutoGenerateWizardActive}
+                />
+              ) : (
+                <ClaudePromptToolkit
+                  companyId={getCompanyId() || ''}
+                  gig={selectedGig}
+                  onTestPrompt={(promptText) => {
+                    setActiveToolkitView('chat');
+                    setIsAutoGenerateWizardActive(false);
+                    sendMessageToApi(promptText, true);
+                  }}
+                />
+              )}
             </div>
 
           </div>
