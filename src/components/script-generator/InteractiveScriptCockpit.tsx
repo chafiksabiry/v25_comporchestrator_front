@@ -17,7 +17,9 @@ import {
   Info,
   Layers,
   GraduationCap,
-  X
+  X,
+  RotateCcw,
+  Award
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -78,6 +80,18 @@ export function InteractiveScriptCockpit({
   // Interactive UI States
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  
+  // Scoring Simulation States
+  const [showScoringSimulation, setShowScoringSimulation] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
+
+  const handleSimulateScoring = () => {
+    setIsSimulating(true);
+    setTimeout(() => {
+      setIsSimulating(false);
+      setShowScoringSimulation(true);
+    }, 1500);
+  };
 
   // Reset interactive states when changing stages
   useEffect(() => {
@@ -340,6 +354,20 @@ export function InteractiveScriptCockpit({
           )}
 
         </div>
+        
+        {/* SIMULATE SCORING BUTTON (ONLY ON LAST STEP) */}
+        {currentStageIdx === stages.length - 1 && (
+          <div className="flex justify-center py-2 bg-slate-50 border-t border-slate-100 shrink-0">
+            <button
+              onClick={handleSimulateScoring}
+              disabled={isSimulating}
+              className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 font-extrabold rounded-lg shadow-sm text-[10px] uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 text-slate-600 ${isSimulating ? 'animate-spin' : ''}`} />
+              {isSimulating ? "Analyse HARX en cours..." : "Simuler scoring HARX"}
+            </button>
+          </div>
+        )}
 
         {/* BOTTOM NAVIGATION ACTIONS FOOTER */}
         <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0">
@@ -359,9 +387,9 @@ export function InteractiveScriptCockpit({
             <button
               onClick={onValidate}
               disabled={isValidating}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-lg transition-all text-[9px] uppercase tracking-widest flex items-center gap-1 shadow-md shadow-emerald-600/10 active:scale-95 disabled:opacity-40 cursor-pointer"
+              className="px-4 py-2 bg-[#f4f4f5] border border-slate-200 hover:bg-slate-100 text-slate-800 font-extrabold rounded-lg transition-all text-[9px] uppercase tracking-widest flex items-center gap-1 shadow-sm active:scale-95 disabled:opacity-40 cursor-pointer"
             >
-              Terminer & Sauvegarder
+              Terminer ✓
             </button>
           ) : (
             <button
@@ -372,6 +400,72 @@ export function InteractiveScriptCockpit({
             </button>
           )}
         </div>
+
+        {/* EXPLANATORY TEXT BELOW FOOTER */}
+        {currentStageIdx === stages.length - 1 && (
+          <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 text-[11px] font-bold text-slate-800 text-left shrink-0 leading-relaxed">
+            Voici le script dynamique complet en 8 étapes. Voici ce qu'il intègre :
+          </div>
+        )}
+
+        {/* PREMIUM SIMULATED SCORING RESULTS MODAL */}
+        {showScoringSimulation && (
+          <div className="absolute inset-0 z-[100] bg-slate-950/40 backdrop-blur-[1px] flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl max-w-sm w-full border border-slate-100 shadow-2xl overflow-hidden p-5 space-y-4 animate-in zoom-in-95 duration-200 text-left">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-red-600" />
+                  <span className="text-[11px] font-black text-slate-900 uppercase tracking-wider">Scoring de Vente HARX</span>
+                </div>
+                <button 
+                  onClick={() => setShowScoringSimulation(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              <div className="space-y-3.5">
+                {/* Circular Score display */}
+                <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <div className="w-12 h-12 rounded-full bg-red-50 border-2 border-red-500 flex items-center justify-center font-black text-red-600 text-base shadow-sm shrink-0">
+                    A+
+                  </div>
+                  <div>
+                    <h4 className="text-[10px] font-black text-slate-800 uppercase tracking-wider">Qualité Globale</h4>
+                    <p className="text-[9.5px] text-slate-500 font-bold leading-normal mt-0.5">Le script est ultra-performant et respecte 100% des règles d'acquisition.</p>
+                  </div>
+                </div>
+
+                {/* Grid stats */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg text-center">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Loi Naegelen</span>
+                    <span className="block text-xs font-black text-emerald-600 mt-1">Conforme ✓</span>
+                  </div>
+                  <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg text-center">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Bloctel Fine Risk</span>
+                    <span className="block text-xs font-black text-emerald-600 mt-1">0 € Risk ✓</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Analyse IA Comportementale :</span>
+                  <p className="text-[9.5px] text-slate-600 font-bold leading-relaxed bg-slate-50/50 p-2.5 border border-slate-100 rounded-lg">
+                    "Ton de l'agent chaleureux, empathie élevée, conformité Naegelen & Bloctel respectée à l'ouverture de l'appel."
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowScoringSimulation(false)}
+                className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-lg text-[10px] uppercase tracking-wider active:scale-95 transition-all cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     );
