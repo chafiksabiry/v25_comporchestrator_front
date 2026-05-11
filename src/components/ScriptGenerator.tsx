@@ -655,13 +655,6 @@ const ScriptGenerator: React.FC = () => {
     setActiveInteractiveStages(stages);
   };
 
-  const handleBackToOrchestrator = () => {
-    const event = new CustomEvent('tabChange', {
-      detail: { tab: 'company-onboarding' }
-    });
-    window.dispatchEvent(event);
-  };
-
   const markOnboardingScriptStepCompleted = async () => {
     const companyId = getCompanyId();
     if (!companyId) return;
