@@ -59,6 +59,11 @@ interface InteractiveScriptCockpitProps {
   isInline?: boolean;
 }
 
+const cleanTrainingText = (text: string): string => {
+  if (!text) return '';
+  return text.replace(/^(module\s+\d+\s*[:\-]\s*)/i, '').trim();
+};
+
 export function InteractiveScriptCockpit({ 
   scriptTitle, 
   stages = [], 
@@ -273,7 +278,7 @@ export function InteractiveScriptCockpit({
                   {rem.type === 'warning' && <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />}
                   {rem.type === 'clock' && <Clock className="w-3.5 h-3.5 text-orange-500 shrink-0 mt-0.5" />}
                   {rem.type === 'info' && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5 border border-emerald-500 rounded-full p-0.5" />}
-                  <p className="text-[9.5px] font-bold leading-normal">{rem.text}</p>
+                  <p className="text-[9.5px] font-bold leading-normal">{cleanTrainingText(rem.text)}</p>
                 </div>
               ))}
             </div>
