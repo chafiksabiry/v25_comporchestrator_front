@@ -238,14 +238,70 @@ const ScriptGenerator: React.FC = () => {
   }, [selectedGig]);;
 
   const buildInteractiveStages = (gig: Gig | null, message: ChatMessage): InteractiveStage[] => {
-    const title = gig?.title || '';
-    const desc = (gig?.description || '').toLowerCase();
-    const cat = (gig?.category || '').toLowerCase();
-    
-    const isAssurance = desc.includes('assurance') || desc.includes('mutuelle') || desc.includes('santé') || desc.includes('prévoyance') || cat.includes('assurance') || cat.includes('santé');
-    const isB2B = desc.includes('saas') || desc.includes('software') || desc.includes('crm') || desc.includes('b2b') || desc.includes('logiciel') || cat.includes('saas') || cat.includes('b2b') || cat.includes('logiciel');
-
-    if (isAssurance) {
+    const title = gig?.title || 'Mission';
+    return [
+      {
+        id: 'step_1',
+        stepNumber: 1,
+        label: 'Introduction',
+        type: 'regulatory',
+        typeLabel: 'Introduction',
+        introTitle: "ACCROCHE D'OUVERTURE",
+        introReplica: `« Bonjour, je vous contacte concernant la mission ${title}. Ai-je bien l'honneur de parler à ${message.playbook?.dialogue?.[0]?.text?.replace(/Bonjour/gi, '') || '[NOM DU PROSPECT]'} ? »`,
+        reminders: [
+          { type: 'info', text: "Valider l'identité de l'interlocuteur dès l'introduction." }
+        ]
+      },
+      {
+        id: 'step_2',
+        stepNumber: 2,
+        label: 'Qualification',
+        type: 'collection',
+        typeLabel: 'Qualification',
+        introTitle: "DÉCOUVERTE ET BESOINS",
+        introReplica: `« Dans le cadre de notre offre liée à ${title}, j'aimerais valider quelques points avec vous... »`,
+        reminders: [
+          { type: 'info', text: "Découvrir les besoins spécifiques et les attentes du prospect." }
+        ]
+      },
+      {
+        id: 'step_3',
+        stepNumber: 3,
+        label: 'Présentation de la solution',
+        type: 'presentation',
+        typeLabel: 'Présentation',
+        introTitle: "VALORISATION DE L'OFFRE",
+        introReplica: `« Notre solution vous permet de répondre parfaitement à ce besoin en vous proposant... »`,
+        reminders: [
+          { type: 'info', text: "Présenter les bénéfices clés de la solution." }
+        ]
+      },
+      {
+        id: 'step_4',
+        stepNumber: 4,
+        label: 'Traitement des objections',
+        type: 'objection',
+        typeLabel: 'Objections',
+        introTitle: "RÉPONSES AUX FREINS",
+        introReplica: `« Je comprends tout à fait votre remarque. Laissez-moi vous expliquer en quoi notre offre... »`,
+        reminders: [
+          { type: 'info', text: "Rassurer le client et répondre avec empathie." }
+        ]
+      },
+      {
+        id: 'step_5',
+        stepNumber: 5,
+        label: 'Prise de congé',
+        type: 'closing',
+        typeLabel: 'Conclusion',
+        introTitle: "PROCHAINE ÉTAPE",
+        introReplica: "« Tout est parfait de mon côté. Je valide votre dossier et nous restons à votre entière disposition. Excellente journée à vous ! »",
+        reminders: [
+          { type: 'info', text: "Valider les prochaines étapes de l'accord." }
+        ]
+      }
+    ];
+    if (false) {
       return [
         {
           id: 'step_1',
