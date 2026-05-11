@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Loader2, Send, User, CheckCircle, History, Trash2, Plus, X, ChevronDown, Sparkles, Check } from 'lucide-react';
+import { Bot, Loader2, Send, User, CheckCircle, History, Trash2, Plus, X, ChevronDown, Sparkles, Check, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 type ChatMessage = {
@@ -20,6 +20,7 @@ interface ScriptChatPanelProps {
   onInputChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onValidateScript: (message: ChatMessage) => Promise<void>;
+  onPlayInteractiveScript: (message: ChatMessage) => void;
   renderAssistantMessage: (messageId: string, content: string, playbook?: any) => React.ReactNode;
   
   // New props for saved scripts
@@ -45,6 +46,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
   onInputChange,
   onSubmit,
   onValidateScript,
+  onPlayInteractiveScript,
   renderAssistantMessage,
   savedScripts,
   isLoadingSavedScripts,
@@ -296,6 +298,15 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
                           
                           <button
                             type="button"
+                            onClick={() => onPlayInteractiveScript(message)}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shrink-0 active:scale-95 shadow-md shadow-red-600/10 cursor-pointer"
+                          >
+                            <Play className="w-3 h-3 fill-current" />
+                            Lancer le Script Interactif
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={() => onValidateScript(message)}
                             disabled={
                               Boolean(isValidated) ||
@@ -306,7 +317,7 @@ const ScriptChatPanel: React.FC<ScriptChatPanelProps> = ({
                                 ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 animate-none'
                                 : validatingScriptId === scriptIdToValidate
                                   ? 'bg-slate-50 text-slate-600 border border-slate-200 animate-pulse'
-                                  : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20 active:scale-95'
+                                  : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer'
                             }`}
                           >
                             {isValidated && <CheckCircle className="w-3.5 h-3.5" />}
