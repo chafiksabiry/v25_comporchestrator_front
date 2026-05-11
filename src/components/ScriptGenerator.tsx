@@ -301,458 +301,8 @@ const ScriptGenerator: React.FC = () => {
         ]
       }
     ];
-    if (false) {
-      return [
-        {
-          id: 'step_1',
-          stepNumber: 1,
-          label: 'Introduction & identification légale',
-          type: 'regulatory',
-          typeLabel: 'Réglementaire',
-          introTitle: "SCRIPT D'OUVERTURE — OBLIGATOIRE (LOI NAEGELEN + DDA)",
-          introReplica: `« Bonjour, je suis [PRÉNOM] de Digital Assurance, courtier en assurance santé. Notre numéro ORIAS est le [NUMÉRO]. Je vous contacte aujourd'hui concernant votre complémentaire santé. Ai-je bien l'honneur de parler à ${message.playbook?.dialogue?.[0]?.text?.replace(/Bonjour/gi, '') || '[NOM DU PROSPECT]'} ? »`,
-          reminders: [
-            { type: 'warning', text: "Bloctel : vérifier que le numéro n'est pas sur liste Bloctel avant tout appel. Toute violation = amende jusqu'à 75 000€ (DGCCRF)." },
-            { type: 'clock', text: "Plages autorisées : lun-ven 8h-20h, sam 9h-19h. Dimanches et jours fériés interdits." },
-            { type: 'info', text: "Identifier la source : lead entrant (MeilleureAssurance, Lead Market) -> adapter l'accroche selon le canal." }
-          ],
-          optionsTitle: "GESTION DE L'ACCUEIL",
-          options: [
-            { id: 'prospect_confirms', label: 'Prospect confirme', subtext: '« Oui c\'est moi »', recommendedResponse: '« Parfait ! Je fais suite à votre demande de tarification en ligne. Pour vous proposer le contrat santé le plus adapté... »' },
-            { id: 'not_good_time', label: 'Pas le bon moment', subtext: '« Je suis occupé » / mauvais numéro', recommendedResponse: '« Pas de souci ! Quel serait le meilleur moment pour vous rappeler cette semaine ? » -> noter dans Zoho CRM avec date/heure de rappel.' }
-          ]
-        },
-        {
-          id: 'step_2',
-          stepNumber: 2,
-          label: 'Qualification & collecte initiale',
-          type: 'collection',
-          typeLabel: 'Collecte',
-          introTitle: "ACCROCHE DE QUALIFICATION",
-          introReplica: "« Pour vous proposer la couverture la plus adaptée, j'ai besoin de quelques informations. Vous êtes actuellement couvert par une mutuelle ? »",
-          conditionalTabs: [
-            {
-              id: 'with_mutuelle',
-              label: 'Avec mutuelle',
-              boxTitle: 'SCRIPT SI MUTUELLE EXISTANTE',
-              boxReplica: '« Depuis combien de temps ? Vous en êtes satisfait ? Est-ce qu\'il arrive que certains soins soient mal pris en charge — dentaire, optique, ou autre ? »',
-              badgeText: 'Objectif : identifier le pain point. Le prospect a toujours un insatisfait latent (reste à charge, délai remboursement, réseau de soins).'
-            },
-            {
-              id: 'without_mutuelle',
-              label: 'Sans mutuelle',
-              boxTitle: 'SCRIPT SI SANS MUTUELLE',
-              boxReplica: '« Vous assumez donc 100% de vos frais de santé au-delà du remboursement Sécu — dentaire, ophtalmo, médecin de secteur 2. Ça représente combien par an en moyenne pour vous ? »',
-              badgeText: 'Faire chiffrer le coût annuel brut — l\'ancrage prix sera utilisé à l\'étape 5.'
-            },
-            {
-              id: 'cmu_css',
-              label: 'CMU / CSS',
-              boxTitle: 'SCRIPT SI BÉNÉFICIAIRE CSS',
-              boxReplica: '« Très bien, vous disposez de la Complémentaire Santé Solidaire. Est-ce que cette couverture vous suffit ou avez-vous des besoins optiques/dentaires hors panier CMU ? »',
-              badgeText: 'Valider si le profil est éligible à un contrat complémentaire classique ou s\'il faut rester sur le panier solidaire.'
-            }
-          ],
-          checklistTitle: 'DONNÉES À COLLECTER DANS OGGO / ZOHO',
-          checklist: [
-            "Nom, prénom, date de naissance",
-            "Régime SS (Général / Alsace-Moselle / TNS / Agricole)",
-            "Composition du foyer (conjoint, enfants + âges)",
-            "Mutuelle actuelle + cotisation mensuelle",
-            "Date de résiliation possible (préavis 1 mois loi Hamon)",
-            "Adresse email (pour envoi BA électronique)"
-          ]
-        },
-        {
-          id: 'step_3',
-          stepNumber: 3,
-          label: 'Découverte des besoins & garanties',
-          type: 'discovery',
-          typeLabel: 'Découverte',
-          introTitle: "CRITÈRES DE RECHERCHE ET RELEVÉ DE BESOINS",
-          introReplica: "« Qu'est-ce qui est prioritaire pour vous aujourd'hui sur votre santé ? Un bon remboursement sur l'optique, le dentaire, les consultations de spécialistes, ou bien simplement réduire vos cotisations mensuelles ? »",
-          reminders: [
-            { type: 'info', text: "Écoute active : notez l'insatisfaction sur les délais de remboursement ou les franchises." }
-          ],
-          checklistTitle: "VÉRIFICATIONS SÉCU",
-          checklist: [
-            "Régime général ou spécial validé",
-            "Dépassements d'honoraires habituels identifiés",
-            "Budget maximum psychologique validé"
-          ]
-        },
-        {
-          id: 'step_4',
-          stepNumber: 4,
-          label: 'Présentation des offres / Devis',
-          type: 'presentation',
-          typeLabel: 'Présentation',
-          introTitle: "ARGUMENTAIRE DE VALEUR CIBLÉ",
-          introReplica: "« J'ai sélectionné pour vous la formule de notre partenaire. Elle couvre vos lunettes à hauteur de 350€ et prend en charge l'intégralité des dépassements d'honoraires de vos spécialistes, pour une cotisation de seulement 42€ par mois. »",
-          reminders: [
-            { type: 'info', text: "Mettre en avant le 100% Santé (panier Reste à Charge Zéro) pour valoriser la conformité de l'offre." }
-          ]
-        },
-        {
-          id: 'step_5',
-          stepNumber: 5,
-          label: 'Traitement des objections',
-          type: 'objection',
-          typeLabel: 'Objection',
-          introTitle: "PIVOT SUR LES FREINS",
-          introReplica: "« Je comprends tout à fait votre hésitation. Cependant, en comparant avec votre reste à charge actuel, vous économisez près de 300€ par an tout en étant mieux protégé sur l'hospitalisation. C'est bien cela que vous recherchiez ? »",
-          conditionalTabs: [
-            {
-              id: 'too_expensive',
-              label: 'C\'est trop cher',
-              boxTitle: 'SCRIPT : TRAITEMENT DU BUDGET',
-              boxReplica: '« En prenant cette formule, vous économisez 25€ par mois par rapport à votre contrat actuel, soit 300€ par an pour de meilleures garanties hospitalières. C\'est une vraie sécurité. »',
-              badgeText: 'Recentrer sur le coût du risque plutôt que sur le prix facial de la cotisation.'
-            },
-            {
-              id: 'think_about_it',
-              label: 'Je dois réfléchir',
-              boxTitle: 'SCRIPT : ISOLER L\'OBJECTION',
-              boxReplica: '« Je comprends. Est-ce la formule choisie qui vous fait hésiter, ou est-ce que vous souhaitez simplement valider un point de budget avec votre conjoint ? »',
-              badgeText: 'Isoler l\'objection pour identifier s\'il s\'agit d\'un manque de confiance ou d\'un vrai frein financier.'
-            }
-          ]
-        },
-        {
-          id: 'step_6',
-          stepNumber: 6,
-          label: 'Mentions Légales & Accord vocal',
-          type: 'compliance',
-          typeLabel: 'Conformité',
-          introTitle: "VALIDATION JURIDIQUE ET SÉCURITÉ (DDA / RGPD)",
-          introReplica: "« Pour finaliser la mise en place, je vais procéder à la lecture des mentions obligatoires de la Loi Naegelen. Confirmez-vous que vous donnez votre accord explicite pour la souscription de ce contrat d'assurance ? »",
-          reminders: [
-            { type: 'warning', text: "Enregistrement obligatoire : l'accord de souscription doit être clair, distinct et enregistré sur le serveur de téléphonie." }
-          ]
-        },
-        {
-          id: 'step_7',
-          stepNumber: 7,
-          label: 'Closing & Signature',
-          type: 'closing',
-          typeLabel: 'Closing',
-          introTitle: "SIGNATURE ÉLECTRONIQUE EN DIRECT",
-          introReplica: "« Je viens de vous envoyer un SMS contenant votre lien sécurisé de signature électronique Universign. Ouvrez-le et indiquez-moi dès que vous voyez le document s'afficher à l'écran. »",
-          checklistTitle: "ÉTAPES DE VALIDATION DU DOSSIER",
-          checklist: [
-            "Vérification du RIB et IBAN",
-            "Saisie du code de signature reçu par SMS",
-            "Téléchargement du contrat signé"
-          ]
-        },
-        {
-          id: 'step_8',
-          stepNumber: 8,
-          label: 'Prise de congé & Suivi',
-          type: 'followup',
-          typeLabel: 'Suivi',
-          introTitle: "FINALISATION DE L'APPEL",
-          introReplica: "« Félicitations ! Votre contrat est bien signé. Vous allez recevoir votre carte de tiers payant sous 48 heures. Ce fut un plaisir d'échanger avec vous aujourd'hui, passez une excellente journée ! »",
-          reminders: [
-            { type: 'info', text: "Rappeler le droit de rétractation de 14 jours en cas de vente à distance, conformément à la réglementation." }
-          ]
-        }
-      ];
-    }
-
-    if (isB2B) {
-      return [
-        {
-          id: 'step_1',
-          stepNumber: 1,
-          label: 'Introduction & identification légale',
-          type: 'regulatory',
-          typeLabel: 'Réglementaire',
-          introTitle: "ACCROCHE D'OUVERTURE — CONFORMITÉ RGPD",
-          introReplica: `« Bonjour, je suis [PRÉNOM] de HARX Tech. Je vous contacte à la suite de votre demande de démonstration de notre plateforme. Cet appel est susceptible d'être enregistré à des fins de formation. Ai-je bien l'honneur de parler à ${message.playbook?.dialogue?.[0]?.text?.replace(/Bonjour/gi, '') || '[NOM DU PROSPECT]'} ? »`,
-          reminders: [
-            { type: 'warning', text: "RGPD : recueillir le consentement explicite si le prospect demande la suppression de ses données de prospection." },
-            { type: 'clock', text: "Heures recommandées B2B : lun-ven 9h-12h, 14h-18h." },
-            { type: 'info', text: "Qualifier le canal d'acquisition : Inscription webinaire, démo, ou livre blanc." }
-          ],
-          optionsTitle: "GESTION DE L'ACCUEIL",
-          options: [
-            { id: 'prospect_confirms', label: 'Prospect confirme', subtext: '« Oui c\'est moi »', recommendedResponse: '« Parfait ! J\'ai vu que vous aviez un projet d\'optimisation de vos processus de vente. Commençons par cadrer vos priorités... »' },
-            { id: 'not_good_time', label: 'Indisponible', subtext: '« En réunion / pas le temps »', recommendedResponse: '« Aucun problème, je sais que votre temps est précieux. Quel est votre créneau favori jeudi matin pour un rapide échange de 5 minutes ? »' }
-          ]
-        },
-        {
-          id: 'step_2',
-          stepNumber: 2,
-          label: 'Qualification des besoins & CRM',
-          type: 'collection',
-          typeLabel: 'Qualification',
-          introTitle: "ACCROCHE DE QUALIFICATION B2B",
-          introReplica: "« Afin de bien cadrer notre échange, j'aimerais comprendre votre infrastructure actuelle. Utilisez-vous déjà un CRM ou un outil dédié au quotidien ? »",
-          conditionalTabs: [
-            {
-              id: 'with_crm',
-              label: 'Déjà équipé (CRM)',
-              boxTitle: 'SCRIPT SI DÉJÀ ÉQUIPÉ CRM',
-              boxReplica: '« Depuis combien de temps utilisez-vous cette solution ? Qu\'est-ce qui vous freine le plus aujourd\'hui — l\'adoption des équipes, la lenteur, ou le manque d\'automatisation ? »',
-              badgeText: 'Objectif : identifier le point de friction principal avec le concurrent.'
-            },
-            {
-              id: 'excel_manual',
-              label: 'Excel / Manuel',
-              boxTitle: 'SCRIPT SI PROCESSUS MANUEL',
-              boxReplica: '« D\'accord, donc vous gérez le suivi sur tableur. Quel est le temps moyen hebdomadaire que vous perdez à faire de la double saisie ou des relances manuelles ? »',
-              badgeText: 'Faire chiffrer le coût opérationnel du temps perdu — notion de retour sur investissement (ROI).'
-            }
-          ],
-          checklistTitle: 'DONNÉES À COLLECTER DANS LE CRM',
-          checklist: [
-            "Nom de l'entreprise, SIRET, Site web",
-            "Nombre de collaborateurs / commerciaux",
-            "Décideur final identifié (CEO, VP Sales, DSI)",
-            "Solution actuelle et coût mensuel estimé",
-            "Budget alloué ou en cours de définition",
-            "Échéance du projet (immédiat, 3 mois, fin d'année)"
-          ]
-        },
-        {
-          id: 'step_3',
-          stepNumber: 3,
-          label: 'Découverte des besoins & priorités',
-          type: 'discovery',
-          typeLabel: 'Découverte',
-          introTitle: "EXPLORATION DES MOTIVATIONS",
-          introReplica: "« Quels sont les objectifs clés de votre équipe commerciale ce trimestre ? Augmenter le volume d'appels, optimiser le taux de conversion, ou automatiser les fiches de paie de vos REPs ? »",
-          reminders: [
-            { type: 'info', text: "Prenez note des termes précis employés par le prospect (marge, conversion, gain de temps)." }
-          ]
-        },
-        {
-          id: 'step_4',
-          stepNumber: 4,
-          label: 'Présentation des offres & Démonstration',
-          type: 'presentation',
-          typeLabel: 'Présentation',
-          introTitle: "ARGUMENTAIRE DE VALEUR CIBLÉ B2B",
-          introReplica: "« Notre solution s'intègre en un clic dans vos outils existants. Elle permet à vos commerciaux de passer 2x plus d'appels qualifiés sans aucune double saisie, ce qui amortit le coût de la licence dès le premier mois. »",
-          reminders: [
-            { type: 'info', text: "Présenter un cas client d'un secteur d'activité identique pour rassurer le prospect." }
-          ]
-        },
-        {
-          id: 'step_5',
-          stepNumber: 5,
-          label: 'Traitement des objections',
-          type: 'objection',
-          typeLabel: 'Objection',
-          introTitle: "PIVOT SUR LES OBJECTIONS SAAS B2B",
-          introReplica: "« Je comprends parfaitement vos interrogations sur la mise en œuvre. C'est pourquoi nous mettons à votre disposition un Customer Success Manager dédié pour réaliser la migration technique en moins de 48 heures sans coupure d'activité. »",
-          conditionalTabs: [
-            {
-              id: 'no_budget',
-              label: 'Pas de budget',
-              boxTitle: 'SCRIPT : GESTION DE BUDGET',
-              boxReplica: '« Notre offre n\'est pas un coût mais un investissement. En économisant 10 heures par commercial par semaine, la solution est rentabilisée dès le premier mois. Voulez-vous qu\'on regarde la simulation ? »',
-              badgeText: 'Faire un calcul rapide de ROI avec les chiffres collectés à l\'étape 2.'
-            },
-            {
-              id: 'no_time',
-              label: 'Pas le temps',
-              boxTitle: 'SCRIPT : SIMPLICITÉ DE DEPLOIEMENT',
-              boxReplica: '« Précisément, l\'installation ne prend que 15 minutes et l\'onboarding de vos équipes dure une demi-heure. C\'est l\'assurance de gagner du temps dès la semaine prochaine. »',
-              badgeText: 'Démystifier la complexité de l\'intégration technique.'
-            }
-          ]
-        },
-        {
-          id: 'step_6',
-          stepNumber: 6,
-          label: 'Vérification de l\'infrastructure',
-          type: 'compliance',
-          typeLabel: 'Conformité',
-          introTitle: "CONFORMITÉ TECHNIQUE ET CONTRACTUELLE",
-          introReplica: "« Pour valider l'ouverture de votre environnement sandbox, je dois confirmer vos préférences en matière de conformité RGPD et d'hébergement des données en Europe. Est-ce bien ce que vous souhaitez ? »",
-          reminders: [
-            { type: 'info', text: "Valider l'adéquation technique avec les contraintes d'API de leur système existant." }
-          ]
-        },
-        {
-          id: 'step_7',
-          stepNumber: 7,
-          label: 'Accord commercial & Closing',
-          type: 'closing',
-          typeLabel: 'Closing',
-          introTitle: "VALIDATION DU DEVIS ET LANCEMENT",
-          introReplica: "« Je vous envoie à l'instant le devis électronique récapitulatif par email. Ouvrez-le et validez simplement la signature en ligne pour que nous planifiions la session d'onboarding de vos équipes. »",
-          checklistTitle: "ÉTAPES DU CRÉNEAU D'ONBOARDING",
-          checklist: [
-            "Validation de la commande signée",
-            "Planification de la réunion Kick-off (45 mins)",
-            "Envoi des invitations d'accès administrateurs"
-          ]
-        },
-        {
-          id: 'step_8',
-          stepNumber: 8,
-          label: 'Prise de congé B2B',
-          type: 'followup',
-          typeLabel: 'Suivi',
-          introTitle: "FINALISATION DU CADRAGE",
-          introReplica: "« Bienvenue à bord ! Votre instance est en cours d'initialisation. Vous allez recevoir l'invitation de kick-off dans votre calendrier d'ici quelques instants. Ce fut un plaisir, excellente journée ! »",
-          reminders: [
-            { type: 'info', text: "Envoyer un e-mail récapitulatif de bienvenue immédiatement après l'appel." }
-          ]
-        }
-      ];
-    }
-
-    // Generic fallback
-    return [
-      {
-        id: 'step_1',
-        stepNumber: 1,
-        label: 'Introduction',
-        type: 'regulatory',
-        typeLabel: 'Réglementaire',
-        introTitle: "ACCROCHE D'OUVERTURE COMMERCIALE",
-        introReplica: `« Bonjour, je suis [PRÉNOM] de la société HARX. Je me permets de vous contacter concernant la demande d'information que vous avez formulée en ligne. Ai-je bien l'honneur de parler à ${message.playbook?.dialogue?.[0]?.text?.replace(/Bonjour/gi, '') || '[NOM DU PROSPECT]'} ? »`,
-        reminders: [
-          { type: 'warning', text: "Assurez-vous de parler au bon interlocuteur avant de présenter l'offre commerciale." }
-        ],
-        optionsTitle: "GESTION DE L'ACCUEIL",
-        options: [
-          { id: 'prospect_confirms', label: 'Prospect confirme', subtext: '« Oui c\'est moi »', recommendedResponse: '« Parfait ! Je vous contacte car... »' },
-          { id: 'not_good_time', label: 'Indisponible', subtext: '« Je n\'ai pas le temps »', recommendedResponse: '« Pas de souci ! Quel serait le meilleur moment pour vous rappeler cette semaine ? »' }
-        ]
-      },
-      {
-        id: 'step_2',
-        stepNumber: 2,
-        label: 'Qualification des besoins',
-        type: 'collection',
-        typeLabel: 'Collecte',
-        introTitle: "ACCROCHE DE DÉCOUVERTE",
-        introReplica: "« Pour bien comprendre votre besoin et vous proposer l'offre la plus adaptée, j'aimerais vous poser quelques questions rapides. Êtes-vous actuellement utilisateur de ce type de service ? »",
-        conditionalTabs: [
-          {
-            id: 'with_solution',
-            label: 'Déjà équipé',
-            boxTitle: 'SITUATION ACTUELLE',
-            boxReplica: '« De quelle solution disposez-vous ? Qu\'est-ce qui vous plaît le plus dans cette solution, et quels points aimeriez-vous améliorer ? »',
-            badgeText: 'Identifier les faiblesses de la concurrence.'
-          },
-          {
-            id: 'no_solution',
-            label: 'Non équipé',
-            boxTitle: 'PREMIER ÉQUIPEMENT',
-            boxReplica: '« Qu\'est-ce qui vous a incité à faire cette recherche aujourd\'hui ? Quels sont les problèmes principaux que vous souhaitez résoudre ? »',
-            badgeText: 'Faire verbaliser le besoin et le niveau d\'urgence.'
-          }
-        ],
-        checklistTitle: 'INFORMATIONS À RÉCUPÉRER',
-        checklist: [
-          "Nom complet et coordonnées",
-          "Besoin prioritaire identifié",
-          "Solution actuelle employée",
-          "Budget estimatif ou attendu"
-        ]
-      },
-      {
-        id: 'step_3',
-        stepNumber: 3,
-        label: 'Découverte approfondie',
-        type: 'discovery',
-        typeLabel: 'Découverte',
-        introTitle: "RELEVÉ DES CRITÈRES DÉCISIONNELS",
-        introReplica: "« Qu'est-ce qui fera la différence pour vous lors du choix de votre partenaire : le prix, la simplicité de mise en place, ou la réactivité de notre support client ? »",
-        reminders: [
-          { type: 'info', text: "Laissez le prospect exprimer ses motivations profondes pour les réutiliser dans l'argumentaire." }
-        ]
-      },
-      {
-        id: 'step_4',
-        stepNumber: 4,
-        label: 'Présentation de la solution',
-        type: 'presentation',
-        typeLabel: 'Présentation',
-        introTitle: "VALORISATION DE LA PROPOSITION",
-        introReplica: "« Notre service a été conçu spécifiquement pour répondre à ce type de besoin. Nous offrons une garantie de satisfaction totale et un accompagnement personnalisé, le tout pour un tarif extrêmement compétitif. »",
-        reminders: [
-          { type: 'info', text: "Insister sur les bénéfices concrets plutôt que sur les caractéristiques purement techniques." }
-        ]
-      },
-      {
-        id: 'step_5',
-        stepNumber: 5,
-        label: 'Traitement des objections',
-        type: 'objection',
-        typeLabel: 'Objection',
-        introTitle: "RÉPONSES AUX INQUIÉTUDES",
-        introReplica: "« C'est une remarque tout à fait légitime. Permettez-moi de vous expliquer comment nous sécurisons cet aspect pour l'intégralité de nos clients... »",
-        conditionalTabs: [
-          {
-            id: 'price',
-            label: 'Objection Prix',
-            boxTitle: 'PRIX ET RETOUR SUR INVESTISSEMENT',
-            boxReplica: '« Notre service permet de réduire vos coûts indirects, ce qui compense largement le montant de la mensualité dès les premiers jours d\'utilisation. »',
-            badgeText: 'Démontrer la valeur créée par rapport à la dépense.'
-          },
-          {
-            id: 'delay',
-            label: 'Objection Délai',
-            boxTitle: 'RÉACTIVITÉ ET DISPONIBILITÉ',
-            boxReplica: '« Nous sommes en mesure d\'activer votre compte sous 24 heures et notre équipe reste disponible 7j/7 pour vous assister. »',
-            badgeText: 'Rassurer sur la fluidité opérationnelle.'
-          }
-        ]
-      },
-      {
-        id: 'step_6',
-        stepNumber: 6,
-        label: 'Validation légale & RGPD',
-        type: 'compliance',
-        typeLabel: 'Conformité',
-        introTitle: "SÉCURISATION DU DOSSIER",
-        introReplica: "« Avant de procéder à la finalisation de votre demande, je dois valider avec vous les conditions de protection de vos données. Confirmez-vous votre accord ? »",
-        reminders: [
-          { type: 'warning', text: "Enregistrement ou validation numérique obligatoire pour confirmer l'accord de conformité." }
-        ]
-      },
-      {
-        id: 'step_7',
-        stepNumber: 7,
-        label: 'Closing & Engagement',
-        type: 'closing',
-        typeLabel: 'Closing',
-        introTitle: "FINALISATION ET PLANIFICATION",
-        introReplica: "« Je valide votre inscription à l'instant. Vous allez recevoir un SMS de confirmation. Indiquez-moi dès que vous le recevez pour valider votre code d'activation. »",
-        checklistTitle: "VÉRIFICATIONS SÉCURITÉ",
-        checklist: [
-          "Vérification de l'adresse de livraison / email",
-          "Saisie du code de confirmation SMS",
-          "Planification du premier rendez-vous de suivi"
-        ]
-      },
-      {
-        id: 'step_8',
-        stepNumber: 8,
-        label: 'Prise de congé',
-        type: 'followup',
-        typeLabel: 'Suivi',
-        introTitle: "SALUTATIONS FINALES",
-        introReplica: "« Tout est validé de mon côté ! Votre compte est actif et votre conseiller dédié prendra contact avec vous rapidement. Ce fut un plaisir, excellente journée à vous ! »",
-        reminders: [
-          { type: 'info', text: "Garder une attitude chaleureuse et professionnelle jusqu'au raccrochage." }
-        ]
-      }
-    ];
   };
 
-  const handlePlayInteractiveScript = (message: ChatMessage) => {
-    const stages = buildInteractiveStages(selectedGig, message);
-    setActiveInteractiveTitle(selectedGig?.title || "Script d'Appel Interactif");
-    setActiveInteractiveStages(stages);
-  };
 
   const markOnboardingScriptStepCompleted = async () => {
     const companyId = getCompanyId();
@@ -920,7 +470,7 @@ const ScriptGenerator: React.FC = () => {
     setError(null);
     try {
       const companyId = getCompanyId();
-      
+
       // On-the-fly fetch of linked training modules to ensure they are synchronized
       let currentTrainings = relatedTrainings;
       if (!currentTrainings || currentTrainings.length === 0) {
@@ -973,7 +523,7 @@ const ScriptGenerator: React.FC = () => {
     setError(null);
     try {
       const companyId = getCompanyId();
-      
+
       // On-the-fly fetch of linked training modules to ensure they are synchronized
       let currentTrainings = relatedTrainings;
       if (!currentTrainings || currentTrainings.length === 0) {
@@ -1023,7 +573,7 @@ const ScriptGenerator: React.FC = () => {
     setError(null);
     try {
       if (!selectedGig?._id) throw new Error('Sélection de mission requise');
-      
+
       const payload = {
         gigId: selectedGig._id,
         targetClient: 'general',
@@ -1044,9 +594,9 @@ const ScriptGenerator: React.FC = () => {
       const { data } = await apiClient.post('/rag/scripts', payload);
       const savedScriptId = data?.data?._id || data?._id;
       if (!savedScriptId) throw new Error('La sauvegarde du script a échoué');
-      
+
       setValidatedScriptIds(prev => ({ ...prev, [String(savedScriptId)]: true }));
-      
+
       await markOnboardingScriptStepCompleted();
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Échec de l’enregistrement du script');
@@ -1168,7 +718,7 @@ const ScriptGenerator: React.FC = () => {
         if (item?._id && item?.isActive) nextValidated[item._id] = true;
       });
       setValidatedScriptIds(nextValidated);
-      
+
       // If the Gig already has saved scripts, automatically load the active/first one and deactivate the wizard
       if (items.length > 0) {
         const activeItem = items.find((item: any) => item.isActive) || items[0];
@@ -1373,13 +923,13 @@ const ScriptGenerator: React.FC = () => {
         {/* Main Work Area */}
         {selectedGig ? (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden min-h-0">
-            
+
             {/* Left Column: Context Card & Selector */}
             <div className="lg:col-span-4 h-full flex flex-col overflow-hidden min-h-0">
-              
+
               {/* Cohesive Sidebar Card */}
               <div className="bg-white rounded-2xl border border-slate-100 shadow-lg p-4 flex flex-col h-full min-h-0 overflow-hidden">
-                
+
                 {/* Header selector group */}
                 <div className="space-y-3 shrink-0">
                   <div className="flex items-center gap-2">
@@ -1414,11 +964,10 @@ const ScriptGenerator: React.FC = () => {
                                 setSelectedGig(gig);
                                 setIsGigSelectorOpen(false);
                               }}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-between gap-2 ${
-                                selectedGig?._id === gig._id
-                                  ? 'bg-red-50 text-red-600'
-                                  : 'text-slate-700 hover:bg-slate-50'
-                              }`}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-between gap-2 ${selectedGig?._id === gig._id
+                                ? 'bg-red-50 text-red-600'
+                                : 'text-slate-700 hover:bg-slate-50'
+                                }`}
                             >
                               <span className="truncate">{gig.title}</span>
                               {selectedGig?._id === gig._id && <Check className="w-3.5 h-3.5 shrink-0 text-red-600" />}
@@ -1442,7 +991,7 @@ const ScriptGenerator: React.FC = () => {
 
                 {/* Scrollable details panel */}
                 <div className="flex-1 overflow-y-auto pr-1 space-y-3.5 min-h-0 custom-scrollbar">
-                  
+
                   {/* Category & Status */}
                   <div className="flex items-center justify-between gap-2">
                     <span className="px-2.5 py-1 bg-red-50 text-red-600 rounded-lg text-[9px] font-black uppercase tracking-wider border border-red-100">
@@ -1480,7 +1029,7 @@ const ScriptGenerator: React.FC = () => {
 
             {/* Right Column: Always Active Interactive Script Cockpit and Chat Input */}
             <div className="lg:col-span-8 h-full flex flex-col overflow-hidden min-h-0 bg-white rounded-2xl border border-slate-100 shadow-md relative">
-              
+
               {/* Working Panel */}
               <div className="flex-1 overflow-hidden min-h-0 relative flex flex-col">
                 {activeInteractiveStages && activeInteractiveStages.length > 0 ? (
@@ -1492,7 +1041,7 @@ const ScriptGenerator: React.FC = () => {
                       onValidate={handleSaveAndValidateInteractiveScript}
                       isValidating={isSending}
                     />
-                    
+
                     {/* Beautiful glassmorphic loading overlay over the cockpit when updating */}
                     {isSending && (
                       <div className="absolute inset-0 z-50 bg-slate-950/25 backdrop-blur-[2px] flex flex-col items-center justify-center p-4">
@@ -1514,7 +1063,7 @@ const ScriptGenerator: React.FC = () => {
                         <BookOpen className="w-3.5 h-3.5 text-red-600" />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-1.5 max-w-sm">
                       <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Script Interactif Intelligent</h3>
                       <p className="text-[11px] text-slate-500 font-bold leading-normal">
@@ -1614,7 +1163,7 @@ const ScriptGenerator: React.FC = () => {
             ) : allSavedScripts.length > 0 && !showNewScriptSelection ? (
               /* Screen 1: Existing Scripts List Dashboard */
               <div className="relative overflow-hidden bg-white border border-slate-100 rounded-2xl shadow-xl p-5 text-center flex flex-col h-full max-h-[500px] w-full">
-                
+
                 {/* Header Row */}
                 <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-3 mb-4 shrink-0">
                   <div className="flex items-center gap-2.5 text-left">
@@ -1626,7 +1175,7 @@ const ScriptGenerator: React.FC = () => {
                       <p className="text-[10px] text-slate-400 font-bold">Sélectionnez un script validé ou concevez-en un nouveau</p>
                     </div>
                   </div>
-                  
+
                   {/* Action button "+ Nouveau Script" */}
                   <button
                     onClick={() => setShowNewScriptSelection(true)}
@@ -1671,7 +1220,7 @@ const ScriptGenerator: React.FC = () => {
                             {script.details || 'Aucune consigne spécifique'}
                           </p>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => {
@@ -1682,7 +1231,7 @@ const ScriptGenerator: React.FC = () => {
                           >
                             Ouvrir
                           </button>
-                          
+
                           <button
                             onClick={async () => {
                               if (confirm("Êtes-vous sûr de vouloir supprimer ce script ?")) {
@@ -1703,7 +1252,7 @@ const ScriptGenerator: React.FC = () => {
             ) : (
               /* Screen 2: Gigs grid selection screen (for New Script, showing ONLY Gigs without scripts) */
               <div className="relative overflow-hidden bg-white border border-slate-100 rounded-2xl shadow-xl p-6 text-center space-y-5 w-full">
-                
+
                 {/* Mascot / Icon Container */}
                 <div className="relative w-16 h-16 bg-red-600 rounded-xl flex items-center justify-center mx-auto shadow-md">
                   <Bot className="w-8 h-8 text-white animate-bounce mt-0.5" />
@@ -1750,7 +1299,7 @@ const ScriptGenerator: React.FC = () => {
                         </p>
                       </button>
                     ))}
-                  
+
                   {/* Fallback if all gigs already have scripts */}
                   {gigs.filter((gig) => !allSavedScripts.some((s) => s.gigId === gig._id)).length === 0 && (
                     <div className="col-span-1 sm:col-span-2 p-5 bg-slate-50 rounded-xl text-center space-y-1.5 border border-dashed border-slate-200">
