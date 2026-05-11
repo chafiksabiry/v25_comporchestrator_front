@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
-import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2, Briefcase, FileText, CheckCircle, Shield, Compass, BookOpen, Check, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2, Briefcase, FileText, CheckCircle, Shield, Compass, BookOpen, Check, ChevronDown, GraduationCap, ChevronRight } from 'lucide-react';
 import apiClient from '../api/knowledgeClient';
 import ScriptChatPanel from './script-generator/ScriptChatPanel';
 import { ClaudePromptToolkit } from './script-generator/ClaudePromptToolkit';
 import { useTranslation } from 'react-i18next';
 import { InteractiveScriptCockpit, InteractiveStage } from './script-generator/InteractiveScriptCockpit';
+import { JourneyService } from './training/infrastructure/services/JourneyService';
 
 interface Gig {
   _id: string;
@@ -175,6 +176,8 @@ const ScriptGenerator: React.FC = () => {
   const [activeToolkitView, setActiveToolkitView] = useState<'chat' | 'expert'>('chat');
   const [activeInteractiveStages, setActiveInteractiveStages] = useState<InteractiveStage[] | null>(null);
   const [activeInteractiveTitle, setActiveInteractiveTitle] = useState<string>('');
+  const [relatedTrainings, setRelatedTrainings] = useState<any[]>([]);
+  const [isLoadingTrainings, setIsLoadingTrainings] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -193,6 +196,37 @@ const ScriptGenerator: React.FC = () => {
     });
     window.dispatchEvent(event);
   };
+
+  // Fetch trainings automatically whenselectedGig changes
+  useEffect(() => {
+    const fetchRelatedTrainings = async () => {
+      const companyId = getCompanyId();
+      if (!companyId || !selectedGig?._id) {
+        setRelatedTrainings([]);
+        return;
+      }
+      setIsLoadingTrainings(true);
+      try {
+        const res = await JourneyService.getJourneysByCompanyAndGig(companyId, selectedGig._id);
+        const journey = res?.data?.[0] || res?.[0];
+        if (journey?.modules) {
+          const formatted = journey.modules.map((m: any) => ({
+            title: m.title,
+            learningObjectives: m.learningObjectives || []
+          }));
+          setRelatedTrainings(formatted);
+        } else {
+          setRelatedTrainings([]);
+        }
+      } catch (err) {
+        console.error('[ScriptGenerator] Failed to fetch related trainings:', err);
+        setRelatedTrainings([]);
+      } finally {
+        setIsLoadingTrainings(false);
+      }
+    };
+    fetchRelatedTrainings();
+  }, [selectedGig]);;
 
   const buildInteractiveStages = (gig: Gig | null, message: ChatMessage): InteractiveStage[] => {
     const title = gig?.title || '';
@@ -815,6 +849,111 @@ const ScriptGenerator: React.FC = () => {
     fetchSavedScripts(selectedGig._id);
   }, [selectedGig?._id]);
 
+  const handleGenerateInteractiveScriptFromScratch = async () => {
+    if (!selectedGig) return;
+    setIsSending(true);
+    setError(null);
+    try {
+      const companyId = getCompanyId();
+      const payload = {
+        companyId,
+        gig: selectedGig,
+        typeClient: 'general',
+        langueTon: 'professionnel et direct',
+        contexte: 'Générer un script interactif structuré en 8 étapes basées sur la mission.',
+        trainings: relatedTrainings,
+        isInteractiveRequest: true
+      };
+
+      const { data } = await apiClient.post('/rag/generate-script', payload);
+      const generatedStages = data?.stages || data?.data?.stages;
+      if (Array.isArray(generatedStages) && generatedStages.length > 0) {
+        setActiveInteractiveStages(generatedStages);
+        setActiveInteractiveTitle(selectedGig.title || "Script Interactif");
+      } else {
+        throw new Error("Format de script généré incompatible. Veuillez réessayer.");
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Échec de la génération du script');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleRefineInteractiveScript = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!input.trim() || !selectedGig) return;
+    const promptText = input.trim();
+    setInput('');
+    setIsSending(true);
+    setError(null);
+    try {
+      const companyId = getCompanyId();
+      const payload = {
+        companyId,
+        gig: selectedGig,
+        typeClient: 'general',
+        langueTon: 'professionnel et direct',
+        contexte: promptText,
+        trainings: relatedTrainings,
+        isInteractiveRequest: true
+      };
+
+      const { data } = await apiClient.post('/rag/generate-script', payload);
+      const generatedStages = data?.stages || data?.data?.stages;
+      if (Array.isArray(generatedStages) && generatedStages.length > 0) {
+        setActiveInteractiveStages(generatedStages);
+        setActiveInteractiveTitle(selectedGig.title || "Script Interactif");
+      } else {
+        throw new Error("Format de script généré incompatible. Veuillez réessayer.");
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Échec du raffinement du script');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleSaveAndValidateInteractiveScript = async () => {
+    if (!activeInteractiveStages || activeInteractiveStages.length === 0) return;
+    setIsSending(true);
+    setError(null);
+    try {
+      if (!selectedGig?._id) throw new Error('Sélection de mission requise');
+      
+      const payload = {
+        gigId: selectedGig._id,
+        targetClient: 'general',
+        language: 'simple et direct',
+        details: 'Généré via le Cockpit Interactif',
+        script: activeInteractiveStages.map(s => ({
+          phase: s.label,
+          actor: 'agent',
+          replica: s.introReplica
+        })),
+        playbook: {
+          title: activeInteractiveTitle || selectedGig.title,
+          stages: activeInteractiveStages
+        },
+        isActive: true,
+      };
+
+      const { data } = await apiClient.post('/rag/scripts', payload);
+      const savedScriptId = data?.data?._id || data?._id;
+      if (!savedScriptId) throw new Error('La sauvegarde du script a échoué');
+      
+      setValidatedScriptIds(prev => ({ ...prev, [String(savedScriptId)]: true }));
+      
+      await markOnboardingScriptStepCompleted();
+      
+      alert('Le script interactif a été sauvegardé et activé avec succès pour cette mission !');
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'Échec de l’enregistrement du script');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const selectedGigSummary = useMemo(() => {
     if (!selectedGig) return null;
     return {
@@ -957,6 +1096,15 @@ const ScriptGenerator: React.FC = () => {
     setActiveScriptMessage(message);
     setValidatedScriptIds((prev) => ({ ...prev, [item._id]: Boolean(item?.isActive) }));
     setIsAutoGenerateWizardActive(false);
+
+    // Load active interactive stages from saved script playbook stages
+    const stages = (item.playbook as any)?.stages;
+    if (Array.isArray(stages) && stages.length > 0) {
+      setActiveInteractiveStages(stages);
+      setActiveInteractiveTitle(item.playbook?.title || selectedGig?.title || "Script Interactif");
+    } else {
+      setActiveInteractiveStages(null);
+    }
   };
 
   const handleDeleteSavedScript = async (scriptId: string) => {
@@ -1227,75 +1375,126 @@ const ScriptGenerator: React.FC = () => {
 
             </div>
 
-            {/* Right Column: Interactive Chat Panel or Claude Prompt Toolkit */}
-            <div className="lg:col-span-8 h-full flex flex-col overflow-hidden min-h-0 space-y-2">
+            {/* Right Column: Always Active Interactive Script Cockpit and Chat Input */}
+            <div className="lg:col-span-8 h-full flex flex-col overflow-hidden min-h-0 bg-white rounded-2xl border border-slate-100 shadow-md relative">
               
-              {/* Working Mode Switch */}
-              <div className="bg-[#111111] p-1 rounded-xl border border-slate-800 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2 pl-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Mode de travail</span>
-                </div>
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => setActiveToolkitView('chat')}
-                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 ${
-                      activeToolkitView === 'chat'
-                        ? 'bg-red-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                    }`}
-                  >
-                    <Bot className="w-3.5 h-3.5" />
-                    Assistant Conversationnel
-                  </button>
-                  <button
-                    onClick={() => setActiveToolkitView('expert')}
-                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 ${
-                      activeToolkitView === 'expert'
-                        ? 'bg-red-600 text-white shadow-md border border-red-500/20'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                    }`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    Expert Claude Toolkit 🛠️
-                  </button>
-                </div>
+              {/* Working Panel */}
+              <div className="flex-1 overflow-hidden min-h-0 relative flex flex-col">
+                {activeInteractiveStages && activeInteractiveStages.length > 0 ? (
+                  <div className="flex-1 overflow-hidden min-h-0 relative">
+                    <InteractiveScriptCockpit
+                      scriptTitle={activeInteractiveTitle || selectedGig?.title || "Script d'Appel Interactif"}
+                      stages={activeInteractiveStages}
+                      isInline={true}
+                      onValidate={handleSaveAndValidateInteractiveScript}
+                      isValidating={isSending}
+                    />
+                    
+                    {/* Beautiful glassmorphic loading overlay over the cockpit when updating */}
+                    {isSending && (
+                      <div className="absolute inset-0 z-50 bg-slate-950/25 backdrop-blur-[2px] flex flex-col items-center justify-center p-4">
+                        <div className="bg-white px-5 py-4 rounded-2xl shadow-2xl border border-slate-100 flex flex-col items-center space-y-3">
+                          <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-red-600 animate-spin" />
+                          <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest animate-pulse">Raffinement par l'IA...</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Elegant placeholder screen when there are no active stages */
+                  <div className="flex-1 flex flex-col justify-center items-center p-8 bg-slate-50/50 text-center space-y-5">
+                    <div className="relative">
+                      <div className="w-16 h-16 bg-gradient-to-tr from-red-500 to-rose-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-500/10">
+                        <Sparkles className="w-8 h-8 text-white" />
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white border border-slate-100 rounded-full flex items-center justify-center shadow">
+                        <BookOpen className="w-3.5 h-3.5 text-red-600" />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1.5 max-w-sm">
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Script Interactif Intelligent</h3>
+                      <p className="text-[11px] text-slate-500 font-bold leading-normal">
+                        Concevez un script structuré en 8 étapes, intégrant la conformité légale et les modules d'apprentissage de votre parcours de formation.
+                      </p>
+                    </div>
+
+                    {/* Trainings Card Container */}
+                    <div className="w-full max-w-md bg-white border border-slate-150 rounded-xl p-3.5 text-left space-y-2.5 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-red-600" />
+                        <span className="text-[9px] font-black text-slate-800 uppercase tracking-wider font-extrabold">Formations liées à la mission :</span>
+                      </div>
+                      {isLoadingTrainings ? (
+                        <div className="flex items-center gap-1.5 py-1 text-[10px] text-slate-400 font-bold">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-red-600" /> Chargement des modules...
+                        </div>
+                      ) : relatedTrainings.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {relatedTrainings.map((t, idx) => (
+                            <div key={idx} className="flex items-start gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                              <span className="w-4 h-4 rounded-full bg-red-50 text-red-600 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
+                              <div>
+                                <h4 className="text-[10px] font-black text-slate-800 leading-tight">{t.title}</h4>
+                                {t.learningObjectives?.length > 0 && (
+                                  <p className="text-[9px] text-slate-400 font-bold mt-0.5 line-clamp-1">Obj : {t.learningObjectives.join(', ')}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-slate-400 font-bold italic">Aucune formation liée trouvée pour cette mission. L'IA HARX utilisera les standards de l'industrie.</p>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={handleGenerateInteractiveScriptFromScratch}
+                      disabled={isSending}
+                      className="px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-extrabold rounded-xl text-[10.5px] uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-red-500/15 transition-all duration-200 cursor-pointer active:scale-95"
+                    >
+                      {isSending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Génération en cours...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Générer le Script Interactif
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* Conditional View */}
-              {activeToolkitView === 'chat' ? (
-                <ScriptChatPanel
-                  messages={messages}
-                  input={input}
-                  isSending={isSending}
-                  validatingScriptId={validatingScriptId}
-                  validatedScriptIds={validatedScriptIds}
-                  selectedGigId={selectedGig?._id}
-                  onInputChange={setInput}
-                  onSubmit={sendMessage}
-                  onValidateScript={validateScript}
-                  onPlayInteractiveScript={handlePlayInteractiveScript}
-                  renderAssistantMessage={renderAssistantMessage}
-                  savedScripts={savedScripts}
-                  isLoadingSavedScripts={isLoadingSavedScripts}
-                  onOpenSavedScript={openSavedScript}
-                  onDeleteSavedScript={handleDeleteSavedScript}
-                  onStartNewChat={handleStartNewChat}
-                  onAutoGenerate={handleAutoGenerateInitialScript}
-                  isAutoGenerateWizardActive={isAutoGenerateWizardActive}
-                  setIsAutoGenerateWizardActive={setIsAutoGenerateWizardActive}
-                />
-              ) : (
-                <ClaudePromptToolkit
-                  companyId={getCompanyId() || ''}
-                  gig={selectedGig}
-                  onTestPrompt={(promptText) => {
-                    setActiveToolkitView('chat');
-                    setIsAutoGenerateWizardActive(false);
-                    sendMessageToApi(promptText, true);
-                  }}
-                />
-              )}
+              {/* STUNNING CHAT INPUT FOOTER FOR ADAPTATION & INTERACTIVE CHAT */}
+              <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 shrink-0">
+                <form onSubmit={handleRefineInteractiveScript} className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder={activeInteractiveStages ? "Ajuster ce script interactif (ex: 'Rendre l'étape d'accroche plus chaleureuse', 'Ajouter une objection prix')..." : "Saisir des consignes spécifiques pour la génération du script interactif..."}
+                      disabled={isSending || !selectedGig}
+                      className="w-full pl-3.5 pr-10 py-2.5 bg-[#fcfcfc] border border-slate-200 focus:border-red-600 text-xs font-semibold text-slate-800 placeholder-slate-400 rounded-xl outline-none transition-all shadow-sm disabled:opacity-60"
+                    />
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-slate-400">
+                      <Sparkles className="w-3.5 h-3.5 text-red-500/60 animate-pulse" />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSending || !input.trim() || !selectedGig}
+                    className="p-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-white font-extrabold rounded-xl shadow-sm transition-all duration-200 active:scale-95 flex items-center justify-center cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </form>
+              </div>
+
             </div>
 
           </div>
