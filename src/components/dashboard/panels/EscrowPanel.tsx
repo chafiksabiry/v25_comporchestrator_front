@@ -1036,7 +1036,6 @@ export function EscrowPanel() {
                       <th className="px-6 py-4">Appel (Agent & Lead)</th>
                       <th className="px-6 py-4">Sens</th>
                       <th className="px-6 py-4">Durée Réelle</th>
-                      <th className="px-6 py-4">Minutes Déduites</th>
                       <th className="px-6 py-4">Date de l'Appel</th>
                       <th className="px-6 py-4">Statut Transaction</th>
                       <th className="px-6 py-4 text-center">Décision</th>
@@ -1044,7 +1043,6 @@ export function EscrowPanel() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {calls.map((call) => {
-                      const durationMins = Math.ceil((call.duration || 60) / 60);
                       return (
                         <tr
                           key={call.callId}
@@ -1076,9 +1074,6 @@ export function EscrowPanel() {
                           </td>
                           <td className="px-6 py-4 font-bold text-slate-700">
                             {call.duration} sec
-                          </td>
-                          <td className="px-6 py-4 font-black text-slate-900 text-sm">
-                            {durationMins} mins
                           </td>
                           <td className="px-6 py-4 text-slate-500 font-medium">
                             {call.startTime ? new Date(call.startTime).toLocaleDateString('en-US', {
