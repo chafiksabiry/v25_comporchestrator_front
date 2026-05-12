@@ -217,157 +217,162 @@ export default function CallsDashboardPage() {
                           {call.status}
                         </span>
 
-                        <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
+                        {call.status?.toLowerCase() === 'completed' ? (
+                          <>
+                            <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
 
-                        {/* Validation de l'Appel par la Compagnie */}
-                        <div className="flex flex-col items-center gap-1 min-w-[96px]">
-                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Appel (Compagnie)</span>
-                          {call.companyValidation === 'approved' ? (
-                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
-                              <Check className="w-3.5 h-3.5" />
-                              Validé
-                            </span>
-                          ) : call.companyValidation === 'rejected' ? (
-                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
-                              <X className="w-3.5 h-3.5" />
-                              Refusé
-                            </span>
-                          ) : (
-                            <div className="relative">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenDropdownId(
-                                    openDropdownId?.callId === call._id && openDropdownId?.type === 'validation'
-                                      ? null
-                                      : { callId: call._id, type: 'validation' }
-                                  );
-                                }}
-                                className="w-24 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1 shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                              >
-                                <span>Action</span>
-                                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-                                  openDropdownId?.callId === call._id && openDropdownId?.type === 'validation' ? 'rotate-180' : ''
-                                }`} />
-                              </button>
+                            {/* Validation de l'Appel par la Compagnie */}
+                            <div className="flex flex-col items-center gap-1 min-w-[110px]">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Appel (Validation)</span>
+                              {call.companyValidation === 'approved' && call.agentValidation === 'approved' ? (
+                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-28">
+                                  <Check className="w-3.5 h-3.5" />
+                                  Validé
+                                </span>
+                              ) : call.companyValidation === 'rejected' || call.agentValidation === 'rejected' ? (
+                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-28">
+                                  <X className="w-3.5 h-3.5" />
+                                  Refusé
+                                </span>
+                              ) : call.companyValidation === 'approved' && call.agentValidation !== 'approved' ? (
+                                <span 
+                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-200/40 shadow-sm w-28 text-center cursor-help"
+                                  title="En attente de la confirmation de l'agent"
+                                >
+                                  <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                                  Attente Agent
+                                </span>
+                              ) : (
+                                <div className="relative">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenDropdownId(
+                                        openDropdownId?.callId === call._id && openDropdownId?.type === 'validation'
+                                          ? null
+                                          : { callId: call._id, type: 'validation' }
+                                      );
+                                    }}
+                                    className="w-24 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1 shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                                  >
+                                    <span>Action</span>
+                                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                                      openDropdownId?.callId === call._id && openDropdownId?.type === 'validation' ? 'rotate-180' : ''
+                                    }`} />
+                                  </button>
 
-                              {openDropdownId?.callId === call._id && openDropdownId?.type === 'validation' && (
-                                <>
-                                  <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
-                                  <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-32 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-200">
-                                    <button
-                                      onClick={() => {
-                                        handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved');
-                                        setOpenDropdownId(null);
-                                      }}
-                                      className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50/60 flex items-center gap-2 transition-colors"
-                                    >
-                                      <Check className="w-3.5 h-3.5 shrink-0" />
-                                      <span>Valider</span>
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected');
-                                        setOpenDropdownId(null);
-                                      }}
-                                      className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50/60 flex items-center gap-2 transition-colors"
-                                    >
-                                      <X className="w-3.5 h-3.5 shrink-0" />
-                                      <span>Refuser</span>
-                                    </button>
-                                  </div>
-                                </>
+                                  {openDropdownId?.callId === call._id && openDropdownId?.type === 'validation' && (
+                                    <>
+                                      <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
+                                      <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-32 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <button
+                                          onClick={() => {
+                                            handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved');
+                                            setOpenDropdownId(null);
+                                          }}
+                                          className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50/60 flex items-center gap-2 transition-colors"
+                                        >
+                                          <Check className="w-3.5 h-3.5 shrink-0" />
+                                          <span>Valider</span>
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected');
+                                            setOpenDropdownId(null);
+                                          }}
+                                          className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50/60 flex items-center gap-2 transition-colors"
+                                        >
+                                          <X className="w-3.5 h-3.5 shrink-0" />
+                                          <span>Refuser</span>
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
 
-                        <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
+                            <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
 
-                        {/* Validation de la Transaction par l'Agent */}
-                        <div className="flex flex-col items-center gap-1 min-w-[96px]">
-                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction (Agent)</span>
-                          {call.transaction?.validByReps === true ? (
-                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
-                              <Check className="w-3.5 h-3.5" />
-                              Validé
-                            </span>
-                          ) : call.transaction?.validByReps === false ? (
-                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
-                              <X className="w-3.5 h-3.5" />
-                              Refusé
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100/40 shadow-sm w-24">
-                              En attente
-                            </span>
-                          )}
-                        </div>
+                            {/* Validation de la Transaction par la Compagnie */}
+                            <div className="flex flex-col items-center gap-1 min-w-[110px]">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction</span>
+                              {call.transaction?.validByCompany === true && call.transaction?.validByReps === true ? (
+                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-28">
+                                  <Check className="w-3.5 h-3.5" />
+                                  Signé
+                                </span>
+                              ) : call.transaction?.validByCompany === false || call.transaction?.validByReps === false ? (
+                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-28">
+                                  <X className="w-3.5 h-3.5" />
+                                  Refusé
+                                </span>
+                              ) : call.transaction?.validByCompany === true && call.transaction?.validByReps !== true ? (
+                                <span 
+                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-200/40 shadow-sm w-28 text-center cursor-help"
+                                  title="En attente de la confirmation de l'agent"
+                                >
+                                  <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                                  Attente Agent
+                                </span>
+                              ) : (
+                                <div className="relative">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenDropdownId(
+                                        openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction'
+                                          ? null
+                                          : { callId: call._id, type: 'transaction' }
+                                      );
+                                    }}
+                                    className="w-24 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1 shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                                  >
+                                    <span>Action</span>
+                                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                                      openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' ? 'rotate-180' : ''
+                                    }`} />
+                                  </button>
 
-                        <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
-
-                        {/* Validation de la Transaction par la Compagnie */}
-                        <div className="flex flex-col items-center gap-1 min-w-[96px]">
-                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction (Compagnie)</span>
-                          {call.transaction?.validByCompany === true ? (
-                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
-                              <Check className="w-3.5 h-3.5" />
-                              Validé
-                            </span>
-                          ) : call.transaction?.validByCompany === false ? (
-                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
-                              <X className="w-3.5 h-3.5" />
-                              Refusé
-                            </span>
-                          ) : (
-                            <div className="relative">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenDropdownId(
-                                    openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction'
-                                      ? null
-                                      : { callId: call._id, type: 'transaction' }
-                                  );
-                                }}
-                                className="w-24 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1 shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                              >
-                                <span>Action</span>
-                                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-                                  openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' ? 'rotate-180' : ''
-                                }`} />
-                              </button>
-
-                              {openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' && (
-                                <>
-                                  <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
-                                  <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-32 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-200">
-                                    <button
-                                      onClick={() => {
-                                        handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true);
-                                        setOpenDropdownId(null);
-                                      }}
-                                      className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50/60 flex items-center gap-2 transition-colors"
-                                    >
-                                      <Check className="w-3.5 h-3.5 shrink-0" />
-                                      <span>Valider</span>
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false);
-                                        setOpenDropdownId(null);
-                                      }}
-                                      className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50/60 flex items-center gap-2 transition-colors"
-                                    >
-                                      <X className="w-3.5 h-3.5 shrink-0" />
-                                      <span>Refuser</span>
-                                    </button>
-                                  </div>
-                                </>
+                                  {openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' && (
+                                    <>
+                                      <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
+                                      <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-32 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <button
+                                          onClick={() => {
+                                            handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true);
+                                            setOpenDropdownId(null);
+                                          }}
+                                          className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50/60 flex items-center gap-2 transition-colors"
+                                        >
+                                          <Check className="w-3.5 h-3.5 shrink-0" />
+                                          <span>Signer</span>
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false);
+                                            setOpenDropdownId(null);
+                                          }}
+                                          className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50/60 flex items-center gap-2 transition-colors"
+                                        >
+                                          <X className="w-3.5 h-3.5 shrink-0" />
+                                          <span>Refuser</span>
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
+                            <div className="flex flex-col items-center justify-center min-w-[80px]">
+                              <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
+                            </div>
+                          </>
+                        )}
 
                         <div className="flex items-center gap-2 ml-2">
                           <button 
