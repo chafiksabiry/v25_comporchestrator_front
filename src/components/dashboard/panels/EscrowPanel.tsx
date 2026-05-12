@@ -166,6 +166,15 @@ export function EscrowPanel() {
           setTransactions(txData.data);
         }
       }
+
+      // 3. Fetch company calls
+      const callsRes = await fetch(`${apiBaseUrl}/escrow/calls/${companyId}`);
+      if (callsRes.ok) {
+        const callsData = await callsRes.json();
+        if (callsData.success && callsData.data) {
+          setCalls(callsData.data);
+        }
+      }
     } catch (err) {
       console.error('Error loading escrow data:', err);
       toast.error('Could not synchronize escrow account.');
@@ -542,6 +551,21 @@ export function EscrowPanel() {
     .filter(c => c.status === 'released')
     .reduce((sum, c) => sum + c.amount, 0) || 0;
 
+  // Calculate consumed minutes by all agents (rounded ceiling per call)
+  const totalConsumedMinutes = calls.reduce((acc, call) => acc + Math.ceil((call.duration || 0) / 60), 0);
+  
+  const approvedMinutes = calls
+    .filter(call => call.validByCompany === true)
+    .reduce((acc, call) => acc + Math.ceil((call.duration || 0) / 60), 0);
+
+  const pendingMinutes = calls
+    .filter(call => call.validByCompany === null)
+    .reduce((acc, call) => acc + Math.ceil((call.duration || 0) / 60), 0);
+
+  const refusedMinutes = calls
+    .filter(call => call.validByCompany === false)
+    .reduce((acc, call) => acc + Math.ceil((call.duration || 0) / 60), 0);
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-24 animate-in">
       
@@ -588,7 +612,7 @@ export function EscrowPanel() {
       </div>
 
       {/* Financial Overview Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Metric 1: Euros Cash Balance */}
         <div className="bg-white border border-slate-200 hover:border-emerald-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full translate-x-12 -translate-y-12 transition-transform duration-500 group-hover:scale-110" />
@@ -655,7 +679,31 @@ export function EscrowPanel() {
           </div>
         </div>
 
-        {/* Metric 4: Paid to Representatives */}
+        {/* Metric 4: Consumed Minutes by Agents (Calculated from all calls) */}
+        <div className="bg-white border border-slate-200 hover:border-blue-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-full translate-x-12 -translate-y-12 transition-transform duration-500 group-hover:scale-110" />
+          <div className="flex items-center justify-between mb-3 relative z-10">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Minutes Consommées (Calls)</span>
+            <div className="p-1.5 bg-blue-50 text-blue-500 rounded-lg">
+              <Phone className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="relative z-10">
+            <h3 className="text-2xl font-black text-blue-600 tracking-tight">{totalConsumedMinutes.toLocaleString('en-US')} mins</h3>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-[10px] font-bold text-slate-500">
+                {approvedMinutes.toLocaleString('en-US')} val. • {pendingMinutes.toLocaleString('en-US')} pnd.
+              </span>
+              <span className="text-[10px] bg-blue-100 text-blue-700 font-extrabold px-1.5 py-0.5 rounded-full">Calls</span>
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] relative z-10">
+            <span className="text-slate-400 font-semibold">Minutes refusées :</span>
+            <span className="text-rose-500 font-bold">{refusedMinutes.toLocaleString('en-US')} mins</span>
+          </div>
+        </div>
+
+        {/* Metric 5: Paid to Representatives */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Payé aux REPS</span>
