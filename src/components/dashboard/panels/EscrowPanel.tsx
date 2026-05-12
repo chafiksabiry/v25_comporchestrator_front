@@ -1336,16 +1336,22 @@ export function EscrowPanel() {
                       placeholder="Nombre de minutes"
                       required
                       min="1"
+                      max={displayBalance}
                       className="pl-9 w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-2.5 px-3 text-slate-900 text-sm font-black focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
                     />
                     <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
                       <span className="text-[10px] text-slate-400 font-black uppercase">mins</span>
                     </div>
                   </div>
+                  {buyMinutesAmount && parseInt(buyMinutesAmount) > displayBalance && (
+                    <p className="text-[10px] text-rose-500 font-black mt-1.5 animate-pulse uppercase tracking-wider flex items-center gap-1">
+                      ⚠️ Le montant dépasse votre solde disponible ({displayBalance.toLocaleString('en-US')} €)
+                    </p>
+                  )}
                 </div>
 
                 {/* Live transaction preview block */}
-                {buyMinutesAmount && parseInt(buyMinutesAmount) > 0 ? (
+                {buyMinutesAmount && parseInt(buyMinutesAmount) > 0 && parseInt(buyMinutesAmount) <= displayBalance ? (
                   <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between animate-fade-in">
                     <div>
                       <span className="text-[9px] text-slate-400 font-black uppercase block tracking-wider">Facturation</span>
@@ -1355,6 +1361,10 @@ export function EscrowPanel() {
                       <span className="text-orange-600 text-lg font-black block leading-none">{parseInt(buyMinutesAmount).toLocaleString()} €</span>
                       <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Taux: 1 € = 1 min</span>
                     </div>
+                  </div>
+                ) : buyMinutesAmount && parseInt(buyMinutesAmount) > displayBalance ? (
+                  <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-4 flex items-center justify-center">
+                    <span className="text-[10px] text-rose-600 font-black uppercase tracking-wider">Solde cash insuffisant</span>
                   </div>
                 ) : (
                   <div className="h-[60px] flex items-center justify-center border border-dashed border-slate-200 rounded-2xl">
@@ -1374,8 +1384,8 @@ export function EscrowPanel() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingBuyMinutes}
-                  className="px-5 py-2.5 bg-gradient-to-r from-orange-400 to-amber-500 text-white hover:from-orange-500 hover:to-amber-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2"
+                  disabled={submittingBuyMinutes || !buyMinutesAmount || parseInt(buyMinutesAmount) <= 0 || parseInt(buyMinutesAmount) > displayBalance}
+                  className="px-5 py-2.5 bg-gradient-to-r from-orange-400 to-amber-500 text-white hover:from-orange-500 hover:to-amber-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 disabled:from-slate-200 disabled:to-slate-300 disabled:text-slate-400 disabled:shadow-none transition-all active:scale-95 flex items-center gap-2"
                 >
                   {submittingBuyMinutes ? (
                     <>
