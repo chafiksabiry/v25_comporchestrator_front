@@ -61,6 +61,24 @@ function AppContent() {
 
   const navigate = useNavigate();
 
+  const formatFloatMinutesToMMSSLL = (floatMinutes: number): string => {
+    if (isNaN(floatMinutes) || floatMinutes === null || floatMinutes === undefined) {
+      return "00:00:00";
+    }
+    const totalSeconds = floatMinutes * 60;
+    const mm = Math.floor(floatMinutes);
+    const remainingSeconds = totalSeconds % 60;
+    const ss = Math.floor(remainingSeconds);
+    const remainingFraction = remainingSeconds % 1;
+    const ll = Math.floor(remainingFraction * 100);
+
+    const mmStr = String(mm).padStart(2, '0');
+    const ssStr = String(ss).padStart(2, '0');
+    const llStr = String(ll).padStart(2, '0');
+
+    return `${mmStr}:${ssStr}:${llStr}`;
+  };
+
   useEffect(() => {
     const fetchBalance = async () => {
       const compId = Cookies.get('companyId') || 'demo_company_id';
@@ -400,7 +418,7 @@ function AppContent() {
                   className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-blue-500/10 hover:to-blue-500/5 hover:border-blue-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 cursor-pointer group"
                 >
                   <Clock size={14} className="text-blue-500 group-hover:scale-110 group-hover:text-blue-400 transition-all duration-300 shrink-0" />
-                  <span className="whitespace-nowrap">Minutes: <span className="text-white font-black">{minutes.toLocaleString('en-US')} mins</span></span>
+                  <span className="whitespace-nowrap">Minutes: <span className="text-white font-black">{formatFloatMinutesToMMSSLL(minutes)}</span></span>
                 </div>
 
                 {/* Escrow/Séquestre Widget */}
@@ -409,7 +427,7 @@ function AppContent() {
                   className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-orange-500/10 hover:to-orange-500/5 hover:border-orange-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300 cursor-pointer group"
                 >
                   <span className="text-orange-500 font-extrabold group-hover:scale-110 transition-all duration-300 shrink-0">🔒</span>
-                  <span className="whitespace-nowrap">Séquestre: <span className="text-white font-black">{escrow.toLocaleString('en-US')} mins</span></span>
+                  <span className="whitespace-nowrap">Séquestre: <span className="text-white font-black">{formatFloatMinutesToMMSSLL(escrow)}</span></span>
                 </div>
 
                 {/* Upgrade Button */}
