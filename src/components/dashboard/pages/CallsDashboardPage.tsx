@@ -161,8 +161,9 @@ export default function CallsDashboardPage() {
                 <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Duration</th>
                 <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">AI Score</th>
                 <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Appel</th>
-                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Transaction</th>
+                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Appel (Compagnie)</th>
+                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Tx (Agent)</th>
+                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Tx (Compagnie)</th>
                 <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
@@ -170,14 +171,14 @@ export default function CallsDashboardPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                    <tr key={i} className="animate-pulse">
-                    <td colSpan={7} className="px-4 py-10">
+                    <td colSpan={8} className="px-4 py-10">
                       <div className="h-12 bg-slate-100 rounded-2xl w-full"></div>
                     </td>
                   </tr>
                 ))
               ) : filteredCalls.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-20 text-center">
+                  <td colSpan={8} className="px-4 py-20 text-center">
                     <div className="flex flex-col items-center gap-4 text-slate-400">
                       <Phone className="w-12 h-12 opacity-20" />
                       <p className="font-bold uppercase tracking-widest text-xs">No calls found</p>
@@ -269,6 +270,23 @@ export default function CallsDashboardPage() {
                               Refuser
                             </button>
                           </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-5 text-center">
+                        {call.transaction?.validByReps === true ? (
+                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
+                            <Check className="w-3.5 h-3.5" />
+                            Validé
+                          </span>
+                        ) : call.transaction?.validByReps === false ? (
+                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
+                            <X className="w-3.5 h-3.5" />
+                            Refusé
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100/40 shadow-sm w-24">
+                            En attente
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-5 text-center">
@@ -422,7 +440,26 @@ export default function CallsDashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Val. Tx :</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Val. Tx (Agent) :</span>
+                  {selectedCall.transaction?.validByReps === true ? (
+                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
+                      <Check className="w-3.5 h-3.5" />
+                      Validé
+                    </span>
+                  ) : selectedCall.transaction?.validByReps === false ? (
+                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
+                      <X className="w-3.5 h-3.5" />
+                      Refusé
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100/40 shadow-sm w-24">
+                      En attente
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Val. Tx (Compagnie) :</span>
                   {selectedCall.transaction?.validByCompany === true ? (
                     <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
                       <Check className="w-3.5 h-3.5" />
