@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Wallet,
   Lock,
@@ -1128,7 +1129,7 @@ export function EscrowPanel() {
       </div>
 
       {/* 1. Modal: Deposit / Alimentation (Call-details style pure white layout) */}
-      {showDepositModal && (
+      {showDepositModal && createPortal(
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[99999] animate-fade-in">
           <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-xl max-h-[90vh] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 relative flex flex-col">
             
@@ -1174,7 +1175,7 @@ export function EscrowPanel() {
                         onClick={() => setDepositAmount(pkg.eur.toString())}
                         className={`relative p-3 border text-center rounded-2xl flex flex-col justify-between transition-all cursor-pointer h-24 ${
                           depositAmount === pkg.eur.toString()
-                            ? 'border-emerald-500 bg-emerald-50/30 text-emerald-950 shadow-sm'
+                            ? 'border-emerald-500 bg-emerald-50/30 text-orange-950 shadow-sm'
                             : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                         }`}
                       >
@@ -1214,14 +1215,14 @@ export function EscrowPanel() {
                 {/* Live transaction preview block */}
                 {depositAmount && parseInt(depositAmount) > 0 ? (
                   <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between animate-fade-in">
-                    <div>
-                      <span className="text-[9px] text-slate-400 font-black uppercase block tracking-wider">Mode de Paiement</span>
-                      <span className="text-xs font-bold text-slate-600">Paiement sécurisé par carte</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-emerald-600 text-lg font-black block leading-none">{parseInt(depositAmount).toLocaleString()} €</span>
-                      <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider">EUR de crédit cash</span>
-                    </div>
+                     <div>
+                       <span className="text-[9px] text-slate-400 font-black uppercase block tracking-wider">Mode de Paiement</span>
+                       <span className="text-xs font-bold text-slate-600">Paiement sécurisé par carte</span>
+                     </div>
+                     <div className="text-right">
+                       <span className="text-emerald-600 text-lg font-black block leading-none">{parseInt(depositAmount).toLocaleString()} €</span>
+                       <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider">EUR de crédit cash</span>
+                     </div>
                   </div>
                 ) : (
                   <div className="h-[60px] flex items-center justify-center border border-dashed border-slate-200 rounded-2xl">
@@ -1256,12 +1257,13 @@ export function EscrowPanel() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
 
       {/* 1.5. Modal: Buy Minutes with Euros (Call-details style pure white layout) */}
-      {showBuyMinutesModal && (
+      {showBuyMinutesModal && createPortal(
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[99999] animate-fade-in">
           <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-xl max-h-[90vh] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 relative flex flex-col">
             
@@ -1399,13 +1401,14 @@ export function EscrowPanel() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
 
 
       {/* 2. Modal: Withdraw / Retrait */}
-      {showWithdrawModal && (
+      {showWithdrawModal && createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[99999] animate-fade-in">
           <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4">
             <div className="bg-slate-900 p-6 text-white relative">
@@ -1472,11 +1475,12 @@ export function EscrowPanel() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 3. Modal: Lock Escrow / Nouveau Séquestre */}
-      {showLockModal && (
+      {showLockModal && createPortal(
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999999] overflow-y-auto animate-fade-in">
           <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-lg overflow-visible shadow-2xl animate-in slide-in-from-bottom-4 my-auto relative">
             <div className="bg-gradient-to-r from-orange-400 to-rose-500 p-6 text-white relative rounded-t-[2rem]">
@@ -1666,11 +1670,12 @@ export function EscrowPanel() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 4. Modal: Custom Confirmation for releasing funds */}
-      {showReleaseConfirmModal && (
+      {showReleaseConfirmModal && createPortal(
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999999] overflow-y-auto animate-fade-in">
           <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 my-auto relative">
             <div className="bg-gradient-to-r from-orange-400 to-rose-500 p-6 text-white relative">
@@ -1725,11 +1730,12 @@ export function EscrowPanel() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 5. Modal: Custom Confirmation for refunding/canceling escrow */}
-      {showRefundConfirmModal && (
+      {showRefundConfirmModal && createPortal(
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999999] overflow-y-auto animate-fade-in">
           <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 my-auto relative">
             <div className="bg-gradient-to-r from-orange-400 to-rose-500 p-6 text-white relative">
@@ -1784,11 +1790,12 @@ export function EscrowPanel() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 6. Modal: Detailed Call View with Transcript and AI insights */}
-      {selectedCall && (
+      {selectedCall && createPortal(
         <div className="fixed inset-0 z-[999999] flex items-center justify-center p-6 animate-fade-in">
           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}></div>
 
@@ -1986,7 +1993,8 @@ export function EscrowPanel() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <style>{`
