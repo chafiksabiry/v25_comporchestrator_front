@@ -152,199 +152,189 @@ export default function CallsDashboardPage() {
         </div>
       </div>
 
-      <div className="bg-white/40 backdrop-blur-xl rounded-3xl border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-320px)] flex flex-col overflow-hidden min-h-[400px]">
-        <div className="flex-1 overflow-auto scrollbar-auto min-h-0">
-          <table className="min-w-[1200px] w-full text-left border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-50/80 backdrop-blur-sm">
-              <tr className="border-b border-slate-200/50">
-                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Lead / Agent</th>
-                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Duration</th>
-                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">AI Score</th>
-                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Appel (Compagnie)</th>
-                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Tx (Agent)</th>
-                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Tx (Compagnie)</th>
-                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                   <tr key={i} className="animate-pulse">
-                    <td colSpan={8} className="px-4 py-10">
-                      <div className="h-12 bg-slate-100 rounded-2xl w-full"></div>
-                    </td>
-                  </tr>
-                ))
-              ) : filteredCalls.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-20 text-center">
-                    <div className="flex flex-col items-center gap-4 text-slate-400">
-                      <Phone className="w-12 h-12 opacity-20" />
-                      <p className="font-bold uppercase tracking-widest text-xs">No calls found</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredCalls.map((call, idx) => {
-                  const callId = call._id || idx;
-                  
-                  return (
-                    <tr key={callId} className="group hover:bg-white/60 transition-colors">
-                      <td className="px-4 py-5">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                            <Phone className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <h3 className="text-sm font-black text-slate-900 tracking-tight">
-                              {call.lead?.First_Name || call.lead?.Last_Name ? `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim() : 'Unknown Lead'}
-                            </h3>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+      <div className="bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-320px)] flex flex-col overflow-hidden min-h-[400px]">
+        <div className="flex-1 overflow-auto custom-scrollbar p-6">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : filteredCalls.length === 0 ? (
+            <div className="flex flex-col justify-center items-center p-20 text-center">
+              <div className="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-6">
+                <Phone className="w-10 h-10 text-slate-300 opacity-40" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest">No calls found</h3>
+              <p className="text-sm text-slate-500 mt-2 max-w-sm">
+                No call records were found matching your filters.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredCalls.map((call, idx) => {
+                const callId = call._id || idx;
+                return (
+                  <div 
+                    key={callId} 
+                    className="p-6 bg-white rounded-3xl border border-slate-100/80 hover:border-indigo-100 shadow-sm hover:shadow-md transition-all duration-300 group"
+                  >
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform flex-shrink-0">
+                          <Phone className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="font-black text-slate-900 text-sm tracking-tight">
+                            {call.lead?.First_Name || call.lead?.Last_Name ? `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim() : 'Unknown Lead'}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-3 mt-1">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                              {new Date(call.createdAt || call.date).toLocaleString()}
+                            </span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 text-slate-500 border border-slate-100 px-2 py-0.5 rounded-full">
                               Agent: {call.agent?.name || 'Assigned Agent'}
-                            </p>
+                            </span>
+                            {call.duration && (
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-full">
+                                {Math.floor(call.duration/60)}m {call.duration%60}s
+                              </span>
+                            )}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-5">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2 text-slate-700">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span className="text-xs font-bold">{new Date(call.createdAt || call.date).toLocaleString()}</span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-4 xl:gap-6">
+                        {call.ai_call_score?.overall?.score !== undefined && (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-full border border-amber-100/50 shadow-sm">
+                            <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                            <span className="text-xs font-black">{call.ai_call_score.overall.score}%</span>
                           </div>
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            {call.duration ? `${Math.floor(call.duration/60)}m ${call.duration%60}s` : '0s'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-5">
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <Star className={`w-4 h-4 ${call.ai_call_score?.overall?.score >= 80 ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
-                            <span className="text-sm font-black text-slate-900">{call.ai_call_score?.overall?.score || 'N/A'}</span>
-                          </div>
-                          <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full rounded-full ${call.ai_call_score?.overall?.score >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} 
-                              style={{ width: `${call.ai_call_score?.overall?.score || 0}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-5 text-center">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                          call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
-                          call.status === 'failed' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
-                          'bg-slate-50 text-slate-500 border border-slate-100'
+                        )}
+                        
+                        <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border ${
+                          call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 'bg-rose-50 text-rose-600 border-rose-100/50'
                         }`}>
                           {call.status}
                         </span>
-                      </td>
-                      <td className="px-4 py-5 text-center">
-                        {call.companyValidation === 'approved' ? (
-                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
-                            <Check className="w-3.5 h-3.5" />
-                            Validé
-                          </span>
-                        ) : call.companyValidation === 'rejected' ? (
-                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
-                            <X className="w-3.5 h-3.5" />
-                            Refusé
-                          </span>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved')}
-                              className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60"
-                              title="Valider l'appel"
-                            >
-                              <Check className="w-3 h-3" />
-                              Valider
-                            </button>
-                            <button
-                              onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected')}
-                              className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60"
-                              title="Refuser l'appel"
-                            >
-                              <X className="w-3 h-3" />
-                              Refuser
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-5 text-center">
-                        {call.transaction?.validByReps === true ? (
-                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
-                            <Check className="w-3.5 h-3.5" />
-                            Validé
-                          </span>
-                        ) : call.transaction?.validByReps === false ? (
-                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
-                            <X className="w-3.5 h-3.5" />
-                            Refusé
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100/40 shadow-sm w-24">
-                            En attente
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-5 text-center">
-                        {call.transaction?.validByCompany === true ? (
-                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
-                            <Check className="w-3.5 h-3.5" />
-                            Validé
-                          </span>
-                        ) : call.transaction?.validByCompany === false ? (
-                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
-                            <X className="w-3.5 h-3.5" />
-                            Refusé
-                          </span>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true)}
-                              className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60"
-                              title="Valider la transaction"
-                            >
-                              <Check className="w-3 h-3" />
-                              Valider
-                            </button>
-                            <button
-                              onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false)}
-                              className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60"
-                              title="Refuser la transaction"
-                            >
-                              <X className="w-3 h-3" />
-                              Refuser
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-5">
-                        <div className="flex items-center justify-end gap-2">
+
+                        <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
+
+                        {/* Validation de l'Appel par la Compagnie */}
+                        <div className="flex flex-col items-center gap-1 min-w-[96px]">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Appel (Compagnie)</span>
+                          {call.companyValidation === 'approved' ? (
+                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
+                              <Check className="w-3.5 h-3.5" />
+                              Validé
+                            </span>
+                          ) : call.companyValidation === 'rejected' ? (
+                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
+                              <X className="w-3.5 h-3.5" />
+                              Refusé
+                            </span>
+                          ) : (
+                            <div className="flex flex-col gap-1.5">
+                              <button
+                                onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved')}
+                                className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 shadow-sm bg-blue-50/50 text-blue-600 border-blue-100/40 hover:bg-blue-100/60"
+                                title="Valider l'appel"
+                              >
+                                <Check className="w-3 h-3" />
+                                Valider
+                              </button>
+                              <button
+                                onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected')}
+                                className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50/50 text-rose-600 border-rose-100/40 hover:bg-rose-100/60"
+                                title="Refuser l'appel"
+                              >
+                                <X className="w-3 h-3" />
+                                Refuser
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
+
+                        {/* Validation de la Transaction par l'Agent */}
+                        <div className="flex flex-col items-center gap-1 min-w-[96px]">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction (Agent)</span>
+                          {call.transaction?.validByReps === true ? (
+                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
+                              <Check className="w-3.5 h-3.5" />
+                              Validé
+                            </span>
+                          ) : call.transaction?.validByReps === false ? (
+                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
+                              <X className="w-3.5 h-3.5" />
+                              Refusé
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100/40 shadow-sm w-24">
+                              En attente
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
+
+                        {/* Validation de la Transaction par la Compagnie */}
+                        <div className="flex flex-col items-center gap-1 min-w-[96px]">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction (Compagnie)</span>
+                          {call.transaction?.validByCompany === true ? (
+                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
+                              <Check className="w-3.5 h-3.5" />
+                              Validé
+                            </span>
+                          ) : call.transaction?.validByCompany === false ? (
+                            <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
+                              <X className="w-3.5 h-3.5" />
+                              Refusé
+                            </span>
+                          ) : (
+                            <div className="flex flex-col gap-1.5">
+                              <button
+                                onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true)}
+                                className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 shadow-sm bg-blue-50/50 text-blue-600 border-blue-100/40 hover:bg-blue-100/60"
+                                title="Valider la transaction"
+                              >
+                                <Check className="w-3 h-3" />
+                                Valider
+                              </button>
+                              <button
+                                onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false)}
+                                className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50/50 text-rose-600 border-rose-100/40 hover:bg-rose-100/60"
+                                title="Refuser la transaction"
+                              >
+                                <X className="w-3 h-3" />
+                                Refuser
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 ml-2">
                           <button 
                             onClick={() => openCallDetails(call, 'transcript')}
-                            className="p-2 rounded-xl border border-indigo-100 text-indigo-600 hover:bg-indigo-50 transition-all"
-                            title="View Transcript"
+                            className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all"
+                            title="Transcript"
                           >
                             <MessageSquare className="w-5 h-5" />
                           </button>
                           <button 
                             onClick={() => openCallDetails(call, 'insights')}
-                            className="p-2 rounded-xl border border-emerald-100 text-emerald-600 hover:bg-emerald-50 transition-all"
-                            title="AI Performance Insights"
+                            className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100 transition-all"
+                            title="AI Insights"
                           >
                             <ActivityIcon className="w-5 h-5" />
                           </button>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
