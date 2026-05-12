@@ -612,7 +612,7 @@ export function EscrowPanel() {
       </div>
 
       {/* Financial Overview Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: Euros Cash Balance */}
         <div className="bg-white border border-slate-200 hover:border-emerald-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full translate-x-12 -translate-y-12 transition-transform duration-500 group-hover:scale-110" />
@@ -702,20 +702,6 @@ export function EscrowPanel() {
             <span className="text-rose-500 font-bold">{refusedMinutes.toLocaleString('en-US')} mins</span>
           </div>
         </div>
-
-        {/* Metric 5: Paid to Representatives */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Payé aux REPS</span>
-            <div className="p-1.5 bg-emerald-50 text-emerald-500 rounded-lg">
-              <Unlock className="w-4 h-4" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-2xl font-black text-emerald-600 tracking-tight">{totalDisbursed.toLocaleString('en-US')} mins</h3>
-            <p className="text-[10px] text-slate-400 font-semibold mt-1">Milestones completed & successfully paid</p>
-          </div>
-        </div>
       </div>
 
       {/* Main Tabbed Container: Active Escrows vs Audit Log */}
@@ -787,92 +773,94 @@ export function EscrowPanel() {
                 <p className="text-xs text-slate-400 mt-1 max-w-sm">When you set campaign objectives or enroll a representative, lock guarantees to establish trusted relationships.</p>
               </div>
             ) : (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/10">
-                    <th className="px-6 py-4">Garantie / Campagne</th>
-                    <th className="px-6 py-4">Représentant</th>
-                    <th className="px-6 py-4 text-right">Montant</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Date de blocage</th>
-                    <th className="px-6 py-4 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {wallet.contracts.map((contract) => (
-                    <tr key={contract._id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-slate-900 text-sm leading-tight">{contract.gigTitle || 'Custom Contract'}</div>
-                        <div className="text-[10px] text-slate-400 font-medium italic mt-0.5">{contract.purpose}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs border border-slate-200">
-                            {contract.agentName?.charAt(0) || 'R'}
-                          </div>
-                          <div>
-                            <div className="font-bold text-slate-800 text-xs">{contract.agentName || 'Assigned Representative'}</div>
-                            <div className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">ID: {contract.agentId || 'N/A'}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">
-                        {contract.amount.toLocaleString('en-US')} mins
-                      </td>
-                      <td className="px-6 py-4">
-                        {contract.status === 'locked' && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-100 rounded-full">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                            🔒 Locked / Séquestre
-                          </span>
-                        )}
-                        {contract.status === 'released' && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                            🔓 Released / Payé
-                          </span>
-                        )}
-                        {contract.status === 'refunded' && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-slate-50 text-slate-500 border border-slate-200 rounded-full">
-                            ↩️ Restitué
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-xs text-slate-500 font-medium">
-                        {new Date(contract.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </td>
-                      <td className="px-6 py-4">
-                        {contract.status === 'locked' ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                               onClick={() => handleReleaseEscrow(contract._id, contract.amount, contract.agentName || 'Agent')}
-                              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 hover:border-emerald-300 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all"
-                            >
-                              Libérer Fonds
-                            </button>
-                            <button
-                              onClick={() => handleRefundEscrow(contract._id, contract.amount)}
-                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 hover:border-slate-300 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all"
-                            >
-                              Restituer
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                            Ledger Settled
-                          </div>
-                        )}
-                      </td>
+              <div className="overflow-y-auto max-h-[500px] custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                    <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white">
+                      <th className="px-6 py-4">Garantie / Campagne</th>
+                      <th className="px-6 py-4">Représentant</th>
+                      <th className="px-6 py-4 text-right">Montant</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4">Date de blocage</th>
+                      <th className="px-6 py-4 text-center">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {wallet.contracts.map((contract) => (
+                      <tr key={contract._id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-slate-900 text-sm leading-tight">{contract.gigTitle || 'Custom Contract'}</div>
+                          <div className="text-[10px] text-slate-400 font-medium italic mt-0.5">{contract.purpose}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs border border-slate-200">
+                              {contract.agentName?.charAt(0) || 'R'}
+                            </div>
+                            <div>
+                              <div className="font-bold text-slate-800 text-xs">{contract.agentName || 'Assigned Representative'}</div>
+                              <div className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">ID: {contract.agentId || 'N/A'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">
+                          {contract.amount.toLocaleString('en-US')} mins
+                        </td>
+                        <td className="px-6 py-4">
+                          {contract.status === 'locked' && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-100 rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                              🔒 Locked / Séquestre
+                            </span>
+                          )}
+                          {contract.status === 'released' && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              🔓 Released / Payé
+                            </span>
+                          )}
+                          {contract.status === 'refunded' && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-slate-50 text-slate-500 border border-slate-200 rounded-full">
+                              ↩️ Restitué
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-xs text-slate-500 font-medium">
+                          {new Date(contract.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </td>
+                        <td className="px-6 py-4">
+                          {contract.status === 'locked' ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                 onClick={() => handleReleaseEscrow(contract._id, contract.amount, contract.agentName || 'Agent')}
+                                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 hover:border-emerald-300 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all"
+                              >
+                                Libérer Fonds
+                              </button>
+                              <button
+                                onClick={() => handleRefundEscrow(contract._id, contract.amount)}
+                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 hover:border-slate-300 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all"
+                              >
+                                Restituer
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                              Ledger Settled
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
@@ -889,95 +877,97 @@ export function EscrowPanel() {
                 <p className="text-xs text-slate-400 mt-1">Your payments, deposits, and locks are fully recorded here for tax and auditing purposes.</p>
               </div>
             ) : (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/10">
-                    <th className="px-6 py-4">Activité / Type</th>
-                    <th className="px-6 py-4 text-right">Montant</th>
-                    <th className="px-6 py-4">Statut</th>
-                    <th className="px-6 py-4">Date de transaction</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
-                  {transactions.map((tx) => (
-                    <tr key={tx._id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 font-bold text-slate-800">
-                        {tx.type === 'deposit' && (
-                          <span className="inline-flex items-center gap-1.5 text-emerald-600 font-bold uppercase text-[10px] tracking-wide">
-                            <ArrowDownLeft className="w-3.5 h-3.5 bg-emerald-50 p-0.5 rounded" /> Dépôt / Alimentation
-                          </span>
-                        )}
-                        {tx.type === 'withdrawal' && (
-                          <span className="inline-flex items-center gap-1.5 text-slate-600 font-bold uppercase text-[10px] tracking-wide">
-                            <ArrowUpRight className="w-3.5 h-3.5 bg-slate-50 p-0.5 rounded" /> Retrait / Remboursement
-                          </span>
-                        )}
-                        {tx.type === 'buy_minutes' && (
-                          <span className="inline-flex items-center gap-1.5 text-orange-500 font-bold uppercase text-[10px] tracking-wide">
-                            <RefreshCw className="w-3.5 h-3.5 bg-orange-50 p-0.5 rounded" /> Achat de Minutes
-                          </span>
-                        )}
-                        {tx.type === 'escrow_lock' && (
-                          <span className="inline-flex items-center gap-1.5 text-amber-600 font-bold uppercase text-[10px] tracking-wide">
-                            <Lock className="w-3.5 h-3.5 bg-amber-50 p-0.5 rounded" /> Séquestre Bloqué
-                          </span>
-                        )}
-                        {tx.type === 'escrow_release' && (
-                          <span className="inline-flex items-center gap-1.5 text-emerald-500 font-bold uppercase text-[10px] tracking-wide">
-                            <Unlock className="w-3.5 h-3.5 bg-emerald-50 p-0.5 rounded" /> Séquestre Libéré
-                          </span>
-                        )}
-                        {tx.type === 'escrow_refund' && (
-                          <span className="inline-flex items-center gap-1.5 text-indigo-600 font-bold uppercase text-[10px] tracking-wide">
-                            <X className="w-3.5 h-3.5 bg-indigo-50 p-0.5 rounded" /> Restitution
-                          </span>
-                        )}
-                        {tx.type === 'call_charge' && (
-                          <span className="inline-flex items-center gap-1.5 text-rose-600 font-bold uppercase text-[10px] tracking-wide">
-                            <Phone className="w-3.5 h-3.5 bg-rose-50 p-0.5 rounded" /> Déduction Appel
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">
-                        {(tx.type === 'deposit' || tx.type === 'withdrawal') ? (
-                          <span className="text-emerald-600 font-extrabold">{tx.amount.toLocaleString('en-US')} €</span>
-                        ) : tx.type === 'buy_minutes' ? (
-                          <span className="text-orange-600 font-extrabold">+{tx.amount.toLocaleString('en-US')} mins</span>
-                        ) : (
-                          <span>{tx.amount.toLocaleString('en-US')} mins</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {tx.status === 'pending' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                            Pending / En attente
-                          </span>
-                        ) : tx.status === 'failed' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-200">
-                            <X className="w-3 h-3 text-rose-500" />
-                            Failed
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-100">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                            Success
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-slate-500 font-medium">
-                        {new Date(tx.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </td>
+              <div className="overflow-y-auto max-h-[500px] custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                    <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white">
+                      <th className="px-6 py-4">Activité / Type</th>
+                      <th className="px-6 py-4 text-right">Montant</th>
+                      <th className="px-6 py-4">Statut</th>
+                      <th className="px-6 py-4">Date de transaction</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {transactions.map((tx) => (
+                      <tr key={tx._id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4 font-bold text-slate-800">
+                          {tx.type === 'deposit' && (
+                            <span className="inline-flex items-center gap-1.5 text-emerald-600 font-bold uppercase text-[10px] tracking-wide">
+                              <ArrowDownLeft className="w-3.5 h-3.5 bg-emerald-50 p-0.5 rounded" /> Dépôt / Alimentation
+                            </span>
+                          )}
+                          {tx.type === 'withdrawal' && (
+                            <span className="inline-flex items-center gap-1.5 text-slate-600 font-bold uppercase text-[10px] tracking-wide">
+                              <ArrowUpRight className="w-3.5 h-3.5 bg-slate-50 p-0.5 rounded" /> Retrait / Remboursement
+                            </span>
+                          )}
+                          {tx.type === 'buy_minutes' && (
+                            <span className="inline-flex items-center gap-1.5 text-orange-500 font-bold uppercase text-[10px] tracking-wide">
+                              <RefreshCw className="w-3.5 h-3.5 bg-orange-50 p-0.5 rounded" /> Achat de Minutes
+                            </span>
+                          )}
+                          {tx.type === 'escrow_lock' && (
+                            <span className="inline-flex items-center gap-1.5 text-amber-600 font-bold uppercase text-[10px] tracking-wide">
+                              <Lock className="w-3.5 h-3.5 bg-amber-50 p-0.5 rounded" /> Séquestre Bloqué
+                            </span>
+                          )}
+                          {tx.type === 'escrow_release' && (
+                            <span className="inline-flex items-center gap-1.5 text-emerald-500 font-bold uppercase text-[10px] tracking-wide">
+                              <Unlock className="w-3.5 h-3.5 bg-emerald-50 p-0.5 rounded" /> Séquestre Libéré
+                            </span>
+                          )}
+                          {tx.type === 'escrow_refund' && (
+                            <span className="inline-flex items-center gap-1.5 text-indigo-600 font-bold uppercase text-[10px] tracking-wide">
+                              <X className="w-3.5 h-3.5 bg-indigo-50 p-0.5 rounded" /> Restitution
+                            </span>
+                          )}
+                          {tx.type === 'call_charge' && (
+                            <span className="inline-flex items-center gap-1.5 text-rose-600 font-bold uppercase text-[10px] tracking-wide">
+                              <Phone className="w-3.5 h-3.5 bg-rose-50 p-0.5 rounded" /> Déduction Appel
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">
+                          {(tx.type === 'deposit' || tx.type === 'withdrawal') ? (
+                            <span className="text-emerald-600 font-extrabold">{tx.amount.toLocaleString('en-US')} €</span>
+                          ) : tx.type === 'buy_minutes' ? (
+                            <span className="text-orange-600 font-extrabold">+{tx.amount.toLocaleString('en-US')} mins</span>
+                          ) : (
+                            <span>{tx.amount.toLocaleString('en-US')} mins</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {tx.status === 'pending' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                              Pending / En attente
+                            </span>
+                          ) : tx.status === 'failed' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-200">
+                              <X className="w-3 h-3 text-rose-500" />
+                              Failed
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-100">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              Success
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-slate-500 font-medium">
+                          {new Date(tx.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
@@ -1000,103 +990,105 @@ export function EscrowPanel() {
                 </p>
               </div>
             ) : (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/10">
-                    <th className="px-6 py-4">Appel (Agent & Lead)</th>
-                    <th className="px-6 py-4">Sens</th>
-                    <th className="px-6 py-4">Durée Réelle</th>
-                    <th className="px-6 py-4">Minutes Déduites</th>
-                    <th className="px-6 py-4">Date de l'Appel</th>
-                    <th className="px-6 py-4">Statut Transaction</th>
-                    <th className="px-6 py-4 text-center">Décision</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {calls.map((call) => {
-                    const durationMins = Math.ceil((call.duration || 60) / 60);
-                    return (
-                      <tr key={call.callId} className="hover:bg-slate-50/50 transition-colors text-xs">
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <span className="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-orange-500" />
-                              {call.agent}
-                            </span>
-                            <span className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tight">
-                              Lead: {call.lead}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
-                            call.direction === 'inbound' 
-                              ? 'bg-blue-50 text-blue-600 border border-blue-100'
-                              : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
-                          }`}>
-                            {call.direction === 'inbound' ? 'Entrant 📥' : 'Sortant 📤'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 font-bold text-slate-700">
-                          {call.duration} sec
-                        </td>
-                        <td className="px-6 py-4 font-black text-slate-900 text-sm">
-                          {durationMins} mins
-                        </td>
-                        <td className="px-6 py-4 text-slate-500 font-medium">
-                          {call.startTime ? new Date(call.startTime).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          }) : 'N/A'}
-                        </td>
-                        <td className="px-6 py-4">
-                          {call.validByCompany === true ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                              Approuvé
-                            </span>
-                          ) : call.validByCompany === false ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-100 rounded-full">
-                              <X className="w-3 h-3 text-rose-500" />
-                              Refusé
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-100 rounded-full">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                              En Attente
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          {call.validByCompany === null ? (
-                            <div className="flex items-center justify-center space-x-2">
-                              <button
-                                onClick={() => handleApproveOrRefuse(call.callId, 'approve')}
-                                className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-1"
-                              >
-                                <Check className="w-3 h-3" /> Approuver
-                              </button>
-                              <button
-                                onClick={() => handleApproveOrRefuse(call.callId, 'refuse')}
-                                className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-1"
-                              >
-                                <X className="w-3 h-3" /> Refuser
-                              </button>
+              <div className="overflow-y-auto max-h-[500px] custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                    <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white">
+                      <th className="px-6 py-4">Appel (Agent & Lead)</th>
+                      <th className="px-6 py-4">Sens</th>
+                      <th className="px-6 py-4">Durée Réelle</th>
+                      <th className="px-6 py-4">Minutes Déduites</th>
+                      <th className="px-6 py-4">Date de l'Appel</th>
+                      <th className="px-6 py-4">Statut Transaction</th>
+                      <th className="px-6 py-4 text-center">Décision</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {calls.map((call) => {
+                      const durationMins = Math.ceil((call.duration || 60) / 60);
+                      return (
+                        <tr key={call.callId} className="hover:bg-slate-50/50 transition-colors text-xs">
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-orange-500" />
+                                {call.agent}
+                              </span>
+                              <span className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tight">
+                                Lead: {call.lead}
+                              </span>
                             </div>
-                          ) : (
-                            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">
-                              Décision Enregistrée
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
+                              call.direction === 'inbound' 
+                                ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                                : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                            }`}>
+                              {call.direction === 'inbound' ? 'Entrant 📥' : 'Sortant 📤'}
                             </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="px-6 py-4 font-bold text-slate-700">
+                            {call.duration} sec
+                          </td>
+                          <td className="px-6 py-4 font-black text-slate-900 text-sm">
+                            {durationMins} mins
+                          </td>
+                          <td className="px-6 py-4 text-slate-500 font-medium">
+                            {call.startTime ? new Date(call.startTime).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : 'N/A'}
+                          </td>
+                          <td className="px-6 py-4">
+                            {call.validByCompany === true ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                Approuvé
+                              </span>
+                            ) : call.validByCompany === false ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-100 rounded-full">
+                                <X className="w-3 h-3 text-rose-500" />
+                                Refusé
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-100 rounded-full">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                En Attente
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            {call.validByCompany === null ? (
+                              <div className="flex items-center justify-center space-x-2">
+                                <button
+                                  onClick={() => handleApproveOrRefuse(call.callId, 'approve')}
+                                  className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-1"
+                                >
+                                  <Check className="w-3 h-3" /> Approuver
+                                </button>
+                                <button
+                                  onClick={() => handleApproveOrRefuse(call.callId, 'refuse')}
+                                  className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-1"
+                                >
+                                  <X className="w-3 h-3" /> Refuser
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">
+                                Décision Enregistrée
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
