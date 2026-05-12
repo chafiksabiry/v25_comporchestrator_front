@@ -1043,96 +1043,141 @@ export function EscrowPanel() {
         )}
       </div>
 
-      {/* 1. Modal: Deposit / Alimentation */}
+      {/* 1. Modal: Deposit / Alimentation (Stunning Landscape Layout) */}
       {showDepositModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[999] animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4">
-            <div className="bg-gradient-to-r from-orange-400 to-rose-500 p-6 text-white relative">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-fade-in">
+          <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 flex flex-col md:flex-row min-h-[480px]">
+            
+            {/* Left Column: Visual Gradient Brand Banner */}
+            <div className="w-full md:w-[38%] bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-600 p-8 text-white flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full translate-x-12 -translate-y-12" />
+              <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-black/5 rounded-full" />
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="p-2 bg-white/15 rounded-xl backdrop-blur-md">
+                    <Coins className="w-6 h-6 text-white animate-bounce-subtle" />
+                  </div>
+                  <span className="text-[10px] bg-white/20 font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full">Secure Top-Up</span>
+                </div>
+                
+                <h3 className="text-2xl font-black tracking-tight leading-tight">Alimenter Votre Solde Cash</h3>
+                <p className="text-xs text-white/95 mt-3 leading-relaxed font-medium">
+                  Rechargez votre solde cash disponible en Euros (€) pour financer vos campagnes et acheter des minutes d'appels.
+                </p>
+              </div>
+
+              <div className="relative z-10 space-y-4 pt-8 border-t border-white/10">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
+                  <p className="text-[11px] text-white/90 font-bold leading-tight">Top-up sécurisé par carte bancaire ou virement</p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
+                  <p className="text-[11px] text-white/90 font-bold leading-tight">Crédits disponibles pour financer le séquestre des campagnes</p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
+                  <p className="text-[11px] text-white/90 font-bold leading-tight">Restitution du solde cash possible à tout moment</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: High-fidelity Compact Form */}
+            <form onSubmit={handleDeposit} className="w-full md:w-[62%] p-8 flex flex-col justify-between space-y-6 relative bg-white">
               <button
+                type="button"
                 onClick={() => setShowDepositModal(false)}
-                className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all"
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
-              <div className="flex items-center gap-2.5 mb-2">
-                <Coins className="w-5 h-5 text-emerald-300 animate-bounce-subtle" />
-                <span className="text-[10px] bg-white/20 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Secure Top-Up</span>
-              </div>
-              <h3 className="text-lg font-black tracking-tight leading-none">Alimenter Votre Solde Cash</h3>
-              <p className="text-xs text-white/80 mt-1">Rechargez votre solde cash disponible en Euros (€) pour financer vos campagnes et acheter des minutes d'appels.</p>
-            </div>
 
-            <form onSubmit={handleDeposit} className="p-6 space-y-5">
-              
-              {/* Value Packages Selection */}
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Choisissez un Forfait de Rechargement</label>
-                <div className="grid grid-cols-1 gap-2.5">
-                  {[
-                    { eur: 200, label: 'Starter Balance', popular: false },
-                    { eur: 1000, label: 'Growth Balance', popular: true },
-                    { eur: 3000, label: 'Enterprise Balance', popular: false },
-                  ].map((pkg) => (
-                    <button
-                      key={pkg.eur}
-                      type="button"
-                      onClick={() => setDepositAmount(pkg.eur.toString())}
-                      className={`relative p-3.5 border text-left rounded-2xl flex items-center justify-between transition-all cursor-pointer ${
-                        depositAmount === pkg.eur.toString()
-                          ? 'border-emerald-500 bg-emerald-50/40 text-emerald-950 shadow-sm'
-                          : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      {pkg.popular && (
-                        <span className="absolute -top-2 right-4 bg-rose-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow">Most Popular</span>
-                      )}
-                      <div>
-                        <div className="font-extrabold text-sm">{pkg.eur.toLocaleString()} €</div>
-                        <div className="text-[10px] text-slate-400 font-semibold">{pkg.label}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-black text-sm text-emerald-600">{pkg.eur.toLocaleString()} €</div>
-                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">EUR One-time</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Input */}
-              <div className="pt-2 border-t border-slate-100">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Ou Saisir un Montant Personnalisé</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <span className="text-slate-400 font-black text-sm">€</span>
-                  </div>
-                  <input
-                    type="number"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    placeholder="Entrez le montant en Euros"
-                    required
-                    min="10"
-                    className="pl-7 w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl py-3 px-3 text-slate-900 text-sm font-black focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
-                    <span className="text-[10px] text-slate-400 font-black uppercase">EUR</span>
+              <div className="space-y-5">
+                {/* Value Packages Selection - Compact 3 Columns Grid */}
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Choisissez un Forfait de Rechargement</label>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {[
+                      { eur: 200, label: 'Starter', popular: false },
+                      { eur: 1000, label: 'Growth', popular: true },
+                      { eur: 3000, label: 'Enterprise', popular: false },
+                    ].map((pkg) => (
+                      <button
+                        key={pkg.eur}
+                        type="button"
+                        onClick={() => setDepositAmount(pkg.eur.toString())}
+                        className={`relative p-3 border text-center rounded-2xl flex flex-col justify-between transition-all cursor-pointer h-24 ${
+                          depositAmount === pkg.eur.toString()
+                            ? 'border-emerald-500 bg-emerald-50/30 text-emerald-950 shadow-sm'
+                            : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        {pkg.popular && (
+                          <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[7px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider shadow">Popular</span>
+                        )}
+                        <div className="text-[10px] text-slate-400 font-bold mt-1">{pkg.label}</div>
+                        <div className="font-extrabold text-sm text-slate-900 leading-none">{pkg.eur.toLocaleString()} €</div>
+                        <div className="text-[8px] text-slate-400 font-bold uppercase tracking-wider pb-1">One-time</div>
+                      </button>
+                    ))}
                   </div>
                 </div>
+
+                {/* Custom Input */}
+                <div className="pt-2 border-t border-slate-100">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ou Saisir un Montant Personnalisé</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <span className="text-slate-400 font-black text-sm">€</span>
+                    </div>
+                    <input
+                      type="number"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      placeholder="Entrez le montant en Euros"
+                      required
+                      min="10"
+                      className="pl-7 w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl py-2.5 px-3 text-slate-900 text-sm font-black focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                      <span className="text-[10px] text-slate-400 font-black uppercase">EUR</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live transaction preview block */}
+                {depositAmount && parseInt(depositAmount) > 0 ? (
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between animate-fade-in">
+                    <div>
+                      <span className="text-[9px] text-slate-400 font-black uppercase block tracking-wider">Mode de Paiement</span>
+                      <span className="text-xs font-bold text-slate-600">Paiement sécurisé par carte</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-emerald-600 text-lg font-black block leading-none">{parseInt(depositAmount).toLocaleString()} €</span>
+                      <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider">EUR de crédit cash</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-[60px] flex items-center justify-center border border-dashed border-slate-200 rounded-2xl">
+                    <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Sélectionnez un forfait ou saisissez un montant</span>
+                  </div>
+                )}
               </div>
 
+              {/* Action buttons footer */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2.5">
                 <button
                   type="button"
                   onClick={() => setShowDepositModal(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all"
+                  className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={submittingDeposit}
-                  className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2"
+                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2"
                 >
                   {submittingDeposit ? (
                     <>
@@ -1149,110 +1194,141 @@ export function EscrowPanel() {
         </div>
       )}
 
-      {/* 1.5. Modal: Buy Minutes with Euros */}
+      {/* 1.5. Modal: Buy Minutes with Euros (Stunning Landscape Layout) */}
       {showBuyMinutesModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[999] animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4">
-            <div className="bg-gradient-to-r from-orange-400 to-amber-500 p-6 text-white relative">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-fade-in">
+          <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 flex flex-col md:flex-row min-h-[480px]">
+            
+            {/* Left Column: Visual Gradient Brand Banner */}
+            <div className="w-full md:w-[38%] bg-gradient-to-br from-orange-400 via-orange-500 to-amber-600 p-8 text-white flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full translate-x-12 -translate-y-12" />
+              <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-black/5 rounded-full" />
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="p-2 bg-white/15 rounded-xl backdrop-blur-md">
+                    <Clock className="w-6 h-6 text-white animate-bounce-subtle" />
+                  </div>
+                  <span className="text-[10px] bg-white/20 font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full">Convertisseur</span>
+                </div>
+                
+                <h3 className="text-2xl font-black tracking-tight leading-tight">Acheter des Minutes d'Appels</h3>
+                <p className="text-xs text-white/95 mt-3 leading-relaxed font-medium">
+                  Convertissez instantanément votre solde Euros (€) disponible en minutes d'appels à un taux de 1 € = 1 minute.
+                </p>
+              </div>
+
+              <div className="relative z-10 space-y-4 pt-8 border-t border-white/10">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
+                  <p className="text-[11px] text-white/90 font-bold leading-tight">Débit instantané et sécurisé du solde</p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
+                  <p className="text-[11px] text-white/90 font-bold leading-tight">Minutes créditées immédiatement sur votre compte</p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
+                  <p className="text-[11px] text-white/90 font-bold leading-tight">Aucun frais caché ni expiration de crédit</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: High-fidelity Compact Form */}
+            <form onSubmit={handleBuyMinutes} className="w-full md:w-[62%] p-8 flex flex-col justify-between space-y-6 relative bg-white">
               <button
+                type="button"
                 onClick={() => setShowBuyMinutesModal(false)}
-                className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all"
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
-              <div className="flex items-center gap-2.5 mb-2">
-                <Clock className="w-5 h-5 animate-bounce-subtle" />
-                <span className="text-[10px] bg-white/20 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Convert EUR to mins</span>
-              </div>
-              <h3 className="text-lg font-black tracking-tight leading-none">Acheter des Minutes d'Appels</h3>
-              <p className="text-xs text-white/80 mt-1">Convertissez instantanément votre solde Euros (€) disponible en minutes d'appels à un taux de 1 € = 1 minute.</p>
-            </div>
 
-            <form onSubmit={handleBuyMinutes} className="p-6 space-y-5">
-              
-              {/* Value Packages Selection */}
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Choisissez un Forfait Minutes</label>
-                <div className="grid grid-cols-1 gap-2.5">
-                  {[
-                    { mins: 100, cost: 100, label: 'Starter Minutes Pack', popular: false },
-                    { mins: 500, cost: 500, label: 'Growth Minutes Pack', popular: true },
-                    { mins: 1000, cost: 1000, label: 'Enterprise Minutes Pack', popular: false },
-                  ].map((pkg) => (
-                    <button
-                      key={pkg.mins}
-                      type="button"
-                      onClick={() => setBuyMinutesAmount(pkg.mins.toString())}
-                      className={`relative p-3.5 border text-left rounded-2xl flex items-center justify-between transition-all cursor-pointer ${
-                        buyMinutesAmount === pkg.mins.toString()
-                          ? 'border-orange-500 bg-orange-50/40 text-orange-950 shadow-sm'
-                          : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      {pkg.popular && (
-                        <span className="absolute -top-2 right-4 bg-orange-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow">Most Popular</span>
-                      )}
-                      <div>
-                        <div className="font-extrabold text-sm">{pkg.mins} Minutes</div>
-                        <div className="text-[10px] text-slate-400 font-semibold">{pkg.label}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-black text-sm text-orange-600">{pkg.cost.toLocaleString()} €</div>
-                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">EUR Deduction</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Input */}
-              <div className="pt-2 border-t border-slate-100">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Ou Saisir un Volume Personnalisé</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Clock className="w-4 h-4 text-slate-400 font-black" />
-                  </div>
-                  <input
-                    type="number"
-                    value={buyMinutesAmount}
-                    onChange={(e) => setBuyMinutesAmount(e.target.value)}
-                    placeholder="Enter minutes volume to buy"
-                    required
-                    min="1"
-                    className="pl-9 w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-3 px-3 text-slate-900 text-sm font-black focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
-                    <span className="text-[10px] text-slate-400 font-black uppercase">mins</span>
+              <div className="space-y-5">
+                {/* Value Packages Selection - Compact 3 Columns Grid */}
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Choisissez un Forfait Minutes</label>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {[
+                      { mins: 100, cost: 100, label: 'Starter', popular: false },
+                      { mins: 500, cost: 500, label: 'Growth', popular: true },
+                      { mins: 1000, cost: 1000, label: 'Enterprise', popular: false },
+                    ].map((pkg) => (
+                      <button
+                        key={pkg.mins}
+                        type="button"
+                        onClick={() => setBuyMinutesAmount(pkg.mins.toString())}
+                        className={`relative p-3 border text-center rounded-2xl flex flex-col justify-between transition-all cursor-pointer h-24 ${
+                          buyMinutesAmount === pkg.mins.toString()
+                            ? 'border-orange-500 bg-orange-50/30 text-orange-950 shadow-sm'
+                            : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        {pkg.popular && (
+                          <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-[7px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider shadow">Popular</span>
+                        )}
+                        <div className="text-[10px] text-slate-400 font-bold mt-1">{pkg.label}</div>
+                        <div className="font-extrabold text-sm text-slate-900 leading-none">{pkg.mins} mins</div>
+                        <div className="font-black text-xs text-orange-600 pb-1">{pkg.cost} €</div>
+                      </button>
+                    ))}
                   </div>
                 </div>
-                
-                {/* Dynamically calculated custom price */}
-                {buyMinutesAmount && parseInt(buyMinutesAmount) > 0 && (
-                  <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between animate-fade-in">
+
+                {/* Custom Input */}
+                <div className="pt-2 border-t border-slate-100">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ou Saisir un Volume Personnalisé</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Clock className="w-4 h-4 text-slate-400 font-black" />
+                    </div>
+                    <input
+                      type="number"
+                      value={buyMinutesAmount}
+                      onChange={(e) => setBuyMinutesAmount(e.target.value)}
+                      placeholder="Nombre de minutes"
+                      required
+                      min="1"
+                      className="pl-9 w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-2.5 px-3 text-slate-900 text-sm font-black focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                      <span className="text-[10px] text-slate-400 font-black uppercase">mins</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live transaction preview block */}
+                {buyMinutesAmount && parseInt(buyMinutesAmount) > 0 ? (
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between animate-fade-in">
                     <div>
-                      <span className="text-[9px] text-slate-400 font-black uppercase block tracking-wider">Coût de la Transaction</span>
+                      <span className="text-[9px] text-slate-400 font-black uppercase block tracking-wider">Facturation</span>
                       <span className="text-xs font-bold text-slate-600">Déduit de votre solde cash</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-orange-600 text-base font-black block leading-none">{parseInt(buyMinutesAmount).toLocaleString()} €</span>
-                      <span className="text-[9px] text-slate-400 font-black uppercase">Taux: 1 € = 1 min</span>
+                      <span className="text-orange-600 text-lg font-black block leading-none">{parseInt(buyMinutesAmount).toLocaleString()} €</span>
+                      <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Taux: 1 € = 1 min</span>
                     </div>
+                  </div>
+                ) : (
+                  <div className="h-[60px] flex items-center justify-center border border-dashed border-slate-200 rounded-2xl">
+                    <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Sélectionnez un forfait ou saisissez un volume</span>
                   </div>
                 )}
               </div>
 
+              {/* Action buttons footer */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2.5">
                 <button
                   type="button"
                   onClick={() => setShowBuyMinutesModal(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all"
+                  className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={submittingBuyMinutes}
-                  className="px-5 py-2 bg-gradient-to-r from-orange-400 to-amber-500 text-white hover:from-orange-500 hover:to-amber-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2"
+                  className="px-5 py-2.5 bg-gradient-to-r from-orange-400 to-amber-500 text-white hover:from-orange-500 hover:to-amber-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2"
                 >
                   {submittingBuyMinutes ? (
                     <>
