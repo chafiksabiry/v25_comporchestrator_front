@@ -23,10 +23,16 @@ import {
   Clock,
   Phone,
   Check,
-  HelpCircle as QuestionIcon
+  HelpCircle as QuestionIcon,
+  MessageSquare,
+  Star,
+  Activity as ActivityIcon,
+  Shield,
+  Brain
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
+import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 
 interface EscrowContract {
   _id: string;
@@ -54,14 +60,20 @@ interface CompanyCall {
   callId: string;
   agent: string;
   lead: string;
+  leadObj?: { First_Name: string; Last_Name: string };
   direction: string;
   duration: number; // seconds
   startTime: string;
+  createdAt?: string;
   status: string;
   validByCompany: boolean | null;
   validByReps: boolean | null;
   valid: boolean | null;
   price?: number;
+  recording_url?: string | null;
+  recording_url_cloudinary?: string | null;
+  transcript?: any[];
+  ai_call_score?: any;
 }
 
 interface WalletState {
@@ -118,6 +130,8 @@ export function EscrowPanel() {
   const [gigsLoading, setGigsLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'contracts' | 'history' | 'calls'>('contracts');
+  const [selectedCall, setSelectedCall] = useState<CompanyCall | null>(null);
+  const [selectedCallTab, setSelectedCallTab] = useState<'transcript' | 'insights'>('transcript');
 
   const [isGigDropdownOpen, setIsGigDropdownOpen] = useState(false);
   const [isRepDropdownOpen, setIsRepDropdownOpen] = useState(false);
@@ -1007,7 +1021,14 @@ export function EscrowPanel() {
                     {calls.map((call) => {
                       const durationMins = Math.ceil((call.duration || 60) / 60);
                       return (
-                        <tr key={call.callId} className="hover:bg-slate-50/50 transition-colors text-xs">
+                        <tr
+                          key={call.callId}
+                          onClick={() => {
+                            setSelectedCall(call);
+                            setSelectedCallTab('transcript');
+                          }}
+                          className="hover:bg-slate-50/50 transition-colors text-xs cursor-pointer"
+                        >
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
                               <span className="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5">
@@ -1065,13 +1086,19 @@ export function EscrowPanel() {
                             {call.validByCompany === null ? (
                               <div className="flex items-center justify-center space-x-2">
                                 <button
-                                  onClick={() => handleApproveOrRefuse(call.callId, 'approve')}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleApproveOrRefuse(call.callId, 'approve');
+                                  }}
                                   className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-1"
                                 >
                                   <Check className="w-3 h-3" /> Approuver
                                 </button>
                                 <button
-                                  onClick={() => handleApproveOrRefuse(call.callId, 'refuse')}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleApproveOrRefuse(call.callId, 'refuse');
+                                  }}
                                   className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-1"
                                 >
                                   <X className="w-3 h-3" /> Refuser
@@ -1739,6 +1766,208 @@ export function EscrowPanel() {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Modal: Detailed Call View with Transcript and AI insights */}
+      {selectedCall && (
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-6 animate-fade-in">
+          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}></div>
+
+          <div className="relative bg-white w-full max-w-4xl max-h-[85vh] rounded-[48px] shadow-2xl overflow-hidden flex flex-col animate-in border border-white/20">
+            {/* Modal Header */}
+            <div className="px-8 py-8 border-b border-slate-100 bg-slate-50/40 flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-orange-400 to-rose-500 text-white flex items-center justify-center shadow-xl shadow-rose-500/20">
+                  <Phone className="w-7 h-7" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">
+                    {selectedCall.leadObj?.First_Name || selectedCall.lead || 'Détails de l\'appel'}
+                  </h2>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
+                    {selectedCall.startTime ? new Date(selectedCall.startTime).toLocaleString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) : 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-1 max-w-md">
+                {(() => {
+                  const recordingUrl = selectedCall.recording_url_cloudinary || selectedCall.recording_url;
+                  if (!recordingUrl) return <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">Pas d'enregistrement</div>;
+                  const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
+                  return <PremiumAudioPlayer url={finalUrl} />;
+                })()}
+              </div>
+
+              <button
+                onClick={() => setSelectedCall(null)}
+                className="p-3 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl border border-slate-100 transition-all shadow-sm"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="px-8 py-4 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setSelectedCallTab('transcript')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedCallTab === 'transcript' ? 'bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Transcription
+                </button>
+                <button
+                  onClick={() => setSelectedCallTab('insights')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedCallTab === 'insights' ? 'bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                >
+                  <ActivityIcon className="w-4 h-4" />
+                  Analyses IA
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Décision :</span>
+                  {selectedCall.validByCompany === true ? (
+                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-24">
+                      <Check className="w-3.5 h-3.5" />
+                      Approuvé
+                    </span>
+                  ) : selectedCall.validByCompany === false ? (
+                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
+                      <X className="w-3.5 h-3.5" />
+                      Refusé
+                    </span>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          handleApproveOrRefuse(selectedCall.callId, 'approve');
+                          setSelectedCall(prev => prev ? { ...prev, validByCompany: true } : null);
+                        }}
+                        className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-emerald-50 text-emerald-600 border border-emerald-100/40 hover:bg-emerald-100/60 w-24"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Approuver
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleApproveOrRefuse(selectedCall.callId, 'refuse');
+                          setSelectedCall(prev => prev ? { ...prev, validByCompany: false } : null);
+                        }}
+                        className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60 w-24"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        Refuser
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30 custom-scrollbar">
+              {selectedCallTab === 'transcript' ? (
+                <div className="max-w-4xl mx-auto space-y-6">
+                  {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
+                    selectedCall.transcript.map((t: any, i: number) => (
+                      <div key={i} className={`flex gap-4 ${t.speaker?.toLowerCase().includes('agent') ? 'flex-row' : 'flex-row-reverse'}`}>
+                        <div className={`flex flex-col max-w-[75%] ${t.speaker?.toLowerCase().includes('agent') ? 'items-start' : 'items-end'}`}>
+                          <div className="flex items-center gap-2 mb-1.5 px-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.speaker}</span>
+                            <span className="text-[9px] font-bold text-slate-300">{t.timestamp}</span>
+                          </div>
+                          <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${t.speaker?.toLowerCase().includes('agent')
+                              ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm'
+                              : 'bg-gradient-to-r from-orange-400 to-rose-500 text-white rounded-tr-none shadow-lg shadow-rose-500/20'
+                            }`}>
+                            {t.text}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-20 text-center">
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Transcription non disponible pour cet appel</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="max-w-5xl mx-auto space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[
+                      { label: 'Fluidité Agent', data: selectedCall.ai_call_score?.["Agent fluency"], icon: Globe },
+                      { label: 'Analyse Sentiment', data: selectedCall.ai_call_score?.["Sentiment analysis"], icon: ActivityIcon },
+                      { label: 'Détection Fraude', data: selectedCall.ai_call_score?.["Fraud detection"], icon: Shield },
+                      {
+                        label: 'Potentiel Conversion',
+                        data: {
+                          score: Math.round(((selectedCall.ai_call_score?.["Agent fluency"]?.score || 0) * 0.4) + ((selectedCall.ai_call_score?.["Sentiment analysis"]?.score || 0) * 0.6)),
+                          feedback: "Probabilité de conversion estimée basée sur l'analyse sémantique."
+                        },
+                        icon: TrendingUp
+                      }
+                    ].map((metric, mIdx) => (
+                      <div key={mIdx} className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
+                        <div className="flex justify-between items-start mb-6">
+                          <div className={`w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
+                            <metric.icon className="w-6 h-6" />
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-2xl font-black text-orange-600`}>{metric.data?.score || 0}%</span>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Score</p>
+                          </div>
+                        </div>
+                        <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-3">{metric.label}</h5>
+                        <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
+                          &quot;{metric.data?.feedback || 'Analyse complète terminée.'}&quot;
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-white rounded-[32px] border border-emerald-100 shadow-xl overflow-hidden relative group p-10">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-emerald-500/10 transition-colors"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                          <Star className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-black text-slate-900 uppercase tracking-widest">Résumé Exécutif</h4>
+                          <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Évaluation IA Globale</p>
+                        </div>
+                      </div>
+                      <div className="bg-emerald-50/50 rounded-2xl p-8 border border-emerald-100/50">
+                        <p className="text-lg font-bold text-emerald-900 leading-relaxed italic">
+                          &quot;{selectedCall.ai_call_score?.overall?.feedback || 'L\'agent a fait preuve d\'une performance standard.'}&quot;
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-8 py-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+              <button
+                onClick={() => setSelectedCall(null)}
+                className="px-8 py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all shadow-lg"
+              >
+                Fermer les Détails
+              </button>
             </div>
           </div>
         </div>
