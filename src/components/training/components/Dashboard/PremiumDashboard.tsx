@@ -412,9 +412,18 @@ export default function PremiumDashboard({
                           </h3>
                           <p className="text-[10px] font-medium text-slate-500">{new Date(call.createdAt || call.date).toLocaleDateString()}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end gap-1">
                           <span className={`text-[11px] font-black ${call.ai_call_score?.overall?.score >= 80 ? 'text-emerald-600' : 'text-slate-500'}`}>
                             {call.ai_call_score?.overall?.score || 'N/A'}/100
+                          </span>
+                          <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                            call.companyValidation === 'approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                            call.companyValidation === 'rejected' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
+                            'bg-amber-50 text-amber-600 border border-amber-100'
+                          }`}>
+                            {call.companyValidation === 'approved' ? 'Validé' :
+                             call.companyValidation === 'rejected' ? 'Refusé' :
+                             'En attente'}
                           </span>
                         </div>
                       </div>
