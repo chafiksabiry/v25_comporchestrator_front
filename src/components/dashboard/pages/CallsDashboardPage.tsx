@@ -240,60 +240,68 @@ export default function CallsDashboardPage() {
                         </span>
                       </td>
                       <td className="px-4 py-5 text-center">
-                        <div className="flex flex-col items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved')}
-                            className={`w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm ${
-                              call.companyValidation === 'approved'
-                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20 border-transparent'
-                                : 'bg-emerald-50/50 text-emerald-600 border border-emerald-100/40 hover:bg-emerald-100/60'
-                            }`}
-                            title="Valider l'appel"
-                          >
-                            <Check className="w-3 h-3" />
-                            Valider
-                          </button>
-                          <button
-                            onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected')}
-                            className={`w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm ${
-                              call.companyValidation === 'rejected'
-                                ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md shadow-rose-500/20 border-transparent'
-                                : 'bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60'
-                            }`}
-                            title="Refuser l'appel"
-                          >
-                            <X className="w-3 h-3" />
-                            Refuser
-                          </button>
-                        </div>
+                        {call.companyValidation === 'approved' ? (
+                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/50 shadow-sm w-24">
+                            <Check className="w-3.5 h-3.5" />
+                            Validé
+                          </span>
+                        ) : call.companyValidation === 'rejected' ? (
+                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/50 shadow-sm w-24">
+                            <X className="w-3.5 h-3.5" />
+                            Refusé
+                          </span>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved')}
+                              className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-emerald-50/50 text-emerald-600 border border-emerald-100/40 hover:bg-emerald-100/60"
+                              title="Valider l'appel"
+                            >
+                              <Check className="w-3 h-3" />
+                              Valider
+                            </button>
+                            <button
+                              onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected')}
+                              className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60"
+                              title="Refuser l'appel"
+                            >
+                              <X className="w-3 h-3" />
+                              Refuser
+                            </button>
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-5 text-center">
-                        <div className="flex flex-col items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true)}
-                            className={`w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm ${
-                              call.transaction?.validByCompany === true
-                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20 border-transparent'
-                                : 'bg-emerald-50/50 text-emerald-600 border border-emerald-100/40 hover:bg-emerald-100/60'
-                            }`}
-                            title="Valider la transaction"
-                          >
-                            <Check className="w-3 h-3" />
-                            Valider
-                          </button>
-                          <button
-                            onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false)}
-                            className={`w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm ${
-                              call.transaction?.validByCompany === false
-                                ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md shadow-rose-500/20 border-transparent'
-                                : 'bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60'
-                            }`}
-                            title="Refuser la transaction"
-                          >
-                            <X className="w-3 h-3" />
-                            Refuser
-                          </button>
-                        </div>
+                        {call.transaction?.validByCompany === true ? (
+                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/50 shadow-sm w-24">
+                            <Check className="w-3.5 h-3.5" />
+                            Validé
+                          </span>
+                        ) : call.transaction?.validByCompany === false ? (
+                          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/50 shadow-sm w-24">
+                            <X className="w-3.5 h-3.5" />
+                            Refusé
+                          </span>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true)}
+                              className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-emerald-50/50 text-emerald-600 border border-emerald-100/40 hover:bg-emerald-100/60"
+                              title="Valider la transaction"
+                            >
+                              <Check className="w-3 h-3" />
+                              Valider
+                            </button>
+                            <button
+                              onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false)}
+                              className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60"
+                              title="Refuser la transaction"
+                            >
+                              <X className="w-3 h-3" />
+                              Refuser
+                            </button>
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-5">
                         <div className="flex items-center justify-end gap-2">
