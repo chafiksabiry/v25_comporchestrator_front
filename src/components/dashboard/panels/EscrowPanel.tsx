@@ -1043,57 +1043,38 @@ export function EscrowPanel() {
         )}
       </div>
 
-      {/* 1. Modal: Deposit / Alimentation (Stunning Landscape Layout) */}
+      {/* 1. Modal: Deposit / Alimentation (Call-details style pure white layout) */}
       {showDepositModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-fade-in">
-          <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 flex flex-col md:flex-row min-h-[480px]">
+          <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 relative flex flex-col">
             
-            {/* Left Column: Visual Gradient Brand Banner */}
-            <div className="w-full md:w-[38%] bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-600 p-8 text-white flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full translate-x-12 -translate-y-12" />
-              <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-black/5 rounded-full" />
-              
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="p-2 bg-white/15 rounded-xl backdrop-blur-md">
-                    <Coins className="w-6 h-6 text-white animate-bounce-subtle" />
-                  </div>
-                  <span className="text-[10px] bg-white/20 font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full">Secure Top-Up</span>
+            {/* Modal Header */}
+            <div className="p-8 pb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl">
+                  <Coins className="w-6 h-6 animate-bounce-subtle" />
                 </div>
-                
-                <h3 className="text-2xl font-black tracking-tight leading-tight">Alimenter Votre Solde Cash</h3>
-                <p className="text-xs text-white/95 mt-3 leading-relaxed font-medium">
-                  Rechargez votre solde cash disponible en Euros (€) pour financer vos campagnes et acheter des minutes d'appels.
-                </p>
-              </div>
-
-              <div className="relative z-10 space-y-4 pt-8 border-t border-white/10">
-                <div className="flex items-start gap-2.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
-                  <p className="text-[11px] text-white/90 font-bold leading-tight">Top-up sécurisé par carte bancaire ou virement</p>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
-                  <p className="text-[11px] text-white/90 font-bold leading-tight">Crédits disponibles pour financer le séquestre des campagnes</p>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
-                  <p className="text-[11px] text-white/90 font-bold leading-tight">Restitution du solde cash possible à tout moment</p>
+                <div>
+                  <h3 className="text-lg font-black text-slate-950 tracking-tight leading-none">Alimenter Votre Solde Cash</h3>
+                  <p className="text-[10px] text-emerald-600 font-extrabold uppercase tracking-widest mt-1">Secure Top-Up</p>
                 </div>
               </div>
-            </div>
-
-            {/* Right Column: High-fidelity Compact Form */}
-            <form onSubmit={handleDeposit} className="w-full md:w-[62%] p-8 flex flex-col justify-between space-y-6 relative bg-white">
               <button
                 type="button"
                 onClick={() => setShowDepositModal(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl transition-all"
+                className="text-slate-400 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 p-2.5 rounded-2xl transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
 
-              <div className="space-y-5">
+            {/* Modal Body */}
+            <form onSubmit={handleDeposit} className="flex-1 flex flex-col justify-between">
+              <div className="px-8 py-4 space-y-5">
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                  Rechargez votre solde cash disponible en Euros (€) pour financer vos campagnes et acheter des minutes d'appels.
+                </p>
+
                 {/* Value Packages Selection - Compact 3 Columns Grid */}
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Choisissez un Forfait de Rechargement</label>
@@ -1166,7 +1147,7 @@ export function EscrowPanel() {
               </div>
 
               {/* Action buttons footer */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2.5">
+              <div className="p-8 pt-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end space-x-2.5">
                 <button
                   type="button"
                   onClick={() => setShowDepositModal(false)}
@@ -1194,57 +1175,38 @@ export function EscrowPanel() {
         </div>
       )}
 
-      {/* 1.5. Modal: Buy Minutes with Euros (Stunning Landscape Layout) */}
+      {/* 1.5. Modal: Buy Minutes with Euros (Call-details style pure white layout) */}
       {showBuyMinutesModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-fade-in">
-          <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 flex flex-col md:flex-row min-h-[480px]">
+          <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 relative flex flex-col">
             
-            {/* Left Column: Visual Gradient Brand Banner */}
-            <div className="w-full md:w-[38%] bg-gradient-to-br from-orange-400 via-orange-500 to-amber-600 p-8 text-white flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full translate-x-12 -translate-y-12" />
-              <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-black/5 rounded-full" />
-              
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="p-2 bg-white/15 rounded-xl backdrop-blur-md">
-                    <Clock className="w-6 h-6 text-white animate-bounce-subtle" />
-                  </div>
-                  <span className="text-[10px] bg-white/20 font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full">Convertisseur</span>
+            {/* Modal Header */}
+            <div className="p-8 pb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-orange-50 text-orange-600 rounded-2xl">
+                  <Clock className="w-6 h-6 animate-bounce-subtle" />
                 </div>
-                
-                <h3 className="text-2xl font-black tracking-tight leading-tight">Acheter des Minutes d'Appels</h3>
-                <p className="text-xs text-white/95 mt-3 leading-relaxed font-medium">
-                  Convertissez instantanément votre solde Euros (€) disponible en minutes d'appels à un taux de 1 € = 1 minute.
-                </p>
-              </div>
-
-              <div className="relative z-10 space-y-4 pt-8 border-t border-white/10">
-                <div className="flex items-start gap-2.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
-                  <p className="text-[11px] text-white/90 font-bold leading-tight">Débit instantané et sécurisé du solde</p>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
-                  <p className="text-[11px] text-white/90 font-bold leading-tight">Minutes créditées immédiatement sur votre compte</p>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-white mt-1.5 shrink-0" />
-                  <p className="text-[11px] text-white/90 font-bold leading-tight">Aucun frais caché ni expiration de crédit</p>
+                <div>
+                  <h3 className="text-lg font-black text-slate-950 tracking-tight leading-none">Acheter des Minutes d'Appels</h3>
+                  <p className="text-[10px] text-orange-600 font-extrabold uppercase tracking-widest mt-1">Convertisseur Balance</p>
                 </div>
               </div>
-            </div>
-
-            {/* Right Column: High-fidelity Compact Form */}
-            <form onSubmit={handleBuyMinutes} className="w-full md:w-[62%] p-8 flex flex-col justify-between space-y-6 relative bg-white">
               <button
                 type="button"
                 onClick={() => setShowBuyMinutesModal(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl transition-all"
+                className="text-slate-400 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 p-2.5 rounded-2xl transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
 
-              <div className="space-y-5">
+            {/* Modal Body */}
+            <form onSubmit={handleBuyMinutes} className="flex-1 flex flex-col justify-between">
+              <div className="px-8 py-4 space-y-5">
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                  Convertissez instantanément votre solde Euros (€) disponible en minutes d'appels à un taux de 1 € = 1 minute.
+                </p>
+
                 {/* Value Packages Selection - Compact 3 Columns Grid */}
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Choisissez un Forfait Minutes</label>
@@ -1317,7 +1279,7 @@ export function EscrowPanel() {
               </div>
 
               {/* Action buttons footer */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2.5">
+              <div className="p-8 pt-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end space-x-2.5">
                 <button
                   type="button"
                   onClick={() => setShowBuyMinutesModal(false)}
@@ -1344,6 +1306,7 @@ export function EscrowPanel() {
           </div>
         </div>
       )}
+
 
       {/* 2. Modal: Withdraw / Retrait */}
       {showWithdrawModal && (
