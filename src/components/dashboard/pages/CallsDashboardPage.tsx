@@ -308,7 +308,9 @@ export default function CallsDashboardPage() {
                             {/* Validation de la Transaction par la Compagnie */}
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction</span>
-                              {call.transaction?.validByCompany === true && call.transaction?.validByReps === true ? (
+                              {call.transactionOccurred !== true ? (
+                                <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
+                              ) : call.transaction?.validByCompany === true && call.transaction?.validByReps === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-32 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
                                   Signé
