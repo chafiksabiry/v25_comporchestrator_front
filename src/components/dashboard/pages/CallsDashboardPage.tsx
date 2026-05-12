@@ -240,13 +240,13 @@ export default function CallsDashboardPage() {
                         </span>
                       </td>
                       <td className="px-4 py-5 text-center">
-                        <div className="flex flex-col items-center justify-center gap-1">
+                        <div className="flex flex-col items-center justify-center gap-1.5">
                           <button
                             onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved')}
-                            className={`w-[96px] py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
+                            className={`w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm ${
                               call.companyValidation === 'approved'
-                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
-                                : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20 border-transparent'
+                                : 'bg-emerald-50/50 text-emerald-600 border border-emerald-100/40 hover:bg-emerald-100/60'
                             }`}
                             title="Valider l'appel"
                           >
@@ -255,10 +255,10 @@ export default function CallsDashboardPage() {
                           </button>
                           <button
                             onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected')}
-                            className={`w-[96px] py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
+                            className={`w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm ${
                               call.companyValidation === 'rejected'
-                                ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
-                                : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'
+                                ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md shadow-rose-500/20 border-transparent'
+                                : 'bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60'
                             }`}
                             title="Refuser l'appel"
                           >
@@ -268,13 +268,13 @@ export default function CallsDashboardPage() {
                         </div>
                       </td>
                       <td className="px-4 py-5 text-center">
-                        <div className="flex flex-col items-center justify-center gap-1">
+                        <div className="flex flex-col items-center justify-center gap-1.5">
                           <button
                             onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true)}
-                            className={`w-[96px] py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
+                            className={`w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm ${
                               call.transaction?.validByCompany === true
-                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
-                                : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20 border-transparent'
+                                : 'bg-emerald-50/50 text-emerald-600 border border-emerald-100/40 hover:bg-emerald-100/60'
                             }`}
                             title="Valider la transaction"
                           >
@@ -283,10 +283,10 @@ export default function CallsDashboardPage() {
                           </button>
                           <button
                             onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false)}
-                            className={`w-[96px] py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
+                            className={`w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm ${
                               call.transaction?.validByCompany === false
-                                ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
-                                : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'
+                                ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md shadow-rose-500/20 border-transparent'
+                                : 'bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60'
                             }`}
                             title="Refuser la transaction"
                           >
