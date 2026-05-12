@@ -67,6 +67,7 @@ interface CompanyCall {
 interface WalletState {
   companyId: string;
   balance: number;
+  minutes: number;
   escrow: number;
   contracts: EscrowContract[];
 }
@@ -84,6 +85,10 @@ export function EscrowPanel() {
   const [depositAmount, setDepositAmount] = useState('600');
   const [depositDesc, setDepositDesc] = useState('Stripe credit card deposit');
   const [submittingDeposit, setSubmittingDeposit] = useState(false);
+
+  const [showBuyMinutesModal, setShowBuyMinutesModal] = useState(false);
+  const [buyMinutesAmount, setBuyMinutesAmount] = useState('100');
+  const [submittingBuyMinutes, setSubmittingBuyMinutes] = useState(false);
 
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('200');
@@ -145,6 +150,7 @@ export function EscrowPanel() {
           const event = new CustomEvent('balanceUpdated', {
             detail: {
               balance: walletData.data.balance,
+              minutes: walletData.data.minutes || 0,
               escrow: walletData.data.escrow || 0
             }
           });
@@ -308,7 +314,7 @@ export function EscrowPanel() {
       });
 
       if (res.ok) {
-        toast.success(`Successfully added ${parsed.toLocaleString('en-US')} minutes of calling credits!`);
+        toast.success(`Successfully added ${parsed.toLocaleString('en-US')} € to your available balance!`);
         setShowDepositModal(false);
         fetchWalletData(true);
       } else {
@@ -320,6 +326,47 @@ export function EscrowPanel() {
       toast.error('Failed to communicate with billing gateway.');
     } finally {
       setSubmittingDeposit(false);
+    }
+  };
+
+  // Perform buy minutes from Euros balance
+  const handleBuyMinutes = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = parseFloat(buyMinutesAmount);
+    if (isNaN(parsed) || parsed <= 0) {
+      toast.error('Please enter a valid minutes volume.');
+      return;
+    }
+
+    if (wallet && wallet.balance < parsed) {
+      toast.error('Solde disponible insuffisant en Euros (€) pour cet achat.');
+      return;
+    }
+
+    setSubmittingBuyMinutes(true);
+    try {
+      const res = await fetch(`${apiBaseUrl}/escrow/buy-minutes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId,
+          amount: parsed
+        })
+      });
+
+      if (res.ok) {
+        toast.success(`Successfully purchased ${parsed.toLocaleString('en-US')} calling minutes with Euro balance!`);
+        setShowBuyMinutesModal(false);
+        fetchWalletData(true);
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || 'Failed to buy minutes.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to process minutes purchase.');
+    } finally {
+      setSubmittingBuyMinutes(false);
     }
   };
 
@@ -486,6 +533,7 @@ export function EscrowPanel() {
 
   // Derived metrics
   const displayBalance = wallet?.balance || 0;
+  const displayMinutes = wallet?.minutes || 0;
   const displayEscrow = wallet?.escrow || 0;
   const totalFunded = transactions
     .filter(t => t.type === 'deposit' && t.status === 'completed')
@@ -541,29 +589,51 @@ export function EscrowPanel() {
 
       {/* Financial Overview Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Metric 1: Available Balance */}
+        {/* Metric 1: Euros Cash Balance */}
+        <div className="bg-white border border-slate-200 hover:border-emerald-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full translate-x-12 -translate-y-12 transition-transform duration-500 group-hover:scale-110" />
+          <div className="flex items-center justify-between mb-3 relative z-10">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Solde Cash (€)</span>
+            <div className="p-1.5 bg-emerald-50 text-emerald-500 rounded-lg">
+              <Coins className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="relative z-10">
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">{displayBalance.toLocaleString('en-US')} €</h3>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-[10px] font-bold text-slate-500">Unrestricted corporate Euros balance</span>
+              <span className="text-[10px] bg-emerald-100 text-emerald-700 font-extrabold px-1.5 py-0.5 rounded-full">Available</span>
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] relative z-10">
+            <button onClick={() => setShowWithdrawModal(true)} className="text-slate-500 hover:text-emerald-500 font-bold uppercase tracking-tight">Restituer</button>
+            <button onClick={() => setShowDepositModal(true)} className="text-emerald-500 hover:text-emerald-600 font-black uppercase tracking-tight">Recharger</button>
+          </div>
+        </div>
+
+        {/* Metric 2: Available calling minutes */}
         <div className="bg-white border border-slate-200 hover:border-orange-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-bl-full translate-x-12 -translate-y-12 transition-transform duration-500 group-hover:scale-110" />
           <div className="flex items-center justify-between mb-3 relative z-10">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Solde Disponible</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Minutes d'Appels Disponibles</span>
             <div className="p-1.5 bg-orange-50 text-orange-500 rounded-lg">
               <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="relative z-10">
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight">{displayBalance.toLocaleString('en-US')} mins</h3>
+            <h3 className="text-2xl font-black text-orange-600 tracking-tight">{displayMinutes.toLocaleString('en-US')} mins</h3>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-[10px] font-bold text-slate-500">Unrestricted calling minutes</span>
-              <span className="text-[10px] bg-orange-100 text-orange-700 font-extrabold px-1.5 py-0.5 rounded-full">Available</span>
+              <span className="text-[10px] font-bold text-slate-500">Calling credit volume</span>
+              <span className="text-[10px] bg-orange-100 text-orange-700 font-extrabold px-1.5 py-0.5 rounded-full">Active</span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] relative z-10">
-            <button onClick={() => setShowWithdrawModal(true)} className="text-slate-500 hover:text-orange-500 font-bold uppercase tracking-tight">Restituer</button>
-            <button onClick={() => setShowDepositModal(true)} className="text-orange-500 hover:text-orange-600 font-black uppercase tracking-tight">Recharger</button>
+            <span className="text-slate-400 font-semibold">Buy with Euros:</span>
+            <button onClick={() => setShowBuyMinutesModal(true)} className="text-orange-500 hover:text-orange-600 font-black uppercase tracking-tight">Acheter des minutes</button>
           </div>
         </div>
 
-        {/* Metric 2: Escrow Locked */}
+        {/* Metric 3: Escrow Locked */}
         <div className="bg-white border border-slate-200 hover:border-rose-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
           <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-bl-full translate-x-12 -translate-y-12 transition-transform duration-500 group-hover:scale-110" />
           <div className="flex items-center justify-between mb-3 relative z-10">
@@ -582,20 +652,6 @@ export function EscrowPanel() {
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] relative z-10">
             <span className="text-slate-400 font-semibold">Active guarantees:</span>
             <button onClick={() => setShowLockModal(true)} className="text-rose-500 hover:text-rose-600 font-black uppercase tracking-tight">Nouveau séquestre</button>
-          </div>
-        </div>
-
-        {/* Metric 3: Total Funded */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Rechargé</span>
-            <div className="p-1.5 bg-slate-100 text-slate-500 rounded-lg">
-              <ArrowDownLeft className="w-4 h-4" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-2xl font-black text-slate-800 tracking-tight">{totalFunded.toLocaleString('en-US')} mins</h3>
-            <p className="text-[10px] text-slate-400 font-semibold mt-1">Total inputs via external payment packages</p>
           </div>
         </div>
 
@@ -999,31 +1055,31 @@ export function EscrowPanel() {
                 <X className="w-4 h-4" />
               </button>
               <div className="flex items-center gap-2.5 mb-2">
-                <Clock className="w-5 h-5 animate-bounce-subtle" />
+                <Coins className="w-5 h-5 text-emerald-300 animate-bounce-subtle" />
                 <span className="text-[10px] bg-white/20 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Secure Top-Up</span>
               </div>
-              <h3 className="text-lg font-black tracking-tight leading-none">Recharger Votre Compte</h3>
-              <p className="text-xs text-white/80 mt-1">Purchase high-quality, low-latency calling credits (minutes) for your active corporate campaigns.</p>
+              <h3 className="text-lg font-black tracking-tight leading-none">Alimenter Votre Solde Cash</h3>
+              <p className="text-xs text-white/80 mt-1">Rechargez votre solde cash disponible en Euros (€) pour financer vos campagnes et acheter des minutes d'appels.</p>
             </div>
 
             <form onSubmit={handleDeposit} className="p-6 space-y-5">
               
               {/* Value Packages Selection */}
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Choisissez un Forfait Minutes</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Choisissez un Forfait de Rechargement</label>
                 <div className="grid grid-cols-1 gap-2.5">
                   {[
-                    { mins: 120, usd: 12.00, label: 'Starter Pack', rate: '$0.10/min', popular: false },
-                    { mins: 600, usd: 50.00, label: 'Growth Pack', rate: '$0.08/min', popular: true },
-                    { mins: 1500, usd: 100.00, label: 'Enterprise Pack', rate: '$0.06/min', popular: false },
+                    { eur: 200, label: 'Starter Balance', popular: false },
+                    { eur: 1000, label: 'Growth Balance', popular: true },
+                    { eur: 3000, label: 'Enterprise Balance', popular: false },
                   ].map((pkg) => (
                     <button
-                      key={pkg.mins}
+                      key={pkg.eur}
                       type="button"
-                      onClick={() => setDepositAmount(pkg.mins.toString())}
+                      onClick={() => setDepositAmount(pkg.eur.toString())}
                       className={`relative p-3.5 border text-left rounded-2xl flex items-center justify-between transition-all cursor-pointer ${
-                        depositAmount === pkg.mins.toString()
-                          ? 'border-orange-500 bg-orange-50/40 text-orange-950 shadow-sm'
+                        depositAmount === pkg.eur.toString()
+                          ? 'border-emerald-500 bg-emerald-50/40 text-emerald-950 shadow-sm'
                           : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                       }`}
                     >
@@ -1031,12 +1087,118 @@ export function EscrowPanel() {
                         <span className="absolute -top-2 right-4 bg-rose-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow">Most Popular</span>
                       )}
                       <div>
-                        <div className="font-extrabold text-sm">{pkg.mins} Minutes</div>
-                        <div className="text-[10px] text-slate-400 font-semibold">{pkg.label} — {pkg.rate}</div>
+                        <div className="font-extrabold text-sm">{pkg.eur.toLocaleString()} €</div>
+                        <div className="text-[10px] text-slate-400 font-semibold">{pkg.label}</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-black text-sm text-orange-600">${pkg.usd.toFixed(2)}</div>
-                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">USD One-time</div>
+                        <div className="font-black text-sm text-emerald-600">{pkg.eur.toLocaleString()} €</div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">EUR One-time</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Input */}
+              <div className="pt-2 border-t border-slate-100">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Ou Saisir un Montant Personnalisé</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <span className="text-slate-400 font-black text-sm">€</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    placeholder="Entrez le montant en Euros"
+                    required
+                    min="10"
+                    className="pl-7 w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl py-3 px-3 text-slate-900 text-sm font-black focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                    <span className="text-[10px] text-slate-400 font-black uppercase">EUR</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowDepositModal(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingDeposit}
+                  className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2"
+                >
+                  {submittingDeposit ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-white"></div>
+                      <span>Traitement...</span>
+                    </>
+                  ) : (
+                    <span>Payer & Alimenter</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 1.5. Modal: Buy Minutes with Euros */}
+      {showBuyMinutesModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[999] animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4">
+            <div className="bg-gradient-to-r from-orange-400 to-amber-500 p-6 text-white relative">
+              <button
+                onClick={() => setShowBuyMinutesModal(false)}
+                className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2.5 mb-2">
+                <Clock className="w-5 h-5 animate-bounce-subtle" />
+                <span className="text-[10px] bg-white/20 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Convert EUR to mins</span>
+              </div>
+              <h3 className="text-lg font-black tracking-tight leading-none">Acheter des Minutes d'Appels</h3>
+              <p className="text-xs text-white/80 mt-1">Convertissez instantanément votre solde Euros (€) disponible en minutes d'appels à un taux de 1 € = 1 minute.</p>
+            </div>
+
+            <form onSubmit={handleBuyMinutes} className="p-6 space-y-5">
+              
+              {/* Value Packages Selection */}
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Choisissez un Forfait Minutes</label>
+                <div className="grid grid-cols-1 gap-2.5">
+                  {[
+                    { mins: 100, cost: 100, label: 'Starter Minutes Pack', popular: false },
+                    { mins: 500, cost: 500, label: 'Growth Minutes Pack', popular: true },
+                    { mins: 1000, cost: 1000, label: 'Enterprise Minutes Pack', popular: false },
+                  ].map((pkg) => (
+                    <button
+                      key={pkg.mins}
+                      type="button"
+                      onClick={() => setBuyMinutesAmount(pkg.mins.toString())}
+                      className={`relative p-3.5 border text-left rounded-2xl flex items-center justify-between transition-all cursor-pointer ${
+                        buyMinutesAmount === pkg.mins.toString()
+                          ? 'border-orange-500 bg-orange-50/40 text-orange-950 shadow-sm'
+                          : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      {pkg.popular && (
+                        <span className="absolute -top-2 right-4 bg-orange-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow">Most Popular</span>
+                      )}
+                      <div>
+                        <div className="font-extrabold text-sm">{pkg.mins} Minutes</div>
+                        <div className="text-[10px] text-slate-400 font-semibold">{pkg.label}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-black text-sm text-orange-600">{pkg.cost.toLocaleString()} €</div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">EUR Deduction</div>
                       </div>
                     </button>
                   ))}
@@ -1052,11 +1214,11 @@ export function EscrowPanel() {
                   </div>
                   <input
                     type="number"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    placeholder="Enter minutes volume"
+                    value={buyMinutesAmount}
+                    onChange={(e) => setBuyMinutesAmount(e.target.value)}
+                    placeholder="Enter minutes volume to buy"
                     required
-                    min="10"
+                    min="1"
                     className="pl-9 w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-3 px-3 text-slate-900 text-sm font-black focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
                   />
                   <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
@@ -1065,9 +1227,16 @@ export function EscrowPanel() {
                 </div>
                 
                 {/* Dynamically calculated custom price */}
-                {!['120', '600', '1500'].includes(depositAmount) && depositAmount && parseInt(depositAmount) > 0 && (
-                  <div className="mt-2 text-right text-[10px] text-slate-500 font-black uppercase tracking-wider animate-fade-in">
-                    Estimated Cost: <span className="text-orange-600 text-xs font-black">${(parseInt(depositAmount) * 0.10).toFixed(2)} USD</span>
+                {buyMinutesAmount && parseInt(buyMinutesAmount) > 0 && (
+                  <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between animate-fade-in">
+                    <div>
+                      <span className="text-[9px] text-slate-400 font-black uppercase block tracking-wider">Coût de la Transaction</span>
+                      <span className="text-xs font-bold text-slate-600">Déduit de votre solde cash</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-orange-600 text-base font-black block leading-none">{parseInt(buyMinutesAmount).toLocaleString()} €</span>
+                      <span className="text-[9px] text-slate-400 font-black uppercase">Taux: 1 € = 1 min</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1075,23 +1244,23 @@ export function EscrowPanel() {
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2.5">
                 <button
                   type="button"
-                  onClick={() => setShowDepositModal(false)}
+                  onClick={() => setShowBuyMinutesModal(false)}
                   className="px-4 py-2 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 text-xs font-black uppercase tracking-tight transition-all"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingDeposit}
-                  className="px-5 py-2 bg-gradient-to-r from-orange-400 to-rose-500 text-white hover:from-orange-500 hover:to-rose-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2"
+                  disabled={submittingBuyMinutes}
+                  className="px-5 py-2 bg-gradient-to-r from-orange-400 to-amber-500 text-white hover:from-orange-500 hover:to-amber-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2"
                 >
-                  {submittingDeposit ? (
+                  {submittingBuyMinutes ? (
                     <>
                       <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-white"></div>
-                      <span>Traitement...</span>
+                      <span>Conversion...</span>
                     </>
                   ) : (
-                    <span>Payer & Recharger</span>
+                    <span>Valider la Conversion</span>
                   )}
                 </button>
               </div>

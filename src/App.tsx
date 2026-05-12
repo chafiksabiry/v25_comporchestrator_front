@@ -56,6 +56,7 @@ function AppContent() {
   const [logoError, setLogoError] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [balance, setBalance] = useState<number>(0);
+  const [minutes, setMinutes] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
 
   const navigate = useNavigate();
@@ -70,6 +71,7 @@ function AppContent() {
           const result = await res.json();
           if (result.success && result.data) {
             setBalance(result.data.balance);
+            setMinutes(result.data.minutes || 0);
             setEscrow(result.data.escrow || 0);
           }
         }
@@ -85,6 +87,9 @@ function AppContent() {
       if (customEvent.detail) {
         if (typeof customEvent.detail.balance === 'number') {
           setBalance(customEvent.detail.balance);
+        }
+        if (typeof customEvent.detail.minutes === 'number') {
+          setMinutes(customEvent.detail.minutes);
         }
         if (typeof customEvent.detail.escrow === 'number') {
           setEscrow(customEvent.detail.escrow);
@@ -380,22 +385,31 @@ function AppContent() {
 
               {/* Centered Credits, Balance, and Upgrade Widgets */}
               <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-3">
-                {/* Credit Widget */}
-                <div 
-                  onClick={handleBalanceClick}
-                  className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-yellow-500/10 hover:to-yellow-500/5 hover:border-yellow-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow-500/5 transition-all duration-300 cursor-pointer group"
-                >
-                  <Coins size={14} className="text-yellow-500 animate-pulse-subtle group-hover:scale-110 group-hover:text-yellow-400 transition-all duration-300 shrink-0" />
-                  <span className="whitespace-nowrap">{t('navbar.credits')}: <span className="text-white font-black">{escrow.toLocaleString('en-US')} mins</span></span>
-                </div>
-
-                {/* Balance Widget */}
+                {/* Balance Widget (Solde en Euros) */}
                 <div 
                   onClick={handleBalanceClick}
                   className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-emerald-500/10 hover:to-emerald-500/5 hover:border-emerald-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-300 cursor-pointer group"
                 >
-                  <Clock size={14} className="text-emerald-500 group-hover:scale-110 group-hover:text-emerald-400 transition-all duration-300 shrink-0" />
-                  <span className="whitespace-nowrap">{t('navbar.balance')}: <span className="text-white font-black">{balance.toLocaleString('en-US')} mins</span></span>
+                  <Coins size={14} className="text-emerald-500 animate-pulse-subtle group-hover:scale-110 group-hover:text-emerald-400 transition-all duration-300 shrink-0" />
+                  <span className="whitespace-nowrap">Solde: <span className="text-white font-black">{balance.toLocaleString('en-US')} €</span></span>
+                </div>
+
+                {/* Minutes Disponibles Widget */}
+                <div 
+                  onClick={handleBalanceClick}
+                  className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-blue-500/10 hover:to-blue-500/5 hover:border-blue-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 cursor-pointer group"
+                >
+                  <Clock size={14} className="text-blue-500 group-hover:scale-110 group-hover:text-blue-400 transition-all duration-300 shrink-0" />
+                  <span className="whitespace-nowrap">Minutes: <span className="text-white font-black">{minutes.toLocaleString('en-US')} mins</span></span>
+                </div>
+
+                {/* Escrow/Séquestre Widget */}
+                <div 
+                  onClick={handleBalanceClick}
+                  className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-orange-500/10 hover:to-orange-500/5 hover:border-orange-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300 cursor-pointer group"
+                >
+                  <span className="text-orange-500 font-extrabold group-hover:scale-110 transition-all duration-300 shrink-0">🔒</span>
+                  <span className="whitespace-nowrap">Séquestre: <span className="text-white font-black">{escrow.toLocaleString('en-US')} mins</span></span>
                 </div>
 
                 {/* Upgrade Button */}
