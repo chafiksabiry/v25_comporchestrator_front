@@ -240,57 +240,57 @@ export default function CallsDashboardPage() {
                         </span>
                       </td>
                       <td className="px-4 py-5 text-center">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex flex-col items-center justify-center gap-1">
                           <button
                             onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved')}
-                            className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
+                            className={`w-[96px] py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
                               call.companyValidation === 'approved'
                                 ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
                                 : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
                             }`}
                             title="Valider l'appel"
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Check className="w-3 h-3" />
                             Valider
                           </button>
                           <button
                             onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected')}
-                            className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
+                            className={`w-[96px] py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
                               call.companyValidation === 'rejected'
                                 ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
                                 : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'
                             }`}
                             title="Refuser l'appel"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-3 h-3" />
                             Refuser
                           </button>
                         </div>
                       </td>
                       <td className="px-4 py-5 text-center">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex flex-col items-center justify-center gap-1">
                           <button
                             onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true)}
-                            className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
+                            className={`w-[96px] py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
                               call.transaction?.validByCompany === true
                                 ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
                                 : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
                             }`}
                             title="Valider la transaction"
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Check className="w-3 h-3" />
                             Valider
                           </button>
                           <button
                             onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false)}
-                            className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
+                            className={`w-[96px] py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 ${
                               call.transaction?.validByCompany === false
                                 ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
                                 : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'
                             }`}
                             title="Refuser la transaction"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-3 h-3" />
                             Refuser
                           </button>
                         </div>
