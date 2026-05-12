@@ -65,8 +65,11 @@ function AppContent() {
     if (isNaN(floatMinutes) || floatMinutes === null || floatMinutes === undefined) {
       return "00:00:00";
     }
-    const totalSeconds = floatMinutes * 60;
-    const mm = Math.floor(floatMinutes);
+    const isNegative = floatMinutes < 0;
+    const absMinutes = Math.abs(floatMinutes);
+
+    const totalSeconds = absMinutes * 60;
+    const mm = Math.floor(absMinutes);
     const remainingSeconds = totalSeconds % 60;
     const ss = Math.floor(remainingSeconds);
     const remainingFraction = remainingSeconds % 1;
@@ -76,7 +79,7 @@ function AppContent() {
     const ssStr = String(ss).padStart(2, '0');
     const llStr = String(ll).padStart(2, '0');
 
-    return `${mmStr}:${ssStr}:${llStr}`;
+    return `${isNegative ? '-' : ''}${mmStr}:${ssStr}:${llStr}`;
   };
 
   useEffect(() => {
