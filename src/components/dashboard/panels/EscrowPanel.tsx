@@ -864,6 +864,11 @@ export function EscrowPanel() {
                             <ArrowUpRight className="w-3.5 h-3.5 bg-slate-50 p-0.5 rounded" /> Retrait / Remboursement
                           </span>
                         )}
+                        {tx.type === 'buy_minutes' && (
+                          <span className="inline-flex items-center gap-1.5 text-orange-500 font-bold uppercase text-[10px] tracking-wide">
+                            <RefreshCw className="w-3.5 h-3.5 bg-orange-50 p-0.5 rounded" /> Achat de Minutes
+                          </span>
+                        )}
                         {tx.type === 'escrow_lock' && (
                           <span className="inline-flex items-center gap-1.5 text-amber-600 font-bold uppercase text-[10px] tracking-wide">
                             <Lock className="w-3.5 h-3.5 bg-amber-50 p-0.5 rounded" /> Séquestre Bloqué
@@ -886,7 +891,13 @@ export function EscrowPanel() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">
-                        {tx.amount.toLocaleString('en-US')} mins
+                        {(tx.type === 'deposit' || tx.type === 'withdrawal') ? (
+                          <span className="text-emerald-600 font-extrabold">{tx.amount.toLocaleString('en-US')} €</span>
+                        ) : tx.type === 'buy_minutes' ? (
+                          <span className="text-orange-600 font-extrabold">+{tx.amount.toLocaleString('en-US')} mins</span>
+                        ) : (
+                          <span>{tx.amount.toLocaleString('en-US')} mins</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         {tx.status === 'pending' ? (
@@ -1046,10 +1057,10 @@ export function EscrowPanel() {
       {/* 1. Modal: Deposit / Alimentation (Call-details style pure white layout) */}
       {showDepositModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[99999] animate-fade-in">
-          <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 relative flex flex-col">
+          <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-xl max-h-[90vh] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 relative flex flex-col">
             
             {/* Modal Header */}
-            <div className="p-8 pb-4 flex items-center justify-between">
+            <div className="p-8 pb-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl">
                   <Coins className="w-6 h-6 animate-bounce-subtle" />
@@ -1069,8 +1080,8 @@ export function EscrowPanel() {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleDeposit} className="flex-1 flex flex-col justify-between">
-              <div className="px-8 py-4 space-y-5">
+            <form onSubmit={handleDeposit} className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-8 py-4 space-y-5 custom-scrollbar">
                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
                   Rechargez votre solde cash disponible en Euros (€) pour financer vos campagnes et acheter des minutes d'appels.
                 </p>
@@ -1147,7 +1158,7 @@ export function EscrowPanel() {
               </div>
 
               {/* Action buttons footer */}
-              <div className="p-8 pt-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end space-x-2.5">
+              <div className="p-8 pt-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end space-x-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowDepositModal(false)}
@@ -1175,13 +1186,14 @@ export function EscrowPanel() {
         </div>
       )}
 
+
       {/* 1.5. Modal: Buy Minutes with Euros (Call-details style pure white layout) */}
       {showBuyMinutesModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[99999] animate-fade-in">
-          <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 relative flex flex-col">
+          <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-xl max-h-[90vh] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 relative flex flex-col">
             
             {/* Modal Header */}
-            <div className="p-8 pb-4 flex items-center justify-between">
+            <div className="p-8 pb-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-orange-50 text-orange-600 rounded-2xl">
                   <Clock className="w-6 h-6 animate-bounce-subtle" />
@@ -1201,8 +1213,8 @@ export function EscrowPanel() {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleBuyMinutes} className="flex-1 flex flex-col justify-between">
-              <div className="px-8 py-4 space-y-5">
+            <form onSubmit={handleBuyMinutes} className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-8 py-4 space-y-5 custom-scrollbar">
                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
                   Convertissez instantanément votre solde Euros (€) disponible en minutes d'appels à un taux de 1 € = 1 minute.
                 </p>
@@ -1279,7 +1291,7 @@ export function EscrowPanel() {
               </div>
 
               {/* Action buttons footer */}
-              <div className="p-8 pt-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end space-x-2.5">
+              <div className="p-8 pt-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end space-x-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowBuyMinutesModal(false)}
@@ -1306,6 +1318,7 @@ export function EscrowPanel() {
           </div>
         </div>
       )}
+
 
 
       {/* 2. Modal: Withdraw / Retrait */}
