@@ -6,6 +6,7 @@ import {
   DollarSign,
   Sparkles,
   X,
+  Clock,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
@@ -385,7 +386,7 @@ function AppContent() {
                   className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-yellow-500/10 hover:to-yellow-500/5 hover:border-yellow-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow-500/5 transition-all duration-300 cursor-pointer group"
                 >
                   <Coins size={14} className="text-yellow-500 animate-pulse-subtle group-hover:scale-110 group-hover:text-yellow-400 transition-all duration-300 shrink-0" />
-                  <span className="whitespace-nowrap">{t('navbar.credits')}: <span className="text-white font-black">${escrow.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                  <span className="whitespace-nowrap">{t('navbar.credits')}: <span className="text-white font-black">{escrow.toLocaleString('en-US')} mins</span></span>
                 </div>
 
                 {/* Balance Widget */}
@@ -393,8 +394,8 @@ function AppContent() {
                   onClick={handleBalanceClick}
                   className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-emerald-500/10 hover:to-emerald-500/5 hover:border-emerald-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-300 cursor-pointer group"
                 >
-                  <DollarSign size={14} className="text-emerald-500 group-hover:scale-110 group-hover:text-emerald-400 transition-all duration-300 shrink-0" />
-                  <span className="whitespace-nowrap">{t('navbar.balance')}: <span className="text-white font-black">${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                  <Clock size={14} className="text-emerald-500 group-hover:scale-110 group-hover:text-emerald-400 transition-all duration-300 shrink-0" />
+                  <span className="whitespace-nowrap">{t('navbar.balance')}: <span className="text-white font-black">{balance.toLocaleString('en-US')} mins</span></span>
                 </div>
 
                 {/* Upgrade Button */}

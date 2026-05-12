@@ -20,6 +20,9 @@ import {
   HelpCircle,
   User,
   Zap,
+  Clock,
+  Phone,
+  Check,
   HelpCircle as QuestionIcon
 } from 'lucide-react';
 import Cookies from 'js-cookie';
@@ -39,12 +42,26 @@ interface EscrowContract {
 
 interface EscrowTransaction {
   _id: string;
-  type: 'deposit' | 'withdrawal' | 'escrow_lock' | 'escrow_release' | 'escrow_refund';
+  type: 'deposit' | 'withdrawal' | 'escrow_lock' | 'escrow_release' | 'escrow_refund' | 'call_charge';
   amount: number;
   status: 'pending' | 'completed' | 'failed';
   description: string;
   referenceId?: string;
   createdAt: string;
+}
+
+interface CompanyCall {
+  callId: string;
+  agent: string;
+  lead: string;
+  direction: string;
+  duration: number; // seconds
+  startTime: string;
+  status: string;
+  validByCompany: boolean | null;
+  validByReps: boolean | null;
+  valid: boolean | null;
+  price?: number;
 }
 
 interface WalletState {
@@ -57,12 +74,14 @@ interface WalletState {
 export function EscrowPanel() {
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [transactions, setTransactions] = useState<EscrowTransaction[]>([]);
+  const [calls, setCalls] = useState<CompanyCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [callsLoading, setCallsLoading] = useState(false);
 
   // Modals state
   const [showDepositModal, setShowDepositModal] = useState(false);
-  const [depositAmount, setDepositAmount] = useState('500');
+  const [depositAmount, setDepositAmount] = useState('600');
   const [depositDesc, setDepositDesc] = useState('Stripe credit card deposit');
   const [submittingDeposit, setSubmittingDeposit] = useState(false);
 
@@ -93,7 +112,7 @@ export function EscrowPanel() {
   const [gigsAndReps, setGigsAndReps] = useState<GigAndReps[]>([]);
   const [gigsLoading, setGigsLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'contracts' | 'history'>('contracts');
+  const [activeTab, setActiveTab] = useState<'contracts' | 'history' | 'calls'>('contracts');
 
   const [isGigDropdownOpen, setIsGigDropdownOpen] = useState(false);
   const [isRepDropdownOpen, setIsRepDropdownOpen] = useState(false);
@@ -210,8 +229,62 @@ export function EscrowPanel() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchWalletData(true);
+    if (activeTab === 'calls') {
+      fetchCallsData();
+    }
     toast.success('Escrow status updated.', { id: 'refresh-toast' });
   };
+
+  const fetchCallsData = async () => {
+    setCallsLoading(true);
+    try {
+      const res = await fetch(`${apiBaseUrl}/escrow/calls/${companyId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.data) {
+          setCalls(data.data);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching company calls:', err);
+    } finally {
+      setCallsLoading(false);
+    }
+  };
+
+  const handleApproveOrRefuse = async (callId: string, action: 'approve' | 'refuse') => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/escrow/calls/approve/${callId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ companyId, action }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          toast.success(action === 'approve' ? 'Appel approuvé et crédits déduits !' : 'Appel refusé avec succès.');
+          // Refresh both calls data and wallet balance data
+          fetchCallsData();
+          fetchWalletData(true);
+        } else {
+          toast.error(data.error || 'Une erreur est survenue.');
+        }
+      } else {
+        toast.error('Erreur lors de la validation.');
+      }
+    } catch (err) {
+      console.error('Error validating call:', err);
+      toast.error('Erreur de communication.');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'calls') {
+      fetchCallsData();
+    }
+  }, [activeTab, companyId]);
 
   // Perform deposit
   const handleDeposit = async (e: React.FormEvent) => {
@@ -235,7 +308,7 @@ export function EscrowPanel() {
       });
 
       if (res.ok) {
-        toast.success(`Successfully funded account with $${parsed.toFixed(2)}!`);
+        toast.success(`Successfully added ${parsed.toLocaleString('en-US')} minutes of calling credits!`);
         setShowDepositModal(false);
         fetchWalletData(true);
       } else {
@@ -276,7 +349,7 @@ export function EscrowPanel() {
       });
 
       if (res.ok) {
-        toast.success(`Successfully withdrawn $${parsed.toFixed(2)} to linked card.`);
+        toast.success(`Successfully returned ${parsed.toLocaleString('en-US')} minutes of credits to your linked account.`);
         setShowWithdrawModal(false);
         fetchWalletData(true);
       } else {
@@ -322,7 +395,7 @@ export function EscrowPanel() {
       });
 
       if (res.ok) {
-        toast.success(`Successfully secured $${parsed.toFixed(2)} in Escrow contract!`);
+        toast.success(`Successfully secured ${parsed.toLocaleString('en-US')} minutes in Escrow contract!`);
         setShowLockModal(false);
         fetchWalletData(true);
       } else {
@@ -355,7 +428,7 @@ export function EscrowPanel() {
       });
 
       if (res.ok) {
-        toast.success(`Payment disbursed successfully! $${releaseAmount.toFixed(2)} transferred to ${releaseAgentName}.`);
+        toast.success(`Payment disbursed successfully! ${releaseAmount.toLocaleString('en-US')} minutes transferred to ${releaseAgentName}.`);
         setShowReleaseConfirmModal(false);
         fetchWalletData(true);
       } else {
@@ -387,7 +460,7 @@ export function EscrowPanel() {
       });
 
       if (res.ok) {
-        toast.success(`Escrow cancelled. $${refundAmount.toFixed(2)} restored to your available balance.`);
+        toast.success(`Escrow cancelled. ${refundAmount.toLocaleString('en-US')} minutes restored to your available balance.`);
         setShowRefundConfirmModal(false);
         fetchWalletData(true);
       } else {
@@ -474,19 +547,19 @@ export function EscrowPanel() {
           <div className="flex items-center justify-between mb-3 relative z-10">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Solde Disponible</span>
             <div className="p-1.5 bg-orange-50 text-orange-500 rounded-lg">
-              <DollarSign className="w-4 h-4" />
+              <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="relative z-10">
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight">${displayBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">{displayBalance.toLocaleString('en-US')} mins</h3>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-[10px] font-bold text-slate-500">Unrestricted virtual capital</span>
+              <span className="text-[10px] font-bold text-slate-500">Unrestricted calling minutes</span>
               <span className="text-[10px] bg-orange-100 text-orange-700 font-extrabold px-1.5 py-0.5 rounded-full">Available</span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] relative z-10">
-            <button onClick={() => setShowWithdrawModal(true)} className="text-slate-500 hover:text-orange-500 font-bold uppercase tracking-tight">Retrait fonds</button>
-            <button onClick={() => setShowDepositModal(true)} className="text-orange-500 hover:text-orange-600 font-black uppercase tracking-tight">Alimenter</button>
+            <button onClick={() => setShowWithdrawModal(true)} className="text-slate-500 hover:text-orange-500 font-bold uppercase tracking-tight">Restituer</button>
+            <button onClick={() => setShowDepositModal(true)} className="text-orange-500 hover:text-orange-600 font-black uppercase tracking-tight">Recharger</button>
           </div>
         </div>
 
@@ -494,13 +567,13 @@ export function EscrowPanel() {
         <div className="bg-white border border-slate-200 hover:border-rose-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
           <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-bl-full translate-x-12 -translate-y-12 transition-transform duration-500 group-hover:scale-110" />
           <div className="flex items-center justify-between mb-3 relative z-10">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fonds Séquestre (Locked)</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Minutes Séquestrées</span>
             <div className="p-1.5 bg-rose-50 text-rose-500 rounded-lg">
               <Lock className="w-4 h-4" />
             </div>
           </div>
           <div className="relative z-10">
-            <h3 className="text-2xl font-black text-rose-600 tracking-tight">${displayEscrow.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+            <h3 className="text-2xl font-black text-rose-600 tracking-tight">{displayEscrow.toLocaleString('en-US')} mins</h3>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="text-[10px] font-bold text-slate-500">Secured for active campaigns</span>
               <span className="text-[10px] bg-rose-100 text-rose-700 font-extrabold px-1.5 py-0.5 rounded-full">Escrow</span>
@@ -515,27 +588,27 @@ export function EscrowPanel() {
         {/* Metric 3: Total Funded */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cumul Approvisionné</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Rechargé</span>
             <div className="p-1.5 bg-slate-100 text-slate-500 rounded-lg">
               <ArrowDownLeft className="w-4 h-4" />
             </div>
           </div>
           <div>
-            <h3 className="text-2xl font-black text-slate-800 tracking-tight">${totalFunded.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
-            <p className="text-[10px] text-slate-400 font-semibold mt-1">Total inputs via external payment systems</p>
+            <h3 className="text-2xl font-black text-slate-800 tracking-tight">{totalFunded.toLocaleString('en-US')} mins</h3>
+            <p className="text-[10px] text-slate-400 font-semibold mt-1">Total inputs via external payment packages</p>
           </div>
         </div>
 
         {/* Metric 4: Paid to Representatives */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payé aux REPS</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Payé aux REPS</span>
             <div className="p-1.5 bg-emerald-50 text-emerald-500 rounded-lg">
               <Unlock className="w-4 h-4" />
             </div>
           </div>
           <div>
-            <h3 className="text-2xl font-black text-emerald-600 tracking-tight">${totalDisbursed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+            <h3 className="text-2xl font-black text-emerald-600 tracking-tight">{totalDisbursed.toLocaleString('en-US')} mins</h3>
             <p className="text-[10px] text-slate-400 font-semibold mt-1">Milestones completed & successfully paid</p>
           </div>
         </div>
@@ -565,9 +638,18 @@ export function EscrowPanel() {
             >
               Historique des Transactions ({transactions.length})
             </button>
+            <button
+              onClick={() => setActiveTab('calls')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all ${activeTab === 'calls'
+                ? 'bg-white text-orange-500 shadow-sm border border-slate-100'
+                : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Validation des Appels ({calls.length})
+            </button>
           </div>
           <div className="flex items-center">
-            {activeTab === 'contracts' ? (
+            {activeTab === 'contracts' && (
               <button
                 onClick={() => setShowLockModal(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-extrabold uppercase tracking-wide rounded-lg shadow-sm transition-all"
@@ -575,9 +657,15 @@ export function EscrowPanel() {
                 <Lock className="w-3.5 h-3.5 text-rose-500" />
                 Bloquer Nouveau Séquestre
               </button>
-            ) : (
+            )}
+            {activeTab === 'history' && (
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5" /> Immutable Audit Ledger
+              </span>
+            )}
+            {activeTab === 'calls' && (
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-orange-500 animate-pulse" /> Approbations d'Appels & Crédits
               </span>
             )}
           </div>
@@ -625,7 +713,7 @@ export function EscrowPanel() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">
-                        ${contract.amount.toFixed(2)}
+                        {contract.amount.toLocaleString('en-US')} mins
                       </td>
                       <td className="px-6 py-4">
                         {contract.status === 'locked' && (
@@ -659,7 +747,7 @@ export function EscrowPanel() {
                         {contract.status === 'locked' ? (
                           <div className="flex items-center justify-center gap-2">
                             <button
-                              onClick={() => handleReleaseEscrow(contract._id, contract.amount, contract.agentName || 'Agent')}
+                               onClick={() => handleReleaseEscrow(contract._id, contract.amount, contract.agentName || 'Agent')}
                               className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 hover:border-emerald-300 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all"
                             >
                               Libérer Fonds
@@ -735,9 +823,14 @@ export function EscrowPanel() {
                             <X className="w-3.5 h-3.5 bg-indigo-50 p-0.5 rounded" /> Restitution
                           </span>
                         )}
+                        {tx.type === 'call_charge' && (
+                          <span className="inline-flex items-center gap-1.5 text-rose-600 font-bold uppercase text-[10px] tracking-wide">
+                            <Phone className="w-3.5 h-3.5 bg-rose-50 p-0.5 rounded" /> Déduction Appel
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">
-                        ${tx.amount.toFixed(2)}
+                        {tx.amount.toLocaleString('en-US')} mins
                       </td>
                       <td className="px-6 py-4">
                         {tx.status === 'pending' ? (
@@ -773,6 +866,125 @@ export function EscrowPanel() {
             )}
           </div>
         )}
+
+        {activeTab === 'calls' && (
+          <div className="overflow-x-auto">
+            {callsLoading ? (
+              <div className="p-12 text-center flex flex-col items-center justify-center animate-pulse">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500 mb-3"></div>
+                <h4 className="text-sm font-bold text-slate-800">Chargement des appels...</h4>
+              </div>
+            ) : calls.length === 0 ? (
+              <div className="p-12 text-center flex flex-col items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-300 flex items-center justify-center mb-3">
+                  <Phone className="w-6 h-6 animate-bounce-subtle" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-800">Aucun appel à valider</h4>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                  Les appels passés par vos agents s'afficheront ici pour validation de la déduction de vos minutes de crédit.
+                </p>
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/10">
+                    <th className="px-6 py-4">Appel (Agent & Lead)</th>
+                    <th className="px-6 py-4">Sens</th>
+                    <th className="px-6 py-4">Durée Réelle</th>
+                    <th className="px-6 py-4">Minutes Déduites</th>
+                    <th className="px-6 py-4">Date de l'Appel</th>
+                    <th className="px-6 py-4">Statut Transaction</th>
+                    <th className="px-6 py-4 text-center">Décision</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {calls.map((call) => {
+                    const durationMins = Math.ceil((call.duration || 60) / 60);
+                    return (
+                      <tr key={call.callId} className="hover:bg-slate-50/50 transition-colors text-xs">
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-orange-500" />
+                              {call.agent}
+                            </span>
+                            <span className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tight">
+                              Lead: {call.lead}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
+                            call.direction === 'inbound' 
+                              ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                              : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                          }`}>
+                            {call.direction === 'inbound' ? 'Entrant 📥' : 'Sortant 📤'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-bold text-slate-700">
+                          {call.duration} sec
+                        </td>
+                        <td className="px-6 py-4 font-black text-slate-900 text-sm">
+                          {durationMins} mins
+                        </td>
+                        <td className="px-6 py-4 text-slate-500 font-medium">
+                          {call.startTime ? new Date(call.startTime).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4">
+                          {call.validByCompany === true ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              Approuvé
+                            </span>
+                          ) : call.validByCompany === false ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-100 rounded-full">
+                              <X className="w-3 h-3 text-rose-500" />
+                              Refusé
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-100 rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                              En Attente
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {call.validByCompany === null ? (
+                            <div className="flex items-center justify-center space-x-2">
+                              <button
+                                onClick={() => handleApproveOrRefuse(call.callId, 'approve')}
+                                className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-1"
+                              >
+                                <Check className="w-3 h-3" /> Approuver
+                              </button>
+                              <button
+                                onClick={() => handleApproveOrRefuse(call.callId, 'refuse')}
+                                className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-1"
+                              >
+                                <X className="w-3 h-3" /> Refuser
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">
+                              Décision Enregistrée
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 1. Modal: Deposit / Alimentation */}
@@ -787,48 +999,77 @@ export function EscrowPanel() {
                 <X className="w-4 h-4" />
               </button>
               <div className="flex items-center gap-2.5 mb-2">
-                <Coins className="w-5 h-5 animate-bounce-subtle" />
-                <span className="text-[10px] bg-white/20 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Secure Deposit</span>
+                <Clock className="w-5 h-5 animate-bounce-subtle" />
+                <span className="text-[10px] bg-white/20 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Secure Top-Up</span>
               </div>
-              <h3 className="text-lg font-black tracking-tight leading-none">Alimenter Votre Solde</h3>
-              <p className="text-xs text-white/80 mt-1">Add virtual demo funds securely to your corporate account balance to establish agent contract guarantees.</p>
+              <h3 className="text-lg font-black tracking-tight leading-none">Recharger Votre Compte</h3>
+              <p className="text-xs text-white/80 mt-1">Purchase high-quality, low-latency calling credits (minutes) for your active corporate campaigns.</p>
             </div>
 
-            <form onSubmit={handleDeposit} className="p-6 space-y-4">
+            <form onSubmit={handleDeposit} className="p-6 space-y-5">
+              
+              {/* Value Packages Selection */}
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Montant D'approvisionnement ($)</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Choisissez un Forfait Minutes</label>
+                <div className="grid grid-cols-1 gap-2.5">
+                  {[
+                    { mins: 120, usd: 12.00, label: 'Starter Pack', rate: '$0.10/min', popular: false },
+                    { mins: 600, usd: 50.00, label: 'Growth Pack', rate: '$0.08/min', popular: true },
+                    { mins: 1500, usd: 100.00, label: 'Enterprise Pack', rate: '$0.06/min', popular: false },
+                  ].map((pkg) => (
+                    <button
+                      key={pkg.mins}
+                      type="button"
+                      onClick={() => setDepositAmount(pkg.mins.toString())}
+                      className={`relative p-3.5 border text-left rounded-2xl flex items-center justify-between transition-all cursor-pointer ${
+                        depositAmount === pkg.mins.toString()
+                          ? 'border-orange-500 bg-orange-50/40 text-orange-950 shadow-sm'
+                          : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      {pkg.popular && (
+                        <span className="absolute -top-2 right-4 bg-rose-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow">Most Popular</span>
+                      )}
+                      <div>
+                        <div className="font-extrabold text-sm">{pkg.mins} Minutes</div>
+                        <div className="text-[10px] text-slate-400 font-semibold">{pkg.label} — {pkg.rate}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-black text-sm text-orange-600">${pkg.usd.toFixed(2)}</div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">USD One-time</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Input */}
+              <div className="pt-2 border-t border-slate-100">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Ou Saisir un Volume Personnalisé</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <DollarSign className="w-4 h-4 text-slate-400 font-black" />
+                    <Clock className="w-4 h-4 text-slate-400 font-black" />
                   </div>
                   <input
                     type="number"
                     value={depositAmount}
                     onChange={(e) => setDepositAmount(e.target.value)}
-                    placeholder="Enter amount"
+                    placeholder="Enter minutes volume"
                     required
-                    min="1"
+                    min="10"
                     className="pl-9 w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-3 px-3 text-slate-900 text-sm font-black focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
                   />
+                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                    <span className="text-[10px] text-slate-400 font-black uppercase">mins</span>
+                  </div>
                 </div>
-              </div>
-
-
-
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                {['250', '500', '1000'].map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setDepositAmount(amt)}
-                    className={`py-2 border rounded-xl text-xs font-black transition-all ${depositAmount === amt
-                      ? 'border-orange-500 bg-orange-50/50 text-orange-500'
-                      : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500'
-                    }`}
-                  >
-                    + ${amt}
-                  </button>
-                ))}
+                
+                {/* Dynamically calculated custom price */}
+                {!['120', '600', '1500'].includes(depositAmount) && depositAmount && parseInt(depositAmount) > 0 && (
+                  <div className="mt-2 text-right text-[10px] text-slate-500 font-black uppercase tracking-wider animate-fade-in">
+                    Estimated Cost: <span className="text-orange-600 text-xs font-black">${(parseInt(depositAmount) * 0.10).toFixed(2)} USD</span>
+                  </div>
+                )}
               </div>
 
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2.5">
@@ -842,9 +1083,16 @@ export function EscrowPanel() {
                 <button
                   type="submit"
                   disabled={submittingDeposit}
-                  className="px-5 py-2 bg-gradient-to-r from-orange-400 to-rose-500 text-white hover:from-orange-500 hover:to-rose-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 disabled:opacity-50 transition-all"
+                  className="px-5 py-2 bg-gradient-to-r from-orange-400 to-rose-500 text-white hover:from-orange-500 hover:to-rose-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2"
                 >
-                  {submittingDeposit ? 'Processing...' : 'Valider Dépôt'}
+                  {submittingDeposit ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-white"></div>
+                      <span>Traitement...</span>
+                    </>
+                  ) : (
+                    <span>Payer & Recharger</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -864,38 +1112,41 @@ export function EscrowPanel() {
                 <X className="w-4 h-4" />
               </button>
               <div className="flex items-center gap-2.5 mb-2">
-                <ArrowUpRight className="w-5 h-5 text-orange-400" />
-                <span className="text-[10px] bg-white/10 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Bank Withdrawal</span>
+                <Clock className="w-5 h-5 text-orange-400" />
+                <span className="text-[10px] bg-white/10 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Bank Return</span>
               </div>
-              <h3 className="text-lg font-black tracking-tight leading-none">Demander un Retrait</h3>
-              <p className="text-xs text-white/60 mt-1">Return available balance directly to your registered banking coordinates.</p>
+              <h3 className="text-lg font-black tracking-tight leading-none">Restituer des Minutes</h3>
+              <p className="text-xs text-white/60 mt-1">Return available balance directly to your registered corporate coordinates.</p>
             </div>
 
             <form onSubmit={handleWithdraw} className="p-6 space-y-4">
               <div className="bg-orange-500/5 border border-orange-500/10 rounded-2xl p-3.5 text-xs text-slate-600 flex items-start gap-2.5 mb-2">
                 <Info className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold block">Available Balance: ${displayBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                  Only unpledged available capital can be withdrawn immediately. Locked escrow funds are excluded.
+                  <span className="font-bold block">Available Balance: {displayBalance.toLocaleString('en-US')} mins</span>
+                  Only unpledged available minutes can be returned. Locked escrow credits are excluded.
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Montant de Retrait ($)</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Volume de Minutes à Restituer</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <DollarSign className="w-4 h-4 text-slate-400 font-black" />
+                    <Clock className="w-4 h-4 text-slate-400 font-black" />
                   </div>
                   <input
                     type="number"
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
-                    placeholder="Enter amount"
+                    placeholder="Enter minutes volume"
                     required
                     min="1"
                     max={displayBalance}
                     className="pl-9 w-full bg-slate-50 border border-slate-200 focus:border-slate-900 rounded-xl py-3 px-3 text-slate-900 text-sm font-black focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all"
                   />
+                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                    <span className="text-[10px] text-slate-400 font-black uppercase">mins</span>
+                  </div>
                 </div>
               </div>
 
@@ -912,7 +1163,7 @@ export function EscrowPanel() {
                   disabled={submittingWithdraw}
                   className="px-5 py-2 bg-slate-900 text-white hover:bg-black font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-slate-900/20 disabled:opacity-50 transition-all"
                 >
-                  {submittingWithdraw ? 'Processing...' : 'Valider Retrait'}
+                  {submittingWithdraw ? 'Processing...' : 'Restituer Minutes'}
                 </button>
               </div>
             </form>
@@ -939,16 +1190,16 @@ export function EscrowPanel() {
                 <Lock className="w-5 h-5 animate-pulse" />
                 <span className="text-[10px] bg-white/20 font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Secure Milestone Lock</span>
               </div>
-              <h3 className="text-lg font-black tracking-tight leading-none">Bloquer Fonds Sous Séquestre</h3>
-              <p className="text-xs text-white/80 mt-1">Commit payment guarantees into escrow to assure active campaign representatives of financial security.</p>
+              <h3 className="text-lg font-black tracking-tight leading-none">Bloquer Nouveau Séquestre</h3>
+              <p className="text-xs text-white/80 mt-1">Commit calling minute guarantees into escrow to assure active campaign representatives of credit security.</p>
             </div>
 
             <form onSubmit={handleLockFunds} className="p-6 space-y-4">
               <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-3.5 text-xs text-slate-600 flex items-start gap-2.5">
                 <Sparkles className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold block">Available Wallet Balance: ${displayBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                  Funding this escrow locks designated amount from your available balance. Real payouts are disbursed strictly on milestones validations.
+                  <span className="font-bold block">Available Wallet Balance: {displayBalance.toLocaleString('en-US')} mins</span>
+                  Funding this escrow locks designated minutes from your available balance. Real payouts are disbursed strictly on milestones validations.
                 </div>
               </div>
 
@@ -1068,21 +1319,24 @@ export function EscrowPanel() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Montant à Séquestrer ($)</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Minutes à Séquestrer</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <DollarSign className="w-4 h-4 text-slate-400 font-black" />
+                    <Clock className="w-4 h-4 text-slate-400 font-black" />
                   </div>
                   <input
                     type="number"
                     value={lockAmount}
                     onChange={(e) => setLockAmount(e.target.value)}
-                    placeholder="Enter amount"
+                    placeholder="Enter minutes amount"
                     required
                     min="1"
                     max={displayBalance}
                     className="pl-9 w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl py-3 px-3 text-slate-900 text-sm font-black focus:outline-none focus:ring-1 focus:ring-orange-500 transition-all"
                   />
+                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                    <span className="text-[10px] text-slate-400 font-black uppercase">mins</span>
+                  </div>
                 </div>
               </div>
 
@@ -1101,7 +1355,7 @@ export function EscrowPanel() {
                 <button
                   type="submit"
                   disabled={submittingLock}
-                  className="px-5 py-2 bg-gradient-to-r from-orange-400 to-rose-500 text-white hover:from-orange-500 hover:to-rose-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 disabled:opacity-50 transition-all"
+                  className="px-5 py-2 bg-gradient-to-r from-orange-400 to-rose-500 text-white hover:from-orange-500 hover:to-rose-600 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 disabled:opacity-50 transition-all animate-bounce-subtle"
                 >
                   {submittingLock ? 'Securing...' : 'Établir Séquestre'}
                 </button>
@@ -1110,6 +1364,7 @@ export function EscrowPanel() {
           </div>
         </div>
       )}
+
       {/* 4. Modal: Custom Confirmation for releasing funds */}
       {showReleaseConfirmModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999999] overflow-y-auto animate-fade-in">
@@ -1132,7 +1387,7 @@ export function EscrowPanel() {
             <div className="p-6 space-y-4">
               <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4 text-xs text-slate-600 space-y-3">
                 <p className="font-bold text-slate-700 leading-snug">
-                  Êtes-vous sûr de vouloir libérer <span className="font-black text-rose-500 text-sm block mt-0.5">${releaseAmount.toFixed(2)}</span> à <span className="font-black text-slate-950">{releaseAgentName}</span> ?
+                  Êtes-vous sûr de vouloir libérer <span className="font-black text-rose-500 text-sm block mt-0.5">{releaseAmount.toLocaleString('en-US')} minutes</span> à <span className="font-black text-slate-950">{releaseAgentName}</span> ?
                 </p>
                 <div className="text-[10px] bg-white border border-rose-500/15 rounded-xl p-3 text-slate-500 leading-relaxed">
                   ⚠️ <span className="font-extrabold text-slate-700">Action Irréversible :</span> Cette action transfère définitivement et immédiatement les fonds vers le solde disponible du représentant.
@@ -1191,7 +1446,7 @@ export function EscrowPanel() {
             <div className="p-6 space-y-4">
               <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4 text-xs text-slate-600 space-y-3">
                 <p className="font-bold text-slate-700 leading-snug">
-                  Êtes-vous sûr de vouloir annuler ce contrat et restituer <span className="font-black text-rose-500 text-sm block mt-0.5">${refundAmount.toFixed(2)}</span> sur votre solde disponible ?
+                  Êtes-vous sûr de vouloir annuler ce contrat et restituer <span className="font-black text-rose-500 text-sm block mt-0.5">{refundAmount.toLocaleString('en-US')} minutes</span> sur votre solde disponible ?
                 </p>
                 <div className="text-[10px] bg-white border border-rose-500/15 rounded-xl p-3 text-slate-500 leading-relaxed">
                   🔄 <span className="font-extrabold text-slate-700">Restitution Immédiate :</span> La garantie séquestre sera annulée et la somme sera instantanément recréditée sur votre portefeuille disponible d'entreprise.
