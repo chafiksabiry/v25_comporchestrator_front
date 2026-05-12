@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, X, TrendingUp } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, X, Check, TrendingUp } from 'lucide-react';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 
 export default function CallsDashboardPage() {
@@ -199,19 +199,32 @@ export default function CallsDashboardPage() {
                         </span>
                       </td>
                       <td className="px-8 py-6 text-center">
-                        <select
-                          value={call.companyValidation || 'pending'}
-                          onChange={(e) => handleUpdateValidation(call._id, e.target.value)}
-                          className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all cursor-pointer outline-none ${
-                            (call.companyValidation || 'pending') === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                            (call.companyValidation || 'pending') === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-200' :
-                            'bg-amber-50 text-amber-600 border-amber-200'
-                          }`}
-                        >
-                          <option value="pending" className="bg-white text-amber-600 font-bold">En attente</option>
-                          <option value="approved" className="bg-white text-emerald-600 font-bold">Validé</option>
-                          <option value="rejected" className="bg-white text-rose-600 font-bold">Refusé</option>
-                        </select>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleUpdateValidation(call._id, 'approved')}
+                            className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
+                              call.companyValidation === 'approved'
+                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                                : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                            }`}
+                            title="Valider l'appel"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            Valider
+                          </button>
+                          <button
+                            onClick={() => handleUpdateValidation(call._id, 'rejected')}
+                            className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
+                              call.companyValidation === 'rejected'
+                                ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
+                                : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'
+                            }`}
+                            title="Refuser l'appel"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            Refuser
+                          </button>
+                        </div>
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex items-center justify-end gap-2">
@@ -299,20 +312,31 @@ export default function CallsDashboardPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Validation de l'appel :</span>
-                <select
-                  value={selectedCall.companyValidation || 'pending'}
-                  onChange={(e) => handleUpdateValidation(selectedCall._id, e.target.value)}
-                  className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all cursor-pointer shadow-sm outline-none ${
-                    (selectedCall.companyValidation || 'pending') === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                    (selectedCall.companyValidation || 'pending') === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-200' :
-                    'bg-amber-50 text-amber-600 border-amber-200'
-                  }`}
-                >
-                  <option value="pending" className="bg-white text-amber-600 font-bold">En attente</option>
-                  <option value="approved" className="bg-white text-emerald-600 font-bold">Validé</option>
-                  <option value="rejected" className="bg-white text-rose-600 font-bold">Refusé</option>
-                </select>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Validation :</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleUpdateValidation(selectedCall._id, 'approved')}
+                    className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 shadow-sm ${
+                      selectedCall.companyValidation === 'approved'
+                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                        : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Valider
+                  </button>
+                  <button
+                    onClick={() => handleUpdateValidation(selectedCall._id, 'rejected')}
+                    className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 shadow-sm ${
+                      selectedCall.companyValidation === 'rejected'
+                        ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
+                        : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'
+                    }`}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Refuser
+                  </button>
+                </div>
               </div>
             </div>
 
