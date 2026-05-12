@@ -43,8 +43,9 @@ export default function CallsDashboardPage() {
     setActiveTab(tab);
   };
 
-  const handleUpdateValidation = async (callId: string, status: string) => {
+  const handleUpdateValidation = async (callId: string, currentStatus: string, clickedStatus: string) => {
     try {
+      const status = currentStatus === clickedStatus ? 'pending' : clickedStatus;
       const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
       const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
       
@@ -62,6 +63,45 @@ export default function CallsDashboardPage() {
       }
     } catch (error) {
       console.error('Error updating call validation status:', error);
+    }
+  };
+
+  const handleUpdateTransactionValidation = async (callId: string, currentStatus: boolean | null, clickedStatus: boolean) => {
+    try {
+      const status = currentStatus === clickedStatus ? null : clickedStatus;
+      const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
+      const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
+      
+      const response = await fetch(`${callsBase}/calls/${callId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 'transaction.validByCompany': status }),
+      });
+      
+      if (response.ok) {
+        setCalls(prevCalls => prevCalls.map(c => {
+          if (c._id === callId) {
+            const updatedTx = c.transaction 
+              ? { ...c.transaction, validByCompany: status } 
+              : { validByCompany: status, validByReps: null };
+            return { ...c, transaction: updatedTx };
+          }
+          return c;
+        }));
+        setSelectedCall((prev: any) => {
+          if (prev && prev._id === callId) {
+            const updatedTx = prev.transaction 
+              ? { ...prev.transaction, validByCompany: status } 
+              : { validByCompany: status, validByReps: null };
+            return { ...prev, transaction: updatedTx };
+          }
+          return prev;
+        });
+      }
+    } catch (error) {
+      console.error('Error updating transaction validation:', error);
     }
   };
 
@@ -121,7 +161,8 @@ export default function CallsDashboardPage() {
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Duration</th>
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">AI Score</th>
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Validation</th>
+                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Appel</th>
+                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Transaction</th>
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
@@ -129,14 +170,14 @@ export default function CallsDashboardPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={6} className="px-8 py-10">
+                    <td colSpan={7} className="px-8 py-10">
                       <div className="h-12 bg-slate-100 rounded-2xl w-full"></div>
                     </td>
                   </tr>
                 ))
               ) : filteredCalls.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-8 py-20 text-center">
+                  <td colSpan={7} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-4 text-slate-400">
                       <Phone className="w-12 h-12 opacity-20" />
                       <p className="font-bold uppercase tracking-widest text-xs">No calls found</p>
@@ -201,7 +242,7 @@ export default function CallsDashboardPage() {
                       <td className="px-8 py-6 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => handleUpdateValidation(call._id, 'approved')}
+                            onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved')}
                             className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
                               call.companyValidation === 'approved'
                                 ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
@@ -213,13 +254,41 @@ export default function CallsDashboardPage() {
                             Valider
                           </button>
                           <button
-                            onClick={() => handleUpdateValidation(call._id, 'rejected')}
+                            onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected')}
                             className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
                               call.companyValidation === 'rejected'
                                 ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
                                 : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'
                             }`}
                             title="Refuser l'appel"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            Refuser
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true)}
+                            className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
+                              call.transaction?.validByCompany === true
+                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                                : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                            }`}
+                            title="Valider la transaction"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            Valider
+                          </button>
+                          <button
+                            onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false)}
+                            className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
+                              call.transaction?.validByCompany === false
+                                ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
+                                : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'
+                            }`}
+                            title="Refuser la transaction"
                           >
                             <X className="w-3.5 h-3.5" />
                             Refuser
@@ -311,31 +380,61 @@ export default function CallsDashboardPage() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Validation :</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleUpdateValidation(selectedCall._id, 'approved')}
-                    className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 shadow-sm ${
-                      selectedCall.companyValidation === 'approved'
-                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
-                        : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
-                    }`}
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    Valider
-                  </button>
-                  <button
-                    onClick={() => handleUpdateValidation(selectedCall._id, 'rejected')}
-                    className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 shadow-sm ${
-                      selectedCall.companyValidation === 'rejected'
-                        ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
-                        : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'
-                    }`}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    Refuser
-                  </button>
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Val. Appel :</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleUpdateValidation(selectedCall._id, selectedCall.companyValidation || 'pending', 'approved')}
+                      className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 shadow-sm ${
+                        selectedCall.companyValidation === 'approved'
+                          ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                          : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                      }`}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      Valider
+                    </button>
+                    <button
+                      onClick={() => handleUpdateValidation(selectedCall._id, selectedCall.companyValidation || 'pending', 'rejected')}
+                      className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 shadow-sm ${
+                        selectedCall.companyValidation === 'rejected'
+                          ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
+                          : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'
+                      }`}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Refuser
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Val. Tx :</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, true)}
+                      className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 shadow-sm ${
+                        selectedCall.transaction?.validByCompany === true
+                          ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                          : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                      }`}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      Valider
+                    </button>
+                    <button
+                      onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, false)}
+                      className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 shadow-sm ${
+                        selectedCall.transaction?.validByCompany === false
+                          ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
+                          : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50'
+                      }`}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Refuser
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
