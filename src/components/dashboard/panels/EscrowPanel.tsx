@@ -978,12 +978,26 @@ export function EscrowPanel() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">
-                          {(tx.type === 'deposit' || tx.type === 'withdrawal') ? (
-                            <span className="text-emerald-600 font-extrabold">{tx.amount.toLocaleString('en-US')} €</span>
-                          ) : tx.type === 'buy_minutes' ? (
-                            <span className="text-orange-600 font-extrabold">+{tx.amount.toLocaleString('en-US')} mins</span>
-                          ) : (
-                            <span>{formatFloatMinutesToMMSSLL(tx.amount)}</span>
+                          {tx.type === 'deposit' && (
+                            <span className="text-emerald-600 font-extrabold">+{tx.amount.toLocaleString('en-US')} €</span>
+                          )}
+                          {tx.type === 'withdrawal' && (
+                            <span className="text-rose-600 font-extrabold">-{tx.amount.toLocaleString('en-US')} €</span>
+                          )}
+                          {tx.type === 'buy_minutes' && (
+                            <span className="text-emerald-600 font-extrabold">+{formatFloatMinutesToMMSSLL(tx.amount)}</span>
+                          )}
+                          {tx.type === 'call_charge' && (
+                            <span className="text-rose-600 font-extrabold">-{formatFloatMinutesToMMSSLL(tx.amount)}</span>
+                          )}
+                          {tx.type === 'escrow_lock' && (
+                            <span className="text-amber-600 font-extrabold">-{formatFloatMinutesToMMSSLL(tx.amount)}</span>
+                          )}
+                          {tx.type === 'escrow_release' && (
+                            <span className="text-slate-600 font-bold">-{formatFloatMinutesToMMSSLL(tx.amount)}</span>
+                          )}
+                          {tx.type === 'escrow_refund' && (
+                            <span className="text-emerald-600 font-extrabold">+{formatFloatMinutesToMMSSLL(tx.amount)}</span>
                           )}
                         </td>
                         <td className="px-6 py-4">
@@ -1059,7 +1073,11 @@ export function EscrowPanel() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">
-                          <span className="text-emerald-600 font-extrabold">{tx.amount.toLocaleString('en-US')} €</span>
+                          {tx.type === 'deposit' ? (
+                            <span className="text-emerald-600 font-extrabold">+{tx.amount.toLocaleString('en-US')} €</span>
+                          ) : (
+                            <span className="text-rose-600 font-extrabold">-{tx.amount.toLocaleString('en-US')} €</span>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           {tx.status === 'pending' ? (
