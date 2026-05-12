@@ -43,6 +43,28 @@ export default function CallsDashboardPage() {
     setActiveTab(tab);
   };
 
+  const handleUpdateValidation = async (callId: string, status: string) => {
+    try {
+      const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
+      const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
+      
+      const response = await fetch(`${callsBase}/calls/${callId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ companyValidation: status }),
+      });
+      
+      if (response.ok) {
+        setCalls(prevCalls => prevCalls.map(c => c._id === callId ? { ...c, companyValidation: status } : c));
+        setSelectedCall((prev: any) => prev && prev._id === callId ? { ...prev, companyValidation: status } : prev);
+      }
+    } catch (error) {
+      console.error('Error updating call validation status:', error);
+    }
+  };
+
   const filteredCalls = calls.filter(call => {
     const leadName = `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.toLowerCase();
     const matchesSearch = leadName.includes(searchTerm.toLowerCase());
@@ -99,6 +121,7 @@ export default function CallsDashboardPage() {
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Duration</th>
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">AI Score</th>
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Validation</th>
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
@@ -106,14 +129,14 @@ export default function CallsDashboardPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={5} className="px-8 py-10">
+                    <td colSpan={6} className="px-8 py-10">
                       <div className="h-12 bg-slate-100 rounded-2xl w-full"></div>
                     </td>
                   </tr>
                 ))
               ) : filteredCalls.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={6} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-4 text-slate-400">
                       <Phone className="w-12 h-12 opacity-20" />
                       <p className="font-bold uppercase tracking-widest text-xs">No calls found</p>
@@ -174,6 +197,21 @@ export default function CallsDashboardPage() {
                         }`}>
                           {call.status}
                         </span>
+                      </td>
+                      <td className="px-8 py-6 text-center">
+                        <select
+                          value={call.companyValidation || 'pending'}
+                          onChange={(e) => handleUpdateValidation(call._id, e.target.value)}
+                          className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all cursor-pointer outline-none ${
+                            (call.companyValidation || 'pending') === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                            (call.companyValidation || 'pending') === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-200' :
+                            'bg-amber-50 text-amber-600 border-amber-200'
+                          }`}
+                        >
+                          <option value="pending" className="bg-white text-amber-600 font-bold">En attente</option>
+                          <option value="approved" className="bg-white text-emerald-600 font-bold">Validé</option>
+                          <option value="rejected" className="bg-white text-rose-600 font-bold">Refusé</option>
+                        </select>
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex items-center justify-end gap-2">
@@ -242,21 +280,40 @@ export default function CallsDashboardPage() {
             </div>
 
             {/* Tabs */}
-            <div className="px-8 py-4 bg-white border-b border-slate-100 flex items-center gap-4">
-              <button 
-                onClick={() => setActiveTab('transcript')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'transcript' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-              >
-                <MessageSquare className="w-4 h-4" />
-                Transcript
-              </button>
-              <button 
-                onClick={() => setActiveTab('insights')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'insights' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-              >
-                <ActivityIcon className="w-4 h-4" />
-                AI Insights
-              </button>
+            <div className="px-8 py-4 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setActiveTab('transcript')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'transcript' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Transcript
+                </button>
+                <button 
+                  onClick={() => setActiveTab('insights')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'insights' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                >
+                  <ActivityIcon className="w-4 h-4" />
+                  AI Insights
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Validation de l'appel :</span>
+                <select
+                  value={selectedCall.companyValidation || 'pending'}
+                  onChange={(e) => handleUpdateValidation(selectedCall._id, e.target.value)}
+                  className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all cursor-pointer shadow-sm outline-none ${
+                    (selectedCall.companyValidation || 'pending') === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                    (selectedCall.companyValidation || 'pending') === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-200' :
+                    'bg-amber-50 text-amber-600 border-amber-200'
+                  }`}
+                >
+                  <option value="pending" className="bg-white text-amber-600 font-bold">En attente</option>
+                  <option value="approved" className="bg-white text-emerald-600 font-bold">Validé</option>
+                  <option value="rejected" className="bg-white text-rose-600 font-bold">Refusé</option>
+                </select>
+              </div>
             </div>
 
             {/* Modal Body */}
