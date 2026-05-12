@@ -1045,7 +1045,7 @@ export function EscrowPanel() {
 
       {/* 1. Modal: Deposit / Alimentation (Call-details style pure white layout) */}
       {showDepositModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-fade-in">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[99999] animate-fade-in">
           <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 relative flex flex-col">
             
             {/* Modal Header */}
@@ -1177,7 +1177,7 @@ export function EscrowPanel() {
 
       {/* 1.5. Modal: Buy Minutes with Euros (Call-details style pure white layout) */}
       {showBuyMinutesModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-fade-in">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[99999] animate-fade-in">
           <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 relative flex flex-col">
             
             {/* Modal Header */}
@@ -1310,7 +1310,7 @@ export function EscrowPanel() {
 
       {/* 2. Modal: Withdraw / Retrait */}
       {showWithdrawModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[999] animate-fade-in">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[99999] animate-fade-in">
           <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4">
             <div className="bg-slate-900 p-6 text-white relative">
               <button
