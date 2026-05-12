@@ -566,20 +566,20 @@ export function EscrowPanel() {
     .filter(c => c.status === 'released')
     .reduce((sum, c) => sum + c.amount, 0) || 0;
 
-  // Calculate consumed minutes by all agents (rounded ceiling per call)
-  const totalConsumedMinutes = calls.reduce((acc, call) => acc + Math.ceil((call.duration || 0) / 60), 0);
+  // Calculate consumed minutes by all agents (exact float representation from actual seconds)
+  const totalConsumedMinutes = calls.reduce((acc, call) => acc + ((call.duration || 0) / 60), 0);
   
   const approvedMinutes = calls
     .filter(call => call.validByCompany === true)
-    .reduce((acc, call) => acc + Math.ceil((call.duration || 0) / 60), 0);
+    .reduce((acc, call) => acc + ((call.duration || 0) / 60), 0);
 
   const pendingMinutes = calls
     .filter(call => call.validByCompany === null)
-    .reduce((acc, call) => acc + Math.ceil((call.duration || 0) / 60), 0);
+    .reduce((acc, call) => acc + ((call.duration || 0) / 60), 0);
 
   const refusedMinutes = calls
     .filter(call => call.validByCompany === false)
-    .reduce((acc, call) => acc + Math.ceil((call.duration || 0) / 60), 0);
+    .reduce((acc, call) => acc + ((call.duration || 0) / 60), 0);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-24 animate-in">
@@ -660,7 +660,7 @@ export function EscrowPanel() {
             </div>
           </div>
           <div className="relative z-10">
-            <h3 className="text-2xl font-black text-orange-600 tracking-tight">{displayMinutes.toLocaleString('en-US')} mins</h3>
+            <h3 className="text-2xl font-black text-orange-600 tracking-tight">{displayMinutes.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} mins</h3>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="text-[10px] font-bold text-slate-500">Calling credit volume</span>
               <span className="text-[10px] bg-orange-100 text-orange-700 font-extrabold px-1.5 py-0.5 rounded-full">Active</span>
@@ -688,7 +688,7 @@ export function EscrowPanel() {
             </div>
           </div>
           <div className="relative z-10">
-            <h3 className="text-2xl font-black text-rose-600 tracking-tight">{displayEscrow.toLocaleString('en-US')} mins</h3>
+            <h3 className="text-2xl font-black text-rose-600 tracking-tight">{displayEscrow.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} mins</h3>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="text-[10px] font-bold text-slate-500">Secured for active campaigns</span>
               <span className="text-[10px] bg-rose-100 text-rose-700 font-extrabold px-1.5 py-0.5 rounded-full">Escrow</span>
@@ -710,17 +710,17 @@ export function EscrowPanel() {
             </div>
           </div>
           <div className="relative z-10">
-            <h3 className="text-2xl font-black text-blue-600 tracking-tight">{totalConsumedMinutes.toLocaleString('en-US')} mins</h3>
+            <h3 className="text-2xl font-black text-blue-600 tracking-tight">{totalConsumedMinutes.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} mins</h3>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="text-[10px] font-bold text-slate-500">
-                {approvedMinutes.toLocaleString('en-US')} val. • {pendingMinutes.toLocaleString('en-US')} pnd.
+                {approvedMinutes.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} val. • {pendingMinutes.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} pnd.
               </span>
               <span className="text-[10px] bg-blue-100 text-blue-700 font-extrabold px-1.5 py-0.5 rounded-full">Calls</span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] relative z-10">
             <span className="text-slate-400 font-semibold">Minutes refusées :</span>
-            <span className="text-rose-500 font-bold">{refusedMinutes.toLocaleString('en-US')} mins</span>
+            <span className="text-rose-500 font-bold">{refusedMinutes.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} mins</span>
           </div>
         </div>
       </div>
