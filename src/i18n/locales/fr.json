@@ -23,8 +23,8 @@
     "logout": "Déconnexion"
   },
   "navbar": {
-    "credits": "Crédits",
-    "balance": "Solde",
+    "credits": "Séquestre (mins)",
+    "balance": "Solde (mins)",
     "upgrade": "Upgrade"
   },
   "dashboard": {

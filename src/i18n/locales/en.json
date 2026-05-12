@@ -23,8 +23,8 @@
     "logout": "Logout"
   },
   "navbar": {
-    "credits": "Credits",
-    "balance": "Balance",
+    "credits": "Escrow (mins)",
+    "balance": "Balance (mins)",
     "upgrade": "Upgrade"
   },
   "dashboard": {
