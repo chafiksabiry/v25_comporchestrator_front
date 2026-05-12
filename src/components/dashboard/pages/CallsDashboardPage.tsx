@@ -197,11 +197,9 @@ export default function CallsDashboardPage() {
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 text-slate-500 border border-slate-100 px-2 py-0.5 rounded-full">
                               Agent: {call.agent?.name || 'Assigned Agent'}
                             </span>
-                            {call.duration && (
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-full">
-                                {Math.floor(call.duration / 60)}m {call.duration % 60}s
-                              </span>
-                            )}
+                            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full shadow-sm">
+                              {(call.price ?? 0).toFixed(2)} €
+                            </span>
                           </div>
                         </div>
                       </div>
