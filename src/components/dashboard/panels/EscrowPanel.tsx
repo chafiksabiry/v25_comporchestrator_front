@@ -667,7 +667,13 @@ export function EscrowPanel() {
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] relative z-10">
             <span className="text-slate-400 font-semibold">Buy with Euros:</span>
-            <button onClick={() => setShowBuyMinutesModal(true)} className="text-orange-500 hover:text-orange-600 font-black uppercase tracking-tight">Acheter des minutes</button>
+            <button
+              disabled={displayBalance <= 0}
+              onClick={() => setShowBuyMinutesModal(true)}
+              className={`${displayBalance <= 0 ? 'text-slate-300 cursor-not-allowed' : 'text-orange-500 hover:text-orange-600'} font-black uppercase tracking-tight transition-all duration-200`}
+            >
+              Acheter des minutes
+            </button>
           </div>
         </div>
 
