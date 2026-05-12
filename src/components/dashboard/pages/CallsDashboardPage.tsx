@@ -232,24 +232,22 @@ export default function CallsDashboardPage() {
                               Refusé
                             </span>
                           ) : (
-                            <div className="flex flex-col gap-1.5">
-                              <button
-                                onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved')}
-                                className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 shadow-sm bg-blue-50/50 text-blue-600 border-blue-100/40 hover:bg-blue-100/60"
-                                title="Valider l'appel"
-                              >
-                                <Check className="w-3 h-3" />
-                                Valider
-                              </button>
-                              <button
-                                onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected')}
-                                className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50/50 text-rose-600 border-rose-100/40 hover:bg-rose-100/60"
-                                title="Refuser l'appel"
-                              >
-                                <X className="w-3 h-3" />
-                                Refuser
-                              </button>
-                            </div>
+                            <select
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === 'approved') {
+                                  handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved');
+                                } else if (val === 'rejected') {
+                                  handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected');
+                                }
+                              }}
+                              defaultValue=""
+                              className="w-24 px-2.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-600 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none text-center cursor-pointer appearance-none"
+                            >
+                              <option value="" disabled hidden>Action</option>
+                              <option value="approved">Valider</option>
+                              <option value="rejected">Refuser</option>
+                            </select>
                           )}
                         </div>
 
@@ -291,24 +289,22 @@ export default function CallsDashboardPage() {
                               Refusé
                             </span>
                           ) : (
-                            <div className="flex flex-col gap-1.5">
-                              <button
-                                onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true)}
-                                className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 shadow-sm bg-blue-50/50 text-blue-600 border-blue-100/40 hover:bg-blue-100/60"
-                                title="Valider la transaction"
-                              >
-                                <Check className="w-3 h-3" />
-                                Valider
-                              </button>
-                              <button
-                                onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false)}
-                                className="w-24 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50/50 text-rose-600 border-rose-100/40 hover:bg-rose-100/60"
-                                title="Refuser la transaction"
-                              >
-                                <X className="w-3 h-3" />
-                                Refuser
-                              </button>
-                            </div>
+                            <select
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === 'approved') {
+                                  handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true);
+                                } else if (val === 'rejected') {
+                                  handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false);
+                                }
+                              }}
+                              defaultValue=""
+                              className="w-24 px-2.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-600 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none text-center cursor-pointer appearance-none"
+                            >
+                              <option value="" disabled hidden>Action</option>
+                              <option value="approved">Valider</option>
+                              <option value="rejected">Refuser</option>
+                            </select>
                           )}
                         </div>
 
