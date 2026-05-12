@@ -10,6 +10,7 @@ export default function CallsDashboardPage() {
   const [activeTab, setActiveTab] = useState<'transcript' | 'insights'>('transcript');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [openDropdownId, setOpenDropdownId] = useState<{ callId: string; type: 'validation' | 'transaction' } | null>(null);
 
   const companyId = Cookies.get('companyId');
 
@@ -232,22 +233,52 @@ export default function CallsDashboardPage() {
                               Refusé
                             </span>
                           ) : (
-                            <select
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === 'approved') {
-                                  handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved');
-                                } else if (val === 'rejected') {
-                                  handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected');
-                                }
-                              }}
-                              defaultValue=""
-                              className="w-24 px-2.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-600 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none text-center cursor-pointer appearance-none"
-                            >
-                              <option value="" disabled hidden>Action</option>
-                              <option value="approved">Valider</option>
-                              <option value="rejected">Refuser</option>
-                            </select>
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDropdownId(
+                                    openDropdownId?.callId === call._id && openDropdownId?.type === 'validation'
+                                      ? null
+                                      : { callId: call._id, type: 'validation' }
+                                  );
+                                }}
+                                className="w-24 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1 shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                              >
+                                <span>Action</span>
+                                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                                  openDropdownId?.callId === call._id && openDropdownId?.type === 'validation' ? 'rotate-180' : ''
+                                }`} />
+                              </button>
+
+                              {openDropdownId?.callId === call._id && openDropdownId?.type === 'validation' && (
+                                <>
+                                  <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
+                                  <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-32 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <button
+                                      onClick={() => {
+                                        handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved');
+                                        setOpenDropdownId(null);
+                                      }}
+                                      className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50/60 flex items-center gap-2 transition-colors"
+                                    >
+                                      <Check className="w-3.5 h-3.5 shrink-0" />
+                                      <span>Valider</span>
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected');
+                                        setOpenDropdownId(null);
+                                      }}
+                                      className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50/60 flex items-center gap-2 transition-colors"
+                                    >
+                                      <X className="w-3.5 h-3.5 shrink-0" />
+                                      <span>Refuser</span>
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           )}
                         </div>
 
@@ -289,22 +320,52 @@ export default function CallsDashboardPage() {
                               Refusé
                             </span>
                           ) : (
-                            <select
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === 'approved') {
-                                  handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true);
-                                } else if (val === 'rejected') {
-                                  handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false);
-                                }
-                              }}
-                              defaultValue=""
-                              className="w-24 px-2.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 bg-white text-slate-600 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none text-center cursor-pointer appearance-none"
-                            >
-                              <option value="" disabled hidden>Action</option>
-                              <option value="approved">Valider</option>
-                              <option value="rejected">Refuser</option>
-                            </select>
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDropdownId(
+                                    openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction'
+                                      ? null
+                                      : { callId: call._id, type: 'transaction' }
+                                  );
+                                }}
+                                className="w-24 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1 shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                              >
+                                <span>Action</span>
+                                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                                  openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' ? 'rotate-180' : ''
+                                }`} />
+                              </button>
+
+                              {openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' && (
+                                <>
+                                  <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
+                                  <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-32 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <button
+                                      onClick={() => {
+                                        handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true);
+                                        setOpenDropdownId(null);
+                                      }}
+                                      className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50/60 flex items-center gap-2 transition-colors"
+                                    >
+                                      <Check className="w-3.5 h-3.5 shrink-0" />
+                                      <span>Valider</span>
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false);
+                                        setOpenDropdownId(null);
+                                      }}
+                                      className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50/60 flex items-center gap-2 transition-colors"
+                                    >
+                                      <X className="w-3.5 h-3.5 shrink-0" />
+                                      <span>Refuser</span>
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           )}
                         </div>
 
