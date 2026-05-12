@@ -130,7 +130,7 @@ export function EscrowPanel() {
   const [gigsAndReps, setGigsAndReps] = useState<GigAndReps[]>([]);
   const [gigsLoading, setGigsLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'contracts' | 'history' | 'calls'>('contracts');
+  const [activeTab, setActiveTab] = useState<'contracts' | 'history' | 'calls' | 'deposits_withdrawals'>('contracts');
   const [selectedCall, setSelectedCall] = useState<CompanyCall | null>(null);
   const [selectedCallTab, setSelectedCallTab] = useState<'transcript' | 'insights'>('transcript');
 
@@ -584,6 +584,8 @@ export function EscrowPanel() {
     .filter(c => c.status === 'released')
     .reduce((sum, c) => sum + c.amount, 0) || 0;
 
+  const cashTransactions = transactions.filter(t => t.type === 'deposit' || t.type === 'withdrawal');
+
   // Calculate consumed minutes by all agents (exact float representation from actual seconds)
   const totalConsumedMinutes = calls.reduce((acc, call) => acc + ((call.duration || 0) / 60), 0);
   
@@ -766,6 +768,15 @@ export function EscrowPanel() {
               }`}
             >
               Historique des Transactions ({transactions.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('deposits_withdrawals')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all ${activeTab === 'deposits_withdrawals'
+                ? 'bg-white text-orange-500 shadow-sm border border-slate-100'
+                : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Dépôts & Retraits ({cashTransactions.length})
             </button>
             <button
               onClick={() => setActiveTab('calls')}
@@ -974,6 +985,81 @@ export function EscrowPanel() {
                           ) : (
                             <span>{formatFloatMinutesToMMSSLL(tx.amount)}</span>
                           )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {tx.status === 'pending' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                              Pending / En attente
+                            </span>
+                          ) : tx.status === 'failed' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-200">
+                              <X className="w-3 h-3 text-rose-500" />
+                              Failed
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-100">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              Success
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-slate-500 font-medium">
+                          {new Date(tx.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab Content: Deposits & Withdrawals Table */}
+        {activeTab === 'deposits_withdrawals' && (
+          <div className="overflow-x-auto">
+            {cashTransactions.length === 0 ? (
+              <div className="p-12 text-center flex flex-col items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-300 flex items-center justify-center mb-3">
+                  <Coins className="w-6 h-6 text-emerald-500" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-800">Aucun dépôt ou retrait</h4>
+                <p className="text-xs text-slate-400 mt-1">Vos dépôts sécurisés et remboursements de solde s'afficheront ici.</p>
+              </div>
+            ) : (
+              <div className="overflow-y-auto max-h-[500px] custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                    <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white">
+                      <th className="px-6 py-4">Type de transaction</th>
+                      <th className="px-6 py-4 text-right">Montant</th>
+                      <th className="px-6 py-4">Statut</th>
+                      <th className="px-6 py-4">Date de transaction</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {cashTransactions.map((tx) => (
+                      <tr key={tx._id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4 font-bold text-slate-800">
+                          {tx.type === 'deposit' ? (
+                            <span className="inline-flex items-center gap-1.5 text-emerald-600 font-bold uppercase text-[10px] tracking-wide">
+                              <ArrowDownLeft className="w-3.5 h-3.5 bg-emerald-50 p-0.5 rounded" /> Dépôt / Alimentation
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-slate-600 font-bold uppercase text-[10px] tracking-wide">
+                              <ArrowUpRight className="w-3.5 h-3.5 bg-slate-50 p-0.5 rounded" /> Retrait / Remboursement
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">
+                          <span className="text-emerald-600 font-extrabold">{tx.amount.toLocaleString('en-US')} €</span>
                         </td>
                         <td className="px-6 py-4">
                           {tx.status === 'pending' ? (
