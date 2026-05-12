@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, X, Check, TrendingUp } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, X, Check, TrendingUp, Brain } from 'lucide-react';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 
 export default function CallsDashboardPage() {
@@ -195,10 +195,7 @@ export default function CallsDashboardPage() {
                               {new Date(call.createdAt || call.date).toLocaleString()}
                             </span>
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 text-slate-500 border border-slate-100 px-2 py-0.5 rounded-full">
-                              Agent: {call.agent?.name || 'Assigned Agent'}
-                            </span>
-                            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full shadow-sm">
-                              {(call.price ?? 0).toFixed(2)} €
+                              Durée: {Math.floor((call.duration || 0) / 60)}m {(call.duration || 0) % 60}s
                             </span>
                           </div>
                         </div>
@@ -380,7 +377,7 @@ export default function CallsDashboardPage() {
                             className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100 transition-all"
                             title="AI Insights"
                           >
-                            <ActivityIcon className="w-5 h-5" />
+                            <Brain className="w-5 h-5" />
                           </button>
                         </div>
                       </div>
