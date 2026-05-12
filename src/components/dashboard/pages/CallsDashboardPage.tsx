@@ -153,31 +153,31 @@ export default function CallsDashboardPage() {
       </div>
 
       <div className="bg-white/40 backdrop-blur-xl rounded-3xl border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-320px)] flex flex-col overflow-hidden min-h-[400px]">
-        <div className="flex-1 overflow-y-auto scrollbar-auto min-h-0">
-          <table className="w-full text-left border-collapse">
+        <div className="flex-1 overflow-auto scrollbar-auto min-h-0">
+          <table className="min-w-[1200px] w-full text-left border-collapse">
             <thead className="sticky top-0 z-10 bg-slate-50/80 backdrop-blur-sm">
               <tr className="border-b border-slate-200/50">
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Lead / Agent</th>
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Duration</th>
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">AI Score</th>
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Appel</th>
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Transaction</th>
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Lead / Agent</th>
+                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Duration</th>
+                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">AI Score</th>
+                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Appel</th>
+                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Transaction</th>
+                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td colSpan={7} className="px-8 py-10">
+                   <tr key={i} className="animate-pulse">
+                    <td colSpan={7} className="px-4 py-10">
                       <div className="h-12 bg-slate-100 rounded-2xl w-full"></div>
                     </td>
                   </tr>
                 ))
               ) : filteredCalls.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-8 py-20 text-center">
+                  <td colSpan={7} className="px-4 py-20 text-center">
                     <div className="flex flex-col items-center gap-4 text-slate-400">
                       <Phone className="w-12 h-12 opacity-20" />
                       <p className="font-bold uppercase tracking-widest text-xs">No calls found</p>
@@ -190,7 +190,7 @@ export default function CallsDashboardPage() {
                   
                   return (
                     <tr key={callId} className="group hover:bg-white/60 transition-colors">
-                      <td className="px-8 py-6">
+                      <td className="px-4 py-5">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
                             <Phone className="w-6 h-6" />
@@ -205,7 +205,7 @@ export default function CallsDashboardPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-8 py-6">
+                      <td className="px-4 py-5">
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2 text-slate-700">
                             <Clock className="w-3.5 h-3.5" />
@@ -216,7 +216,7 @@ export default function CallsDashboardPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-8 py-6">
+                      <td className="px-4 py-5">
                         <div className="flex flex-col items-center gap-2">
                           <div className="flex items-center gap-1.5">
                             <Star className={`w-4 h-4 ${call.ai_call_score?.overall?.score >= 80 ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
@@ -230,7 +230,7 @@ export default function CallsDashboardPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-8 py-6 text-center">
+                      <td className="px-4 py-5 text-center">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
                           call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
                           call.status === 'failed' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
@@ -239,7 +239,7 @@ export default function CallsDashboardPage() {
                           {call.status}
                         </span>
                       </td>
-                      <td className="px-8 py-6 text-center">
+                      <td className="px-4 py-5 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved')}
@@ -267,7 +267,7 @@ export default function CallsDashboardPage() {
                           </button>
                         </div>
                       </td>
-                      <td className="px-8 py-6 text-center">
+                      <td className="px-4 py-5 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true)}
@@ -295,7 +295,7 @@ export default function CallsDashboardPage() {
                           </button>
                         </div>
                       </td>
-                      <td className="px-8 py-6">
+                      <td className="px-4 py-5">
                         <div className="flex items-center justify-end gap-2">
                           <button 
                             onClick={() => openCallDetails(call, 'transcript')}
