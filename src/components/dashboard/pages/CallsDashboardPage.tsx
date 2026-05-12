@@ -188,6 +188,9 @@ export default function CallsDashboardPage() {
                             {call.lead?.First_Name || call.lead?.Last_Name ? `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim() : 'Unknown Lead'}
                           </h3>
                           <div className="flex flex-wrap items-center gap-3 mt-1">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm border ${call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 'bg-rose-50 text-rose-600 border-rose-100/50'}`}>
+                              {call.status}
+                            </span>
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                               {new Date(call.createdAt || call.date).toLocaleString()}
                             </span>
@@ -210,11 +213,6 @@ export default function CallsDashboardPage() {
                             <span className="text-xs font-black">{call.ai_call_score.overall.score}%</span>
                           </div>
                         )}
-
-                        <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border ${call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 'bg-rose-50 text-rose-600 border-rose-100/50'
-                          }`}>
-                          {call.status}
-                        </span>
 
                         {call.status?.toLowerCase() === 'completed' ? (
                           <>
