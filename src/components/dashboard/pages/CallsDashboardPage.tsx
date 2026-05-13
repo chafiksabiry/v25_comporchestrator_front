@@ -311,7 +311,7 @@ export default function CallsDashboardPage() {
                             {/* Validation de la Transaction par la Compagnie */}
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction</span>
-                              {call.transactionOccurred !== true ? (
+                              {!(call.transactionOccurred === true || call.transaction?.validByReps === true) ? (
                                 <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
                               ) : call.transaction?.validByCompany === true && call.transaction?.validByReps === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-32 whitespace-nowrap">
@@ -332,49 +332,54 @@ export default function CallsDashboardPage() {
                                   Attente Agent
                                 </span>
                               ) : (
-                                <div className="relative">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenDropdownId(
-                                        openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction'
-                                          ? null
-                                          : { callId: call._id, type: 'transaction' }
-                                      );
-                                    }}
-                                    className="w-24 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1 shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                                  >
-                                    <span>Action</span>
-                                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' ? 'rotate-180' : ''
-                                      }`} />
-                                  </button>
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className="relative">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenDropdownId(
+                                          openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction'
+                                            ? null
+                                            : { callId: call._id, type: 'transaction' }
+                                        );
+                                      }}
+                                      className="w-24 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1 shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                                    >
+                                      <span>Action</span>
+                                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' ? 'rotate-180' : ''
+                                        }`} />
+                                    </button>
 
-                                  {openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' && (
-                                    <>
-                                      <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
-                                      <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-32 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-200">
-                                        <button
-                                          onClick={() => {
-                                            handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true);
-                                            setOpenDropdownId(null);
-                                          }}
-                                          className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50/60 flex items-center gap-2 transition-colors"
-                                        >
-                                          <Check className="w-3.5 h-3.5 shrink-0" />
-                                          <span>Signer</span>
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false);
-                                            setOpenDropdownId(null);
-                                          }}
-                                          className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50/60 flex items-center gap-2 transition-colors"
-                                        >
-                                          <X className="w-3.5 h-3.5 shrink-0" />
-                                          <span>Refuser</span>
-                                        </button>
-                                      </div>
-                                    </>
+                                    {openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' && (
+                                      <>
+                                        <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
+                                        <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-32 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-200">
+                                          <button
+                                            onClick={() => {
+                                              handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true);
+                                              setOpenDropdownId(null);
+                                            }}
+                                            className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50/60 flex items-center gap-2 transition-colors"
+                                          >
+                                            <Check className="w-3.5 h-3.5 shrink-0" />
+                                            <span>Signer</span>
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false);
+                                              setOpenDropdownId(null);
+                                            }}
+                                            className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50/60 flex items-center gap-2 transition-colors"
+                                          >
+                                            <X className="w-3.5 h-3.5 shrink-0" />
+                                            <span>Refuser</span>
+                                          </button>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                  {call.transaction?._id && (
+                                    <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">ID: {call.transaction._id}</span>
                                   )}
                                 </div>
                               )}
@@ -434,10 +439,15 @@ export default function CallsDashboardPage() {
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
                     {new Date(selectedCall.createdAt || selectedCall.date).toLocaleString()}
                   </p>
-                  <div className="flex items-center gap-3 mt-1 opacity-60">
+                  <div className="flex flex-wrap items-center gap-3 mt-1 opacity-60">
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">
-                      ID: {typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id}
+                      Call ID: {typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id}
                     </span>
+                    {selectedCall.transaction?._id && (
+                      <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-md">
+                        Tx ID: {selectedCall.transaction._id}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
