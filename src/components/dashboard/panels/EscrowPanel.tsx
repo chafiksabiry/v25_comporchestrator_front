@@ -88,6 +88,7 @@ interface WalletState {
 export function EscrowPanel() {
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [transactions, setTransactions] = useState<EscrowTransaction[]>([]);
+  const [agentWithdrawals, setAgentWithdrawals] = useState<any[]>([]);
   const [calls, setCalls] = useState<CompanyCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -188,6 +189,15 @@ export function EscrowPanel() {
         const callsData = await callsRes.json();
         if (callsData.success && callsData.data) {
           setCalls(callsData.data);
+        }
+      }
+
+      // 4. Fetch agent withdrawals
+      const agentWithdrawalsRes = await fetch(`${apiBaseUrl}/escrow/company/agent-withdrawals/${companyId}`);
+      if (agentWithdrawalsRes.ok) {
+        const agentWithdrawalsData = await agentWithdrawalsRes.json();
+        if (agentWithdrawalsData.success && agentWithdrawalsData.data) {
+          setAgentWithdrawals(agentWithdrawalsData.data);
         }
       }
     } catch (err) {
@@ -307,6 +317,25 @@ export function EscrowPanel() {
     } catch (err) {
       console.error('Error validating call:', err);
       toast.error('Erreur de communication.');
+    }
+  };
+
+  const handleAgentWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'refuse') => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/escrow/company/agent-withdrawals/approve/${withdrawalId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId, action })
+      });
+      if (res.ok) {
+        toast.success(action === 'approve' ? 'Retrait approuvé !' : 'Retrait refusé.');
+        fetchWalletData(true);
+      } else {
+        toast.error('Erreur lors du traitement du retrait.');
+      }
+    } catch (err) {
+      console.error('Error processing agent withdrawal:', err);
+      toast.error('Erreur réseau.');
     }
   };
 
@@ -790,6 +819,15 @@ export function EscrowPanel() {
             >
               Validation des Appels ({calls.length})
             </button>
+            <button
+              onClick={() => setActiveTab('agent_withdrawals' as any)}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all ${activeTab === ('agent_withdrawals' as any)
+                ? 'bg-white text-orange-500 shadow-sm border border-slate-100'
+                : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Retraits Agents ({agentWithdrawals.length})
+            </button>
           </div>
           <div className="flex items-center">
             {activeTab === 'contracts' && (
@@ -1257,6 +1295,90 @@ export function EscrowPanel() {
                         </tr>
                       );
                     })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === ('agent_withdrawals' as any) && (
+          <div className="overflow-x-auto">
+            {agentWithdrawals.length === 0 ? (
+              <div className="p-12 text-center flex flex-col items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-300 flex items-center justify-center mb-3">
+                  <ArrowUpRight className="w-6 h-6 animate-bounce-subtle" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-800">Aucune demande de retrait</h4>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                  Les demandes de virement bancaire de vos agents s'afficheront ici pour validation.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-y-auto max-h-[500px] custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                    <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white">
+                      <th className="px-6 py-4">Agent</th>
+                      <th className="px-6 py-4 text-right">Montant</th>
+                      <th className="px-6 py-4">Méthode</th>
+                      <th className="px-6 py-4">Date de Demande</th>
+                      <th className="px-6 py-4 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {agentWithdrawals.map((withdrawal) => (
+                      <tr key={withdrawal._id} className="hover:bg-slate-50/50 transition-colors text-xs">
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                              {withdrawal.agentName}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-bold mt-0.5 tracking-tight">
+                              {withdrawal.agentEmail}
+                            </span>
+                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-1 opacity-60">
+                              REF: {withdrawal.reference}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm font-black text-slate-900">{withdrawal.amount.toLocaleString('fr-FR')} €</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex flex-col">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-tight">{withdrawal.method === 'bank' ? 'Banque' : 'PayPal'}</span>
+                            <span className="text-[9px] text-slate-400 font-medium truncate max-w-[150px]">{withdrawal.methodDetails}</span>
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-500 font-medium">
+                          {new Date(withdrawal.createdAt).toLocaleDateString('fr-FR', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={() => handleAgentWithdrawalAction(withdrawal._id, 'approve')}
+                              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-sm transition-all active:scale-95"
+                            >
+                              Valider
+                            </button>
+                            <button
+                              onClick={() => handleAgentWithdrawalAction(withdrawal._id, 'refuse')}
+                              className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-sm transition-all active:scale-95"
+                            >
+                              Refuser
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
