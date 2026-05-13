@@ -17,7 +17,6 @@ import {
   Target,
   Zap,
   Languages,
-  Globe2,
 } from "lucide-react";
 import { GigData } from "../types";
 import { predefinedOptions } from "../lib/guidance";
