@@ -942,7 +942,21 @@ export function EscrowPanel() {
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
                     {transactions.map((tx) => (
-                      <tr key={tx._id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr 
+                        key={tx._id} 
+                        className={`transition-colors ${tx.type === 'call_charge' ? 'hover:bg-rose-50/50 cursor-pointer' : 'hover:bg-slate-50/50'}`}
+                        onClick={() => {
+                          if (tx.type === 'call_charge' && tx.referenceId) {
+                            const call = calls.find(c => c.callId === tx.referenceId);
+                            if (call) {
+                              setSelectedCall(call);
+                              setSelectedCallTab('transcript');
+                            } else {
+                              toast.error("Détails de l'appel non trouvés.");
+                            }
+                          }
+                        }}
+                      >
                         <td className="px-6 py-4 font-bold text-slate-800">
                           {tx.type === 'deposit' && (
                             <span className="inline-flex items-center gap-1.5 text-emerald-600 font-bold uppercase text-[10px] tracking-wide">
@@ -1167,6 +1181,9 @@ export function EscrowPanel() {
                               </span>
                               <span className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tight">
                                 Lead: {call.lead}
+                              </span>
+                              <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-1 opacity-60">
+                                ID: {call.callId}
                               </span>
                             </div>
                           </td>
@@ -1939,6 +1956,11 @@ export function EscrowPanel() {
                       minute: '2-digit'
                     }) : 'N/A'}
                   </p>
+                  <div className="flex items-center gap-3 mt-1 opacity-60">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">
+                      ID: {selectedCall.callId}
+                    </span>
+                  </div>
                 </div>
               </div>
 
