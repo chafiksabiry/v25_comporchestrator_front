@@ -218,6 +218,10 @@ export default function CallsDashboardPage() {
                             <Clock className="w-3.5 h-3.5 text-slate-300" />
                             <span>{new Date(call.createdAt || call.date).toLocaleString()}</span>
                           </div>
+                          <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-1 flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                            {call.sid && <span>SID: {call.sid}</span>}
+                            {call.call_id && <span>ID: {call.call_id}</span>}
+                          </div>
                         </div>
                       </div>
 
@@ -431,6 +435,10 @@ export default function CallsDashboardPage() {
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
                     {new Date(selectedCall.createdAt || selectedCall.date).toLocaleString()}
                   </p>
+                  <div className="flex items-center gap-3 mt-1 opacity-60">
+                    {selectedCall.sid && <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">SID: {selectedCall.sid}</span>}
+                    {selectedCall.call_id && <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">ID: {selectedCall.call_id}</span>}
+                  </div>
                 </div>
               </div>
 
