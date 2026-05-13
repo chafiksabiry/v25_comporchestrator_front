@@ -29,7 +29,8 @@ import {
   Star,
   Activity as ActivityIcon,
   Shield,
-  Brain
+  Brain,
+  Globe
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -555,25 +556,21 @@ export function EscrowPanel() {
     );
   }
 
-  const formatFloatMinutesToMMSSLL = (floatMinutes: number): string => {
+  const formatFloatMinutesToReadable = (floatMinutes: number): string => {
     if (isNaN(floatMinutes) || floatMinutes === null || floatMinutes === undefined) {
-      return "00:00:00";
+      return "0s";
     }
     const isNegative = floatMinutes < 0;
     const absMinutes = Math.abs(floatMinutes);
+    const totalSeconds = Math.round(absMinutes * 60);
+    const mm = Math.floor(totalSeconds / 60);
+    const ss = totalSeconds % 60;
 
-    const totalSeconds = absMinutes * 60;
-    const mm = Math.floor(absMinutes);
-    const remainingSeconds = totalSeconds % 60;
-    const ss = Math.floor(remainingSeconds);
-    const remainingFraction = remainingSeconds % 1;
-    const ll = Math.floor(remainingFraction * 100);
-
-    const mmStr = String(mm).padStart(2, '0');
-    const ssStr = String(ss).padStart(2, '0');
-    const llStr = String(ll).padStart(2, '0');
-
-    return `${isNegative ? '-' : ''}${mmStr}:${ssStr}:${llStr}`;
+    let res = "";
+    if (mm > 0) res += `${mm}m `;
+    if (ss > 0 || mm === 0) res += `${ss}s`;
+    
+    return `${isNegative ? '-' : ''}${res.trim()}`;
   };
 
   // Derived metrics
@@ -683,7 +680,7 @@ export function EscrowPanel() {
             </div>
           </div>
           <div className="relative z-10">
-            <h3 className="text-2xl font-black text-orange-600 tracking-tight">{formatFloatMinutesToMMSSLL(displayMinutes)}</h3>
+            <h3 className="text-2xl font-black text-orange-600 tracking-tight">{formatFloatMinutesToReadable(displayMinutes)}</h3>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="text-[10px] font-bold text-slate-500">Calling credit volume</span>
               <span className="text-[10px] bg-orange-100 text-orange-700 font-extrabold px-1.5 py-0.5 rounded-full">Active</span>
@@ -711,7 +708,7 @@ export function EscrowPanel() {
             </div>
           </div>
           <div className="relative z-10">
-            <h3 className="text-2xl font-black text-rose-600 tracking-tight">{formatFloatMinutesToMMSSLL(displayEscrow)}</h3>
+            <h3 className="text-2xl font-black text-rose-600 tracking-tight">{formatFloatMinutesToReadable(displayEscrow)}</h3>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="text-[10px] font-bold text-slate-500">Secured for active campaigns</span>
               <span className="text-[10px] bg-rose-100 text-rose-700 font-extrabold px-1.5 py-0.5 rounded-full">Escrow</span>
@@ -733,17 +730,17 @@ export function EscrowPanel() {
             </div>
           </div>
           <div className="relative z-10">
-            <h3 className="text-2xl font-black text-blue-600 tracking-tight">{formatFloatMinutesToMMSSLL(totalConsumedMinutes)}</h3>
+            <h3 className="text-2xl font-black text-blue-600 tracking-tight">{formatFloatMinutesToReadable(totalConsumedMinutes)}</h3>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="text-[10px] font-bold text-slate-500">
-                {formatFloatMinutesToMMSSLL(approvedMinutes)} val. • {formatFloatMinutesToMMSSLL(pendingMinutes)} pnd.
+                {formatFloatMinutesToReadable(approvedMinutes)} val. • {formatFloatMinutesToReadable(pendingMinutes)} pnd.
               </span>
               <span className="text-[10px] bg-blue-100 text-blue-700 font-extrabold px-1.5 py-0.5 rounded-full">Calls</span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] relative z-10">
             <span className="text-slate-400 font-semibold">Minutes refusées :</span>
-            <span className="text-rose-500 font-bold">{formatFloatMinutesToMMSSLL(refusedMinutes)}</span>
+            <span className="text-rose-500 font-bold">{formatFloatMinutesToReadable(refusedMinutes)}</span>
           </div>
         </div>
       </div>
