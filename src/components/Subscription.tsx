@@ -1,8 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, CreditCard, Sparkles, X, ShieldCheck, Lock } from 'lucide-react';
-import CheckoutForm from './stripe/CheckoutForm';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 
-const plans = [
+interface Plan {
+  _id?: string;
+  name: string;
+  price: string | number;
+  priceId?: string;
+  stripePriceId?: string;
+  amount?: number;
+  description: string;
+  features: string[];
+  buttonText: string;
+  popular: boolean;
+  isPopular?: boolean;
+}
+
+const defaultPlans: Plan[] = [
   {
     name: 'STARTER',
     price: '99',
@@ -65,38 +80,86 @@ const plans = [
 ];
 
 const Subscription: React.FC = () => {
+  const [plans, setPlans] = useState<Plan[]>(defaultPlans);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<typeof plans[0] | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [isLoadingSecret, setIsLoadingSecret] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [activePriceId, setActivePriceId] = useState<string | null>(null);
 
-  const handleStartTrial = async (plan: typeof plans[0]) => {
+  const companyId = Cookies.get('companyId');
+  const userId = Cookies.get('userId');
+
+  useEffect(() => {
+    const fetchRealPlans = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/plans`);
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+          const formattedPlans = response.data.map((plan: any) => ({
+            ...plan,
+            priceId: plan.stripePriceId || plan.priceId,
+            buttonText: 'Start trial',
+            popular: plan.isPopular || false
+          }));
+          setPlans(formattedPlans);
+        }
+      } catch (error) {
+        console.error('Error fetching real plans:', error);
+      }
+    };
+
+    const checkCurrentSubscription = async () => {
+      if (!companyId) return;
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/current/${companyId}`);
+        const subData = response.data?.data;
+        if (subData && (subData.status === 'active' || subData.status === 'trialing')) {
+          if (subData.planId && subData.planId.stripePriceId) {
+            setActivePriceId(subData.planId.stripePriceId);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking current subscription:', error);
+      }
+    };
+
+    fetchRealPlans();
+    checkCurrentSubscription();
+  }, [companyId]);
+
+  const handleStartTrial = async (plan: Plan) => {
+    const priceId = plan.priceId || plan.stripePriceId;
+    if (!priceId) {
+      alert('ID de plan invalide.');
+      return;
+    }
+
     setSelectedPlan(plan);
     setShowCheckout(true);
     setIsLoadingSecret(true);
-    
-    // In a real implementation, you would call your backend to create a PaymentIntent:
-    /*
+    setErrorMessage(null);
+
     try {
-      const response = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId: plan.priceId })
+      const response = await axios.post(`${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/checkout`, {
+        userId,
+        companyId,
+        priceId,
+        planName: plan.name,
+        successUrl: `${window.location.origin}/#/orchestrator?success=true`,
+        cancelUrl: `${window.location.origin}/#/orchestrator?cancel=true`
       });
-      const data = await response.json();
-      setClientSecret(data.clientSecret);
+
+      if (response.data && response.data.data && response.data.data.url) {
+        window.location.href = response.data.data.url;
+      } else {
+        setErrorMessage('Erreur lors de la création de la session de paiement.');
+        setIsLoadingSecret(false);
+      }
     } catch (err) {
-      console.error('Error creating payment intent:', err);
-    } finally {
+      console.error('Error creating checkout session:', err);
+      setErrorMessage('Une erreur est survenue lors de la redirection vers Stripe.');
       setIsLoadingSecret(false);
     }
-    */
-
-    // MOCK: Simulate getting a clientSecret
-    setTimeout(() => {
-      setClientSecret('pi_mock_secret_' + Math.random().toString(36).substring(7));
-      setIsLoadingSecret(false);
-    }, 1000);
   };
 
   return (
@@ -124,67 +187,79 @@ const Subscription: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {plans.map((plan) => (
-            <div 
-              key={plan.name}
-              className={`relative flex flex-col p-8 rounded-[2rem] transition-all duration-500 group ${
-                plan.popular 
-                  ? 'bg-[#0a0b14] text-white scale-105 shadow-2xl shadow-harx-500/20 ring-1 ring-white/10' 
-                  : 'bg-white text-gray-900 border border-gray-100 shadow-xl hover:shadow-2xl hover:border-harx-500/30'
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-gradient-harx text-white px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-harx-500/30">
-                  Most Popular
-                </div>
-              )}
-
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className={`text-2xl font-black tracking-tight ${plan.popular ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
-                  {plan.popular && <Sparkles className="h-5 w-5 text-harx-400" />}
-                </div>
-                <p className={`text-xs font-medium leading-relaxed ${plan.popular ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {plan.description}
-                </p>
-              </div>
-
-              <div className="mb-8">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-black tracking-tighter">€{plan.price}</span>
-                  <span className={`text-sm font-bold uppercase tracking-widest opacity-60 ${plan.popular ? 'text-gray-400' : 'text-gray-500'}`}>/ Mo</span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => handleStartTrial(plan)}
-                className={`w-full py-4 px-6 rounded-2xl font-black text-sm uppercase tracking-[0.15em] transition-all duration-300 mb-8 transform group-hover:scale-[1.02] active:scale-95 ${
-                  plan.popular
-                    ? 'bg-gradient-harx text-white shadow-xl shadow-harx-500/30 hover:shadow-harx-500/50'
-                    : 'bg-gray-900 text-white hover:bg-black shadow-lg shadow-black/10'
+          {plans.map((plan) => {
+            const isActive = activePriceId === (plan.priceId || plan.stripePriceId);
+            return (
+              <div 
+                key={plan.name}
+                className={`relative flex flex-col p-8 rounded-[2rem] transition-all duration-500 group ${
+                  isActive
+                    ? 'bg-[#0a0b14] text-white scale-105 shadow-2xl shadow-harx-500/20 ring-2 ring-harx-500'
+                    : plan.popular 
+                      ? 'bg-[#0a0b14] text-white scale-105 shadow-2xl shadow-harx-500/20 ring-1 ring-white/10' 
+                      : 'bg-white text-gray-900 border border-gray-100 shadow-xl hover:shadow-2xl hover:border-harx-500/30'
                 }`}
               >
-                {plan.buttonText}
-              </button>
+                {(plan.popular || isActive) && (
+                  <div className={`absolute -top-5 left-1/2 transform -translate-x-1/2 px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg ${
+                    isActive ? 'bg-green-500 text-white shadow-green-500/30' : 'bg-gradient-harx text-white shadow-harx-500/30'
+                  }`}>
+                    {isActive ? 'Current Plan' : 'Most Popular'}
+                  </div>
+                )}
 
-              <div className={`h-px w-full mb-8 ${plan.popular ? 'bg-white/10' : 'bg-gray-100'}`} />
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className={`text-2xl font-black tracking-tight ${plan.popular || isActive ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
+                    {(plan.popular || isActive) && <Sparkles className="h-5 w-5 text-harx-400" />}
+                  </div>
+                  <p className={`text-xs font-medium leading-relaxed ${plan.popular || isActive ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {plan.description}
+                  </p>
+                </div>
 
-              <ul className="space-y-4 flex-grow">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
-                    <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
-                      plan.popular ? 'bg-harx-500/20 text-harx-400' : 'bg-green-50 text-green-600'
-                    }`}>
-                      <Check size={12} strokeWidth={3} />
-                    </div>
-                    <span className={`text-xs font-bold leading-tight ${plan.popular ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {feature}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                <div className="mb-8">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-5xl font-black tracking-tighter">€{plan.price}</span>
+                    <span className={`text-sm font-bold uppercase tracking-widest opacity-60 ${plan.popular || isActive ? 'text-gray-400' : 'text-gray-500'}`}>/ Mo</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => !isActive && handleStartTrial(plan)}
+                  disabled={isActive}
+                  className={`w-full py-4 px-6 rounded-2xl font-black text-sm uppercase tracking-[0.15em] transition-all duration-300 mb-8 transform ${
+                    !isActive ? 'group-hover:scale-[1.02] active:scale-95' : ''
+                  } ${
+                    isActive
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/30 cursor-default'
+                      : plan.popular
+                        ? 'bg-gradient-harx text-white shadow-xl shadow-harx-500/30 hover:shadow-harx-500/50'
+                        : 'bg-gray-900 text-white hover:bg-black shadow-lg shadow-black/10'
+                  }`}
+                >
+                  {isActive ? 'Current Plan' : plan.buttonText}
+                </button>
+
+                <div className={`h-px w-full mb-8 ${plan.popular || isActive ? 'bg-white/10' : 'bg-gray-100'}`} />
+
+                <ul className="space-y-4 flex-grow">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3">
+                      <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
+                        plan.popular || isActive ? 'bg-harx-500/20 text-harx-400' : 'bg-green-50 text-green-600'
+                      }`}>
+                        <Check size={12} strokeWidth={3} />
+                      </div>
+                      <span className={`text-xs font-bold leading-tight ${plan.popular || isActive ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -197,7 +272,6 @@ const Subscription: React.FC = () => {
               <button 
                 onClick={() => {
                   setShowCheckout(false);
-                  setClientSecret(null);
                 }}
                 className="p-3 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-all duration-300 text-gray-500 hover:text-gray-900 shadow-sm"
               >
@@ -222,34 +296,13 @@ const Subscription: React.FC = () => {
               {isLoadingSecret ? (
                 <div className="h-64 flex flex-col items-center justify-center gap-4 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
                   <div className="h-12 w-12 border-4 border-harx-500/20 border-t-harx-500 rounded-full animate-spin" />
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest animate-pulse">Initializing Secure Gateway...</p>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest animate-pulse">Redirecting to Secure Stripe Checkout...</p>
                 </div>
-              ) : clientSecret && selectedPlan ? (
-                <div className="animate-fade-in">
-                  <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Plan Summary</p>
-                      <p className="text-sm font-black text-gray-900">{selectedPlan.name} Membership</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-black text-harx-500">€{selectedPlan.price}</p>
-                    </div>
-                  </div>
-                  <CheckoutForm 
-                    clientSecret={clientSecret} 
-                    amount={selectedPlan.amount}
-                    onSuccess={() => {
-                      setTimeout(() => {
-                        setShowCheckout(false);
-                      }, 4000);
-                    }}
-                  />
-                </div>
-              ) : (
+              ) : errorMessage ? (
                 <div className="p-6 bg-red-50 rounded-2xl border border-red-100 text-red-600 text-center">
-                  <p className="text-sm font-bold">Failed to initialize payment. Please try again.</p>
+                  <p className="text-sm font-bold">{errorMessage}</p>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -259,3 +312,4 @@ const Subscription: React.FC = () => {
 };
 
 export default Subscription;
+
