@@ -145,8 +145,8 @@ const Subscription: React.FC = () => {
         companyId,
         priceId,
         planName: plan.name,
-        successUrl: `${window.location.origin}/#/orchestrator?success=true`,
-        cancelUrl: `${window.location.origin}/#/orchestrator?cancel=true`
+        successUrl: `${window.location.origin}/company#/orchestrator?success=true`,
+        cancelUrl: `${window.location.origin}/company#/orchestrator?cancel=true`
       });
 
       if (response.data && response.data.data && response.data.data.url) {
