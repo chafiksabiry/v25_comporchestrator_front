@@ -6,11 +6,11 @@ import { Call, callsApi } from "../services/api/calls";
 import { Info, Target, Volume2, BookOpen, User, Phone, Clock, Calendar, CheckCircle, XCircle, FileText, ClipboardList, ArrowRight } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 
-interface CallReport {
     "Agent fluency": { score: number; feedback: string };
     "Sentiment analysis": { score: number; feedback: string };
     "Fraud detection": { score: number; feedback: string };
-    "Script adherence"?: { score: number; feedback: string };
+    "Script coherence"?: { score: number; feedback: string };
+    "Argumentation"?: { score: number; feedback: string };
     "overall": { score: number; feedback: string };
 }
 
@@ -49,15 +49,13 @@ function CallReportCard() {
     const handleValidateByCompany = async (isValidByCompany: boolean) => {
         if (!call) return;
         try {
-            const currentRepsVal = call.transaction?.validByReps ?? call.transactionOccurred ?? null;
             const updatedTransaction = {
-                validByReps: currentRepsVal,
                 validByCompany: isValidByCompany,
-                valid: (currentRepsVal === true && isValidByCompany === true)
+                valid: (call.transaction?.validByAI === true && isValidByCompany === true)
             };
-            const response = await callsApi.update(call._id, { transaction: updatedTransaction });
-            if (response) {
-                const updatedCall = response.data || response;
+            const response = await callsApi.update(call._id, { transaction: updatedTransaction } as any);
+            if (response && response.success) {
+                const updatedCall = response.data || response.call || response;
                 setCall(updatedCall);
             }
         } catch (err) {
@@ -65,32 +63,37 @@ function CallReportCard() {
         }
     };
 
+    const handleAnalyzeCall = async () => {
+        if (!call) return;
+        try {
+            setLoadingReport(true);
+            const response = await callsApi.analyze(call._id);
+            if (response.success) {
+                setReport(response.data);
+                setCall({ 
+                    ...call, 
+                    ai_call_score: response.data, 
+                    transcript: response.transcript || (call as any).transcript,
+                    validByAI: response.validByAI
+                });
+            }
+        } catch (err) {
+            setErrorReport("Failed to analyze the call.");
+        } finally {
+            setLoadingReport(false);
+        }
+    };
+
     useEffect(() => {
         if (!call) return; // Ensure the call object exists
 
-        if (call.ai_call_score && Object.keys(call.ai_call_score).length > 0) {
+        if (call.ai_call_score && Object.keys(call.ai_call_score).length > 0 && call.ai_call_score.overall?.score) {
             // If scores exist in the database, use them
             setReport(call.ai_call_score);
             setLoadingReport(false);
         } else {
-            // If no existing score, generate a new one
-            const fetchScoring = async () => {
-                try {
-                    setLoadingReport(true);
-                    const response = await vertexApi.getCallScoring({ file_uri: (call.recording_url_cloudinary) ? call.recording_url_cloudinary : call.recording_url });
-                    setReport(response);
-
-                    // Store the generated score in the database
-                    await callsApi.update(call._id, { ai_call_score: response });
-                    setCall({ ...call, ai_call_score: response }); // Update local state
-                } catch (err) {
-                    setErrorReport("Failed to analyze the call.");
-                } finally {
-                    setLoadingReport(false);
-                }
-            };
-
-            fetchScoring();
+            // Use unified backend analysis
+            handleAnalyzeCall();
         }
 
         // Fetch Transcription
@@ -216,24 +219,24 @@ function CallReportCard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    {/* Reps Validation */}
+                    {/* AI Validation */}
                     <div className="bg-white p-4 rounded-lg border border-slate-100 flex items-center justify-between shadow-sm">
                         <div>
-                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Commercial (Rep)</p>
-                            <p className="text-sm font-semibold text-slate-700">DÉCISION COMMERCIALE :</p>
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Validation AI (Automatique)</p>
+                            <p className="text-sm font-semibold text-slate-700">DÉCISION AI :</p>
                         </div>
                         <div>
-                            {call?.transaction?.validByReps === true || call?.transactionOccurred === true ? (
+                            {call?.validByAI === true ? (
                                 <span className="px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl text-xs font-black uppercase tracking-wider">
-                                    TRANSACTION CONFIRMÉE
+                                    CONFORME / TRANSACTION DÉTECTÉE
                                 </span>
-                            ) : call?.transaction?.validByReps === false || call?.transactionOccurred === false ? (
+                            ) : call?.validByAI === false ? (
                                 <span className="px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl text-xs font-black uppercase tracking-wider">
-                                    AUCUNE TRANSACTION
+                                    NON CONFORME / REFUS
                                 </span>
                             ) : (
-                                <span className="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-wider">
-                                    NON SPÉCIFIÉE
+                                <span className="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-wider animate-pulse">
+                                    ANALYSE EN COURS...
                                 </span>
                             )}
                         </div>
