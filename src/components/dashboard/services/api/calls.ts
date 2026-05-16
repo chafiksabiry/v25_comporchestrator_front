@@ -20,29 +20,23 @@ export interface Call {
   //notes: string;
   //tags: string[];
   quality_score: number;
+  validByAI?: boolean | null;
+  valid?: boolean | null;
+  argumentation_score?: number;
   ai_call_score: {
-    "Agent fluency": {
-      score: number; // 0-100 range enforced in logic
-      feedback: string;
-    };
-    "Sentiment analysis": {
-      score: number;
-      feedback: string;
-    };
-    "Fraud detection": {
-      score: number;
-      feedback: string;
-    };
-    "overall": {
-      score: number;
-      feedback: string;
-    };
+    "Agent fluency": { score: number; feedback: string };
+    "Sentiment analysis": { score: number; feedback: string };
+    "Fraud detection": { score: number; feedback: string };
+    "Script coherence": { score: number; feedback: string };
+    "Argumentation": { score: number; feedback: string };
+    "overall": { score: number; feedback: string };
   };
   createdAt: string;
   updatedAt: string;
   transactionOccurred?: boolean | null;
   transaction?: {
-    validByReps: boolean | null;
+    _id?: string;
+    validByAI?: boolean;
     validByCompany: boolean | null;
     valid: boolean | null;
   } | null;
@@ -138,6 +132,16 @@ getCallDetails:async (callSid: string, ) => {
   storeCallInDBAtEndCall: async (phoneNumber: string, callSid: string) => {
     const response = await apiCall.post('/api/calls/store-call-in-db-at-end-call', { phoneNumber, callSid });
     
+    return response.data;
+  },
+
+  analyze: async (id: string) => {
+    const response = await apiCall.post<{
+      success: boolean;
+      data: any;
+      transcript: any[];
+      validByAI: boolean;
+    }>(`/api/calls/${id}/analyze`);
     return response.data;
   },
 
