@@ -14,6 +14,8 @@ export default function CallsDashboardPage() {
 
   const companyId = Cookies.get('companyId');
 
+  const [analyzingCallId, setAnalyzingCallId] = useState<string | null>(null);
+
   useEffect(() => {
     if (companyId) {
       fetchCalls();
@@ -44,26 +46,32 @@ export default function CallsDashboardPage() {
     setActiveTab(tab);
   };
 
-  const handleUpdateValidation = async (callId: string, currentStatus: string, clickedStatus: string) => {
+  const handleAnalyzeCall = async (callId: string) => {
     try {
-      const status = currentStatus === clickedStatus ? 'pending' : clickedStatus;
+      setAnalyzingCallId(callId);
       const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
       const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
 
-      const response = await fetch(`${callsBase}/calls/${callId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ companyValidation: status }),
-      });
-
+      const response = await fetch(`${callsBase}/calls/${callId}/analyze`, { method: 'POST' });
       if (response.ok) {
-        setCalls(prevCalls => prevCalls.map(c => c._id === callId ? { ...c, companyValidation: status } : c));
-        setSelectedCall((prev: any) => prev && prev._id === callId ? { ...prev, companyValidation: status } : prev);
+        const result = await response.json();
+        if (result.success) {
+          if (selectedCall && (selectedCall._id === callId)) {
+            setSelectedCall({
+              ...selectedCall,
+              ai_call_score: result.data,
+              transcript: result.transcript || selectedCall.transcript,
+              validByAI: result.validByAI,
+              valid: result.validByAI
+            });
+          }
+          fetchCalls();
+        }
       }
     } catch (error) {
-      console.error('Error updating call validation status:', error);
+      console.error('Error analyzing call:', error);
+    } finally {
+      setAnalyzingCallId(null);
     }
   };
 
@@ -236,152 +244,49 @@ export default function CallsDashboardPage() {
                           <>
                             <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
 
-                            {/* Validation de l'Appel par la Compagnie */}
+                            {/* Validation de l'Appel AI */}
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Appel (Validation)</span>
-                              {call.companyValidation === 'approved' && call.agentValidation === 'approved' ? (
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Appel (Validation AI)</span>
+                              {call.validByAI === true || call.valid === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-32 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
-                                  Validé
+                                  Validé par AI
                                 </span>
-                              ) : call.companyValidation === 'rejected' || call.agentValidation === 'rejected' ? (
+                              ) : call.validByAI === false ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
                                   <X className="w-3.5 h-3.5" />
-                                  Refusé
-                                </span>
-                              ) : call.companyValidation === 'approved' && call.agentValidation !== 'approved' ? (
-                                <span
-                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-200/40 shadow-sm w-32 whitespace-nowrap text-center cursor-help"
-                                  title="En attente de la confirmation de l'agent"
-                                >
-                                  <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                                  Attente Agent
+                                  Refusé AI
                                 </span>
                               ) : (
-                                <div className="relative">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenDropdownId(
-                                        openDropdownId?.callId === call._id && openDropdownId?.type === 'validation'
-                                          ? null
-                                          : { callId: call._id, type: 'validation' }
-                                      );
-                                    }}
-                                    className="w-24 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1 shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                                  >
-                                    <span>Action</span>
-                                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${openDropdownId?.callId === call._id && openDropdownId?.type === 'validation' ? 'rotate-180' : ''
-                                      }`} />
-                                  </button>
-
-                                  {openDropdownId?.callId === call._id && openDropdownId?.type === 'validation' && (
-                                    <>
-                                      <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
-                                      <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-32 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-200">
-                                        <button
-                                          onClick={() => {
-                                            handleUpdateValidation(call._id, call.companyValidation || 'pending', 'approved');
-                                            setOpenDropdownId(null);
-                                          }}
-                                          className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50/60 flex items-center gap-2 transition-colors"
-                                        >
-                                          <Check className="w-3.5 h-3.5 shrink-0" />
-                                          <span>Valider</span>
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            handleUpdateValidation(call._id, call.companyValidation || 'pending', 'rejected');
-                                            setOpenDropdownId(null);
-                                          }}
-                                          className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50/60 flex items-center gap-2 transition-colors"
-                                        >
-                                          <X className="w-3.5 h-3.5 shrink-0" />
-                                          <span>Refuser</span>
-                                        </button>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
+                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 border border-slate-200/40 shadow-sm w-32 whitespace-nowrap">
+                                  <Clock className="w-3.5 h-3.5 animate-pulse" />
+                                  Analyse en cours
+                                </span>
                               )}
                             </div>
 
                             <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
 
-                            {/* Validation de la Transaction par la Compagnie */}
+                            {/* Validation de la Transaction AI */}
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction</span>
-                              {!(call.transactionOccurred === true || call.transaction?.validByReps === true) ? (
-                                <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
-                              ) : call.transaction?.validByCompany === true && call.transaction?.validByReps === true ? (
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction AI</span>
+                              {call.transaction?.validByCompany === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-32 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
                                   Signé
                                 </span>
-                              ) : call.transaction?.validByCompany === false || call.transaction?.validByReps === false ? (
+                              ) : call.transaction?.validByAI === true ? (
+                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-200/40 shadow-sm w-44 whitespace-nowrap text-center cursor-help" title="Analyse IA positive, en attente de votre validation finale">
+                                  <Clock className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
+                                  Wait for your Validation
+                                </span>
+                              ) : call.transaction?.validByAI === false ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
                                   <X className="w-3.5 h-3.5" />
-                                  Refusé
-                                </span>
-                              ) : call.transaction?.validByCompany === true && call.transaction?.validByReps !== true ? (
-                                <span
-                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-200/40 shadow-sm w-32 whitespace-nowrap text-center cursor-help"
-                                  title="En attente de la confirmation de l'agent"
-                                >
-                                  <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                                  Attente Agent
+                                  Refusé AI
                                 </span>
                               ) : (
-                                <div className="flex flex-col items-center gap-1">
-                                  <div className="relative">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setOpenDropdownId(
-                                          openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction'
-                                            ? null
-                                            : { callId: call._id, type: 'transaction' }
-                                        );
-                                      }}
-                                      className="w-24 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1 shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                                    >
-                                      <span>Action</span>
-                                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' ? 'rotate-180' : ''
-                                        }`} />
-                                    </button>
-
-                                    {openDropdownId?.callId === call._id && openDropdownId?.type === 'transaction' && (
-                                      <>
-                                        <div className="fixed inset-0 z-30" onClick={() => setOpenDropdownId(null)} />
-                                        <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-32 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-200">
-                                          <button
-                                            onClick={() => {
-                                              handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, true);
-                                              setOpenDropdownId(null);
-                                            }}
-                                            className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50/60 flex items-center gap-2 transition-colors"
-                                          >
-                                            <Check className="w-3.5 h-3.5 shrink-0" />
-                                            <span>Signer</span>
-                                          </button>
-                                          <button
-                                            onClick={() => {
-                                              handleUpdateTransactionValidation(call._id, call.transaction?.validByCompany ?? null, false);
-                                              setOpenDropdownId(null);
-                                            }}
-                                            className="w-full px-3.5 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50/60 flex items-center gap-2 transition-colors"
-                                          >
-                                            <X className="w-3.5 h-3.5 shrink-0" />
-                                            <span>Refuser</span>
-                                          </button>
-                                        </div>
-                                      </>
-                                    )}
-                                  </div>
-                                  {call.transaction?._id && (
-                                    <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">ID: {call.transaction._id}</span>
-                                  )}
-                                </div>
+                                <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
                               )}
                             </div>
                           </>
@@ -461,12 +366,24 @@ export default function CallsDashboardPage() {
                 })()}
               </div>
 
-              <button
-                onClick={() => setSelectedCall(null)}
-                className="p-3 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl border border-slate-100 transition-all shadow-sm"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-3">
+                {(!selectedCall.ai_call_score || !selectedCall.ai_call_score.overall?.score) && selectedCall.recording_url_cloudinary && (
+                  <button
+                    onClick={() => handleAnalyzeCall(selectedCall._id)}
+                    disabled={analyzingCallId === selectedCall._id}
+                    className="flex items-center gap-2 px-6 py-3 bg-harx-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-harx-600 transition-all shadow-lg shadow-harx-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Brain className={`w-4 h-4 ${analyzingCallId === selectedCall._id ? 'animate-spin' : ''}`} />
+                    {analyzingCallId === selectedCall._id ? 'Analyse...' : 'Analyze & Transcribe'}
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedCall(null)}
+                  className="p-3 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl border border-slate-100 transition-all shadow-sm"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             {/* Tabs */}
@@ -490,65 +407,34 @@ export default function CallsDashboardPage() {
 
               <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Val. Appel :</span>
-                  {selectedCall.companyValidation === 'approved' ? (
-                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Appel (Validation AI) :</span>
+                  {selectedCall.validByAI === true ? (
+                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-32">
                       <Check className="w-3.5 h-3.5" />
-                      Validé
+                      Validé par AI
                     </span>
-                  ) : selectedCall.companyValidation === 'rejected' ? (
-                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
+                  ) : selectedCall.validByAI === false ? (
+                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32">
                       <X className="w-3.5 h-3.5" />
-                      Refusé
+                      Refusé par AI
                     </span>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleUpdateValidation(selectedCall._id, selectedCall.companyValidation || 'pending', 'approved')}
-                        className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60 w-24"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        Valider
-                      </button>
-                      <button
-                        onClick={() => handleUpdateValidation(selectedCall._id, selectedCall.companyValidation || 'pending', 'rejected')}
-                        className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60 w-24"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        Refuser
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Val. Tx (Agent) :</span>
-                  {selectedCall.transaction?.validByReps === true ? (
-                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
-                      <Check className="w-3.5 h-3.5" />
-                      Validé
-                    </span>
-                  ) : selectedCall.transaction?.validByReps === false ? (
-                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
-                      <X className="w-3.5 h-3.5" />
-                      Refusé
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100/40 shadow-sm w-24">
-                      En attente
+                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 border border-slate-100/40 shadow-sm w-32">
+                      <Clock className="w-3.5 h-3.5 animate-pulse" />
+                      En cours
                     </span>
                   )}
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Val. Tx (Compagnie) :</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction (Validation Finale) :</span>
                   {selectedCall.transaction?.validByCompany === true ? (
-                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-24">
+                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-32">
                       <Check className="w-3.5 h-3.5" />
                       Validé
                     </span>
                   ) : selectedCall.transaction?.validByCompany === false ? (
-                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-24">
+                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32">
                       <X className="w-3.5 h-3.5" />
                       Refusé
                     </span>
@@ -607,15 +493,8 @@ export default function CallsDashboardPage() {
                     {[
                       { label: 'Agent Fluency', data: selectedCall.ai_call_score?.["Agent fluency"], icon: Globe },
                       { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], icon: ActivityIcon },
-                      { label: 'Fraud Detection', data: selectedCall.ai_call_score?.["Fraud detection"], icon: Shield },
-                      {
-                        label: 'Conversion Potential',
-                        data: {
-                          score: Math.round(((selectedCall.ai_call_score?.["Agent fluency"]?.score || 0) * 0.4) + ((selectedCall.ai_call_score?.["Sentiment analysis"]?.score || 0) * 0.6)),
-                          feedback: "Probabilité de conversion estimée basée sur l'analyse sémantique."
-                        },
-                        icon: TrendingUp
-                      }
+                      { label: 'Script Coherence', data: selectedCall.ai_call_score?.["Script coherence"], icon: Shield },
+                      { label: 'Argumentation Quality', data: selectedCall.ai_call_score?.["Argumentation"], icon: TrendingUp }
                     ].map((metric, mIdx) => (
                       <div key={mIdx} className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
                         <div className="flex justify-between items-start mb-6">
