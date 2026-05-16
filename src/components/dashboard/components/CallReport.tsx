@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { vertexApi } from "../services/api/vertex";
 import { Call, callsApi } from "../services/api/calls";
 
-import { Info, Target, Volume2, BookOpen, User, Phone, Clock, Calendar, CheckCircle, XCircle, FileText, ClipboardList, ArrowRight } from 'lucide-react';
+import { Info, Target, Volume2, BookOpen, User, Phone, Clock, Calendar, CheckCircle, XCircle, FileText, ClipboardList, ArrowRight, ShieldAlert, ShieldCheck, Globe, ActivityIcon, Shield, TrendingUp } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 
     "Agent fluency": { score: number; feedback: string };
@@ -383,25 +383,34 @@ function CallReportCard() {
                 {loadingReport ? <LoadingSpinner text="Generating call scoring ..." /> : errorReport ? <p className="text-red-500">{errorReport}</p> : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
-                            {Object.entries(report)
-                                .filter(([category]) => category !== "overall")
-                                .map(([category, data]) => (
-                                    <div key={category}>
-                                        <label className="text-sm font-medium text-gray-700 mb-3 block">{category}</label>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-full bg-gray-200 rounded-full h-3">
-                                                <div
-                                                    className={`h-3 rounded-full ${data.score >= 80 ? "bg-green-500" :
-                                                        data.score >= 60 ? "bg-yellow-500" : "bg-red-500"
-                                                        }`}
-                                                    style={{ width: `${data.score}%` }}
-                                                />
-                                            </div>
-                                            <div className="text-2xl font-bold text-gray-900">{data.score}</div>
+                            {[
+                                { label: 'Agent Fluency', data: report["Agent fluency"], icon: Globe },
+                                { label: 'Sentiment Analysis', data: report["Sentiment analysis"], icon: ActivityIcon },
+                                { label: 'Fraud Detection', data: report["Fraud detection"], icon: ShieldAlert },
+                                { label: 'Script Coherence', data: report["Script coherence"], icon: ShieldCheck },
+                                { label: 'Argumentation Quality', data: report["Argumentation"], icon: TrendingUp }
+                            ].map((metric, idx) => (
+                                <div key={idx}>
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center">
+                                            {metric.icon && <metric.icon className="w-4 h-4" />}
                                         </div>
-                                        <p className="text-sm text-gray-600 mt-2">{data.feedback}</p>
+                                        <label className="text-sm font-bold text-gray-700 uppercase tracking-widest">{metric.label}</label>
                                     </div>
-                                ))}
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                            <div
+                                                className={`h-3 rounded-full transition-all duration-500 ${metric.data?.score >= 80 ? "bg-emerald-500" :
+                                                    metric.data?.score >= 60 ? "bg-amber-500" : "bg-rose-500"
+                                                    }`}
+                                                style={{ width: `${metric.data?.score || 0}%` }}
+                                            />
+                                        </div>
+                                        <div className="text-xl font-black text-gray-900">{metric.data?.score || 0}%</div>
+                                    </div>
+                                    <p className="text-xs text-gray-600 mt-2 font-medium leading-relaxed italic">&quot;{metric.data?.feedback || 'Analysis completed.'}&quot;</p>
+                                </div>
+                            ))}
                         </div>
 
                         <div className="space-y-6">
