@@ -11,6 +11,7 @@ import { PremiumAudioPlayer } from './PremiumAudioPlayer';
     "Fraud detection": { score: number; feedback: string };
     "Script coherence"?: { score: number; feedback: string };
     "Argumentation"?: { score: number; feedback: string };
+    "Script adherence"?: { score: number; feedback: string };
     "overall": { score: number; feedback: string };
 }
 
@@ -199,84 +200,54 @@ function CallReportCard() {
                 </div>
             </div>
 
-            {/* Transaction Dual-Validation Panel */}
-            <div className="border border-slate-200 rounded-lg p-5 bg-slate-50/50">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                        <Target className="h-5 w-5 text-indigo-500" />
-                        <h3 className="text-sm font-semibold text-indigo-900">Validation de la Transaction</h3>
-                    </div>
-                    {call?.transaction?.valid ? (
-                        <span className="px-3 py-1 bg-emerald-500 text-white rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-emerald-500/25">
-                            <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                            Validation Globale OK
-                        </span>
-                    ) : (
-                        <span className="px-3 py-1 bg-amber-500 text-white rounded-full text-xs font-bold uppercase tracking-wider">
-                            En cours de validation
-                        </span>
-                    )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    {/* AI Validation */}
-                    <div className="bg-white p-4 rounded-lg border border-slate-100 flex items-center justify-between shadow-sm">
-                        <div>
-                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Validation AI (Automatique)</p>
-                            <p className="text-sm font-semibold text-slate-700">DÉCISION AI :</p>
+            {/* AI Decision Panel - Final word */}
+            <div className={`border rounded-xl p-6 transition-all duration-500 ${
+                call?.validByAI === true 
+                    ? 'bg-emerald-50/50 border-emerald-100 shadow-sm' 
+                    : call?.validByAI === false 
+                        ? 'bg-rose-50/50 border-rose-100 shadow-sm'
+                        : 'bg-slate-50/50 border-slate-100'
+            }`}>
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center space-x-4">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
+                            call?.validByAI === true ? 'bg-emerald-500 text-white' : 
+                            call?.validByAI === false ? 'bg-rose-500 text-white' : 'bg-slate-400 text-white'
+                        }`}>
+                            <Shield className="w-6 h-6" />
                         </div>
                         <div>
-                            {call?.validByAI === true ? (
-                                <span className="px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl text-xs font-black uppercase tracking-wider">
-                                    CONFORME / TRANSACTION DÉTECTÉE
-                                </span>
-                            ) : call?.validByAI === false ? (
-                                <span className="px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl text-xs font-black uppercase tracking-wider">
-                                    NON CONFORME / REFUS
-                                </span>
-                            ) : (
-                                <span className="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-wider animate-pulse">
-                                    ANALYSE EN COURS...
-                                </span>
-                            )}
+                            <h3 className="text-lg font-bold text-slate-900">Décision Finale de l'IA</h3>
+                            <p className="text-sm text-slate-500 font-medium">L'analyse chirurgicale Gemini détermine la conformité de l'appel.</p>
                         </div>
                     </div>
-
-                    {/* Company Validation */}
-                    <div className="bg-white p-4 rounded-lg border border-slate-100 flex items-center justify-between shadow-sm">
-                        <div>
-                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Entreprise (Company)</p>
-                            <p className="text-sm font-semibold text-slate-700">VOTRE VALIDATION :</p>
-                        </div>
-                        <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={() => handleValidateByCompany(true)}
-                                className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 ${
-                                    call?.transaction?.validByCompany === true
-                                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25'
-                                        : 'bg-white hover:bg-slate-50 text-emerald-600 border border-emerald-200'
-                                }`}
-                            >
-                                Approuver
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleValidateByCompany(false)}
-                                className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 ${
-                                    call?.transaction?.validByCompany === false
-                                        ? 'bg-rose-500 text-white shadow-md shadow-rose-500/25'
-                                        : 'bg-white hover:bg-slate-50 text-rose-600 border border-rose-200'
-                                }`}
-                            >
-                                Refuser
-                            </button>
-                        </div>
+                    
+                    <div className="flex flex-col items-end">
+                        {call?.validByAI === true ? (
+                            <div className="flex flex-col items-end">
+                                <span className="px-6 py-2 bg-emerald-500 text-white rounded-full text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-500/30 flex items-center gap-2">
+                                    <ShieldCheck className="w-4 h-4" />
+                                    CONFORME / VALIDÉ
+                                </span>
+                                <span className="text-[10px] text-emerald-600 mt-2 font-bold uppercase tracking-tighter">Transaction approuvée automatiquement</span>
+                            </div>
+                        ) : call?.validByAI === false ? (
+                            <div className="flex flex-col items-end">
+                                <span className="px-6 py-2 bg-rose-500 text-white rounded-full text-sm font-black uppercase tracking-widest shadow-lg shadow-rose-500/30 flex items-center gap-2">
+                                    <ShieldAlert className="w-4 h-4" />
+                                    NON CONFORME / REJETÉ
+                                </span>
+                                <span className="text-[10px] text-rose-600 mt-2 font-bold uppercase tracking-tighter">Transaction annulée par l'audit IA</span>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-end">
+                                <span className="px-6 py-2 bg-slate-200 text-slate-500 rounded-full text-sm font-black uppercase tracking-widest animate-pulse flex items-center gap-2">
+                                    <RefreshCw className="w-4 h-4 animate-spin" />
+                                    AUDIT EN COURS...
+                                </span>
+                            </div>
+                        )}
                     </div>
-                </div>
-
-                <div className="text-xs text-slate-400 italic">
-                    💡 La transaction est considérée comme globalement valide uniquement lorsque le représentant ET l'entreprise ont tous deux marqué la transaction comme approuvée / confirmée.
                 </div>
             </div>
 
@@ -374,57 +345,78 @@ function CallReportCard() {
                 )}
             </div>
             {/* Call Report */}
-            <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center space-x-2 mb-3">
-                    <Target className="h-5 w-5 text-rose-400" />
-                    <h3 className="text-sm font-medium text-rose-500">Call Scoring metrix</h3>
-                </div>
-
-                {loadingReport ? <LoadingSpinner text="Generating call scoring ..." /> : errorReport ? <p className="text-red-500">{errorReport}</p> : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            {[
-                                { label: 'Agent Fluency', data: report["Agent fluency"], icon: Globe },
-                                { label: 'Sentiment Analysis', data: report["Sentiment analysis"], icon: ActivityIcon },
-                                { label: 'Fraud Detection', data: report["Fraud detection"], icon: ShieldAlert },
-                                { label: 'Script Coherence', data: report["Script coherence"], icon: ShieldCheck },
-                                { label: 'Argumentation Quality', data: report["Argumentation"], icon: TrendingUp }
-                            ].map((metric, idx) => (
-                                <div key={idx}>
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center">
-                                            {metric.icon && <metric.icon className="w-4 h-4" />}
-                                        </div>
-                                        <label className="text-sm font-bold text-gray-700 uppercase tracking-widest">{metric.label}</label>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                            <div
-                                                className={`h-3 rounded-full transition-all duration-500 ${metric.data?.score >= 80 ? "bg-emerald-500" :
-                                                    metric.data?.score >= 60 ? "bg-amber-500" : "bg-rose-500"
-                                                    }`}
-                                                style={{ width: `${metric.data?.score || 0}%` }}
-                                            />
-                                        </div>
-                                        <div className="text-xl font-black text-gray-900">{metric.data?.score || 0}%</div>
-                                    </div>
-                                    <p className="text-xs text-gray-600 mt-2 font-medium leading-relaxed italic">&quot;{metric.data?.feedback || 'Analysis completed.'}&quot;</p>
-                                </div>
-                            ))}
+            <div className="border border-gray-100 rounded-2xl p-6 bg-slate-50/30">
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-rose-100 text-rose-600 rounded-lg">
+                            <Target className="h-5 w-5" />
                         </div>
-
-                        <div className="space-y-6">
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <h4 className="text-sm font-medium text-gray-900 mb-3">Overall Score</h4>
-                                <div className="text-4xl font-bold text-rose-500 mb-2">
-                                    {report.overall.score}%
-                                </div>
-                                <p className="text-sm text-gray-600">{report.overall.feedback}</p>
-                            </div>
+                        <h3 className="text-lg font-bold text-slate-800">Scoring Détaillé IA</h3>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-slate-100">
+                        <div className="text-right">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score Global</p>
+                            <p className="text-2xl font-black text-slate-900">{report.overall.score}%</p>
+                        </div>
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                            report.overall.score >= 80 ? 'bg-emerald-500 text-white' : 
+                            report.overall.score >= 50 ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'
+                        }`}>
+                            <TrendingUp className="w-6 h-6" />
                         </div>
                     </div>
-                )}
+                </div>
 
+                {loadingReport ? <LoadingSpinner text="Analyse en cours par Gemini..." /> : errorReport ? <p className="text-red-500">{errorReport}</p> : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {[
+                            { label: 'Fluidité Agent', data: report["Agent fluency"], icon: Globe, color: 'blue' },
+                            { label: 'Analyse Sentiment', data: report["Sentiment analysis"], icon: ActivityIcon, color: 'indigo' },
+                            { label: 'Fraude & Intégrité', data: report["Fraud detection"], icon: ShieldAlert, color: 'rose' },
+                            { label: 'Cohérence Script', data: report["Script coherence"], icon: ShieldCheck, color: 'emerald' },
+                            { label: 'Qualité Argumentation', data: report["Argumentation"], icon: TrendingUp, color: 'amber' },
+                            { label: 'Adhérence Script', data: report["Script adherence"], icon: BookOpen, color: 'violet' }
+                        ].filter(m => m.data).map((metric, idx) => (
+                            <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-rose-200 transition-colors">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-xl bg-${metric.color}-50 text-${metric.color}-600`}>
+                                            {metric.icon && <metric.icon className="w-5 h-5" />}
+                                        </div>
+                                        <span className="font-bold text-slate-700">{metric.label}</span>
+                                    </div>
+                                    <span className={`px-2 py-1 rounded-lg text-xs font-black ${
+                                        metric.data!.score >= 80 ? 'bg-emerald-50 text-emerald-600' :
+                                        metric.data!.score >= 50 ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
+                                    }`}>
+                                        {metric.data!.score}%
+                                    </span>
+                                </div>
+
+                                <div className="w-full bg-slate-100 h-2 rounded-full mb-4 overflow-hidden">
+                                    <div 
+                                        className={`h-full rounded-full transition-all duration-1000 ${
+                                            metric.data!.score >= 80 ? 'bg-emerald-500' :
+                                            metric.data!.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                                        }`}
+                                        style={{ width: `${metric.data!.score}%` }}
+                                    />
+                                </div>
+
+                                <div className="text-sm text-slate-600 leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-slate-100 italic">
+                                    {metric.data!.feedback.split(/("(?:[^"\\]|\\.)*")/).map((part, i) => 
+                                        part.startsWith('"') ? (
+                                            <mark key={i} className="bg-rose-100 text-rose-900 font-bold px-1 rounded mx-1">
+                                                {part}
+                                            </mark>
+                                        ) : part
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
