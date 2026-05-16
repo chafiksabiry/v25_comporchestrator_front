@@ -6,6 +6,7 @@ import { Call, callsApi } from "../services/api/calls";
 import { Info, Target, Volume2, BookOpen, User, Phone, Clock, Calendar, CheckCircle, XCircle, FileText, ClipboardList, ArrowRight, ShieldAlert, ShieldCheck, Globe, ActivityIcon, Shield, TrendingUp } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 
+interface CallReport {
     "Agent fluency": { score: number; feedback: string };
     "Sentiment analysis": { score: number; feedback: string };
     "Fraud detection": { score: number; feedback: string };
