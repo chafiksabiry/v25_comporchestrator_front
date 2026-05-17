@@ -408,8 +408,8 @@ function AppContent() {
                 )}
               </div>
 
-              {/* Centered Credits, Balance, and Upgrade Widgets */}
-              <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-3">
+              {/* Credits, Balance, and Upgrade Widgets */}
+              <div className="flex items-center gap-3">
                 {/* Balance Widget (Solde en Euros) */}
                 <div 
                   onClick={handleBalanceClick}
