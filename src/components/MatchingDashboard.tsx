@@ -643,8 +643,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
             {/* Main Content */}
             <main className="flex-1 overflow-hidden p-4 w-full max-w-full flex flex-col min-h-0">
-
-                {/* Error Message */}
+                {selectedAgentProfile ? (
+                    <div className="w-full h-full">
+                        <RepProfileView
+                            profile={selectedAgentProfile}
+                            onClose={() => setSelectedAgentProfile(null)}
+                        />
+                    </div>
+                ) : (
+                    <>
+                        {/* Error Message */}
                 {error && (
                     <div className="mb-6 bg-red-900/20 border-l-4 border-antigravity-accent text-harx-alt-600 px-4 py-3 rounded-lg shadow-md backdrop-blur-sm">
                         <p className="flex items-center">
@@ -677,15 +685,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
 
                                 {/* Two Column Layout: Gigs and Reps */}
-                                {selectedAgentProfile ? (
-                                    <div className="w-full h-[calc(100vh-320px)]">
-                                        <RepProfileView
-                                            profile={selectedAgentProfile}
-                                            onClose={() => setSelectedAgentProfile(null)}
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="resizable-container flex gap-4 w-full max-w-full h-[calc(100vh-320px)] min-h-0 overflow-hidden">
+                                <div className="resizable-container flex gap-4 w-full max-w-full h-[calc(100vh-320px)] min-h-0 overflow-hidden">
                                     {/* Left Column: Gig Selection */}
                                     <div
                                         className="bg-white rounded-3xl shadow-xl p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-harx-100/50 backdrop-blur-sm flex flex-col"
@@ -1340,7 +1340,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         </div>
                                     </div>
                                 </div>
-                                )}
                             </div>
                         )}
                         {/* 2. INVITED REPS */}
