@@ -532,7 +532,8 @@ export default function CallsDashboardPage() {
                           { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], icon: ActivityIcon },
                           { label: 'Fraud Detection', data: selectedCall.ai_call_score?.["Fraud detection"], icon: ShieldAlert },
                           { label: 'Script Coherence', data: selectedCall.ai_call_score?.["Script coherence"], icon: ShieldCheck },
-                          { label: 'Argumentation Quality', data: selectedCall.ai_call_score?.["Argumentation"], icon: TrendingUp }
+                          { label: 'Argumentation Quality', data: selectedCall.ai_call_score?.["Argumentation"], icon: TrendingUp },
+                          { label: 'Transaction Analysis', data: selectedCall.ai_call_score?.["Transaction analysis"], icon: TrendingUp }
                         ].map((metric, mIdx) => (
                           <div key={mIdx} className="bg-white rounded-[20px] p-4 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
                             <div className="flex justify-between items-start mb-3">
