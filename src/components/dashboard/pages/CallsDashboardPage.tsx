@@ -367,7 +367,7 @@ export default function CallsDashboardPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                {(!selectedCall.ai_call_score || !selectedCall.ai_call_score.overall?.score) && selectedCall.recording_url_cloudinary && (
+                {(!selectedCall.ai_call_score || !selectedCall.ai_call_score.overall?.score) && (!selectedCall.transcript || selectedCall.transcript.length === 0) && selectedCall.recording_url_cloudinary && (
                   <button
                     onClick={() => handleAnalyzeCall(selectedCall._id)}
                     disabled={analyzingCallId === selectedCall._id}
