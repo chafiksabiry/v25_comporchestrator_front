@@ -31,6 +31,7 @@ import {
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import RepProfileView from './RepProfileView';
 
 export type MatchingDashboardProps = {
   /** When embedded in Company Onboarding (step 13), closes the step — tab is already company-onboarding. */
@@ -78,6 +79,27 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [leftColumnWidth, setLeftColumnWidth] = useState<number>(25); // percentage
     const [isResizing, setIsResizing] = useState<boolean>(false);
+    
+    const [selectedAgentProfile, setSelectedAgentProfile] = useState<any>(null);
+    const [loadingProfile, setLoadingProfile] = useState(false);
+
+    const handleAgentClick = async (agentId: string) => {
+        try {
+            setLoadingProfile(true);
+            const REP_API_URL = 'https://v25repscreationwizardbackend-production.up.railway.app/api';
+            const response = await fetch(`${REP_API_URL}/profiles/${agentId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch profile');
+            }
+            const data = await response.json();
+            setSelectedAgentProfile(data);
+        } catch (err) {
+            console.error('Error fetching profile:', err);
+            alert('Impossible de charger le profil de l\'agent.');
+        } finally {
+            setLoadingProfile(false);
+        }
+    };
 
     // Handle column resizing
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -973,7 +995,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     <div className="flex items-center gap-3 mb-2">
                                                                         <h4
                                                                             className="text-lg font-bold text-gray-900 truncate cursor-pointer hover:text-harx-600 transition-colors"
-                                                                            onClick={() => toggleRepDetails(match.agentId)}
+                                                                            onClick={() => handleAgentClick(match.agentId)}
                                                                         >
                                                                             {match.agentInfo?.name}
                                                                         </h4>
@@ -1632,6 +1654,21 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                     </>
                 )}
             </main>
+
+            {/* Modal pour le profil */}
+            {selectedAgentProfile && (
+                <RepProfileView
+                    profile={selectedAgentProfile}
+                    onClose={() => setSelectedAgentProfile(null)}
+                />
+            )}
+            
+            {/* Spinner pour le chargement du profil */}
+            {loadingProfile && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-25 flex items-center justify-center z-[110]">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-600"></div>
+                </div>
+            )}
         </div>
     );
 }
