@@ -283,29 +283,29 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
   return (
     <div className="space-y-8 p-8 bg-gradient-to-br from-slate-50 via-white to-purple-50/20 min-h-screen text-slate-800 rounded-[24px] border border-slate-100 relative overflow-hidden shadow-xl">
       {/* Soft elegant ambient background glows */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-500/[0.02] rounded-full blur-[120px] pointer-events-none animate-pulse-slow" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[500px] h-[500px] bg-rose-500/[0.02] rounded-full blur-[120px] pointer-events-none animate-pulse-slow" />
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-500/[0.02] rounded-full blur-[120px] pointer-events-none animate-float-slow" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[500px] h-[500px] bg-rose-500/[0.02] rounded-full blur-[120px] pointer-events-none animate-float-slow" style={{ animationDelay: '-3s' }} />
 
       {/* Header Back Button */}
-      <div className="flex items-center justify-between relative z-10">
+      <div className="flex items-center justify-between relative z-10 animate-slide-up">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2.5 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:text-slate-950 transition-all duration-300 shadow-sm"
+          className="inline-flex items-center gap-2.5 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:text-slate-950 transition-all duration-300 shadow-sm hover:scale-105 active:scale-95"
         >
-          <ArrowLeft size={14} />
+          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
           Back to Gigs
         </button>
       </div>
 
       {/* Main Card (Matching 1st Image) */}
-      <div className="rounded-[2rem] bg-white border border-slate-100 p-10 space-y-10 shadow-xl shadow-slate-100/50 relative overflow-hidden z-10">
+      <div className="rounded-[2rem] bg-white border border-slate-100 p-10 space-y-10 shadow-xl shadow-slate-100/50 relative overflow-hidden z-10 animate-slide-up [animation-delay:80ms] hover-lift">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-rose-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
-            <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest block">
+            <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest block animate-pulse">
               {gig.category || 'OUTBOUND SALES'}
             </span>
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight uppercase tracking-tight bg-clip-text bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900/90">
@@ -317,34 +317,34 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
           {/* Left Column: Job Description */}
-          <div className="space-y-6">
+          <div className="space-y-6 animate-slide-up [animation-delay:120ms]">
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">Job Description</h2>
             <p className="text-slate-600 leading-relaxed font-medium text-[15px]">
               {gig.description || 'Nous recherchons une équipe commerciale dynamique comprenant jusqu\'à 5 télévendeurs pour assurer l\'intégralité du cycle de vente de produits d\'assurance complémentaire santé/mutuelle à destination de clients particuliers en France. Votre mission couvrira toutes les étapes du processus de vente.'}
             </p>
             {/* Seniority Tags */}
             <div className="flex flex-wrap gap-2.5 mt-4">
-              <span className="px-3.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-full text-xs font-extrabold uppercase tracking-wide">
+              <span className="px-3.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-full text-xs font-extrabold uppercase tracking-wide hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-rose-100 hover:border-rose-200">
                 {gig.seniority?.level || 'Mid-Level'}
               </span>
-              <span className="px-3.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-full text-xs font-extrabold uppercase tracking-wide">
+              <span className="px-3.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-full text-xs font-extrabold uppercase tracking-wide hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-rose-100 hover:border-rose-200">
                 {gig.seniority?.yearsExperience || '2'} Years Experience
               </span>
             </div>
           </div>
 
           {/* Right Column: Commission & Details */}
-          <div className="space-y-6">
+          <div className="space-y-6 animate-slide-up [animation-delay:150ms]">
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">Commission & details</h2>
 
             <div className="space-y-5">
               {/* Badges Row */}
               <div className="flex flex-wrap gap-3.5">
-                <div className="px-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-cyan-500/10 hover:scale-[1.02] transition-transform duration-300">
-                  <Phone size={14} />
+                <div className="px-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-cyan-500/10 hover:scale-105 transition-all duration-300 cursor-default hover:shadow-cyan-500/20">
+                  <Phone size={14} className="animate-bounce" />
                   {gig.commission?.commission_per_call || '2.8'}€ / APPEL
                 </div>
-                <div className="px-5 py-3 animate-shimmer-purple animate-pulse-subtle text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-purple-500/15">
+                <div className="px-5 py-3 animate-shimmer-purple animate-pulse-subtle text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:scale-105 transition-all duration-300 shadow-lg shadow-purple-500/15 cursor-default hover:shadow-purple-500/30">
                   <Repeat size={14} className="animate-spin-slow hover:rotate-180 transition-transform duration-500" />
                   {typeof gig.commission?.transactionCommission === 'number'
                     ? gig.commission.transactionCommission
@@ -353,8 +353,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               </div>
 
               {/* Bonus Badge */}
-              <div className="px-5 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest inline-flex items-center gap-2 shadow-lg shadow-rose-500/10 hover:scale-[1.02] transition-transform duration-300">
-                <Star size={14} />
+              <div className="px-5 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest inline-flex items-center gap-2 shadow-lg shadow-rose-500/10 hover:scale-105 transition-all duration-300 cursor-default hover:shadow-rose-500/20">
+                <Star size={14} className="animate-spin-slow" />
                 +{gig.commission?.bonusAmount || '84'}€ BONUS
                 <span className="text-[10px] font-bold opacity-80 normal-case ml-1 tracking-normal bg-black/15 px-2 py-0.5 rounded-md">
                   Chaque {gig.commission?.minimumVolume?.amount || '25'} appels / {gig.commission?.minimumVolume?.period || 'mois'}
@@ -362,7 +362,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               </div>
 
               {/* Description Box */}
-              <div className="bg-slate-50 rounded-2xl p-6 text-slate-600 text-xs font-medium leading-relaxed italic border border-slate-100">
+              <div className="bg-slate-50 rounded-2xl p-6 text-slate-600 text-xs font-medium leading-relaxed italic border border-slate-100 hover:border-slate-200 transition-colors duration-300">
                 {gig.commission?.additionalDetails || "Une transaction est comptabilisée uniquement si le contrat est signé et non rétracté dans les 14 jours. Les résiliations dans les 3 mois suivant la signature entraînent l'annulation et le remboursement de la commission correspondante. La prime de performance est de 100 € pour 25 transactions validées sur un même mois."}
               </div>
             </div>
@@ -371,7 +371,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
       </div>
 
       {/* Combined Team, Territory & Agents Control Center */}
-      <div className="rounded-[2rem] bg-white border border-slate-100 p-8 relative overflow-hidden shadow-xl shadow-slate-100/50 z-10">
+      <div className="rounded-[2rem] bg-white border border-slate-100 p-8 relative overflow-hidden shadow-xl shadow-slate-100/50 z-10 animate-slide-up [animation-delay:150ms] hover-lift">
         {/* Background glow effects */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-48 h-48 bg-gradient-to-br from-purple-500/[0.02] to-indigo-500/[0.02] rounded-full blur-3xl pointer-events-none" />
 
@@ -379,7 +379,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100 mb-6">
           <div>
             <h2 className="text-lg font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <Users className="h-5 w-5 text-purple-600 animate-pulse" />
+              <Users className="h-5 w-5 text-purple-600 animate-pulse animate-glow-pulse" />
               Team & Territory setup
             </h2>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
@@ -391,14 +391,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
         {/* Content grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Column 1: Team Size & Capacity */}
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 hover:scale-[1.02] transition-transform duration-300">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Team Structure</span>
-            <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 flex items-center gap-4">
-              <div className="p-3 bg-purple-100 rounded-xl text-purple-700 shrink-0">
+            <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 flex items-center gap-4 hover:border-purple-200 transition-colors duration-300">
+              <div className="p-3 bg-purple-100 rounded-xl text-purple-700 shrink-0 animate-bounce" style={{ animationDuration: '3s' }}>
                 <Briefcase className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-2xl font-black text-slate-950 leading-none">{gig.team?.size || 5}</p>
+                <p className="text-2xl font-black text-slate-955 leading-none">{gig.team?.size || 5}</p>
                 <p className="text-[10px] text-purple-600 font-bold mt-1 uppercase tracking-wider">Allocated Seats</p>
               </div>
             </div>
@@ -406,11 +406,11 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
           {/* Column 2: Destination Territory */}
           {gig.destination_zone && (
-            <div className="space-y-2.5">
+            <div className="space-y-2.5 hover:scale-[1.02] transition-transform duration-300">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Target Country</span>
-              <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex items-center gap-4">
+              <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex items-center gap-4 hover:border-emerald-200 transition-colors duration-300">
                 {gig.destination_zone.flags?.png ? (
-                  <img src={gig.destination_zone.flags.png} alt="" className="w-12 h-8 rounded-lg border border-slate-200 object-cover shrink-0 shadow-sm" />
+                  <img src={gig.destination_zone.flags.png} alt="" className="w-12 h-8 rounded-lg border border-slate-200 object-cover shrink-0 shadow-sm animate-pulse-subtle" />
                 ) : (
                   <div className="p-3 bg-emerald-100 rounded-xl text-emerald-700 shrink-0">
                     <MapPin className="h-5 w-5" />
@@ -434,13 +434,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
             {enrolledAgents.length > 0 ? (
               <div
                 onClick={() => setShowAgentsModal(true)}
-                className="p-4 bg-indigo-50/50 hover:bg-indigo-100/50 cursor-pointer rounded-2xl border border-indigo-100 flex items-center justify-between gap-4 transition-all duration-300 group"
+                className="p-4 bg-indigo-50/50 hover:bg-indigo-100/50 cursor-pointer rounded-2xl border border-indigo-100 flex items-center justify-between gap-4 transition-all duration-300 group hover:scale-[1.02] hover:border-indigo-200 hover:shadow-md"
               >
                 <div className="flex -space-x-3 overflow-hidden">
                   {enrolledAgents.slice(0, 4).map((agent, i) => (
                     <div
                       key={i}
-                      className="inline-block h-8 w-8 rounded-full overflow-hidden ring-2 ring-white bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shadow-sm uppercase transition-transform group-hover:-translate-y-0.5"
+                      className="inline-block h-8 w-8 rounded-full overflow-hidden ring-2 ring-white bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shadow-sm uppercase transition-transform group-hover:-translate-y-0.5 group-hover:scale-110"
+                      style={{ transitionDelay: `${i * 40}ms` }}
                     >
                       {getAgentAvatar(agent) ? (
                         <img src={getAgentAvatar(agent)} alt="Avatar" className="w-full h-full object-cover" />
@@ -463,9 +464,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
             ) : (
               <button 
                 onClick={handleMatchingRedirect}
-                className="w-full p-4 bg-indigo-50/50 hover:bg-indigo-100/50 rounded-2xl border border-indigo-100/70 border-dashed flex items-center justify-center gap-2 transition-all duration-300 group shadow-sm"
+                className="w-full p-4 bg-indigo-50/50 hover:bg-indigo-100/50 rounded-2xl border border-indigo-100/70 border-dashed flex items-center justify-center gap-2 transition-all duration-300 group shadow-sm hover:scale-[1.02]"
               >
-                <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse group-hover:scale-110" />
+                <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse animate-glow-pulse group-hover:scale-110" />
                 <span className="text-[10px] text-indigo-600 font-black uppercase tracking-wider group-hover:text-indigo-800">Match New Agents</span>
               </button>
             )}
@@ -475,10 +476,10 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
       {/* Skills */}
       {gig.skills && (
-        <div className="rounded-[2rem] bg-white border border-slate-100 p-8 shadow-xl shadow-slate-100/50 z-10">
+        <div className="rounded-[2rem] bg-white border border-slate-100 p-8 shadow-xl shadow-slate-100/50 z-10 animate-slide-up [animation-delay:220ms] hover-lift">
           <div className="flex items-center gap-4 mb-6">
             <div className="p-3 bg-purple-50 rounded-xl">
-              <Target className="h-5 w-5 text-purple-600 animate-pulse" />
+              <Target className="h-5 w-5 text-purple-600 animate-pulse animate-glow-pulse" />
             </div>
             <h2 className="text-lg font-black text-slate-900 uppercase tracking-wider">Skills & Requirements</h2>
           </div>
@@ -487,7 +488,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               <div className="space-y-3.5">
                 <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-widest border-b border-slate-100 pb-2">Professional</h3>
                 {gig.skills.professional.map((item, index) => (
-                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-0.5 rounded-2xl flex justify-between items-center transition-all duration-300">
+                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-1 rounded-2xl flex justify-between items-center transition-all duration-300 hover:shadow-sm">
                     <span className="text-xs font-extrabold text-slate-700">
                       {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
                     </span>
@@ -500,7 +501,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               <div className="space-y-3.5">
                 <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-widest border-b border-slate-100 pb-2">Technical</h3>
                 {gig.skills.technical.map((item, index) => (
-                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-0.5 rounded-2xl flex justify-between items-center transition-all duration-300">
+                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-1 rounded-2xl flex justify-between items-center transition-all duration-300 hover:shadow-sm">
                     <span className="text-xs font-extrabold text-slate-700">
                       {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
                     </span>
@@ -513,7 +514,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               <div className="space-y-3.5">
                 <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-widest border-b border-slate-100 pb-2">Soft</h3>
                 {gig.skills.soft.map((item, index) => (
-                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-0.5 rounded-2xl flex justify-between items-center transition-all duration-300">
+                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-1 rounded-2xl flex justify-between items-center transition-all duration-300 hover:shadow-sm">
                     <span className="text-xs font-extrabold text-slate-700">
                       {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
                     </span>
@@ -526,7 +527,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               <div className="space-y-3.5">
                 <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-widest border-b border-slate-100 pb-2">Languages</h3>
                 {gig.skills.languages.map((item, index) => (
-                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-0.5 rounded-2xl flex justify-between items-center transition-all duration-300">
+                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-1 rounded-2xl flex justify-between items-center transition-all duration-300 hover:shadow-sm">
                     <div>
                       <p className="text-xs font-extrabold text-slate-700">
                         {typeof item.language === 'object' ? item.language?.name : (item.language || 'Unnamed Language')}
@@ -546,13 +547,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
       {/* Enrolled Agents Modal */}
       {showAgentsModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2.5rem] w-11/12 max-w-4xl shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] w-11/12 max-w-4xl shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col overflow-hidden animate-scale-up-bounce">
             {/* Header */}
             <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>
                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Users className="text-purple-600 animate-pulse" />
+                  <Users className="text-purple-600 animate-pulse animate-glow-pulse" />
                   Enrolled Representatives
                 </h3>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">Currently assigned agents for <span className="font-extrabold text-purple-600">{gig.title}</span></p>
@@ -563,14 +564,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                     setShowAgentsModal(false);
                     handleMatchingRedirect();
                   }}
-                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-sm hover:shadow flex items-center gap-1.5"
+                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-sm hover:shadow flex items-center gap-1.5 hover:scale-105 active:scale-95"
                 >
-                  <Sparkles size={12} className="animate-pulse" />
+                  <Sparkles size={12} className="animate-pulse animate-glow-pulse" />
                   Match New Reps
                 </button>
                 <button
                   onClick={() => setShowAgentsModal(false)}
-                  className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                  className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-all duration-300 hover:scale-110 active:scale-90"
                 >
                   <X size={20} />
                 </button>
@@ -586,9 +587,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                   const statusColors = getAgentStatusColor(agent.status || 'accepted');
 
                   return (
-                    <div key={agent._id || index} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0 border-b border-slate-100 last:border-b-0">
+                    <div 
+                      key={agent._id || index} 
+                      className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0 border-b border-slate-100 last:border-b-0 animate-fade-in-row"
+                      style={{ animationDelay: `${index * 80}ms` }}
+                    >
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-indigo-600 ring-2 ring-purple-100 text-white font-black text-sm flex items-center justify-center shadow-md uppercase">
+                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-indigo-600 ring-2 ring-purple-100 text-white font-black text-sm flex items-center justify-center shadow-md uppercase hover:scale-110 hover:rotate-6 transition-transform duration-300">
                           {getAgentAvatar(agent) ? (
                             <img src={getAgentAvatar(agent)} alt="Avatar" className="w-full h-full object-cover" />
                           ) : (
@@ -607,8 +612,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                               <span className="opacity-70">Email:</span> {getAgentEmail(agent)}
                             </p>
                           )}
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
+                          <div className="flex items-center gap-2 mt-2 animate-slide-up" style={{ animationDelay: `${(index * 80) + 100}ms` }}>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusColors.bg} ${statusColors.text} ${statusColors.border} hover:scale-105 transition-transform duration-200 cursor-default`}>
                               {agent.status || 'accepted'}
                             </span>
                             {agent.emailSent && (
@@ -625,10 +630,10 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                         <div className="text-right">
                           <span className="text-[10px] text-slate-400 font-bold block mb-1">MATCH SCORE</span>
                           <div className="flex items-center gap-2">
-                            <div className="w-24 bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div className="w-24 bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
                               <div
-                                className={`h-full rounded-full bg-gradient-to-r ${score >= 0.8 ? 'from-emerald-400 to-emerald-500' : 'from-amber-400 to-amber-500'}`}
-                                style={{ width: `${scorePct}%` }}
+                                className={`h-full rounded-full bg-gradient-to-r ${score >= 0.8 ? 'from-emerald-400 to-emerald-500' : 'from-amber-400 to-amber-500'} animate-width-fill`}
+                                style={{ width: `${scorePct}%`, animationDelay: `${(index * 80) + 150}ms` }}
                               />
                             </div>
                             <span className={`text-sm font-black ${score >= 0.8 ? 'text-emerald-600' : 'text-amber-600'}`}>
@@ -675,7 +680,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
         }
         @keyframes subtlePulse {
           0%, 100% { transform: scale(1); box-shadow: 0 0 0 rgba(168, 85, 247, 0); }
-          50% { transform: scale(1.03); box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); }
+          50% { transform: scale(1.03); box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
         }
         .animate-pulse-subtle {
           animation: subtlePulse 3s infinite ease-in-out;
@@ -686,6 +691,55 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
         }
         .animate-spin-slow {
           animation: spinSlow 12s infinite linear;
+        }
+        @keyframes floatSlow {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-10px) rotate(1deg); }
+        }
+        .animate-float-slow {
+          animation: floatSlow 8s infinite ease-in-out;
+        }
+        @keyframes glowPulse {
+          0%, 100% { filter: drop-shadow(0 0 2px rgba(168, 85, 247, 0.1)); }
+          50% { filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4)); }
+        }
+        .animate-glow-pulse {
+          animation: glowPulse 2.5s infinite ease-in-out;
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+          animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes scaleUpBounce {
+          from { opacity: 0; transform: scale(0.96) translateY(20px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-scale-up-bounce {
+          animation: scaleUpBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        @keyframes fadeInRow {
+          from { opacity: 0; transform: translateX(16px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-fade-in-row {
+          animation: fadeInRow 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes widthFill {
+          from { width: 0%; }
+        }
+        .animate-width-fill {
+          animation: widthFill 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .hover-lift {
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .hover-lift:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.05);
+          border-color: rgba(168, 85, 247, 0.15);
         }
       `}</style>
     </div>
