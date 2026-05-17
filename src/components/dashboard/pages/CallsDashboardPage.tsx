@@ -367,16 +367,7 @@ export default function CallsDashboardPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                {(!selectedCall.ai_call_score || !selectedCall.ai_call_score.overall?.score) && (!selectedCall.transcript || selectedCall.transcript.length === 0) && selectedCall.recording_url_cloudinary && (
-                  <button
-                    onClick={() => handleAnalyzeCall(selectedCall._id)}
-                    disabled={analyzingCallId === selectedCall._id}
-                    className="flex items-center gap-2 px-6 py-3 bg-harx-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-harx-600 transition-all shadow-lg shadow-harx-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Brain className={`w-4 h-4 ${analyzingCallId === selectedCall._id ? 'animate-spin' : ''}`} />
-                    {analyzingCallId === selectedCall._id ? 'Analyse...' : 'Analyze & Transcribe'}
-                  </button>
-                )}
+
                 <button
                   onClick={() => setSelectedCall(null)}
                   className="p-3 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl border border-slate-100 transition-all shadow-sm"
