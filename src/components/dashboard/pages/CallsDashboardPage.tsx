@@ -261,9 +261,9 @@ export default function CallsDashboardPage() {
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Appel (Validation AI)</span>
                               {call.validByAI === true || call.valid === true ? (
-                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-32 whitespace-nowrap">
+                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
-                                  Validé par AI
+                                  Validé par AI (+{(call.lead?.gigId?.commission?.commission_per_call || call.lead?.gigId?.rewardPerCall || 4).toFixed(2)}€)
                                 </span>
                               ) : call.validByAI === false ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
@@ -284,9 +284,9 @@ export default function CallsDashboardPage() {
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction AI</span>
                               {call.transaction?.validByCompany === true ? (
-                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-32 whitespace-nowrap">
+                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
-                                  Signé
+                                  Signé (+{(call.lead?.gigId?.commission?.transactionCommission || call.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€)
                                 </span>
                               ) : (call.validByAI === null || call.validByAI === undefined) ? (
                                 <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
@@ -428,9 +428,9 @@ export default function CallsDashboardPage() {
                 <div className="flex items-center gap-3">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction (Validation Finale) :</span>
                   {selectedCall.transaction?.validByCompany === true ? (
-                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-32">
+                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-36 whitespace-nowrap">
                       <Check className="w-3.5 h-3.5" />
-                      Validé
+                      Validé (+{(selectedCall.lead?.gigId?.commission?.transactionCommission || selectedCall.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€)
                     </span>
                   ) : selectedCall.transaction?.validByCompany === false ? (
                     <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32">
@@ -439,13 +439,13 @@ export default function CallsDashboardPage() {
                     </span>
                   ) : (
                     <div className="flex items-center gap-3">
-                      {selectedCall.transaction?.validByAI === false && (
+                      {selectedCall.validByAI !== null && selectedCall.validByAI !== undefined && selectedCall.transaction?.validByAI === false && (
                         <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
                           <X className="w-3.5 h-3.5" />
                           Refusé AI
                         </span>
                       )}
-                      {selectedCall.transaction?.validByAI === true && (
+                      {selectedCall.validByAI !== null && selectedCall.validByAI !== undefined && selectedCall.transaction?.validByAI === true && (
                         <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-44 whitespace-nowrap">
                           <Clock className="w-3.5 h-3.5 animate-pulse" />
                           Wait for Validation
