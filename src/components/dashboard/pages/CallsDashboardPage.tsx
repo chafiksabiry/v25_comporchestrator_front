@@ -466,7 +466,7 @@ export default function CallsDashboardPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="py-20 text-center flex flex-col items-center justify-center gap-4">
+                    <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                       <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Transcript not available for this call</p>
                       <button
                         onClick={() => handleAnalyzeCall(selectedCall._id)}
@@ -480,9 +480,9 @@ export default function CallsDashboardPage() {
                   )}
                 </div>
               ) : (
-                <div className="max-w-5xl mx-auto space-y-8">
+                <div className="max-w-5xl mx-auto space-y-8 pb-4">
                   {(!selectedCall.ai_call_score || !selectedCall.ai_call_score.overall?.score) ? (
-                    <div className="py-20 text-center flex flex-col items-center justify-center gap-4">
+                    <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                       <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">No analysis available for this call</p>
                       <button
                         onClick={() => handleAnalyzeCall(selectedCall._id)}
