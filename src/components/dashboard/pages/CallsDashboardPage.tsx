@@ -52,9 +52,16 @@ export default function CallsDashboardPage() {
       const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
       const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
 
-      const response = await fetch(`${callsBase}/calls/${callId}/analyze`, { method: 'POST' });
+      const response = await fetch(`${callsBase}/calls/${callId}/analyze`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const result = await response.json().catch(() => ({}));
+      
       if (response.ok) {
-        const result = await response.json();
         if (result.success) {
           if (selectedCall && (selectedCall._id === callId)) {
             setSelectedCall({
@@ -66,10 +73,16 @@ export default function CallsDashboardPage() {
             });
           }
           fetchCalls();
+          alert('Analysis completed successfully!');
+        } else {
+          alert(`Analysis failed: ${result.message || 'Unknown error'}`);
         }
+      } else {
+        alert(`Error: ${response.status} - ${result.message || response.statusText || 'Failed to analyze call'}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error analyzing call:', error);
+      alert(`Error analyzing call: ${error.message || 'Network error'}`);
     } finally {
       setAnalyzingCallId(null);
     }
@@ -423,21 +436,35 @@ export default function CallsDashboardPage() {
                       Refusé
                     </span>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, true)}
-                        className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60 w-24"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        Valider
-                      </button>
-                      <button
-                        onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, false)}
-                        className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60 w-24"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        Refuser
-                      </button>
+                    <div className="flex items-center gap-3">
+                      {selectedCall.transaction?.validByAI === false && (
+                        <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
+                          <X className="w-3.5 h-3.5" />
+                          Refusé AI
+                        </span>
+                      )}
+                      {selectedCall.transaction?.validByAI === true && (
+                        <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-44 whitespace-nowrap">
+                          <Clock className="w-3.5 h-3.5 animate-pulse" />
+                          Wait for Validation
+                        </span>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, true)}
+                          className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60 w-24"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          Valider
+                        </button>
+                        <button
+                          onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, false)}
+                          className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60 w-24"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          Refuser
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
