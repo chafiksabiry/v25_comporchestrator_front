@@ -20,7 +20,10 @@ const GigAgentList: React.FC<GigAgentListProps> = ({ gigId, agentId }) => {
         try {
             setLoadingProfile(true);
             const REP_API_URL = 'https://v25repscreationwizardbackend-production.up.railway.app/api';
-            const response = await fetch(`${REP_API_URL}/profiles/${agentId}`);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${REP_API_URL}/profiles/${agentId}`, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
             if (!response.ok) {
                 throw new Error('Failed to fetch profile');
             }
