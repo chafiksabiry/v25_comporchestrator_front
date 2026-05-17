@@ -1,5 +1,6 @@
-import React from 'react';
-import { ArrowLeft, FileText, Target, Award, DollarSign, Users, MapPin, ClockIcon, Globe, Settings, Phone, Repeat, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, FileText, Target, Award, DollarSign, Users, MapPin, ClockIcon, Globe, Settings, Phone, Repeat, Star, X, ChevronRight } from 'lucide-react';
+import RepProfileView from '../RepProfileView';
 
 interface Gig {
   _id: string;
@@ -134,6 +135,62 @@ interface GigDetailsViewProps {
 }
 
 const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
+  const [enrolledAgents, setEnrolledAgents] = useState<any[]>([]);
+  const [loadingAgents, setLoadingAgents] = useState<boolean>(false);
+  const [showAgentsModal, setShowAgentsModal] = useState<boolean>(false);
+  const [selectedAgentProfile, setSelectedAgentProfile] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (gig?._id) {
+      setLoadingAgents(true);
+      const MATCHING_API_URL = import.meta.env.VITE_MATCHING_API_URL || 'https://v25matchingbackend-production.up.railway.app/api';
+      fetch(`${MATCHING_API_URL}/gig-agents/gig/${gig._id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setEnrolledAgents(data);
+          }
+        })
+        .catch(err => console.error("Error fetching enrolled agents:", err))
+        .finally(() => setLoadingAgents(false));
+    }
+  }, [gig?._id]);
+
+  const handleAgentClick = async (agentId: string) => {
+    try {
+      setLoadingProfile(true);
+      const REP_API_URL = 'https://v25repscreationwizardbackend-production.up.railway.app/api';
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${REP_API_URL}/profiles/${agentId}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile');
+      }
+      const data = await response.json();
+      setSelectedAgentProfile(data);
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      alert('Impossible de charger le profil de l\'agent.');
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const getAgentStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'accepted':
+        return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' };
+      case 'pending':
+        return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' };
+      case 'rejected':
+        return { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' };
+      default:
+        return { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' };
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Back Button */}
@@ -191,8 +248,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                   <Phone size={14} />
                   {gig.commission?.commission_per_call || '2.8'}€ / APPEL
                 </div>
-                <div className="px-4 py-2 bg-gradient-to-r from-purple-400 to-purple-600 text-white rounded-lg text-sm font-black uppercase tracking-tight flex items-center gap-2">
-                  <Repeat size={14} />
+                <div className="px-4 py-2 animate-shimmer-purple animate-pulse-subtle text-white rounded-lg text-sm font-black uppercase tracking-tight flex items-center gap-2 hover:scale-105 transition-transform duration-300 shadow-md">
+                  <Repeat size={14} className="animate-spin-slow hover:rotate-180 transition-transform duration-500" />
                   {typeof gig.commission?.transactionCommission === 'number' 
                     ? gig.commission.transactionCommission 
                     : ((gig.commission?.transactionCommission as any)?.amount || '21')}€ / TRANSACTION
@@ -269,6 +326,58 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
             </div>
           </div>
         )}
+
+        {/* Enrolled Agents Card */}
+        {enrolledAgents.length > 0 && (
+          <div 
+            onClick={() => setShowAgentsModal(true)}
+            className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8 hover:shadow-xl hover:border-purple-200 transition-all duration-300 cursor-pointer group relative overflow-hidden"
+          >
+            {/* Background absolute subtle gradient glow */}
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-36 h-36 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-full blur-2xl group-hover:scale-125 transition-all duration-500" />
+            
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-purple-50 rounded-xl group-hover:bg-purple-100 transition-colors">
+                <Users className="h-6 w-6 text-purple-600 animate-pulse" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Enrolled Agents</h2>
+                <p className="text-xs text-purple-600 font-bold uppercase tracking-wider mt-0.5">
+                  {enrolledAgents.length} Active {enrolledAgents.length === 1 ? 'Representative' : 'Representatives'}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-gray-500 text-sm font-medium leading-relaxed">
+                Click to view matching scores, compliance status, and full profiles of the agents currently enrolled in this outbound sales gig.
+              </p>
+              
+              {/* Stacked Avatars Preview */}
+              <div className="flex items-center gap-2 pt-2">
+                <div className="flex -space-x-3 overflow-hidden">
+                  {enrolledAgents.slice(0, 5).map((agent, i) => (
+                    <div 
+                      key={i} 
+                      className="inline-block h-9 w-9 rounded-full ring-2 ring-white bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-md uppercase transition-transform hover:-translate-y-1"
+                    >
+                      {agent.agentId ? agent.agentId.substring(0, 2).toUpperCase() : 'AG'}
+                    </div>
+                  ))}
+                  {enrolledAgents.length > 5 && (
+                    <div className="inline-block h-9 w-9 rounded-full ring-2 ring-white bg-gray-100 text-gray-600 font-bold text-xs flex items-center justify-center shadow-md">
+                      +{enrolledAgents.length - 5}
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs font-bold text-gray-400 group-hover:text-purple-600 transition-colors ml-2 flex items-center gap-1">
+                  View List
+                  <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform animate-pulse" />
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Skills */}
@@ -331,6 +440,141 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
           </div>
         </div>
       )}
+
+      {/* Enrolled Agents Modal */}
+      {showAgentsModal && (
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-11/12 max-w-4xl shadow-2xl border border-gray-100 max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <div>
+                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+                  <Users className="text-purple-600" />
+                  Enrolled Representatives
+                </h3>
+                <p className="text-sm text-gray-500 font-medium">Currently assigned agents for <span className="font-bold text-gray-700">{gig.title}</span></p>
+              </div>
+              <button 
+                onClick={() => setShowAgentsModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="p-8 overflow-y-auto flex-1 space-y-4">
+              <div className="divide-y divide-gray-100">
+                {enrolledAgents.map((agent, index) => {
+                  const score = agent.matchScore || 0.85;
+                  const scorePct = Math.round(score * 100);
+                  const statusColors = getAgentStatusColor(agent.status || 'accepted');
+                  
+                  return (
+                    <div key={agent._id || index} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-md uppercase">
+                          {agent.agentId ? agent.agentId.substring(0, 2).toUpperCase() : 'AG'}
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900">
+                            Agent ID: <span 
+                              className="text-harx-600 hover:underline cursor-pointer font-black"
+                              onClick={() => {
+                                handleAgentClick(agent.agentId);
+                              }}
+                            >
+                              {agent.agentId}
+                            </span>
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
+                              {agent.status || 'accepted'}
+                            </span>
+                            {agent.emailSent && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100">
+                                Invited
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6 self-end md:self-center">
+                        {/* Match Score Indicator */}
+                        <div className="text-right">
+                          <span className="text-xs text-gray-400 font-bold block mb-1">MATCH SCORE</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 bg-gray-100 rounded-full h-2 overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full bg-gradient-to-r ${score >= 0.8 ? 'from-emerald-400 to-emerald-500' : 'from-amber-400 to-amber-500'}`} 
+                                style={{ width: `${scorePct}%` }}
+                              />
+                            </div>
+                            <span className={`text-sm font-black ${score >= 0.8 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                              {scorePct}%
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* View Button */}
+                        <button
+                          onClick={() => handleAgentClick(agent.agentId)}
+                          className="px-4 py-2 border border-purple-200 text-purple-600 hover:bg-purple-50 rounded-xl text-xs font-black uppercase tracking-wider transition-colors"
+                        >
+                          Profile
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rep Profile View Modal overlay */}
+      {selectedAgentProfile && (
+        <RepProfileView
+          profile={selectedAgentProfile}
+          onClose={() => setSelectedAgentProfile(null)}
+        />
+      )}
+      
+      {/* Loading Profile Overlay */}
+      {loadingProfile && (
+        <div className="fixed inset-0 bg-gray-950/20 backdrop-blur-xs flex items-center justify-center z-[110] animate-in fade-in duration-200">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-600"></div>
+        </div>
+      )}
+
+      {/* Styled custom classes and animations */}
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .animate-shimmer-purple {
+          background: linear-gradient(90deg, #c084fc 0%, #a855f7 25%, #6366f1 50%, #a855f7 75%, #c084fc 100%);
+          background-size: 200% 100%;
+          animation: shimmer 4s infinite linear;
+        }
+        @keyframes subtlePulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 0 rgba(168, 85, 247, 0); }
+          50% { transform: scale(1.03); box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); }
+        }
+        .animate-pulse-subtle {
+          animation: subtlePulse 3s infinite ease-in-out;
+        }
+        @keyframes spinSlow {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spinSlow 12s infinite linear;
+        }
+      `}</style>
     </div>
   );
 };
