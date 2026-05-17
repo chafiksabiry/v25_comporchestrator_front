@@ -610,13 +610,6 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                           </div>
                         </div>
 
-                        {/* View Button */}
-                        <button
-                          onClick={() => handleAgentClick(getAgentIdString(agent))}
-                          className="px-4 py-2 border border-purple-200 text-purple-600 hover:bg-purple-50 rounded-xl text-xs font-black uppercase tracking-wider transition-colors"
-                        >
-                          Profile
-                        </button>
                       </div>
                     </div>
                   );
