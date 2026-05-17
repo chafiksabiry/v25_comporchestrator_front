@@ -282,7 +282,7 @@ export default function CallsDashboardPage() {
 
                             {/* Validation de la Transaction AI */}
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction AI</span>
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction </span>
                               {call.transaction?.validByCompany === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
