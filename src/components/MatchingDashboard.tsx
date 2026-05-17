@@ -570,8 +570,17 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
     };
     return (
         <div className="h-full bg-slate-50/50 w-full max-w-full overflow-hidden text-slate-900 flex flex-col rounded-3xl">
-            {/* Header with Navigation Tabs */}
-            <header className="bg-gradient-harx border-b border-harx-600 shadow-lg rounded-t-3xl">
+            {selectedAgentProfile ? (
+                <div className="w-full h-full p-4">
+                    <RepProfileView
+                        profile={selectedAgentProfile}
+                        onClose={() => setSelectedAgentProfile(null)}
+                    />
+                </div>
+            ) : (
+                <>
+                    {/* Header with Navigation Tabs */}
+                    <header className="bg-gradient-harx border-b border-harx-600 shadow-lg rounded-t-3xl">
                 {/* Top Header */}
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex justify-between items-center">
@@ -643,16 +652,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
             {/* Main Content */}
             <main className="flex-1 overflow-hidden p-4 w-full max-w-full flex flex-col min-h-0">
-                {selectedAgentProfile ? (
-                    <div className="w-full h-full">
-                        <RepProfileView
-                            profile={selectedAgentProfile}
-                            onClose={() => setSelectedAgentProfile(null)}
-                        />
-                    </div>
-                ) : (
-                    <>
-                        {/* Error Message */}
+
+                {/* Error Message */}
                 {error && (
                     <div className="mb-6 bg-red-900/20 border-l-4 border-antigravity-accent text-harx-alt-600 px-4 py-3 rounded-lg shadow-md backdrop-blur-sm">
                         <p className="flex items-center">
@@ -1666,6 +1667,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                     </>
                 )}
             </main>
+                </>
+            )}
         </div>
     );
 }
