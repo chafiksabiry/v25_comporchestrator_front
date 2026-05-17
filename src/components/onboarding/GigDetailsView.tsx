@@ -240,7 +240,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                     {gig.team.territories.map((territory, index) => (
                       <div key={index} className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
                         {territory.flags?.png && <img src={territory.flags.png} alt={territory.flags.alt || ''} className="w-5 h-3.5 rounded-sm object-cover" />}
-                        <span className="text-xs font-bold text-gray-700">{territory.name?.common || territory}</span>
+                        <span className="text-xs font-bold text-gray-700">{typeof territory === 'object' ? (territory.name?.common || 'Unknown') : territory}</span>
                       </div>
                     ))}
                   </div>
