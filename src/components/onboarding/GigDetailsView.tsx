@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, FileText, Target, Award, DollarSign, Users, MapPin, ClockIcon, Globe, Settings, Phone, Repeat, Star, X, ChevronRight, Briefcase } from 'lucide-react';
+import { ArrowLeft, FileText, Target, Award, DollarSign, Users, MapPin, ClockIcon, Globe, Settings, Phone, Repeat, Star, X, ChevronRight, Briefcase, Sparkles } from 'lucide-react';
 import RepProfileView from '../RepProfileView';
 
 interface Gig {
@@ -456,10 +456,15 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                 </span>
               </div>
             ) : (
-              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 flex items-center gap-3">
-                <span className="text-lg">👥</span>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-wide">No active agents</p>
-              </div>
+              <button 
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'matching' } }));
+                }}
+                className="w-full p-4 bg-indigo-50/50 hover:bg-indigo-100/50 rounded-2xl border border-indigo-100/70 border-dashed flex items-center justify-center gap-2 transition-all duration-300 group"
+              >
+                <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse group-hover:scale-110" />
+                <span className="text-xs text-indigo-600 font-black uppercase tracking-wider group-hover:text-indigo-800">Match New Agents</span>
+              </button>
             )}
           </div>
         </div>
@@ -549,12 +554,24 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                 </h3>
                 <p className="text-sm text-gray-500 font-medium">Currently assigned agents for <span className="font-bold text-gray-700">{gig.title}</span></p>
               </div>
-              <button
-                onClick={() => setShowAgentsModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowAgentsModal(false);
+                    window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'matching' } }));
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-sm hover:shadow flex items-center gap-1.5"
+                >
+                  <Sparkles size={12} className="animate-pulse" />
+                  Match New Reps
+                </button>
+                <button
+                  onClick={() => setShowAgentsModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             {/* List */}
