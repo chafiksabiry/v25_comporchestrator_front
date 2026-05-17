@@ -355,91 +355,87 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
         </div>
       </div>
 
-      {/* Other Sections (Team, Skills, etc.) moved below in a clean layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Team */}
-        {gig.team && (
-          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-harx-50 rounded-xl">
-                <Users className="h-6 w-6 text-harx-500" />
+      {/* Combined Team, Territory & Agents Control Center */}
+      <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-8 relative overflow-hidden">
+        {/* Background glow effects */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-48 h-48 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-100 mb-6">
+          <div>
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+              <Users className="h-6 w-6 text-purple-600 animate-pulse" />
+              Team & Territory setup
+            </h2>
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mt-0.5">
+              Campaign staffing, target zone & active assignments
+            </p>
+          </div>
+          
+          {enrolledAgents.length > 0 && (
+            <button 
+              onClick={() => setShowAgentsModal(true)}
+              className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2"
+            >
+              <Users size={14} />
+              Manage Representatives ({enrolledAgents.length})
+            </button>
+          )}
+        </div>
+
+        {/* Content grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Column 1: Team Size & Capacity */}
+          <div className="space-y-2">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Team Structure</span>
+            <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 flex items-center gap-4">
+              <div className="p-3 bg-purple-100 rounded-xl text-purple-700 shrink-0">
+                <Briefcase className="h-5 w-5" />
               </div>
-              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Team Structure</h2>
+              <div>
+                <p className="text-2xl font-black text-gray-900 leading-none">{gig.team?.size || 5}</p>
+                <p className="text-xs text-gray-500 font-bold mt-1 uppercase">Allocated Seats</p>
+              </div>
             </div>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Team Size</span>
-                <span className="font-bold text-gray-900">{gig.team.size} members</span>
-              </div>
-              {gig.team.territories && gig.team.territories.length > 0 && (
-                <div>
-                  <span className="text-gray-600 font-medium block mb-2">Territories</span>
-                  <div className="flex flex-wrap gap-2">
-                    {gig.team.territories.map((territory, index) => (
-                      <div key={index} className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
-                        {territory.flags?.png && <img src={territory.flags.png} alt={territory.flags.alt || ''} className="w-5 h-3.5 rounded-sm object-cover" />}
-                        <span className="text-xs font-bold text-gray-700">{typeof territory === 'object' ? (territory.name?.common || 'Unknown') : territory}</span>
-                      </div>
-                    ))}
+          </div>
+
+          {/* Column 2: Destination Territory */}
+          {gig.destination_zone && (
+            <div className="space-y-2">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Target Country</span>
+              <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex items-center gap-4">
+                {gig.destination_zone.flags?.png ? (
+                  <img src={gig.destination_zone.flags.png} alt="" className="w-12 h-8 rounded-lg border border-gray-200 object-cover shrink-0 shadow-sm" />
+                ) : (
+                  <div className="p-3 bg-emerald-100 rounded-xl text-emerald-700 shrink-0">
+                    <MapPin className="h-5 w-5" />
                   </div>
+                )}
+                <div>
+                  <p className="text-base font-extrabold text-gray-900 leading-none truncate">
+                    {typeof gig.destination_zone === 'object' ? gig.destination_zone.name?.common : gig.destination_zone}
+                  </p>
+                  <p className="text-[10px] text-emerald-600 font-black mt-1 uppercase tracking-wider">
+                    {typeof gig.destination_zone === 'object' ? (gig.destination_zone.name?.official || 'Territory') : 'Territory'}
+                  </p>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Destination Zone */}
-        {gig.destination_zone && (
-          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-emerald-50 rounded-xl">
-                <MapPin className="h-6 w-6 text-emerald-600" />
-              </div>
-              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Destination Zone</h2>
-            </div>
-            <div className="flex items-center gap-4">
-              {gig.destination_zone.flags?.png && <img src={gig.destination_zone.flags.png} alt={gig.destination_zone.flags.alt || ''} className="w-16 h-10 rounded-lg border border-gray-100 object-cover" />}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">{typeof gig.destination_zone === 'object' ? (gig.destination_zone.name?.common || 'Unknown') : gig.destination_zone}</h3>
-                <p className="text-sm text-gray-500">{gig.destination_zone.name?.official || ''}</p>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Enrolled Agents Card */}
-        {enrolledAgents.length > 0 && (
-          <div
-            onClick={() => setShowAgentsModal(true)}
-            className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8 hover:shadow-xl hover:border-purple-200 transition-all duration-300 cursor-pointer group relative overflow-hidden"
-          >
-            {/* Background absolute subtle gradient glow */}
-            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-36 h-36 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-full blur-2xl group-hover:scale-125 transition-all duration-500" />
-
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-purple-50 rounded-xl group-hover:bg-purple-100 transition-colors">
-                <Users className="h-6 w-6 text-purple-600 animate-pulse" />
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Enrolled Agents</h2>
-                <p className="text-xs text-purple-600 font-bold uppercase tracking-wider mt-0.5">
-                  {enrolledAgents.length} Active {enrolledAgents.length === 1 ? 'Representative' : 'Representatives'}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-gray-500 text-sm font-medium leading-relaxed">
-                Click to view matching scores, compliance status, and full profiles of the agents currently enrolled in this outbound sales gig.
-              </p>
-
-              {/* Stacked Avatars Preview */}
-              <div className="flex items-center gap-2 pt-2">
+          {/* Column 3: Active Reps & Live preview */}
+          <div className="space-y-2">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Assigned Representatives</span>
+            {enrolledAgents.length > 0 ? (
+              <div 
+                onClick={() => setShowAgentsModal(true)}
+                className="p-4 bg-indigo-50/50 hover:bg-indigo-100/50 cursor-pointer rounded-2xl border border-indigo-100 flex items-center justify-between gap-4 transition-all duration-300 group"
+              >
                 <div className="flex -space-x-3 overflow-hidden">
-                  {enrolledAgents.slice(0, 5).map((agent, i) => (
-                    <div
-                      key={i}
-                      className="inline-block h-9 w-9 rounded-full overflow-hidden ring-2 ring-white bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-md uppercase transition-transform hover:-translate-y-1"
+                  {enrolledAgents.slice(0, 4).map((agent, i) => (
+                    <div 
+                      key={i} 
+                      className="inline-block h-8 w-8 rounded-full overflow-hidden ring-2 ring-white bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shadow-sm uppercase transition-transform group-hover:-translate-y-0.5"
                     >
                       {getAgentAvatar(agent) ? (
                         <img src={getAgentAvatar(agent)} alt="Avatar" className="w-full h-full object-cover" />
@@ -448,20 +444,25 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                       )}
                     </div>
                   ))}
-                  {enrolledAgents.length > 5 && (
-                    <div className="inline-block h-9 w-9 rounded-full ring-2 ring-white bg-gray-100 text-gray-600 font-bold text-xs flex items-center justify-center shadow-md">
-                      +{enrolledAgents.length - 5}
+                  {enrolledAgents.length > 4 && (
+                    <div className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-100 text-gray-600 font-bold text-[10px] flex items-center justify-center shadow-md">
+                      +{enrolledAgents.length - 4}
                     </div>
                   )}
                 </div>
-                <span className="text-xs font-bold text-gray-400 group-hover:text-purple-600 transition-colors ml-2 flex items-center gap-1">
+                <span className="text-xs font-bold text-indigo-600 group-hover:text-indigo-800 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0">
                   View List
                   <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform animate-pulse" />
                 </span>
               </div>
-            </div>
+            ) : (
+              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 flex items-center gap-3">
+                <span className="text-lg">👥</span>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-wide">No active agents</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Skills */}
