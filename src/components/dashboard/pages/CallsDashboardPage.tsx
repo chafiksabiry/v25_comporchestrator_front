@@ -335,12 +335,12 @@ export default function CallsDashboardPage() {
 
       {/* Modal Overlay */}
       {selectedCall && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}></div>
 
-          <div className="relative bg-white w-full max-w-4xl max-h-[85vh] rounded-[48px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-white/20">
+          <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-white/20">
             {/* Modal Header */}
-            <div className="px-8 py-8 border-b border-slate-100 bg-slate-50/40 flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/40 flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-harx text-white flex items-center justify-center shadow-xl shadow-harx-500/20">
                   <Phone className="w-7 h-7" />
@@ -386,7 +386,7 @@ export default function CallsDashboardPage() {
             </div>
 
             {/* Tabs */}
-            <div className="px-8 py-4 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="px-5 py-3 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setActiveTab('transcript')}
@@ -474,7 +474,7 @@ export default function CallsDashboardPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-5 bg-slate-50/30 custom-scrollbar">
               {activeTab === 'transcript' ? (
                 <div className="max-w-4xl mx-auto space-y-6">
                   {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
@@ -509,7 +509,7 @@ export default function CallsDashboardPage() {
                   )}
                 </div>
               ) : (
-                <div className="max-w-5xl mx-auto space-y-8 pb-4">
+                <div className="max-w-5xl mx-auto space-y-4 pb-2">
                   {(!selectedCall.ai_call_score || !selectedCall.ai_call_score.overall?.score) ? (
                     <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                       <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">No analysis available for this call</p>
@@ -524,7 +524,7 @@ export default function CallsDashboardPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
                         {[
                           { label: 'Agent Fluency', data: selectedCall.ai_call_score?.["Agent fluency"], icon: Globe },
                           { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], icon: ActivityIcon },
@@ -532,17 +532,17 @@ export default function CallsDashboardPage() {
                           { label: 'Script Coherence', data: selectedCall.ai_call_score?.["Script coherence"], icon: ShieldCheck },
                           { label: 'Argumentation Quality', data: selectedCall.ai_call_score?.["Argumentation"], icon: TrendingUp }
                         ].map((metric, mIdx) => (
-                          <div key={mIdx} className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
-                            <div className="flex justify-between items-start mb-6">
-                              <div className={`w-12 h-12 rounded-2xl bg-harx-50 text-harx-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
-                                <metric.icon className="w-6 h-6" />
+                          <div key={mIdx} className="bg-white rounded-[20px] p-4 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className={`w-10 h-10 rounded-xl bg-harx-50 text-harx-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
+                                <metric.icon className="w-5 h-5" />
                               </div>
                               <div className="text-right">
-                                <span className={`text-2xl font-black text-harx-600`}>{metric.data?.score || 0}%</span>
+                                <span className={`text-xl font-black text-harx-600`}>{metric.data?.score || 0}%</span>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Score</p>
                               </div>
                             </div>
-                            <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-3">{metric.label}</h5>
+                            <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-1.5">{metric.label}</h5>
                             <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
                               &quot;{metric.data?.feedback || 'Comprehensive analysis completed.'}&quot;
                             </p>
