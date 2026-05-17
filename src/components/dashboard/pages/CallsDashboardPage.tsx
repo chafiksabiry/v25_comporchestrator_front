@@ -288,6 +288,8 @@ export default function CallsDashboardPage() {
                                   <Check className="w-3.5 h-3.5" />
                                   Signé
                                 </span>
+                              ) : (call.validByAI === null || call.validByAI === undefined) ? (
+                                <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
                               ) : call.transaction?.validByAI === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-200/40 shadow-sm w-44 whitespace-nowrap text-center cursor-help" title="Analyse IA positive, en attente de votre validation finale">
                                   <Clock className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
