@@ -97,9 +97,8 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-            <div className="bg-[#f8fafc] w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl relative">
-                {/* Close Button */}
+        <div className="bg-[#f8fafc] w-full h-full overflow-y-auto rounded-3xl relative border border-gray-100">
+            {/* Close Button */}
                 <button
                     onClick={onClose}
                     className="absolute top-6 right-6 p-2 bg-white/80 hover:bg-white text-gray-500 hover:text-gray-700 rounded-full shadow-sm border border-gray-100 transition-colors z-10"
@@ -224,7 +223,6 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                     </div>
                 </div>
             </div>
-        </div>
     );
 };
 

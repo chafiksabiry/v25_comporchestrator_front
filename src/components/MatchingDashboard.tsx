@@ -919,11 +919,18 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                     <div
                                         className="bg-white rounded-3xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 border border-gray-100 flex flex-col"
                                     >
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h3 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
-                                                <Users size={20} className="text-harx-500" />
-                                                <span>{selectedGig ? `${t('matchingDashboard.matching.matchesFor')} "${selectedGig.title}"` : t('matchingDashboard.matching.selectGig')}</span>
-                                            </h3>
+                                        {selectedAgentProfile ? (
+                                            <RepProfileView
+                                                profile={selectedAgentProfile}
+                                                onClose={() => setSelectedAgentProfile(null)}
+                                            />
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h3 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
+                                                        <Users size={20} className="text-harx-500" />
+                                                        <span>{selectedGig ? `${t('matchingDashboard.matching.matchesFor')} "${selectedGig.title}"` : t('matchingDashboard.matching.selectGig')}</span>
+                                                    </h3>
                                             
                                             {selectedGig && (
                                                 <div className="relative w-64">
@@ -1329,6 +1336,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 </div>
                                             </div>
                                         )}
+                                            </>
+                                        )}
                                         </div>
                                     </div>
                                 </div>
@@ -1657,21 +1666,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                     </>
                 )}
             </main>
-
-            {/* Modal pour le profil */}
-            {selectedAgentProfile && (
-                <RepProfileView
-                    profile={selectedAgentProfile}
-                    onClose={() => setSelectedAgentProfile(null)}
-                />
-            )}
-            
-            {/* Spinner pour le chargement du profil */}
-            {loadingProfile && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-25 flex items-center justify-center z-[110]">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-600"></div>
-                </div>
-            )}
         </div>
     );
 }
