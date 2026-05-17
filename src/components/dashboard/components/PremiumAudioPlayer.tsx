@@ -64,7 +64,7 @@ export function PremiumAudioPlayer({ url }: PremiumAudioPlayerProps) {
   };
 
   return (
-    <div className="bg-slate-900/95 backdrop-blur-2xl rounded-[32px] p-5 border border-white/10 shadow-2xl flex items-center gap-5 w-full max-w-lg mx-auto group">
+    <div className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex items-center gap-3 w-full max-w-lg mx-auto group">
       <audio
         ref={audioRef}
         src={url}
@@ -75,14 +75,14 @@ export function PremiumAudioPlayer({ url }: PremiumAudioPlayerProps) {
 
       <button
         onClick={togglePlay}
-        className="w-14 h-14 rounded-2xl bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white flex items-center justify-center shadow-xl shadow-harx-500/30 hover:scale-105 active:scale-95 transition-all shrink-0"
+        className="w-10 h-10 rounded-xl bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white flex items-center justify-center shadow-lg shadow-harx-500/20 hover:scale-105 active:scale-95 transition-all shrink-0"
       >
-        {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
+        {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
       </button>
 
-      <div className="flex-1 flex flex-col gap-3">
+      <div className="flex-1 flex flex-col gap-2">
         <div 
-          className="h-10 flex items-end gap-[3px] cursor-pointer relative"
+          className="h-8 flex items-end gap-[2px] cursor-pointer relative"
           onClick={handleSeek}
         >
           {waveform.map((val, i) => {
@@ -94,25 +94,25 @@ export function PremiumAudioPlayer({ url }: PremiumAudioPlayerProps) {
               <div
                 key={i}
                 className={`flex-1 rounded-full transition-all duration-300 ${
-                  isPlayed ? 'bg-gradient-to-t from-harx-500 to-harx-alt-400' : 'bg-slate-700/50'
+                  isPlayed ? 'bg-gradient-to-t from-harx-500 to-harx-alt-400' : 'bg-slate-200'
                 } ${isPlaying && isPlayed ? 'animate-pulse' : ''}`}
                 style={{ 
                   height: `${val * 100}%`,
                   animationDelay: animDelay,
-                  minWidth: '3px'
+                  minWidth: '2px'
                 }}
               ></div>
             );
           })}
         </div>
         
-        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">
-          <span className="text-harx-400">{formatTime(currentTime)}</span>
+        <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-500 px-1">
+          <span className="text-harx-600">{formatTime(currentTime)}</span>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 opacity-60">
               <Volume2 className="w-3 h-3" />
-              <div className="w-12 h-1 bg-slate-800 rounded-full overflow-hidden">
-                <div className="w-2/3 h-full bg-slate-600 rounded-full"></div>
+              <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-2/3 h-full bg-slate-400 rounded-full"></div>
               </div>
             </div>
             <span className="opacity-80">{formatTime(duration)}</span>
@@ -122,10 +122,10 @@ export function PremiumAudioPlayer({ url }: PremiumAudioPlayerProps) {
 
       <button 
         onClick={(e) => { e.stopPropagation(); if(audioRef.current) audioRef.current.currentTime = 0 }}
-        className="p-2 text-slate-600 hover:text-white transition-colors"
+        className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
         title="Restart"
       >
-        <RotateCcw className="w-4 h-4" />
+        <RotateCcw className="w-3.5 h-3.5" />
       </button>
     </div>
   );
