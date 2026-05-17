@@ -3,6 +3,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import Swal from 'sweetalert2';
 import { GigReview } from '../gigsaicreation/components/GigReview';
+import GigDetailsView from './GigDetailsView';
 import { Clock, Users, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -275,13 +276,9 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
 
     
     return (
-      <GigReview
-        data={mappedGig as any}
-        isReadOnly={true}
+      <GigDetailsView
+        gig={mappedGig as any}
         onBack={() => setSelectedGig(null)}
-        onEdit={() => {}}
-        onSubmit={async () => {}}
-        isSubmitting={false}
       />
     );
   }
