@@ -1336,9 +1336,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 </div>
                                             </div>
                                         )}
+                                        </div>
                                             </>
                                         )}
-                                        </div>
                                     </div>
                                 </div>
                             </div>
