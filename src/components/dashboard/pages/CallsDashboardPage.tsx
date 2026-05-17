@@ -482,8 +482,16 @@ export default function CallsDashboardPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="py-20 text-center">
+                    <div className="py-20 text-center flex flex-col items-center justify-center gap-4">
                       <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Transcript not available for this call</p>
+                      <button
+                        onClick={() => handleAnalyzeCall(selectedCall._id)}
+                        disabled={analyzingCallId === selectedCall._id}
+                        className="flex items-center gap-2 px-6 py-3 bg-harx-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-harx-600 transition-all shadow-lg shadow-harx-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Brain className={`w-4 h-4 ${analyzingCallId === selectedCall._id ? 'animate-spin' : ''}`} />
+                        {analyzingCallId === selectedCall._id ? 'Analyse...' : 'Analyze & Transcribe'}
+                      </button>
                     </div>
                   )}
                 </div>
