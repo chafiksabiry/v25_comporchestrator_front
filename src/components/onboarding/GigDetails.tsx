@@ -435,6 +435,25 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
                         </span>
                       )}
                     </div>
+
+                    {/* Additional details */}
+                    {(gig.commission?.minimumVolume || gig.commission?.additionalDetails) && (
+                      <div className="mt-2 text-[9px] text-slate-400 font-bold uppercase tracking-wide leading-tight space-y-0.5">
+                        {gig.commission?.minimumVolume && (
+                          <div className="flex items-center gap-1 text-slate-500 font-extrabold">
+                            <span className="text-rose-500 text-[10px] animate-pulse">🎯</span>
+                            <span>
+                              Bonus: every {gig.commission.minimumVolume.amount} {gig.commission.minimumVolume.unit || 'calls'} / {gig.commission.minimumVolume.period || 'month'}
+                            </span>
+                          </div>
+                        )}
+                        {gig.commission?.additionalDetails && (
+                          <div className="text-[9px] text-slate-400 font-medium normal-case line-clamp-1 italic text-slate-400/80 pl-3.5">
+                            "{gig.commission.additionalDetails}"
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Strategic Actions */}
