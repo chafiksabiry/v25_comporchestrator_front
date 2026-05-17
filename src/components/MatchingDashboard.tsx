@@ -1663,6 +1663,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         )}
                     </>
                 )}
+                    </>
+                )}
             </main>
         </div>
     );
