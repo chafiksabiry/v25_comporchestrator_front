@@ -277,7 +277,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
             <div className="flex items-center gap-4">
               {gig.destination_zone.flags?.png && <img src={gig.destination_zone.flags.png} alt={gig.destination_zone.flags.alt || ''} className="w-16 h-10 rounded-lg border border-gray-100 object-cover" />}
               <div>
-                <h3 className="text-lg font-bold text-gray-900">{gig.destination_zone.name?.common || gig.destination_zone}</h3>
+                <h3 className="text-lg font-bold text-gray-900">{typeof gig.destination_zone === 'object' ? (gig.destination_zone.name?.common || 'Unknown') : gig.destination_zone}</h3>
                 <p className="text-sm text-gray-500">{gig.destination_zone.name?.official || ''}</p>
                 <span className="text-xs font-bold text-gray-400">ISO: {gig.destination_zone.cca2 || ''}</span>
               </div>
