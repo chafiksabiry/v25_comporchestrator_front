@@ -259,7 +259,7 @@ export default function CallsDashboardPage() {
 
                             {/* Validation de l'Appel AI */}
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Appel (Validation AI)</span>
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Appel</span>
                               {call.validByAI === true || call.valid === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
@@ -394,7 +394,7 @@ export default function CallsDashboardPage() {
 
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-1.5">
-                  <div className="flex items-center gap-1.5 text-slate-400" title="Appel (Validation AI)">
+                  <div className="flex items-center gap-1.5 text-slate-400" title="Appe">
                     <Phone className="w-4 h-4" />
                   </div>
                   {selectedCall.validByAI === true ? (
