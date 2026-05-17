@@ -141,6 +141,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
   const [selectedAgentProfile, setSelectedAgentProfile] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
 
+  const handleMatchingRedirect = () => {
+    if (window.location.hash.includes('dashboard') || window.location.pathname.includes('dashboard')) {
+      window.location.hash = '#/dashboard/rep-matching';
+    } else {
+      window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'matching' } }));
+    }
+  };
+
   useEffect(() => {
     if (gig?._id) {
       setLoadingAgents(true);
@@ -457,9 +465,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               </div>
             ) : (
               <button 
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'matching' } }));
-                }}
+                onClick={handleMatchingRedirect}
                 className="w-full p-4 bg-indigo-50/50 hover:bg-indigo-100/50 rounded-2xl border border-indigo-100/70 border-dashed flex items-center justify-center gap-2 transition-all duration-300 group"
               >
                 <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse group-hover:scale-110" />
@@ -558,7 +564,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                 <button
                   onClick={() => {
                     setShowAgentsModal(false);
-                    window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'matching' } }));
+                    handleMatchingRedirect();
                   }}
                   className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-sm hover:shadow flex items-center gap-1.5"
                 >
