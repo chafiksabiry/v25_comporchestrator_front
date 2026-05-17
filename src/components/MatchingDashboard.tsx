@@ -677,7 +677,15 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
 
                                 {/* Two Column Layout: Gigs and Reps */}
-                                <div className="resizable-container flex gap-4 w-full max-w-full h-[calc(100vh-320px)] min-h-0 overflow-hidden">
+                                {selectedAgentProfile ? (
+                                    <div className="w-full h-[calc(100vh-320px)]">
+                                        <RepProfileView
+                                            profile={selectedAgentProfile}
+                                            onClose={() => setSelectedAgentProfile(null)}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="resizable-container flex gap-4 w-full max-w-full h-[calc(100vh-320px)] min-h-0 overflow-hidden">
                                     {/* Left Column: Gig Selection */}
                                     <div
                                         className="bg-white rounded-3xl shadow-xl p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-harx-100/50 backdrop-blur-sm flex flex-col"
@@ -919,15 +927,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                     <div
                                         className="bg-white rounded-3xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 border border-gray-100 flex flex-col"
                                     >
-                                        {selectedAgentProfile ? (
-                                            <RepProfileView
-                                                profile={selectedAgentProfile}
-                                                onClose={() => setSelectedAgentProfile(null)}
-                                            />
-                                        ) : (
-                                            <>
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <h3 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
                                                         <Users size={20} className="text-harx-500" />
                                                         <span>{selectedGig ? `${t('matchingDashboard.matching.matchesFor')} "${selectedGig.title}"` : t('matchingDashboard.matching.selectGig')}</span>
                                                     </h3>
@@ -1337,13 +1338,11 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             </div>
                                         )}
                                         </div>
-                                            </>
-                                        )}
                                     </div>
                                 </div>
+                                )}
                             </div>
                         )}
-
                         {/* 2. INVITED REPS */}
                         {activeSection === 'invited' && (
                             <div className="space-y-6">
