@@ -471,22 +471,7 @@ export function GigReview({
             <h1 className="text-3xl font-black text-gray-900 leading-tight">
               {data.title || 'No title provided'}
             </h1>
-            <div className="flex items-center gap-3 mt-4">
-              <div className="w-10 h-10 bg-harx-900 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-                LOGO
-              </div>
-              <div>
-                <p className="font-bold text-gray-900">{getCompanyName(data.companyId)}</p>
-                <a href="#" className="text-xs font-bold text-harx-500 uppercase tracking-tight hover:text-harx-600">
-                  VIEW COMPANY PROFILE →
-                </a>
-              </div>
-            </div>
           </div>
-          <button className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-black uppercase tracking-widest rounded-xl hover:shadow-lg hover:shadow-pink-500/30 transition-all duration-300 self-start md:self-center">
-            <Repeat size={16} />
-            START
-          </button>
         </div>
 
         {/* Content Grid */}
