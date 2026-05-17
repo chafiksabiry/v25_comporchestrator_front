@@ -480,12 +480,8 @@ function AppContent() {
                       <button
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
-                          if (activeProject === 'comporchestrator') {
-                            setActiveTab('profile-creation');
-                          } else {
-                            setActiveProject('dashboard');
-                            navigate('/dashboard/profile');
-                          }
+                          setActiveProject('dashboard');
+                          navigate('/dashboard/profile');
                         }}
                         className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
                       >
