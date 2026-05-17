@@ -337,10 +337,10 @@ export default function CallsDashboardPage() {
       {selectedCall && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 animate-in fade-in duration-300 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}>
           <style>{`
-            .modal-scrollbar::-webkit-scrollbar { width: 6px; }
-            .modal-scrollbar::-webkit-scrollbar-track { background: transparent; }
-            .modal-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
-            .modal-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+            .modal-scrollbar::-webkit-scrollbar { width: 8px !important; }
+            .modal-scrollbar::-webkit-scrollbar-track { background: transparent !important; }
+            .modal-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1 !important; border-radius: 20px !important; }
+            .modal-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8 !important; }
           `}</style>
           <div className="relative bg-white w-full max-w-4xl max-h-[85vh] rounded-[32px] shadow-2xl overflow-y-auto flex flex-col animate-in zoom-in-95 duration-300 border border-white/20 modal-scrollbar" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
