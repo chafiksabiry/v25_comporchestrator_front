@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, FileText, Target, Award, DollarSign, Users, MapPin, ClockIcon, Globe, Settings, Phone, Repeat, Star, X, ChevronRight } from 'lucide-react';
+import { ArrowLeft, FileText, Target, Award, DollarSign, Users, MapPin, ClockIcon, Globe, Settings, Phone, Repeat, Star, X, ChevronRight, Briefcase } from 'lucide-react';
 import RepProfileView from '../RepProfileView';
 
 interface Gig {
