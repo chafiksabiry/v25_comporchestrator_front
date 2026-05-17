@@ -392,73 +392,86 @@ export default function CallsDashboardPage() {
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <div className="flex items-center gap-1.5 text-slate-400" title="Appel">
-                    <Phone className="w-4 h-4" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Appel</span>
+              <div className="flex flex-col gap-3">
+                {/* Section Décision de l'IA */}
+                <div className="flex items-center gap-4">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[120px]">La décision de l'IA:</span>
+                  
+                  {/* Appel */}
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 text-slate-400" title="Appel">
+                      <Phone className="w-4 h-4" />
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Appel</span>
+                    </div>
+                    {selectedCall.validByAI === true ? (
+                      <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm" title="Validé par AI">
+                        <Check className="w-3.5 h-3.5" />
+                      </span>
+                    ) : selectedCall.validByAI === false ? (
+                      <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm" title="Refusé par AI">
+                        <X className="w-3.5 h-3.5" />
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-slate-50 text-slate-400 border border-slate-100/40 shadow-sm" title="En cours">
+                        <Clock className="w-3.5 h-3.5 animate-pulse" />
+                      </span>
+                    )}
                   </div>
-                  {selectedCall.validByAI === true ? (
-                    <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm" title="Validé par AI">
-                      <Check className="w-3.5 h-3.5" />
-                    </span>
-                  ) : selectedCall.validByAI === false ? (
-                    <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm" title="Refusé par AI">
-                      <X className="w-3.5 h-3.5" />
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-slate-50 text-slate-400 border border-slate-100/40 shadow-sm" title="En cours">
-                      <Clock className="w-3.5 h-3.5 animate-pulse" />
-                    </span>
-                  )}
+
+                  {/* Transaction (IA part) */}
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 text-slate-400" title="Transaction">
+                      <CreditCard className="w-4 h-4" />
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction</span>
+                    </div>
+                    {selectedCall.transaction?.validByCompany === true ? (
+                      <span className="inline-flex items-center justify-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm">
+                        <Check className="w-3.5 h-3.5" />
+                        -{(selectedCall.lead?.gigId?.commission?.transactionCommission || selectedCall.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€
+                      </span>
+                    ) : selectedCall.transaction?.validByCompany === false ? (
+                      <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm" title="Refusé">
+                        <X className="w-3.5 h-3.5" />
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {selectedCall.validByAI !== null && selectedCall.validByAI !== undefined && selectedCall.transaction?.validByAI === false && (
+                          <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm" title="Refusé AI">
+                            <X className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                        {selectedCall.validByAI !== null && selectedCall.validByAI !== undefined && selectedCall.transaction?.validByAI === true && (
+                          <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm" title="Wait for Validation">
+                            <Clock className="w-3.5 h-3.5 animate-pulse" />
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <div className="flex items-center gap-1.5 text-slate-400" title="Transaction">
-                    <CreditCard className="w-4 h-4" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction</span>
-                  </div>
-                  {selectedCall.transaction?.validByCompany === true ? (
-                    <span className="inline-flex items-center justify-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm">
-                      <Check className="w-3.5 h-3.5" />
-                      -{(selectedCall.lead?.gigId?.commission?.transactionCommission || selectedCall.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€
-                    </span>
-                  ) : selectedCall.transaction?.validByCompany === false ? (
-                    <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm" title="Refusé">
-                      <X className="w-3.5 h-3.5" />
-                    </span>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      {selectedCall.validByAI !== null && selectedCall.validByAI !== undefined && selectedCall.transaction?.validByAI === false && (
-                        <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm" title="Refusé AI">
-                          <X className="w-3.5 h-3.5" />
-                        </span>
-                      )}
-                      {selectedCall.validByAI !== null && selectedCall.validByAI !== undefined && selectedCall.transaction?.validByAI === true && (
-                        <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm" title="Wait for Validation">
-                          <Clock className="w-3.5 h-3.5 animate-pulse" />
-                        </span>
-                      )}
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vos décisions</span>
-                        <button
-                          onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, true)}
-                          className="p-1.5 rounded-full transition-all flex items-center justify-center shadow-sm bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60"
-                          title="Valider"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, false)}
-                          className="p-1.5 rounded-full transition-all flex items-center justify-center shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60"
-                          title="Refuser"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                {/* Section Votre Décision */}
+                {selectedCall.transaction?.validByCompany === null && (
+                  <div className="flex items-center gap-4">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[120px]">Votre décision:</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, true)}
+                        className="p-1.5 rounded-full transition-all flex items-center justify-center shadow-sm bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60"
+                        title="Valider"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, false)}
+                        className="p-1.5 rounded-full transition-all flex items-center justify-center shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60"
+                        title="Refuser"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
 
