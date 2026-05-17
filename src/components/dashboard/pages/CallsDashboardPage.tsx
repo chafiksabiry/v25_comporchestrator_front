@@ -263,7 +263,7 @@ export default function CallsDashboardPage() {
                               {call.validByAI === true || call.valid === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
-                                  Validé par AI (+{(call.lead?.gigId?.commission?.commission_per_call || call.lead?.gigId?.rewardPerCall || 4).toFixed(2)}€)
+                                  Validé par AI (-{(call.lead?.gigId?.commission?.commission_per_call || call.lead?.gigId?.rewardPerCall || 4).toFixed(2)}€)
                                 </span>
                               ) : call.validByAI === false ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
@@ -286,7 +286,7 @@ export default function CallsDashboardPage() {
                               {call.transaction?.validByCompany === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
-                                  Signé (+{(call.lead?.gigId?.commission?.transactionCommission || call.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€)
+                                  Signé (-{(call.lead?.gigId?.commission?.transactionCommission || call.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€)
                                 </span>
                               ) : (call.validByAI === null || call.validByAI === undefined) ? (
                                 <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
@@ -419,7 +419,7 @@ export default function CallsDashboardPage() {
                   {selectedCall.transaction?.validByCompany === true ? (
                     <span className="inline-flex items-center justify-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm">
                       <Check className="w-3.5 h-3.5" />
-                      +{(selectedCall.lead?.gigId?.commission?.transactionCommission || selectedCall.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€
+                      -{(selectedCall.lead?.gigId?.commission?.transactionCommission || selectedCall.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€
                     </span>
                   ) : selectedCall.transaction?.validByCompany === false ? (
                     <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm" title="Refusé">
