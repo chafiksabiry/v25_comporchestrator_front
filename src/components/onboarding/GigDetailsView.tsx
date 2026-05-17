@@ -209,9 +209,60 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
   };
 
   const getAgentInitials = (agent: any): string => {
+    if (!agent) return 'AG';
+    const agentObj = agent.agentId;
+    if (agentObj && typeof agentObj === 'object') {
+      const name = agentObj.personalInfo?.name || agentObj.name;
+      if (name && typeof name === 'string') {
+        const parts = name.trim().split(/\s+/);
+        if (parts.length >= 2) {
+          return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+        if (parts.length === 1 && parts[0].length >= 2) {
+          return parts[0].substring(0, 2).toUpperCase();
+        }
+      }
+    }
     const idStr = getAgentIdString(agent);
     if (idStr) return idStr.substring(0, 2).toUpperCase();
     return 'AG';
+  };
+
+  const getAgentName = (agent: any): string => {
+    if (!agent) return 'Agent';
+    const agentObj = agent.agentId;
+    if (agentObj && typeof agentObj === 'object') {
+      if (agentObj.personalInfo?.name) return agentObj.personalInfo.name;
+      if (agentObj.name) return agentObj.name;
+    }
+    return `Agent ID: ${getAgentIdString(agent).substring(0, 8)}`;
+  };
+
+  const getAgentEmail = (agent: any): string => {
+    if (!agent) return '';
+    const agentObj = agent.agentId;
+    if (agentObj && typeof agentObj === 'object') {
+      return agentObj.personalInfo?.email || agentObj.email || '';
+    }
+    return '';
+  };
+
+  const getAgentPhone = (agent: any): string => {
+    if (!agent) return '';
+    const agentObj = agent.agentId;
+    if (agentObj && typeof agentObj === 'object') {
+      return agentObj.personalInfo?.phone || agentObj.phone || '';
+    }
+    return '';
+  };
+
+  const getAgentAvatar = (agent: any): string => {
+    if (!agent) return '';
+    const agentObj = agent.agentId;
+    if (agentObj && typeof agentObj === 'object') {
+      return agentObj.personalInfo?.profilePicture || agentObj.personalInfo?.photo?.url || '';
+    }
+    return '';
   };
 
   return (
@@ -382,9 +433,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                   {enrolledAgents.slice(0, 5).map((agent, i) => (
                     <div 
                       key={i} 
-                      className="inline-block h-9 w-9 rounded-full ring-2 ring-white bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-md uppercase transition-transform hover:-translate-y-1"
+                      className="inline-block h-9 w-9 rounded-full overflow-hidden ring-2 ring-white bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-md uppercase transition-transform hover:-translate-y-1"
                     >
-                      {getAgentInitials(agent)}
+                      {getAgentAvatar(agent) ? (
+                        <img src={getAgentAvatar(agent)} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        getAgentInitials(agent)
+                      )}
                     </div>
                   ))}
                   {enrolledAgents.length > 5 && (
@@ -496,21 +551,29 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                   return (
                     <div key={agent._id || index} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0">
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-md uppercase">
-                          {getAgentInitials(agent)}
+                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-md uppercase">
+                          {getAgentAvatar(agent) ? (
+                            <img src={getAgentAvatar(agent)} alt="Avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            getAgentInitials(agent)
+                          )}
                         </div>
                         <div>
-                          <p className="font-bold text-gray-900">
-                            Agent ID: <span 
-                              className="text-harx-600 hover:underline cursor-pointer font-black"
-                              onClick={() => {
-                                handleAgentClick(getAgentIdString(agent));
-                              }}
+                          <p className="font-extrabold text-gray-900 text-base flex items-center gap-2">
+                            {getAgentName(agent)}
+                            <span 
+                              className="text-[10px] font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md hover:underline cursor-pointer transition-colors hover:text-purple-600"
+                              onClick={() => handleAgentClick(getAgentIdString(agent))}
                             >
-                              {getAgentIdString(agent)}
+                              #{getAgentIdString(agent).substring(0, 8)}...
                             </span>
                           </p>
-                          <div className="flex items-center gap-2 mt-1">
+                          {getAgentEmail(agent) && (
+                            <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 font-medium">
+                              <span className="opacity-70">Email:</span> {getAgentEmail(agent)}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-2">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
                               {agent.status || 'accepted'}
                             </span>
