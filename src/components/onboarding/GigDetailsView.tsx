@@ -254,8 +254,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                   <div className="flex flex-wrap gap-2">
                     {gig.team.territories.map((territory, index) => (
                       <div key={index} className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
-                        <img src={territory.flags.png} alt={territory.flags.alt} className="w-5 h-3.5 rounded-sm object-cover" />
-                        <span className="text-xs font-bold text-gray-700">{territory.name.common}</span>
+                        {territory.flags?.png && <img src={territory.flags.png} alt={territory.flags.alt || ''} className="w-5 h-3.5 rounded-sm object-cover" />}
+                        <span className="text-xs font-bold text-gray-700">{territory.name?.common || territory}</span>
                       </div>
                     ))}
                   </div>
@@ -275,11 +275,11 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Destination Zone</h2>
             </div>
             <div className="flex items-center gap-4">
-              <img src={gig.destination_zone.flags.png} alt={gig.destination_zone.flags.alt} className="w-16 h-10 rounded-lg border border-gray-100 object-cover" />
+              {gig.destination_zone.flags?.png && <img src={gig.destination_zone.flags.png} alt={gig.destination_zone.flags.alt || ''} className="w-16 h-10 rounded-lg border border-gray-100 object-cover" />}
               <div>
-                <h3 className="text-lg font-bold text-gray-900">{gig.destination_zone.name.common}</h3>
-                <p className="text-sm text-gray-500">{gig.destination_zone.name.official}</p>
-                <span className="text-xs font-bold text-gray-400">ISO: {gig.destination_zone.cca2}</span>
+                <h3 className="text-lg font-bold text-gray-900">{gig.destination_zone.name?.common || gig.destination_zone}</h3>
+                <p className="text-sm text-gray-500">{gig.destination_zone.name?.official || ''}</p>
+                <span className="text-xs font-bold text-gray-400">ISO: {gig.destination_zone.cca2 || ''}</span>
               </div>
             </div>
           </div>
