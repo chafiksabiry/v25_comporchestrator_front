@@ -52,15 +52,15 @@ export default function CallsDashboardPage() {
       const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
       const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
 
-      const response = await fetch(`${callsBase}/calls/${callId}/analyze`, { 
+      const response = await fetch(`${callsBase}/calls/${callId}/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         }
       });
-      
+
       const result = await response.json().catch(() => ({}));
-      
+
       if (response.ok) {
         if (result.success) {
           if (selectedCall && (selectedCall._id === callId)) {
@@ -414,7 +414,7 @@ export default function CallsDashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction (Validation Finale) :</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction</span>
                   {selectedCall.transaction?.validByCompany === true ? (
                     <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-36 whitespace-nowrap">
                       <Check className="w-3.5 h-3.5" />
@@ -474,8 +474,8 @@ export default function CallsDashboardPage() {
                             <span className="text-[9px] font-bold text-slate-300">{t.timestamp}</span>
                           </div>
                           <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${t.speaker?.toLowerCase().includes('agent')
-                              ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm'
-                              : 'bg-gradient-harx text-white rounded-tr-none shadow-lg shadow-harx-500/20'
+                            ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm'
+                            : 'bg-gradient-harx text-white rounded-tr-none shadow-lg shadow-harx-500/20'
                             }`}>
                             {t.text}
                           </div>
