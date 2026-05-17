@@ -7,6 +7,9 @@ import {
   Sparkles,
   X,
   Clock,
+  ChevronDown,
+  Building2,
+  LogOut,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
@@ -58,6 +61,7 @@ function AppContent() {
   const [balance, setBalance] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -445,25 +449,57 @@ function AppContent() {
 
               <div className="flex items-center space-x-4 ml-auto">
                 <LanguageSwitcher />
-                <div className="flex items-center space-x-3 bg-white/5 p-1.5 pr-4 rounded-2xl border border-white/10 shadow-sm">
-                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-black shadow-md overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
-                    {companyLogo && !logoError ? (
-                      <img
-                        src={companyLogo}
-                        alt="Company Logo"
-                        className="w-full h-full object-contain p-1"
-                        onError={() => setLogoError(true)}
-                      />
-                    ) : (
-                      userFullName.charAt(0).toUpperCase()
-                    )}
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-white leading-tight">{companyName || userFullName}</span>
+                <div className="relative">
+                  <div 
+                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                    className="flex items-center space-x-3 bg-white/5 p-1.5 pr-4 rounded-2xl border border-white/10 shadow-sm cursor-pointer hover:bg-white/10 transition-colors"
+                  >
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-black shadow-md overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
+                      {companyLogo && !logoError ? (
+                        <img
+                          src={companyLogo}
+                          alt="Company Logo"
+                          className="w-full h-full object-contain p-1"
+                          onError={() => setLogoError(true)}
+                        />
+                      ) : (
+                        userFullName.charAt(0).toUpperCase()
+                      )}
                     </div>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Administrator</span>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-black text-white leading-tight">{companyName || userFullName}</span>
+                      </div>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Administrator</span>
+                    </div>
+                    <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ml-2 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
+
+                  {isProfileDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-[#0B0F19] border border-white/10 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                      <button
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          setActiveProject('dashboard');
+                          navigate('/dashboard/profile');
+                        }}
+                        className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
+                      >
+                        <Building2 size={16} className="text-gray-400" />
+                        <span className="font-bold">Profil Entreprise</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex items-center gap-3 w-full p-4 text-left text-sm text-rose-400 hover:bg-white/5 transition-colors"
+                      >
+                        <LogOut size={16} className="text-rose-400" />
+                        <span className="font-bold">Déconnexion</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
