@@ -386,16 +386,6 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               Campaign staffing, target zone & active assignments
             </p>
           </div>
-
-          {enrolledAgents.length > 0 && (
-            <button
-              onClick={() => setShowAgentsModal(true)}
-              className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2"
-            >
-              <Users size={14} />
-              Manage Representatives ({enrolledAgents.length})
-            </button>
-          )}
         </div>
 
         {/* Content grid */}
@@ -606,14 +596,11 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                           )}
                         </div>
                         <div>
-                          <p className="font-extrabold text-slate-950 text-base flex items-center gap-2">
+                          <p 
+                            className="font-extrabold text-slate-950 text-base flex items-center gap-2 cursor-pointer hover:text-purple-600 transition-colors"
+                            onClick={() => handleAgentClick(getAgentIdString(agent))}
+                          >
                             {getAgentName(agent)}
-                            <span
-                              className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md hover:underline cursor-pointer transition-colors hover:text-purple-800"
-                              onClick={() => handleAgentClick(getAgentIdString(agent))}
-                            >
-                              #{getAgentIdString(agent).substring(0, 8)}...
-                            </span>
                           </p>
                           {getAgentEmail(agent) && (
                             <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1 font-medium">
