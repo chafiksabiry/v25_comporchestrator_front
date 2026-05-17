@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MapPin, Mail, Phone, Target, Briefcase, Calendar, Clock } from 'lucide-react';
+import { X, MapPin, Mail, Phone, Target, Briefcase, Calendar, Clock, ChevronLeft } from 'lucide-react';
 
 interface RepProfileViewProps {
     profile: any;
@@ -109,6 +109,13 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                 <div className="px-6 py-6 lg:px-10 lg:py-8 space-y-6">
                     {/* Header */}
                     <div>
+                        <button
+                            onClick={onClose}
+                            className="flex items-center text-harx-500 hover:text-harx-600 font-medium mb-4 transition-colors"
+                        >
+                            <ChevronLeft size={20} className="mr-1" />
+                            <span>Back to Dashboard</span>
+                        </button>
                         <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-1">
                             Representative Profile
                         </h1>
