@@ -19,9 +19,22 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
 
     const getCountryDisplayName = () => {
         const country = profile.personalInfo?.country;
-        if (!country) return 'Not specified';
-        if (typeof country === 'string') return country;
-        if (typeof country === 'object') return country.countryName || country.zoneName || 'Not specified';
+        if (country) {
+            if (typeof country === 'string') return country;
+            if (typeof country === 'object') {
+                if (country.countryName) return country.countryName;
+                if (country.zoneName) return country.zoneName;
+            }
+        }
+        
+        // Fallback to flat structure or timezone
+        if (profile.timezone?.countryName) return profile.timezone.countryName;
+        if (profile.location) return profile.location;
+        if (profile.country) {
+            if (typeof profile.country === 'string') return profile.country;
+            if (typeof profile.country === 'object' && profile.country.countryName) return profile.country.countryName;
+        }
+        
         return 'Not specified';
     };
 
@@ -146,15 +159,15 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                         <div className="flex flex-col md:flex-row gap-8 items-start">
                             {/* Photo */}
                             <div className="w-32 h-32 rounded-[24px] shadow-lg border-4 border-white bg-slate-200/50 overflow-hidden shrink-0">
-                                {profile.personalInfo?.photo?.url ? (
+                                {profile.personalInfo?.photo?.url || profile.photo?.url || profile.photo ? (
                                     <img
-                                        src={profile.personalInfo.photo.url}
+                                        src={profile.personalInfo?.photo?.url || profile.photo?.url || profile.photo}
                                         alt="Profile"
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-4xl font-black text-gray-300 bg-gray-50 uppercase">
-                                        {profile.personalInfo?.name?.charAt(0) || '?'}
+                                        {profile.personalInfo?.name?.charAt(0) || profile.name?.charAt(0) || '?'}
                                     </div>
                                 )}
                             </div>
@@ -162,8 +175,8 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                             {/* Info */}
                             <div className="flex-1 w-full">
                                 <div className="mb-4">
-                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">{profile.personalInfo?.name}</h2>
-                                    <p className="text-sm font-bold text-harx-500 uppercase tracking-widest italic">{profile.professionalSummary?.currentRole || 'Representative'}</p>
+                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">{profile.personalInfo?.name || profile.name}</h2>
+                                    <p className="text-sm font-bold text-harx-500 uppercase tracking-widest italic">{profile.professionalSummary?.currentRole || profile.currentRole || 'Representative'}</p>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
