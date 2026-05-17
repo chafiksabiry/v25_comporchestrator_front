@@ -85,11 +85,25 @@ interface WalletState {
   contracts: EscrowContract[];
 }
 
+interface HarxCommission {
+  _id: string;
+  type: 'minute_purchase' | 'call_commission' | 'transaction_commission' | 'bonus_commission' | 'phone_number';
+  amount: number;
+  agentId?: string;
+  callId?: string;
+  transactionId?: string;
+  bonusId?: string;
+  companyId?: string;
+  description: string;
+  createdAt: string;
+}
+
 export function EscrowPanel() {
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [transactions, setTransactions] = useState<EscrowTransaction[]>([]);
   const [agentWithdrawals, setAgentWithdrawals] = useState<any[]>([]);
   const [calls, setCalls] = useState<CompanyCall[]>([]);
+  const [harxCommissions, setHarxCommissions] = useState<HarxCommission[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [callsLoading, setCallsLoading] = useState(false);
@@ -131,7 +145,7 @@ export function EscrowPanel() {
   const [gigsAndReps, setGigsAndReps] = useState<GigAndReps[]>([]);
   const [gigsLoading, setGigsLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'contracts' | 'history' | 'calls' | 'deposits_withdrawals'>('contracts');
+  const [activeTab, setActiveTab] = useState<'contracts' | 'history' | 'calls' | 'deposits_withdrawals' | 'harx_commissions'>('contracts');
   const [selectedCall, setSelectedCall] = useState<CompanyCall | null>(null);
   const [selectedCallTab, setSelectedCallTab] = useState<'transcript' | 'insights'>('transcript');
 
@@ -198,6 +212,15 @@ export function EscrowPanel() {
         const agentWithdrawalsData = await agentWithdrawalsRes.json();
         if (agentWithdrawalsData.success && agentWithdrawalsData.data) {
           setAgentWithdrawals(agentWithdrawalsData.data);
+        }
+      }
+
+      // 5. Fetch HARX commissions
+      const harxRes = await fetch(`${apiBaseUrl}/escrow/harx/commissions`);
+      if (harxRes.ok) {
+        const harxData = await harxRes.json();
+        if (harxData.success && harxData.data) {
+          setHarxCommissions(harxData.data);
         }
       }
     } catch (err) {
@@ -828,6 +851,15 @@ export function EscrowPanel() {
             >
               Retraits Agents ({agentWithdrawals.length})
             </button>
+            <button
+              onClick={() => setActiveTab('harx_commissions')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all ${activeTab === 'harx_commissions'
+                ? 'bg-white text-orange-500 shadow-sm border border-slate-100'
+                : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Commissions HARX ({harxCommissions.length})
+            </button>
           </div>
           <div className="flex items-center">
             {activeTab === 'contracts' && (
@@ -946,6 +978,67 @@ export function EscrowPanel() {
                               Ledger Settled
                             </div>
                           )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab Content: HARX Commissions Table */}
+        {activeTab === 'harx_commissions' && (
+          <div className="overflow-x-auto">
+            {harxCommissions.length === 0 ? (
+              <div className="p-12 text-center flex flex-col items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-300 flex items-center justify-center mb-3">
+                  <Coins className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-800">Aucune commission enregistrée</h4>
+                <p className="text-xs text-slate-400 mt-1">Les commissions HARX apparaîtront ici après validation des actions.</p>
+              </div>
+            ) : (
+              <div className="overflow-y-auto max-h-[500px] custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                    <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white">
+                      <th className="px-6 py-4">Type / Description</th>
+                      <th className="px-6 py-4 text-right">Montant</th>
+                      <th className="px-6 py-4">Références</th>
+                      <th className="px-6 py-4">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {harxCommissions.map((comm) => (
+                      <tr key={comm._id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-slate-800">
+                            {comm.type === 'minute_purchase' && "Achat de minutes"}
+                            {comm.type === 'call_commission' && "Commission Appel (30%)"}
+                            {comm.type === 'transaction_commission' && "Commission Transaction (30%)"}
+                            {comm.type === 'bonus_commission' && "Commission Bonus (30%)"}
+                            {comm.type === 'phone_number' && "Achat Numéro"}
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">{comm.description}</div>
+                        </td>
+                        <td className="px-6 py-4 text-right font-black text-slate-900">
+                          {comm.amount.toLocaleString('en-US')} €
+                        </td>
+                        <td className="px-6 py-4 text-slate-500">
+                          {comm.agentId && <div>Agent: {comm.agentId}</div>}
+                          {comm.callId && <div>Appel: {comm.callId}</div>}
+                          {comm.transactionId && <div>Transac: {comm.transactionId}</div>}
+                        </td>
+                        <td className="px-6 py-4 text-slate-400">
+                          {new Date(comm.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                         </td>
                       </tr>
                     ))}
