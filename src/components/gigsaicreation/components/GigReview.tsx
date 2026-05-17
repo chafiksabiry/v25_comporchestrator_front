@@ -17,6 +17,9 @@ import {
   Target,
   Zap,
   Languages,
+  ArrowLeft,
+  Repeat,
+  Phone,
 } from "lucide-react";
 import { GigData } from "../types";
 import { predefinedOptions } from "../lib/guidance";
@@ -426,434 +429,220 @@ export function GigReview({
   const destinationZoneName = countryName || getTimeZoneName(data.destination_zone);
 
   return (
-    <div className="min-h-screen w-full h-full bg-gradient-to-br from-white via-harx-50/30 to-harx-alt-50/30 flex items-center justify-center">
-      <div className="w-full h-full px-8 py-6 max-w-7xl mx-auto">
-
-        {/* Page Header with Title and Description */}
-        <div className="mb-8">
-
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex gap-3">
-              <button
-                onClick={onBack}
-                className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2"
-              >
-                ← Previous
-              </button>
-            </div>
-            {!isReadOnly && (
-              <button
-                onClick={handlePublish}
-                disabled={isSubmitting}
-                className="px-8 py-3 bg-gradient-harx hover:opacity-90 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    {isEditMode ? 'Updating...' : 'Publishing...'}
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4" />
-                    {isEditMode ? 'Update Gig' : 'Publish Gig'}
-                  </>
-                )}
-              </button>
+    <div className="space-y-6 bg-gradient-to-br from-white via-harx-50/30 to-harx-alt-50/30 min-h-screen p-8">
+      {/* Header Back Button */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-2 px-5 py-2 text-sm font-black uppercase tracking-tighter text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-all duration-300 shadow-sm"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handlePublish}
+            disabled={isSubmitting}
+            className="px-8 py-3 bg-gradient-harx hover:opacity-90 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                {isEditMode ? 'Updating...' : 'Publishing...'}
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4" />
+                {isEditMode ? 'Update Gig' : 'Publish Gig'}
+              </>
             )}
+          </button>
+        )}
+      </div>
+
+      {/* Main Card (Matching 1st Image) */}
+      <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-10 space-y-10">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <span className="text-xs font-black text-harx-400 uppercase tracking-widest">
+              {data.category || 'OUTBOUND SALES'}
+            </span>
+            <h1 className="text-3xl font-black text-gray-900 leading-tight">
+              {data.title || 'No title provided'}
+            </h1>
+            <div className="flex items-center gap-3 mt-4">
+              <div className="w-10 h-10 bg-harx-900 rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                LOGO
+              </div>
+              <div>
+                <p className="font-bold text-gray-900">{getCompanyName(data.companyId)}</p>
+                <a href="#" className="text-xs font-bold text-harx-500 uppercase tracking-tight hover:text-harx-600">
+                  VIEW COMPANY PROFILE →
+                </a>
+              </div>
+            </div>
           </div>
+          <button className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-black uppercase tracking-widest rounded-xl hover:shadow-lg hover:shadow-pink-500/30 transition-all duration-300 self-start md:self-center">
+            <Repeat size={16} />
+            START
+          </button>
         </div>
 
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Enhanced Basic Information */}
-            {renderEditableSection(
-              "Basic Information",
-              "basic",
-              <Briefcase className="w-6 h-6 text-gray-600" />,
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">
-                    {data?.title || 'No title provided'}
-                  </h1>
-                  <p className="text-gray-700 text-lg leading-relaxed mb-6">{data?.description || 'No description provided'}</p>
-
-                  <div className="flex flex-wrap gap-3 mb-6">
-                    {data?.category && (
-                      <span className="px-4 py-2 bg-harx-500/10 text-harx-500 rounded-full text-sm font-semibold border border-harx-500/30">
-                        {data.category}
-                      </span>
-                    )}
-                    {data?.seniority?.level && (
-                      <span className="px-4 py-2 bg-harx-alt-500/10 text-harx-alt-500 rounded-full text-sm font-semibold border border-harx-alt-500/30">
-                        {data.seniority.level}
-                      </span>
-                    )}
-                    {data?.seniority?.yearsExperience && (
-                      <span className="px-4 py-2 bg-harx-alt-500/10 text-harx-alt-500 rounded-full text-sm font-semibold border border-harx-alt-500/30">
-                        {data.seniority.yearsExperience} Years Experience
-                      </span>
-                    )}
-                    {/* Gig Status display removed */}
-                  </div>
-
-                  {/* Industries Section */}
-                  {data?.industries && data.industries.length > 0 && (
-                    <div className="mb-6">
-                      <div className="bg-gradient-to-r from-harx-50 to-harx-alt-50 rounded-xl p-4 border border-harx-100">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="p-2 bg-harx-100 rounded-lg">
-                            <Target className="w-5 h-5 text-harx-500" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-medium text-harx-900">Industries</h3>
-                            <p className="text-sm text-harx-700">Relevant industries for this position</p>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {data.industries.map((industry, index) => {
-                            const industryName = getIndustryNameById(industry);
-                            return industryName ? (
-                              <span key={index} className="inline-flex items-center gap-1 px-3 py-1 bg-harx-100 text-harx-700 text-sm rounded-full border border-harx-200">
-                                {industryName}
-                              </span>
-                            ) : null;
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Additional Details Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {data?.destination_zone && (
-                    <div className="bg-gradient-to-br from-harx-500/5 to-harx-alt-500/5 rounded-lg p-4 border border-harx-500/20">
-                      <div className="flex items-center gap-3 mb-2">
-                        <MapPin className="w-5 h-5 text-harx-500" />
-                        <h3 className="font-semibold text-harx-500">Destination Zone</h3>
-                      </div>
-                      <p className="text-gray-700">{destinationZoneName}</p>
-                      {/* Show selected schedule time zones if available */}
-                      {/* {scheduleTimeZoneNames.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <span className="text-xs text-gray-500">Schedule Time Zones:</span>
-                          {scheduleTimeZoneNames.map((name, idx) => (
-                            <span key={idx} className="px-2 py-1 bg-gradient-to-r from-[#764ba2]/20 to-[#764ba2]/30 text-[#764ba2] rounded text-xs font-medium border border-[#764ba2]/30">{name}</span>
-                          ))}
-                        </div>
-                      )} */}
-                    </div>
-                  )}
-
-                  {data?.companyId && (
-                    <div className="bg-gradient-to-br from-harx-alt-500/5 to-pink-500/5 rounded-lg p-4 border border-harx-alt-500/20">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Building className="w-5 h-5 text-harx-alt-500" />
-                        <h3 className="font-semibold text-harx-alt-500">Company</h3>
-                      </div>
-                      <p className="text-gray-700">{getCompanyName(data.companyId)}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Enhanced Commission Structure */}
-            {data?.commission && renderEditableSection(
-              "Commission Structure",
-              "commission",
-              <DollarSign className="w-6 h-6 text-gray-600" />,
-              <div className="space-y-8">
-
-                <div className="bg-gradient-to-r from-harx-50/50 to-harx-alt-50/50 rounded-xl p-6 border border-harx-100">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
-
-                    {/* Per call compensation */}
-                    <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-harx-100/50">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-harx-100 rounded-lg text-harx-600">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                        </div>
-                        <span className="text-gray-600 font-medium">Per call compensation</span>
-                      </div>
-                      <span className="font-bold text-gray-900">
-                        {data.commission.commission_per_call || 0}
-                        <span className="ml-1 text-gray-500 text-sm">
-                          {getCurrencySymbol()}
-                        </span>
-                      </span>
-                    </div>
-
-                    {/* Transaction Commission */}
-                    <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-harx-alt-100/50">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-harx-alt-100 rounded-lg text-harx-alt-600">
-                          <Coins className="w-5 h-5" />
-                        </div>
-                        <span className="text-gray-600 font-medium">Transaction Commission</span>
-                      </div>
-                      <span className="font-bold text-gray-900">
-                        {data.commission.transactionCommission || 0}
-                        <span className="ml-1 text-gray-500 text-sm">
-                          {getCurrencySymbol()}
-                        </span>
-                      </span>
-                    </div>
-
-                    {/* Bonus & Incentives */}
-                    <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-harx-100/50">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-harx-100 rounded-lg text-harx-600">
-                          <Star className="w-5 h-5" />
-                        </div>
-                        <span className="text-gray-600 font-medium">Bonus & Incentives</span>
-                      </div>
-                      <span className="font-bold text-gray-900">
-                        {data.commission.bonusAmount || 0}
-                        <span className="ml-1 text-gray-500 text-sm">
-                          {getCurrencySymbol()}
-                        </span>
-                      </span>
-                    </div>
-
-                    {/* Minimum Volume Requirements For Bonus */}
-                    <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-harx-alt-100/50 col-span-1 md:col-span-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-harx-alt-100 rounded-lg text-harx-alt-600">
-                          <Target className="w-5 h-5" />
-                        </div>
-                        <span className="text-gray-600 font-medium">Minimum Volume Requirements For Bonus</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900 text-lg">
-                          {data?.commission?.minimumVolume?.amount || 0}
-                        </span>
-                        <span className="text-gray-500 text-sm bg-gray-100 px-2 py-0.5 rounded">
-                          {data?.commission?.minimumVolume?.period || 'Period'}
-                        </span>
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-            {/* Enhanced Schedule */}
-            {data?.schedule && renderEditableSection(
-              "Schedule & Availability",
-              "schedule",
-              <Calendar className="w-6 h-6 text-gray-600" />,
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {data.schedule.schedules && data.schedule.schedules.length > 0 && (
-                    <>
-                      <div className="bg-harx-500/5 rounded-xl p-6 border border-harx-500/30">
-                        <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-harx mb-4 flex items-center gap-3">
-                          <Calendar className="w-6 h-6 text-harx-500" />
-                          Working Days
-                        </h3>
-                        <div className="space-y-4">
-                          {groupSchedules(data.schedule.schedules).map((group, index) => (
-                            <div
-                              key={`${group.hours.start}-${group.hours.end}-${index}`}
-                              className="bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-sm border border-white/20"
-                            >
-                              <div className="flex flex-wrap gap-2 mb-3">
-                                {group.days.map((day, dayIndex) => (
-                                  <span
-                                    key={dayIndex}
-                                    className="px-3 py-1 bg-harx-500/10 text-harx-500 rounded-full text-sm font-semibold border border-harx-500/30"
-                                  >
-                                    {day}
-                                  </span>
-                                ))}
-                              </div>
-                              <div className="flex items-center gap-2 text-harx-500 font-semibold">
-                                <Clock className="w-4 h-4" />
-                                {group.hours.start} - {group.hours.end}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* {data.schedule.timeZones && data.schedule.timeZones.length > 0 && (
-                  <div className="bg-gradient-to-r from-[#764ba2]/10 to-[#764ba2]/20 rounded-xl p-6 border border-[#764ba2]/30">
-                    <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#764ba2] to-[#f093fb] mb-4 flex items-center gap-3">
-                      <Globe2 className="w-6 h-6 text-[#764ba2]" />
-                      Time Zones
-                    </h3>
-                    <div className="flex flex-wrap gap-3">
-                      {data.schedule.timeZones.map((zone) => (
-                        <span
-                          key={zone}
-                          className="px-4 py-2 bg-gradient-to-r from-[#764ba2]/20 to-[#764ba2]/30 text-[#764ba2] rounded-full text-sm font-semibold border border-[#764ba2]/30"
-                        >
-                          {getTimeZoneName(zone)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )} */}
-
-                {data.schedule.flexibility && data.schedule.flexibility.length > 0 && (
-                  <div className="bg-harx-alt-500/5 rounded-xl p-6 border border-harx-alt-500/30">
-                    <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-harx-alt-500 to-pink-500 mb-4 flex items-center gap-3">
-                      <Clock className="w-6 h-6 text-harx-alt-500" />
-                      Flexibility Options
-                    </h3>
-                    <div className="flex flex-wrap gap-3">
-                      {data.schedule.flexibility.map((option) => (
-                        <span
-                          key={option}
-                          className="px-4 py-2 bg-harx-alt-500/10 text-harx-alt-500 rounded-full text-sm font-semibold border border-harx-alt-500/30"
-                        >
-                          {option}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Left Column: Job Description */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-black text-gray-900">Job Description</h2>
+            <p className="text-gray-600 leading-relaxed font-medium text-lg">
+              {data.description || 'No description provided'}
+            </p>
+            {/* Seniority Tags */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              {data.seniority?.level && (
+                <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-xs font-bold">
+                  {data.seniority.level}
+                </span>
+              )}
+              {data.seniority?.yearsExperience && (
+                <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-xs font-bold">
+                  {data.seniority.yearsExperience} Years Experience
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Right Column - Enhanced Sidebar */}
-          <div className="space-y-8">
-            {/* Enhanced Skills Summary */}
-            {renderEditableSection(
-              "Skills & Qualifications",
-              "skills",
-              <Award className="w-6 h-6 text-gray-600" />,
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-harx-500/5 to-harx-alt-500/5 rounded-lg p-4 border border-harx-500/20">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Languages className="w-5 h-5 text-harx-500" />
-                        <span className="text-sm font-semibold text-harx-500">Languages:</span>
-                      </div>
-                      <span className="px-3 py-1 bg-harx-500/10 text-harx-500 rounded-full text-sm font-semibold border border-harx-500/30">
-                        {data.skills?.languages?.length || 0}
-                      </span>
-                    </div>
-                    {data.skills?.languages && data.skills.languages.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {data.skills.languages.map((lang, index) => (
-                          <span key={index} className="px-2 py-1 bg-harx-500/10 text-harx-500 rounded text-xs font-medium border border-harx-500/30">
-                            {getLanguageName(lang.language)} ({lang.proficiency})
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
+          {/* Right Column: Commission & Details */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-black text-gray-900">Commission & details</h2>
+            
+            <div className="space-y-4">
+              {/* Badges Row */}
+              <div className="flex flex-wrap gap-3">
+                <div className="px-4 py-2 bg-gradient-to-r from-cyan-400 to-blue-500 text-white rounded-lg text-sm font-black uppercase tracking-tight flex items-center gap-2">
+                  <Phone size={14} />
+                  {data.commission?.commission_per_call || 0}{getCurrencySymbol()} / APPEL
                 </div>
-                {/* Actual skill names for each category */}
-                <div className="space-y-4">
-                  {/* Technical Skills */}
-                  {data.skills?.technical && data.skills.technical.length > 0 && (
-                    <div>
-                      <div className="font-semibold text-harx-500 mb-1">Technical Skills:</div>
-                      <ul className="flex flex-wrap gap-2">
-                        {data.skills.technical.map((s, i) => (
-                          <li key={i} className="px-3 py-1 bg-harx-500/10 text-harx-500 rounded text-sm">
-                            {skillsLoading ? 'Loading...' : getSkillName(s.skill, 'technical')}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {/* Professional Skills */}
-                  {data.skills?.professional && data.skills.professional.length > 0 && (
-                    <div>
-                      <div className="font-semibold text-harx-alt-500 mb-1">Professional Skills:</div>
-                      <ul className="flex flex-wrap gap-2">
-                        {data.skills.professional.map((s, i) => (
-                          <li key={i} className="px-3 py-1 bg-harx-alt-500/10 text-harx-alt-500 rounded text-sm">
-                            {skillsLoading ? 'Loading...' : getSkillName(s.skill, 'professional')}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {/* Soft Skills */}
-                  {data.skills?.soft && data.skills.soft.length > 0 && (
-                    <div>
-                      <div className="font-semibold text-harx-alt-500 mb-1">Soft Skills:</div>
-                      <ul className="flex flex-wrap gap-2">
-                        {data.skills.soft.map((s, i) => (
-                          <li key={i} className="px-3 py-1 bg-harx-alt-500/10 text-harx-alt-500 rounded text-sm">
-                            {skillsLoading ? 'Loading...' : getSkillName(s.skill, 'soft')}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {/* Certifications section removed - no longer part of skills structure */}
+                <div className="px-4 py-2 bg-gradient-to-r from-purple-400 to-purple-600 text-white rounded-lg text-sm font-black uppercase tracking-tight flex items-center gap-2">
+                  <Repeat size={14} />
+                  {data.commission?.transactionCommission || 0}{getCurrencySymbol()} / TRANSACTION
                 </div>
               </div>
-            )}
 
-            {/* Enhanced Team Structure */}
-            {data.team && renderEditableSection(
-              "Team Structure",
-              "team",
-              <Users className="w-6 h-6 text-gray-600" />,
-              <div className="space-y-6">
-                <div className="bg-gradient-to-r from-harx-500/5 to-harx-alt-500/10 rounded-lg p-6 text-center border border-harx-500/30">
-                  <Users className="w-10 h-10 text-harx-500 mx-auto mb-3" />
-                  <div className="text-3xl font-bold text-gray-900 mb-2">{data.team.size}</div>
-                  <div className="text-base text-gray-600 font-semibold">Team Members</div>
-                </div>
-
-                {data.team.structure && data.team.structure.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-harx mb-4 flex items-center gap-2">
-                      <Target className="w-5 h-5 text-harx-500" />
-                      Team Roles
-                    </h3>
-                    <div className="space-y-3">
-                      {data.team.structure.map((role, index) => {
-                        const roleInfo = predefinedOptions.team.roles.find(r => r.id === role.roleId);
-                        return (
-                          <div key={index} className="bg-gradient-to-br from-harx-500/5 to-harx-alt-500/5 rounded-lg p-4 border border-harx-500/20">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="font-semibold text-gray-900">
-                                {roleInfo ? roleInfo.name : role.roleId}
-                              </div>
-                              <div className="text-sm text-gray-600 font-semibold">
-                                Count: {role.count}
-                              </div>
-                            </div>
-                            <div className="text-sm text-gray-600 mb-2">
-                              {roleInfo ? roleInfo.description : ''}
-                            </div>
-                            <div className="flex items-center gap-4 text-xs text-gray-600">
-                              <span className="font-semibold">Seniority:</span> {role.seniority.level}
-                              <span className="font-semibold">Experience:</span> {role.seniority.yearsExperience} years
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+              {/* Bonus Badge */}
+              <div className="px-4 py-2 bg-gradient-to-r from-pink-400 to-rose-500 text-white rounded-lg text-sm font-black uppercase tracking-tight inline-flex items-center gap-2">
+                <Star size={14} />
+                +{data.commission?.bonusAmount || 0}{getCurrencySymbol()} BONUS
+                <span className="text-xs font-medium opacity-80 normal-case ml-1">
+                  Chaque {data.commission?.minimumVolume?.amount || 0} appels / {data.commission?.minimumVolume?.period || 'mois'}
+                </span>
               </div>
-            )}
 
-
+              {/* Description Box */}
+              <div className="bg-gray-50 rounded-2xl p-6 text-gray-600 text-sm font-medium leading-relaxed italic border border-gray-100">
+                {data.commission?.additionalDetails || "Détails supplémentaires non spécifiés."}
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Other Sections (Team, Skills, etc.) moved below in a clean layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* Team */}
+        {data.team && (
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-harx-50 rounded-xl">
+                <Users className="h-6 w-6 text-harx-500" />
+              </div>
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Team Structure</h2>
+            </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 font-medium">Team Size</span>
+                <span className="font-bold text-gray-900">{data.team.size} members</span>
+              </div>
+              {/* Add more team details if needed */}
+            </div>
+          </div>
+        )}
+
+        {/* Destination Zone */}
+        {data.destination_zone && (
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-emerald-50 rounded-xl">
+                <MapPin className="h-6 w-6 text-emerald-600" />
+              </div>
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Destination Zone</h2>
+            </div>
+            <div className="flex items-center gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">{destinationZoneName}</h3>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Skills */}
+      {data.skills && (
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8 mt-6">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-3 bg-harx-50 rounded-xl">
+              <Target className="h-6 w-6 text-harx-500" />
+            </div>
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Skills & Requirements</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Technical Skills */}
+            {data.skills.technical && data.skills.technical.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-gray-500 uppercase">Technical</h3>
+                {data.skills.technical.map((s, i) => (
+                  <div key={i} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">{skillsLoading ? 'Loading...' : getSkillName(s.skill, 'technical')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Professional Skills */}
+            {data.skills.professional && data.skills.professional.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-gray-500 uppercase">Professional</h3>
+                {data.skills.professional.map((s, i) => (
+                  <div key={i} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">{skillsLoading ? 'Loading...' : getSkillName(s.skill, 'professional')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Soft Skills */}
+            {data.skills.soft && data.skills.soft.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-gray-500 uppercase">Soft</h3>
+                {data.skills.soft.map((s, i) => (
+                  <div key={i} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">{skillsLoading ? 'Loading...' : getSkillName(s.skill, 'soft')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Languages */}
+            {data.skills.languages && data.skills.languages.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-gray-500 uppercase">Languages</h3>
+                {data.skills.languages.map((lang, index) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">{getLanguageName(lang.language)} ({lang.proficiency})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
