@@ -338,7 +338,7 @@ export default function CallsDashboardPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}></div>
 
-          <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-white/20">
+          <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[32px] shadow-2xl overflow-y-auto flex flex-col animate-in zoom-in-95 duration-300 border border-white/20 custom-scrollbar">
             {/* Modal Header */}
             <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/40 flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
               <div className="flex items-center gap-3">
@@ -474,7 +474,7 @@ export default function CallsDashboardPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-5 bg-slate-50/30 custom-scrollbar">
+            <div className="p-5 bg-slate-50/30">
               {activeTab === 'transcript' ? (
                 <div className="max-w-4xl mx-auto space-y-6">
                   {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
@@ -524,7 +524,7 @@ export default function CallsDashboardPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
                           { label: 'Agent Fluency', data: selectedCall.ai_call_score?.["Agent fluency"], icon: Globe },
                           { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], icon: ActivityIcon },
