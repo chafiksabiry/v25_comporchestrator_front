@@ -474,7 +474,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
         </div>
       </div>
 
-      {/* Skills */}
+      {/* Skills & Requirements */}
       {gig.skills && (
         <div className="rounded-[2rem] bg-white border border-slate-100 p-8 shadow-xl shadow-slate-100/50 z-10 animate-slide-up [animation-delay:220ms] hover-lift">
           <div className="flex items-center gap-4 mb-6">
@@ -483,64 +483,97 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
             </div>
             <h2 className="text-lg font-black text-slate-900 uppercase tracking-wider">Skills & Requirements</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {gig.skills.professional && gig.skills.professional.length > 0 && (
-              <div className="space-y-3.5">
-                <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-widest border-b border-slate-100 pb-2">Professional</h3>
-                {gig.skills.professional.map((item, index) => (
-                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-1 rounded-2xl flex justify-between items-center transition-all duration-300 hover:shadow-sm">
-                    <span className="text-xs font-extrabold text-slate-700">
-                      {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
-                    </span>
-                    <span className="text-[9px] font-black bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-md">Lvl {item.level}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {gig.skills.technical && gig.skills.technical.length > 0 && (
-              <div className="space-y-3.5">
-                <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-widest border-b border-slate-100 pb-2">Technical</h3>
-                {gig.skills.technical.map((item, index) => (
-                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-1 rounded-2xl flex justify-between items-center transition-all duration-300 hover:shadow-sm">
-                    <span className="text-xs font-extrabold text-slate-700">
-                      {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
-                    </span>
-                    <span className="text-[9px] font-black bg-cyan-100 text-cyan-700 border border-cyan-200 px-2 py-0.5 rounded-md">Lvl {item.level}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {gig.skills.soft && gig.skills.soft.length > 0 && (
-              <div className="space-y-3.5">
-                <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-widest border-b border-slate-100 pb-2">Soft</h3>
-                {gig.skills.soft.map((item, index) => (
-                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-1 rounded-2xl flex justify-between items-center transition-all duration-300 hover:shadow-sm">
-                    <span className="text-xs font-extrabold text-slate-700">
-                      {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
-                    </span>
-                    <span className="text-[9px] font-black bg-rose-100 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-md">Lvl {item.level}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {gig.skills.languages && gig.skills.languages.length > 0 && (
-              <div className="space-y-3.5">
-                <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-widest border-b border-slate-100 pb-2">Languages</h3>
-                {gig.skills.languages.map((item, index) => (
-                  <div key={index} className="p-3 bg-slate-50/50 border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 hover:-translate-y-1 rounded-2xl flex justify-between items-center transition-all duration-300 hover:shadow-sm">
-                    <div>
-                      <p className="text-xs font-extrabold text-slate-700">
-                        {typeof item.language === 'object' ? item.language?.name : (item.language || 'Unnamed Language')}
-                      </p>
-                      {typeof item.language === 'object' && item.language?.nativeName && (
-                        <p className="text-[10px] text-slate-400 mt-0.5 font-bold">{item.language.nativeName}</p>
-                      )}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left Column: Skills & Stack */}
+            <div className="lg:col-span-8 space-y-6">
+              {/* Professional & Soft Skills Card */}
+              <div className="bg-slate-50/50 border border-slate-100/80 rounded-2xl p-6 hover:bg-white hover:border-slate-200 transition-all duration-300 hover:shadow-md">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                  Core & Soft Competencies
+                </h3>
+                <div className="flex flex-wrap gap-2.5">
+                  {/* Professional Skills */}
+                  {gig.skills.professional?.map((item, index) => (
+                    <div key={`prof-${index}`} className="inline-flex items-center gap-2.5 px-3 py-2 bg-white border border-slate-100/80 hover:border-purple-200 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xs">
+                      <span className="text-xs font-extrabold text-slate-700">
+                        {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
+                      </span>
+                      <span className="text-[9px] font-black bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded-md">
+                        Lvl {item.level}
+                      </span>
                     </div>
-                    <span className="text-[9px] font-black bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md uppercase tracking-wider">{item.proficiency}</span>
-                  </div>
-                ))}
+                  ))}
+                  {/* Soft Skills */}
+                  {gig.skills.soft?.map((item, index) => (
+                    <div key={`soft-${index}`} className="inline-flex items-center gap-2.5 px-3 py-2 bg-white border border-slate-100/80 hover:border-rose-200 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xs">
+                      <span className="text-xs font-extrabold text-slate-700">
+                        {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
+                      </span>
+                      <span className="text-[9px] font-black bg-rose-50 text-rose-600 border border-rose-100 px-2 py-0.5 rounded-md">
+                        Lvl {item.level}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
+
+              {/* Technical Stack Card */}
+              <div className="bg-slate-50/50 border border-slate-100/80 rounded-2xl p-6 hover:bg-white hover:border-slate-200 transition-all duration-300 hover:shadow-md">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
+                  Technical & Operations Stack
+                </h3>
+                <div className="flex flex-wrap gap-2.5">
+                  {gig.skills.technical?.map((item, index) => (
+                    <div key={`tech-${index}`} className="inline-flex items-center gap-2.5 px-3 py-2 bg-white border border-slate-100/80 hover:border-cyan-200 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xs">
+                      <span className="text-xs font-extrabold text-slate-700">
+                        {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
+                      </span>
+                      <span className="text-[9px] font-black bg-cyan-50 text-cyan-600 border border-cyan-100 px-2 py-0.5 rounded-md">
+                        Lvl {item.level}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Languages & Communication */}
+            <div className="lg:col-span-4">
+              <div className="bg-gradient-to-br from-indigo-50/40 via-purple-50/20 to-white border border-indigo-100/40 rounded-2xl p-6 h-full hover:border-indigo-200 transition-all duration-300 hover:shadow-md relative overflow-hidden flex flex-col justify-between">
+                <div className="absolute top-0 right-0 -mr-10 -mt-10 w-24 h-24 bg-indigo-500/[0.02] rounded-full blur-xl pointer-events-none" />
+                
+                <div>
+                  <h3 className="text-xs font-black text-indigo-500 uppercase tracking-widest border-b border-indigo-100/50 pb-3 mb-4 flex items-center gap-2">
+                    <Globe className="w-3.5 h-3.5 animate-spin-slow text-indigo-500" />
+                    Languages
+                  </h3>
+                  <div className="space-y-3">
+                    {gig.skills.languages?.map((item, index) => (
+                      <div key={`lang-${index}`} className="p-3 bg-white border border-slate-100/70 hover:border-indigo-200 rounded-xl flex justify-between items-center transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xs">
+                        <div>
+                          <p className="text-xs font-extrabold text-slate-800">
+                            {typeof item.language === 'object' ? item.language?.name : (item.language || 'Unnamed Language')}
+                          </p>
+                          {typeof item.language === 'object' && item.language?.nativeName && (
+                            <p className="text-[10px] text-slate-400 mt-0.5 font-bold italic">{item.language.nativeName}</p>
+                          )}
+                        </div>
+                        <span className="text-[9px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-md uppercase tracking-wider">
+                          {item.proficiency}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-indigo-100/30 flex items-center gap-2 text-[10px] text-indigo-600 font-extrabold uppercase tracking-wide">
+                  <Sparkles className="w-3 h-3 text-indigo-500 animate-pulse" />
+                  <span>Verified Neuro-profile pairable</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
