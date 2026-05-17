@@ -998,7 +998,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     <div className="flex items-center gap-3 mb-2">
                                                                         <h4
                                                                             className="text-lg font-bold text-gray-900 truncate cursor-pointer hover:text-harx-600 transition-colors"
-                                                                            onClick={() => handleAgentClick(match.agentId)}
+                                                                            onClick={() => setSelectedAgentProfile(match.agentInfo)}
                                                                         >
                                                                             {match.agentInfo?.name}
                                                                         </h4>
