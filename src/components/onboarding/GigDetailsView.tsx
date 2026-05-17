@@ -261,11 +261,11 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
     const agentObj = agent.agentId;
     if (agentObj && typeof agentObj === 'object') {
       return (
-        agentObj.personalInfo?.photo?.url || 
-        agentObj.personalInfo?.profilePicture || 
-        agentObj.photo?.url || 
-        agentObj.photo || 
-        agentObj.profilePicture || 
+        agentObj.personalInfo?.photo?.url ||
+        agentObj.personalInfo?.profilePicture ||
+        agentObj.photo?.url ||
+        agentObj.photo ||
+        agentObj.profilePicture ||
         ''
       );
     }
@@ -321,7 +321,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
           {/* Right Column: Commission & Details */}
           <div className="space-y-6">
             <h2 className="text-2xl font-black text-gray-900">Commission & details</h2>
-            
+
             <div className="space-y-4">
               {/* Badges Row */}
               <div className="flex flex-wrap gap-3">
@@ -331,8 +331,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                 </div>
                 <div className="px-4 py-2 animate-shimmer-purple animate-pulse-subtle text-white rounded-lg text-sm font-black uppercase tracking-tight flex items-center gap-2 hover:scale-105 transition-transform duration-300 shadow-md">
                   <Repeat size={14} className="animate-spin-slow hover:rotate-180 transition-transform duration-500" />
-                  {typeof gig.commission?.transactionCommission === 'number' 
-                    ? gig.commission.transactionCommission 
+                  {typeof gig.commission?.transactionCommission === 'number'
+                    ? gig.commission.transactionCommission
                     : ((gig.commission?.transactionCommission as any)?.amount || '21')}€ / TRANSACTION
                 </div>
               </div>
@@ -402,7 +402,6 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               <div>
                 <h3 className="text-lg font-bold text-gray-900">{typeof gig.destination_zone === 'object' ? (gig.destination_zone.name?.common || 'Unknown') : gig.destination_zone}</h3>
                 <p className="text-sm text-gray-500">{gig.destination_zone.name?.official || ''}</p>
-                <span className="text-xs font-bold text-gray-400">ISO: {gig.destination_zone.cca2 || ''}</span>
               </div>
             </div>
           </div>
@@ -410,13 +409,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
         {/* Enrolled Agents Card */}
         {enrolledAgents.length > 0 && (
-          <div 
+          <div
             onClick={() => setShowAgentsModal(true)}
             className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8 hover:shadow-xl hover:border-purple-200 transition-all duration-300 cursor-pointer group relative overflow-hidden"
           >
             {/* Background absolute subtle gradient glow */}
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-36 h-36 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-full blur-2xl group-hover:scale-125 transition-all duration-500" />
-            
+
             <div className="flex items-center gap-4 mb-6">
               <div className="p-3 bg-purple-50 rounded-xl group-hover:bg-purple-100 transition-colors">
                 <Users className="h-6 w-6 text-purple-600 animate-pulse" />
@@ -433,13 +432,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               <p className="text-gray-500 text-sm font-medium leading-relaxed">
                 Click to view matching scores, compliance status, and full profiles of the agents currently enrolled in this outbound sales gig.
               </p>
-              
+
               {/* Stacked Avatars Preview */}
               <div className="flex items-center gap-2 pt-2">
                 <div className="flex -space-x-3 overflow-hidden">
                   {enrolledAgents.slice(0, 5).map((agent, i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       className="inline-block h-9 w-9 rounded-full overflow-hidden ring-2 ring-white bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-md uppercase transition-transform hover:-translate-y-1"
                     >
                       {getAgentAvatar(agent) ? (
@@ -539,7 +538,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                 </h3>
                 <p className="text-sm text-gray-500 font-medium">Currently assigned agents for <span className="font-bold text-gray-700">{gig.title}</span></p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowAgentsModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
               >
@@ -554,7 +553,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                   const score = agent.matchScore || 0.85;
                   const scorePct = Math.round(score * 100);
                   const statusColors = getAgentStatusColor(agent.status || 'accepted');
-                  
+
                   return (
                     <div key={agent._id || index} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0">
                       <div className="flex items-center gap-4">
@@ -568,7 +567,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                         <div>
                           <p className="font-extrabold text-gray-900 text-base flex items-center gap-2">
                             {getAgentName(agent)}
-                            <span 
+                            <span
                               className="text-[10px] font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md hover:underline cursor-pointer transition-colors hover:text-purple-600"
                               onClick={() => handleAgentClick(getAgentIdString(agent))}
                             >
@@ -599,8 +598,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                           <span className="text-xs text-gray-400 font-bold block mb-1">MATCH SCORE</span>
                           <div className="flex items-center gap-2">
                             <div className="w-24 bg-gray-100 rounded-full h-2 overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full bg-gradient-to-r ${score >= 0.8 ? 'from-emerald-400 to-emerald-500' : 'from-amber-400 to-amber-500'}`} 
+                              <div
+                                className={`h-full rounded-full bg-gradient-to-r ${score >= 0.8 ? 'from-emerald-400 to-emerald-500' : 'from-amber-400 to-amber-500'}`}
                                 style={{ width: `${scorePct}%` }}
                               />
                             </div>
@@ -627,7 +626,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
           onClose={() => setSelectedAgentProfile(null)}
         />
       )}
-      
+
       {/* Loading Profile Overlay */}
       {loadingProfile && (
         <div className="fixed inset-0 bg-gray-950/20 backdrop-blur-xs flex items-center justify-center z-[110] animate-in fade-in duration-200">
