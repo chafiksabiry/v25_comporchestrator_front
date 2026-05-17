@@ -481,7 +481,7 @@ function AppContent() {
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
                           if (activeProject === 'comporchestrator') {
-                            setActiveTab('company-onboarding');
+                            setActiveTab('profile-creation');
                           } else {
                             setActiveProject('dashboard');
                             navigate('/dashboard/profile');
