@@ -440,6 +440,7 @@ export default function CallsDashboardPage() {
                         </span>
                       )}
                       <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vos décisions</span>
                         <button
                           onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, true)}
                           className="p-1.5 rounded-full transition-all flex items-center justify-center shadow-sm bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60"
