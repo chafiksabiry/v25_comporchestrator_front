@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GigAgent } from '../types/matching';
 import GigAgentDetails from './GigAgentDetails';
+import RepProfileView from './RepProfileView';
 
 interface GigAgentListProps {
     gigId?: string;
@@ -12,6 +13,26 @@ const GigAgentList: React.FC<GigAgentListProps> = ({ gigId, agentId }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedGigAgent, setSelectedGigAgent] = useState<GigAgent | null>(null);
+    const [selectedAgentProfile, setSelectedAgentProfile] = useState<any>(null);
+    const [loadingProfile, setLoadingProfile] = useState(false);
+
+    const handleAgentClick = async (agentId: string) => {
+        try {
+            setLoadingProfile(true);
+            const REP_API_URL = 'https://v25repscreationwizardbackend-production.up.railway.app/api';
+            const response = await fetch(`${REP_API_URL}/profiles/${agentId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch profile');
+            }
+            const data = await response.json();
+            setSelectedAgentProfile(data);
+        } catch (err) {
+            console.error('Error fetching profile:', err);
+            alert('Impossible de charger le profil de l\'agent.');
+        } finally {
+            setLoadingProfile(false);
+        }
+    };
 
     useEffect(() => {
         fetchGigAgents();
@@ -126,6 +147,21 @@ const GigAgentList: React.FC<GigAgentListProps> = ({ gigId, agentId }) => {
                 </div>
             )}
 
+            {/* Modal pour le profil */}
+            {selectedAgentProfile && (
+                <RepProfileView
+                    profile={selectedAgentProfile}
+                    onClose={() => setSelectedAgentProfile(null)}
+                />
+            )}
+            
+            {/* Spinner pour le chargement du profil */}
+            {loadingProfile && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-25 flex items-center justify-center z-[110]">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-600"></div>
+                </div>
+            )}
+
             {/* Liste des assignations */}
             <div className="bg-white shadow overflow-hidden sm:rounded-md">
                 <ul className="divide-y divide-gray-200">
@@ -143,7 +179,12 @@ const GigAgentList: React.FC<GigAgentListProps> = ({ gigId, agentId }) => {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center space-x-2">
                                             <p className="text-sm font-medium text-gray-900 truncate">
-                                                Agent: {gigAgent.agentId}
+                                                Agent: <span 
+                                                    className="text-harx-600 hover:underline cursor-pointer font-bold"
+                                                    onClick={() => handleAgentClick(gigAgent.agentId)}
+                                                >
+                                                    {gigAgent.agentId}
+                                                </span>
                                             </p>
                                             <span className="text-gray-400">•</span>
                                             <p className="text-sm text-gray-500 truncate">

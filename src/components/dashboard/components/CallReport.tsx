@@ -26,7 +26,7 @@ const initialReport: CallReport = {
 function CallReportCard() {
     const location = useLocation();
     const callPased = location.state?.call; // Retrieve passed call object
-    
+
 
     const [call, setCall] = useState<Call | null>(callPased || null);
     const [report, setReport] = useState<CallReport>(callPased?.ai_call_score || initialReport);
@@ -48,22 +48,6 @@ function CallReportCard() {
 
 
 
-    const handleValidateByCompany = async (isValidByCompany: boolean) => {
-        if (!call) return;
-        try {
-            const updatedTransaction = {
-                validByCompany: isValidByCompany,
-                valid: (call.transaction?.validByAI === true && isValidByCompany === true)
-            };
-            const response = await callsApi.update(call._id, { transaction: updatedTransaction } as any);
-            if (response && response.success) {
-                const updatedCall = response.data || response.call || response;
-                setCall(updatedCall);
-            }
-        } catch (err) {
-            console.error("Failed to update transaction validation:", err);
-        }
-    };
 
     const handleAnalyzeCall = async () => {
         if (!call) return;
@@ -72,9 +56,9 @@ function CallReportCard() {
             const response = await callsApi.analyze(call._id);
             if (response.success) {
                 setReport(response.data);
-                setCall({ 
-                    ...call, 
-                    ai_call_score: response.data, 
+                setCall({
+                    ...call,
+                    ai_call_score: response.data,
                     transcript: response.transcript || (call as any).transcript,
                     validByAI: response.validByAI
                 });
@@ -130,7 +114,7 @@ function CallReportCard() {
             try {
                 setLoadingPostActions(true);
                 const response = await vertexApi.getCallPostActions({ file_uri: (call.recording_url_cloudinary) ? call.recording_url_cloudinary : call.recording_url });
-                
+
                 setCallPostActions(response.plan_actions);
             } catch (err) {
                 setErrorSummary("Failed to generate call post actions.");
@@ -202,19 +186,17 @@ function CallReportCard() {
             </div>
 
             {/* AI Decision Panel - Final word */}
-            <div className={`border rounded-xl p-6 transition-all duration-500 ${
-                call?.validByAI === true 
-                    ? 'bg-emerald-50/50 border-emerald-100 shadow-sm' 
-                    : call?.validByAI === false 
+            <div className={`border rounded-xl p-6 transition-all duration-500 ${call?.validByAI === true
+                    ? 'bg-emerald-50/50 border-emerald-100 shadow-sm'
+                    : call?.validByAI === false
                         ? 'bg-rose-50/50 border-rose-100 shadow-sm'
                         : 'bg-slate-50/50 border-slate-100'
-            }`}>
+                }`}>
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
-                            call?.validByAI === true ? 'bg-emerald-500 text-white' : 
-                            call?.validByAI === false ? 'bg-rose-500 text-white' : 'bg-slate-400 text-white'
-                        }`}>
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${call?.validByAI === true ? 'bg-emerald-500 text-white' :
+                                call?.validByAI === false ? 'bg-rose-500 text-white' : 'bg-slate-400 text-white'
+                            }`}>
                             <Shield className="w-6 h-6" />
                         </div>
                         <div>
@@ -222,7 +204,7 @@ function CallReportCard() {
                             <p className="text-sm text-slate-500 font-medium">L'analyse chirurgicale Gemini détermine la conformité de l'appel.</p>
                         </div>
                     </div>
-                    
+
                     <div className="flex flex-col items-end">
                         {call?.validByAI === true ? (
                             <div className="flex flex-col items-end">
@@ -277,16 +259,16 @@ function CallReportCard() {
                     <FileText className="h-5 w-5 text-purple-500" />
                     <h3 className="text-sm font-medium text-purple-900">Call Transcription</h3>
                 </div>
-                    {loadingTranscription ? <LoadingSpinner text="Generating call transcription ..." /> : errorTranscription ? <p className="text-red-500">{errorTranscription}</p> : (
-                        <div className="bg-gray-100 p-3 rounded-md text-sm text-gray-800 space-y-2 max-h-96 overflow-y-auto">
-                            {Array.isArray(transcription) ? transcription.map((item, idx) => (
-                                <div key={idx} className="flex flex-col mb-2">
-                                    <span className="font-bold text-xs text-purple-600">{item.speaker} {item.timestamp ? `[${item.timestamp}]` : ''}</span>
-                                    <span className="text-gray-700">{item.text}</span>
-                                </div>
-                            )) : transcription}
-                        </div>
-                    )}
+                {loadingTranscription ? <LoadingSpinner text="Generating call transcription ..." /> : errorTranscription ? <p className="text-red-500">{errorTranscription}</p> : (
+                    <div className="bg-gray-100 p-3 rounded-md text-sm text-gray-800 space-y-2 max-h-96 overflow-y-auto">
+                        {Array.isArray(transcription) ? transcription.map((item, idx) => (
+                            <div key={idx} className="flex flex-col mb-2">
+                                <span className="font-bold text-xs text-purple-600">{item.speaker} {item.timestamp ? `[${item.timestamp}]` : ''}</span>
+                                <span className="text-gray-700">{item.text}</span>
+                            </div>
+                        )) : transcription}
+                    </div>
+                )}
             </div>
 
             {/* Call Summarization */}
@@ -354,16 +336,15 @@ function CallReportCard() {
                         </div>
                         <h3 className="text-lg font-bold text-slate-800">Scoring Détaillé IA</h3>
                     </div>
-                    
+
                     <div className="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl shadow-sm border border-slate-100">
                         <div className="text-right">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score Global</p>
                             <p className="text-2xl font-black text-slate-900">{report.overall.score}%</p>
                         </div>
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                            report.overall.score >= 80 ? 'bg-emerald-500 text-white' : 
-                            report.overall.score >= 50 ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'
-                        }`}>
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${report.overall.score >= 80 ? 'bg-emerald-500 text-white' :
+                                report.overall.score >= 50 ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'
+                            }`}>
                             <TrendingUp className="w-6 h-6" />
                         </div>
                     </div>
@@ -387,26 +368,24 @@ function CallReportCard() {
                                         </div>
                                         <span className="font-bold text-slate-700">{metric.label}</span>
                                     </div>
-                                    <span className={`px-2 py-1 rounded-lg text-xs font-black ${
-                                        metric.data!.score >= 80 ? 'bg-emerald-50 text-emerald-600' :
-                                        metric.data!.score >= 50 ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
-                                    }`}>
+                                    <span className={`px-2 py-1 rounded-lg text-xs font-black ${metric.data!.score >= 80 ? 'bg-emerald-50 text-emerald-600' :
+                                            metric.data!.score >= 50 ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
+                                        }`}>
                                         {metric.data!.score}%
                                     </span>
                                 </div>
 
                                 <div className="w-full bg-slate-100 h-2 rounded-full mb-4 overflow-hidden">
-                                    <div 
-                                        className={`h-full rounded-full transition-all duration-1000 ${
-                                            metric.data!.score >= 80 ? 'bg-emerald-500' :
-                                            metric.data!.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
-                                        }`}
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-1000 ${metric.data!.score >= 80 ? 'bg-emerald-500' :
+                                                metric.data!.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                                            }`}
                                         style={{ width: `${metric.data!.score}%` }}
                                     />
                                 </div>
 
                                 <div className="text-sm text-slate-600 leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-slate-100 italic">
-                                    {metric.data!.feedback.split(/("(?:[^"\\]|\\.)*")/).map((part, i) => 
+                                    {metric.data!.feedback.split(/("(?:[^"\\]|\\.)*")/).map((part, i) =>
                                         part.startsWith('"') ? (
                                             <mark key={i} className="bg-rose-100 text-rose-900 font-bold px-1 rounded mx-1">
                                                 {part}
