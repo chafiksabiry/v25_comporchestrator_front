@@ -340,24 +340,24 @@ export default function CallsDashboardPage() {
 
           <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-white/20">
             {/* Modal Header */}
-            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/40 flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-harx text-white flex items-center justify-center shadow-xl shadow-harx-500/20">
-                  <Phone className="w-7 h-7" />
+            <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/40 flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-harx text-white flex items-center justify-center shadow-lg shadow-harx-500/20">
+                  <Phone className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">
+                  <h2 className="text-base font-black text-slate-900 uppercase tracking-widest">
                     {selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim() : 'Call Details'}
                   </h2>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
                     {new Date(selectedCall.createdAt || selectedCall.date).toLocaleString()}
                   </p>
-                  <div className="flex flex-wrap items-center gap-3 mt-1 opacity-60">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">
+                  <div className="flex flex-wrap items-center gap-1.5 mt-0.5 opacity-60">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md">
                       Call ID: {typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id}
                     </span>
                     {selectedCall.transaction?._id && (
-                      <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-md">
+                      <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest bg-blue-50 px-1.5 py-0.5 rounded-md">
                         Tx ID: {selectedCall.transaction._id}
                       </span>
                     )}
@@ -365,7 +365,7 @@ export default function CallsDashboardPage() {
                 </div>
               </div>
 
-              <div className="flex-1 max-w-md">
+              <div className="flex-1 max-w-sm">
                 {(() => {
                   const recordingUrl = selectedCall.recording_url_cloudinary || selectedCall.recording_url;
                   if (!recordingUrl) return <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">No recording</div>;
@@ -374,13 +374,13 @@ export default function CallsDashboardPage() {
                 })()}
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
 
                 <button
                   onClick={() => setSelectedCall(null)}
-                  className="p-3 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl border border-slate-100 transition-all shadow-sm"
+                  className="p-2 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-xl border border-slate-100 transition-all shadow-sm"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
