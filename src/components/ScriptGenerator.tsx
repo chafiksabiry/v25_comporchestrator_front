@@ -426,13 +426,7 @@ const ScriptGenerator: React.FC = () => {
   }, [gigs]);
 
   useEffect(() => {
-    const event = new CustomEvent('setGlobalBack', {
-      detail: {
-        label: 'Back to onboarding',
-        action: handleBackToOrchestrator,
-      },
-    });
-    window.dispatchEvent(event);
+    window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
     return () => {
       window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
     };
