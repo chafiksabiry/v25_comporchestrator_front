@@ -470,7 +470,7 @@ function AppContent() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-black text-white leading-tight">{companyName || userFullName}</span>
                       </div>
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Administrator</span>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Company</span>
                     </div>
                     <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ml-2 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
@@ -486,7 +486,7 @@ function AppContent() {
                         className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
                       >
                         <Building2 size={16} className="text-gray-400" />
-                        <span className="font-bold">Profil Entreprise</span>
+                        <span className="font-bold">Profil</span>
                       </button>
                       <button
                         onClick={() => {
