@@ -335,12 +335,10 @@ export default function CallsDashboardPage() {
 
       {/* Modal Overlay */}
       {selectedCall && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}></div>
-
-          <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[32px] shadow-2xl overflow-y-auto flex flex-col animate-in zoom-in-95 duration-300 border border-white/20 custom-scrollbar">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center p-3 overflow-y-auto animate-in fade-in duration-300 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}>
+          <div className="relative bg-white w-full max-w-4xl my-8 rounded-[32px] shadow-2xl flex flex-col animate-in zoom-in-95 duration-300 border border-white/20" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/40 flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
+            <div className="px-4 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-harx text-white flex items-center justify-center shadow-lg shadow-harx-500/20">
                   <Phone className="w-5 h-5" />
@@ -386,7 +384,7 @@ export default function CallsDashboardPage() {
             </div>
 
             {/* Tabs */}
-            <div className="px-5 py-3 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setActiveTab('transcript')}
@@ -474,7 +472,7 @@ export default function CallsDashboardPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 bg-slate-50/30">
+            <div className="p-5">
               {activeTab === 'transcript' ? (
                 <div className="max-w-4xl mx-auto space-y-6">
                   {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
