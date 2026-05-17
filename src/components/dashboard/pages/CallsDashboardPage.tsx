@@ -394,8 +394,9 @@ export default function CallsDashboardPage() {
 
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-1.5">
-                  <div className="flex items-center gap-1.5 text-slate-400" title="Appe">
+                  <div className="flex items-center gap-1.5 text-slate-400" title="Appel">
                     <Phone className="w-4 h-4" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Appel</span>
                   </div>
                   {selectedCall.validByAI === true ? (
                     <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm" title="Validé par AI">
@@ -415,6 +416,7 @@ export default function CallsDashboardPage() {
                 <div className="flex items-center gap-1.5">
                   <div className="flex items-center gap-1.5 text-slate-400" title="Transaction">
                     <CreditCard className="w-4 h-4" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction</span>
                   </div>
                   {selectedCall.transaction?.validByCompany === true ? (
                     <span className="inline-flex items-center justify-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm">
