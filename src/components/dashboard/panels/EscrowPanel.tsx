@@ -69,6 +69,7 @@ interface CompanyCall {
   status: string;
   validByCompany: boolean | null;
   validByReps: boolean | null;
+  validByAI: boolean | null;
   valid: boolean | null;
   price?: number;
   recording_url?: string | null;
@@ -314,6 +315,33 @@ export function EscrowPanel() {
       setCallsLoading(false);
     }
   };
+
+  useEffect(() => {
+    // WebSocket for real-time updates
+    const wsUrl = apiBaseUrl.replace('/api', '').replace('http', 'ws') + '/escrow-updates';
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+      console.log('Connected to Escrow WebSocket');
+    };
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'escrow_update') {
+        // Refresh data
+        fetchWalletData(true);
+        fetchCallsData();
+      }
+    };
+    
+    ws.onclose = () => {
+      console.log('Disconnected from Escrow WebSocket');
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [apiBaseUrl, companyId]);
 
   const handleApproveOrRefuse = async (callId: string, action: 'approve' | 'refuse') => {
     try {
@@ -1289,6 +1317,7 @@ export function EscrowPanel() {
                       <th className="px-6 py-4">Sens</th>
                       <th className="px-6 py-4">Durée Réelle</th>
                       <th className="px-6 py-4">Date de l'Appel</th>
+                      <th className="px-6 py-4">Décision IA</th>
                       <th className="px-6 py-4">Statut Transaction</th>
                       <th className="px-6 py-4 text-center">Décision</th>
                     </tr>
@@ -1338,6 +1367,24 @@ export function EscrowPanel() {
                               hour: '2-digit',
                               minute: '2-digit'
                             }) : 'N/A'}
+                          </td>
+                          <td className="px-6 py-4">
+                            {call.validByAI === true ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full">
+                                <Brain className="w-3 h-3 text-emerald-500" />
+                                IA Approuvé
+                              </span>
+                            ) : call.validByAI === false ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-100 rounded-full">
+                                <Brain className="w-3 h-3 text-rose-500" />
+                                IA Refusé
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide bg-slate-50 text-slate-500 border border-slate-200 rounded-full">
+                                <Brain className="w-3 h-3 text-slate-400" />
+                                Non évalué
+                              </span>
+                            )}
                           </td>
                           <td className="px-6 py-4">
                             {call.validByCompany === true ? (
