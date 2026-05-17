@@ -371,9 +371,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               Campaign staffing, target zone & active assignments
             </p>
           </div>
-          
+
           {enrolledAgents.length > 0 && (
-            <button 
+            <button
               onClick={() => setShowAgentsModal(true)}
               className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2"
             >
@@ -427,14 +427,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
           <div className="space-y-2">
             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Assigned Representatives</span>
             {enrolledAgents.length > 0 ? (
-              <div 
+              <div
                 onClick={() => setShowAgentsModal(true)}
                 className="p-4 bg-indigo-50/50 hover:bg-indigo-100/50 cursor-pointer rounded-2xl border border-indigo-100 flex items-center justify-between gap-4 transition-all duration-300 group"
               >
                 <div className="flex -space-x-3 overflow-hidden">
                   {enrolledAgents.slice(0, 4).map((agent, i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       className="inline-block h-8 w-8 rounded-full overflow-hidden ring-2 ring-white bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shadow-sm uppercase transition-transform group-hover:-translate-y-0.5"
                     >
                       {getAgentAvatar(agent) ? (
@@ -480,7 +480,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                 <h3 className="text-sm font-bold text-gray-500 uppercase">Professional</h3>
                 {gig.skills.professional.map((item, index) => (
                   <div key={index} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">{item.skill.name}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
+                    </span>
                     <span className="text-xs font-bold bg-harx-500 text-white px-2 py-0.5 rounded">Lvl {item.level}</span>
                   </div>
                 ))}
@@ -491,7 +493,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                 <h3 className="text-sm font-bold text-gray-500 uppercase">Technical</h3>
                 {gig.skills.technical.map((item, index) => (
                   <div key={index} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">{item.skill.name}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
+                    </span>
                     <span className="text-xs font-bold bg-cyan-500 text-white px-2 py-0.5 rounded">Lvl {item.level}</span>
                   </div>
                 ))}
@@ -502,7 +506,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                 <h3 className="text-sm font-bold text-gray-500 uppercase">Soft</h3>
                 {gig.skills.soft.map((item, index) => (
                   <div key={index} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">{item.skill.name}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
+                    </span>
                     <span className="text-xs font-bold bg-pink-500 text-white px-2 py-0.5 rounded">Lvl {item.level}</span>
                   </div>
                 ))}
@@ -514,8 +520,12 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                 {gig.skills.languages.map((item, index) => (
                   <div key={index} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
                     <div>
-                      <p className="text-sm font-medium text-gray-700">{item.language.name}</p>
-                      <p className="text-xs text-gray-400">{item.language.nativeName}</p>
+                      <p className="text-sm font-medium text-gray-700">
+                        {typeof item.language === 'object' ? item.language?.name : (item.language || 'Unnamed Language')}
+                      </p>
+                      {typeof item.language === 'object' && item.language?.nativeName && (
+                        <p className="text-xs text-gray-400">{item.language.nativeName}</p>
+                      )}
                     </div>
                     <span className="text-xs font-bold bg-harx-500 text-white px-2 py-0.5 rounded">{item.proficiency}</span>
                   </div>

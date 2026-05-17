@@ -246,19 +246,19 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
       skills: {
         ...rawGig.skills,
         professional: rawGig.skills?.professional?.map((s: any) => ({
-          skill: s.skill?._id || s.skill,
+          skill: s.skill,
           level: s.level || 50
         })) || [],
         technical: rawGig.skills?.technical?.map((s: any) => ({
-          skill: s.skill?._id || s.skill,
+          skill: s.skill,
           level: s.level || 50
         })) || [],
         soft: rawGig.skills?.soft?.map((s: any) => ({
-          skill: s.skill?._id || s.skill,
+          skill: s.skill,
           level: s.level || 50
         })) || [],
         languages: rawGig.skills?.languages?.map((l: any) => ({
-          language: l.language?._id || l.language,
+          language: l.language,
           proficiency: l.proficiency || 'Intermediate',
           iso639_1: l.language?.iso639_1 || 'en'
         })) || []
