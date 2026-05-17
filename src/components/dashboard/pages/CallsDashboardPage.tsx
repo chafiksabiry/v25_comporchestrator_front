@@ -336,30 +336,20 @@ export default function CallsDashboardPage() {
       {/* Modal Overlay */}
       {selectedCall && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 animate-in fade-in duration-300 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}>
-          <div className="relative bg-white w-full max-w-4xl max-h-[85vh] rounded-[32px] shadow-2xl overflow-y-auto flex flex-col animate-in zoom-in-95 duration-300 border border-white/20" onClick={(e) => e.stopPropagation()}>
+          <div className="relative bg-white w-full max-w-4xl max-h-[85vh] rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-white/20" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="px-4 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-harx text-white flex items-center justify-center shadow-lg shadow-harx-500/20">
-                  <Phone className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-base font-black text-slate-900 uppercase tracking-widest">
-                    {selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim() : 'Call Details'}
-                  </h2>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
-                    {new Date(selectedCall.createdAt || selectedCall.date).toLocaleString()}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-0.5 opacity-60">
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md">
-                      Call ID: {typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id}
-                    </span>
-                    {selectedCall.transaction?._id && (
-                      <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest bg-blue-50 px-1.5 py-0.5 rounded-md">
-                        Tx ID: {selectedCall.transaction._id}
-                      </span>
-                    )}
-                  </div>
+            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
+              <div className="flex flex-col">
+                <h2 className="text-base font-black text-slate-900 uppercase tracking-widest">
+                  {selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim() : 'Call Details'}
+                </h2>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
+                  {new Date(selectedCall.createdAt || selectedCall.date).toLocaleString()}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5 opacity-60">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md">
+                    Call ID: {typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id}
+                  </span>
                 </div>
               </div>
 
@@ -472,7 +462,7 @@ export default function CallsDashboardPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-5">
+            <div className="flex-1 overflow-y-auto p-5 bg-slate-50/30">
               {activeTab === 'transcript' ? (
                 <div className="max-w-4xl mx-auto space-y-6">
                   {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
