@@ -336,13 +336,7 @@ export default function CallsDashboardPage() {
       {/* Modal Overlay */}
       {selectedCall && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 animate-in fade-in duration-300 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}>
-          <style>{`
-            .modal-scrollbar::-webkit-scrollbar { width: 8px !important; }
-            .modal-scrollbar::-webkit-scrollbar-track { background: transparent !important; }
-            .modal-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1 !important; border-radius: 20px !important; }
-            .modal-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8 !important; }
-          `}</style>
-          <div className="relative bg-white w-full max-w-4xl max-h-[85vh] rounded-[32px] shadow-2xl overflow-y-auto flex flex-col animate-in zoom-in-95 duration-300 border border-white/20 modal-scrollbar" onClick={(e) => e.stopPropagation()}>
+          <div className="relative bg-white w-full max-w-4xl max-h-[85vh] rounded-[32px] shadow-2xl overflow-y-auto flex flex-col animate-in zoom-in-95 duration-300 border border-white/20" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="px-4 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
               <div className="flex items-center gap-3">
