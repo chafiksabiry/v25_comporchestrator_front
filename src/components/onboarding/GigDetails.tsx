@@ -238,7 +238,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
     // Map populated API data back into the flat GigData structure expected by GigReview
     const mappedGig = {
       ...rawGig,
-      destination_zone: rawGig.destination_zone?._id || rawGig.destination_zone?.cca2 || rawGig.destination_zone,
+      destination_zone: rawGig.destination_zone,
       commission: {
         ...rawGig.commission,
         currency: rawGig.commission?.currency?._id || rawGig.commission?.currency
