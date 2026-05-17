@@ -191,6 +191,29 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
     }
   };
 
+  const getAgentIdString = (agent: any): string => {
+    if (!agent) return '';
+    if (typeof agent.agentId === 'string') {
+      return agent.agentId;
+    }
+    if (agent.agentId && typeof agent.agentId === 'object') {
+      return agent.agentId._id || agent.agentId.id || '';
+    }
+    if (typeof agent.agent === 'string') {
+      return agent.agent;
+    }
+    if (agent.agent && typeof agent.agent === 'object') {
+      return agent.agent._id || agent.agent.id || '';
+    }
+    return agent._id || '';
+  };
+
+  const getAgentInitials = (agent: any): string => {
+    const idStr = getAgentIdString(agent);
+    if (idStr) return idStr.substring(0, 2).toUpperCase();
+    return 'AG';
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Back Button */}
@@ -361,7 +384,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                       key={i} 
                       className="inline-block h-9 w-9 rounded-full ring-2 ring-white bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-md uppercase transition-transform hover:-translate-y-1"
                     >
-                      {agent.agentId ? agent.agentId.substring(0, 2).toUpperCase() : 'AG'}
+                      {getAgentInitials(agent)}
                     </div>
                   ))}
                   {enrolledAgents.length > 5 && (
@@ -474,17 +497,17 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                     <div key={agent._id || index} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0">
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-md uppercase">
-                          {agent.agentId ? agent.agentId.substring(0, 2).toUpperCase() : 'AG'}
+                          {getAgentInitials(agent)}
                         </div>
                         <div>
                           <p className="font-bold text-gray-900">
                             Agent ID: <span 
                               className="text-harx-600 hover:underline cursor-pointer font-black"
                               onClick={() => {
-                                handleAgentClick(agent.agentId);
+                                handleAgentClick(getAgentIdString(agent));
                               }}
                             >
-                              {agent.agentId}
+                              {getAgentIdString(agent)}
                             </span>
                           </p>
                           <div className="flex items-center gap-2 mt-1">
@@ -519,7 +542,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
                         {/* View Button */}
                         <button
-                          onClick={() => handleAgentClick(agent.agentId)}
+                          onClick={() => handleAgentClick(getAgentIdString(agent))}
                           className="px-4 py-2 border border-purple-200 text-purple-600 hover:bg-purple-50 rounded-xl text-xs font-black uppercase tracking-wider transition-colors"
                         >
                           Profile
