@@ -481,51 +481,67 @@ export default function CallsDashboardPage() {
                 </div>
               ) : (
                 <div className="max-w-5xl mx-auto space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-                    {[
-                      { label: 'Agent Fluency', data: selectedCall.ai_call_score?.["Agent fluency"], icon: Globe },
-                      { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], icon: ActivityIcon },
-                      { label: 'Fraud Detection', data: selectedCall.ai_call_score?.["Fraud detection"], icon: ShieldAlert },
-                      { label: 'Script Coherence', data: selectedCall.ai_call_score?.["Script coherence"], icon: ShieldCheck },
-                      { label: 'Argumentation Quality', data: selectedCall.ai_call_score?.["Argumentation"], icon: TrendingUp }
-                    ].map((metric, mIdx) => (
-                      <div key={mIdx} className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
-                        <div className="flex justify-between items-start mb-6">
-                          <div className={`w-12 h-12 rounded-2xl bg-harx-50 text-harx-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
-                            <metric.icon className="w-6 h-6" />
-                          </div>
-                          <div className="text-right">
-                            <span className={`text-2xl font-black text-harx-600`}>{metric.data?.score || 0}%</span>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Score</p>
-                          </div>
-                        </div>
-                        <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-3">{metric.label}</h5>
-                        <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
-                          &quot;{metric.data?.feedback || 'Comprehensive analysis completed.'}&quot;
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="bg-white rounded-[32px] border border-emerald-100 shadow-xl overflow-hidden relative group p-10">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-emerald-500/10 transition-colors"></div>
-                    <div className="relative z-10">
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                          <Star className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <h4 className="text-lg font-black text-slate-900 uppercase tracking-widest">Executive Summary</h4>
-                          <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Overall AI Evaluation</p>
-                        </div>
-                      </div>
-                      <div className="bg-emerald-50/50 rounded-2xl p-8 border border-emerald-100/50">
-                        <p className="text-lg font-bold text-emerald-900 leading-relaxed italic">
-                          &quot;{selectedCall.ai_call_score?.overall?.feedback || 'The agent demonstrated standard performance.'}&quot;
-                        </p>
-                      </div>
+                  {(!selectedCall.ai_call_score || !selectedCall.ai_call_score.overall?.score) ? (
+                    <div className="py-20 text-center flex flex-col items-center justify-center gap-4">
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">No analysis available for this call</p>
+                      <button
+                        onClick={() => handleAnalyzeCall(selectedCall._id)}
+                        disabled={analyzingCallId === selectedCall._id}
+                        className="flex items-center gap-2 px-6 py-3 bg-harx-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-harx-600 transition-all shadow-lg shadow-harx-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Brain className={`w-4 h-4 ${analyzingCallId === selectedCall._id ? 'animate-spin' : ''}`} />
+                        {analyzingCallId === selectedCall._id ? 'Analyse...' : 'Analyze & Transcribe'}
+                      </button>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                        {[
+                          { label: 'Agent Fluency', data: selectedCall.ai_call_score?.["Agent fluency"], icon: Globe },
+                          { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], icon: ActivityIcon },
+                          { label: 'Fraud Detection', data: selectedCall.ai_call_score?.["Fraud detection"], icon: ShieldAlert },
+                          { label: 'Script Coherence', data: selectedCall.ai_call_score?.["Script coherence"], icon: ShieldCheck },
+                          { label: 'Argumentation Quality', data: selectedCall.ai_call_score?.["Argumentation"], icon: TrendingUp }
+                        ].map((metric, mIdx) => (
+                          <div key={mIdx} className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
+                            <div className="flex justify-between items-start mb-6">
+                              <div className={`w-12 h-12 rounded-2xl bg-harx-50 text-harx-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
+                                <metric.icon className="w-6 h-6" />
+                              </div>
+                              <div className="text-right">
+                                <span className={`text-2xl font-black text-harx-600`}>{metric.data?.score || 0}%</span>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Score</p>
+                              </div>
+                            </div>
+                            <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-3">{metric.label}</h5>
+                            <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
+                              &quot;{metric.data?.feedback || 'Comprehensive analysis completed.'}&quot;
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="bg-white rounded-[32px] border border-emerald-100 shadow-xl overflow-hidden relative group p-10">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-emerald-500/10 transition-colors"></div>
+                        <div className="relative z-10">
+                          <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                              <Star className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-black text-slate-900 uppercase tracking-widest">Executive Summary</h4>
+                              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Overall AI Evaluation</p>
+                            </div>
+                          </div>
+                          <div className="bg-emerald-50/50 rounded-2xl p-8 border border-emerald-100/50">
+                            <p className="text-lg font-bold text-emerald-900 leading-relaxed italic">
+                              &quot;{selectedCall.ai_call_score?.overall?.feedback || 'The agent demonstrated standard performance.'}&quot;
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
