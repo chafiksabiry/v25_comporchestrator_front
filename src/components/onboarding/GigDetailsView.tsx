@@ -281,46 +281,53 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-8 bg-[#090D16] min-h-screen text-white rounded-[24px] border border-white/5 relative overflow-hidden shadow-2xl">
+      {/* Ambient background glows */}
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-500/[0.03] rounded-full blur-[120px] pointer-events-none animate-pulse-slow" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[500px] h-[500px] bg-rose-500/[0.03] rounded-full blur-[120px] pointer-events-none animate-pulse-slow" />
+
       {/* Header Back Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between relative z-10">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-5 py-2 text-sm font-black uppercase tracking-tighter text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-all duration-300 shadow-sm"
+          className="inline-flex items-center gap-2.5 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-gray-300 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 hover:text-white transition-all duration-300 shadow-sm"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={14} />
           Back to Gigs
         </button>
       </div>
 
       {/* Main Card (Matching 1st Image) */}
-      <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-10 space-y-10">
+      <div className="rounded-[2rem] bg-[#0F172A]/40 backdrop-blur-md border border-white/5 p-10 space-y-10 shadow-2xl relative overflow-hidden z-10">
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-rose-500/[0.03] rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/[0.03] rounded-full blur-[100px] pointer-events-none" />
+
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
-            <span className="text-xs font-black text-harx-400 uppercase tracking-widest">
+            <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest block">
               {gig.category || 'OUTBOUND SALES'}
             </span>
-            <h1 className="text-3xl font-black text-gray-900 leading-tight">
+            <h1 className="text-3xl md:text-4xl font-black text-white leading-tight uppercase tracking-tight bg-clip-text bg-gradient-to-r from-white via-white to-white/80">
               {gig.title}
             </h1>
           </div>
         </div>
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
           {/* Left Column: Job Description */}
           <div className="space-y-6">
-            <h2 className="text-2xl font-black text-gray-900">Job Description</h2>
-            <p className="text-gray-600 leading-relaxed font-medium text-lg">
+            <h2 className="text-xl font-black text-white uppercase tracking-wider border-b border-white/5 pb-3">Job Description</h2>
+            <p className="text-gray-300 leading-relaxed font-medium text-[15px]">
               {gig.description || 'Nous recherchons une équipe commerciale dynamique comprenant jusqu\'à 5 télévendeurs pour assurer l\'intégralité du cycle de vente de produits d\'assurance complémentaire santé/mutuelle à destination de clients particuliers en France. Votre mission couvrira toutes les étapes du processus de vente.'}
             </p>
             {/* Seniority Tags */}
-            <div className="flex flex-wrap gap-2 mt-4">
-              <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-xs font-bold">
+            <div className="flex flex-wrap gap-2.5 mt-4">
+              <span className="px-3.5 py-1.5 bg-rose-500/10 text-rose-300 border border-rose-500/20 rounded-full text-xs font-extrabold uppercase tracking-wide">
                 {gig.seniority?.level || 'Mid-Level'}
               </span>
-              <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-xs font-bold">
+              <span className="px-3.5 py-1.5 bg-rose-500/10 text-rose-300 border border-rose-500/20 rounded-full text-xs font-extrabold uppercase tracking-wide">
                 {gig.seniority?.yearsExperience || '2'} Years Experience
               </span>
             </div>
@@ -328,16 +335,16 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
           {/* Right Column: Commission & Details */}
           <div className="space-y-6">
-            <h2 className="text-2xl font-black text-gray-900">Commission & details</h2>
+            <h2 className="text-xl font-black text-white uppercase tracking-wider border-b border-white/5 pb-3">Commission & details</h2>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Badges Row */}
-              <div className="flex flex-wrap gap-3">
-                <div className="px-4 py-2 bg-gradient-to-r from-cyan-400 to-blue-500 text-white rounded-lg text-sm font-black uppercase tracking-tight flex items-center gap-2">
+              <div className="flex flex-wrap gap-3.5">
+                <div className="px-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-cyan-500/10">
                   <Phone size={14} />
                   {gig.commission?.commission_per_call || '2.8'}€ / APPEL
                 </div>
-                <div className="px-4 py-2 animate-shimmer-purple animate-pulse-subtle text-white rounded-lg text-sm font-black uppercase tracking-tight flex items-center gap-2 hover:scale-105 transition-transform duration-300 shadow-md">
+                <div className="px-5 py-3 animate-shimmer-purple animate-pulse-subtle text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-purple-500/15">
                   <Repeat size={14} className="animate-spin-slow hover:rotate-180 transition-transform duration-500" />
                   {typeof gig.commission?.transactionCommission === 'number'
                     ? gig.commission.transactionCommission
@@ -346,16 +353,16 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               </div>
 
               {/* Bonus Badge */}
-              <div className="px-4 py-2 bg-gradient-to-r from-pink-400 to-rose-500 text-white rounded-lg text-sm font-black uppercase tracking-tight inline-flex items-center gap-2">
+              <div className="px-5 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest inline-flex items-center gap-2 shadow-lg shadow-rose-500/10">
                 <Star size={14} />
                 +{gig.commission?.bonusAmount || '84'}€ BONUS
-                <span className="text-xs font-medium opacity-80 normal-case ml-1">
+                <span className="text-[10px] font-bold opacity-80 normal-case ml-1 tracking-normal bg-black/20 px-2 py-0.5 rounded-md">
                   Chaque {gig.commission?.minimumVolume?.amount || '25'} appels / {gig.commission?.minimumVolume?.period || 'mois'}
                 </span>
               </div>
 
               {/* Description Box */}
-              <div className="bg-gray-50 rounded-2xl p-6 text-gray-600 text-sm font-medium leading-relaxed italic border border-gray-100">
+              <div className="bg-white/[0.03] rounded-2xl p-6 text-gray-300 text-xs font-medium leading-relaxed italic border border-white/5">
                 {gig.commission?.additionalDetails || "Une transaction est comptabilisée uniquement si le contrat est signé et non rétracté dans les 14 jours. Les résiliations dans les 3 mois suivant la signature entraînent l'annulation et le remboursement de la commission correspondante. La prime de performance est de 100 € pour 25 transactions validées sur un même mois."}
               </div>
             </div>
@@ -364,18 +371,18 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
       </div>
 
       {/* Combined Team, Territory & Agents Control Center */}
-      <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-8 relative overflow-hidden">
+      <div className="rounded-[2rem] bg-[#0F172A]/40 backdrop-blur-md border border-white/5 p-8 relative overflow-hidden shadow-2xl z-10">
         {/* Background glow effects */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-48 h-48 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-48 h-48 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-100 mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/5 mb-6">
           <div>
-            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
-              <Users className="h-6 w-6 text-purple-600 animate-pulse" />
+            <h2 className="text-lg font-black text-white uppercase tracking-wider flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-400 animate-pulse" />
               Team & Territory setup
             </h2>
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mt-0.5">
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">
               Campaign staffing, target zone & active assignments
             </p>
           </div>
@@ -394,36 +401,36 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
         {/* Content grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Column 1: Team Size & Capacity */}
-          <div className="space-y-2">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Team Structure</span>
-            <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 flex items-center gap-4">
-              <div className="p-3 bg-purple-100 rounded-xl text-purple-700 shrink-0">
+          <div className="space-y-2.5">
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Team Structure</span>
+            <div className="p-4 bg-purple-500/[0.03] rounded-2xl border border-purple-500/10 flex items-center gap-4">
+              <div className="p-3 bg-purple-500/10 rounded-xl text-purple-300 shrink-0">
                 <Briefcase className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-2xl font-black text-gray-900 leading-none">{gig.team?.size || 5}</p>
-                <p className="text-xs text-gray-500 font-bold mt-1 uppercase">Allocated Seats</p>
+                <p className="text-2xl font-black text-white leading-none">{gig.team?.size || 5}</p>
+                <p className="text-[10px] text-purple-400 font-bold mt-1 uppercase tracking-wider">Allocated Seats</p>
               </div>
             </div>
           </div>
 
           {/* Column 2: Destination Territory */}
           {gig.destination_zone && (
-            <div className="space-y-2">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Target Country</span>
-              <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex items-center gap-4">
+            <div className="space-y-2.5">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Target Country</span>
+              <div className="p-4 bg-emerald-500/[0.03] rounded-2xl border border-emerald-500/10 flex items-center gap-4">
                 {gig.destination_zone.flags?.png ? (
-                  <img src={gig.destination_zone.flags.png} alt="" className="w-12 h-8 rounded-lg border border-gray-200 object-cover shrink-0 shadow-sm" />
+                  <img src={gig.destination_zone.flags.png} alt="" className="w-12 h-8 rounded-lg border border-white/10 object-cover shrink-0 shadow-sm" />
                 ) : (
-                  <div className="p-3 bg-emerald-100 rounded-xl text-emerald-700 shrink-0">
+                  <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-300 shrink-0">
                     <MapPin className="h-5 w-5" />
                   </div>
                 )}
                 <div>
-                  <p className="text-base font-extrabold text-gray-900 leading-none truncate">
+                  <p className="text-base font-extrabold text-white leading-none truncate">
                     {typeof gig.destination_zone === 'object' ? gig.destination_zone.name?.common : gig.destination_zone}
                   </p>
-                  <p className="text-[10px] text-emerald-600 font-black mt-1 uppercase tracking-wider">
+                  <p className="text-[9px] text-emerald-400 font-black mt-1 uppercase tracking-wider">
                     {typeof gig.destination_zone === 'object' ? (gig.destination_zone.name?.official || 'Territory') : 'Territory'}
                   </p>
                 </div>
@@ -432,18 +439,18 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
           )}
 
           {/* Column 3: Active Reps & Live preview */}
-          <div className="space-y-2">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Assigned Representatives</span>
+          <div className="space-y-2.5">
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Assigned Representatives</span>
             {enrolledAgents.length > 0 ? (
               <div
                 onClick={() => setShowAgentsModal(true)}
-                className="p-4 bg-indigo-50/50 hover:bg-indigo-100/50 cursor-pointer rounded-2xl border border-indigo-100 flex items-center justify-between gap-4 transition-all duration-300 group"
+                className="p-4 bg-indigo-500/[0.03] hover:bg-indigo-500/[0.07] cursor-pointer rounded-2xl border border-indigo-500/10 flex items-center justify-between gap-4 transition-all duration-300 group"
               >
                 <div className="flex -space-x-3 overflow-hidden">
                   {enrolledAgents.slice(0, 4).map((agent, i) => (
                     <div
                       key={i}
-                      className="inline-block h-8 w-8 rounded-full overflow-hidden ring-2 ring-white bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shadow-sm uppercase transition-transform group-hover:-translate-y-0.5"
+                      className="inline-block h-8 w-8 rounded-full overflow-hidden ring-2 ring-white/10 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shadow-sm uppercase transition-transform group-hover:-translate-y-0.5"
                     >
                       {getAgentAvatar(agent) ? (
                         <img src={getAgentAvatar(agent)} alt="Avatar" className="w-full h-full object-cover" />
@@ -453,12 +460,12 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                     </div>
                   ))}
                   {enrolledAgents.length > 4 && (
-                    <div className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-100 text-gray-600 font-bold text-[10px] flex items-center justify-center shadow-md">
+                    <div className="inline-block h-8 w-8 rounded-full ring-2 ring-white/10 bg-white/5 text-gray-300 font-bold text-[10px] flex items-center justify-center shadow-md">
                       +{enrolledAgents.length - 4}
                     </div>
                   )}
                 </div>
-                <span className="text-xs font-bold text-indigo-600 group-hover:text-indigo-800 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0">
+                <span className="text-[10px] font-black text-indigo-400 group-hover:text-indigo-300 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0">
                   View List
                   <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform animate-pulse" />
                 </span>
@@ -466,10 +473,10 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
             ) : (
               <button 
                 onClick={handleMatchingRedirect}
-                className="w-full p-4 bg-indigo-50/50 hover:bg-indigo-100/50 rounded-2xl border border-indigo-100/70 border-dashed flex items-center justify-center gap-2 transition-all duration-300 group"
+                className="w-full p-4 bg-indigo-500/[0.03] hover:bg-indigo-500/[0.08] rounded-2xl border border-indigo-500/20 border-dashed flex items-center justify-center gap-2 transition-all duration-300 group shadow-md"
               >
-                <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse group-hover:scale-110" />
-                <span className="text-xs text-indigo-600 font-black uppercase tracking-wider group-hover:text-indigo-800">Match New Agents</span>
+                <Sparkles className="h-4 w-4 text-indigo-400 animate-pulse group-hover:scale-110" />
+                <span className="text-[10px] text-indigo-300 font-black uppercase tracking-wider group-hover:text-white">Match New Agents</span>
               </button>
             )}
           </div>
@@ -478,67 +485,67 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
       {/* Skills */}
       {gig.skills && (
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8">
+        <div className="rounded-[2rem] bg-[#0F172A]/40 backdrop-blur-md border border-white/5 p-8 shadow-2xl z-10">
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-harx-50 rounded-xl">
-              <Target className="h-6 w-6 text-harx-500" />
+            <div className="p-3 bg-purple-500/10 rounded-xl">
+              <Target className="h-5 w-5 text-purple-400 animate-pulse" />
             </div>
-            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Skills & Requirements</h2>
+            <h2 className="text-lg font-black text-white uppercase tracking-wider">Skills & Requirements</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {gig.skills.professional && gig.skills.professional.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-500 uppercase">Professional</h3>
+              <div className="space-y-3.5">
+                <h3 className="text-[10px] font-black text-rose-400 uppercase tracking-widest border-b border-white/5 pb-2">Professional</h3>
                 {gig.skills.professional.map((item, index) => (
-                  <div key={index} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">
+                  <div key={index} className="p-3 bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 hover:-translate-y-0.5 rounded-2xl flex justify-between items-center transition-all duration-300">
+                    <span className="text-xs font-extrabold text-gray-200">
                       {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
                     </span>
-                    <span className="text-xs font-bold bg-harx-500 text-white px-2 py-0.5 rounded">Lvl {item.level}</span>
+                    <span className="text-[9px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md">Lvl {item.level}</span>
                   </div>
                 ))}
               </div>
             )}
             {gig.skills.technical && gig.skills.technical.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-500 uppercase">Technical</h3>
+              <div className="space-y-3.5">
+                <h3 className="text-[10px] font-black text-rose-400 uppercase tracking-widest border-b border-white/5 pb-2">Technical</h3>
                 {gig.skills.technical.map((item, index) => (
-                  <div key={index} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">
+                  <div key={index} className="p-3 bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 hover:-translate-y-0.5 rounded-2xl flex justify-between items-center transition-all duration-300">
+                    <span className="text-xs font-extrabold text-gray-200">
                       {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
                     </span>
-                    <span className="text-xs font-bold bg-cyan-500 text-white px-2 py-0.5 rounded">Lvl {item.level}</span>
+                    <span className="text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-md">Lvl {item.level}</span>
                   </div>
                 ))}
               </div>
             )}
             {gig.skills.soft && gig.skills.soft.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-500 uppercase">Soft</h3>
+              <div className="space-y-3.5">
+                <h3 className="text-[10px] font-black text-rose-400 uppercase tracking-widest border-b border-white/5 pb-2">Soft</h3>
                 {gig.skills.soft.map((item, index) => (
-                  <div key={index} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">
+                  <div key={index} className="p-3 bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 hover:-translate-y-0.5 rounded-2xl flex justify-between items-center transition-all duration-300">
+                    <span className="text-xs font-extrabold text-gray-200">
                       {typeof item.skill === 'object' ? item.skill?.name : (item.skill || 'Unnamed Skill')}
                     </span>
-                    <span className="text-xs font-bold bg-pink-500 text-white px-2 py-0.5 rounded">Lvl {item.level}</span>
+                    <span className="text-[9px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md">Lvl {item.level}</span>
                   </div>
                 ))}
               </div>
             )}
             {gig.skills.languages && gig.skills.languages.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-500 uppercase">Languages</h3>
+              <div className="space-y-3.5">
+                <h3 className="text-[10px] font-black text-rose-400 uppercase tracking-widest border-b border-white/5 pb-2">Languages</h3>
                 {gig.skills.languages.map((item, index) => (
-                  <div key={index} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+                  <div key={index} className="p-3 bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 hover:-translate-y-0.5 rounded-2xl flex justify-between items-center transition-all duration-300">
                     <div>
-                      <p className="text-sm font-medium text-gray-700">
+                      <p className="text-xs font-extrabold text-gray-200">
                         {typeof item.language === 'object' ? item.language?.name : (item.language || 'Unnamed Language')}
                       </p>
                       {typeof item.language === 'object' && item.language?.nativeName && (
-                        <p className="text-xs text-gray-400">{item.language.nativeName}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5 font-bold">{item.language.nativeName}</p>
                       )}
                     </div>
-                    <span className="text-xs font-bold bg-harx-500 text-white px-2 py-0.5 rounded">{item.proficiency}</span>
+                    <span className="text-[9px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md uppercase tracking-wider">{item.proficiency}</span>
                   </div>
                 ))}
               </div>
@@ -549,16 +556,16 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
       {/* Enrolled Agents Modal */}
       {showAgentsModal && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-11/12 max-w-4xl shadow-2xl border border-gray-100 max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] animate-in fade-in duration-200">
+          <div className="bg-[#0B0F19] rounded-[2.5rem] w-11/12 max-w-4xl shadow-2xl border border-white/10 max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
               <div>
-                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
-                  <Users className="text-purple-600" />
+                <h3 className="text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <Users className="text-purple-400 animate-pulse" />
                   Enrolled Representatives
                 </h3>
-                <p className="text-sm text-gray-500 font-medium">Currently assigned agents for <span className="font-bold text-gray-700">{gig.title}</span></p>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mt-0.5">Currently assigned agents for <span className="font-extrabold text-purple-300">{gig.title}</span></p>
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -573,7 +580,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                 </button>
                 <button
                   onClick={() => setShowAgentsModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+                  className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -581,17 +588,25 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
             </div>
 
             {/* List */}
-            <div className="p-8 overflow-y-auto flex-1 space-y-4">
-              <div className="divide-y divide-gray-100">
+            <div className="p-8 overflow-y-auto flex-1 space-y-4 bg-[#090D16]/50">
+              <div className="divide-y divide-white/5">
                 {enrolledAgents.map((agent, index) => {
                   const score = agent.matchScore || 0.85;
                   const scorePct = Math.round(score * 100);
                   const statusColors = getAgentStatusColor(agent.status || 'accepted');
+                  
+                  // Map dark mode status classes
+                  let darkStatusColors = { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20' };
+                  if (agent.status?.toLowerCase() === 'pending') {
+                    darkStatusColors = { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' };
+                  } else if (agent.status?.toLowerCase() === 'rejected') {
+                    darkStatusColors = { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20' };
+                  }
 
                   return (
-                    <div key={agent._id || index} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0">
+                    <div key={agent._id || index} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0 border-b border-white/5 last:border-b-0">
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-md uppercase">
+                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-indigo-600 ring-2 ring-purple-500/20 text-white font-black text-sm flex items-center justify-center shadow-md uppercase">
                           {getAgentAvatar(agent) ? (
                             <img src={getAgentAvatar(agent)} alt="Avatar" className="w-full h-full object-cover" />
                           ) : (
@@ -599,26 +614,26 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                           )}
                         </div>
                         <div>
-                          <p className="font-extrabold text-gray-900 text-base flex items-center gap-2">
+                          <p className="font-extrabold text-white text-base flex items-center gap-2">
                             {getAgentName(agent)}
                             <span
-                              className="text-[10px] font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md hover:underline cursor-pointer transition-colors hover:text-purple-600"
+                              className="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-md hover:underline cursor-pointer transition-colors hover:text-purple-200"
                               onClick={() => handleAgentClick(getAgentIdString(agent))}
                             >
                               #{getAgentIdString(agent).substring(0, 8)}...
                             </span>
                           </p>
                           {getAgentEmail(agent) && (
-                            <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 font-medium">
+                            <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1 font-medium">
                               <span className="opacity-70">Email:</span> {getAgentEmail(agent)}
                             </p>
                           )}
                           <div className="flex items-center gap-2 mt-2">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${darkStatusColors.bg} ${darkStatusColors.text} ${darkStatusColors.border}`}>
                               {agent.status || 'accepted'}
                             </span>
                             {agent.emailSent && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20">
                                 Invited
                               </span>
                             )}
@@ -629,15 +644,15 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                       <div className="flex items-center gap-6 self-end md:self-center">
                         {/* Match Score Indicator */}
                         <div className="text-right">
-                          <span className="text-xs text-gray-400 font-bold block mb-1">MATCH SCORE</span>
+                          <span className="text-[10px] text-gray-400 font-bold block mb-1">MATCH SCORE</span>
                           <div className="flex items-center gap-2">
-                            <div className="w-24 bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div className="w-24 bg-white/10 rounded-full h-2 overflow-hidden">
                               <div
                                 className={`h-full rounded-full bg-gradient-to-r ${score >= 0.8 ? 'from-emerald-400 to-emerald-500' : 'from-amber-400 to-amber-500'}`}
                                 style={{ width: `${scorePct}%` }}
                               />
                             </div>
-                            <span className={`text-sm font-black ${score >= 0.8 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            <span className={`text-sm font-black ${score >= 0.8 ? 'text-emerald-400' : 'text-amber-400'}`}>
                               {scorePct}%
                             </span>
                           </div>
@@ -663,8 +678,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
       {/* Loading Profile Overlay */}
       {loadingProfile && (
-        <div className="fixed inset-0 bg-gray-950/20 backdrop-blur-xs flex items-center justify-center z-[110] animate-in fade-in duration-200">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-600"></div>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-[110] animate-in fade-in duration-200">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
         </div>
       )}
 
