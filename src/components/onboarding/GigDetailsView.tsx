@@ -260,7 +260,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
     if (!agent) return '';
     const agentObj = agent.agentId;
     if (agentObj && typeof agentObj === 'object') {
-      return agentObj.personalInfo?.profilePicture || agentObj.personalInfo?.photo?.url || '';
+      return (
+        agentObj.personalInfo?.photo?.url || 
+        agentObj.personalInfo?.profilePicture || 
+        agentObj.photo?.url || 
+        agentObj.photo || 
+        agentObj.profilePicture || 
+        ''
+      );
     }
     return '';
   };
