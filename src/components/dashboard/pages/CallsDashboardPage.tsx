@@ -303,16 +303,9 @@ export default function CallsDashboardPage() {
                           <button
                             onClick={() => openCallDetails(call, 'transcript')}
                             className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all"
-                            title="Transcript"
+                            title="View Details"
                           >
                             <MessageSquare className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => openCallDetails(call, 'insights')}
-                            className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100 transition-all"
-                            title="AI Insights"
-                          >
-                            <Brain className="w-5 h-5" />
                           </button>
                         </div>
                       </div>
