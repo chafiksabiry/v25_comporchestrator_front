@@ -1,5 +1,6 @@
 import axios from "axios";
 import Cookies from "js-cookie";
+import { discardDraftCompany } from "./companyApi";
 
 const API_URL = import.meta.env.VITE_COMPANY_API_URL;
 
@@ -53,6 +54,7 @@ export async function generateCompanyProfile(
     companyInfo,
     userId,
     logoUrl,
+    persist: false,
   });
 
   if (!response.data?.success) {
@@ -60,7 +62,22 @@ export async function generateCompanyProfile(
   }
 
   const raw = response.data.data as CompanyProfile & Record<string, unknown>;
-  const { _id, createdAt, updatedAt, __v, ...profile } = raw;
+  const draftId =
+    typeof raw._id === "string"
+      ? raw._id
+      : raw._id && typeof raw._id === "object" && "$oid" in raw._id
+        ? String((raw._id as { $oid: string }).$oid)
+        : undefined;
+
+  if (draftId) {
+    try {
+      await discardDraftCompany(draftId);
+    } catch {
+      console.warn("Could not discard draft company created during profile generation");
+    }
+  }
+
+  const { _id, createdAt, updatedAt, __v, subscription, ...profile } = raw;
   return profile as CompanyProfile;
 }
 
