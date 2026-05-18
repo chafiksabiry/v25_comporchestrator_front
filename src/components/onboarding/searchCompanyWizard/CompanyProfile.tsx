@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import Cookies from "js-cookie";
 import {
   Building2,
@@ -77,6 +78,7 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState("");
   const [logoUrl, setLogoUrl] = useState(profile.logo || "");
+  const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
 
   const hasContactInfo =
@@ -122,7 +124,18 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
     }
   }, [profile.contact.website, logoUrl]);
 
+  const markStepCompleted = async (companyId: string) => {
+    const apiUrl =
+      import.meta.env.VITE_COMPANY_API_URL ||
+      "https://v25searchcompanywizardbackend-production.up.railway.app/api";
+    await axios.put(`${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`, {
+      status: "completed",
+    });
+  };
+
   const handlePublish = async () => {
+    setPublishing(true);
+    setPublishError(null);
     try {
       const cleanData = (obj: any): any => {
         if (Array.isArray(obj)) return obj.length > 0 ? obj : undefined;
@@ -143,14 +156,33 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
 
       const payload = cleanData(profile) || {};
       if (profile.userId) payload.userId = profile.userId;
+      delete payload._id;
 
       const response = await saveCompanyData(payload);
-      if (response && response.data && response.data._id) {
-        Cookies.set("companyId", response.data._id, { expires: 30 });
+      const newCompanyId = response?.data?._id;
+      if (!newCompanyId) {
+        throw new Error("Company ID missing from API response");
       }
+
+      Cookies.set("companyId", newCompanyId, { expires: 30 });
+
+      try {
+        await markStepCompleted(newCompanyId);
+      } catch (err) {
+        console.error("Failed to mark onboarding step 1:", err);
+      }
+
+      window.dispatchEvent(
+        new CustomEvent("stepCompleted", {
+          detail: { stepId: 1, phaseId: 1, status: "completed", completedSteps: [1] },
+        })
+      );
+
       window.location.href = "/orchestrator#/orchestrator";
     } catch (error: any) {
       setPublishError(error.response?.data?.message || t('searchCompanyWizard.errors.publishFailed'));
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -511,10 +543,11 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
             <div className="pt-8 flex justify-center border-t border-gray-100">
               <button
                 onClick={handlePublish}
-                className="px-8 py-4 bg-gradient-harx text-white rounded-2xl hover:shadow-2xl hover:shadow-harx-500/30 transition-all duration-300 flex items-center gap-3 group text-lg font-bold w-full sm:w-auto justify-center transform hover:-translate-y-1"
+                disabled={publishing}
+                className="px-8 py-4 bg-gradient-harx text-white rounded-2xl hover:shadow-2xl hover:shadow-harx-500/30 transition-all duration-300 flex items-center gap-3 group text-lg font-bold w-full sm:w-auto justify-center transform hover:-translate-y-1 disabled:opacity-70 disabled:hover:translate-y-0"
               >
                 <Check size={24} className="text-white" />
-                <span>{t('searchCompanyWizard.profile.publishBtn')}</span>
+                <span>{publishing ? t('searchCompanyWizard.profile.publishing') : t('searchCompanyWizard.profile.publishBtn')}</span>
                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
