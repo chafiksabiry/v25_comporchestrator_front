@@ -2634,24 +2634,7 @@ const ApprovalPublishing = () => {
                     )}
 
                     <div className="flex space-x-3">
-                      <button
-                        onClick={() => previewGig(gig._id)}
-                        className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview
-                      </button>
-                      <button
-                        onClick={() => editGig(gig._id)}
-                        className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </button>
-                      <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        Comment
-                      </button>
+
 
                       {/* Boutons d'action selon le statut actuel */}
                       {(gig.status === 'pending' || gig.status === 'to_activate' || gig.status === 'draft' || gig.status === 'submitted') && (
