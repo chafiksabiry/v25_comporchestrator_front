@@ -59,7 +59,9 @@ export async function generateCompanyProfile(
     throw new Error(response.data?.message || "Failed to generate company profile");
   }
 
-  return response.data.data as CompanyProfile;
+  const raw = response.data.data as CompanyProfile & Record<string, unknown>;
+  const { _id, createdAt, updatedAt, __v, ...profile } = raw;
+  return profile as CompanyProfile;
 }
 
 export type CompanyProfileData = CompanyProfile;
