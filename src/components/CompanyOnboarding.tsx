@@ -1097,6 +1097,19 @@ const CompanyOnboarding = () => {
       Cookies.set("companyId", newCompanyId, { expires: 30 });
       setActiveStep(null);
       setCompletedSteps((prev) => (prev.includes(1) ? prev : [...prev, 1]));
+      setDisplayedPhase(2);
+      setCurrentPhase(2);
+
+      const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
+      try {
+        await axios.put(
+          `${apiUrl}/onboarding/companies/${newCompanyId}/onboarding/current-phase`,
+          { phase: 2 }
+        );
+      } catch (err) {
+        console.error("Failed to set onboarding phase 2:", err);
+      }
+
       await loadCompanyProgress(newCompanyId);
     },
     [loadCompanyProgress]
