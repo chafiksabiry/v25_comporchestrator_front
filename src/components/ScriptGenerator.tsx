@@ -426,7 +426,17 @@ const ScriptGenerator: React.FC = () => {
   }, [gigs]);
 
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
+    window.dispatchEvent(new CustomEvent('setGlobalBack', {
+      detail: {
+        label: 'BACK TO ONBOARDING',
+        action: () => {
+          localStorage.setItem('activeTab', 'company-onboarding');
+          window.dispatchEvent(
+            new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
+          );
+        }
+      }
+    }));
     return () => {
       window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
     };
