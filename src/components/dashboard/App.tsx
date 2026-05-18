@@ -27,6 +27,7 @@ import { CompanyPerformanceDashboard } from './pages/CompanyPerformanceDashboard
 import { EscrowPanel } from './panels/EscrowPanel';
 import ScriptGenerator from '../ScriptGenerator';
 import RepOnboarding from '../onboarding/RepOnboarding';
+import ApprovalPublishing from '../ApprovalPublishing';
 
 function App() {
   return (
@@ -53,7 +54,7 @@ function App() {
         <Route path="/dashboard/quality-assurance" element={<QualityAssurancePanel />} />
         <Route path="/dashboard/operations" element={<OperationsPanel />} />
         <Route path="/dashboard/analytics" element={<CompanyPerformanceDashboard />} />
-        <Route path="/dashboard/gig-activation" element={<IntegrationsPanel />} />
+        <Route path="/dashboard/gig-activation" element={<ApprovalPublishing />} />
         <Route path="/dashboard/settings" element={<SettingsPanel />} />
         <Route path="/dashboard/knowledge-base" element={<KnowledgeBase />} />
         <Route path="/dashboard/kb-insight" element={<KnowledgeInsights />} />
