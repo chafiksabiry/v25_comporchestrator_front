@@ -23,7 +23,8 @@ import {
   BarChart2,
   Sparkles,
   Info,
-  Wallet
+  Wallet,
+  BookOpen
 } from 'lucide-react';
 import { getHiddenSections } from '../dashboard/config/sections';
 import Cookies from 'js-cookie';
@@ -187,17 +188,17 @@ export function MasterSidebar({
       <div className={`flex items-center relative group cursor-pointer transition-all duration-300 ${isCollapsed ? 'px-4 justify-center mt-8 mb-10' : 'px-0 mt-4 mb-6'}`}>
         {activeProject === 'comporchestrator' ? (
           <div className={`flex items-center justify-center w-full overflow-hidden`}>
-            <img 
-              src={`${import.meta.env.BASE_URL || '/'}logo-black.png`} 
-              alt="HARX Orchestrator" 
+            <img
+              src={`${import.meta.env.BASE_URL || '/'}logo-black.png`}
+              alt="HARX Orchestrator"
               className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-10' : 'w-full scale-110'}`}
             />
           </div>
         ) : (
           <div className={`flex items-center justify-center w-full overflow-hidden`}>
-            <img 
-              src={`${import.meta.env.BASE_URL || '/'}logo-black.png`} 
-              alt="HARX Dashboard" 
+            <img
+              src={`${import.meta.env.BASE_URL || '/'}logo-black.png`}
+              alt="HARX Dashboard"
               className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-10' : 'w-full scale-110'}`}
             />
           </div>
@@ -216,8 +217,8 @@ export function MasterSidebar({
                     key={item.key}
                     onClick={() => handleLinkClick(item.key)}
                     className={`flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isActive
-                        ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                      ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
                       }`}
                   >
                     <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
