@@ -4,6 +4,7 @@ import Cookies from "js-cookie";
 import { ArrowLeft, CheckCircle2, Save } from "lucide-react";
 import type { CompanyProfileData } from "./api/openai";
 import { saveCompanyData } from "./api/companyApi";
+import { redirectToCompanyOnboarding } from "./navigation";
 
 interface Props {
   profile: CompanyProfileData;
@@ -60,7 +61,11 @@ export default function SearchWizardCompanyProfile({ profile, onBack, onDone }: 
         })
       );
 
-      onDone?.();
+      if (onDone) {
+        onDone();
+      } else {
+        redirectToCompanyOnboarding();
+      }
     } catch (e: any) {
       setError(e?.response?.data?.message || e?.message || "Failed to publish company");
     } finally {

@@ -23,17 +23,20 @@ import {
   Upload,
 } from "lucide-react";
 import { saveCompanyData } from "./api/companyApi";
+import { redirectToCompanyOnboarding } from "./navigation";
 import { LucideProps } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface Props {
   profile: CompanyProfileType;
   onClose: () => void;
+  /** When set (embedded in Company Onboarding), called instead of a full-page redirect */
+  onPublished?: (companyId: string) => void;
 }
 
 const userId = Cookies.get("userId");
 
-export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
+export function CompanyProfile({ profile: initialProfile, onClose, onPublished }: Props) {
   const { t } = useTranslation();
   const defaultProfile = {
     userId: userId || "",
@@ -178,7 +181,11 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
         })
       );
 
-      window.location.href = "/company#/orchestrator";
+      if (onPublished) {
+        onPublished(newCompanyId);
+      } else {
+        redirectToCompanyOnboarding();
+      }
     } catch (error: any) {
       setPublishError(error.response?.data?.message || t('searchCompanyWizard.errors.publishFailed'));
     } finally {
