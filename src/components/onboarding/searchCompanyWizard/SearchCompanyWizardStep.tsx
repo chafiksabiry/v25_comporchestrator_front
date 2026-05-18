@@ -13,9 +13,11 @@ import { useTranslation } from "react-i18next";
 interface Props {
   onBack?: () => void;
   companyId?: string | null;
+  /** Called after publish — returns to onboarding phase view (not search) */
+  onStepComplete?: (companyId: string) => void;
 }
 
-export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
+export default function SearchCompanyWizardStep({ onBack, companyId, onStepComplete }: Props) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -119,8 +121,13 @@ export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
           setProfile(null);
           onBack?.();
         }}
-        onPublished={() => {
+        onPublished={(newCompanyId) => {
           setProfile(null);
+          if (onStepComplete) {
+            onStepComplete(newCompanyId);
+          } else {
+            onBack?.();
+          }
         }}
       />
     );
