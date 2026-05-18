@@ -126,7 +126,7 @@ export function MasterSidebar({
     // Group 1
     { icon: <LayoutDashboard size={20} />, label: t('sidebar.dashboard'), path: '/dashboard/main', key: 'premium-dashboard', alwaysShow: true, groupId: 1 },
     { icon: <TrendingUp size={20} />, label: t('sidebar.overview'), path: '/dashboard/overview', key: 'overview', alwaysShow: true, groupId: 1 },
-    { icon: <Building2 size={20} />, label: t('sidebar.company'), path: '/dashboard/profile', key: 'company', alwaysShow: true, groupId: 1 },
+
     { icon: <Wallet size={20} />, label: t('sidebar.escrow', 'Escrow & Solde'), path: '/dashboard/escrow', key: 'escrow', alwaysShow: true, groupId: 1 },
 
     // Group 2
@@ -142,7 +142,7 @@ export function MasterSidebar({
     { icon: <Briefcase size={20} />, label: t('sidebar.gigs'), path: '/dashboard/gigs', key: 'gigs', requiresGigs: true, groupId: 3 },
     { icon: <ScrollText size={20} />, label: t('sidebar.scriptGenerator'), path: '/dashboard/script-generator', key: 'script-generator', alwaysShow: true, groupId: 3 },
     { icon: <Book size={20} />, label: t('sidebar.knowledgeBase'), path: '/dashboard/knowledge-base', key: 'knowledge-base', alwaysShow: true, groupId: 3 },
-    { icon: <Plug size={20} />, label: t('sidebar.integrations'), path: '/dashboard/integrations', key: 'integrations', alwaysShow: true, groupId: 3 },
+    { icon: <Plug size={20} />, label: 'Gig Activation', path: '/dashboard/gig-activation', key: 'integrations', alwaysShow: true, groupId: 3 },
     { icon: <ClipboardCheck size={20} />, label: t('sidebar.qualityAssurance'), path: '/dashboard/quality-assurance', key: 'quality-assurance', requiresRepMatching: true, groupId: 3 },
     { icon: <ScrollText size={20} />, label: t('sidebar.operations'), path: '/dashboard/operations', key: 'operations', requiresRepMatching: true, groupId: 3 },
     { icon: <TrendingUp size={20} />, label: t('sidebar.analytics'), path: '/dashboard/analytics', key: 'analytics', requiresRepMatching: true, groupId: 3 },
