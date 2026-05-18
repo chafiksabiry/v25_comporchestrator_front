@@ -308,13 +308,13 @@ const ScriptGenerator: React.FC = () => {
     const companyId = getCompanyId();
     if (!companyId) return;
 
-    const phaseId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_PHASE_ID || 3);
-    const stepId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_STEP_ID || 10);
+    const phaseId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_PHASE_ID || 2);
+    const stepId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_STEP_ID || 6);
     const apiUrl =
       import.meta.env.VITE_COMPANY_API_URL ||
       'https://v25searchcompanywizardbackend-production.up.railway.app/api';
     const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/`;
-    const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`;
+    const stepUrl = `${apiUrl}/onboarding/phases/${phaseId}/steps/${stepId}/complete?companyId=${companyId}`;
 
     try {
       await fetch(stepUrl, {
