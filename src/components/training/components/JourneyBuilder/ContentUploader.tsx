@@ -132,6 +132,8 @@ function stripHarxStyleBlocks(rawText: string): string {
   );
   // Case C: any standalone canvasBg trailer chunk
   s = s.replace(/,?\s*"canvasBg"\s*:\s*"#[0-9a-fA-F]{3,8}"\s*}\s*}?/gi, '');
+  // Case D: truncated style JSON leaks starting with a hex color and "border" (e.g. fff5f7","border":"#efbfd0"...)
+  s = s.replace(/[a-fA-F0-9]{3,8}"\s*,\s*"border"\s*:\s*"#[a-fA-F0-9]{3,8}"[\s\S]*?"contentTheme"\s*:\s*\{[\s\S]*$/gi, '');
   return s.replace(/<\/harx-style>/gi, '').trim();
 }
 
