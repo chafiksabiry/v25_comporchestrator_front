@@ -178,7 +178,7 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
         })
       );
 
-      window.location.href = "/orchestrator#/orchestrator";
+      window.location.href = "/company#/orchestrator";
     } catch (error: any) {
       setPublishError(error.response?.data?.message || t('searchCompanyWizard.errors.publishFailed'));
     } finally {
