@@ -63,9 +63,18 @@ export function MasterSidebar({
   const [hasLeads, setHasLeads] = useState(false);
   const [hasKb, setHasKb] = useState(false);
   const [hasRepMatching, setHasRepMatching] = useState(false);
+  const [openGroups, setOpenGroups] = useState<number[]>([1, 2, 3]); // All open by default
   const { t } = useTranslation();
 
   const hiddenSections = getHiddenSections();
+
+  const toggleGroup = (groupId: number) => {
+    setOpenGroups(prev =>
+      prev.includes(groupId)
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
@@ -239,45 +248,54 @@ export function MasterSidebar({
             </>
           ) : (
             <>
-              {groupedItems.map((group) => (
-                <div key={group.id} className="mb-4">
-                  {!isCollapsed && (
-                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-4">
-                      {group.label}
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    {group.items.map((item) => (
-                      <NavLink
-                        key={item.label}
-                        to={item.path}
-                        end={item.key === 'overview'}
-                        className={({ isActive }) => {
-                          const prefix = (item as { activePathPrefix?: string }).activePathPrefix;
-                          const isReallyActive = isActive || (prefix && location.pathname.startsWith(prefix));
-
-                          return `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isReallyActive
-                            ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
-                            : "text-slate-400 hover:text-white hover:bg-white/5"
-                            }`;
-                        }}
+              {groupedItems.map((group) => {
+                const isOpen = openGroups.includes(group.id);
+                return (
+                  <div key={group.id} className="mb-4">
+                    {!isCollapsed && (
+                      <button
+                        onClick={() => toggleGroup(group.id)}
+                        className="flex items-center justify-between w-full text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-4 hover:text-white transition-colors"
                       >
-                        <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
-                          {item.icon}
-                        </div>
-                        {!isCollapsed && (
-                          <span className="font-medium whitespace-nowrap overflow-hidden text-sm transition-all duration-300">{item.label}</span>
+                        <span>{group.label}</span>
+                        {(group.id === 2 || group.id === 3) && (
+                          isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />
                         )}
-                        {isCollapsed && (
-                          <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
-                            {item.label}
+                      </button>
+                    )}
+                    <div className={`space-y-1.5 transition-all duration-300 ${(isOpen || isCollapsed || group.id === 1) ? 'block' : 'hidden'}`}>
+                      {group.items.map((item) => (
+                        <NavLink
+                          key={item.label}
+                          to={item.path}
+                          end={item.key === 'overview'}
+                          className={({ isActive }) => {
+                            const prefix = (item as { activePathPrefix?: string }).activePathPrefix;
+                            const isReallyActive = isActive || (prefix && location.pathname.startsWith(prefix));
+
+                            return `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isReallyActive
+                              ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
+                              : "text-slate-400 hover:text-white hover:bg-white/5"
+                              }`;
+                          }}
+                        >
+                          <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
+                            {item.icon}
                           </div>
-                        )}
-                      </NavLink>
-                    ))}
+                          {!isCollapsed && (
+                            <span className="font-medium whitespace-nowrap overflow-hidden text-sm transition-all duration-300">{item.label}</span>
+                          )}
+                          {isCollapsed && (
+                            <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
+                              {item.label}
+                            </div>
+                          )}
+                        </NavLink>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </>
           )}
 
