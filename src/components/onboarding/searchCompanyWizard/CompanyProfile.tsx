@@ -148,7 +148,7 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
       if (response && response.data && response.data._id) {
         Cookies.set("companyId", response.data._id, { expires: 30 });
       }
-      window.location.href = "/#/orchestrator";
+      window.location.href = "/orchestrator#/orchestrator";
     } catch (error: any) {
       setPublishError(error.response?.data?.message || t('searchCompanyWizard.errors.publishFailed'));
     }
