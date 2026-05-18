@@ -119,6 +119,9 @@ export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
           setProfile(null);
           onBack?.();
         }}
+        onPublished={() => {
+          setProfile(null);
+        }}
       />
     );
   }
