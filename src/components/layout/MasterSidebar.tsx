@@ -148,7 +148,7 @@ export function MasterSidebar({
     { icon: <MessageSquare size={20} />, label: t('sidebar.liveChat'), path: '/dashboard/chat', key: 'live-chat', requiresRepMatching: true, groupId: 2 },
 
     // Group 3
-    { icon: <Briefcase size={20} />, label: t('sidebar.gigs'), path: '/dashboard/gigs', key: 'gigs', requiresGigs: true, groupId: 3 },
+    { icon: <Briefcase size={20} />, label: 'Gigs', path: '/dashboard/gigs', key: 'gigs', requiresGigs: true, groupId: 3 },
     { icon: <ScrollText size={20} />, label: t('sidebar.scriptGenerator'), path: '/dashboard/script-generator', key: 'script-generator', alwaysShow: true, groupId: 3 },
     { icon: <Book size={20} />, label: t('sidebar.knowledgeBase'), path: '/dashboard/knowledge-base', key: 'knowledge-base', alwaysShow: true, groupId: 3 },
     { icon: <Plug size={20} />, label: 'Gig Activation', path: '/dashboard/gig-activation', key: 'integrations', alwaysShow: true, groupId: 3 },
