@@ -509,15 +509,16 @@ const CompanyOnboarding = () => {
     initOnboarding();
   }, [companyId]);
 
-  const loadCompanyProgress = useCallback(async () => {
+  const loadCompanyProgress = useCallback(async (overrideCompanyId?: string) => {
     try {
-      if (!companyId) {
+      const effectiveCompanyId = overrideCompanyId ?? companyId;
+      if (!effectiveCompanyId) {
         console.error("❌ Company ID not available for loading progress");
         return;
       }
 
       const response = await axios.get<OnboardingProgressResponse>(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${effectiveCompanyId}/onboarding`
       );
       
       const progress = response.data;
@@ -530,14 +531,14 @@ const CompanyOnboarding = () => {
         const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
         if (backUrl && apiUrl) {
           const { data } = await axios.get(
-            `${backUrl}/api/subscriptions/current/${companyId}`
+            `${backUrl}/api/subscriptions/current/${effectiveCompanyId}`
           );
           const subData = (data as any)?.data;
           const ok = (data as any)?.success !== false && subData;
           const st = String(subData?.status || "").toLowerCase();
           if (ok && (st === "active" || st === "trialing") && !completedStepsState.includes(11)) {
             await axios.put(
-              `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/4/steps/11`,
+              `${apiUrl}/onboarding/companies/${effectiveCompanyId}/onboarding/phases/4/steps/11`,
               { status: "completed" }
             );
             completedStepsState = [...completedStepsState, 11];
@@ -553,7 +554,7 @@ const CompanyOnboarding = () => {
         if (step1Completed && progress.phases[0].status !== 'completed') {
           try {
             await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`,
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${effectiveCompanyId}/onboarding/phases/1/steps/1`,
               { status: "completed" }
             );
           } catch (fixError) {
@@ -647,7 +648,14 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     const handleStepCompleted = (event: CustomEvent) => {
       const { stepId, phaseId, status, completedSteps } = event.detail;
-      
+
+      if (stepId === 1) {
+        const idFromCookie = Cookies.get("companyId");
+        if (idFromCookie) {
+          setCompanyId(idFromCookie);
+          setActiveStep(null);
+        }
+      }
 
       if (completedSteps && Array.isArray(completedSteps)) {
         setCompletedSteps(completedSteps);
@@ -1083,6 +1091,17 @@ const CompanyOnboarding = () => {
     }
   };
 
+  const handleCompanyProfilePublished = useCallback(
+    async (newCompanyId: string) => {
+      setCompanyId(newCompanyId);
+      Cookies.set("companyId", newCompanyId, { expires: 30 });
+      setActiveStep(null);
+      setCompletedSteps((prev) => (prev.includes(1) ? prev : [...prev, 1]));
+      await loadCompanyProgress(newCompanyId);
+    },
+    [loadCompanyProgress]
+  );
+
   const handleBackToOnboarding = async () => {
     // If UploadContacts is showing, cancel processing and return immediately
     if (showUploadContacts) {
@@ -1293,10 +1312,23 @@ const CompanyOnboarding = () => {
     );
   } else if (ActiveStepComponent) {
     const DynamicStepComponent = ActiveStepComponent as React.FC<any>;
-    activeComponent = <DynamicStepComponent companyId={companyId} onBack={handleBackToOnboarding} />;
+    activeComponent = (
+      <DynamicStepComponent
+        companyId={companyId}
+        onBack={handleBackToOnboarding}
+        onStepComplete={handleCompanyProfilePublished}
+      />
+    );
 
     if (activeStep === 12) {
-      activeComponent = <DynamicStepComponent companyId={companyId} onBackToOnboarding={handleBackToOnboarding} onBack={handleBackToOnboarding} />;
+      activeComponent = (
+        <DynamicStepComponent
+          companyId={companyId}
+          onBackToOnboarding={handleBackToOnboarding}
+          onBack={handleBackToOnboarding}
+          onStepComplete={handleCompanyProfilePublished}
+        />
+      );
     }
   }
 
