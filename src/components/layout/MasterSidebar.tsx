@@ -122,35 +122,29 @@ export function MasterSidebar({
   }, [location.pathname, activeProject]);
 
   const dashboardItems = [
-    { icon: <LayoutDashboard size={20} />, label: t('sidebar.dashboard'), path: '/dashboard/main', key: 'premium-dashboard', alwaysShow: true },
-    { icon: <TrendingUp size={20} />, label: t('sidebar.overview'), path: '/dashboard/overview', key: 'overview', alwaysShow: true },
-    {
-      icon: <Building2 size={20} />,
-      label: t('sidebar.company'),
-      path: '/dashboard/profile',
-      key: 'company',
-      alwaysShow: true,
-    },
-    {
-      icon: <Wallet size={20} />,
-      label: t('sidebar.escrow', 'Escrow & Solde'),
-      path: '/dashboard/escrow',
-      key: 'escrow',
-      alwaysShow: true,
-    },
-    { icon: <Briefcase size={20} />, label: t('sidebar.gigs'), path: '/dashboard/gigs', key: 'gigs', requiresGigs: true },
-    { icon: <UserPlus size={20} />, label: t('sidebar.leads'), path: '/dashboard/leads', key: 'leads', requiresLeads: true },
-    { icon: <Phone size={20} />, label: t('sidebar.calls'), path: '/dashboard/calls', key: 'calls', alwaysShow: true },
-    { icon: <ScrollText size={20} />, label: t('sidebar.scriptGenerator'), path: '/dashboard/script-generator', key: 'script-generator', alwaysShow: true },
-    { icon: <Book size={20} />, label: t('sidebar.training'), path: '/dashboard/training', key: 'training', alwaysShow: true },
-    { icon: <Users size={20} />, label: t('sidebar.repMatching'), path: '/dashboard/rep-matching', key: 'rep-matching', requiresRepMatching: true },
-    { icon: <Calendar size={20} />, label: t('sidebar.scheduler'), path: '/dashboard/scheduler', key: 'scheduler', requiresRepMatching: true },
-    { icon: <Mail size={20} />, label: t('sidebar.emails'), path: '/dashboard/emails', key: 'emails', requiresRepMatching: true },
-    { icon: <MessageSquare size={20} />, label: t('sidebar.liveChat'), path: '/dashboard/chat', key: 'live-chat', requiresRepMatching: true },
-    { icon: <ClipboardCheck size={20} />, label: t('sidebar.qualityAssurance'), path: '/dashboard/quality-assurance', key: 'quality-assurance', requiresRepMatching: true },
-    { icon: <ScrollText size={20} />, label: t('sidebar.operations'), path: '/dashboard/operations', key: 'operations', requiresRepMatching: true },
-    { icon: <TrendingUp size={20} />, label: t('sidebar.analytics'), path: '/dashboard/analytics', key: 'analytics', requiresRepMatching: true },
-    { icon: <Plug size={20} />, label: t('sidebar.integrations'), path: '/dashboard/integrations', key: 'integrations', alwaysShow: true },
+    // Group 1
+    { icon: <LayoutDashboard size={20} />, label: t('sidebar.dashboard'), path: '/dashboard/main', key: 'premium-dashboard', alwaysShow: true, groupId: 1 },
+    { icon: <TrendingUp size={20} />, label: t('sidebar.overview'), path: '/dashboard/overview', key: 'overview', alwaysShow: true, groupId: 1 },
+    { icon: <Building2 size={20} />, label: t('sidebar.company'), path: '/dashboard/profile', key: 'company', alwaysShow: true, groupId: 1 },
+    { icon: <Wallet size={20} />, label: t('sidebar.escrow', 'Escrow & Solde'), path: '/dashboard/escrow', key: 'escrow', alwaysShow: true, groupId: 1 },
+
+    // Group 2
+    { icon: <Phone size={20} />, label: t('sidebar.calls'), path: '/dashboard/calls', key: 'calls', alwaysShow: true, groupId: 2 },
+    { icon: <UserPlus size={20} />, label: t('sidebar.leads'), path: '/dashboard/leads', key: 'leads', requiresLeads: true, groupId: 2 },
+    { icon: <Users size={20} />, label: t('sidebar.repMatching'), path: '/dashboard/rep-matching', key: 'rep-matching', requiresRepMatching: true, groupId: 2 },
+    { icon: <BookOpen size={20} />, label: t('sidebar.training'), path: '/dashboard/training', key: 'training', alwaysShow: true, groupId: 2 },
+    { icon: <Calendar size={20} />, label: t('sidebar.scheduler'), path: '/dashboard/scheduler', key: 'scheduler', requiresRepMatching: true, groupId: 2 },
+    { icon: <Mail size={20} />, label: t('sidebar.emails'), path: '/dashboard/emails', key: 'emails', requiresRepMatching: true, groupId: 2 },
+    { icon: <MessageSquare size={20} />, label: t('sidebar.liveChat'), path: '/dashboard/chat', key: 'live-chat', requiresRepMatching: true, groupId: 2 },
+
+    // Group 3
+    { icon: <Briefcase size={20} />, label: t('sidebar.gigs'), path: '/dashboard/gigs', key: 'gigs', requiresGigs: true, groupId: 3 },
+    { icon: <ScrollText size={20} />, label: t('sidebar.scriptGenerator'), path: '/dashboard/script-generator', key: 'script-generator', alwaysShow: true, groupId: 3 },
+    { icon: <Book size={20} />, label: t('sidebar.knowledgeBase'), path: '/dashboard/knowledge-base', key: 'knowledge-base', alwaysShow: true, groupId: 3 },
+    { icon: <Plug size={20} />, label: t('sidebar.integrations'), path: '/dashboard/integrations', key: 'integrations', alwaysShow: true, groupId: 3 },
+    { icon: <ClipboardCheck size={20} />, label: t('sidebar.qualityAssurance'), path: '/dashboard/quality-assurance', key: 'quality-assurance', requiresRepMatching: true, groupId: 3 },
+    { icon: <ScrollText size={20} />, label: t('sidebar.operations'), path: '/dashboard/operations', key: 'operations', requiresRepMatching: true, groupId: 3 },
+    { icon: <TrendingUp size={20} />, label: t('sidebar.analytics'), path: '/dashboard/analytics', key: 'analytics', requiresRepMatching: true, groupId: 3 },
   ];
 
   const orchestratorItems = [
@@ -166,6 +160,17 @@ export function MasterSidebar({
     if ((item as any).requiresCompany && !hasCompany) return false;
     return true;
   });
+
+  const groups = [
+    { id: 1, label: 'Dashboard' },
+    { id: 2, label: 'Opérations' },
+    { id: 3, label: 'Orchestrator' }
+  ];
+
+  const groupedItems = groups.map(group => ({
+    ...group,
+    items: filteredDashboardItems.filter(item => item.groupId === group.id)
+  })).filter(g => g.items.length > 0);
 
   const handleLinkClick = (key: string) => {
     setActiveTab(key);
@@ -233,58 +238,45 @@ export function MasterSidebar({
             </>
           ) : (
             <>
-              {filteredDashboardItems.map((item) => (
-                <NavLink
-                  key={item.label}
-                  to={item.path}
-                  end={item.key === 'overview'}
-                  className={({ isActive }) => {
-                    // Manual override for specific prefix rules if they exist
-                    const prefix = (item as { activePathPrefix?: string }).activePathPrefix;
-                    const isReallyActive = isActive || (prefix && location.pathname.startsWith(prefix));
-
-                    return `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isReallyActive
-                      ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
-                      : "text-slate-400 hover:text-white hover:bg-white/5"
-                      }`;
-                  }}
-                >
-                  <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
-                    {item.icon}
-                  </div>
+              {groupedItems.map((group) => (
+                <div key={group.id} className="mb-4">
                   {!isCollapsed && (
-                    <span className="font-medium whitespace-nowrap overflow-hidden text-sm transition-all duration-300">{item.label}</span>
-                  )}
-                  {isCollapsed && (
-                    <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
-                      {item.label}
+                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-4">
+                      {group.label}
                     </div>
                   )}
-                </NavLink>
-              ))}
+                  <div className="space-y-1.5">
+                    {group.items.map((item) => (
+                      <NavLink
+                        key={item.label}
+                        to={item.path}
+                        end={item.key === 'overview'}
+                        className={({ isActive }) => {
+                          const prefix = (item as { activePathPrefix?: string }).activePathPrefix;
+                          const isReallyActive = isActive || (prefix && location.pathname.startsWith(prefix));
 
-              {hasKb && (
-                <NavLink
-                  to="/dashboard/knowledge-base"
-                  className={({ isActive }) =>
-                    `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isActive
-                      ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
-                      : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
-                    <Book size={20} />
+                          return `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isReallyActive
+                            ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                            }`;
+                        }}
+                      >
+                        <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
+                          {item.icon}
+                        </div>
+                        {!isCollapsed && (
+                          <span className="font-medium whitespace-nowrap overflow-hidden text-sm transition-all duration-300">{item.label}</span>
+                        )}
+                        {isCollapsed && (
+                          <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
+                            {item.label}
+                          </div>
+                        )}
+                      </NavLink>
+                    ))}
                   </div>
-                  {!isCollapsed && <span className="font-medium text-sm transition-all duration-300">{t('sidebar.knowledgeBase')}</span>}
-                  {isCollapsed && (
-                    <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
-                      {t('sidebar.knowledgeBase')}
-                    </div>
-                  )}
-                </NavLink>
-              )}
-
+                </div>
+              ))}
             </>
           )}
 
@@ -322,24 +314,7 @@ export function MasterSidebar({
         </nav>
       </div>
 
-      {/* Sidebar Footer */}
-      <div className={`mt-auto pt-6 border-t border-white/5 space-y-2 transition-all duration-300 ${isCollapsed ? 'px-3' : 'px-4 pb-8'}`}>
-        <button
-          onClick={handleLogoutMaster}
-          className={`flex items-center gap-4 w-full p-4 rounded-2xl transition-all duration-300 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 group relative ${isCollapsed ? 'justify-center' : ''}`}
-        >
-          <div className="p-2 bg-rose-500/10 rounded-xl group-hover:scale-110 transition-transform duration-300 shrink-0">
-            <LogOut size={18} />
-          </div>
-          {!isCollapsed && <span className="font-bold text-sm tracking-tight">{t('sidebar.logout')}</span>}
 
-          {isCollapsed && (
-            <div className="absolute left-16 bg-rose-500 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl">
-              {t('sidebar.logout')}
-            </div>
-          )}
-        </button>
-      </div>
     </div>
   );
 }

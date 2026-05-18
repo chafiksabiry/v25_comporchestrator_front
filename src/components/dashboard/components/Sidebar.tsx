@@ -219,24 +219,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         </nav>
       </div>
 
-      {/* Sidebar Footer - Logout */}
-      <div className={`mt-auto pt-6 border-t border-white/5 transition-all duration-300 ${isCollapsed ? 'px-3' : 'px-4 pb-8'}`}>
-        <button
-          onClick={logout}
-          className={`flex items-center gap-4 w-full p-4 rounded-2xl transition-all duration-300 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 group relative ${isCollapsed ? 'justify-center' : ''}`}
-        >
-          <div className="p-2 bg-rose-500/10 rounded-xl group-hover:scale-110 transition-transform duration-300 shrink-0">
-            <LogOut size={18} />
-          </div>
-          {!isCollapsed && <span className="font-bold text-sm tracking-tight">Logout</span>}
 
-          {isCollapsed && (
-            <div className="absolute left-16 bg-rose-500 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl">
-              Logout
-            </div>
-          )}
-        </button>
-      </div>
     </div>
   );
 }
