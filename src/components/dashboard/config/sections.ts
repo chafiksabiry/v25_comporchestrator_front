@@ -8,7 +8,6 @@ export const HIDDEN_SECTIONS = [
   'quality-assurance',
   'operations',
   'analytics',
-  'integrations',
   'settings'
 ];
 

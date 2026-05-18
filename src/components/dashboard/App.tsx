@@ -53,7 +53,7 @@ function App() {
         <Route path="/dashboard/quality-assurance" element={<QualityAssurancePanel />} />
         <Route path="/dashboard/operations" element={<OperationsPanel />} />
         <Route path="/dashboard/analytics" element={<CompanyPerformanceDashboard />} />
-        <Route path="/dashboard/integrations" element={<IntegrationsPanel />} />
+        <Route path="/dashboard/gig-activation" element={<IntegrationsPanel />} />
         <Route path="/dashboard/settings" element={<SettingsPanel />} />
         <Route path="/dashboard/knowledge-base" element={<KnowledgeBase />} />
         <Route path="/dashboard/kb-insight" element={<KnowledgeInsights />} />
