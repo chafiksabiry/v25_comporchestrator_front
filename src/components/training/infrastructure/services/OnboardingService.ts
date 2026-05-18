@@ -149,5 +149,53 @@ export const OnboardingService = {
       throw new Error('Failed to fetch company data');
     }
   },
+
+  /**
+   * Update onboarding progress for a company (Phase 3, Step 9)
+   * @param companyId - The company ID
+   */
+  async updateOnboardingProgress(companyId: string): Promise<void> {
+    const apiUrl =
+      import.meta.env.VITE_COMPANY_API_URL ||
+      "https://v25searchcompanywizardbackend-production.up.railway.app/api";
+    const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding`;
+    const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/9`;
+
+    try {
+      await axios.put(stepUrl, { status: "completed" });
+    } catch (error) {
+      console.error("[OnboardingService] Failed to mark step 9 completed:", error);
+      window.dispatchEvent(new Event("refreshOnboardingProgress"));
+      throw error;
+    }
+
+    try {
+      const { data: progress } = await axios.get(onboardingUrl);
+      const raw = progress as Record<string, unknown>;
+      const completedSteps = Array.isArray(raw?.completedSteps)
+        ? [...(raw.completedSteps as number[])]
+        : [];
+      if (!completedSteps.includes(9)) completedSteps.push(9);
+      const phaseId = typeof raw?.currentPhase === "number" ? (raw.currentPhase as number) : 3;
+      const cookiePayload = { ...raw, completedSteps };
+      Cookies.set("companyOnboardingProgress", JSON.stringify(cookiePayload), { expires: 7 });
+      
+      // Dispatch events for UI updates
+      window.dispatchEvent(
+        new CustomEvent("stepCompleted", {
+          detail: {
+            stepId: 9,
+            phaseId,
+            status: "completed",
+            completedSteps,
+          },
+        })
+      );
+      window.dispatchEvent(new Event("refreshOnboardingProgress"));
+    } catch (error) {
+      console.error("[OnboardingService] Failed to reload onboarding after step 9:", error);
+      window.dispatchEvent(new Event("refreshOnboardingProgress"));
+    }
+  },
 };
 
