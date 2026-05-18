@@ -394,7 +394,7 @@ export function InteractiveScriptCockpit({
               disabled={isValidating}
               className="px-4 py-2 bg-[#f4f4f5] border border-slate-200 hover:bg-slate-100 text-slate-800 font-extrabold rounded-lg transition-all text-[9px] uppercase tracking-widest flex items-center gap-1 shadow-sm active:scale-95 disabled:opacity-40 cursor-pointer"
             >
-              Terminer ✓
+              Save Script ✓
             </button>
           ) : (
             <button
