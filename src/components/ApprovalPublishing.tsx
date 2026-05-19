@@ -136,8 +136,42 @@ const ApprovalPublishing = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [industries, setIndustries] = useState<Industry[]>([]);
   const [languages, setLanguages] = useState<Language[]>([]);
+  const [balance, setBalance] = useState<number | null>(null);
+
+  const fetchBalance = async () => {
+    try {
+      const companyId = Cookies.get('companyId');
+      if (!companyId) return;
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL || 'http://localhost:3003/api';
+      console.log('🔍 FRONTEND - Checking balance on page load:', companyId);
+      const res = await fetch(`${apiBaseUrl}/escrow/wallet/${companyId}`);
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data) {
+          const fetchedBalance = result.data.balance ?? 0;
+          setBalance(fetchedBalance);
+          if (fetchedBalance <= 0) {
+            toast.error("Attention : Votre solde est de 0 €. Vous devez alimenter votre compte pour pouvoir activer vos gigs.", {
+              duration: 6000,
+              position: 'top-center',
+              icon: '⚠️',
+              style: {
+                background: '#FEF3C7',
+                color: '#92400E',
+                border: '1px solid #F59E0B',
+                fontWeight: 'bold',
+              }
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching balance:', err);
+    }
+  };
 
   useEffect(() => {
+    fetchBalance();
     fetchGigs();
     fetchCompanyDetails();
     fetchActivities();
@@ -2507,6 +2541,21 @@ const ApprovalPublishing = () => {
         {/* Abstract pattern */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
       </div>
+
+      {/* Balance Warning Banner */}
+      {balance !== null && balance <= 0 && (
+        <div className="rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-5 flex items-start gap-4 shadow-sm animate-in slide-in-from-top duration-300">
+          <div className="p-2 bg-amber-100 rounded-lg text-amber-700 flex-shrink-0">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+          <div>
+            <h4 className="text-base font-bold text-amber-900">Attention : Solde insuffisant (0 €)</h4>
+            <p className="text-sm font-medium text-amber-700 mt-1 leading-relaxed">
+              Votre solde actuel est de <strong>0 €</strong>. Vous devez alimenter votre compte dans la section billing afin de pouvoir activer ou approuver des gigs. Sans cela, vos reps ne pourront pas commencer à travailler.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex space-x-1 rounded-xl bg-white p-1 border border-gray-100 shadow-sm">
