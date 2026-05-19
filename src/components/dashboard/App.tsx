@@ -24,7 +24,9 @@ import CompanyDashboardPage from './pages/CompanyDashboardPage';
 import PremiumDashboardPage from './pages/PremiumDashboardPage';
 import CallsDashboardPage from './pages/CallsDashboardPage';
 import { CompanyPerformanceDashboard } from './pages/CompanyPerformanceDashboard';
-import { EscrowPanel } from './panels/EscrowPanel';
+import { WalletCompanyPanel } from './panels/WalletCompanyPanel';
+import { MinutesCompanyPanel } from './panels/MinutesCompanyPanel';
+import { PhoneNumberPanel } from './panels/PhoneNumberPanel';
 import ScriptGenerator from '../ScriptGenerator';
 import RepOnboarding from '../onboarding/RepOnboarding';
 import ApprovalPublishing from '../ApprovalPublishing';
@@ -37,7 +39,9 @@ function App() {
         <Route path="/dashboard/overview" element={<OverviewDashboardPage />} />
         <Route path="/company" element={<Navigate to="/dashboard/profile" replace />} />
         <Route path="/dashboard" element={<CompanyDashboardPage />} />
-        <Route path="/dashboard/escrow" element={<EscrowPanel />} />
+        <Route path="/dashboard/wallet" element={<WalletCompanyPanel />} />
+        <Route path="/dashboard/minutes" element={<MinutesCompanyPanel />} />
+        <Route path="/dashboard/telephony" element={<PhoneNumberPanel />} />
         <Route path="/dashboard/profile" element={<CompanyProfilePanel />} />
         <Route path="/dashboard/leads" element={<LeadManagementPanel />} />
         <Route path="/dashboard/rep-matching" element={<RepMatchingPanel />} />
