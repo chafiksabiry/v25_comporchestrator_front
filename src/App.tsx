@@ -8,6 +8,7 @@ import {
   X,
   Clock,
   Lock,
+  Phone,
   ChevronDown,
   Building2,
   LogOut,
@@ -531,7 +532,7 @@ function AppContent() {
                         <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/15 to-transparent animate-escrow-shine" />
                       </span>
                       <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-escrow-icon text-white shadow-lg shadow-amber-500/30 ring-2 ring-amber-400/20 group-hover:scale-110 group-hover:shadow-amber-500/50 transition-all duration-300 shrink-0">
-                        <Lock size={16} className="drop-shadow-sm" strokeWidth={2.5} />
+                        <Phone size={16} className="drop-shadow-sm" strokeWidth={2.5} />
                       </div>
                       <div className="relative flex flex-col leading-tight">
                         <span className="flex items-center gap-1.5">
