@@ -256,6 +256,7 @@ export function GigReview({
   };
 
   const handlePublish = async () => {
+    if (isSubmitting) return;
     try {
 
       // Let onSubmit handle the saving (it already calls saveGigData)
