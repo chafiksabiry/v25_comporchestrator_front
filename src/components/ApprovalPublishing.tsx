@@ -32,6 +32,7 @@ import {
   Trash2
 } from 'lucide-react';
 import Cookies from 'js-cookie';
+import toast from 'react-hot-toast';
 
 interface Gig {
   _id: string;
@@ -428,27 +429,58 @@ const ApprovalPublishing = () => {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  const checkCompanyBalance = async (): Promise<boolean> => {
+    try {
+      const companyId = Cookies.get('companyId');
+      if (!companyId) return false;
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL || 'http://localhost:3003/api';
+      console.log('🔍 FRONTEND - Checking balance for company:', companyId);
+      const res = await fetch(`${apiBaseUrl}/escrow/wallet/${companyId}`);
+      if (res.ok) {
+        const result = await res.json();
+        console.log('🔍 FRONTEND - Balance check result:', result);
+        if (result.success && result.data) {
+          const balance = result.data.balance ?? 0;
+          return balance > 0;
+        }
+      }
+      return true; // Fallback in case of server failure
+    } catch (err) {
+      console.error('Failed to check company balance:', err);
+      return true;
+    }
+  };
+
   // API Functions
   const approveGig = async (gigId: string) => {
     try {
-      
+      const isBalanceSufficient = await checkCompanyBalance();
+      if (!isBalanceSufficient) {
+        toast.error("Solde insuffisant. Vous devez alimenter votre compte pour activer ce gig.", {
+          duration: 5000,
+          position: 'top-right',
+          style: {
+            background: '#EF4444',
+            color: '#FFFFFF',
+            fontWeight: 'bold',
+          }
+        });
+        return;
+      }
+
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
       const gigIdCookie = Cookies.get('gigId');
-
-      
 
       if (!companyId || !userId) {
         throw new Error('Missing authentication tokens');
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
-      
 
       const requestBody = {
         status: 'active'
       };
-      
 
       const response = await fetch(apiUrl, {
         method: 'PUT',
@@ -459,17 +491,19 @@ const ApprovalPublishing = () => {
         body: JSON.stringify(requestBody)
       });
 
-      
-      
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API Error response:', errorText);
-        throw new Error(`Failed to approve gig: ${response.status} ${response.statusText}`);
+        let errorMessage = `Failed to approve gig: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (_) {}
+        console.error('❌ API Error response:', errorMessage);
+        throw new Error(errorMessage);
       }
 
       const responseData = await response.json();
-      
 
       // Update the gig status locally instead of refreshing
       setGigs(prevGigs => prevGigs.map(gig =>
@@ -481,6 +515,10 @@ const ApprovalPublishing = () => {
     } catch (error) {
       console.error('❌ Error approving gig:', error);
       setError(error instanceof Error ? error.message : 'Failed to approve gig');
+      toast.error(error instanceof Error ? error.message : 'Failed to approve gig', {
+        duration: 5000,
+        position: 'top-right'
+      });
     }
   };
 
@@ -1063,7 +1101,20 @@ const ApprovalPublishing = () => {
   };
 
   const approveSelectedGigs = async () => {
-    
+    const isBalanceSufficient = await checkCompanyBalance();
+    if (!isBalanceSufficient) {
+      toast.error("Solde insuffisant. Vous devez alimenter votre compte pour activer ces gigs.", {
+        duration: 5000,
+        position: 'top-right',
+        style: {
+          background: '#EF4444',
+          color: '#FFFFFF',
+          fontWeight: 'bold',
+        }
+      });
+      return;
+    }
+
     for (const gigId of selectedGigs) {
       await approveGig(gigId);
     }
