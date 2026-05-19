@@ -110,7 +110,7 @@ export function PhoneNumberPanel() {
     try {
       const selectedGig = gigsAndReps.find(g => g.gigId === selectedGigIdForNumber);
       const targetCountry = selectedGig?.destinationCountry;
-
+      console.log('sele', selectedGig);
       if (!targetCountry) {
         toast.error('Veuillez sélectionner un Gig avec une destination country.');
         return;
