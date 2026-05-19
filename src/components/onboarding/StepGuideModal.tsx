@@ -1,7 +1,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
-import { X, ChevronRight, Lightbulb, PlayCircle } from 'lucide-react';
+import { ChevronRight, Lightbulb, PlayCircle } from 'lucide-react';
+import {
+  GuideBadge,
+  GuideHero,
+  GuideIconOrb,
+  GuideModalLayout,
+  GuidePrimaryButton,
+} from './GuideModalLayout';
 
 export type StepGuideVariant = 'before' | 'inside';
 
@@ -13,11 +19,11 @@ interface StepGuideModalProps {
   onClose: () => void;
 }
 
-const STEP_GRADIENTS = [
-  'from-rose-500 via-pink-500 to-fuchsia-600',
-  'from-blue-500 via-indigo-500 to-violet-600',
-  'from-emerald-500 via-teal-500 to-cyan-600',
-  'from-amber-500 via-orange-500 to-rose-500',
+const PHASE_GRADIENTS = [
+  'from-[#ff4d4d] via-[#ec4899] to-[#c026d3]',
+  'from-blue-600 via-indigo-600 to-violet-700',
+  'from-emerald-600 via-teal-600 to-cyan-700',
+  'from-amber-500 via-orange-500 to-[#ff4d4d]',
 ];
 
 const StepGuideModal: React.FC<StepGuideModalProps> = ({
@@ -29,85 +35,59 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  if (!isOpen) return null;
-
   const isBefore = variant === 'before';
-  const gradient = STEP_GRADIENTS[(phaseId - 1) % STEP_GRADIENTS.length];
+  const gradient = PHASE_GRADIENTS[(phaseId - 1) % PHASE_GRADIENTS.length];
   const title = t(`companyOnboarding.phases.${phaseId}.steps.${stepId}.title`);
   const description = t(`companyOnboarding.phases.${phaseId}.steps.${stepId}.description`);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+    <GuideModalLayout
+      isOpen={isOpen}
+      onBackdropClick={onClose}
+      onClose={onClose}
+      closeLabel={t('orchestratorGuide.close')}
+      maxWidth="md"
+      footer={
+        <GuidePrimaryButton onClick={onClose}>
+          {isBefore
+            ? t('companyOnboarding.stepGuide.beforeStart')
+            : t('companyOnboarding.stepGuide.start')}
+          <ChevronRight className="h-4 w-4" />
+        </GuidePrimaryButton>
+      }
     >
-      <motion.div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      />
+      <GuideHero gradientClass={gradient}>
+        <GuideIconOrb>
+          {isBefore ? (
+            <PlayCircle className="h-9 w-9 text-white drop-shadow-md" />
+          ) : (
+            <Lightbulb className="h-9 w-9 text-white drop-shadow-md" />
+          )}
+        </GuideIconOrb>
+      </GuideHero>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.92, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-          aria-label={t('orchestratorGuide.close')}
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <motion.div className={`h-32 bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-            className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm ring-4 ring-white/25"
-          >
-            {isBefore ? (
-              <PlayCircle className="h-8 w-8 text-white" />
-            ) : (
-              <Lightbulb className="h-8 w-8 text-white" />
-            )}
-          </motion.div>
-        </motion.div>
-
-        <motion.div className="px-6 pt-5 pb-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-rose-500 mb-1">
+      <div className="px-6 sm:px-8 pt-6 pb-2">
+        <div className="mb-4">
+          <GuideBadge>
             {isBefore
               ? t('companyOnboarding.stepGuide.beforeBadge', { step: stepId })
               : t('companyOnboarding.stepGuide.insideBadge', { step: stepId })}
-          </p>
-          <h2 className="text-lg font-bold text-slate-800">
-            {isBefore
-              ? t('companyOnboarding.stepGuide.beforeHeading', { title })
-              : title}
-          </h2>
-          <p className="mt-2 text-sm text-slate-600 leading-relaxed">{description}</p>
-          {!isBefore && (
-            <p className="mt-2 text-xs text-slate-500">
-              {t('companyOnboarding.stepGuide.insideHint')}
-            </p>
-          )}
+          </GuideBadge>
+        </div>
 
-          <button
-            onClick={onClose}
-            className="mt-5 w-full flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/25 transition-all hover:bg-blue-700 active:scale-[0.98]"
-          >
-            {isBefore
-              ? t('companyOnboarding.stepGuide.beforeStart')
-              : t('companyOnboarding.stepGuide.start')}
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </motion.div>
-      </motion.div>
-    </motion.div>
+        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+          {isBefore ? t('companyOnboarding.stepGuide.beforeHeading', { title }) : title}
+        </h2>
+
+        <p className="mt-3 text-sm sm:text-base text-gray-400 leading-relaxed">{description}</p>
+
+        {!isBefore && (
+          <p className="mt-4 rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3 text-xs text-gray-500 leading-relaxed">
+            {t('companyOnboarding.stepGuide.insideHint')}
+          </p>
+        )}
+      </div>
+    </GuideModalLayout>
   );
 };
 
