@@ -36,6 +36,10 @@ import ZohoService from "../services/zohoService";
 import PrompAI from "./gigsaicreation/components/PrompAI";
 import { useTranslation } from "react-i18next";
 import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
+import {
+  markStepGuideSeen,
+  shouldShowStepGuide,
+} from "../hooks/useStepGuide";
 
 interface BaseStep {
   id: number;
@@ -281,6 +285,7 @@ const CompanyOnboarding = () => {
   };
 
   const dispatchInsideStepGuide = (stepId: number) => {
+    if (!shouldShowStepGuide(stepId, 'inside', completedSteps)) return;
     window.dispatchEvent(
       new CustomEvent('stepGuideInside', {
         detail: { stepId, phaseId: findPhaseIdForStep(stepId) },
@@ -288,7 +293,26 @@ const CompanyOnboarding = () => {
     );
   };
 
+  const openStepDirectly = (stepId: number, mode: 'start' | 'review') => {
+    if (shouldShowStepGuide(stepId, 'inside', completedSteps)) {
+      setPendingInStepGuide(stepId);
+    }
+    if (mode === 'start') {
+      void executeStartStep(stepId);
+    } else {
+      void executeReviewStep(stepId);
+    }
+  };
+
   const showPreStepGuide = (stepId: number, mode: 'start' | 'review') => {
+    if (completedSteps.includes(stepId)) {
+      openStepDirectly(stepId, mode);
+      return;
+    }
+    if (!shouldShowStepGuide(stepId, 'before', completedSteps)) {
+      openStepDirectly(stepId, mode);
+      return;
+    }
     setPendingStep({ stepId, mode });
     setStepGuide({
       stepId,
@@ -300,11 +324,13 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     const stepId = getFocusedStepId();
     if (stepId !== null && pendingInStepGuide === stepId) {
-      setStepGuide({
-        stepId,
-        phaseId: findPhaseIdForStep(stepId),
-        variant: 'inside',
-      });
+      if (shouldShowStepGuide(stepId, 'inside', completedSteps)) {
+        setStepGuide({
+          stepId,
+          phaseId: findPhaseIdForStep(stepId),
+          variant: 'inside',
+        });
+      }
       setPendingInStepGuide(null);
     }
   }, [
@@ -315,16 +341,22 @@ const CompanyOnboarding = () => {
     showUploadContacts,
     showKnowledgeBase,
     pendingInStepGuide,
+    completedSteps,
   ]);
 
   const handleCloseStepGuide = () => {
     if (!stepGuide) return;
 
-    if (stepGuide.variant === 'before' && pendingStep) {
-      const { stepId, mode } = pendingStep;
+    const { stepId, variant } = stepGuide;
+    markStepGuideSeen(stepId, variant);
+
+    if (variant === 'before' && pendingStep) {
+      const { mode } = pendingStep;
       setStepGuide(null);
       setPendingStep(null);
-      setPendingInStepGuide(stepId);
+      if (shouldShowStepGuide(stepId, 'inside', completedSteps)) {
+        setPendingInStepGuide(stepId);
+      }
       if (mode === 'start') {
         void executeStartStep(stepId);
       } else {
@@ -755,10 +787,11 @@ const CompanyOnboarding = () => {
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
 
-        
+        if (typeof stepId === 'number') {
+          markStepGuideSeen(stepId, 'all');
+        }
 
         setTimeout(() => {
-          
           loadCompanyProgress();
         }, 500);
       }
