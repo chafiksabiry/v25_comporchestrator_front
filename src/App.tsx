@@ -151,7 +151,17 @@ function AppContent() {
 
   const handleBalanceClick = () => {
     setActiveProject('dashboard');
-    navigate('/dashboard/escrow');
+    navigate('/dashboard/wallet');
+  };
+
+  const handleMinutesClick = () => {
+    setActiveProject('dashboard');
+    navigate('/dashboard/minutes');
+  };
+
+  const handleTelephonyClick = () => {
+    setActiveProject('dashboard');
+    navigate('/dashboard/telephony');
   };
 
   const unwrapPayload = (body: any) => {
@@ -500,7 +510,7 @@ function AppContent() {
                   <>
                     {/* Minutes Disponibles Widget */}
                     <div 
-                      onClick={handleBalanceClick}
+                      onClick={handleMinutesClick}
                       className="flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl bg-gradient-to-br from-blue-500/15 via-blue-500/5 to-transparent border border-blue-500/25 text-xs font-bold text-blue-100/80 shadow-[0_0_20px_-6px_rgba(59,130,246,0.4)] hover:border-blue-400/50 hover:from-blue-500/25 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_24px_-4px_rgba(59,130,246,0.45)] transition-all duration-300 cursor-pointer group backdrop-blur-sm"
                     >
                       <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500/20 border border-blue-400/30 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
@@ -512,9 +522,9 @@ function AppContent() {
                       </div>
                     </div>
 
-                    {/* Escrow/Séquestre Widget — accent visuel renforcé */}
+                    {/* Escrow/Séquestre Widget (Telephony Lines) */}
                     <div 
-                      onClick={handleBalanceClick}
+                      onClick={handleTelephonyClick}
                       className="relative flex items-center gap-2.5 pl-2 pr-4 py-2.5 rounded-2xl bg-gradient-escrow border border-amber-400/40 text-xs font-bold text-amber-100/90 animate-escrow-glow hover:border-amber-300/60 hover:-translate-y-0.5 hover:shadow-[0_0_32px_-2px_rgba(251,191,36,0.5)] transition-all duration-300 cursor-pointer group overflow-hidden backdrop-blur-md"
                     >
                       <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
@@ -525,8 +535,8 @@ function AppContent() {
                       </div>
                       <div className="relative flex flex-col leading-tight">
                         <span className="flex items-center gap-1.5">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-amber-300/90">Séquestre</span>
-                          <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-px rounded-full bg-amber-500/25 text-amber-200 border border-amber-400/30">Vault</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-amber-300/90">Lignes Tél.</span>
+                          <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-px rounded-full bg-amber-500/25 text-amber-200 border border-amber-400/30">Lines</span>
                         </span>
                         <span className="text-sm font-black text-white tabular-nums tracking-tight">{formatFloatMinutesToMMSSLL(escrow)}</span>
                       </div>

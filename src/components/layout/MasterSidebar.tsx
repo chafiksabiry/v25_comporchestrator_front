@@ -24,7 +24,8 @@ import {
   Sparkles,
   Info,
   Wallet,
-  BookOpen
+  BookOpen,
+  Clock
 } from 'lucide-react';
 import { getHiddenSections } from '../dashboard/config/sections';
 import Cookies from 'js-cookie';
@@ -136,7 +137,7 @@ export function MasterSidebar({
     { icon: <LayoutDashboard size={20} />, label: t('sidebar.dashboard'), path: '/dashboard/main', key: 'premium-dashboard', alwaysShow: true, groupId: 1 },
     { icon: <TrendingUp size={20} />, label: t('sidebar.overview'), path: '/dashboard/overview', key: 'overview', alwaysShow: true, groupId: 1 },
 
-    { icon: <Wallet size={20} />, label: t('sidebar.escrow', 'Escrow & Solde'), path: '/dashboard/escrow', key: 'escrow', alwaysShow: true, groupId: 1 },
+    { icon: <Wallet size={20} />, label: t('sidebar.wallet', 'Mon Portefeuille'), path: '/dashboard/wallet', key: 'wallet', alwaysShow: true, groupId: 1 },
 
     // Group 2
     { icon: <Phone size={20} />, label: t('sidebar.calls'), path: '/dashboard/calls', key: 'calls', alwaysShow: true, groupId: 2 },
