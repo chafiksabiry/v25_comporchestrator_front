@@ -284,6 +284,7 @@ export function GigCreator({ children }: GigCreatorProps) {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setSubmitError(null);
 
