@@ -113,13 +113,7 @@ export function PhoneNumberPanel() {
     setSearchResults([]);
 
     try {
-      let endpoint = '';
-      if (searchProvider === 'twilio') {
-        endpoint = `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${searchCountry}&limit=${searchLimit}`;
-      } else {
-        endpoint = `${apiBaseUrl}/phone-numbers/search?countryCode=${searchCountry}&type=local&limit=${searchLimit}`;
-      }
-
+      const endpoint = `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${searchCountry}&limit=${searchLimit}`;
       const res = await fetch(endpoint);
       if (res.ok) {
         const data = await res.json();
@@ -155,12 +149,11 @@ export function PhoneNumberPanel() {
 
     setPurchasing(numberToBuy);
     try {
-      const res = await fetch(`${apiBaseUrl}/phone-numbers/purchase`, {
+      const res = await fetch(`${apiBaseUrl}/phone-numbers/purchase/twilio`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: numberToBuy,
-          provider: searchProvider,
           gigId: selectedGigIdForNumber,
           companyId
         })
@@ -360,43 +353,6 @@ export function PhoneNumberPanel() {
             </div>
 
             <form onSubmit={handleSearchNumbers} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Fournisseur</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSearchProvider('twilio')}
-                    className={`p-3 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all flex flex-col items-center gap-1.5 ${searchProvider === 'twilio' ? 'border-orange-500 bg-orange-50/50 text-orange-600' : 'border-gray-100 bg-white text-gray-500 hover:bg-gray-50'}`}
-                  >
-                    <span>Twilio</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSearchProvider('telnyx')}
-                    className={`p-3 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all flex flex-col items-center gap-1.5 ${searchProvider === 'telnyx' ? 'border-orange-500 bg-orange-50/50 text-orange-600' : 'border-gray-100 bg-white text-gray-500 hover:bg-gray-50'}`}
-                  >
-                    <span>Telnyx</span>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Code Pays ISO</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                    <Globe size={16} />
-                  </div>
-                  <input
-                    type="text"
-                    value={searchCountry}
-                    onChange={(e) => setSearchCountry(e.target.value.toUpperCase())}
-                    placeholder="US, FR, CA..."
-                    maxLength={2}
-                    required
-                    className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl font-bold text-sm focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
-                  />
-                </div>
-              </div>
 
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Affecter au Gig</label>
