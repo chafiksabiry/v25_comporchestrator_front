@@ -216,6 +216,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
           </div>
         </div>
       </div>
+      </div>
     </div>
   );
 }
