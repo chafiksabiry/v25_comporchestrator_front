@@ -77,6 +77,9 @@ export async function saveTrainingJourney(params: {
   const embeddedModules = buildEmbeddedModules(modules || []);
 
   const titleValue = (journey.title || journey.name || 'Untitled Journey') as string;
+  const cleanCompanyId = companyId && isValidMongoId(companyId) ? companyId : undefined;
+  const cleanGigId = gigId && isValidMongoId(gigId) ? gigId : undefined;
+
   const journeyPayload: Record<string, unknown> = {
     title: titleValue,
     name: titleValue,
@@ -85,8 +88,8 @@ export async function saveTrainingJourney(params: {
     status: journey.status || 'active',
     company: journey.company,
     vision: journey.vision,
-    companyId,
-    gigId: gigId || undefined,
+    companyId: cleanCompanyId,
+    gigId: cleanGigId,
     modules: embeddedModules,
     finalExam: null,
     presentationData,

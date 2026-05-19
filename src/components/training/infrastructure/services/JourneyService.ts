@@ -157,6 +157,9 @@ export class JourneyService {
     }
 
     const titleValue = (journey as any).title || (journey as any).name || 'Untitled Journey';
+    const cleanCompanyId = companyId && isValidMongoId(companyId) ? companyId : undefined;
+    const cleanGigId = gigId && isValidMongoId(gigId) ? gigId : undefined;
+
     const journeyPayload: any = {
       title: titleValue,
       name: titleValue, // Fix: Express validator requires 'name'
@@ -168,8 +171,8 @@ export class JourneyService {
       estimatedDuration: (journey as any).estimatedDuration,
       targetRoles: Array.isArray((journey as any).targetRoles) ? (journey as any).targetRoles : [],
       trainingLogo: (journey as any).trainingLogo,
-      companyId: companyId,
-      gigId: gigId,
+      companyId: cleanCompanyId,
+      gigId: cleanGigId,
       modules: embeddedModules,
       finalExam: embeddedFinalExam,
       presentationData: presentationData, // Send presentation data to backend
@@ -338,6 +341,9 @@ export class JourneyService {
       journeyIdToUse = null;
     }
 
+    const cleanCompanyId = request.companyId && isValidMongoId(request.companyId) ? request.companyId : undefined;
+    const cleanGigId = request.gigId && isValidMongoId(request.gigId) ? request.gigId : undefined;
+
     const titleValue = (request.journey as any).title || request.journey.name || 'Untitled Journey';
     const journeyPayload: any = {
       title: titleValue,
@@ -350,8 +356,8 @@ export class JourneyService {
       estimatedDuration: (request.journey as any).estimatedDuration,
       targetRoles: Array.isArray((request.journey as any).targetRoles) ? (request.journey as any).targetRoles : [],
       trainingLogo: (request.journey as any).trainingLogo,
-      companyId: request.companyId,
-      gigId: request.gigId,
+      companyId: cleanCompanyId,
+      gigId: cleanGigId,
       modules: embeddedModules,
       finalExam: embeddedFinalExam,
       launchSettings: request.launchSettings,
