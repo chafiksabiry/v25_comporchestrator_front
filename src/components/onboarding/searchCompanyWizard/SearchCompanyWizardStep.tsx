@@ -137,82 +137,83 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     <div className="mx-auto max-w-5xl p-6 animate-fade-in relative overflow-hidden min-h-[600px] flex flex-col justify-center">
       {/* Background Animated Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[5%] left-[10%] w-[30%] h-[30%] bg-gradient-to-br from-harx-400/30 to-harx-alt-400/30 blur-[80px] rounded-full animate-float" />
-        <div className="absolute bottom-[5%] right-[10%] w-[40%] h-[40%] bg-gradient-to-tl from-harx-alt-400/30 to-harx-400/30 blur-[100px] rounded-full animate-float" style={{ animationDelay: '3s' }} />
+        <div className="absolute top-[5%] left-[10%] w-[30%] h-[30%] bg-gradient-to-br from-harx-200/40 to-harx-alt-200/40 blur-[80px] rounded-full animate-float" />
+        <div className="absolute bottom-[5%] right-[10%] w-[40%] h-[40%] bg-gradient-to-tl from-harx-alt-200/40 to-harx-200/40 blur-[100px] rounded-full animate-float" style={{ animationDelay: '3s' }} />
       </div>
 
       <div className="relative z-10">
         <div className="mb-8 text-center lg:text-left">
-          <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-harx-600 to-harx-alt-600">
+          <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-harx-700 to-harx-alt-700">
             {t('searchCompanyWizard.title')}
           </h1>
-          <p className="text-gray-500 text-lg">{t('searchCompanyWizard.subtitle')}</p>
+          <p className="text-slate-700 text-lg font-medium">{t('searchCompanyWizard.subtitle')}</p>
         </div>
 
-        <div className="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-xl p-8 shadow-2xl relative overflow-hidden">
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 relative overflow-hidden">
           {/* Decorative background blur inside card */}
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-harx-400/10 blur-3xl rounded-full pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-harx-alt-400/10 blur-3xl rounded-full pointer-events-none" />
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-harx-100/40 blur-3xl rounded-full pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-harx-alt-100/40 blur-3xl rounded-full pointer-events-none" />
 
           <div className="relative z-10">
-          <div className="relative group">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder={t('searchCompanyWizard.placeholder')}
-              className="w-full rounded-2xl border-2 border-gray-100 px-6 py-4 pr-14 text-lg outline-none focus:border-harx-400 focus:ring-4 focus:ring-harx-400/20 transition-all bg-gray-50/50 focus:bg-white"
-            />
-            <button
-              onClick={handleSearch}
-              disabled={loading || !query.trim()}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-3 bg-gradient-harx text-white disabled:opacity-40 hover:scale-105 transition-transform shadow-lg shadow-harx-500/20"
-            >
-              <Search size={22} />
-            </button>
-          </div>
-
-          {error && (
-            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-center gap-2">
-              <span className="w-2 h-2 bg-red-600 rounded-full flex-shrink-0" />
-              {error}
+            <div className="relative group">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                placeholder={t('searchCompanyWizard.placeholder')}
+                className="w-full rounded-2xl border-2 border-slate-200 px-6 py-4 pr-14 text-lg outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10 transition-all bg-white text-slate-900 placeholder-slate-400"
+              />
+              <button
+                onClick={handleSearch}
+                disabled={loading || !query.trim()}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-3 bg-gradient-harx text-white disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all"
+              >
+                <Search size={22} />
+              </button>
             </div>
-          )}
 
-          <div className="mt-8 space-y-4 max-h-[500px] overflow-y-auto pr-2">
-            {loading ? (
-              <div className="py-10 text-center text-gray-500 flex flex-col items-center gap-3">
-                <div className="animate-spin h-8 w-8 border-4 border-harx-500 border-t-transparent rounded-full" />
-                <span>{t('searchCompanyWizard.loading')}</span>
+            {error && (
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-center gap-2">
+                <span className="w-2 h-2 bg-red-600 rounded-full flex-shrink-0" />
+                {error}
               </div>
-            ) : (
-              results.map((result, idx) => (
-                <div 
-                  key={`${result.link}-${idx}`} 
-                  className="rounded-2xl border border-gray-100 p-6 hover:shadow-lg transition-all duration-300 hover:border-harx-200 group bg-white"
-                >
-                  <div className="flex items-start gap-5">
-                    <div className="transform group-hover:scale-105 transition-transform">
-                      <CompanyLogo result={result} />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-xl text-gray-900 group-hover:text-harx-600 transition-colors">
-                        {result.title}
-                      </h3>
-                      <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                        {result.snippet}
-                      </p>
-                      <button
-                        onClick={() => handleGenerate(result)}
-                        className="mt-4 rounded-xl bg-gradient-harx px-6 py-2.5 text-xs font-bold text-white hover:shadow-lg hover:shadow-harx-500/20 transform hover:-translate-y-0.5 transition-all"
-                      >
-                        {t('searchCompanyWizard.generateBtn')}
-                      </button>
+            )}
+
+            <div className="mt-8 space-y-4 max-h-[500px] overflow-y-auto pr-2">
+              {loading ? (
+                <div className="py-10 text-center text-slate-600 flex flex-col items-center gap-3">
+                  <div className="animate-spin h-8 w-8 border-4 border-harx-500 border-t-transparent rounded-full" />
+                  <span>{t('searchCompanyWizard.loading')}</span>
+                </div>
+              ) : (
+                results.map((result, idx) => (
+                  <div 
+                    key={`${result.link}-${idx}`} 
+                    className="rounded-2xl border border-slate-200 p-6 transition-all duration-300 hover:bg-harx-50/40 hover:border-harx-300 group bg-white"
+                  >
+                    <div className="flex items-start gap-5">
+                      <div className="transform group-hover:scale-105 transition-transform">
+                        <CompanyLogo result={result} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-xl text-slate-900 group-hover:text-harx-700 transition-colors">
+                          {result.title}
+                        </h3>
+                        <p className="mt-2 text-sm text-slate-700 leading-relaxed">
+                          {result.snippet}
+                        </p>
+                        <button
+                          onClick={() => handleGenerate(result)}
+                          className="mt-4 rounded-xl bg-gradient-harx px-6 py-2.5 text-xs font-bold text-white hover:opacity-90 active:scale-95 transition-all"
+                        >
+                          {t('searchCompanyWizard.generateBtn')}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
