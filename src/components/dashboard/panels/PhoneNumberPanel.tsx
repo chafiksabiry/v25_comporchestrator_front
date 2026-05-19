@@ -56,7 +56,7 @@ export function PhoneNumberPanel() {
   const [searching, setSearching] = useState(false);
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
-  const companyId = Cookies.get('companyId') || 'demo_company_id';
+  const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
 
   const fetchData = async (isSilent = false) => {
