@@ -35,6 +35,7 @@ import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
 import PrompAI from "./gigsaicreation/components/PrompAI";
 import { useTranslation } from "react-i18next";
+import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
 
 interface BaseStep {
   id: number;
@@ -256,7 +257,94 @@ const CompanyOnboarding = () => {
   const [showGigCreation, setShowGigCreation] = useState(false);
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [stepGuide, setStepGuide] = useState<{
+    stepId: number;
+    phaseId: number;
+    variant: StepGuideVariant;
+  } | null>(null);
+  const [pendingStep, setPendingStep] = useState<{
+    stepId: number;
+    mode: 'start' | 'review';
+  } | null>(null);
+  const [pendingInStepGuide, setPendingInStepGuide] = useState<number | null>(null);
 
+  const findPhaseIdForStep = (stepId: number) =>
+    phases.find((p) => p.steps.some((s) => s.id === stepId))?.id ?? 1;
+
+  const getFocusedStepId = (): number | null => {
+    if (showGigCreation || showGigDetails) return 3;
+    if (showTelephonySetup) return 4;
+    if (showUploadContacts) return 5;
+    if (showKnowledgeBase) return 8;
+    if (activeStep !== null) return activeStep;
+    return null;
+  };
+
+  const dispatchInsideStepGuide = (stepId: number) => {
+    window.dispatchEvent(
+      new CustomEvent('stepGuideInside', {
+        detail: { stepId, phaseId: findPhaseIdForStep(stepId) },
+      })
+    );
+  };
+
+  const showPreStepGuide = (stepId: number, mode: 'start' | 'review') => {
+    setPendingStep({ stepId, mode });
+    setStepGuide({
+      stepId,
+      phaseId: findPhaseIdForStep(stepId),
+      variant: 'before',
+    });
+  };
+
+  useEffect(() => {
+    const stepId = getFocusedStepId();
+    if (stepId !== null && pendingInStepGuide === stepId) {
+      setStepGuide({
+        stepId,
+        phaseId: findPhaseIdForStep(stepId),
+        variant: 'inside',
+      });
+      setPendingInStepGuide(null);
+    }
+  }, [
+    activeStep,
+    showGigDetails,
+    showGigCreation,
+    showTelephonySetup,
+    showUploadContacts,
+    showKnowledgeBase,
+    pendingInStepGuide,
+  ]);
+
+  const handleCloseStepGuide = () => {
+    if (!stepGuide) return;
+
+    if (stepGuide.variant === 'before' && pendingStep) {
+      const { stepId, mode } = pendingStep;
+      setStepGuide(null);
+      setPendingStep(null);
+      setPendingInStepGuide(stepId);
+      if (mode === 'start') {
+        void executeStartStep(stepId);
+      } else {
+        void executeReviewStep(stepId);
+      }
+      return;
+    }
+
+    setStepGuide(null);
+  };
+
+  const stepGuideLayer = stepGuide ? (
+    <StepGuideModal
+      isOpen
+      stepId={stepGuide.stepId}
+      phaseId={stepGuide.phaseId}
+      variant={stepGuide.variant}
+      onClose={handleCloseStepGuide}
+    />
+  ) : null;
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
@@ -783,7 +871,23 @@ const CompanyOnboarding = () => {
     }
   };
 
-  const handleStartStep = async (stepId: number) => {
+  const handleStartStep = (stepId: number) => {
+    if (!companyId && stepId !== 1) {
+      console.error("Company ID not available for starting step");
+      return;
+    }
+    showPreStepGuide(stepId, 'start');
+  };
+
+  const handleReviewStep = (stepId: number) => {
+    if (!companyId && stepId !== 1) {
+      console.error("Company ID not available for reviewing step");
+      return;
+    }
+    showPreStepGuide(stepId, 'review');
+  };
+
+  const executeStartStep = async (stepId: number) => {
     // Step 1 must be accessible even when no company exists yet.
     if (!companyId && stepId !== 1) {
       console.error("Company ID not available for starting step");
@@ -816,6 +920,7 @@ const CompanyOnboarding = () => {
 
       // Special handling for Knowledge Base step
       if (stepId === 8) {
+        dispatchInsideStepGuide(stepId);
         localStorage.setItem("activeTab", "knowledge-base");
         window.dispatchEvent(
           new CustomEvent("tabChange", {
@@ -827,6 +932,7 @@ const CompanyOnboarding = () => {
 
       // Special handling for Call Script step
       if (stepId === 6) {
+        dispatchInsideStepGuide(stepId);
         localStorage.setItem("activeTab", "script-generator");
         window.dispatchEvent(
           new CustomEvent("tabChange", {
@@ -838,9 +944,8 @@ const CompanyOnboarding = () => {
 
       // Special handling for Gig Activation step (step 12) - redirect to Approval & Publishing
       if (stepId === 12) {
-        // Set the active tab to approval-publishing in the App component
+        dispatchInsideStepGuide(stepId);
         localStorage.setItem("activeTab", "approval-publishing");
-        // Trigger a custom event to notify the App component
         window.dispatchEvent(
           new CustomEvent("tabChange", {
             detail: { tab: "approval-publishing" },
@@ -868,34 +973,23 @@ const CompanyOnboarding = () => {
     } catch (error: any) {
       console.error("Error updating step status:", error);
 
-      // Handle the specific 400 error regarding previous phases
       if (error.response && error.response.status === 400) {
         alert(t('companyOnboarding.ui.unableToStart'));
       }
 
-      // Afficher un message d'erreur plus informatif
       if (error instanceof Error) {
         console.error("Error details:", error.message);
       }
     }
   };
 
-
-  // Nouvelle fonction pour gérer la révision des steps complétés
-  const handleReviewStep = async (stepId: number) => {
-    if (!companyId && stepId !== 1) {
-      console.error("Company ID not available for reviewing step");
-      return;
-    }
-
+  const executeReviewStep = async (stepId: number) => {
     try {
-      
-
       const allSteps = phases.flatMap((phase) => phase.steps);
       const step = allSteps.find((s) => s.id === stepId);
 
-      // Special handling for Knowledge Base step
       if (stepId === 8) {
+        dispatchInsideStepGuide(stepId);
         localStorage.setItem("activeTab", "knowledge-base");
         window.dispatchEvent(
           new CustomEvent("tabChange", {
@@ -905,8 +999,8 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      // Special handling for Call Script step
       if (stepId === 6) {
+        dispatchInsideStepGuide(stepId);
         localStorage.setItem("activeTab", "script-generator");
         window.dispatchEvent(
           new CustomEvent("tabChange", {
@@ -916,11 +1010,9 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      // Special handling for Gig Activation step (step 12) - redirect to Approval & Publishing
       if (stepId === 12) {
-        // Set the active tab to approval-publishing in the App component
+        dispatchInsideStepGuide(stepId);
         localStorage.setItem("activeTab", "approval-publishing");
-        // Trigger a custom event to notify the App component
         window.dispatchEvent(
           new CustomEvent("tabChange", {
             detail: { tab: "approval-publishing" },
@@ -930,7 +1022,6 @@ const CompanyOnboarding = () => {
       }
 
       if (stepId === 3) {
-        
         setShowGigDetails(true);
         return;
       }
@@ -1347,9 +1438,10 @@ const CompanyOnboarding = () => {
 
   if (activeComponent) {
     return (
-      <div className="animate-fade-in">
-        {activeComponent}
-      </div>
+      <>
+        {stepGuideLayer}
+        <div className="animate-fade-in">{activeComponent}</div>
+      </>
     );
   }
 
@@ -1427,7 +1519,9 @@ const CompanyOnboarding = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      {stepGuideLayer}
+      <div className="space-y-6">
       {/* Progress Overview */}
       <div className="grid grid-cols-5 gap-4">
         {phases.map((phase) => {
@@ -1639,6 +1733,7 @@ const CompanyOnboarding = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
