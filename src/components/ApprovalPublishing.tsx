@@ -155,7 +155,7 @@ const ApprovalPublishing = () => {
       const companyId = Cookies.get('companyId');
       if (!companyId) return;
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL || 'http://localhost:3003/api';
-      const res = await fetch(`${apiBaseUrl}/escrow/deposit`, {
+      const res = await fetch(`${apiBaseUrl}/wallet-company/deposit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
