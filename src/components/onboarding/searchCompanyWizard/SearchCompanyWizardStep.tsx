@@ -134,20 +134,27 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-6 animate-fade-in">
-      <div className="mb-8 text-center lg:text-left">
-        <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-harx-600 to-harx-alt-600">
-          {t('searchCompanyWizard.title')}
-        </h1>
-        <p className="text-gray-500 text-lg">{t('searchCompanyWizard.subtitle')}</p>
+    <div className="mx-auto max-w-5xl p-6 animate-fade-in relative overflow-hidden min-h-[600px] flex flex-col justify-center">
+      {/* Background Animated Blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[5%] left-[10%] w-[30%] h-[30%] bg-gradient-to-br from-harx-400/30 to-harx-alt-400/30 blur-[80px] rounded-full animate-float" />
+        <div className="absolute bottom-[5%] right-[10%] w-[40%] h-[40%] bg-gradient-to-tl from-harx-alt-400/30 to-harx-400/30 blur-[100px] rounded-full animate-float" style={{ animationDelay: '3s' }} />
       </div>
 
-      <div className="rounded-3xl border border-harx-100/50 bg-white/95 backdrop-blur-md p-8 shadow-2xl relative overflow-hidden">
-        {/* Decorative background blur inside card */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-harx-400/10 blur-3xl rounded-full pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-harx-alt-400/10 blur-3xl rounded-full pointer-events-none" />
+      <div className="relative z-10">
+        <div className="mb-8 text-center lg:text-left">
+          <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-harx-600 to-harx-alt-600">
+            {t('searchCompanyWizard.title')}
+          </h1>
+          <p className="text-gray-500 text-lg">{t('searchCompanyWizard.subtitle')}</p>
+        </div>
 
-        <div className="relative z-10">
+        <div className="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-xl p-8 shadow-2xl relative overflow-hidden">
+          {/* Decorative background blur inside card */}
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-harx-400/10 blur-3xl rounded-full pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-harx-alt-400/10 blur-3xl rounded-full pointer-events-none" />
+
+          <div className="relative z-10">
           <div className="relative group">
             <input
               value={query}
