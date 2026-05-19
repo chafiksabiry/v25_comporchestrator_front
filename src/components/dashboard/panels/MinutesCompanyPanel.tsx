@@ -16,7 +16,8 @@ import {
   Star,
   Activity as ActivityIcon,
   Play,
-  Volume2
+  Volume2,
+  Info
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
