@@ -870,5 +870,36 @@
       "reservedSlots": "Reserved Slots",
       "gigHours": "Gig Hours"
     }
+  },
+  "orchestratorGuide": {
+    "intro": {
+      "title": "Ready to orchestrate your operations{{name}}?",
+      "description": "The HARX Orchestrator helps you set up your company, create gigs, match reps, and launch your sales operations — all in one place.",
+      "startTour": "Start a quick tour"
+    },
+    "skipTour": "Skip the tour",
+    "skip": "Skip",
+    "next": "Next",
+    "finish": "Get started",
+    "close": "Close",
+    "stepIndicator": "Step {{current}} of {{total}}",
+    "steps": {
+      "1": {
+        "title": "Company Onboarding",
+        "description": "Complete your company profile, KYC verification, telephony setup, and call scripts. This is your foundation for everything else."
+      },
+      "2": {
+        "title": "Gigs & Matching",
+        "description": "Create AI-powered gigs, define requirements, and let our algorithm match the best HARX reps to your campaigns."
+      },
+      "3": {
+        "title": "Training & Knowledge Base",
+        "description": "Build training journeys, upload knowledge base documents, and prepare your reps for success before they hit the phones."
+      },
+      "4": {
+        "title": "Dashboard & Analytics",
+        "description": "Switch to the dashboard anytime to monitor calls, leads, escrow balance, rep performance, and real-time analytics."
+      }
+    }
   }
 }

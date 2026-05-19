@@ -36,6 +36,8 @@ import MasterSidebar from './components/layout/MasterSidebar';
 import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwitch';
 import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
 import Subscription from './components/Subscription';
+import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideModal';
+import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 
 function AppContent() {
   const { t } = useTranslation();
@@ -58,6 +60,8 @@ function AppContent() {
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => localStorage.getItem('companyLogo'));
   const [logoError, setLogoError] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
+  const { shouldShowGuide, markGuideComplete } = useOrchestratorGuide();
   const [balance, setBalance] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
@@ -317,7 +321,33 @@ function AppContent() {
       window.removeEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
       window.removeEventListener('openComporchestrator', openComporchestrator);
     };
-  }, [location.pathname, companyLogo, isZohoCallback, isZohoAuth]);
+  }, [location.pathname, isZohoCallback, isZohoAuth]);
+
+  useEffect(() => {
+    if (activeProject !== 'comporchestrator') {
+      setShowGuideModal(false);
+      return;
+    }
+    if (
+      shouldShowGuide &&
+      !isZohoCallback &&
+      !isZohoAuth &&
+      !showUpgradeModal
+    ) {
+      const timer = setTimeout(() => setShowGuideModal(true), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [activeProject, shouldShowGuide, isZohoCallback, isZohoAuth, showUpgradeModal]);
+
+  const handleGuideComplete = () => {
+    markGuideComplete();
+    setShowGuideModal(false);
+  };
+
+  const handleGuideSkip = () => {
+    markGuideComplete();
+    setShowGuideModal(false);
+  };
 
   const handleLogout = () => {
     const cookies = Cookies.get();
@@ -519,6 +549,13 @@ function AppContent() {
           </main>
         </div>
       </div>
+
+      <OrchestratorGuideModal
+        isOpen={showGuideModal}
+        onComplete={handleGuideComplete}
+        onSkip={handleGuideSkip}
+        userName={userFullName?.split(' ')[0]}
+      />
 
       {/* Upgrade Plan Modal */}
       {showUpgradeModal && (

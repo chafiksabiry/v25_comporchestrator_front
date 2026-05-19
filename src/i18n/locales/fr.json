@@ -870,5 +870,36 @@
       "reservedSlots": "Créneaux Réservés",
       "gigHours": "Heures de Gig"
     }
+  },
+  "orchestratorGuide": {
+    "intro": {
+      "title": "Prêt à orchestrer vos opérations{{name}} ?",
+      "description": "L'Orchestrateur HARX vous aide à configurer votre entreprise, créer des gigs, matcher des reps et lancer vos opérations commerciales — le tout en un seul endroit.",
+      "startTour": "Démarrer une visite rapide"
+    },
+    "skipTour": "Passer la visite",
+    "skip": "Passer",
+    "next": "Suivant",
+    "finish": "Commencer",
+    "close": "Fermer",
+    "stepIndicator": "Étape {{current}} sur {{total}}",
+    "steps": {
+      "1": {
+        "title": "Onboarding Entreprise",
+        "description": "Complétez le profil de votre entreprise, la vérification KYC, la téléphonie et les scripts d'appel. C'est la base de tout le reste."
+      },
+      "2": {
+        "title": "Gigs & Matching",
+        "description": "Créez des gigs assistés par l'IA, définissez vos critères et laissez notre algorithme matcher les meilleurs reps HARX à vos campagnes."
+      },
+      "3": {
+        "title": "Formation & Base de Connaissances",
+        "description": "Construisez des parcours de formation, importez vos documents et préparez vos reps au succès avant qu'ils passent les appels."
+      },
+      "4": {
+        "title": "Tableau de Bord & Analyses",
+        "description": "Basculez vers le tableau de bord à tout moment pour suivre les appels, les leads, le solde escrow, la performance des reps et les analyses en temps réel."
+      }
+    }
   }
 }
