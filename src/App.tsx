@@ -538,7 +538,7 @@ function AppContent() {
                           <span className="text-[9px] font-black uppercase tracking-widest text-amber-300/90">Lignes Tél.</span>
                           <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-px rounded-full bg-amber-500/25 text-amber-200 border border-amber-400/30">Lines</span>
                         </span>
-                        <span className="text-sm font-black text-white tabular-nums tracking-tight">{formatFloatMinutesToMMSSLL(escrow)}</span>
+                        <span className="text-sm font-black text-white tabular-nums tracking-tight">{escrow} Ligne{escrow !== 1 ? 's' : ''}</span>
                       </div>
                     </div>
                   </>
