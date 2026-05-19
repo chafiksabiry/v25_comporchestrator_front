@@ -39,6 +39,10 @@ import Subscription from './components/Subscription';
 import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideModal';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import StepGuideModal, { type StepGuideVariant } from './components/onboarding/StepGuideModal';
+import {
+  markStepGuideSeen,
+  shouldShowStepGuide,
+} from './hooks/useStepGuide';
 
 const TAB_ONBOARDING_STEPS: Record<string, { stepId: number; phaseId: number }> = {
   'script-generator': { stepId: 6, phaseId: 2 },
@@ -364,9 +368,9 @@ function AppContent() {
   useEffect(() => {
     const handleInsideGuide = (event: Event) => {
       const detail = (event as CustomEvent<{ stepId: number; phaseId: number }>).detail;
-      if (detail?.stepId) {
-        setTabStepGuide({ ...detail, variant: 'inside' });
-      }
+      if (!detail?.stepId) return;
+      if (!shouldShowStepGuide(detail.stepId, 'inside')) return;
+      setTabStepGuide({ ...detail, variant: 'inside' });
     };
     window.addEventListener('stepGuideInside', handleInsideGuide as EventListener);
     return () => {
@@ -375,6 +379,9 @@ function AppContent() {
   }, []);
 
   const handleCloseTabStepGuide = () => {
+    if (tabStepGuide) {
+      markStepGuideSeen(tabStepGuide.stepId, 'inside');
+    }
     setTabStepGuide(null);
   };
 
