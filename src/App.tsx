@@ -477,17 +477,22 @@ function AppContent() {
 
               {/* Credits, Balance, and Upgrade Widgets */}
               <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5">
-                {/* Balance Widget (Solde en Euros) */}
+                {/* Balance Widget (My Wallet) */}
                 <div
                   onClick={handleBalanceClick}
-                  className="flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border border-emerald-500/25 text-xs font-bold text-emerald-100/80 shadow-[0_0_20px_-6px_rgba(16,185,129,0.4)] hover:border-emerald-400/50 hover:from-emerald-500/25 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_24px_-4px_rgba(16,185,129,0.45)] transition-all duration-300 cursor-pointer group backdrop-blur-sm"
+                  className="relative flex items-center gap-3 pl-3 pr-5 py-2.5 rounded-[1.5rem] bg-gradient-to-br from-emerald-500/20 via-slate-950/90 to-[#064e3b]/30 border border-emerald-500/40 text-xs font-bold text-emerald-50/90 shadow-[0_0_30px_-5px_rgba(16,185,129,0.5)] hover:border-emerald-300/80 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_40px_-2px_rgba(16,185,129,0.7)] transition-all duration-500 cursor-pointer group backdrop-blur-md overflow-hidden shrink-0"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-400/30 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
-                    <Coins size={15} className="text-emerald-400 animate-pulse-subtle group-hover:text-emerald-300" />
+                  {/* Subtle hover shine sweep */}
+                  <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.5rem]">
+                    <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-escrow-shine" />
+                  </span>
+
+                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(16,185,129,0.6)] group-hover:rotate-12 transition-all duration-500 shrink-0">
+                    <Coins size={17} className="text-white drop-shadow-md animate-pulse-subtle" />
                   </div>
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400/70">Solde</span>
-                    <span className="text-sm font-black text-white tabular-nums">{balance.toLocaleString('en-US')} €</span>
+                  <div className="flex flex-col leading-tight relative z-10">
+                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-400 group-hover:text-emerald-300 transition-colors">My Wallet</span>
+                    <span className="text-base font-black text-white tabular-nums tracking-tight mt-0.5">{balance.toLocaleString('en-US')} €</span>
                   </div>
                 </div>
 
@@ -532,10 +537,18 @@ function AppContent() {
                 {/* Upgrade Button */}
                 <button
                   onClick={() => setShowUpgradeModal(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-harx hover:bg-none hover:bg-white text-white hover:text-harx-500 text-xs font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-harx-500/20 hover:shadow-harx-500/40 hover:-translate-y-0.5 active:scale-95 transition-all duration-300 group shrink-0"
+                  className="relative flex items-center gap-2 px-6 py-3 rounded-[1.5rem] bg-gradient-to-r from-[#EC4899] via-[#F43F5E] to-[#8B5CF6] text-white font-black text-xs uppercase tracking-[0.15em] shadow-[0_0_35px_rgba(236,72,153,0.55)] hover:shadow-[0_0_50px_rgba(236,72,153,0.8)] hover:-translate-y-0.5 active:scale-95 hover:scale-105 transition-all duration-500 overflow-hidden group/upgrade shrink-0"
                 >
-                  <Sparkles size={14} className="animate-pulse text-white group-hover:text-harx-500 group-hover:scale-110 transition-all duration-300 shrink-0" />
-                  <span className="whitespace-nowrap">{t('navbar.upgrade')}</span>
+                  {/* Glowing background shift overlay */}
+                  <span className="absolute inset-0 bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#F43F5E] opacity-0 group-hover/upgrade:opacity-100 transition-opacity duration-700" />
+                  
+                  {/* Subtle hover shine sweep */}
+                  <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.5rem]">
+                    <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover/upgrade:animate-escrow-shine" />
+                  </span>
+
+                  <Sparkles size={15} className="animate-pulse text-white group-hover/upgrade:rotate-45 group-hover/upgrade:scale-125 transition-all duration-500 shrink-0 relative z-10" />
+                  <span className="whitespace-nowrap relative z-10">{t('navbar.upgrade')}</span>
                 </button>
               </div>
 
