@@ -7,6 +7,7 @@ import {
   Sparkles,
   X,
   Clock,
+  Lock,
   ChevronDown,
   Building2,
   LogOut,
@@ -475,32 +476,53 @@ function AppContent() {
               </div>
 
               {/* Credits, Balance, and Upgrade Widgets */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 {/* Balance Widget (Solde en Euros) */}
-                <div 
+                <div
                   onClick={handleBalanceClick}
-                  className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-emerald-500/10 hover:to-emerald-500/5 hover:border-emerald-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-300 cursor-pointer group"
+                  className="flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border border-emerald-500/25 text-xs font-bold text-emerald-100/80 shadow-[0_0_20px_-6px_rgba(16,185,129,0.4)] hover:border-emerald-400/50 hover:from-emerald-500/25 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_24px_-4px_rgba(16,185,129,0.45)] transition-all duration-300 cursor-pointer group backdrop-blur-sm"
                 >
-                  <Coins size={14} className="text-emerald-500 animate-pulse-subtle group-hover:scale-110 group-hover:text-emerald-400 transition-all duration-300 shrink-0" />
-                  <span className="whitespace-nowrap">Solde: <span className="text-white font-black">{balance.toLocaleString('en-US')} €</span></span>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-400/30 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
+                    <Coins size={15} className="text-emerald-400 animate-pulse-subtle group-hover:text-emerald-300" />
+                  </div>
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400/70">Solde</span>
+                    <span className="text-sm font-black text-white tabular-nums">{balance.toLocaleString('en-US')} €</span>
+                  </div>
                 </div>
 
                 {/* Minutes Disponibles Widget */}
                 <div 
                   onClick={handleBalanceClick}
-                  className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-blue-500/10 hover:to-blue-500/5 hover:border-blue-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 cursor-pointer group"
+                  className="flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl bg-gradient-to-br from-blue-500/15 via-blue-500/5 to-transparent border border-blue-500/25 text-xs font-bold text-blue-100/80 shadow-[0_0_20px_-6px_rgba(59,130,246,0.4)] hover:border-blue-400/50 hover:from-blue-500/25 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_24px_-4px_rgba(59,130,246,0.45)] transition-all duration-300 cursor-pointer group backdrop-blur-sm"
                 >
-                  <Clock size={14} className="text-blue-500 group-hover:scale-110 group-hover:text-blue-400 transition-all duration-300 shrink-0" />
-                  <span className="whitespace-nowrap">Minutes: <span className="text-white font-black">{formatFloatMinutesToMMSSLL(minutes)}</span></span>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500/20 border border-blue-400/30 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
+                    <Clock size={15} className="text-blue-400 group-hover:text-blue-300" />
+                  </div>
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-blue-400/70">Minutes</span>
+                    <span className="text-sm font-black text-white tabular-nums">{formatFloatMinutesToMMSSLL(minutes)}</span>
+                  </div>
                 </div>
 
-                {/* Escrow/Séquestre Widget */}
+                {/* Escrow/Séquestre Widget — accent visuel renforcé */}
                 <div 
                   onClick={handleBalanceClick}
-                  className="flex items-center gap-2 bg-gradient-to-b from-white/5 to-white/[0.02] border border-white/10 px-3.5 py-2 rounded-2xl text-xs font-bold text-gray-300 shadow-inner hover:from-orange-500/10 hover:to-orange-500/5 hover:border-orange-500/30 hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300 cursor-pointer group"
+                  className="relative flex items-center gap-2.5 pl-2 pr-4 py-2.5 rounded-2xl bg-gradient-escrow border border-amber-400/40 text-xs font-bold text-amber-100/90 animate-escrow-glow hover:border-amber-300/60 hover:-translate-y-0.5 hover:shadow-[0_0_32px_-2px_rgba(251,191,36,0.5)] transition-all duration-300 cursor-pointer group overflow-hidden backdrop-blur-md"
                 >
-                  <span className="text-orange-500 font-extrabold group-hover:scale-110 transition-all duration-300 shrink-0">🔒</span>
-                  <span className="whitespace-nowrap">Séquestre: <span className="text-white font-black">{formatFloatMinutesToMMSSLL(escrow)}</span></span>
+                  <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+                    <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/15 to-transparent animate-escrow-shine" />
+                  </span>
+                  <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-escrow-icon text-white shadow-lg shadow-amber-500/30 ring-2 ring-amber-400/20 group-hover:scale-110 group-hover:shadow-amber-500/50 transition-all duration-300 shrink-0">
+                    <Lock size={16} className="drop-shadow-sm" strokeWidth={2.5} />
+                  </div>
+                  <div className="relative flex flex-col leading-tight">
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-amber-300/90">Séquestre</span>
+                      <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-px rounded-full bg-amber-500/25 text-amber-200 border border-amber-400/30">Vault</span>
+                    </span>
+                    <span className="text-sm font-black text-white tabular-nums tracking-tight">{formatFloatMinutesToMMSSLL(escrow)}</span>
+                  </div>
                 </div>
 
                 {/* Upgrade Button */}
