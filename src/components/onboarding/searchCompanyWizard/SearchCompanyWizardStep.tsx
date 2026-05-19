@@ -179,7 +179,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
             </div>
           )}
 
-          <div className="mt-8 space-y-4">
+          <div className="mt-8 space-y-4 max-h-[500px] overflow-y-auto pr-2">
             {loading ? (
               <div className="py-10 text-center text-gray-500 flex flex-col items-center gap-3">
                 <div className="animate-spin h-8 w-8 border-4 border-harx-500 border-t-transparent rounded-full" />
