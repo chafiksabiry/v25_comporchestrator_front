@@ -137,6 +137,7 @@ const ApprovalPublishing = () => {
   const [industries, setIndustries] = useState<Industry[]>([]);
   const [languages, setLanguages] = useState<Language[]>([]);
   const [balance, setBalance] = useState<number | null>(null);
+  const [showBalanceWarning, setShowBalanceWarning] = useState(true);
 
   const fetchBalance = async () => {
     try {
@@ -150,19 +151,6 @@ const ApprovalPublishing = () => {
         if (result.success && result.data) {
           const fetchedBalance = result.data.balance ?? 0;
           setBalance(fetchedBalance);
-          if (fetchedBalance <= 0) {
-            toast.error("Attention : Votre solde est de 0 €. Vous devez alimenter votre compte pour pouvoir activer vos gigs.", {
-              duration: 6000,
-              position: 'top-center',
-              icon: '⚠️',
-              style: {
-                background: '#FEF3C7',
-                color: '#92400E',
-                border: '1px solid #F59E0B',
-                fontWeight: 'bold',
-              }
-            });
-          }
         }
       }
     } catch (err) {
@@ -2543,17 +2531,34 @@ const ApprovalPublishing = () => {
       </div>
 
       {/* Balance Warning Banner */}
-      {balance !== null && balance <= 0 && (
-        <div className="rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-5 flex items-start gap-4 shadow-sm animate-in slide-in-from-top duration-300">
-          <div className="p-2 bg-amber-100 rounded-lg text-amber-700 flex-shrink-0">
-            <AlertTriangle className="h-5 w-5" />
+      {showBalanceWarning && balance !== null && balance <= 0 && (
+        <div className="rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-5 flex items-start justify-between gap-4 shadow-sm animate-in slide-in-from-top duration-300 relative">
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 bg-amber-100 rounded-xl text-amber-700 flex-shrink-0 shadow-inner">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-base font-black text-amber-900 uppercase tracking-tight">Attention : Solde insuffisant (0 €)</h4>
+              <p className="text-sm font-medium text-amber-700 mt-1 leading-relaxed max-w-3xl">
+                Votre solde actuel est de <strong>0 €</strong>. Vous devez alimenter votre compte afin de pouvoir activer ou approuver des gigs. Sans cela, vos reps ne pourront pas commencer à travailler.
+              </p>
+              <div className="mt-4">
+                <button
+                  onClick={() => { window.location.href = '/dashboard/escrow'; }}
+                  className="px-5 py-2 bg-gradient-harx text-white font-black rounded-xl shadow-md hover:shadow-lg hover:brightness-110 active:scale-95 transition-all uppercase tracking-widest text-[10px] flex items-center gap-2 border border-harx-500/20"
+                >
+                  Alimenter mon compte
+                </button>
+              </div>
+            </div>
           </div>
-          <div>
-            <h4 className="text-base font-bold text-amber-900">Attention : Solde insuffisant (0 €)</h4>
-            <p className="text-sm font-medium text-amber-700 mt-1 leading-relaxed">
-              Votre solde actuel est de <strong>0 €</strong>. Vous devez alimenter votre compte dans la section billing afin de pouvoir activer ou approuver des gigs. Sans cela, vos reps ne pourront pas commencer à travailler.
-            </p>
-          </div>
+          <button
+            onClick={() => setShowBalanceWarning(false)}
+            className="p-1.5 rounded-lg text-amber-400 hover:text-amber-700 hover:bg-amber-100 transition-colors flex-shrink-0 absolute top-4 right-4"
+            aria-label="Fermer"
+          >
+            <XCircle className="h-5 w-5" />
+          </button>
         </div>
       )}
 
