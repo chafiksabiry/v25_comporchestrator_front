@@ -112,11 +112,8 @@ export function PhoneNumberPanel() {
     e.preventDefault();
     setSearching(true);
     setSearchResults([]);
-
     try {
-      const selectedGig = gigsAndReps.find(g => g.gigId === selectedGigIdForNumber);
-      const targetCountry = selectedGig?.destinationCountry || 'US';
-      console.log('targetCountry', selectedGig);
+      const targetCountry = 'US'; // Always display US numbers even if France, as in telephony setup
 
       const endpoint = `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${targetCountry}&limit=${searchLimit}`;
       const res = await fetch(endpoint);
