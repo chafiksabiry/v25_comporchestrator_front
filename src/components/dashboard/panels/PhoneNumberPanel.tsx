@@ -108,15 +108,19 @@ export function PhoneNumberPanel() {
     setSearchResults([]);
 
     try {
+      console.log('[handleSearchNumbers] Current selectedGigIdForNumber:', selectedGigIdForNumber);
+      console.log('[handleSearchNumbers] Available gigsAndReps in state:', gigsAndReps);
       const selectedGig = gigsAndReps.find(g => g.gigId === selectedGigIdForNumber);
+      console.log('[handleSearchNumbers] Found selectedGig:', selectedGig);
       const targetCountry = selectedGig?.destinationCountry;
-      console.log('sele', selectedGig);
+      console.log('[handleSearchNumbers] targetCountry resolved to:', targetCountry);
       if (!targetCountry) {
         toast.error('Veuillez sélectionner un Gig avec une destination country.');
         return;
       }
 
       const endpoint = `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${targetCountry}&limit=${searchLimit}`;
+      console.log('[handleSearchNumbers] Fetching telephony search endpoint:', endpoint);
       const res = await fetch(endpoint);
       if (res.ok) {
         const data = await res.json();
