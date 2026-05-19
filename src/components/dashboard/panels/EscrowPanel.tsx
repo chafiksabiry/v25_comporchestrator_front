@@ -717,13 +717,17 @@ export function EscrowPanel() {
       </div>
 
       {/* Escrow Guarantee Infobar */}
-      <div className="bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 rounded-2xl p-4 flex items-start gap-3.5 shadow-sm">
-        <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600 shrink-0">
+      <div className="relative overflow-hidden bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-emerald-500/10 border border-amber-400/30 rounded-2xl p-4 flex items-start gap-3.5 shadow-lg shadow-amber-500/10">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
+        <div className="relative p-2.5 bg-gradient-escrow-icon rounded-xl text-white shrink-0 shadow-md shadow-amber-500/25 ring-2 ring-amber-400/20">
           <ShieldCheck className="w-5 h-5" />
         </div>
-        <div>
-          <h4 className="text-xs font-black text-emerald-800 uppercase tracking-wide">HARX Escrow Secure Protocol Activated</h4>
-          <p className="text-xs text-slate-600 leading-relaxed mt-0.5 font-medium">
+        <div className="relative">
+          <h4 className="text-xs font-black text-amber-900 uppercase tracking-wide flex items-center gap-2 flex-wrap">
+            HARX Escrow Secure Protocol Activated
+            <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 border border-amber-400/40">Vault actif</span>
+          </h4>
+          <p className="text-xs text-slate-700 leading-relaxed mt-1 font-medium">
             All agent bookings require a minimum milestone escrow pledge. Locked balances are strictly safe in the secure vault and are disembursed immediately upon validated campaign completions or restored to your balance if contracts are canceled.
           </p>
         </div>
@@ -782,24 +786,32 @@ export function EscrowPanel() {
         </div>
 
         {/* Metric 3: Escrow Locked */}
-        <div className="bg-white border border-slate-200 hover:border-rose-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden transition-all duration-300">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-bl-full translate-x-12 -translate-y-12 transition-transform duration-500 group-hover:scale-110" />
+        <div className="bg-gradient-to-br from-amber-50 via-rose-50/80 to-white border-2 border-amber-300/50 hover:border-amber-400/70 rounded-2xl p-5 shadow-lg shadow-amber-500/15 relative group overflow-hidden transition-all duration-300 ring-1 ring-amber-400/20">
+          <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-bl from-amber-400/20 to-rose-500/10 rounded-bl-full translate-x-10 -translate-y-10 transition-transform duration-500 group-hover:scale-110" />
+          <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl" />
           <div className="flex items-center justify-between mb-3 relative z-10">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Minutes Séquestrées</span>
-            <div className="p-1.5 bg-rose-50 text-rose-500 rounded-lg">
-              <Lock className="w-4 h-4" />
+            <span className="text-[10px] font-black text-amber-800/80 uppercase tracking-widest">Minutes Séquestrées</span>
+            <div className="p-2 bg-gradient-escrow-icon text-white rounded-xl shadow-md shadow-amber-500/30 ring-2 ring-amber-400/25">
+              <Lock className="w-4 h-4" strokeWidth={2.5} />
             </div>
           </div>
           <div className="relative z-10">
-            <h3 className="text-2xl font-black text-rose-600 tracking-tight">{formatFloatMinutesToMMSSLL(displayEscrow)}</h3>
+            <h3 className="text-2xl font-black bg-gradient-to-r from-amber-600 via-rose-600 to-harx-500 bg-clip-text text-transparent tracking-tight tabular-nums">
+              {formatFloatMinutesToMMSSLL(displayEscrow)}
+            </h3>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-[10px] font-bold text-slate-500">Secured for active campaigns</span>
-              <span className="text-[10px] bg-rose-100 text-rose-700 font-extrabold px-1.5 py-0.5 rounded-full">Escrow</span>
+              <span className="text-[10px] font-bold text-slate-600">Secured for active campaigns</span>
+              <span className="text-[10px] bg-gradient-to-r from-amber-500/20 to-rose-500/20 text-amber-900 border border-amber-400/40 font-extrabold px-2 py-0.5 rounded-full">Escrow Vault</span>
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] relative z-10">
-            <span className="text-slate-400 font-semibold">Active guarantees:</span>
-            <button onClick={() => setShowLockModal(true)} className="text-rose-500 hover:text-rose-600 font-black uppercase tracking-tight">Nouveau séquestre</button>
+          <div className="mt-4 pt-3 border-t border-amber-200/60 flex items-center justify-between text-[11px] relative z-10">
+            <span className="text-amber-800/60 font-semibold">Active guarantees:</span>
+            <button
+              onClick={() => setShowLockModal(true)}
+              className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-rose-500 text-white font-black uppercase tracking-tight shadow-sm shadow-rose-500/25 hover:shadow-md hover:brightness-110 active:scale-95 transition-all"
+            >
+              Nouveau séquestre
+            </button>
           </div>
         </div>
 
