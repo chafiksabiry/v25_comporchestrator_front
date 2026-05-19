@@ -476,7 +476,7 @@ function AppContent() {
               </div>
 
               {/* Credits, Balance, and Upgrade Widgets */}
-              <div className="flex items-center gap-2.5">
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5">
                 {/* Balance Widget (Solde en Euros) */}
                 <div
                   onClick={handleBalanceClick}
