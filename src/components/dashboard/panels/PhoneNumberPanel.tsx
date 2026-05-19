@@ -116,6 +116,7 @@ export function PhoneNumberPanel() {
     try {
       const selectedGig = gigsAndReps.find(g => g.gigId === selectedGigIdForNumber);
       const targetCountry = selectedGig?.destinationCountry || 'US';
+      console.log('targetCountry', targetCountry);
 
       const endpoint = `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${targetCountry}&limit=${searchLimit}`;
       const res = await fetch(endpoint);
