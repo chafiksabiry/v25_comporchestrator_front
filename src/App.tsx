@@ -110,7 +110,7 @@ function AppContent() {
 
   useEffect(() => {
     const fetchBalance = async () => {
-      const compId = Cookies.get('companyId') || 'demo_company_id';
+      const compId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
       try {
         const res = await fetch(`${apiBaseUrl}/escrow/wallet/${compId}`);
