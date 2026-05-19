@@ -42,6 +42,7 @@ interface EnrolledRep {
 interface GigAndReps {
   gigId: string;
   title: string;
+  destinationCountry?: string;
   enrolledReps: EnrolledRep[];
 }
 
@@ -113,7 +114,10 @@ export function PhoneNumberPanel() {
     setSearchResults([]);
 
     try {
-      const endpoint = `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${searchCountry}&limit=${searchLimit}`;
+      const selectedGig = gigsAndReps.find(g => g.gigId === selectedGigIdForNumber);
+      const targetCountry = selectedGig?.destinationCountry || 'US';
+
+      const endpoint = `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${targetCountry}&limit=${searchLimit}`;
       const res = await fetch(endpoint);
       if (res.ok) {
         const data = await res.json();
