@@ -2,21 +2,16 @@ import React, { useState, useEffect } from 'react';
 import {
   Phone,
   Search,
-  Globe,
   Sparkles,
   RefreshCw,
-  X,
   CheckCircle2,
-  AlertCircle,
   Hash,
   Briefcase,
-  Layers,
-  ArrowRight,
-  TrendingUp,
   Cpu
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
+import { gigsApi } from '../services/api/endpoints';
 
 interface PurchasedNumber {
   _id?: string;
@@ -54,8 +49,7 @@ export function PhoneNumberPanel() {
 
   // Telephony Search & Purchase states
   const [telephonyTab, setTelephonyTab] = useState<'my_numbers' | 'buy'>('my_numbers');
-  const [searchCountry, setSearchCountry] = useState('US');
-  const [searchProvider, setSearchProvider] = useState<'telnyx' | 'twilio'>('twilio');
+
   const [selectedGigIdForNumber, setSelectedGigIdForNumber] = useState('');
   const [searchLimit, setSearchLimit] = useState('10');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -112,8 +106,15 @@ export function PhoneNumberPanel() {
     e.preventDefault();
     setSearching(true);
     setSearchResults([]);
+
     try {
-      const targetCountry = 'US'; // Always display US numbers even if France, as in telephony setup
+      const selectedGig = gigsAndReps.find(g => g.gigId === selectedGigIdForNumber);
+      const targetCountry = selectedGig?.destinationCountry;
+
+      if (!targetCountry) {
+        toast.error('Veuillez sélectionner un Gig avec une destination country.');
+        return;
+      }
 
       const endpoint = `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${targetCountry}&limit=${searchLimit}`;
       const res = await fetch(endpoint);
