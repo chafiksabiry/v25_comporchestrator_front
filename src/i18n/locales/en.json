@@ -387,6 +387,15 @@
       "phaseCompleted": "All steps in this phase are completed. You can proceed to the next phase.",
       "backToOnboarding": "Back to onboarding",
       "unableToStart": "Unable to start this step because previous phases are not fully completed. \n\nPlease try the 'Reset Onboarding' button at the bottom of the page to fix potential data inconsistencies."
+    },
+    "stepGuide": {
+      "badge": "Step {{step}}",
+      "beforeBadge": "Before step {{step}}",
+      "insideBadge": "Step {{step}} — you're in",
+      "beforeHeading": "Ready to start: {{title}}?",
+      "insideHint": "Complete the fields below, then return to onboarding when you're done.",
+      "beforeStart": "Enter this step",
+      "start": "Got it, let's go"
     }
   },
   "gigDetails": {

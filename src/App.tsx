@@ -38,6 +38,13 @@ import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
 import Subscription from './components/Subscription';
 import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideModal';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
+import StepGuideModal, { type StepGuideVariant } from './components/onboarding/StepGuideModal';
+
+const TAB_ONBOARDING_STEPS: Record<string, { stepId: number; phaseId: number }> = {
+  'script-generator': { stepId: 6, phaseId: 2 },
+  'knowledge-base': { stepId: 8, phaseId: 3 },
+  'approval-publishing': { stepId: 12, phaseId: 4 },
+};
 
 function AppContent() {
   const { t } = useTranslation();
@@ -61,6 +68,11 @@ function AppContent() {
   const [logoError, setLogoError] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
+  const [tabStepGuide, setTabStepGuide] = useState<{
+    stepId: number;
+    phaseId: number;
+    variant: StepGuideVariant;
+  } | null>(null);
   const { shouldShowGuide, markGuideComplete } = useOrchestratorGuide();
   const [balance, setBalance] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
@@ -349,6 +361,23 @@ function AppContent() {
     setShowGuideModal(false);
   };
 
+  useEffect(() => {
+    const handleInsideGuide = (event: Event) => {
+      const detail = (event as CustomEvent<{ stepId: number; phaseId: number }>).detail;
+      if (detail?.stepId) {
+        setTabStepGuide({ ...detail, variant: 'inside' });
+      }
+    };
+    window.addEventListener('stepGuideInside', handleInsideGuide as EventListener);
+    return () => {
+      window.removeEventListener('stepGuideInside', handleInsideGuide as EventListener);
+    };
+  }, []);
+
+  const handleCloseTabStepGuide = () => {
+    setTabStepGuide(null);
+  };
+
   const handleLogout = () => {
     const cookies = Cookies.get();
     Object.keys(cookies).forEach(cookieName => {
@@ -556,6 +585,16 @@ function AppContent() {
         onSkip={handleGuideSkip}
         userName={userFullName?.split(' ')[0]}
       />
+
+      {tabStepGuide && (
+        <StepGuideModal
+          isOpen
+          stepId={tabStepGuide.stepId}
+          phaseId={tabStepGuide.phaseId}
+          variant={tabStepGuide.variant}
+          onClose={handleCloseTabStepGuide}
+        />
+      )}
 
       {/* Upgrade Plan Modal */}
       {showUpgradeModal && (
