@@ -9,6 +9,7 @@ import { CompanyLogo } from "./CompanyLogo";
 import { CompanyProfile } from "./CompanyProfile";
 import ExistingCompanyProfile from "../CompanyProfile";
 import { useTranslation } from "react-i18next";
+import { div } from "@tensorflow/tfjs";
 
 interface Props {
   onBack?: () => void;
@@ -216,7 +217,6 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
             </div>
           </div>
         </div>
-      </div>
       </div>
     </div>
   );
