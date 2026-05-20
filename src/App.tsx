@@ -552,9 +552,12 @@ function AppContent() {
                   </>
                 )}
 
-                {/* Upgrade Button */}
+                {/* Upgrade Button — navigates to the Subscription panel like wallet/minutes/telephony */}
                 <button
-                  onClick={() => setShowUpgradeModal(true)}
+                  onClick={() => {
+                    setActiveProject('dashboard');
+                    navigate('/dashboard/subscription');
+                  }}
                   className="relative flex items-center gap-2 px-6 py-3 rounded-[1.5rem] bg-gradient-to-r from-[#EC4899] via-[#F43F5E] to-[#8B5CF6] text-white font-black text-xs uppercase tracking-[0.15em] shadow-[0_0_35px_rgba(236,72,153,0.55)] hover:shadow-[0_0_50px_rgba(236,72,153,0.8)] hover:-translate-y-0.5 active:scale-95 hover:scale-105 transition-all duration-500 overflow-hidden group/upgrade shrink-0"
                 >
                   {/* Glowing background shift overlay */}
@@ -630,30 +633,15 @@ function AppContent() {
 
           {/* Main Content Area */}
           <main className="flex-1 overflow-y-auto relative w-full h-full bg-white rounded-tl-[20px] shadow-2xl shadow-black/5">
-            {showUpgradeModal ? (
-              <div className="relative h-full w-full bg-[#F8FAFC] overflow-y-auto">
-                <div className="absolute top-6 right-6 z-[90]">
-                  <button
-                    onClick={() => setShowUpgradeModal(false)}
-                    className="p-3 bg-gray-100 hover:bg-gray-200 rounded-2xl transition-all duration-300 text-gray-500 hover:text-gray-900 shadow-sm flex items-center gap-2"
-                    aria-label="Fermer"
-                  >
-                    <X size={20} />
-                  </button>
+            <ProjectViewSwitch
+              activeView={activeProject}
+              dashboard={<DashboardApp />}
+              comporchestrator={
+                <div className="px-4 py-3 h-full pb-32">
+                  {renderContent()}
                 </div>
-                <Subscription />
-              </div>
-            ) : (
-              <ProjectViewSwitch
-                activeView={activeProject}
-                dashboard={<DashboardApp />}
-                comporchestrator={
-                  <div className="px-4 py-3 h-full pb-32">
-                    {renderContent()}
-                  </div>
-                }
-              />
-            )}
+              }
+            />
           </main>
         </div>
       </div>
