@@ -765,7 +765,7 @@ const CompanyOnboarding = () => {
 
   useEffect(() => {
     const handleStepCompleted = (event: CustomEvent) => {
-      const { stepId, phaseId, status, completedSteps } = event.detail;
+      const { stepId, phaseId, completedSteps } = event.detail;
 
       if (stepId === 1) {
         const idFromCookie = Cookies.get("companyId");

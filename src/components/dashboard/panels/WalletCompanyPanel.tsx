@@ -43,6 +43,7 @@ interface AgentWithdrawal {
 }
 
 interface CompanyCallRow {
+  _id: any;
   callId: string;
   agent: string;
   lead: string;
@@ -348,7 +349,7 @@ export function WalletCompanyPanel() {
     if (bulkAnalysis.running) return;
     const targets = pendingValidationCalls.map(c => c._id).filter(Boolean) as string[];
     if (targets.length === 0) {
-      toast.info('Aucun appel en attente à analyser.');
+      toast('Aucun appel en attente à analyser.');
       return;
     }
     if (!window.confirm(`Lancer l'analyse IA sur ${targets.length} appel(s) en attente ? Cela peut prendre plusieurs minutes.`)) return;
