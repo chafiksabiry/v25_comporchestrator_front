@@ -25,7 +25,13 @@
   "navbar": {
     "credits": "Séquestre (mins)",
     "balance": "Solde (mins)",
-    "upgrade": "Upgrade"
+    "upgrade": "Upgrade",
+    "myWallet": "Mon Portefeuille",
+    "minutes": "Minutes",
+    "phoneLines": "Lignes Tél.",
+    "lineSingular": "Ligne",
+    "linePlural": "Lignes",
+    "company": "Entreprise"
   },
   "dashboard": {
     "title": "Tableau de Bord Smart Orchestrator",

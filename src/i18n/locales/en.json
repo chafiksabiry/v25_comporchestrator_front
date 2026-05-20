@@ -25,7 +25,13 @@
   "navbar": {
     "credits": "Escrow (mins)",
     "balance": "Balance (mins)",
-    "upgrade": "Upgrade"
+    "upgrade": "Upgrade",
+    "myWallet": "My Wallet",
+    "minutes": "Minutes",
+    "phoneLines": "Phone Lines",
+    "lineSingular": "Line",
+    "linePlural": "Lines",
+    "company": "Company"
   },
   "dashboard": {
     "title": "Smart Orchestrator Dashboard",
