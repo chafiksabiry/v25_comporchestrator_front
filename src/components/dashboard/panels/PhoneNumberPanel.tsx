@@ -15,6 +15,7 @@ import {
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { gigsApi } from '../services/api/endpoints';
+import { waitForStripePopup } from '../../../lib/paypalCheckout';
 
 type CheckoutStep = 'select' | 'paypal' | 'processing' | 'success';
 
@@ -153,6 +154,7 @@ export function PhoneNumberPanel() {
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('select');
   const [checkoutPaymentId, setCheckoutPaymentId] = useState<string | null>(null);
   const [paypalEnabled, setPaypalEnabled] = useState(false);
+  const [stripeEnabled, setStripeEnabled] = useState(false);
   const [linePrice, setLinePrice] = useState({ amountCents: 500, currency: 'EUR' });
 
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
@@ -293,6 +295,7 @@ export function PhoneNumberPanel() {
           });
         }
         setPaypalEnabled(Boolean(cfg.paypal?.enabled));
+        setStripeEnabled(Boolean(cfg.stripe?.enabled));
       } catch (err) {
         console.warn('[checkout] config unavailable', err);
       }
@@ -437,60 +440,44 @@ export function PhoneNumberPanel() {
 
   const handleConfirmStripePayment = async () => {
     if (!checkoutNumber || !selectedGigIdForNumber) return;
+    if (!stripeEnabled) {
+      toast.error("Stripe n'est pas configuré sur le serveur (STRIPE_SECRET_KEY).");
+      return;
+    }
 
-    setCheckoutStep('processing');
     setPurchasing(checkoutNumber);
     try {
-      let paymentId: string | null = null;
-      let checkoutSupported = true;
+      const initData = await initLineCheckout('stripe');
+      const paymentId = initData.paymentId;
+      setCheckoutPaymentId(paymentId);
 
-      const initRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/init`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: checkoutNumber,
-          gigId: selectedGigIdForNumber,
-          companyId,
-          provider: 'stripe'
-        })
-      });
+      const checkoutUrl = initData.checkoutUrl;
+      const isStubCheckout =
+        !checkoutUrl || String(checkoutUrl).startsWith('internal://');
 
-      if (initRes.status === 404) {
-        console.warn('[checkout] /checkout/init not available, falling back to legacy purchase.');
-        checkoutSupported = false;
-      } else {
-        const initData = await safeParseJson(initRes);
-        if (!initData?.paymentId) {
-          throw new Error(initData?.message || initData?.error || "Impossible d'initialiser le paiement.");
+      if (!isStubCheckout) {
+        const popup = openCenteredPopup(checkoutUrl as string, 'stripe-checkout');
+        if (!popup) {
+          throw new Error('Veuillez autoriser les pop-ups pour finaliser le paiement par carte.');
         }
-        paymentId = initData.paymentId as string;
-        setCheckoutPaymentId(paymentId);
-
-        if (initData.checkoutUrl && !String(initData.checkoutUrl).startsWith('internal://')) {
-          window.open(initData.checkoutUrl, '_blank', 'noopener,noreferrer,width=520,height=720');
+        setCheckoutStep('paypal'); // reuse same waiting UI
+        const outcome = await waitForStripePopup(popup);
+        if (outcome === 'cancelled') {
+          toast.error('Paiement par carte annulé.');
+          setCheckoutStep('select');
+          return;
         }
-
-        await confirmLineCheckout(paymentId);
+        if (outcome === 'closed') {
+          toast.error('Fenêtre Stripe fermée avant validation.');
+          setCheckoutStep('select');
+          return;
+        }
+        if (!popup.closed) popup.close();
       }
 
-      if (checkoutSupported && paymentId) {
-        await provisionLine(paymentId);
-      } else {
-        const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase/twilio`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phoneNumber: checkoutNumber,
-            gigId: selectedGigIdForNumber,
-            companyId
-          })
-        });
-        if (!purchaseRes.ok) {
-          const err = await purchaseRes.json().catch(() => ({}));
-          throw new Error(err?.message || err?.error || "L'achat du numéro a échoué.");
-        }
-      }
-
+      setCheckoutStep('processing');
+      await confirmLineCheckout(paymentId);
+      await provisionLine(paymentId);
       finishSuccessfulPurchase('stripe');
     } catch (err: any) {
       console.error(err);
@@ -888,11 +875,21 @@ export function PhoneNumberPanel() {
                       <span className="font-bold">PAYPAL_CLIENT_SECRET</span> sur Railway.
                     </p>
                   )}
+                  {checkoutMethod === 'stripe' && !stripeEnabled && (
+                    <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 font-medium">
+                      Stripe n&apos;est pas encore activé. Configurez{' '}
+                      <span className="font-bold">STRIPE_SECRET_KEY</span> sur Railway.
+                    </p>
+                  )}
 
                   <button
                     type="button"
                     onClick={handleConfirmPayment}
-                    disabled={Boolean(purchasing) || (checkoutMethod === 'paypal' && !paypalEnabled)}
+                    disabled={
+                      Boolean(purchasing)
+                      || (checkoutMethod === 'paypal' && !paypalEnabled)
+                      || (checkoutMethod === 'stripe' && !stripeEnabled)
+                    }
                     className="w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-300 shadow-md active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r from-slate-900 to-slate-800 text-white hover:from-orange-500 hover:to-rose-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Lock size={14} />

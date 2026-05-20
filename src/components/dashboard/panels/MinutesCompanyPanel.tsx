@@ -22,6 +22,7 @@ import toast from 'react-hot-toast';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 import {
   fetchPaymentConfig,
+  paymentFlowErrorMessage,
   runPaypalCheckoutFlow,
   runStripeCheckoutFlow
 } from '../../../lib/paypalCheckout';
@@ -149,6 +150,7 @@ export function MinutesCompanyPanel() {
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
   const [submittingBuy, setSubmittingBuy] = useState(false);
   const [paypalEnabled, setPaypalEnabled] = useState(false);
+  const [stripeEnabled, setStripeEnabled] = useState(false);
 
   // Detail Modal state
   const [selectedCall, setSelectedCall] = useState<CompanyCall | null>(null);
@@ -210,7 +212,10 @@ export function MinutesCompanyPanel() {
 
   useEffect(() => {
     if (!showBuyModal) return;
-    fetchPaymentConfig(apiBaseUrl).then((cfg) => setPaypalEnabled(cfg.paypalEnabled));
+    fetchPaymentConfig(apiBaseUrl).then((cfg) => {
+      setPaypalEnabled(cfg.paypalEnabled);
+      setStripeEnabled(cfg.stripeEnabled);
+    });
   }, [showBuyModal, apiBaseUrl]);
 
   const handleRefresh = () => {
@@ -229,6 +234,10 @@ export function MinutesCompanyPanel() {
 
     if (paymentMethod === 'paypal' && !paypalEnabled) {
       toast.error("PayPal n'est pas configuré sur le serveur (variables PAYPAL_*).");
+      return;
+    }
+    if (paymentMethod === 'card' && !stripeEnabled) {
+      toast.error("Stripe n'est pas configuré sur le serveur (STRIPE_SECRET_KEY).");
       return;
     }
 
@@ -253,14 +262,7 @@ export function MinutesCompanyPanel() {
       fetchData(true);
     } catch (err: unknown) {
       console.error(err);
-      const msg = err instanceof Error ? err.message : '';
-      if (msg === 'PAYPAL_CANCELLED') {
-        toast.error('Paiement PayPal annulé.');
-      } else if (msg === 'PAYPAL_CLOSED') {
-        toast.error('Fenêtre PayPal fermée avant validation. Complétez le paiement sur PayPal.');
-      } else {
-        toast.error(msg || 'Échec du paiement.');
-      }
+      toast.error(paymentFlowErrorMessage(err));
     } finally {
       setSubmittingBuy(false);
     }
@@ -574,12 +576,17 @@ export function MinutesCompanyPanel() {
                 <span>
                   Paiement sécurisé — le portefeuille cash HARX n&apos;est pas débité. Tarif : 1 € / minute.
                   {paymentMethod === 'paypal' && ' Une fenêtre PayPal s&apos;ouvrira pour valider le paiement.'}
+                  {paymentMethod === 'card' && ' Une fenêtre Stripe s&apos;ouvrira pour saisir votre carte.'}
                 </span>
               </div>
 
               <button
                 type="submit"
-                disabled={submittingBuy || (paymentMethod === 'paypal' && !paypalEnabled)}
+                disabled={
+                  submittingBuy
+                  || (paymentMethod === 'paypal' && !paypalEnabled)
+                  || (paymentMethod === 'card' && !stripeEnabled)
+                }
                 className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-750 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-md active:scale-95 disabled:opacity-50"
               >
                 {submittingBuy

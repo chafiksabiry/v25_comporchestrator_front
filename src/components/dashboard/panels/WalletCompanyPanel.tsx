@@ -22,6 +22,7 @@ import toast from 'react-hot-toast';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 import {
   fetchPaymentConfig,
+  paymentFlowErrorMessage,
   runPaypalCheckoutFlow,
   runStripeCheckoutFlow
 } from '../../../lib/paypalCheckout';
@@ -210,6 +211,7 @@ export function WalletCompanyPanel() {
   const [depositMethod, setDepositMethod] = useState<'card' | 'paypal'>('card');
   const [submittingDeposit, setSubmittingDeposit] = useState(false);
   const [paypalEnabled, setPaypalEnabled] = useState(false);
+  const [stripeEnabled, setStripeEnabled] = useState(false);
 
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('200');
@@ -302,7 +304,10 @@ export function WalletCompanyPanel() {
 
   useEffect(() => {
     if (!showDepositModal) return;
-    fetchPaymentConfig(apiBaseUrl).then((cfg) => setPaypalEnabled(cfg.paypalEnabled));
+    fetchPaymentConfig(apiBaseUrl).then((cfg) => {
+      setPaypalEnabled(cfg.paypalEnabled);
+      setStripeEnabled(cfg.stripeEnabled);
+    });
   }, [showDepositModal, apiBaseUrl]);
 
   const handleRefresh = () => {
@@ -321,6 +326,10 @@ export function WalletCompanyPanel() {
 
     if (depositMethod === 'paypal' && !paypalEnabled) {
       toast.error("PayPal n'est pas configuré sur le serveur (variables PAYPAL_*).");
+      return;
+    }
+    if (depositMethod === 'card' && !stripeEnabled) {
+      toast.error("Stripe n'est pas configuré sur le serveur (STRIPE_SECRET_KEY).");
       return;
     }
 
@@ -345,14 +354,7 @@ export function WalletCompanyPanel() {
       fetchData(true);
     } catch (err: unknown) {
       console.error(err);
-      const msg = err instanceof Error ? err.message : '';
-      if (msg === 'PAYPAL_CANCELLED') {
-        toast.error('Paiement PayPal annulé.');
-      } else if (msg === 'PAYPAL_CLOSED') {
-        toast.error('Fenêtre PayPal fermée avant validation. Complétez le paiement sur PayPal.');
-      } else {
-        toast.error(msg || 'Échec de communication avec la passerelle.');
-      }
+      toast.error(paymentFlowErrorMessage(err) || 'Échec de communication avec la passerelle.');
     } finally {
       setSubmittingDeposit(false);
     }
@@ -852,12 +854,17 @@ export function WalletCompanyPanel() {
                 <span>
                   Paiement sécurisé par carte ou PayPal — crédit immédiat du portefeuille après confirmation.
                   {depositMethod === 'paypal' && ' Une fenêtre PayPal s&apos;ouvrira pour valider le paiement.'}
+                  {depositMethod === 'card' && ' Une fenêtre Stripe s&apos;ouvrira pour saisir votre carte.'}
                 </span>
               </div>
 
               <button
                 type="submit"
-                disabled={submittingDeposit || (depositMethod === 'paypal' && !paypalEnabled)}
+                disabled={
+                  submittingDeposit
+                  || (depositMethod === 'paypal' && !paypalEnabled)
+                  || (depositMethod === 'card' && !stripeEnabled)
+                }
                 className="w-full py-3.5 bg-gradient-to-r from-orange-400 to-rose-500 hover:from-orange-500 hover:to-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-md shadow-orange-500/10 active:scale-95 disabled:opacity-50"
               >
                 {submittingDeposit
