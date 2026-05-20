@@ -27,6 +27,46 @@ const safeParseJson = async (res: Response) => {
   }
 };
 
+type PaypalPopupOutcome = 'approved' | 'cancelled' | 'closed';
+
+/** Wait until PayPal redirects to our return/cancel page or the user closes the popup. */
+const waitForPaypalPopup = (popup: Window): Promise<PaypalPopupOutcome> =>
+  new Promise((resolve) => {
+    let settled = false;
+    const finish = (outcome: PaypalPopupOutcome) => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('message', onMessage);
+      clearInterval(timer);
+      resolve(outcome);
+    };
+
+    const onMessage = (ev: MessageEvent) => {
+      const data = ev?.data;
+      if (!data || typeof data !== 'object') return;
+      if (data.type === 'HARX_PAYPAL_RETURN') finish('approved');
+      if (data.type === 'HARX_PAYPAL_CANCEL') finish('cancelled');
+    };
+    window.addEventListener('message', onMessage);
+
+    const timer = setInterval(() => {
+      if (popup.closed) {
+        finish('closed');
+        return;
+      }
+      try {
+        const href = popup.location.href;
+        if (/paypal-return\.html/i.test(href) || /\/paypal\/return/i.test(href)) {
+          finish('approved');
+        } else if (/paypal-cancel\.html/i.test(href) || /\/paypal\/cancel/i.test(href)) {
+          finish('cancelled');
+        }
+      } catch {
+        /* still on paypal.com — cross-origin */
+      }
+    }, 400);
+  });
+
 const openCenteredPopup = (url: string, title: string, w = 520, h = 720): Window | null => {
   const dualLeft = window.screenLeft ?? window.screenX ?? 0;
   const dualTop = window.screenTop ?? window.screenY ?? 0;
@@ -341,19 +381,22 @@ export function PhoneNumberPanel() {
       }
 
       const paymentId = initData.paymentId;
-      const popupClosed: Promise<void> = new Promise((resolve) => {
-        const timer = setInterval(() => {
-          if (popup.closed) {
-            clearInterval(timer);
-            resolve();
-          }
-        }, 800);
-      });
+      const outcome = await waitForPaypalPopup(popup);
 
-      await popupClosed;
+      if (outcome === 'cancelled') {
+        toast.error('Paiement PayPal annulé.');
+        setCheckoutStep('select');
+        return;
+      }
+      if (outcome === 'closed') {
+        toast.error('Fenêtre PayPal fermée avant validation. Complétez le paiement sur PayPal.');
+        setCheckoutStep('select');
+        return;
+      }
 
       setCheckoutStep('processing');
       try {
+        if (!popup.closed) popup.close();
         await confirmLineCheckout(paymentId, initData.paypalOrderId);
         await provisionLine(paymentId);
         finishSuccessfulPurchase('paypal');
@@ -846,11 +889,12 @@ export function PhoneNumberPanel() {
                   <RefreshCw size={28} className="animate-spin text-amber-500" />
                   <p className="text-sm font-black text-slate-900 tracking-tight">Validation sur PayPal…</p>
                   <p className="text-[11px] text-gray-500 text-center max-w-xs">
-                    Une fenêtre PayPal s&apos;est ouverte pour valider le paiement de{' '}
+                    Validez le paiement de{' '}
                     <span className="font-bold text-slate-800">
                       {formatPrice(linePrice.amountCents, linePrice.currency)}
-                    </span>
-                    . Terminez la connexion / le paiement, puis revenez ici.
+                    </span>{' '}
+                    sur PayPal. Attendez la page «&nbsp;Paiement validé&nbsp;» — ne fermez pas la
+                    fenêtre avant.
                   </p>
                   <p className="text-[10px] text-gray-400 text-center max-w-xs">
                     La fenêtre se fermera automatiquement après confirmation.
