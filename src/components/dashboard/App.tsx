@@ -27,6 +27,7 @@ import { CompanyPerformanceDashboard } from './pages/CompanyPerformanceDashboard
 import { WalletCompanyPanel } from './panels/WalletCompanyPanel';
 import { MinutesCompanyPanel } from './panels/MinutesCompanyPanel';
 import { PhoneNumberPanel } from './panels/PhoneNumberPanel';
+import { SubscriptionPanel } from './panels/SubscriptionPanel';
 import ScriptGenerator from '../ScriptGenerator';
 import RepOnboarding from '../onboarding/RepOnboarding';
 import ApprovalPublishing from '../ApprovalPublishing';
@@ -42,6 +43,8 @@ function App() {
         <Route path="/dashboard/wallet" element={<WalletCompanyPanel />} />
         <Route path="/dashboard/minutes" element={<MinutesCompanyPanel />} />
         <Route path="/dashboard/telephony" element={<PhoneNumberPanel />} />
+        <Route path="/dashboard/subscription" element={<SubscriptionPanel />} />
+        <Route path="/dashboard/upgrade" element={<SubscriptionPanel />} />
         <Route path="/dashboard/profile" element={<CompanyProfilePanel />} />
         <Route path="/dashboard/leads" element={<LeadManagementPanel />} />
         <Route path="/dashboard/rep-matching" element={<RepMatchingPanel />} />
