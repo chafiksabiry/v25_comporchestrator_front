@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import {
   Phone,
   Search,
-  Sparkles,
   RefreshCw,
   CheckCircle2,
   Hash,
   Briefcase,
-  Cpu
+  Cpu,
+  CreditCard,
+  Lock,
+  ShieldCheck,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -56,8 +60,30 @@ export function PhoneNumberPanel() {
   const [searching, setSearching] = useState(false);
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
+  // Checkout / payment state for the new Stripe-or-PayPal flow
+  const [checkoutNumber, setCheckoutNumber] = useState<string | null>(null);
+  const [checkoutMethod, setCheckoutMethod] = useState<'stripe' | 'paypal'>('stripe');
+  const [checkoutStep, setCheckoutStep] = useState<'select' | 'processing' | 'success'>('select');
+  const [checkoutPaymentId, setCheckoutPaymentId] = useState<string | null>(null);
+
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
+
+  // Default phone line setup fee — should ideally come from the backend
+  // checkout/init response. We display it before the user commits.
+  const LINE_PRICE = { amountCents: 500, currency: 'EUR' };
+  const formatPrice = (cents: number, currency: string) =>
+    `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} ${currency === 'EUR' ? '€' : currency}`;
+
+  // Every gig is entitled to a baseline of phone lines. Once it has
+  // reached this threshold, any additional number must be purchased
+  // separately via Stripe / PayPal.
+  const MIN_PHONE_NUMBERS_PER_GIG = 1;
+  const numbersForSelectedGig = selectedGigIdForNumber
+    ? phoneNumbers.filter(n => n.gigId === selectedGigIdForNumber)
+    : [];
+  const selectedGigHasReachedMinimum = numbersForSelectedGig.length >= MIN_PHONE_NUMBERS_PER_GIG;
+  const selectedGigTitle = gigsAndReps.find(g => g.gigId === selectedGigIdForNumber)?.title;
 
   const fetchData = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -149,36 +175,96 @@ export function PhoneNumberPanel() {
     }
   };
 
-  const handlePurchaseNumber = async (numberToBuy: string) => {
+  // Step 1 — open the payment modal (does NOT debit the wallet).
+  const handlePurchaseNumber = (numberToBuy: string) => {
     if (!selectedGigIdForNumber) {
-      toast.error('Veuillez d’abord sélectionner un Gig à associer.');
+      toast.error("Veuillez d'abord sélectionner un Gig à associer.");
       return;
     }
+    setCheckoutNumber(numberToBuy);
+    setCheckoutMethod('stripe');
+    setCheckoutStep('select');
+    setCheckoutPaymentId(null);
+  };
 
-    setPurchasing(numberToBuy);
+  const closeCheckoutModal = () => {
+    if (checkoutStep === 'processing') return;
+    setCheckoutNumber(null);
+    setCheckoutPaymentId(null);
+    setCheckoutStep('select');
+  };
+
+  // Step 2 — Stripe / PayPal payment then number provisioning.
+  // Flow: init payment -> (real or stub) provider confirmation ->
+  // confirm payment -> call existing /purchase/twilio with paymentId.
+  const handleConfirmPayment = async () => {
+    if (!checkoutNumber || !selectedGigIdForNumber) return;
+
+    setCheckoutStep('processing');
+    setPurchasing(checkoutNumber);
     try {
-      const res = await fetch(`${apiBaseUrl}/phone-numbers/purchase/twilio`, {
+      // 1. Init a payment intent / order on the backend.
+      const initRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phoneNumber: numberToBuy,
+          phoneNumber: checkoutNumber,
           gigId: selectedGigIdForNumber,
-          companyId
+          companyId,
+          provider: checkoutMethod
+        })
+      });
+      const initData = await initRes.json();
+      if (!initRes.ok || !initData?.paymentId) {
+        throw new Error(initData?.message || initData?.error || "Impossible d'initialiser le paiement.");
+      }
+      const paymentId = initData.paymentId as string;
+      setCheckoutPaymentId(paymentId);
+
+      // 2. If a real provider checkout URL is returned, open it.
+      // Otherwise, we're in stub mode (no Stripe/PayPal SDK key yet) —
+      // we proceed directly to confirmation. Wire the SDK here when keys
+      // are configured (window.open(initData.checkoutUrl, 'checkout') ...).
+      if (initData.checkoutUrl && !String(initData.checkoutUrl).startsWith('internal://')) {
+        window.open(initData.checkoutUrl, '_blank', 'noopener,noreferrer,width=520,height=720');
+      }
+
+      // 3. Confirm the payment server-side.
+      const confirmRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId })
+      });
+      const confirmData = await confirmRes.json();
+      if (!confirmRes.ok || !confirmData?.success) {
+        throw new Error(confirmData?.message || confirmData?.error || 'Paiement non confirmé.');
+      }
+
+      // 4. Now actually provision the Twilio number, gated by paymentId.
+      const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase/twilio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: checkoutNumber,
+          gigId: selectedGigIdForNumber,
+          companyId,
+          paymentId
         })
       });
 
-      if (res.ok) {
-        toast.success(`Numéro ${numberToBuy} acheté avec succès !`);
-        setSearchResults(prev => prev.filter(n => n.phoneNumber !== numberToBuy));
-        fetchData(true);
-        setTelephonyTab('my_numbers');
-      } else {
-        const errData = await res.json();
-        toast.error(errData.error || "L'achat du numéro a échoué.");
+      if (!purchaseRes.ok) {
+        const err = await purchaseRes.json().catch(() => ({}));
+        throw new Error(err?.message || err?.error || "L'achat du numéro a échoué.");
       }
-    } catch (err) {
+
+      setCheckoutStep('success');
+      toast.success(`Numéro ${checkoutNumber} acquis via ${checkoutMethod === 'stripe' ? 'Stripe' : 'PayPal'} !`);
+      setSearchResults(prev => prev.filter(n => n.phoneNumber !== checkoutNumber));
+      fetchData(true);
+    } catch (err: any) {
       console.error(err);
-      toast.error("Erreur lors de l'acquisition.");
+      toast.error(err?.message || "Erreur lors du paiement.");
+      setCheckoutStep('select');
     } finally {
       setPurchasing(null);
     }
@@ -258,13 +344,6 @@ export function PhoneNumberPanel() {
               <span className="text-5xl font-black tracking-tight block">
                 {phoneNumbers.length} <span className="text-lg text-gray-400 font-bold">Lignes</span>
               </span>
-            </div>
-
-            <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Twilio & Telnyx Webhook Routing synchronisé</span>
-              </div>
             </div>
           </div>
         </div>
@@ -373,7 +452,35 @@ export function PhoneNumberPanel() {
                     <option key={g.gigId} value={g.gigId}>{g.title}</option>
                   ))}
                 </select>
+                {selectedGigIdForNumber && (
+                  <p className="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                    {numbersForSelectedGig.length} ligne{numbersForSelectedGig.length > 1 ? 's' : ''} déjà affectée{numbersForSelectedGig.length > 1 ? 's' : ''} à ce Gig
+                  </p>
+                )}
               </div>
+
+              {/* Warning: minimum reached — extra numbers must be paid */}
+              {selectedGigIdForNumber && selectedGigHasReachedMinimum && (
+                <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <span className="shrink-0 p-1.5 rounded-xl bg-amber-100 text-amber-600">
+                      <AlertTriangle size={16} />
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-xs font-black text-amber-900 tracking-tight">
+                        Seuil minimum atteint
+                      </p>
+                      <p className="text-[11px] text-amber-800 leading-relaxed">
+                        Le Gig{selectedGigTitle ? <> <span className="font-bold">« {selectedGigTitle} »</span></> : null} dispose déjà du minimum requis
+                        de <span className="font-bold">{MIN_PHONE_NUMBERS_PER_GIG}</span>{' '}
+                        ligne{MIN_PHONE_NUMBERS_PER_GIG > 1 ? 's' : ''} active{MIN_PHONE_NUMBERS_PER_GIG > 1 ? 's' : ''}.
+                        Tout numéro supplémentaire devra être <span className="font-bold">acheté via Stripe ou PayPal</span>{' '}
+                        ({formatPrice(LINE_PRICE.amountCents, LINE_PRICE.currency)} par ligne) — votre portefeuille HARX n'est pas affecté.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -410,15 +517,185 @@ export function PhoneNumberPanel() {
                         onClick={() => handlePurchaseNumber(numberString)}
                         disabled={purchasing !== null}
                         className="px-4 py-2.5 bg-slate-900 hover:bg-orange-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                        title="Régler par Stripe ou PayPal — sans toucher au wallet"
                       >
-                        {purchasing === numberString ? <RefreshCw size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                        <span>{purchasing === numberString ? 'Acquisition...' : 'Acheter'}</span>
+                        {purchasing === numberString
+                          ? <RefreshCw size={12} className="animate-spin" />
+                          : <CreditCard size={12} />}
+                        <span>{purchasing === numberString ? 'Paiement...' : 'Acheter (Stripe / PayPal)'}</span>
                       </button>
                     </div>
                   );
                 })}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ===========================================================
+          Payment modal — Stripe / PayPal
+          NOT linked to WalletCompany. Charges the company's external
+          card or PayPal account for the phone line setup fee.
+         =========================================================== */}
+      {checkoutNumber && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden border border-gray-100">
+            {/* Header */}
+            <div className="relative px-6 py-5 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+              <button
+                onClick={closeCheckoutModal}
+                disabled={checkoutStep === 'processing'}
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/10 transition disabled:opacity-30"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="p-2 rounded-xl bg-orange-500/20 text-orange-400">
+                  <CreditCard size={18} />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-300">
+                  Paiement sécurisé
+                </span>
+              </div>
+              <h2 className="text-xl font-black tracking-tight">Acquisition d'une ligne</h2>
+              <p className="text-xs text-gray-300 mt-1">
+                Réglez par carte ou PayPal — votre portefeuille HARX n'est pas affecté.
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-5">
+              {/* Order summary */}
+              <div className="rounded-2xl bg-gray-50 border border-gray-100 p-4 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 font-bold uppercase tracking-wider">Numéro</span>
+                  <span className="font-black text-slate-900 tracking-tight">{checkoutNumber}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 font-bold uppercase tracking-wider">Frais d'activation</span>
+                  <span className="font-black text-slate-900">
+                    {formatPrice(LINE_PRICE.amountCents, LINE_PRICE.currency)}
+                  </span>
+                </div>
+                <div className="pt-2 mt-2 border-t border-gray-200 flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-gray-500">Total à payer</span>
+                  <span className="text-lg font-black text-slate-900">
+                    {formatPrice(LINE_PRICE.amountCents, LINE_PRICE.currency)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Method picker */}
+              {checkoutStep === 'select' && (
+                <>
+                  <div>
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-2">
+                      Méthode de paiement
+                    </span>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setCheckoutMethod('stripe')}
+                        className={`relative p-4 rounded-2xl border-2 transition-all text-left ${
+                          checkoutMethod === 'stripe'
+                            ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                            : 'border-gray-100 hover:border-gray-200 bg-white'
+                        }`}
+                      >
+                        {checkoutMethod === 'stripe' && (
+                          <span className="absolute top-2 right-2 text-indigo-500">
+                            <CheckCircle2 size={14} />
+                          </span>
+                        )}
+                        <span className="block text-sm font-black text-indigo-600 tracking-tight">Stripe</span>
+                        <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">
+                          Carte bancaire
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCheckoutMethod('paypal')}
+                        className={`relative p-4 rounded-2xl border-2 transition-all text-left ${
+                          checkoutMethod === 'paypal'
+                            ? 'border-amber-500 bg-amber-50 shadow-sm'
+                            : 'border-gray-100 hover:border-gray-200 bg-white'
+                        }`}
+                      >
+                        {checkoutMethod === 'paypal' && (
+                          <span className="absolute top-2 right-2 text-amber-500">
+                            <CheckCircle2 size={14} />
+                          </span>
+                        )}
+                        <span className="block text-sm font-black text-amber-600 tracking-tight">PayPal</span>
+                        <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">
+                          Compte PayPal
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                    <ShieldCheck size={14} className="shrink-0 mt-0.5" />
+                    <span>
+                      <span className="font-bold">Indépendant du portefeuille.</span> Cette transaction est traitée
+                      directement par {checkoutMethod === 'stripe' ? 'Stripe' : 'PayPal'} et n'utilise{' '}
+                      <span className="font-bold">aucun fonds de votre wallet HARX</span>.
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleConfirmPayment}
+                    className="w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-300 shadow-md active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r from-slate-900 to-slate-800 text-white hover:from-orange-500 hover:to-rose-500"
+                  >
+                    <Lock size={14} />
+                    Payer {formatPrice(LINE_PRICE.amountCents, LINE_PRICE.currency)} avec{' '}
+                    {checkoutMethod === 'stripe' ? 'Stripe' : 'PayPal'}
+                  </button>
+                </>
+              )}
+
+              {checkoutStep === 'processing' && (
+                <div className="flex flex-col items-center justify-center py-8 gap-3">
+                  <RefreshCw size={32} className="animate-spin text-orange-500" />
+                  <p className="text-xs font-black uppercase tracking-wider text-slate-700">
+                    Traitement du paiement {checkoutMethod === 'stripe' ? 'Stripe' : 'PayPal'}…
+                  </p>
+                  <p className="text-[11px] text-gray-500 text-center max-w-xs">
+                    Ne fermez pas cette fenêtre. Provisioning de votre ligne en cours.
+                  </p>
+                </div>
+              )}
+
+              {checkoutStep === 'success' && (
+                <div className="flex flex-col items-center justify-center py-6 gap-3">
+                  <span className="p-3 rounded-full bg-emerald-100 text-emerald-600">
+                    <CheckCircle2 size={28} />
+                  </span>
+                  <p className="text-sm font-black text-slate-900 tracking-tight">Paiement confirmé</p>
+                  <p className="text-[11px] text-gray-500 text-center max-w-xs">
+                    Votre nouvelle ligne <span className="font-bold">{checkoutNumber}</span> est active et
+                    associée à votre Gig.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeCheckoutModal();
+                      setTelephonyTab('my_numbers');
+                    }}
+                    className="mt-2 px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-wider bg-slate-900 hover:bg-slate-800 text-white"
+                  >
+                    Voir mes lignes
+                  </button>
+                </div>
+              )}
+
+              <p className="text-[10px] text-gray-400 text-center">
+                Paiement chiffré · {checkoutPaymentId ? `Ref ${String(checkoutPaymentId).slice(-8)}` : 'Aucun frais débité du wallet'}
+              </p>
+            </div>
           </div>
         </div>
       )}
