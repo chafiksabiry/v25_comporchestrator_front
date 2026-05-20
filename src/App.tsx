@@ -508,7 +508,7 @@ function AppContent() {
                     <Coins size={14} className="text-white drop-shadow-md animate-pulse-subtle" />
                   </div>
                   <div className="flex flex-col leading-tight relative z-10">
-                    <span className="text-[8px] font-black uppercase tracking-[0.15em] text-emerald-400 group-hover:text-emerald-300 transition-colors">My Wallet</span>
+                    <span className="text-[8px] font-black uppercase tracking-[0.15em] text-emerald-400 group-hover:text-emerald-300 transition-colors">{t('navbar.myWallet')}</span>
                     <span className="text-sm font-black text-white tabular-nums tracking-tight">{balance.toLocaleString('en-US')} €</span>
                   </div>
                 </div>
@@ -524,7 +524,7 @@ function AppContent() {
                         <Clock size={13} className="text-blue-400 group-hover:text-blue-300" />
                       </div>
                       <div className="flex flex-col leading-tight">
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-400/70">Minutes</span>
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-400/70">{t('navbar.minutes')}</span>
                         <span className="text-sm font-black text-white tabular-nums">{formatFloatMinutesToMMSSLL(minutes)}</span>
                       </div>
                     </div>
@@ -541,8 +541,8 @@ function AppContent() {
                         <Phone size={13} className="drop-shadow-sm" strokeWidth={2.5} />
                       </div>
                       <div className="relative flex flex-col leading-tight">
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-amber-300/90">Lignes Tél.</span>
-                        <span className="text-sm font-black text-white tabular-nums tracking-tight">{escrow} Ligne{escrow !== 1 ? 's' : ''}</span>
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-amber-300/90">{t('navbar.phoneLines')}</span>
+                        <span className="text-sm font-black text-white tabular-nums tracking-tight">{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
                       </div>
                     </div>
                   </>
@@ -586,7 +586,7 @@ function AppContent() {
                     </div>
                     <div className="flex flex-col">
                       <span className="text-xs font-black text-white leading-tight truncate max-w-[120px]">{companyName || userFullName}</span>
-                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Company</span>
+                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{t('navbar.company')}</span>
                     </div>
                     <ChevronDown size={12} className={`text-gray-400 transition-transform duration-300 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
