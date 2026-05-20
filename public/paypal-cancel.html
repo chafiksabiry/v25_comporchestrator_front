@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Paiement annulé — HARX</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        background: #fffbeb;
+        color: #78350f;
+      }
+      .box {
+        text-align: center;
+        padding: 2rem;
+        max-width: 360px;
+      }
+      h1 {
+        font-size: 1.125rem;
+        margin: 0 0 0.5rem;
+      }
+      p {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h1>Paiement annulé</h1>
+      <p>Vous avez annulé sur PayPal. Fermez cette fenêtre pour revenir au tableau de bord.</p>
+    </div>
+    <script>
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var payload = {
+          type: 'HARX_PAYPAL_CANCEL',
+          paymentId: params.get('paymentId')
+        };
+        if (window.opener && !window.opener.closed) {
+          try {
+            window.opener.postMessage(payload, location.origin);
+          } catch (e) {
+            window.opener.postMessage(payload, '*');
+          }
+        }
+        setTimeout(function () {
+          window.close();
+        }, 400);
+      })();
+    </script>
+  </body>
+</html>
