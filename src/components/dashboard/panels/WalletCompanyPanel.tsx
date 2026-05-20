@@ -329,7 +329,7 @@ export function WalletCompanyPanel() {
       return;
     }
     if (depositMethod === 'card' && !stripeEnabled) {
-      toast.error("Stripe n'est pas configuré sur le serveur (STRIPE_SECRET_KEY).");
+      toast.error('Le paiement par carte est temporairement indisponible.');
       return;
     }
 
@@ -550,7 +550,7 @@ export function WalletCompanyPanel() {
             <div className="pt-4 border-t border-white/5 flex items-center gap-6 text-xs text-gray-400">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Stripe & PayPal actifs</span>
+                <span>Paiement sécurisé activé</span>
               </div>
             </div>
           </div>
@@ -854,7 +854,7 @@ export function WalletCompanyPanel() {
                 <span>
                   Paiement sécurisé par carte ou PayPal — crédit immédiat du portefeuille après confirmation.
                   {depositMethod === 'paypal' && ' Une fenêtre PayPal s&apos;ouvrira pour valider le paiement.'}
-                  {depositMethod === 'card' && ' Une fenêtre Stripe s&apos;ouvrira pour saisir votre carte.'}
+                  {depositMethod === 'card' && ' Une fenêtre sécurisée s&apos;ouvrira pour saisir votre carte.'}
                 </span>
               </div>
 
