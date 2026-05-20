@@ -1,22 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     Users,
-    Phone,
-    Target,
     BarChart3,
-    PieChart,
-    TrendingUp,
-    Calendar,
     Briefcase,
-    CheckCircle2,
-    XCircle,
     Clock,
     Zap,
-    Filter,
     ChevronDown,
     ArrowUpRight,
-    ArrowDownRight,
-    Info
+    ArrowDownRight
 } from 'lucide-react';
 import {
     Chart as ChartJS,
@@ -158,7 +149,6 @@ export function CompanyPerformanceDashboard() {
         registeredReps: 0
     });
     const [callsList, setCallsList] = useState<any[]>([]);
-    const [leadsList, setLeadsList] = useState<any[]>([]);
     const [agentsList, setAgentsList] = useState<any[]>([]);
 
     useEffect(() => {
@@ -173,46 +163,48 @@ export function CompanyPerformanceDashboard() {
                 const gigsArray = Array.isArray(gigsData) ? gigsData : [];
                 setGigs(gigsArray);
 
-                // 2. Fetch Leads — list per gig (with createdAt) so we can
-                // compute period-over-period trends. The dashboard backend's
-                // `/leads/gig/:gigId` endpoint is protected and expects a
-                // bespoke auth scheme: `Authorization: Bearer {gigId}:{userId}`.
-                // Without that header it silently returns nothing, which is
-                // why "Total Leads" was stuck at 0 before this fix.
+                // 2. Count Leads — we only need the *count*, not the full list,
+                // so we ask for `limit=1` and read the paginated `total` field.
+                // This collapses a payload of potentially thousands of leads
+                // down to a single record per gig => orders of magnitude faster
+                // and removes the timeout that was leaving "Total Leads" at 0.
+                //
+                // The `/leads/gig/:gigId` endpoint is protected and expects a
+                // bespoke header `Authorization: Bearer {gigId}:{userId}`.
                 const dashboardBase: string = import.meta.env.VITE_DASHBOARD_API;
                 const userId = Cookies.get('userId') || '';
                 let totalLeads = 0;
-                let fetchedLeads: any[] = [];
                 try {
                     const targetGigs = selectedGig === 'all'
                         ? gigsArray.map((g: any) => g._id).filter(Boolean)
                         : [selectedGig];
 
-                    const leadsByGig = await Promise.all(targetGigs.map(async (gid: string) => {
+                    const totals = await Promise.all(targetGigs.map(async (gid: string) => {
                         try {
-                            const res = await fetch(`${dashboardBase}/leads/gig/${gid}?page=1&limit=100000`, {
+                            const res = await fetch(`${dashboardBase}/leads/gig/${gid}?page=1&limit=1`, {
                                 headers: {
                                     Authorization: `Bearer ${gid}:${userId}`
                                 }
                             });
-                            if (!res.ok) return { items: [], total: 0 };
+                            if (!res.ok) return 0;
                             const json = await res.json();
-                            const items = Array.isArray(json.data) ? json.data : [];
-                            // Backend returns `total` for the paginated count.
-                            const total = typeof json.total === 'number' ? json.total : items.length;
-                            return { items, total };
+                            if (typeof json.total === 'number') return json.total;
+                            // Fallback if the backend doesn't expose `total`:
+                            // count the items we got. With limit=1 this is at
+                            // most 1, but it keeps the count non-zero in dev.
+                            return Array.isArray(json.data) ? json.data.length : 0;
                         } catch {
-                            return { items: [], total: 0 };
+                            return 0;
                         }
                     }));
-                    fetchedLeads = leadsByGig.flatMap(r => r.items);
-                    totalLeads = leadsByGig.reduce((sum, r) => sum + (r.total || 0), 0);
-                    // If `total` was missing everywhere, fall back to the list length.
-                    if (totalLeads === 0 && fetchedLeads.length > 0) totalLeads = fetchedLeads.length;
+                    totalLeads = totals.reduce((sum, n) => sum + n, 0);
                 } catch {
-                    fetchedLeads = [];
+                    totalLeads = 0;
                 }
-                setLeadsList(fetchedLeads);
+                // We deliberately do NOT keep the leads list anymore — leads
+                // are a stock counter (not a flow), so we don't need
+                // timestamps for trend calculation. The StockBar will show
+                // "Total" instead of a +/- % pill, which is honest.
 
                 // 3. Fetch Calls
                 const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
@@ -275,7 +267,9 @@ export function CompanyPerformanceDashboard() {
 
     // Slice everything into current window vs previous window so we can show
     // real period-over-period trends instead of hardcoded "+12%".
-    const { currentWindow, previousWindow, leadsWin, agentsWin } = useMemo(() => {
+    // Leads are intentionally NOT timestamped here: we only fetch the count
+    // (see `totalLeads` in the load step) to keep the page fast.
+    const { currentWindow, previousWindow, agentsWin } = useMemo(() => {
         const now = Date.now();
         const win = timeRangeWindowMs(timeRange);
         const currentStart = now - win;
@@ -294,33 +288,26 @@ export function CompanyPerformanceDashboard() {
         };
 
         const calls = sliceByTimestamp(callsList, c => new Date((c as any).createdAt || (c as any).date || 0).getTime());
-        const leads = sliceByTimestamp(leadsList, l => new Date((l as any).createdAt || (l as any).Last_Activity_Time || 0).getTime());
         const agents = sliceByTimestamp(agentsList, a => new Date((a as any).createdAt || (a as any).enrolledAt || (a as any).joinedAt || 0).getTime());
 
         return {
             currentWindow: computeWindowedStats(calls.curr),
             previousWindow: computeWindowedStats(calls.prev),
-            leadsWin: { current: leads.curr.length, previous: leads.prev.length },
             agentsWin: { current: agents.curr.length, previous: agents.prev.length }
         };
-    }, [callsList, leadsList, agentsList, timeRange]);
+    }, [callsList, agentsList, timeRange]);
 
-    // Trends (period-over-period % change). null = no comparison available.
-    const trendTotalCalls = computeTrendPct(currentWindow.totalCalls, previousWindow.totalCalls);
-    const trendContacted = computeTrendPct(currentWindow.contactedLeads, previousWindow.contactedLeads);
-    const trendValid = computeTrendPct(currentWindow.validNumbers, previousWindow.validNumbers);
-
-    // Leads / Reps trends — only available when we managed to fetch the full
-    // list with timestamps. Otherwise fall back to "Total" snapshot.
-    const hasLeadsTimestamps = leadsList.length > 0;
+    // Reps trend — only available when agents come with timestamps.
+    // Leads are now displayed as a pure stock counter ("Total") — no trend,
+    // because we no longer download the full list (perf optimization).
     const hasAgentsTimestamps = agentsList.some(a => a.createdAt || a.enrolledAt || a.joinedAt);
-    const trendLeads = hasLeadsTimestamps ? computeTrendPct(leadsWin.current, leadsWin.previous) : null;
+    const trendLeads: number | null = null;
     const trendReps = hasAgentsTimestamps ? computeTrendPct(agentsWin.current, agentsWin.previous) : null;
 
-    // Display stats — if we have timestamped data we scope to the window so
-    // the big number tracks the filter. Otherwise we show the total stock.
+    // Display stats — calls are window-scoped, but leads stay as the absolute
+    // stock count (matches the "Total" trend pill).
     const displayStats = {
-        totalLeads: hasLeadsTimestamps ? leadsWin.current : stats.totalLeads,
+        totalLeads: stats.totalLeads,
         registeredReps: hasAgentsTimestamps ? agentsWin.current : stats.registeredReps,
         totalCalls: currentWindow.totalCalls,
         contactedLeads: currentWindow.contactedLeads,
@@ -340,22 +327,37 @@ export function CompanyPerformanceDashboard() {
     //   • Conversion  = transactions / total calls       (% of calls that closed a sale)
     // All four are computed from the current time window so the filter
     // (Quotidien / Hebdo / Mensuel / Annuel) actually changes them.
+    const rate = (num: number, den: number) => (den > 0 ? (num / den) * 100 : 0);
     const coverageRate = useMemo(
-        () => displayStats.totalLeads > 0 ? (displayStats.totalCalls / displayStats.totalLeads) * 100 : 0,
+        () => rate(displayStats.totalCalls, displayStats.totalLeads),
         [displayStats.totalLeads, displayStats.totalCalls]
     );
     const unansweredRate = useMemo(
-        () => displayStats.totalCalls > 0 ? (displayStats.unansweredCalls / displayStats.totalCalls) * 100 : 0,
+        () => rate(displayStats.unansweredCalls, displayStats.totalCalls),
         [displayStats.totalCalls, displayStats.unansweredCalls]
     );
     const argumentationRate = useMemo(
-        () => displayStats.totalCalls > 0 ? (displayStats.validatedCalls / displayStats.totalCalls) * 100 : 0,
+        () => rate(displayStats.validatedCalls, displayStats.totalCalls),
         [displayStats.totalCalls, displayStats.validatedCalls]
     );
     const conversionRate = useMemo(
-        () => displayStats.totalCalls > 0 ? (displayStats.transactionCalls / displayStats.totalCalls) * 100 : 0,
+        () => rate(displayStats.transactionCalls, displayStats.totalCalls),
         [displayStats.totalCalls, displayStats.transactionCalls]
     );
+
+    // Previous-window equivalents so each rate card can show a real trend
+    // (period-over-period change). The leads count is a stock, not a flow,
+    // so we reuse the current total — the coverage trend then reflects the
+    // change in *calls* against the same lead inventory.
+    const prevCoverageRate = rate(previousWindow.totalCalls, stats.totalLeads);
+    const prevUnansweredRate = rate(previousWindow.unansweredCalls, previousWindow.totalCalls);
+    const prevArgumentationRate = rate(previousWindow.validatedCalls, previousWindow.totalCalls);
+    const prevConversionRate = rate(previousWindow.transactionCalls, previousWindow.totalCalls);
+
+    const trendCoverage = computeTrendPct(coverageRate, prevCoverageRate);
+    const trendUnanswered = computeTrendPct(unansweredRate, prevUnansweredRate);
+    const trendArgumentation = computeTrendPct(argumentationRate, prevArgumentationRate);
+    const trendConversion = computeTrendPct(conversionRate, prevConversionRate);
 
     // Chart Data — scoped to the current window so it matches the cards.
     // Buckets are keyed with a sortable key (so the X axis stays chronological)
@@ -517,80 +519,69 @@ export function CompanyPerformanceDashboard() {
                 </div>
             </div>
 
-            {/* Top KPI Cards — periods + trends respect the timeRange filter */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                <MetricCard
-                    title={t('performanceDashboard.metrics.repsRegistered')}
-                    value={displayStats.registeredReps.toLocaleString()}
-                    icon={<Briefcase className="w-6 h-6" />}
-                    color="purple"
-                    trendPct={trendReps}
-                    trendLabel={hasAgentsTimestamps ? periodLabel(timeRange, t) : 'Stock total de reps'}
+            {/* Unified KPI section: stock counters (top) + rate cards.
+                The four rate cards already expose the raw counters in the
+                bottom-right ("40 / 0"), so we don't repeat them as separate
+                Total Calls / Contacted Leads / Valid Numbers cards anymore. */}
+            <div className="space-y-4">
+                <StockBar
+                    items={[
+                        {
+                            label: t('performanceDashboard.metrics.repsRegistered'),
+                            value: displayStats.registeredReps,
+                            icon: <Briefcase className="w-4 h-4" />,
+                            trendPct: trendReps,
+                            trendLabel: hasAgentsTimestamps ? periodLabel(timeRange, t) : 'Stock total de reps'
+                        },
+                        {
+                            label: t('performanceDashboard.metrics.totalLeads'),
+                            value: displayStats.totalLeads,
+                            icon: <Users className="w-4 h-4" />,
+                            trendPct: trendLeads,
+                            trendLabel: 'Stock total de leads'
+                        }
+                    ]}
                 />
-                <MetricCard
-                    title={t('performanceDashboard.metrics.totalLeads')}
-                    value={displayStats.totalLeads.toLocaleString()}
-                    icon={<Users className="w-6 h-6" />}
-                    color="blue"
-                    trendPct={trendLeads}
-                    trendLabel={hasLeadsTimestamps ? periodLabel(timeRange, t) : 'Stock total de leads'}
-                />
-                <MetricCard
-                    title={t('performanceDashboard.metrics.totalCalls')}
-                    value={displayStats.totalCalls.toLocaleString()}
-                    icon={<Phone className="w-6 h-6" />}
-                    color="harx"
-                    trendPct={trendTotalCalls}
-                    trendLabel={periodLabel(timeRange, t)}
-                />
-                <MetricCard
-                    title={t('performanceDashboard.metrics.contactedLeads')}
-                    value={displayStats.contactedLeads.toLocaleString()}
-                    icon={<Target className="w-6 h-6" />}
-                    color="emerald"
-                    trendPct={trendContacted}
-                    trendLabel={periodLabel(timeRange, t)}
-                />
-                <MetricCard
-                    title={t('performanceDashboard.metrics.validNumbers')}
-                    value={displayStats.validNumbers.toLocaleString()}
-                    icon={<CheckCircle2 className="w-6 h-6" />}
-                    color="amber"
-                    trendPct={trendValid}
-                    trendLabel={periodLabel(timeRange, t)}
-                />
-            </div>
 
-            {/* Performance Ratios — 4 KPIs requested by the company team */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <RatioCard
-                    title={t('performanceDashboard.ratios.coverageRate')}
-                    subtitle={t('performanceDashboard.ratios.coverageSubtitle')}
-                    value={coverageRate}
-                    color="harx"
-                    extra={`${displayStats.totalCalls.toLocaleString()} / ${displayStats.totalLeads.toLocaleString()}`}
-                />
-                <RatioCard
-                    title={t('performanceDashboard.ratios.unansweredRate')}
-                    subtitle={t('performanceDashboard.ratios.unansweredSubtitle')}
-                    value={unansweredRate}
-                    color="amber"
-                    extra={`${displayStats.unansweredCalls.toLocaleString()} / ${displayStats.totalCalls.toLocaleString()}`}
-                />
-                <RatioCard
-                    title={t('performanceDashboard.ratios.argumentationRate')}
-                    subtitle={t('performanceDashboard.ratios.argumentationSubtitle')}
-                    value={argumentationRate}
-                    color="blue"
-                    extra={`${displayStats.validatedCalls.toLocaleString()} / ${displayStats.totalCalls.toLocaleString()}`}
-                />
-                <RatioCard
-                    title={t('performanceDashboard.ratios.conversionRate')}
-                    subtitle={t('performanceDashboard.ratios.conversionSubtitle')}
-                    value={conversionRate}
-                    color="emerald"
-                    extra={`${displayStats.transactionCalls.toLocaleString()} / ${displayStats.totalCalls.toLocaleString()}`}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <RatioCard
+                        title={t('performanceDashboard.ratios.coverageRate')}
+                        subtitle={t('performanceDashboard.ratios.coverageSubtitle')}
+                        value={coverageRate}
+                        color="harx"
+                        extra={`${displayStats.totalCalls.toLocaleString()} / ${displayStats.totalLeads.toLocaleString()}`}
+                        trendPct={trendCoverage}
+                        trendLabel={periodLabel(timeRange, t)}
+                    />
+                    <RatioCard
+                        title={t('performanceDashboard.ratios.unansweredRate')}
+                        subtitle={t('performanceDashboard.ratios.unansweredSubtitle')}
+                        value={unansweredRate}
+                        color="amber"
+                        extra={`${displayStats.unansweredCalls.toLocaleString()} / ${displayStats.totalCalls.toLocaleString()}`}
+                        trendPct={trendUnanswered}
+                        trendLabel={periodLabel(timeRange, t)}
+                        invertTrend
+                    />
+                    <RatioCard
+                        title={t('performanceDashboard.ratios.argumentationRate')}
+                        subtitle={t('performanceDashboard.ratios.argumentationSubtitle')}
+                        value={argumentationRate}
+                        color="blue"
+                        extra={`${displayStats.validatedCalls.toLocaleString()} / ${displayStats.totalCalls.toLocaleString()}`}
+                        trendPct={trendArgumentation}
+                        trendLabel={periodLabel(timeRange, t)}
+                    />
+                    <RatioCard
+                        title={t('performanceDashboard.ratios.conversionRate')}
+                        subtitle={t('performanceDashboard.ratios.conversionSubtitle')}
+                        value={conversionRate}
+                        color="emerald"
+                        extra={`${displayStats.transactionCalls.toLocaleString()} / ${displayStats.totalCalls.toLocaleString()}`}
+                        trendPct={trendConversion}
+                        trendLabel={periodLabel(timeRange, t)}
+                    />
+                </div>
             </div>
 
             {/* Charts Section */}
@@ -646,59 +637,57 @@ export function CompanyPerformanceDashboard() {
     );
 }
 
-function MetricCard({
-    title,
-    value,
-    icon,
-    color,
-    trendPct,
-    trendLabel
+/** Compact horizontal bar showing standalone "stock" counters that don't
+ *  have a percentage of their own (e.g. registered reps, total leads).
+ *  Sits above the rate cards to give context without duplicating data. */
+function StockBar({
+    items
 }: {
-    title: string;
-    value: string;
-    icon: React.ReactNode;
-    color: 'harx' | 'blue' | 'emerald' | 'amber' | 'purple';
-    /** Period-over-period variation in %. `null` => no comparable data (snapshot stat). */
-    trendPct: number | null;
-    /** Human-readable comparison label, e.g. "vs 7 derniers jours". */
-    trendLabel: string;
+    items: Array<{
+        label: string;
+        value: number;
+        icon: React.ReactNode;
+        trendPct: number | null;
+        trendLabel: string;
+    }>;
 }) {
-    const colorClasses = {
-        harx: 'bg-harx-500/10 text-harx-500 ring-harx-500/20',
-        blue: 'bg-blue-500/10 text-blue-500 ring-blue-500/20',
-        emerald: 'bg-emerald-500/10 text-emerald-500 ring-emerald-500/20',
-        amber: 'bg-amber-500/10 text-amber-500 ring-amber-500/20',
-        purple: 'bg-purple-500/10 text-purple-500 ring-purple-500/20'
-    };
-
-    const showTrend = trendPct !== null && Number.isFinite(trendPct);
-    const isPositive = showTrend && (trendPct as number) > 0;
-    const isNeutral = showTrend && (trendPct as number) === 0;
-    let pillTone = 'bg-slate-100 text-slate-500';
-    if (showTrend && !isNeutral) {
-        pillTone = isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600';
-    }
-
     return (
-        <div className="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 hover:shadow-xl transition-all duration-300 group">
-            <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-2xl ${colorClasses[color]} ring-1 transition-transform group-hover:scale-110 duration-300`}>
-                    {icon}
-                </div>
-                <div className={`flex items-center gap-1 text-[10px] font-black tracking-wider uppercase px-2.5 py-1 rounded-full ${pillTone}`}>
-                    {showTrend && !isNeutral && (isPositive
-                        ? <ArrowUpRight className="w-3 h-3" />
-                        : <ArrowDownRight className="w-3 h-3" />)}
-                    {showTrend
-                        ? `${isPositive ? '+' : ''}${Math.round(trendPct as number)}%`
-                        : 'Total'}
-                </div>
-            </div>
-            <div className="space-y-1">
-                <h3 className="text-slate-500 text-xs font-black uppercase tracking-widest">{title}</h3>
-                <div className="text-3xl font-black text-slate-900 tracking-tight">{value}</div>
-                <p className="text-[10px] text-slate-400 font-medium italic pt-2">{trendLabel}</p>
-            </div>
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 px-6 py-4 flex flex-wrap items-center gap-x-10 gap-y-4">
+            {items.map((item, idx) => {
+                const showTrend = item.trendPct !== null && Number.isFinite(item.trendPct);
+                const isPositive = showTrend && (item.trendPct as number) > 0;
+                const isNeutral = showTrend && (item.trendPct as number) === 0;
+                let pillTone = 'bg-slate-100 text-slate-500';
+                if (showTrend && !isNeutral) {
+                    pillTone = isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600';
+                }
+                return (
+                    <div key={idx} className="flex items-center gap-3 min-w-[180px]">
+                        <div className="p-2.5 rounded-xl bg-slate-50 text-slate-500 ring-1 ring-slate-100">
+                            {item.icon}
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl font-black text-slate-900 tabular-nums leading-none">
+                                    {item.value.toLocaleString()}
+                                </span>
+                                <span className={`flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full ${pillTone}`}>
+                                    {showTrend && !isNeutral && (isPositive
+                                        ? <ArrowUpRight className="w-2.5 h-2.5" />
+                                        : <ArrowDownRight className="w-2.5 h-2.5" />)}
+                                    {showTrend
+                                        ? `${isPositive ? '+' : ''}${Math.round(item.trendPct as number)}%`
+                                        : 'Total'}
+                                </span>
+                            </div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                                {item.label}
+                            </div>
+                            <div className="text-[9px] text-slate-400 italic mt-0.5">{item.trendLabel}</div>
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 }
@@ -708,7 +697,10 @@ function RatioCard({
     subtitle,
     value,
     color,
-    extra
+    extra,
+    trendPct,
+    trendLabel,
+    invertTrend
 }: {
     title: string;
     subtitle: string;
@@ -716,11 +708,29 @@ function RatioCard({
     color: 'harx' | 'blue' | 'emerald' | 'amber';
     /** Optional raw counters shown next to the percentage (e.g. "12 / 50"). */
     extra?: string;
+    /** Period-over-period variation in %. `null` => no comparable data. */
+    trendPct?: number | null;
+    /** Human-readable comparison label, e.g. "vs 30 jours précédents". */
+    trendLabel?: string;
+    /** When true (e.g. "non-response" rate), a positive trend is actually bad —
+     *  so we color it red instead of green. */
+    invertTrend?: boolean;
 }) {
     const barColor = color === 'harx' ? 'bg-harx-500' :
         color === 'blue' ? 'bg-blue-500' :
             color === 'emerald' ? 'bg-emerald-500' : 'bg-amber-500';
     const clampedWidth = Math.max(0, Math.min(100, value));
+
+    const showTrend = trendPct !== null && trendPct !== undefined && Number.isFinite(trendPct);
+    const isUp = showTrend && (trendPct as number) > 0;
+    const isNeutral = showTrend && (trendPct as number) === 0;
+    // "Good" direction depends on the metric. For most rates higher = better,
+    // but for "non-response" higher = worse — that's what `invertTrend` flips.
+    const isGood = showTrend && !isNeutral && (invertTrend ? !isUp : isUp);
+    let pillTone = 'bg-white/5 text-slate-300';
+    if (showTrend && !isNeutral) {
+        pillTone = isGood ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300';
+    }
 
     return (
         <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-white/5 relative overflow-hidden group">
@@ -729,9 +739,19 @@ function RatioCard({
             </div>
 
             <div className="relative z-10 space-y-4">
-                <div className="space-y-1">
-                    <h3 className="text-white font-black text-sm uppercase tracking-tight">{title}</h3>
-                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{subtitle}</p>
+                <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1 min-w-0">
+                        <h3 className="text-white font-black text-sm uppercase tracking-tight">{title}</h3>
+                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{subtitle}</p>
+                    </div>
+                    {showTrend && (
+                        <span className={`shrink-0 flex items-center gap-0.5 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${pillTone}`}>
+                            {!isNeutral && (isUp
+                                ? <ArrowUpRight className="w-3 h-3" />
+                                : <ArrowDownRight className="w-3 h-3" />)}
+                            {`${isUp ? '+' : ''}${Math.round(trendPct as number)}%`}
+                        </span>
+                    )}
                 </div>
 
                 <div className="space-y-2">
@@ -752,6 +772,10 @@ function RatioCard({
                             style={{ width: `${clampedWidth}%` }}
                         />
                     </div>
+
+                    {trendLabel && (
+                        <p className="text-[9px] text-slate-500 italic pt-1">{trendLabel}</p>
+                    )}
                 </div>
             </div>
         </div>
