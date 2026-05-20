@@ -245,6 +245,104 @@ export function paymentFlowErrorMessage(err: unknown): string {
   return msg || 'Échec du paiement.';
 }
 
+export type SubscriptionCheckoutInitBody = {
+  userId: string;
+  companyId: string;
+  priceId: string;
+  planName: string;
+  provider: 'stripe' | 'paypal';
+};
+
+export async function initSubscriptionCheckout(
+  apiBaseUrl: string,
+  body: SubscriptionCheckoutInitBody
+) {
+  const res = await fetch(`${apiBaseUrl}/subscriptions/checkout/init`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await safeParseJson(res);
+  if (!data) throw new Error('Réponse du serveur invalide.');
+  if (!res.ok || !data?.paymentId) {
+    throw new Error(data?.message || data?.error || "Impossible d'initialiser l'abonnement.");
+  }
+  return data as {
+    paymentId: string;
+    checkoutUrl?: string;
+    paypalOrderId?: string;
+    paypalApproveUrl?: string;
+  };
+}
+
+export async function confirmSubscriptionCheckout(
+  apiBaseUrl: string,
+  paymentId: string,
+  providerRef?: string
+) {
+  const res = await fetch(`${apiBaseUrl}/subscriptions/checkout/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paymentId, providerRef })
+  });
+  const data = await safeParseJson(res);
+  if (!data) throw new Error('Réponse du serveur invalide.');
+  if (!res.ok || !data?.success) {
+    throw new Error(data?.message || data?.error || 'Abonnement non confirmé.');
+  }
+  return data;
+}
+
+export async function runSubscriptionPaypalFlow(
+  apiBaseUrl: string,
+  body: SubscriptionCheckoutInitBody
+) {
+  const initData = await initSubscriptionCheckout(apiBaseUrl, body);
+  if (!initData.paypalApproveUrl) {
+    throw new Error("La commande PayPal n'a pas pu être créée.");
+  }
+  const popup = openCenteredPopup(initData.paypalApproveUrl, 'paypal-subscription');
+  if (!popup) throw new Error('Autorisez les pop-ups pour finaliser le paiement PayPal.');
+  const outcome = await waitForPaypalPopup(popup);
+  if (outcome === 'cancelled') throw new Error('PAYPAL_CANCELLED');
+  if (outcome === 'closed') throw new Error('PAYPAL_CLOSED');
+  if (!popup.closed) popup.close();
+  await confirmSubscriptionCheckout(apiBaseUrl, initData.paymentId, initData.paypalOrderId);
+  return initData;
+}
+
+export async function runSubscriptionStripeFlow(
+  apiBaseUrl: string,
+  body: SubscriptionCheckoutInitBody
+) {
+  const initData = await initSubscriptionCheckout(apiBaseUrl, body);
+  if (!initData.checkoutUrl) {
+    throw new Error('Session Stripe non créée.');
+  }
+  const popup = openCenteredPopup(initData.checkoutUrl, 'stripe-subscription');
+  if (!popup) throw new Error('Autorisez les pop-ups pour finaliser le paiement par carte.');
+  const outcome = await waitForStripePopup(popup);
+  if (outcome === 'cancelled') throw new Error('STRIPE_CANCELLED');
+  if (outcome === 'closed') throw new Error('STRIPE_CLOSED');
+  if (!popup.closed) popup.close();
+  await confirmSubscriptionCheckout(apiBaseUrl, initData.paymentId);
+  return initData;
+}
+
+export async function fetchSubscriptionCheckoutConfig(apiBaseUrl: string) {
+  try {
+    const res = await fetch(`${apiBaseUrl}/subscriptions/checkout/config`);
+    const cfg = await safeParseJson(res);
+    if (!res.ok || !cfg) return { paypalEnabled: false, stripeEnabled: false };
+    return {
+      paypalEnabled: Boolean(cfg.paypal?.enabled),
+      stripeEnabled: Boolean(cfg.stripe?.enabled)
+    };
+  } catch {
+    return { paypalEnabled: false, stripeEnabled: false };
+  }
+}
+
 export async function fetchPaymentConfig(apiBaseUrl: string) {
   try {
     const res = await fetch(`${apiBaseUrl}/payments/checkout/config`);
