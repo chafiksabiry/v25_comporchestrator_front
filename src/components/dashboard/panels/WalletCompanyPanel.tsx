@@ -132,6 +132,7 @@ export function WalletCompanyPanel() {
   const [companyCalls, setCompanyCalls] = useState<CompanyCallRow[]>([]);
   const [approvingCallId, setApprovingCallId] = useState<string | null>(null);
   const [callsTab, setCallsTab] = useState<'pending' | 'validated' | 'refused'>('pending');
+  const [bulkAnalysis, setBulkAnalysis] = useState<{ running: boolean; done: number; total: number }>({ running: false, done: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCall, setSelectedCall] = useState<CompanyCallRow | null>(null);
@@ -340,6 +341,46 @@ export function WalletCompanyPanel() {
     }
   };
 
+  // Bulk AI analysis — runs `POST /calls/:id/analyze` on each pending call so
+  // they all get `validByAI` populated and reconciliation booked. Used to
+  // catch up on calls that were created while auto-scoring was disabled.
+  const handleBulkAnalyze = async () => {
+    if (bulkAnalysis.running) return;
+    const targets = pendingValidationCalls.map(c => c._id).filter(Boolean) as string[];
+    if (targets.length === 0) {
+      toast.info('Aucun appel en attente à analyser.');
+      return;
+    }
+    if (!window.confirm(`Lancer l'analyse IA sur ${targets.length} appel(s) en attente ? Cela peut prendre plusieurs minutes.`)) return;
+
+    const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
+    const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
+
+    setBulkAnalysis({ running: true, done: 0, total: targets.length });
+    let ok = 0;
+    let ko = 0;
+
+    for (let i = 0; i < targets.length; i++) {
+      const callId = targets[i];
+      try {
+        const res = await fetch(`${callsBase}/calls/${callId}/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (res.ok) ok++;
+        else ko++;
+      } catch {
+        ko++;
+      }
+      setBulkAnalysis(prev => ({ ...prev, done: i + 1 }));
+    }
+
+    setBulkAnalysis({ running: false, done: 0, total: 0 });
+    if (ok > 0) toast.success(`${ok} appel(s) analysé(s) avec succès${ko > 0 ? ` — ${ko} échec(s).` : '.'}`);
+    if (ok === 0 && ko > 0) toast.error(`Aucun appel n'a pu être analysé (${ko} échec(s)).`);
+    fetchData(true);
+  };
+
   const handleAgentWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'refuse') => {
     try {
       const res = await fetch(`${apiBaseUrl}/wallet-company/agent-withdrawals/approve/${withdrawalId}`, {
@@ -478,26 +519,46 @@ export function WalletCompanyPanel() {
               Chaque validation débite votre portefeuille : 70% pour le rep, 30% pour HARX.
             </p>
           </div>
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl p-1">
-            {([
-              { id: 'pending', label: 'En attente', count: pendingValidationCalls.length, tone: 'text-amber-700' },
-              { id: 'validated', label: 'Validés', count: validatedCalls.length, tone: 'text-emerald-700' },
-              { id: 'refused', label: 'Refusés', count: refusedCalls.length, tone: 'text-rose-700' }
-            ] as const).map((tab) => (
+          <div className="flex items-center gap-3 flex-wrap">
+            {pendingValidationCalls.length > 0 && (
               <button
-                key={tab.id}
                 type="button"
-                onClick={() => setCallsTab(tab.id)}
-                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                  callsTab === tab.id
-                    ? `bg-white shadow-sm border border-slate-200 ${tab.tone}`
-                    : 'text-slate-400 hover:text-slate-600'
+                onClick={handleBulkAnalyze}
+                disabled={bulkAnalysis.running}
+                className={`px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all ${
+                  bulkAnalysis.running
+                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-wait'
+                    : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-transparent shadow-sm hover:shadow-md active:scale-95'
                 }`}
+                title="Lancer l'analyse IA sur tous les appels en attente"
               >
-                <span>{tab.label}</span>
-                <span className="bg-slate-100 text-slate-600 px-1.5 rounded-full text-[9px]">{tab.count}</span>
+                <Brain className={`w-3.5 h-3.5 ${bulkAnalysis.running ? 'animate-pulse' : ''}`} />
+                {bulkAnalysis.running
+                  ? `Analyse ${bulkAnalysis.done}/${bulkAnalysis.total}`
+                  : `Analyser tous (${pendingValidationCalls.length})`}
               </button>
-            ))}
+            )}
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl p-1">
+              {([
+                { id: 'pending', label: 'En attente', count: pendingValidationCalls.length, tone: 'text-amber-700' },
+                { id: 'validated', label: 'Validés', count: validatedCalls.length, tone: 'text-emerald-700' },
+                { id: 'refused', label: 'Refusés', count: refusedCalls.length, tone: 'text-rose-700' }
+              ] as const).map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setCallsTab(tab.id)}
+                  className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                    callsTab === tab.id
+                      ? `bg-white shadow-sm border border-slate-200 ${tab.tone}`
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span className="bg-slate-100 text-slate-600 px-1.5 rounded-full text-[9px]">{tab.count}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
