@@ -657,52 +657,104 @@ export function WalletCompanyPanel() {
           )}
         </div>
 
-        {/* Transaction History list */}
+        {/* Transaction History list — deposits/withdrawals + aggregated commissions */}
         <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
           <h3 className="text-base font-black text-slate-800 tracking-tight">
             Mouvements de fonds
           </h3>
 
-          {transactions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-2">
-              <Info size={32} />
-              <p className="text-xs font-bold">Aucun mouvement enregistré.</p>
-            </div>
-          ) : (
-            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
-              {transactions.map((tx) => {
-                const isDeposit = tx.type === 'deposit';
-                const isCharge = COMMISSION_CHARGE_TYPES.has(tx.type);
-                const commissionRep = tx.commission_rep;
-                const commissionHarx = tx.commission_harx;
-                return (
+          {(() => {
+            const deposits = transactions.filter(t => t.type === 'deposit');
+            const withdrawals = transactions.filter(t => t.type === 'withdrawal');
+            const charges = transactions.filter(t => COMMISSION_CHARGE_TYPES.has(t.type));
+
+            const totalCharges = charges.reduce((sum, t) => sum + (t.amount || 0), 0);
+            const totalRepShare = charges.reduce((sum, t) => sum + (t.commission_rep || 0), 0);
+            const totalHarxShare = charges.reduce((sum, t) => sum + (t.commission_harx || 0), 0);
+
+            const hasAnything = deposits.length + withdrawals.length + (charges.length > 0 ? 1 : 0) > 0;
+
+            if (!hasAnything) {
+              return (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-2">
+                  <Info size={32} />
+                  <p className="text-xs font-bold">Aucun mouvement enregistré.</p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                {/* Aggregated commissions card */}
+                {charges.length > 0 && (
+                  <div className="p-3.5 rounded-2xl border border-orange-100 bg-orange-50/40">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-orange-100 text-orange-600 shrink-0">
+                          <ArrowUpRight size={16} />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-800">
+                            Commissions versées
+                          </h4>
+                          <p className="text-[10px] text-slate-500">
+                            {charges.length} validation{charges.length > 1 ? 's' : ''} cumulée{charges.length > 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-black text-orange-700">
+                        -{totalCharges.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                      </span>
+                    </div>
+                    <div className="mt-2.5 pt-2.5 border-t border-orange-100 flex items-center justify-between text-[10px] font-bold">
+                      <span className="text-emerald-700">
+                        Rep (70%) · {totalRepShare.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                      </span>
+                      <span className="text-slate-600">
+                        HARX (30%) · {totalHarxShare.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Deposits (newest first) */}
+                {deposits.map((tx) => (
                   <div key={tx._id} className="flex items-center justify-between p-3.5 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`p-2 rounded-xl shrink-0 ${isDeposit ? 'bg-emerald-100 text-emerald-600' : isCharge ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600'}`}>
-                        {isDeposit ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                      <div className="p-2 rounded-xl shrink-0 bg-emerald-100 text-emerald-600">
+                        <ArrowDownLeft size={16} />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-slate-800 line-clamp-1">
-                          {formatEscrowTxLabel(tx.type)}
-                        </h4>
-                        <p className="text-[9px] text-gray-500 line-clamp-1">{tx.description}</p>
-                        {isCharge && (commissionRep != null || commissionHarx != null) && (
-                          <p className="text-[9px] text-orange-600/90 font-bold mt-0.5">
-                            Rep 70%: {commissionRep?.toFixed(2)} € · HARX 30%: {commissionHarx?.toFixed(2)} €
-                          </p>
-                        )}
+                        <h4 className="text-xs font-bold text-slate-800">Dépôt</h4>
                         <span className="text-[9px] text-gray-400">{new Date(tx.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
-
-                    <span className={`text-xs font-black shrink-0 ${isDeposit ? 'text-emerald-600' : 'text-slate-800'}`}>
-                      {isDeposit ? '+' : '-'}{tx.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                    <span className="text-xs font-black shrink-0 text-emerald-600">
+                      +{tx.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                     </span>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                ))}
+
+                {/* Withdrawals */}
+                {withdrawals.map((tx) => (
+                  <div key={tx._id} className="flex items-center justify-between p-3.5 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2 rounded-xl shrink-0 bg-gray-100 text-gray-600">
+                        <ArrowUpRight size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-slate-800">Retrait</h4>
+                        <span className="text-[9px] text-gray-400">{new Date(tx.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-black shrink-0 text-slate-800">
+                      -{tx.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
