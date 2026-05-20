@@ -1,9 +1,26 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, PencilLine, BarChart3, MapPin, Mail, Phone, Globe, Briefcase, ListChecks } from 'lucide-react';
+import { Building2, PencilLine, BarChart3, MapPin, Mail, Phone, Globe, Briefcase, ListChecks, Activity as ActivityIcon } from 'lucide-react';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { getGigsByCompanyId } from '../matching';
+
+interface CompanyCallStat {
+  duration?: number;
+  status?: string;
+  valid?: boolean | null;
+  validByAI?: boolean | null;
+  validByReps?: boolean | null;
+  transactionOccurred?: boolean | null;
+  argumentation_score?: number;
+  ai_call_score?: {
+    overall?: { score?: number };
+    transaction_detected?: boolean;
+    Argumentation?: { score?: number };
+  };
+}
+
+const GAUGE_CIRCUMFERENCE = 301.6; // 2 * pi * 48
 
 type CompanyRecord = Record<string, any>;
 
@@ -28,8 +45,10 @@ export function CompanyDashboardPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<{ completedSteps?: number[]; currentPhase?: number } | null>(null);
   const [gigsCount, setGigsCount] = useState<number | null>(null);
+  const [calls, setCalls] = useState<CompanyCallStat[]>([]);
 
   const base = import.meta.env.VITE_COMPANY_API_URL;
+  const orchestratorBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
 
   const loadCompany = useCallback(async () => {
     const userId = Cookies.get('userId');
@@ -93,9 +112,55 @@ export function CompanyDashboardPage() {
       } catch {
         setGigsCount(null);
       }
+
+      try {
+        const res = await axios.get(`${orchestratorBase}/escrow/calls/${cid}`);
+        const payload = res.data?.data;
+        setCalls(Array.isArray(payload) ? payload : []);
+      } catch {
+        setCalls([]);
+      }
     },
-    [base]
+    [base, orchestratorBase]
   );
+
+  // Performance rates — computed exactly like the rep dashboard so the company
+  // sees the same metrics aggregated across all its reps.
+  const performance = useMemo(() => {
+    const total = calls.length;
+    const completedCalls = calls.filter((c) => (c.status || '').toLowerCase() === 'completed');
+    const completed = completedCalls.length;
+
+    const pitchCount = completedCalls.filter((c) =>
+      (c.argumentation_score || 0) >= 50 ||
+      (c.ai_call_score?.Argumentation?.score || 0) >= 50 ||
+      (c.ai_call_score?.overall?.score || 0) > 0
+    ).length;
+
+    const validCount = completedCalls.filter((c) =>
+      c.valid === true || c.validByAI === true
+    ).length;
+
+    const transactionCount = completedCalls.filter((c) =>
+      c.transactionOccurred === true ||
+      c.validByReps === true ||
+      c.ai_call_score?.transaction_detected === true
+    ).length;
+
+    const pct = (num: number, den: number) => (den > 0 ? Math.round((num / den) * 100) : 0);
+
+    return {
+      total,
+      completed,
+      pitchCount,
+      validCount,
+      transactionCount,
+      reachabilityPct: pct(completed, total),
+      argumentationPct: pct(pitchCount, completed),
+      validationPct: pct(validCount, completed),
+      conversionPct: pct(transactionCount, completed)
+    };
+  }, [calls]);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,6 +255,143 @@ export function CompanyDashboardPage() {
           Modifier la fiche
         </Link>
       </header>
+
+      {/* Performance commerciale — 4 KPIs computed from all of the company's calls */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
+            <ActivityIcon className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-black text-slate-900 tracking-tight">Performance commerciale</h2>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
+              Suivi en temps réel agrégé sur l'ensemble de vos représentants
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Joignabilité */}
+          <div className="bg-white border border-slate-200/80 rounded-[2rem] p-6 shadow-sm flex flex-col justify-between">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Taux de Joignabilité</span>
+              <div className="relative w-28 h-28 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle cx="56" cy="56" r="48" className="stroke-slate-100" strokeWidth="8" fill="transparent" />
+                  <circle
+                    cx="56" cy="56" r="48"
+                    className="stroke-cyan-500 transition-all duration-1000 ease-out"
+                    strokeWidth="8" fill="transparent"
+                    strokeDasharray={GAUGE_CIRCUMFERENCE}
+                    strokeDashoffset={GAUGE_CIRCUMFERENCE - (GAUGE_CIRCUMFERENCE * performance.reachabilityPct) / 100}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center">
+                  <span className="text-2xl font-black text-slate-800 tracking-tighter">{performance.reachabilityPct}%</span>
+                  <span className="text-[9px] text-cyan-600 font-extrabold uppercase tracking-wide">Connected</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 font-bold leading-tight">
+                {performance.completed} / {performance.total} Appels Réussis
+              </p>
+            </div>
+            <p className="border-t border-slate-100 pt-3 mt-4 text-[10px] text-slate-400 font-semibold italic text-center leading-relaxed">
+              Pourcentage d'appels ayant abouti à un échange de vive voix.
+            </p>
+          </div>
+
+          {/* Argumentation */}
+          <div className="bg-white border border-slate-200/80 rounded-[2rem] p-6 shadow-sm flex flex-col justify-between">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Taux d'Argumentation</span>
+              <div className="relative w-28 h-28 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle cx="56" cy="56" r="48" className="stroke-slate-100" strokeWidth="8" fill="transparent" />
+                  <circle
+                    cx="56" cy="56" r="48"
+                    className="stroke-amber-500 transition-all duration-1000 ease-out"
+                    strokeWidth="8" fill="transparent"
+                    strokeDasharray={GAUGE_CIRCUMFERENCE}
+                    strokeDashoffset={GAUGE_CIRCUMFERENCE - (GAUGE_CIRCUMFERENCE * performance.argumentationPct) / 100}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center">
+                  <span className="text-2xl font-black text-slate-800 tracking-tighter">{performance.argumentationPct}%</span>
+                  <span className="text-[9px] text-amber-600 font-extrabold uppercase tracking-wide">Pitched</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 font-bold leading-tight">
+                {performance.pitchCount} / {performance.completed} Appels Argumentés
+              </p>
+            </div>
+            <p className="border-t border-slate-100 pt-3 mt-4 text-[10px] text-slate-400 font-semibold italic text-center leading-relaxed">
+              Pourcentage d'appels où un argumentaire structuré a été présenté.
+            </p>
+          </div>
+
+          {/* Appels valides */}
+          <div className="bg-white border border-slate-200/80 rounded-[2rem] p-6 shadow-sm flex flex-col justify-between">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Taux d'Appels Valides</span>
+              <div className="relative w-28 h-28 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle cx="56" cy="56" r="48" className="stroke-slate-100" strokeWidth="8" fill="transparent" />
+                  <circle
+                    cx="56" cy="56" r="48"
+                    className="stroke-indigo-500 transition-all duration-1000 ease-out"
+                    strokeWidth="8" fill="transparent"
+                    strokeDasharray={GAUGE_CIRCUMFERENCE}
+                    strokeDashoffset={GAUGE_CIRCUMFERENCE - (GAUGE_CIRCUMFERENCE * performance.validationPct) / 100}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center">
+                  <span className="text-2xl font-black text-slate-800 tracking-tighter">{performance.validationPct}%</span>
+                  <span className="text-[9px] text-indigo-600 font-extrabold uppercase tracking-wide">AI Compliant</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 font-bold leading-tight">
+                {performance.validCount} / {performance.completed} Appels Conformes
+              </p>
+            </div>
+            <p className="border-t border-slate-100 pt-3 mt-4 text-[10px] text-slate-400 font-semibold italic text-center leading-relaxed">
+              Pourcentage d'appels validés par l'audit IA (déclenche le paiement).
+            </p>
+          </div>
+
+          {/* Conversion */}
+          <div className="bg-white border border-slate-200/80 rounded-[2rem] p-6 shadow-sm flex flex-col justify-between">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Taux de Conversion</span>
+              <div className="relative w-28 h-28 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle cx="56" cy="56" r="48" className="stroke-slate-100" strokeWidth="8" fill="transparent" />
+                  <circle
+                    cx="56" cy="56" r="48"
+                    className="stroke-rose-500 transition-all duration-1000 ease-out"
+                    strokeWidth="8" fill="transparent"
+                    strokeDasharray={GAUGE_CIRCUMFERENCE}
+                    strokeDashoffset={GAUGE_CIRCUMFERENCE - (GAUGE_CIRCUMFERENCE * performance.conversionPct) / 100}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center">
+                  <span className="text-2xl font-black text-slate-800 tracking-tighter">{performance.conversionPct}%</span>
+                  <span className="text-[9px] text-rose-600 font-extrabold uppercase tracking-wide">Transactions</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 font-bold leading-tight">
+                {performance.transactionCount} / {performance.completed} Ventes Réalisées
+              </p>
+            </div>
+            <p className="border-t border-slate-100 pt-3 mt-4 text-[10px] text-slate-400 font-semibold italic text-center leading-relaxed">
+              Pourcentage d'appels aboutissant à une transaction confirmée.
+            </p>
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
