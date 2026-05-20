@@ -101,13 +101,13 @@
     },
     "ratios": {
       "coverageRate": "Coverage Rate",
-      "coverageSubtitle": "Contacted Leads / Total Leads",
-      "reachabilityRate": "Reachability Rate",
-      "reachabilitySubtitle": "Valid Numbers / Total Calls",
+      "coverageSubtitle": "Total Calls / Total Leads",
+      "unansweredRate": "Unanswered Rate",
+      "unansweredSubtitle": "Unanswered Calls / Total Calls",
       "argumentationRate": "Argumentation Rate",
-      "argumentationSubtitle": "Calls > 1min30 / Reached Leads",
-      "machineRate": "Answering Machine Rate",
-      "machineSubtitle": "Answering Machine Calls / Total Calls"
+      "argumentationSubtitle": "AI-Validated Calls / Total Calls",
+      "conversionRate": "Conversion Rate",
+      "conversionSubtitle": "Transactions / Total Calls"
     },
     "charts": {
       "noData": "No Data",
