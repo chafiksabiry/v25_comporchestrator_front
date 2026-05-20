@@ -2,10 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Play, Pause, Volume2, RotateCcw } from 'lucide-react';
 
 interface PremiumAudioPlayerProps {
-  url: string;
+  // Primary prop name across the dashboard.
+  url?: string;
+  // Backwards-compatible alias: some callers historically passed `audioUrl`.
+  audioUrl?: string;
 }
 
-export function PremiumAudioPlayer({ url }: PremiumAudioPlayerProps) {
+export function PremiumAudioPlayer({ url, audioUrl }: PremiumAudioPlayerProps) {
+  const safeUrl = typeof url === 'string' && url.length > 0
+    ? url
+    : typeof audioUrl === 'string' && audioUrl.length > 0
+      ? audioUrl
+      : '';
+
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -14,14 +23,14 @@ export function PremiumAudioPlayer({ url }: PremiumAudioPlayerProps) {
 
   useEffect(() => {
     const segments = 40;
-    const data = [];
-    const seed = url.length;
+    const data: number[] = [];
+    const seed = safeUrl ? safeUrl.length : 0;
     for (let i = 0; i < segments; i++) {
       const val = Math.abs(Math.sin(seed + i * 0.3) * 0.6 + Math.random() * 0.4);
       data.push(Math.max(0.15, val));
     }
     setWaveform(data);
-  }, [url]);
+  }, [safeUrl]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -67,7 +76,7 @@ export function PremiumAudioPlayer({ url }: PremiumAudioPlayerProps) {
     <div className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex items-center gap-3 w-full max-w-lg mx-auto group">
       <audio
         ref={audioRef}
-        src={url}
+        src={safeUrl}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => setIsPlaying(false)}
