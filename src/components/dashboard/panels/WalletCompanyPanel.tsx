@@ -459,9 +459,9 @@ export function WalletCompanyPanel() {
                       <td className="py-4 px-4">
                         <div className="font-bold text-slate-800 flex items-center gap-2">
                           <span>{call.lead}</span>
-                          {(call.validByCompany === true || call.valid === true) && (
+                          {call.validByAI === true && (
                             <span
-                              title="Appel validé"
+                              title="Appel validé par l'IA — RepTransaction créée, wallet débité"
                               className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
                             >
                               <BadgeCheck size={12} />

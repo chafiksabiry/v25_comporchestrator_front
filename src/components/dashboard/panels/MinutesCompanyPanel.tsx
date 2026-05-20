@@ -411,9 +411,9 @@ export function MinutesCompanyPanel() {
                         <span>
                           {call.leadObj ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}` : call.lead || 'Inconnu'}
                         </span>
-                        {call.valid === true && (
+                        {call.validByAI === true && (
                           <span
-                            title="Appel validé"
+                            title="Appel validé par l'IA"
                             className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
                           >
                             <BadgeCheck size={12} />
