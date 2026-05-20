@@ -160,6 +160,21 @@ function formatFloatMinutesToMMSS(mins: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+// Humanize a RepTransaction `type` for the "Cause" column.
+// Falls back to the raw value so we never render a blank cell.
+function repTxCauseLabel(type?: string): { label: string; tone: string } {
+  switch (type) {
+    case 'call_validated':
+      return { label: 'Appel validé', tone: 'bg-emerald-50 text-emerald-700 border-emerald-100' };
+    case 'transaction':
+      return { label: 'Vente', tone: 'bg-amber-50 text-amber-700 border-amber-100' };
+    case 'bonus':
+      return { label: 'Bonus', tone: 'bg-indigo-50 text-indigo-700 border-indigo-100' };
+    default:
+      return { label: type || '—', tone: 'bg-slate-50 text-slate-600 border-slate-100' };
+  }
+}
+
 export function WalletCompanyPanel() {
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [agentWithdrawals, setAgentWithdrawals] = useState<AgentWithdrawal[]>([]);
@@ -506,7 +521,7 @@ export function WalletCompanyPanel() {
               Commissions (ledger Rep)
             </h3>
             <p className="text-xs text-gray-500 mt-1">
-              Une ligne par <code className="text-[10px] font-mono px-1 py-0.5 rounded bg-slate-100 text-slate-700">RepTransaction</code> bookée — 70% pour le rep, 30% pour HARX. Les appels en attente sont gérés depuis la page Appels.
+              70% pour le rep, 30% pour HARX. Les appels en attente sont gérés depuis la page Appels.
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -548,6 +563,7 @@ export function WalletCompanyPanel() {
               <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
                 <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                   <th className="py-3 px-4 bg-white">Destinataire</th>
+                  <th className="py-3 px-4 bg-white">Cause</th>
                   <th className="py-3 px-4 bg-white">Date & Heure</th>
                   <th className="py-3 px-4 bg-white">Durée</th>
                   <th className="py-3 px-4 bg-white">Score AI</th>
@@ -558,6 +574,7 @@ export function WalletCompanyPanel() {
               <tbody className="divide-y divide-gray-50 text-xs">
                 {visibleCalls.map((call) => {
                   const tx = call.repTx;
+                  const cause = repTxCauseLabel(tx?.type);
                   return (
                     <tr key={tx?._id || call.callId} className="hover:bg-gray-50 transition-colors">
                       <td className="py-4 px-4 font-bold text-slate-800">
@@ -576,7 +593,14 @@ export function WalletCompanyPanel() {
                             </span>
                           ) : null}
                         </div>
-                        <div className="text-[10px] text-gray-400 font-bold mt-0.5">{call.agent}</div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border font-bold text-[10px] uppercase tracking-wider ${cause.tone}`}
+                          title={tx?.description || cause.label}
+                        >
+                          {cause.label}
+                        </span>
                       </td>
                       <td className="py-4 px-4 text-gray-500">
                         {new Date(call.startTime).toLocaleString('fr-FR')}
@@ -602,7 +626,7 @@ export function WalletCompanyPanel() {
                           const gross = Number(tx?.amount || 0);
                           const repShare = Number(tx?.repShare || 0);
                           const harxShare = Number(tx?.harxShare || 0);
-                          const agentName = call.agent || 'Rep';
+                          const agentName = call.agent;
                           return gross > 0 ? (
                             <div className="flex flex-col items-start gap-1">
                               <span className="text-sm font-black text-slate-900 tabular-nums">
@@ -616,12 +640,6 @@ export function WalletCompanyPanel() {
                                   30% HARX · {harxShare.toFixed(2)} €
                                 </div>
                               </div>
-                              {tx?.type === 'bonus' && (
-                                <span className="text-[9px] text-indigo-600 font-bold uppercase tracking-wider">Bonus</span>
-                              )}
-                              {tx?.type === 'transaction' && (
-                                <span className="text-[9px] text-amber-600 font-bold uppercase tracking-wider">Vente</span>
-                              )}
                             </div>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[9px] uppercase tracking-wider">
