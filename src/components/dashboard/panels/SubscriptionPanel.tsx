@@ -8,7 +8,7 @@ import Subscription from '../../Subscription';
  */
 export function SubscriptionPanel() {
   return (
-    <div className="p-2 md:p-4 max-w-7xl mx-auto animate-fade-in">
+    <div className="max-w-7xl mx-auto animate-fade-in">
       <Subscription />
     </div>
   );

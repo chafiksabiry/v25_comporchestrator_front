@@ -218,95 +218,95 @@ const Subscription: React.FC = () => {
   };
 
   return (
-    <div className="min-h-full bg-transparent p-6 relative">
+    <div className="min-h-full bg-transparent p-3 relative">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
           <div>
-            <div className="flex items-center gap-2 mb-2 text-harx-500">
-              <Sparkles className="h-5 w-5" />
-              <span className="text-xs font-black uppercase tracking-[0.2em]">Premium Access</span>
+            <div className="flex items-center gap-2 mb-1 text-harx-500">
+              <Sparkles className="h-4 w-4" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Premium Access</span>
             </div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight">Subscription Plans</h1>
-            <p className="text-gray-500 mt-2 font-medium">Choose the perfect scale for your AI-powered orchestration engine.</p>
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight leading-tight">Subscription Plans</h1>
+            <p className="text-xs text-gray-500 mt-0.5 font-medium">Choose the perfect scale for your AI-powered orchestration engine.</p>
           </div>
-          
-          <div className="bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 flex items-center gap-4 shadow-sm">
-            <div className="h-12 w-12 bg-harx-50 rounded-xl flex items-center justify-center text-harx-600">
-              <CreditCard size={24} />
+
+          <div className="bg-white/50 backdrop-blur-sm p-2.5 rounded-xl border border-gray-100 flex items-center gap-2.5 shadow-sm">
+            <div className="h-9 w-9 bg-harx-50 rounded-lg flex items-center justify-center text-harx-600">
+              <CreditCard size={18} />
             </div>
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Pricing Model</p>
-              <p className="text-sm font-black text-gray-800 tracking-tight">Subscription / Monthly</p>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Pricing Model</p>
+              <p className="text-xs font-black text-gray-800 tracking-tight">Subscription / Monthly</p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {plans.map((plan) => {
             const isActive = activePriceId === (plan.priceId || plan.stripePriceId);
             return (
-              <div 
+              <div
                 key={plan.name}
-                className={`relative flex flex-col p-8 rounded-[2rem] transition-all duration-500 group ${
+                className={`relative flex flex-col p-4 rounded-2xl transition-all duration-500 group ${
                   isActive
-                    ? 'bg-[#0a0b14] text-white scale-105 shadow-2xl shadow-harx-500/20 ring-2 ring-harx-500'
-                    : plan.popular 
-                      ? 'bg-[#0a0b14] text-white scale-105 shadow-2xl shadow-harx-500/20 ring-1 ring-white/10' 
-                      : 'bg-white text-gray-900 border border-gray-100 shadow-xl hover:shadow-2xl hover:border-harx-500/30'
+                    ? 'bg-[#0a0b14] text-white shadow-2xl shadow-harx-500/20 ring-2 ring-harx-500'
+                    : plan.popular
+                      ? 'bg-[#0a0b14] text-white shadow-2xl shadow-harx-500/20 ring-1 ring-white/10'
+                      : 'bg-white text-gray-900 border border-gray-100 shadow-md hover:shadow-xl hover:border-harx-500/30'
                 }`}
               >
                 {(plan.popular || isActive) && (
-                  <div className={`absolute -top-5 left-1/2 transform -translate-x-1/2 px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg ${
+                  <div className={`absolute -top-3 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.18em] shadow-lg ${
                     isActive ? 'bg-green-500 text-white shadow-green-500/30' : 'bg-gradient-harx text-white shadow-harx-500/30'
                   }`}>
                     {isActive ? 'Current Plan' : 'Most Popular'}
                   </div>
                 )}
 
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className={`text-2xl font-black tracking-tight ${plan.popular || isActive ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
-                    {(plan.popular || isActive) && <Sparkles className="h-5 w-5 text-harx-400" />}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className={`text-lg font-black tracking-tight ${plan.popular || isActive ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
+                    {(plan.popular || isActive) && <Sparkles className="h-4 w-4 text-harx-400" />}
                   </div>
-                  <p className={`text-xs font-medium leading-relaxed ${plan.popular || isActive ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <p className={`text-[11px] font-medium leading-snug ${plan.popular || isActive ? 'text-gray-400' : 'text-gray-500'}`}>
                     {plan.description}
                   </p>
                 </div>
 
-                <div className="mb-8">
+                <div className="mb-3">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-5xl font-black tracking-tighter">€{plan.price}</span>
-                    <span className={`text-sm font-bold uppercase tracking-widest opacity-60 ${plan.popular || isActive ? 'text-gray-400' : 'text-gray-500'}`}>/ Mo</span>
+                    <span className="text-3xl font-black tracking-tighter">€{plan.price}</span>
+                    <span className={`text-[10px] font-bold uppercase tracking-widest opacity-60 ${plan.popular || isActive ? 'text-gray-400' : 'text-gray-500'}`}>/ Mo</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => !isActive && handleSelectPlan(plan)}
                   disabled={isActive}
-                  className={`w-full py-4 px-6 rounded-2xl font-black text-sm uppercase tracking-[0.15em] transition-all duration-300 mb-8 transform ${
+                  className={`w-full py-2.5 px-4 rounded-xl font-black text-[11px] uppercase tracking-[0.15em] transition-all duration-300 mb-3 transform ${
                     !isActive ? 'group-hover:scale-[1.02] active:scale-95' : ''
                   } ${
                     isActive
                       ? 'bg-green-500/20 text-green-400 border border-green-500/30 cursor-default'
                       : plan.popular
-                        ? 'bg-gradient-harx text-white shadow-xl shadow-harx-500/30 hover:shadow-harx-500/50'
-                        : 'bg-gray-900 text-white hover:bg-black shadow-lg shadow-black/10'
+                        ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/30 hover:shadow-harx-500/50'
+                        : 'bg-gray-900 text-white hover:bg-black shadow shadow-black/10'
                   }`}
                 >
                   {isActive ? 'Current Plan' : plan.buttonText}
                 </button>
 
-                <div className={`h-px w-full mb-8 ${plan.popular || isActive ? 'bg-white/10' : 'bg-gray-100'}`} />
+                <div className={`h-px w-full mb-3 ${plan.popular || isActive ? 'bg-white/10' : 'bg-gray-100'}`} />
 
-                <ul className="space-y-4 flex-grow">
+                <ul className="space-y-1.5 flex-grow">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
-                      <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
+                    <li key={feature} className="flex items-start gap-2">
+                      <div className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5 ${
                         plan.popular || isActive ? 'bg-harx-500/20 text-harx-400' : 'bg-green-50 text-green-600'
                       }`}>
-                        <Check size={12} strokeWidth={3} />
+                        <Check size={10} strokeWidth={3} />
                       </div>
-                      <span className={`text-xs font-bold leading-tight ${plan.popular || isActive ? 'text-gray-300' : 'text-gray-600'}`}>
+                      <span className={`text-[11px] font-bold leading-tight ${plan.popular || isActive ? 'text-gray-300' : 'text-gray-600'}`}>
                         {feature}
                       </span>
                     </li>
