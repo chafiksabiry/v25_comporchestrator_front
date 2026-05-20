@@ -208,14 +208,16 @@ export function WalletCompanyPanel() {
     }
   };
 
+  // Validation = AI validation. Le wallet est débité automatiquement
+  // dès que l'IA valide un appel (pas besoin d'action manuelle).
   const pendingValidationCalls = companyCalls.filter(
-    (c) => c.validByCompany == null && c.valid !== true && c.valid !== false
+    (c) => c.validByAI == null
   );
   const validatedCalls = companyCalls.filter(
-    (c) => c.validByCompany === true || c.valid === true
+    (c) => c.validByAI === true
   );
   const refusedCalls = companyCalls.filter(
-    (c) => c.validByCompany === false || c.valid === false
+    (c) => c.validByAI === false
   );
   const visibleCalls =
     callsTab === 'pending' ? pendingValidationCalls
