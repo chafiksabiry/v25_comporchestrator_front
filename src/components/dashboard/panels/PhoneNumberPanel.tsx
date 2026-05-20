@@ -9,7 +9,6 @@ import {
   Cpu,
   CreditCard,
   Lock,
-  ShieldCheck,
   AlertTriangle,
   X
 } from 'lucide-react';
@@ -204,6 +203,17 @@ export function PhoneNumberPanel() {
     setPurchasing(checkoutNumber);
     try {
       // 1. Init a payment intent / order on the backend.
+      // Some deployed backends may not yet expose the /checkout endpoints
+      // (older versions). We detect a 404 / non-JSON response and gracefully
+      // fall back to the legacy direct purchase so the user is never stuck.
+      let paymentId: string | null = null;
+      let checkoutSupported = true;
+
+      const safeParseJson = async (res: Response) => {
+        const txt = await res.text();
+        try { return txt ? JSON.parse(txt) : {}; } catch { return null; }
+      };
+
       const initRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -214,42 +224,58 @@ export function PhoneNumberPanel() {
           provider: checkoutMethod
         })
       });
-      const initData = await initRes.json();
-      if (!initRes.ok || !initData?.paymentId) {
-        throw new Error(initData?.message || initData?.error || "Impossible d'initialiser le paiement.");
-      }
-      const paymentId = initData.paymentId as string;
-      setCheckoutPaymentId(paymentId);
 
-      // 2. If a real provider checkout URL is returned, open it.
-      // Otherwise, we're in stub mode (no Stripe/PayPal SDK key yet) —
-      // we proceed directly to confirmation. Wire the SDK here when keys
-      // are configured (window.open(initData.checkoutUrl, 'checkout') ...).
-      if (initData.checkoutUrl && !String(initData.checkoutUrl).startsWith('internal://')) {
-        window.open(initData.checkoutUrl, '_blank', 'noopener,noreferrer,width=520,height=720');
+      if (initRes.status === 404) {
+        // Backend not yet redeployed with checkout routes — legacy fallback.
+        console.warn('[checkout] /checkout/init not available, falling back to legacy purchase.');
+        checkoutSupported = false;
+      } else {
+        const initData = await safeParseJson(initRes);
+        if (!initData) {
+          throw new Error("Réponse du serveur de paiement invalide. Veuillez réessayer.");
+        }
+        if (!initRes.ok || !initData?.paymentId) {
+          throw new Error(initData?.message || initData?.error || "Impossible d'initialiser le paiement.");
+        }
+        paymentId = initData.paymentId as string;
+        setCheckoutPaymentId(paymentId);
+
+        // 2. If a real provider checkout URL is returned, open it. Otherwise
+        // we're in stub mode (no Stripe/PayPal SDK key yet) — we proceed
+        // directly to confirmation.
+        if (initData.checkoutUrl && !String(initData.checkoutUrl).startsWith('internal://')) {
+          window.open(initData.checkoutUrl, '_blank', 'noopener,noreferrer,width=520,height=720');
+        }
+
+        // 3. Confirm the payment server-side.
+        const confirmRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentId })
+        });
+        const confirmData = await safeParseJson(confirmRes);
+        if (!confirmData) {
+          throw new Error("Réponse du serveur de paiement invalide. Veuillez réessayer.");
+        }
+        if (!confirmRes.ok || !confirmData?.success) {
+          throw new Error(confirmData?.message || confirmData?.error || 'Paiement non confirmé.');
+        }
       }
 
-      // 3. Confirm the payment server-side.
-      const confirmRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/confirm`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentId })
-      });
-      const confirmData = await confirmRes.json();
-      if (!confirmRes.ok || !confirmData?.success) {
-        throw new Error(confirmData?.message || confirmData?.error || 'Paiement non confirmé.');
-      }
+      // 4. Now actually provision the Twilio number. Includes paymentId only
+      // when the checkout endpoints exist server-side; legacy backends accept
+      // the call without it.
+      const purchaseBody: Record<string, any> = {
+        phoneNumber: checkoutNumber,
+        gigId: selectedGigIdForNumber,
+        companyId,
+      };
+      if (checkoutSupported && paymentId) purchaseBody.paymentId = paymentId;
 
-      // 4. Now actually provision the Twilio number, gated by paymentId.
       const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase/twilio`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: checkoutNumber,
-          gigId: selectedGigIdForNumber,
-          companyId,
-          paymentId
-        })
+        body: JSON.stringify(purchaseBody)
       });
 
       if (!purchaseRes.ok) {
@@ -634,15 +660,6 @@ export function PhoneNumberPanel() {
                         </span>
                       </button>
                     </div>
-                  </div>
-
-                  <div className="flex items-start gap-2 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl p-3">
-                    <ShieldCheck size={14} className="shrink-0 mt-0.5" />
-                    <span>
-                      <span className="font-bold">Indépendant du portefeuille.</span> Cette transaction est traitée
-                      directement par {checkoutMethod === 'stripe' ? 'Stripe' : 'PayPal'} et n'utilise{' '}
-                      <span className="font-bold">aucun fonds de votre wallet HARX</span>.
-                    </span>
                   </div>
 
                   <button
