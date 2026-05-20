@@ -1,6 +1,6 @@
 export type PaypalPopupOutcome = 'approved' | 'cancelled' | 'closed';
 
-const PAYPAL_RETURN_ORIGINS = new Set([
+const RETURN_ORIGINS = new Set([
   'https://harxv25comporchestratorfront.netlify.app',
   'https://harx25pageslinks.netlify.app'
 ]);
@@ -33,7 +33,7 @@ export const waitForPaypalPopup = (popup: Window): Promise<PaypalPopupOutcome> =
       const data = ev?.data;
       if (!data || typeof data !== 'object') return;
       if (data.type !== 'HARX_PAYPAL_RETURN' && data.type !== 'HARX_PAYPAL_CANCEL') return;
-      if (ev.origin && !PAYPAL_RETURN_ORIGINS.has(ev.origin)) return;
+      if (ev.origin && !RETURN_ORIGINS.has(ev.origin)) return;
       if (data.type === 'HARX_PAYPAL_RETURN') finish('approved');
       if (data.type === 'HARX_PAYPAL_CANCEL') finish('cancelled');
     };
@@ -147,26 +147,117 @@ export async function runPaypalCheckoutFlow(
   return { paymentId: initData.paymentId };
 }
 
+/** Wait until Stripe redirects to our return/cancel page or the user closes the popup. */
+export const waitForStripePopup = (popup: Window): Promise<PaypalPopupOutcome> =>
+  new Promise((resolve) => {
+    let settled = false;
+    let closedGraceTimer: ReturnType<typeof setTimeout> | undefined;
+    let sessionIdFromMessage: string | null = null;
+
+    const finish = (outcome: PaypalPopupOutcome) => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('message', onMessage);
+      clearInterval(timer);
+      if (closedGraceTimer) clearTimeout(closedGraceTimer);
+      resolve(outcome);
+    };
+
+    const onMessage = (ev: MessageEvent) => {
+      const data = ev?.data;
+      if (!data || typeof data !== 'object') return;
+      if (data.type !== 'HARX_STRIPE_RETURN' && data.type !== 'HARX_STRIPE_CANCEL') return;
+      if (ev.origin && !RETURN_ORIGINS.has(ev.origin)) return;
+      if (data.type === 'HARX_STRIPE_RETURN') {
+        if (typeof data.sessionId === 'string') sessionIdFromMessage = data.sessionId;
+        finish('approved');
+      }
+      if (data.type === 'HARX_STRIPE_CANCEL') finish('cancelled');
+    };
+    window.addEventListener('message', onMessage);
+
+    const timer = setInterval(() => {
+      if (popup.closed) {
+        if (!closedGraceTimer) {
+          closedGraceTimer = setTimeout(() => finish('closed'), 1200);
+        }
+        return;
+      }
+      if (closedGraceTimer) {
+        clearTimeout(closedGraceTimer);
+        closedGraceTimer = undefined;
+      }
+      try {
+        const href = popup.location.href;
+        if (/stripe-return\.html/i.test(href)) {
+          finish('approved');
+        } else if (/stripe-cancel\.html/i.test(href)) {
+          finish('cancelled');
+        }
+      } catch {
+        /* cross-origin while on stripe checkout */
+      }
+    }, 400);
+
+    // Expose the captured session id via a side-channel for callers that need it
+    (resolve as unknown as { sessionId?: () => string | null }).sessionId = () => sessionIdFromMessage;
+  });
+
 export async function runStripeCheckoutFlow(
   apiBaseUrl: string,
   initBody: CheckoutInitBody
 ): Promise<{ paymentId: string }> {
-  const initData = await initCompanyCheckout(apiBaseUrl, initBody);
+  const initData = await initCompanyCheckout(apiBaseUrl, initBody) as {
+    paymentId: string;
+    checkoutUrl?: string;
+  };
+
+  // No checkoutUrl → backend ran in stub mode (no STRIPE_SECRET_KEY). Just confirm.
+  if (!initData.checkoutUrl) {
+    await confirmCompanyCheckout(apiBaseUrl, initData.paymentId);
+    return { paymentId: initData.paymentId };
+  }
+
+  const popup = openCenteredPopup(initData.checkoutUrl, 'stripe-checkout');
+  if (!popup) {
+    throw new Error('Veuillez autoriser les pop-ups pour finaliser le paiement par carte.');
+  }
+
+  const outcome = await waitForStripePopup(popup);
+  if (outcome === 'cancelled') throw new Error('STRIPE_CANCELLED');
+  if (outcome === 'closed') throw new Error('STRIPE_CLOSED');
+
+  if (!popup.closed) popup.close();
   await confirmCompanyCheckout(apiBaseUrl, initData.paymentId);
   return { paymentId: initData.paymentId };
+}
+
+/** Map checkout flow errors to user-facing French toasts. */
+export function paymentFlowErrorMessage(err: unknown): string {
+  const msg = err instanceof Error ? err.message : '';
+  if (msg === 'PAYPAL_CANCELLED' || msg === 'STRIPE_CANCELLED') return 'Paiement annulé.';
+  if (msg === 'PAYPAL_CLOSED') {
+    return 'Fenêtre PayPal fermée avant validation. Complétez le paiement sur PayPal.';
+  }
+  if (msg === 'STRIPE_CLOSED') {
+    return 'Fenêtre Stripe fermée avant validation. Complétez le paiement par carte.';
+  }
+  return msg || 'Échec du paiement.';
 }
 
 export async function fetchPaymentConfig(apiBaseUrl: string) {
   try {
     const res = await fetch(`${apiBaseUrl}/payments/checkout/config`);
     const cfg = await safeParseJson(res);
-    if (!res.ok || !cfg) return { paypalEnabled: false, stripeEnabled: false };
+    if (!res.ok || !cfg) {
+      return { paypalEnabled: false, stripeEnabled: false, minutesUnitPriceEuros: 1 };
+    }
     return {
       paypalEnabled: Boolean(cfg.paypal?.enabled),
-      stripeEnabled: Boolean(cfg.stripe?.enabled) || true,
+      stripeEnabled: Boolean(cfg.stripe?.enabled),
       minutesUnitPriceEuros: cfg.pricing?.minutesUnitPriceEuros ?? 1
     };
   } catch {
-    return { paypalEnabled: false, stripeEnabled: true, minutesUnitPriceEuros: 1 };
+    return { paypalEnabled: false, stripeEnabled: false, minutesUnitPriceEuros: 1 };
   }
 }

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Paiement Stripe — HARX</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        background: #f8fafc;
+        color: #0f172a;
+      }
+      .box {
+        text-align: center;
+        padding: 2rem;
+        max-width: 360px;
+      }
+      h1 {
+        font-size: 1.125rem;
+        margin: 0 0 0.5rem;
+      }
+      p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h1>Paiement validé</h1>
+      <p>Vous pouvez fermer cette fenêtre. Le tableau de bord HARX finalise l&apos;achat.</p>
+    </div>
+    <script>
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var payload = {
+          type: 'HARX_STRIPE_RETURN',
+          paymentId: params.get('paymentId'),
+          sessionId: params.get('session_id') || params.get('sessionId')
+        };
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(payload, '*');
+        }
+        setTimeout(function () {
+          window.close();
+        }, 600);
+      })();
+    </script>
+  </body>
+</html>
