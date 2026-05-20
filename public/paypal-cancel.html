@@ -43,11 +43,7 @@
           paymentId: params.get('paymentId')
         };
         if (window.opener && !window.opener.closed) {
-          try {
-            window.opener.postMessage(payload, location.origin);
-          } catch (e) {
-            window.opener.postMessage(payload, '*');
-          }
+          window.opener.postMessage(payload, '*');
         }
         setTimeout(function () {
           window.close();

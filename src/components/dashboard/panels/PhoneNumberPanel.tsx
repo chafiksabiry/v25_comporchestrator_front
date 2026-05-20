@@ -29,21 +29,36 @@ const safeParseJson = async (res: Response) => {
 
 type PaypalPopupOutcome = 'approved' | 'cancelled' | 'closed';
 
+const PAYPAL_RETURN_ORIGINS = new Set([
+  'https://harxv25comporchestratorfront.netlify.app',
+  'https://harx25pageslinks.netlify.app'
+]);
+
 /** Wait until PayPal redirects to our return/cancel page or the user closes the popup. */
 const waitForPaypalPopup = (popup: Window): Promise<PaypalPopupOutcome> =>
   new Promise((resolve) => {
     let settled = false;
+    let closedGraceTimer: ReturnType<typeof setTimeout> | undefined;
+
     const finish = (outcome: PaypalPopupOutcome) => {
       if (settled) return;
       settled = true;
       window.removeEventListener('message', onMessage);
       clearInterval(timer);
+      if (closedGraceTimer) clearTimeout(closedGraceTimer);
       resolve(outcome);
     };
 
     const onMessage = (ev: MessageEvent) => {
       const data = ev?.data;
       if (!data || typeof data !== 'object') return;
+      if (
+        data.type !== 'HARX_PAYPAL_RETURN' &&
+        data.type !== 'HARX_PAYPAL_CANCEL'
+      ) {
+        return;
+      }
+      if (ev.origin && !PAYPAL_RETURN_ORIGINS.has(ev.origin)) return;
       if (data.type === 'HARX_PAYPAL_RETURN') finish('approved');
       if (data.type === 'HARX_PAYPAL_CANCEL') finish('cancelled');
     };
@@ -51,8 +66,14 @@ const waitForPaypalPopup = (popup: Window): Promise<PaypalPopupOutcome> =>
 
     const timer = setInterval(() => {
       if (popup.closed) {
-        finish('closed');
+        if (!closedGraceTimer) {
+          closedGraceTimer = setTimeout(() => finish('closed'), 1200);
+        }
         return;
+      }
+      if (closedGraceTimer) {
+        clearTimeout(closedGraceTimer);
+        closedGraceTimer = undefined;
       }
       try {
         const href = popup.location.href;
