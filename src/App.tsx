@@ -477,7 +477,7 @@ function AppContent() {
 
         <div className="flex flex-1 flex-col overflow-hidden relative bg-black">
           {/* Top Navigation / Navbar */}
-          <header className={`bg-black h-20 flex items-center shrink-0 px-8 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
+          <header className={`bg-black h-16 flex items-center shrink-0 px-5 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-6">
                 {globalBackConfig && (
@@ -494,58 +494,54 @@ function AppContent() {
               </div>
 
               {/* Credits, Balance, and Upgrade Widgets */}
-              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5">
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
                 {/* Balance Widget (My Wallet) */}
                 <div
                   onClick={handleBalanceClick}
-                  className="relative flex items-center gap-3 pl-3 pr-5 py-2.5 rounded-[1.5rem] bg-gradient-to-br from-emerald-500/20 via-slate-950/90 to-[#064e3b]/30 border border-emerald-500/40 text-xs font-bold text-emerald-50/90 shadow-[0_0_30px_-5px_rgba(16,185,129,0.5)] hover:border-emerald-300/80 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_40px_-2px_rgba(16,185,129,0.7)] transition-all duration-500 cursor-pointer group backdrop-blur-md overflow-hidden shrink-0"
+                  className="relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-br from-emerald-500/20 via-slate-950/90 to-[#064e3b]/30 border border-emerald-500/40 text-xs font-bold text-emerald-50/90 shadow-[0_0_20px_-5px_rgba(16,185,129,0.5)] hover:border-emerald-300/80 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_28px_-2px_rgba(16,185,129,0.7)] transition-all duration-300 cursor-pointer group backdrop-blur-md overflow-hidden shrink-0"
                 >
-                  {/* Subtle hover shine sweep */}
-                  <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.5rem]">
+                  <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
                     <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-escrow-shine" />
                   </span>
 
-                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(16,185,129,0.6)] group-hover:rotate-12 transition-all duration-500 shrink-0">
-                    <Coins size={17} className="text-white drop-shadow-md animate-pulse-subtle" />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)] group-hover:scale-110 transition-all duration-300 shrink-0">
+                    <Coins size={14} className="text-white drop-shadow-md animate-pulse-subtle" />
                   </div>
                   <div className="flex flex-col leading-tight relative z-10">
-                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-400 group-hover:text-emerald-300 transition-colors">My Wallet</span>
-                    <span className="text-base font-black text-white tabular-nums tracking-tight mt-0.5">{balance.toLocaleString('en-US')} €</span>
+                    <span className="text-[8px] font-black uppercase tracking-[0.15em] text-emerald-400 group-hover:text-emerald-300 transition-colors">My Wallet</span>
+                    <span className="text-sm font-black text-white tabular-nums tracking-tight">{balance.toLocaleString('en-US')} €</span>
                   </div>
                 </div>
 
                 {activeProject !== 'comporchestrator' && (
                   <>
                     {/* Minutes Disponibles Widget */}
-                    <div 
+                    <div
                       onClick={handleMinutesClick}
-                      className="flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl bg-gradient-to-br from-blue-500/15 via-blue-500/5 to-transparent border border-blue-500/25 text-xs font-bold text-blue-100/80 shadow-[0_0_20px_-6px_rgba(59,130,246,0.4)] hover:border-blue-400/50 hover:from-blue-500/25 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_24px_-4px_rgba(59,130,246,0.45)] transition-all duration-300 cursor-pointer group backdrop-blur-sm"
+                      className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-br from-blue-500/15 via-blue-500/5 to-transparent border border-blue-500/25 text-xs font-bold text-blue-100/80 shadow-[0_0_18px_-6px_rgba(59,130,246,0.4)] hover:border-blue-400/50 hover:from-blue-500/25 hover:text-white hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group backdrop-blur-sm shrink-0"
                     >
-                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500/20 border border-blue-400/30 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
-                        <Clock size={15} className="text-blue-400 group-hover:text-blue-300" />
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/20 border border-blue-400/30 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
+                        <Clock size={13} className="text-blue-400 group-hover:text-blue-300" />
                       </div>
                       <div className="flex flex-col leading-tight">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-blue-400/70">Minutes</span>
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-400/70">Minutes</span>
                         <span className="text-sm font-black text-white tabular-nums">{formatFloatMinutesToMMSSLL(minutes)}</span>
                       </div>
                     </div>
 
                     {/* Escrow/Séquestre Widget (Telephony Lines) */}
-                    <div 
+                    <div
                       onClick={handleTelephonyClick}
-                      className="relative flex items-center gap-2.5 pl-2 pr-4 py-2.5 rounded-2xl bg-gradient-escrow border border-amber-400/40 text-xs font-bold text-amber-100/90 animate-escrow-glow hover:border-amber-300/60 hover:-translate-y-0.5 hover:shadow-[0_0_32px_-2px_rgba(251,191,36,0.5)] transition-all duration-300 cursor-pointer group overflow-hidden backdrop-blur-md"
+                      className="relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-escrow border border-amber-400/40 text-xs font-bold text-amber-100/90 animate-escrow-glow hover:border-amber-300/60 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group overflow-hidden backdrop-blur-md shrink-0"
                     >
-                      <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+                      <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
                         <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/15 to-transparent animate-escrow-shine" />
                       </span>
-                      <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-escrow-icon text-white shadow-lg shadow-amber-500/30 ring-2 ring-amber-400/20 group-hover:scale-110 group-hover:shadow-amber-500/50 transition-all duration-300 shrink-0">
-                        <Phone size={16} className="drop-shadow-sm" strokeWidth={2.5} />
+                      <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-escrow-icon text-white shadow-md shadow-amber-500/30 ring-1 ring-amber-400/20 group-hover:scale-110 transition-all duration-300 shrink-0">
+                        <Phone size={13} className="drop-shadow-sm" strokeWidth={2.5} />
                       </div>
                       <div className="relative flex flex-col leading-tight">
-                        <span className="flex items-center gap-1.5">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-amber-300/90">Lignes Tél.</span>
-                          <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-px rounded-full bg-amber-500/25 text-amber-200 border border-amber-400/30">Lines</span>
-                        </span>
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-amber-300/90">Lignes Tél.</span>
                         <span className="text-sm font-black text-white tabular-nums tracking-tight">{escrow} Ligne{escrow !== 1 ? 's' : ''}</span>
                       </div>
                     </div>
@@ -558,34 +554,30 @@ function AppContent() {
                     setActiveProject('dashboard');
                     navigate('/dashboard/subscription');
                   }}
-                  className="relative flex items-center gap-2 px-6 py-3 rounded-[1.5rem] bg-gradient-to-r from-[#EC4899] via-[#F43F5E] to-[#8B5CF6] text-white font-black text-xs uppercase tracking-[0.15em] shadow-[0_0_35px_rgba(236,72,153,0.55)] hover:shadow-[0_0_50px_rgba(236,72,153,0.8)] hover:-translate-y-0.5 active:scale-95 hover:scale-105 transition-all duration-500 overflow-hidden group/upgrade shrink-0"
+                  className="relative flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#EC4899] via-[#F43F5E] to-[#8B5CF6] text-white font-black text-[11px] uppercase tracking-[0.12em] shadow-[0_0_25px_rgba(236,72,153,0.55)] hover:shadow-[0_0_40px_rgba(236,72,153,0.8)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 overflow-hidden group/upgrade shrink-0"
                 >
-                  {/* Glowing background shift overlay */}
-                  <span className="absolute inset-0 bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#F43F5E] opacity-0 group-hover/upgrade:opacity-100 transition-opacity duration-700" />
-                  
-                  {/* Subtle hover shine sweep */}
-                  <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.5rem]">
+                  <span className="absolute inset-0 bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#F43F5E] opacity-0 group-hover/upgrade:opacity-100 transition-opacity duration-500" />
+                  <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
                     <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover/upgrade:animate-escrow-shine" />
                   </span>
-
-                  <Sparkles size={15} className="animate-pulse text-white group-hover/upgrade:rotate-45 group-hover/upgrade:scale-125 transition-all duration-500 shrink-0 relative z-10" />
+                  <Sparkles size={13} className="animate-pulse text-white shrink-0 relative z-10" />
                   <span className="whitespace-nowrap relative z-10">{t('navbar.upgrade')}</span>
                 </button>
               </div>
 
-              <div className="flex items-center space-x-4 ml-auto">
+              <div className="flex items-center gap-2 ml-auto">
                 <LanguageSwitcher />
                 <div className="relative">
-                  <div 
+                  <div
                     onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                    className="flex items-center space-x-3 bg-white/5 p-1.5 pr-4 rounded-2xl border border-white/10 shadow-sm cursor-pointer hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-2 bg-white/5 p-1 pr-3 rounded-xl border border-white/10 shadow-sm cursor-pointer hover:bg-white/10 transition-colors"
                   >
-                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-black shadow-md overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-white text-sm font-black shadow-md overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
                       {companyLogo && !logoError ? (
                         <img
                           src={companyLogo}
                           alt="Company Logo"
-                          className="w-full h-full object-contain p-1"
+                          className="w-full h-full object-contain p-0.5"
                           onError={() => setLogoError(true)}
                         />
                       ) : (
@@ -593,12 +585,10 @@ function AppContent() {
                       )}
                     </div>
                     <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-white leading-tight">{companyName || userFullName}</span>
-                      </div>
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Company</span>
+                      <span className="text-xs font-black text-white leading-tight truncate max-w-[120px]">{companyName || userFullName}</span>
+                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Company</span>
                     </div>
-                    <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ml-2 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={12} className={`text-gray-400 transition-transform duration-300 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
 
                   {isProfileDropdownOpen && (
