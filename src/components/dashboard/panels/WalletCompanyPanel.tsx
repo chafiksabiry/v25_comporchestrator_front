@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Wallet,
-  ArrowUpRight,
-  ArrowDownLeft,
   CheckCircle2,
   AlertCircle,
   RefreshCw,
@@ -26,17 +24,6 @@ import toast from 'react-hot-toast';
 interface WalletState {
   companyId: string;
   balance: number;
-}
-
-interface WalletTransaction {
-  _id: string;
-  type: string;
-  amount: number;
-  status: string;
-  description: string;
-  createdAt: string;
-  commission_rep?: number;
-  commission_harx?: number;
 }
 
 interface AgentWithdrawal {
@@ -65,28 +52,8 @@ interface CompanyCallRow {
   transactionOccurred?: boolean;
 }
 
-const COMMISSION_CHARGE_TYPES = new Set([
-  'reward_charge',
-  'transaction_charge',
-  'bonus_charge',
-  'call_charge'
-]);
-
-function formatEscrowTxLabel(type: string): string {
-  switch (type) {
-    case 'deposit': return 'Dépôt';
-    case 'withdrawal': return 'Retrait';
-    case 'reward_charge': return 'Appel validé';
-    case 'transaction_charge': return 'Vente validée';
-    case 'bonus_charge': return 'Bonus rep';
-    case 'call_charge': return 'Commission IA';
-    default: return type;
-  }
-}
-
 export function WalletCompanyPanel() {
   const [wallet, setWallet] = useState<WalletState | null>(null);
-  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [agentWithdrawals, setAgentWithdrawals] = useState<AgentWithdrawal[]>([]);
   const [companyCalls, setCompanyCalls] = useState<CompanyCallRow[]>([]);
   const [approvingCallId, setApprovingCallId] = useState<string | null>(null);
@@ -124,22 +91,6 @@ export function WalletCompanyPanel() {
             }
           });
           window.dispatchEvent(event);
-        }
-      }
-
-      // 2. Fetch transaction history (deposits, withdrawals, commissions 70/30)
-      const txRes = await fetch(`${apiBaseUrl}/escrow/transactions/${companyId}`);
-      if (txRes.ok) {
-        const txData = await txRes.json();
-        if (txData.success && txData.data) {
-          setTransactions(
-            txData.data.filter(
-              (t: WalletTransaction) =>
-                t.type === 'deposit' ||
-                t.type === 'withdrawal' ||
-                COMMISSION_CHARGE_TYPES.has(t.type)
-            )
-          );
         }
       }
 
@@ -613,9 +564,9 @@ export function WalletCompanyPanel() {
       </div>
 
       {/* Grid section for lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         {/* Representative Withdrawals list */}
-        <div className="lg:col-span-2 bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
+        <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-black text-slate-800 tracking-tight">
               Demandes de versements des Représentants
@@ -675,105 +626,6 @@ export function WalletCompanyPanel() {
           )}
         </div>
 
-        {/* Transaction History list — deposits/withdrawals + aggregated commissions */}
-        <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
-          <h3 className="text-base font-black text-slate-800 tracking-tight">
-            Mouvements de fonds
-          </h3>
-
-          {(() => {
-            const deposits = transactions.filter(t => t.type === 'deposit');
-            const withdrawals = transactions.filter(t => t.type === 'withdrawal');
-            const charges = transactions.filter(t => COMMISSION_CHARGE_TYPES.has(t.type));
-
-            const totalCharges = charges.reduce((sum, t) => sum + (t.amount || 0), 0);
-            const totalRepShare = charges.reduce((sum, t) => sum + (t.commission_rep || 0), 0);
-            const totalHarxShare = charges.reduce((sum, t) => sum + (t.commission_harx || 0), 0);
-
-            const hasAnything = deposits.length + withdrawals.length + (charges.length > 0 ? 1 : 0) > 0;
-
-            if (!hasAnything) {
-              return (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-2">
-                  <Info size={32} />
-                  <p className="text-xs font-bold">Aucun mouvement enregistré.</p>
-                </div>
-              );
-            }
-
-            return (
-              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-                {/* Aggregated commissions card */}
-                {charges.length > 0 && (
-                  <div className="p-3.5 rounded-2xl border border-orange-100 bg-orange-50/40">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-orange-100 text-orange-600 shrink-0">
-                          <ArrowUpRight size={16} />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-bold text-slate-800">
-                            Commissions versées
-                          </h4>
-                          <p className="text-[10px] text-slate-500">
-                            {charges.length} validation{charges.length > 1 ? 's' : ''} cumulée{charges.length > 1 ? 's' : ''}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-sm font-black text-orange-700">
-                        -{totalCharges.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-                      </span>
-                    </div>
-                    <div className="mt-2.5 pt-2.5 border-t border-orange-100 flex items-center justify-between text-[10px] font-bold">
-                      <span className="text-emerald-700">
-                        Rep (70%) · {totalRepShare.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-                      </span>
-                      <span className="text-slate-600">
-                        HARX (30%) · {totalHarxShare.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Deposits (newest first) */}
-                {deposits.map((tx) => (
-                  <div key={tx._id} className="flex items-center justify-between p-3.5 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="p-2 rounded-xl shrink-0 bg-emerald-100 text-emerald-600">
-                        <ArrowDownLeft size={16} />
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-slate-800">Dépôt</h4>
-                        <span className="text-[9px] text-gray-400">{new Date(tx.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <span className="text-xs font-black shrink-0 text-emerald-600">
-                      +{tx.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-                    </span>
-                  </div>
-                ))}
-
-                {/* Withdrawals */}
-                {withdrawals.map((tx) => (
-                  <div key={tx._id} className="flex items-center justify-between p-3.5 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="p-2 rounded-xl shrink-0 bg-gray-100 text-gray-600">
-                        <ArrowUpRight size={16} />
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-slate-800">Retrait</h4>
-                        <span className="text-[9px] text-gray-400">{new Date(tx.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <span className="text-xs font-black shrink-0 text-slate-800">
-                      -{tx.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-                    </span>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-        </div>
       </div>
 
       {/* Deposit Modal */}
