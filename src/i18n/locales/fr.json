@@ -33,6 +33,16 @@
     "linePlural": "Lignes",
     "company": "Entreprise"
   },
+  "language": {
+    "title": "Changer de langue",
+    "en": "Anglais",
+    "fr": "Français"
+  },
+  "phoneNumberPanel": {
+    "gigsCard": {
+      "description": "Chaque Gig doit disposer d'au moins autant de numéros que le nombre maximum de Reps que vous souhaitez y inscrire pour passer les appels."
+    }
+  },
   "dashboard": {
     "title": "Tableau de Bord Smart Orchestrator",
     "overview": {
