@@ -173,10 +173,14 @@ export function CompanyPerformanceDashboard() {
                 const gigsArray = Array.isArray(gigsData) ? gigsData : [];
                 setGigs(gigsArray);
 
-                // 2. Fetch Leads — try the full list (with createdAt) so we
-                // can compute period-over-period trends. Fallback to the
-                // lightweight count endpoint if the list endpoint is missing.
+                // 2. Fetch Leads — list per gig (with createdAt) so we can
+                // compute period-over-period trends. The dashboard backend's
+                // `/leads/gig/:gigId` endpoint is protected and expects a
+                // bespoke auth scheme: `Authorization: Bearer {gigId}:{userId}`.
+                // Without that header it silently returns nothing, which is
+                // why "Total Leads" was stuck at 0 before this fix.
                 const dashboardBase: string = import.meta.env.VITE_DASHBOARD_API;
+                const userId = Cookies.get('userId') || '';
                 let totalLeads = 0;
                 let fetchedLeads: any[] = [];
                 try {
@@ -186,30 +190,27 @@ export function CompanyPerformanceDashboard() {
 
                     const leadsByGig = await Promise.all(targetGigs.map(async (gid: string) => {
                         try {
-                            const res = await fetch(`${dashboardBase}/leads/gig/${gid}?page=1&limit=100000`);
-                            if (!res.ok) return [];
+                            const res = await fetch(`${dashboardBase}/leads/gig/${gid}?page=1&limit=100000`, {
+                                headers: {
+                                    Authorization: `Bearer ${gid}:${userId}`
+                                }
+                            });
+                            if (!res.ok) return { items: [], total: 0 };
                             const json = await res.json();
-                            return Array.isArray(json.data) ? json.data : [];
+                            const items = Array.isArray(json.data) ? json.data : [];
+                            // Backend returns `total` for the paginated count.
+                            const total = typeof json.total === 'number' ? json.total : items.length;
+                            return { items, total };
                         } catch {
-                            return [];
+                            return { items: [], total: 0 };
                         }
                     }));
-                    fetchedLeads = leadsByGig.flat();
+                    fetchedLeads = leadsByGig.flatMap(r => r.items);
+                    totalLeads = leadsByGig.reduce((sum, r) => sum + (r.total || 0), 0);
+                    // If `total` was missing everywhere, fall back to the list length.
+                    if (totalLeads === 0 && fetchedLeads.length > 0) totalLeads = fetchedLeads.length;
                 } catch {
                     fetchedLeads = [];
-                }
-                if (fetchedLeads.length > 0) {
-                    totalLeads = fetchedLeads.length;
-                } else {
-                    // Fallback: just the count
-                    try {
-                        const leadsUrl = `${dashboardBase}/leads/company/${companyId}/has-leads`;
-                        const leadsRes = await fetch(leadsUrl);
-                        if (leadsRes.ok) {
-                            const leadsData = await leadsRes.json();
-                            totalLeads = leadsData.count || 0;
-                        }
-                    } catch { /* keep totalLeads = 0 */ }
                 }
                 setLeadsList(fetchedLeads);
 
