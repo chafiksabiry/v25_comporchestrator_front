@@ -30,6 +30,8 @@ interface PurchasedNumber {
   gigId?: string;
   companyId?: string;
   createdAt?: string;
+  price?: number;
+  currency?: string;
 }
 
 interface EnrolledRep {
@@ -419,6 +421,7 @@ export function PhoneNumberPanel() {
                     <th className="py-3 px-4">Fournisseur</th>
                     <th className="py-3 px-4">Fonctionnalités</th>
                     <th className="py-3 px-4">Gig Associé</th>
+                    <th className="py-3 px-4">Prix</th>
                     <th className="py-3 px-4">Statut</th>
                   </tr>
                 </thead>
@@ -442,6 +445,11 @@ export function PhoneNumberPanel() {
                         </td>
                         <td className="py-4 px-4 font-bold text-slate-700">
                           {linkedGig ? linkedGig.title : <span className="text-gray-400 italic">Non affecté</span>}
+                        </td>
+                        <td className="py-4 px-4 font-black text-slate-900 tabular-nums">
+                          {typeof num.price === 'number' && num.price > 0
+                            ? formatPrice(Math.round(num.price * 100), num.currency || 'EUR')
+                            : <span className="text-gray-400 italic font-normal">—</span>}
                         </td>
                         <td className="py-4 px-4">
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[9px] uppercase tracking-wider">
