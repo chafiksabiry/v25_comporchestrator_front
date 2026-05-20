@@ -3,19 +3,16 @@ import { createPortal } from 'react-dom';
 import {
   Clock,
   Zap,
-  Sparkles,
   RefreshCw,
   X,
   CreditCard,
   DollarSign,
   Phone,
   CheckCircle2,
-  AlertCircle,
   Brain,
   MessageSquare,
   Star,
   Activity as ActivityIcon,
-  Play,
   Volume2,
   Info
 } from 'lucide-react';
@@ -26,6 +23,8 @@ import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 interface MinutesState {
   companyId: string;
   minutes: number;
+  purchasedMinutes?: number;
+  consumedSeconds?: number;
 }
 
 interface CompanyCall {
@@ -227,17 +226,22 @@ export function MinutesCompanyPanel() {
 
             <div>
               <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                Volume d'appels alloué
+                Volume d'appels restant
               </span>
-              <span className="text-5xl font-black tracking-tight block">
-                {formatFloatMinutesToMMSS(minutesWallet?.minutes || 0)}
+              <span className={`text-5xl font-black tracking-tight block ${(minutesWallet?.minutes ?? 0) < 0 ? 'text-rose-400' : ''}`}>
+                {formatFloatMinutesToMMSS(minutesWallet?.minutes ?? 0)}
               </span>
+              {(minutesWallet?.minutes ?? 0) < 0 && (
+                <span className="text-[10px] text-rose-300 font-bold uppercase tracking-wider mt-1 block">
+                  Surconsommation — rechargez vos minutes
+                </span>
+              )}
             </div>
 
             <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Minutes utilisables sur Twilio & Telnyx</span>
+                <span>Décompte automatique à chaque appel — sans validation IA</span>
               </div>
             </div>
           </div>
@@ -247,21 +251,24 @@ export function MinutesCompanyPanel() {
           <div>
             <div className="flex items-center gap-2 text-indigo-500 font-bold text-xs uppercase tracking-wider mb-4">
               <ActivityIcon size={16} />
-              <span>Qualité & AI</span>
+              <span>Consommation</span>
             </div>
-            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">Appels analysés par l'AI</h3>
+            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">Appels facturés</h3>
             <span className="text-4xl font-black text-slate-900 block mb-2">
-              {calls.filter(c => c.validByAI === true).length}
+              {calls.filter(c => (c.duration || 0) > 0).length}
             </span>
             <p className="text-xs text-gray-500">
-              Chaque appel complété est scanné automatiquement pour valider l'atteinte des scores d'assurance qualité.
+              Chaque appel complété est immédiatement déduit du solde de minutes,
+              indépendamment de la validation IA.
             </p>
           </div>
 
           <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
-            <span>Taux de validation AI</span>
-            <span className="font-bold text-slate-700">
-              {calls.length > 0 ? `${Math.round((calls.filter(c => c.validByAI === true).length / calls.length) * 100)}%` : '0%'}
+            <span>Minutes consommées</span>
+            <span className="font-bold text-slate-700 tabular-nums">
+              {formatFloatMinutesToMMSS(
+                (minutesWallet?.consumedSeconds ?? calls.reduce((s, c) => s + (c.duration || 0), 0)) / 60
+              )}
             </span>
           </div>
         </div>
@@ -295,7 +302,7 @@ export function MinutesCompanyPanel() {
                   <th className="py-3 px-4">Date & Heure</th>
                   <th className="py-3 px-4">Durée</th>
                   <th className="py-3 px-4">Score AI</th>
-                  <th className="py-3 px-4">Validation AI</th>
+                  <th className="py-3 px-4">Facturation</th>
                   <th className="py-3 px-4 text-right">Détails</th>
                 </tr>
               </thead>
@@ -322,17 +329,13 @@ export function MinutesCompanyPanel() {
                       )}
                     </td>
                     <td className="py-4 px-4">
-                      {call.validByAI === true ? (
+                      {(call.duration || 0) > 0 ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[9px] uppercase tracking-wider">
-                          <CheckCircle2 size={10} /> Validé
-                        </span>
-                      ) : call.validByAI === false ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-100 font-bold text-[9px] uppercase tracking-wider">
-                          <AlertCircle size={10} /> Rejeté
+                          <CheckCircle2 size={10} /> Minutes débitées
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100 font-bold text-[9px] uppercase tracking-wider">
-                          <RefreshCw size={10} className="animate-spin" /> En cours...
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-100 font-bold text-[9px] uppercase tracking-wider">
+                          Aucune durée
                         </span>
                       )}
                     </td>
