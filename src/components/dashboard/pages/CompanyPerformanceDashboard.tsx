@@ -135,6 +135,8 @@ export function CompanyPerformanceDashboard() {
         registeredReps: 0
     });
     const [callsList, setCallsList] = useState<any[]>([]);
+    const [leadsList, setLeadsList] = useState<any[]>([]);
+    const [agentsList, setAgentsList] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -148,14 +150,45 @@ export function CompanyPerformanceDashboard() {
                 const gigsArray = Array.isArray(gigsData) ? gigsData : [];
                 setGigs(gigsArray);
 
-                // 2. Fetch Leads Count
-                const leadsUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`;
-                const leadsRes = await fetch(leadsUrl);
+                // 2. Fetch Leads — try the full list (with createdAt) so we
+                // can compute period-over-period trends. Fallback to the
+                // lightweight count endpoint if the list endpoint is missing.
+                const dashboardBase: string = import.meta.env.VITE_DASHBOARD_API;
                 let totalLeads = 0;
-                if (leadsRes.ok) {
-                    const leadsData = await leadsRes.json();
-                    totalLeads = leadsData.count || 0;
+                let fetchedLeads: any[] = [];
+                try {
+                    const targetGigs = selectedGig === 'all'
+                        ? gigsArray.map((g: any) => g._id).filter(Boolean)
+                        : [selectedGig];
+
+                    const leadsByGig = await Promise.all(targetGigs.map(async (gid: string) => {
+                        try {
+                            const res = await fetch(`${dashboardBase}/leads/gig/${gid}?page=1&limit=100000`);
+                            if (!res.ok) return [];
+                            const json = await res.json();
+                            return Array.isArray(json.data) ? json.data : [];
+                        } catch {
+                            return [];
+                        }
+                    }));
+                    fetchedLeads = leadsByGig.flat();
+                } catch {
+                    fetchedLeads = [];
                 }
+                if (fetchedLeads.length > 0) {
+                    totalLeads = fetchedLeads.length;
+                } else {
+                    // Fallback: just the count
+                    try {
+                        const leadsUrl = `${dashboardBase}/leads/company/${companyId}/has-leads`;
+                        const leadsRes = await fetch(leadsUrl);
+                        if (leadsRes.ok) {
+                            const leadsData = await leadsRes.json();
+                            totalLeads = leadsData.count || 0;
+                        }
+                    } catch { /* keep totalLeads = 0 */ }
+                }
+                setLeadsList(fetchedLeads);
 
                 // 3. Fetch Calls
                 const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
@@ -228,6 +261,7 @@ export function CompanyPerformanceDashboard() {
                     filteredAgents = agentsArray.filter(agent => agent.gigId === selectedGig);
                 }
 
+                setAgentsList(filteredAgents);
                 setStats(prev => ({
                     ...prev,
                     registeredReps: filteredAgents.length
@@ -242,37 +276,55 @@ export function CompanyPerformanceDashboard() {
         fetchData();
     }, [selectedGig]);
 
-    // Slice calls into current window vs previous window so we can show real
-    // period-over-period trends instead of hardcoded "+12%".
-    const { currentWindow, previousWindow } = useMemo(() => {
+    // Slice everything into current window vs previous window so we can show
+    // real period-over-period trends instead of hardcoded "+12%".
+    const { currentWindow, previousWindow, leadsWin, agentsWin } = useMemo(() => {
         const now = Date.now();
         const win = timeRangeWindowMs(timeRange);
         const currentStart = now - win;
         const previousStart = now - 2 * win;
-        const currentCalls: any[] = [];
-        const previousCalls: any[] = [];
-        for (const call of callsList) {
-            const ts = new Date(call.createdAt || call.date || 0).getTime();
-            if (Number.isNaN(ts)) continue;
-            if (ts >= currentStart && ts <= now) currentCalls.push(call);
-            else if (ts >= previousStart && ts < currentStart) previousCalls.push(call);
-        }
-        return {
-            currentWindow: computeWindowedStats(currentCalls),
-            previousWindow: computeWindowedStats(previousCalls)
+
+        const sliceByTimestamp = <T,>(arr: T[], pickTs: (item: T) => number) => {
+            const curr: T[] = [];
+            const prev: T[] = [];
+            for (const item of arr) {
+                const ts = pickTs(item);
+                if (!ts || Number.isNaN(ts)) continue;
+                if (ts >= currentStart && ts <= now) curr.push(item);
+                else if (ts >= previousStart && ts < currentStart) prev.push(item);
+            }
+            return { curr, prev };
         };
-    }, [callsList, timeRange]);
+
+        const calls = sliceByTimestamp(callsList, c => new Date((c as any).createdAt || (c as any).date || 0).getTime());
+        const leads = sliceByTimestamp(leadsList, l => new Date((l as any).createdAt || (l as any).Last_Activity_Time || 0).getTime());
+        const agents = sliceByTimestamp(agentsList, a => new Date((a as any).createdAt || (a as any).enrolledAt || (a as any).joinedAt || 0).getTime());
+
+        return {
+            currentWindow: computeWindowedStats(calls.curr),
+            previousWindow: computeWindowedStats(calls.prev),
+            leadsWin: { current: leads.curr.length, previous: leads.prev.length },
+            agentsWin: { current: agents.curr.length, previous: agents.prev.length }
+        };
+    }, [callsList, leadsList, agentsList, timeRange]);
 
     // Trends (period-over-period % change). null = no comparison available.
     const trendTotalCalls = computeTrendPct(currentWindow.totalCalls, previousWindow.totalCalls);
     const trendContacted = computeTrendPct(currentWindow.contactedLeads, previousWindow.contactedLeads);
     const trendValid = computeTrendPct(currentWindow.validNumbers, previousWindow.validNumbers);
 
-    // Display stats — totalLeads and registeredReps are cumulative snapshots
-    // (no period filtering), so they stay on the unscoped values.
+    // Leads / Reps trends — only available when we managed to fetch the full
+    // list with timestamps. Otherwise fall back to "Total" snapshot.
+    const hasLeadsTimestamps = leadsList.length > 0;
+    const hasAgentsTimestamps = agentsList.some(a => a.createdAt || a.enrolledAt || a.joinedAt);
+    const trendLeads = hasLeadsTimestamps ? computeTrendPct(leadsWin.current, leadsWin.previous) : null;
+    const trendReps = hasAgentsTimestamps ? computeTrendPct(agentsWin.current, agentsWin.previous) : null;
+
+    // Display stats — if we have timestamped data we scope to the window so
+    // the big number tracks the filter. Otherwise we show the total stock.
     const displayStats = {
-        totalLeads: stats.totalLeads,
-        registeredReps: stats.registeredReps,
+        totalLeads: hasLeadsTimestamps ? leadsWin.current : stats.totalLeads,
+        registeredReps: hasAgentsTimestamps ? agentsWin.current : stats.registeredReps,
         totalCalls: currentWindow.totalCalls,
         contactedLeads: currentWindow.contactedLeads,
         validNumbers: currentWindow.validNumbers,
@@ -455,16 +507,16 @@ export function CompanyPerformanceDashboard() {
                     value={displayStats.registeredReps.toLocaleString()}
                     icon={<Briefcase className="w-6 h-6" />}
                     color="purple"
-                    trendPct={null}
-                    trendLabel={selectedGig === 'all' ? 'Total cumulé sur tous les gigs' : 'Reps actifs sur ce gig'}
+                    trendPct={trendReps}
+                    trendLabel={hasAgentsTimestamps ? periodLabel(timeRange, t) : 'Stock total de reps'}
                 />
                 <MetricCard
                     title={t('performanceDashboard.metrics.totalLeads')}
                     value={displayStats.totalLeads.toLocaleString()}
                     icon={<Users className="w-6 h-6" />}
                     color="blue"
-                    trendPct={null}
-                    trendLabel="Stock total de leads"
+                    trendPct={trendLeads}
+                    trendLabel={hasLeadsTimestamps ? periodLabel(timeRange, t) : 'Stock total de leads'}
                 />
                 <MetricCard
                     title={t('performanceDashboard.metrics.totalCalls')}
