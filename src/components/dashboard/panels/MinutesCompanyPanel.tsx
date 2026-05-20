@@ -490,7 +490,7 @@ export function MinutesCompanyPanel() {
             {/* Audio Waveform Player Widget */}
             {(selectedCall.recording_url || selectedCall.recording_url_cloudinary) && (
               <div className="bg-slate-950 p-6 border-b border-white/5 shrink-0">
-                <PremiumAudioPlayer audioUrl={selectedCall.recording_url_cloudinary || selectedCall.recording_url || ''} />
+                <PremiumAudioPlayer url={selectedCall.recording_url_cloudinary || selectedCall.recording_url || ''} />
               </div>
             )}
 
