@@ -49,6 +49,88 @@ interface CompanyCall {
   platformCallCommission?: number;
 }
 
+/** Keys that are metadata on ai_call_score, not rubric entries. */
+const AI_SCORE_META_KEYS = new Set([
+  'overall',
+  'transaction_detected',
+  'refusal_detected',
+  'score',
+  'sentiment',
+  'rubrics',
+  'transactionOccurred',
+]);
+
+interface NormalizedAiScore {
+  score: number | null;
+  sentimentLabel: string;
+  transactionDetected: boolean;
+  rubrics: Record<string, { score: number; feedback?: string }>;
+  overallFeedback?: string;
+}
+
+/**
+ * MongoDB stores scores as ai_call_score.overall.score with rubrics as sibling keys
+ * ("Agent fluency", "Sentiment analysis", …). Legacy UI expected ai_call_score.score
+ * and ai_call_score.rubrics — this normalizes both shapes.
+ */
+function normalizeAiCallScore(raw: unknown): NormalizedAiScore | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as Record<string, unknown>;
+
+  const score =
+    typeof data.score === 'number'
+      ? data.score
+      : typeof (data.overall as { score?: number } | undefined)?.score === 'number'
+        ? (data.overall as { score: number }).score
+        : null;
+
+  const rubricsFromNested =
+    data.rubrics && typeof data.rubrics === 'object'
+      ? (data.rubrics as Record<string, { score: number; feedback?: string }>)
+      : null;
+
+  const rubricsFromFlat = Object.fromEntries(
+    Object.entries(data).filter(([key, val]) => {
+      if (AI_SCORE_META_KEYS.has(key)) return false;
+      return (
+        val &&
+        typeof val === 'object' &&
+        typeof (val as { score?: number }).score === 'number'
+      );
+    })
+  ) as Record<string, { score: number; feedback?: string }>;
+
+  const rubrics =
+    rubricsFromNested && Object.keys(rubricsFromNested).length > 0
+      ? rubricsFromNested
+      : rubricsFromFlat;
+
+  const hasRubrics = Object.keys(rubrics).length > 0;
+  const hasData =
+    score !== null || hasRubrics || data.transaction_detected !== undefined;
+
+  if (!hasData) return null;
+
+  const sentimentEntry = data['Sentiment analysis'] as { score?: number } | undefined;
+  let sentimentLabel = 'Neutre';
+  if (typeof data.sentiment === 'string') {
+    sentimentLabel = data.sentiment;
+  } else if (typeof sentimentEntry?.score === 'number') {
+    sentimentLabel = `${sentimentEntry.score}/100`;
+  }
+
+  const overall = data.overall as { feedback?: string } | undefined;
+
+  return {
+    score,
+    sentimentLabel,
+    transactionDetected: Boolean(data.transaction_detected),
+    rubrics,
+    overallFeedback:
+      typeof overall?.feedback === 'string' ? overall.feedback : undefined,
+  };
+}
+
 export function MinutesCompanyPanel() {
   const [minutesWallet, setMinutesWallet] = useState<MinutesState | null>(null);
   const [calls, setCalls] = useState<CompanyCall[]>([]);
@@ -328,14 +410,17 @@ export function MinutesCompanyPanel() {
                       {formatFloatMinutesToMMSS(call.duration / 60)}
                     </td>
                     <td className="py-4 px-4">
-                      {call.ai_call_score?.score ? (
-                        <div className="flex items-center gap-1 font-bold text-slate-800">
-                          <Star size={14} className="fill-amber-400 text-amber-400" />
-                          <span>{call.ai_call_score.score}/100</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 italic">Non noté</span>
-                      )}
+                      {(() => {
+                        const ai = normalizeAiCallScore(call.ai_call_score);
+                        return ai?.score != null ? (
+                          <div className="flex items-center gap-1 font-bold text-slate-800">
+                            <Star size={14} className="fill-amber-400 text-amber-400" />
+                            <span>{ai.score}/100</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">Non noté</span>
+                        );
+                      })()}
                     </td>
                     <td className="py-4 px-4">
                       {(call.duration || 0) > 0 ? (
@@ -537,34 +622,39 @@ export function MinutesCompanyPanel() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {selectedCall.ai_call_score ? (
+                  {(() => {
+                    const ai = normalizeAiCallScore(selectedCall.ai_call_score);
+                    return ai ? (
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
                           <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Note d'assurance Qualité</span>
-                          <span className="text-3xl font-black text-slate-900 mt-2">{selectedCall.ai_call_score.score || 0}/100</span>
+                          <span className="text-3xl font-black text-slate-900 mt-2">{ai.score ?? 0}/100</span>
+                          {ai.overallFeedback && (
+                            <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">{ai.overallFeedback}</p>
+                          )}
                         </div>
                         <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
                           <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Sentiment Client</span>
-                          <span className="text-base font-black text-slate-900 mt-2">{selectedCall.ai_call_score.sentiment || 'Neutre'}</span>
+                          <span className="text-base font-black text-slate-900 mt-2">{ai.sentimentLabel}</span>
                         </div>
                         <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
                           <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Transaction détectée</span>
-                          <span className={`text-xs font-black mt-2 ${selectedCall.ai_call_score.transaction_detected ? 'text-emerald-600' : 'text-slate-600'}`}>
-                            {selectedCall.ai_call_score.transaction_detected ? 'Oui' : 'Non'}
+                          <span className={`text-xs font-black mt-2 ${ai.transactionDetected ? 'text-emerald-600' : 'text-slate-600'}`}>
+                            {ai.transactionDetected ? 'Oui' : 'Non'}
                           </span>
                         </div>
                       </div>
 
                       {/* Critères détaillés */}
-                      {selectedCall.ai_call_score?.rubrics && typeof selectedCall.ai_call_score.rubrics === 'object' && (
+                      {Object.keys(ai.rubrics).length > 0 && (
                         <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
                           <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                             <Brain size={16} className="text-blue-500" />
                             <span>Rubriques de notation AI</span>
                           </h4>
                           <div className="space-y-3.5">
-                            {Object.entries(selectedCall.ai_call_score.rubrics).map(([k, v]: any) => (
+                            {Object.entries(ai.rubrics).map(([k, v]) => (
                               <div key={k} className="flex flex-col gap-1.5 pb-3 border-b border-gray-50 last:border-0">
                                 <div className="flex items-center justify-between text-xs">
                                   <span className="font-bold text-slate-700 capitalize">{k.replace(/_/g, ' ')}</span>
@@ -573,7 +663,9 @@ export function MinutesCompanyPanel() {
                                 <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                   <div className="h-full bg-blue-500 rounded-full" style={{ width: `${v.score}%` }} />
                                 </div>
-                                <p className="text-[10px] text-gray-500 italic mt-0.5">{v.feedback}</p>
+                                {v.feedback && (
+                                  <p className="text-[10px] text-gray-500 italic mt-0.5">{v.feedback}</p>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -585,7 +677,8 @@ export function MinutesCompanyPanel() {
                       <Brain size={36} className="mx-auto mb-2 text-gray-300 animate-pulse" />
                       <p className="text-xs">Analyse en attente d'exécution.</p>
                     </div>
-                  )}
+                  );
+                  })()}
                 </div>
               )}
             </div>
