@@ -243,7 +243,7 @@ export function MinutesCompanyPanel() {
 
     setSubmittingBuy(true);
     try {
-      const provider = paymentMethod === 'paypal' ? 'paypal' : 'stripe';
+      const provider: 'paypal' | 'stripe' = paymentMethod === 'paypal' ? 'paypal' : 'stripe';
       const initBody = {
         companyId,
         purpose: 'minutes_purchase' as const,

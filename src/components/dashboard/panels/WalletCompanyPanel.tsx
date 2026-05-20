@@ -335,7 +335,7 @@ export function WalletCompanyPanel() {
 
     setSubmittingDeposit(true);
     try {
-      const provider = depositMethod === 'paypal' ? 'paypal' : 'stripe';
+      const provider: 'paypal' | 'stripe' = depositMethod === 'paypal' ? 'paypal' : 'stripe';
       const initBody = {
         companyId,
         purpose: 'wallet_deposit' as const,
