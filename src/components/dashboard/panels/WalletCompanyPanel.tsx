@@ -20,6 +20,11 @@ import {
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
+import {
+  fetchPaymentConfig,
+  runPaypalCheckoutFlow,
+  runStripeCheckoutFlow
+} from '../../../lib/paypalCheckout';
 
 interface WalletState {
   companyId: string;
@@ -204,6 +209,7 @@ export function WalletCompanyPanel() {
   const [depositAmount, setDepositAmount] = useState('500');
   const [depositMethod, setDepositMethod] = useState<'card' | 'paypal'>('card');
   const [submittingDeposit, setSubmittingDeposit] = useState(false);
+  const [paypalEnabled, setPaypalEnabled] = useState(false);
 
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('200');
@@ -294,6 +300,11 @@ export function WalletCompanyPanel() {
     fetchData();
   }, [companyId]);
 
+  useEffect(() => {
+    if (!showDepositModal) return;
+    fetchPaymentConfig(apiBaseUrl).then((cfg) => setPaypalEnabled(cfg.paypalEnabled));
+  }, [showDepositModal, apiBaseUrl]);
+
   const handleRefresh = () => {
     setRefreshing(true);
     fetchData(true);
@@ -308,28 +319,40 @@ export function WalletCompanyPanel() {
       return;
     }
 
+    if (depositMethod === 'paypal' && !paypalEnabled) {
+      toast.error("PayPal n'est pas configuré sur le serveur (variables PAYPAL_*).");
+      return;
+    }
+
     setSubmittingDeposit(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/wallet-company/deposit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyId,
-          amount: parsed
-        })
-      });
+      const provider = depositMethod === 'paypal' ? 'paypal' : 'stripe';
+      const initBody = {
+        companyId,
+        purpose: 'wallet_deposit' as const,
+        provider,
+        amountEuros: parsed
+      };
 
-      if (res.ok) {
-        toast.success(`Dépôt de ${parsed.toLocaleString()} € validé !`);
-        setShowDepositModal(false);
-        fetchData(true);
+      if (provider === 'paypal') {
+        await runPaypalCheckoutFlow(apiBaseUrl, initBody);
       } else {
-        const errData = await res.json();
-        toast.error(errData.error || 'Erreur lors du dépôt.');
+        await runStripeCheckoutFlow(apiBaseUrl, initBody);
       }
-    } catch (err) {
+
+      toast.success(`Dépôt de ${parsed.toLocaleString('fr-FR')} € validé !`);
+      setShowDepositModal(false);
+      fetchData(true);
+    } catch (err: unknown) {
       console.error(err);
-      toast.error('Échec de communication avec la passerelle.');
+      const msg = err instanceof Error ? err.message : '';
+      if (msg === 'PAYPAL_CANCELLED') {
+        toast.error('Paiement PayPal annulé.');
+      } else if (msg === 'PAYPAL_CLOSED') {
+        toast.error('Fenêtre PayPal fermée avant validation. Complétez le paiement sur PayPal.');
+      } else {
+        toast.error(msg || 'Échec de communication avec la passerelle.');
+      }
     } finally {
       setSubmittingDeposit(false);
     }
@@ -525,7 +548,7 @@ export function WalletCompanyPanel() {
             <div className="pt-4 border-t border-white/5 flex items-center gap-6 text-xs text-gray-400">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Passerelle de paiement Stripe active</span>
+                <span>Stripe & PayPal actifs</span>
               </div>
             </div>
           </div>
@@ -826,15 +849,22 @@ export function WalletCompanyPanel() {
 
               <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl flex gap-2.5 text-[10px] text-blue-800/80 font-bold leading-relaxed">
                 <Info size={16} className="shrink-0 text-blue-600" />
-                <span>Simulation de transactions Stripe & PayPal sécurisées par bac à sable de paiement.</span>
+                <span>
+                  Paiement sécurisé par carte ou PayPal — crédit immédiat du portefeuille après confirmation.
+                  {depositMethod === 'paypal' && ' Une fenêtre PayPal s&apos;ouvrira pour valider le paiement.'}
+                </span>
               </div>
 
               <button
                 type="submit"
-                disabled={submittingDeposit}
+                disabled={submittingDeposit || (depositMethod === 'paypal' && !paypalEnabled)}
                 className="w-full py-3.5 bg-gradient-to-r from-orange-400 to-rose-500 hover:from-orange-500 hover:to-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-md shadow-orange-500/10 active:scale-95 disabled:opacity-50"
               >
-                {submittingDeposit ? 'Transaction en cours...' : `Payer ${depositAmount} €`}
+                {submittingDeposit
+                  ? 'Transaction en cours...'
+                  : depositMethod === 'paypal'
+                    ? `Payer ${depositAmount} € avec PayPal`
+                    : `Payer ${depositAmount} € par carte`}
               </button>
             </form>
           </div>

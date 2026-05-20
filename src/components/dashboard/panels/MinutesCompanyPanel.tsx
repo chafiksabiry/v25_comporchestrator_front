@@ -20,6 +20,11 @@ import {
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
+import {
+  fetchPaymentConfig,
+  runPaypalCheckoutFlow,
+  runStripeCheckoutFlow
+} from '../../../lib/paypalCheckout';
 
 interface MinutesState {
   companyId: string;
@@ -143,6 +148,7 @@ export function MinutesCompanyPanel() {
   const [minutesToBuy, setMinutesToBuy] = useState('500');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
   const [submittingBuy, setSubmittingBuy] = useState(false);
+  const [paypalEnabled, setPaypalEnabled] = useState(false);
 
   // Detail Modal state
   const [selectedCall, setSelectedCall] = useState<CompanyCall | null>(null);
@@ -202,6 +208,11 @@ export function MinutesCompanyPanel() {
     fetchData();
   }, [companyId]);
 
+  useEffect(() => {
+    if (!showBuyModal) return;
+    fetchPaymentConfig(apiBaseUrl).then((cfg) => setPaypalEnabled(cfg.paypalEnabled));
+  }, [showBuyModal, apiBaseUrl]);
+
   const handleRefresh = () => {
     setRefreshing(true);
     fetchData(true);
@@ -216,28 +227,40 @@ export function MinutesCompanyPanel() {
       return;
     }
 
+    if (paymentMethod === 'paypal' && !paypalEnabled) {
+      toast.error("PayPal n'est pas configuré sur le serveur (variables PAYPAL_*).");
+      return;
+    }
+
     setSubmittingBuy(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/minutes-company/buy-minutes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyId,
-          amount: parsed
-        })
-      });
+      const provider = paymentMethod === 'paypal' ? 'paypal' : 'stripe';
+      const initBody = {
+        companyId,
+        purpose: 'minutes_purchase' as const,
+        provider,
+        minutes: parsed
+      };
 
-      if (res.ok) {
-        toast.success(`Achat de ${parsed.toLocaleString()} minutes d'appels réussi !`);
-        setShowBuyModal(false);
-        fetchData(true);
+      if (provider === 'paypal') {
+        await runPaypalCheckoutFlow(apiBaseUrl, initBody);
       } else {
-        const errData = await res.json();
-        toast.error(errData.error || "Erreur lors de l'achat.");
+        await runStripeCheckoutFlow(apiBaseUrl, initBody);
       }
-    } catch (err) {
+
+      toast.success(`Achat de ${parsed.toLocaleString()} minutes réussi !`);
+      setShowBuyModal(false);
+      fetchData(true);
+    } catch (err: unknown) {
       console.error(err);
-      toast.error('Échec du paiement.');
+      const msg = err instanceof Error ? err.message : '';
+      if (msg === 'PAYPAL_CANCELLED') {
+        toast.error('Paiement PayPal annulé.');
+      } else if (msg === 'PAYPAL_CLOSED') {
+        toast.error('Fenêtre PayPal fermée avant validation. Complétez le paiement sur PayPal.');
+      } else {
+        toast.error(msg || 'Échec du paiement.');
+      }
     } finally {
       setSubmittingBuy(false);
     }
@@ -548,15 +571,22 @@ export function MinutesCompanyPanel() {
 
               <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl flex gap-2.5 text-[10px] text-blue-800/80 font-bold leading-relaxed">
                 <Info size={16} className="shrink-0 text-blue-600" />
-                <span>Simulation Stripe & PayPal. Les minutes seront créditées immédiatement après confirmation de la recharge.</span>
+                <span>
+                  Paiement sécurisé — le portefeuille cash HARX n&apos;est pas débité. Tarif : 1 € / minute.
+                  {paymentMethod === 'paypal' && ' Une fenêtre PayPal s&apos;ouvrira pour valider le paiement.'}
+                </span>
               </div>
 
               <button
                 type="submit"
-                disabled={submittingBuy}
+                disabled={submittingBuy || (paymentMethod === 'paypal' && !paypalEnabled)}
                 className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-750 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-md active:scale-95 disabled:opacity-50"
               >
-                {submittingBuy ? 'Achat en cours...' : `Acheter ${minutesToBuy} minutes`}
+                {submittingBuy
+                  ? 'Paiement en cours...'
+                  : paymentMethod === 'paypal'
+                    ? `Payer ${minutesToBuy} € avec PayPal`
+                    : `Payer ${minutesToBuy} € par carte`}
               </button>
             </form>
           </div>
