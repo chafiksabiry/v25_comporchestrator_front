@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   X
 } from 'lucide-react';
-import { PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { gigsApi } from '../services/api/endpoints';
@@ -26,6 +25,20 @@ const safeParseJson = async (res: Response) => {
   } catch {
     return null;
   }
+};
+
+const openCenteredPopup = (url: string, title: string, w = 520, h = 720): Window | null => {
+  const dualLeft = window.screenLeft ?? window.screenX ?? 0;
+  const dualTop = window.screenTop ?? window.screenY ?? 0;
+  const width = window.innerWidth || document.documentElement.clientWidth || screen.width;
+  const height = window.innerHeight || document.documentElement.clientHeight || screen.height;
+  const left = dualLeft + (width - w) / 2;
+  const top = dualTop + (height - h) / 2;
+  return window.open(
+    url,
+    title,
+    `scrollbars=yes,width=${w},height=${h},top=${top},left=${left}`
+  );
 };
 
 interface PurchasedNumber {
@@ -78,9 +91,7 @@ export function PhoneNumberPanel() {
   const [checkoutMethod, setCheckoutMethod] = useState<'stripe' | 'paypal'>('stripe');
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('select');
   const [checkoutPaymentId, setCheckoutPaymentId] = useState<string | null>(null);
-  const [paypalClientId, setPaypalClientId] = useState<string | null>(null);
   const [paypalEnabled, setPaypalEnabled] = useState(false);
-  const [paypalOrderId, setPaypalOrderId] = useState<string | null>(null);
   const [linePrice, setLinePrice] = useState({ amountCents: 500, currency: 'EUR' });
 
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
@@ -204,7 +215,6 @@ export function PhoneNumberPanel() {
     if (checkoutStep === 'processing') return;
     setCheckoutNumber(null);
     setCheckoutPaymentId(null);
-    setPaypalOrderId(null);
     setCheckoutStep('select');
   };
 
@@ -221,13 +231,7 @@ export function PhoneNumberPanel() {
             currency: cfg.pricing.currency || 'EUR'
           });
         }
-        if (cfg.paypal?.enabled && cfg.paypal.clientId) {
-          setPaypalEnabled(true);
-          setPaypalClientId(cfg.paypal.clientId);
-        } else {
-          setPaypalEnabled(false);
-          setPaypalClientId(null);
-        }
+        setPaypalEnabled(Boolean(cfg.paypal?.enabled));
       } catch (err) {
         console.warn('[checkout] config unavailable', err);
       }
@@ -256,7 +260,7 @@ export function PhoneNumberPanel() {
       return initData as {
         paymentId: string;
         paypalOrderId?: string;
-        paypalClientId?: string;
+        paypalApproveUrl?: string;
         checkoutUrl?: string;
       };
     },
@@ -315,44 +319,53 @@ export function PhoneNumberPanel() {
     [checkoutNumber, fetchData]
   );
 
-  const handlePaypalApprove = async (orderId: string) => {
-    if (!checkoutPaymentId || !checkoutNumber) return;
-
-    setCheckoutStep('processing');
-    setPurchasing(checkoutNumber);
-    try {
-      await confirmLineCheckout(checkoutPaymentId, orderId);
-      await provisionLine(checkoutPaymentId);
-      finishSuccessfulPurchase('paypal');
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.message || 'Erreur lors du paiement PayPal.');
-      setCheckoutStep('paypal');
-    } finally {
-      setPurchasing(null);
-    }
-  };
-
   const startPaypalCheckout = async () => {
     if (!checkoutNumber || !selectedGigIdForNumber) return;
-    if (!paypalEnabled || !paypalClientId) {
-      toast.error('PayPal n\'est pas configuré sur le serveur (variables PAYPAL_*).');
+    if (!paypalEnabled) {
+      toast.error("PayPal n'est pas configuré sur le serveur (variables PAYPAL_*).");
       return;
     }
 
     setPurchasing(checkoutNumber);
     try {
       const initData = await initLineCheckout('paypal');
-      if (!initData.paypalOrderId) {
-        throw new Error('La commande PayPal n\'a pas pu être créée.');
+      if (!initData.paypalApproveUrl || !initData.paymentId) {
+        throw new Error("La commande PayPal n'a pas pu être créée.");
       }
       setCheckoutPaymentId(initData.paymentId);
-      setPaypalOrderId(initData.paypalOrderId);
-      if (initData.paypalClientId) setPaypalClientId(initData.paypalClientId);
       setCheckoutStep('paypal');
+
+      const popup = openCenteredPopup(initData.paypalApproveUrl, 'paypal-checkout');
+      if (!popup) {
+        throw new Error('Veuillez autoriser les pop-ups pour finaliser le paiement PayPal.');
+      }
+
+      const paymentId = initData.paymentId;
+      const popupClosed: Promise<void> = new Promise((resolve) => {
+        const timer = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(timer);
+            resolve();
+          }
+        }, 800);
+      });
+
+      await popupClosed;
+
+      setCheckoutStep('processing');
+      try {
+        await confirmLineCheckout(paymentId, initData.paypalOrderId);
+        await provisionLine(paymentId);
+        finishSuccessfulPurchase('paypal');
+      } catch (captureErr: any) {
+        console.error(captureErr);
+        toast.error(captureErr?.message || 'Paiement PayPal non confirmé.');
+        setCheckoutStep('select');
+      }
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || 'Impossible de démarrer le paiement PayPal.');
+      setCheckoutStep('select');
     } finally {
       setPurchasing(null);
     }
@@ -643,7 +656,7 @@ export function PhoneNumberPanel() {
                         de <span className="font-bold">{MIN_PHONE_NUMBERS_PER_GIG}</span>{' '}
                         ligne{MIN_PHONE_NUMBERS_PER_GIG > 1 ? 's' : ''} active{MIN_PHONE_NUMBERS_PER_GIG > 1 ? 's' : ''}.
                         Tout numéro supplémentaire devra être <span className="font-bold">acheté via Stripe ou PayPal</span>{' '}
-                        ({formatPrice(LINE_PRICE.amountCents, LINE_PRICE.currency)} par ligne) — votre portefeuille HARX n'est pas affecté.
+                        ({formatPrice(linePrice.amountCents, linePrice.currency)} par ligne) — votre portefeuille HARX n'est pas affecté.
                       </p>
                     </div>
                   </div>
@@ -828,50 +841,20 @@ export function PhoneNumberPanel() {
                 </>
               )}
 
-              {checkoutStep === 'paypal' && paypalClientId && paypalOrderId && (
-                <div className="space-y-3">
-                  <p className="text-[11px] text-gray-500 text-center font-medium">
-                    Connectez-vous à PayPal pour valider le paiement de{' '}
+              {checkoutStep === 'paypal' && (
+                <div className="flex flex-col items-center justify-center py-6 gap-3">
+                  <RefreshCw size={28} className="animate-spin text-amber-500" />
+                  <p className="text-sm font-black text-slate-900 tracking-tight">Validation sur PayPal…</p>
+                  <p className="text-[11px] text-gray-500 text-center max-w-xs">
+                    Une fenêtre PayPal s&apos;est ouverte pour valider le paiement de{' '}
                     <span className="font-bold text-slate-800">
                       {formatPrice(linePrice.amountCents, linePrice.currency)}
                     </span>
-                    .
+                    . Terminez la connexion / le paiement, puis revenez ici.
                   </p>
-                  <PayPalScriptProvider
-                    options={{
-                      clientId: paypalClientId,
-                      currency: linePrice.currency,
-                      intent: 'capture'
-                    }}
-                  >
-                    <PayPalButtons
-                      style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' }}
-                      createOrder={() => paypalOrderId}
-                      onApprove={async (data) => {
-                        if (data.orderID) await handlePaypalApprove(data.orderID);
-                      }}
-                      onCancel={() => {
-                        toast.error('Paiement PayPal annulé.');
-                        setCheckoutStep('select');
-                        setPaypalOrderId(null);
-                      }}
-                      onError={(err) => {
-                        console.error('PayPal SDK error', err);
-                        toast.error('Erreur PayPal. Réessayez ou choisissez Stripe.');
-                        setCheckoutStep('select');
-                      }}
-                    />
-                  </PayPalScriptProvider>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCheckoutStep('select');
-                      setPaypalOrderId(null);
-                    }}
-                    className="w-full py-2 text-[11px] font-bold text-gray-500 hover:text-slate-800"
-                  >
-                    ← Changer de méthode
-                  </button>
+                  <p className="text-[10px] text-gray-400 text-center max-w-xs">
+                    La fenêtre se fermera automatiquement après confirmation.
+                  </p>
                 </div>
               )}
 
