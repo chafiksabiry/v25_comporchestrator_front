@@ -138,7 +138,8 @@ export function PhoneNumberPanel() {
           toast.error("Format de données inconnu reçu de la recherche.");
         }
       } else {
-        toast.error("Erreur technique lors de la recherche.");
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(errorData.error || "Erreur technique lors de la recherche.", { duration: 6000 });
       }
     } catch (err) {
       console.error(err);
