@@ -43,6 +43,13 @@ interface GigReviewProps {
   /** When set (e.g. embedded in Company Onboarding), called instead of full page navigation to /#/orchestrator */
   onPublishSuccess?: () => void | Promise<void>;
   isReadOnly?: boolean;
+  /**
+   * If provided, a small Edit pencil button is rendered next to each section
+   * header even in read-only mode, calling this handler with the section key.
+   * Section keys: 'header' | 'description' | 'commission' | 'team' |
+   *               'destination' | 'availability' | 'skills'
+   */
+  onEditSection?: (section: string) => void;
 }
 
 export function GigReview({
@@ -55,7 +62,24 @@ export function GigReview({
   editGigId = null,
   onPublishSuccess,
   isReadOnly = false,
+  onEditSection,
 }: GigReviewProps) {
+  // Compact pencil button rendered next to each section header. Visible
+  // whenever `onEditSection` is provided, even in read-only mode.
+  const EditSectionBtn = ({ section, label = 'Edit' }: { section: string; label?: string }) => {
+    if (!onEditSection) return null;
+    return (
+      <button
+        type="button"
+        onClick={() => onEditSection(section)}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-harx-500 bg-harx-500/10 hover:bg-harx-500/20 border border-harx-500/20 rounded-full transition-all shadow-sm active:scale-95"
+        title={`Modifier ${label}`}
+      >
+        <Edit3 className="w-3 h-3" />
+        {label}
+      </button>
+    );
+  };
   // State for skills data
   const [softSkills, setSoftSkills] = useState<Array<{ _id: string, name: string, description: string, category: string }>>([]);
   const [professionalSkills, setProfessionalSkills] = useState<Array<{ _id: string, name: string, description: string, category: string }>>([]);
@@ -464,7 +488,7 @@ export function GigReview({
       {/* Main Card (Matching 1st Image) */}
       <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-10 space-y-10">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="space-y-2">
             <span className="text-xs font-black text-harx-400 uppercase tracking-widest">
               {data.category || 'OUTBOUND SALES'}
@@ -473,13 +497,19 @@ export function GigReview({
               {data.title || 'No title provided'}
             </h1>
           </div>
+          <div className="shrink-0">
+            <EditSectionBtn section="header" label="Titre & Catégorie" />
+          </div>
         </div>
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Left Column: Job Description */}
           <div className="space-y-6">
-            <h2 className="text-2xl font-black text-gray-900">Job Description</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-2xl font-black text-gray-900">Job Description</h2>
+              <EditSectionBtn section="description" />
+            </div>
             <p className="text-gray-600 leading-relaxed font-medium text-lg">
               {data.description || 'No description provided'}
             </p>
@@ -500,7 +530,10 @@ export function GigReview({
 
           {/* Right Column: Commission & Details */}
           <div className="space-y-6">
-            <h2 className="text-2xl font-black text-gray-900">Commission & details</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-2xl font-black text-gray-900">Commission & details</h2>
+              <EditSectionBtn section="commission" />
+            </div>
             
             <div className="space-y-4">
               {/* Badges Row */}
@@ -538,11 +571,14 @@ export function GigReview({
         {/* Team */}
         {data.team && (
           <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-harx-50 rounded-xl">
-                <Users className="h-6 w-6 text-harx-500" />
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-harx-50 rounded-xl">
+                  <Users className="h-6 w-6 text-harx-500" />
+                </div>
+                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Team Structure</h2>
               </div>
-              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Team Structure</h2>
+              <EditSectionBtn section="team" />
             </div>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
@@ -557,11 +593,14 @@ export function GigReview({
         {/* Destination Zone */}
         {data.destination_zone && (
           <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-emerald-50 rounded-xl">
-                <MapPin className="h-6 w-6 text-emerald-600" />
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-50 rounded-xl">
+                  <MapPin className="h-6 w-6 text-emerald-600" />
+                </div>
+                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Destination Zone</h2>
               </div>
-              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Destination Zone</h2>
+              <EditSectionBtn section="destination" />
             </div>
             <div className="flex items-center gap-4">
               <div>
@@ -604,7 +643,7 @@ export function GigReview({
                 </div>
               </div>
 
-              {/* Summary pills */}
+              {/* Summary pills + edit */}
               <div className="flex flex-wrap items-center gap-2">
                 <div className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">
                   <Clock className="w-3 h-3" />
@@ -619,6 +658,7 @@ export function GigReview({
                 <div className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full text-[11px] font-black uppercase tracking-wider">
                   {(rawSchedules || []).length} jours
                 </div>
+                <EditSectionBtn section="availability" />
               </div>
             </div>
 
@@ -663,11 +703,14 @@ export function GigReview({
       {/* Skills */}
       {data.skills && (
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8 mt-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-harx-50 rounded-xl">
-              <Target className="h-6 w-6 text-harx-500" />
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-harx-50 rounded-xl">
+                <Target className="h-6 w-6 text-harx-500" />
+              </div>
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Skills & Requirements</h2>
             </div>
-            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Skills & Requirements</h2>
+            <EditSectionBtn section="skills" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Technical Skills */}
