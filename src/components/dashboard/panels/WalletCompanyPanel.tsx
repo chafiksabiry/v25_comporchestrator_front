@@ -16,7 +16,9 @@ import {
   Zap,
   Check,
   CreditCard,
-  Building2
+  Building2,
+  Phone,
+  BadgeCheck
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -33,6 +35,8 @@ interface WalletTransaction {
   status: string;
   description: string;
   createdAt: string;
+  commission_rep?: number;
+  commission_harx?: number;
 }
 
 interface AgentWithdrawal {
@@ -46,10 +50,46 @@ interface AgentWithdrawal {
   createdAt: string;
 }
 
+interface CompanyCallRow {
+  callId: string;
+  agent: string;
+  lead: string;
+  duration: number;
+  startTime: string;
+  validByCompany: boolean | null;
+  validByReps: boolean | null;
+  validByAI: boolean | null;
+  valid: boolean | null;
+  repCallCommission?: number;
+  repTransactionCommission?: number;
+  transactionOccurred?: boolean;
+}
+
+const COMMISSION_CHARGE_TYPES = new Set([
+  'reward_charge',
+  'transaction_charge',
+  'bonus_charge',
+  'call_charge'
+]);
+
+function formatEscrowTxLabel(type: string): string {
+  switch (type) {
+    case 'deposit': return 'Dépôt';
+    case 'withdrawal': return 'Retrait';
+    case 'reward_charge': return 'Appel validé';
+    case 'transaction_charge': return 'Vente validée';
+    case 'bonus_charge': return 'Bonus rep';
+    case 'call_charge': return 'Commission IA';
+    default: return type;
+  }
+}
+
 export function WalletCompanyPanel() {
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [agentWithdrawals, setAgentWithdrawals] = useState<AgentWithdrawal[]>([]);
+  const [companyCalls, setCompanyCalls] = useState<CompanyCallRow[]>([]);
+  const [approvingCallId, setApprovingCallId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -86,19 +126,34 @@ export function WalletCompanyPanel() {
         }
       }
 
-      // 2. Fetch transaction history (Euros deposits/withdrawals)
+      // 2. Fetch transaction history (deposits, withdrawals, commissions 70/30)
       const txRes = await fetch(`${apiBaseUrl}/escrow/transactions/${companyId}`);
       if (txRes.ok) {
         const txData = await txRes.json();
         if (txData.success && txData.data) {
-          // Filter only relevant euro transactions
-          setTransactions(txData.data.filter((t: any) => 
-            t.type === 'deposit' || t.type === 'withdrawal' || t.type === 'reward_charge'
-          ));
+          setTransactions(
+            txData.data.filter(
+              (t: WalletTransaction) =>
+                t.type === 'deposit' ||
+                t.type === 'withdrawal' ||
+                COMMISSION_CHARGE_TYPES.has(t.type)
+            )
+          );
         }
       }
 
-      // 3. Fetch representatives withdrawal requests pending validation
+      // 3. Calls & sales awaiting company validation
+      const callsRes = await fetch(`${apiBaseUrl}/escrow/calls/${companyId}`);
+      if (callsRes.ok) {
+        const callsData = await callsRes.json();
+        if (callsData.success && Array.isArray(callsData.data)) {
+          setCompanyCalls(callsData.data);
+        } else {
+          setCompanyCalls([]);
+        }
+      }
+
+      // 4. Fetch representatives withdrawal requests pending validation
       const agentRes = await fetch(`${apiBaseUrl}/wallet-company/agent-withdrawals/${companyId}`);
       if (agentRes.ok) {
         const agentData = await agentRes.json();
@@ -198,6 +253,50 @@ export function WalletCompanyPanel() {
       toast.error('Échec de communication avec la passerelle.');
     } finally {
       setSubmittingWithdraw(false);
+    }
+  };
+
+  const pendingValidationCalls = companyCalls.filter(
+    (c) => c.validByCompany !== true && c.valid !== true
+  );
+
+  const handleCallApproval = async (callId: string, action: 'approve' | 'refuse') => {
+    setApprovingCallId(callId);
+    try {
+      const res = await fetch(`${apiBaseUrl}/escrow/calls/approve/${callId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId, action })
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success) {
+        const booked = data.data?.repTransactions;
+        const callBooked = booked?.call;
+        if (action === 'approve' && callBooked) {
+          toast.success(
+            `Validé — débit ${callBooked.amount}€ (Rep 70%: ${callBooked.repShare}€ · HARX 30%: ${callBooked.harxShare}€)`
+          );
+        } else if (action === 'approve') {
+          toast.success('Appel / vente validé — portefeuille mis à jour.');
+        } else {
+          toast.success('Validation refusée.');
+        }
+        if (data.data?.walletCompany?.balance != null) {
+          setWallet({ companyId, balance: data.data.walletCompany.balance });
+          window.dispatchEvent(
+            new CustomEvent('balanceUpdated', { detail: { balance: data.data.walletCompany.balance } })
+          );
+        }
+        fetchData(true);
+      } else {
+        toast.error(data.error || 'Impossible de traiter la validation.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Erreur lors de la validation.');
+    } finally {
+      setApprovingCallId(null);
     }
   };
 
@@ -328,6 +427,108 @@ export function WalletCompanyPanel() {
         </div>
       </div>
 
+      {/* Calls & transactions to validate — debits WalletCompany (70% rep / 30% HARX) */}
+      <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-black text-slate-800 tracking-tight">
+              Validations appels & ventes
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">
+              Chaque validation débite votre portefeuille : 70% pour le rep, 30% pour HARX.
+            </p>
+          </div>
+          <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-100 px-2.5 py-1 rounded-full font-bold uppercase">
+            {pendingValidationCalls.length} en attente
+          </span>
+        </div>
+
+        {pendingValidationCalls.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-gray-100 rounded-[1.5rem] text-gray-400 gap-2">
+            <CheckCircle2 size={32} className="text-emerald-500" />
+            <p className="text-sm font-bold">Aucune validation en attente.</p>
+          </div>
+        ) : (
+          <div className="overflow-auto max-h-[50vh] rounded-2xl border border-gray-50 calls-scroll-company">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
+                <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                  <th className="py-3 px-4 bg-white">Rep / Lead</th>
+                  <th className="py-3 px-4 bg-white">Date</th>
+                  <th className="py-3 px-4 bg-white">Durée</th>
+                  <th className="py-3 px-4 bg-white">IA</th>
+                  <th className="py-3 px-4 bg-white">Vente</th>
+                  <th className="py-3 px-4 bg-white text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {pendingValidationCalls.map((call) => {
+                  const hasSale = call.validByReps === true;
+                  return (
+                    <tr key={call.callId} className="hover:bg-gray-50/80">
+                      <td className="py-4 px-4">
+                        <div className="font-bold text-slate-800">{call.lead}</div>
+                        <div className="text-[10px] text-gray-400">{call.agent}</div>
+                      </td>
+                      <td className="py-4 px-4 text-gray-500">
+                        {new Date(call.startTime).toLocaleString('fr-FR')}
+                      </td>
+                      <td className="py-4 px-4 font-bold tabular-nums text-slate-800">
+                        {Math.floor((call.duration || 0) / 60)}:
+                        {String((call.duration || 0) % 60).padStart(2, '0')}
+                      </td>
+                      <td className="py-4 px-4">
+                        {call.validByAI === true ? (
+                          <span className="text-emerald-600 font-bold">Validé IA</span>
+                        ) : call.validByAI === false ? (
+                          <span className="text-rose-500 font-bold">Refusé</span>
+                        ) : (
+                          <span className="text-gray-400 italic">—</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-4">
+                        {hasSale ? (
+                          <span className="inline-flex items-center gap-1 text-blue-600 font-bold">
+                            <BadgeCheck size={12} /> Déclarée
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            disabled={approvingCallId === call.callId}
+                            onClick={() => handleCallApproval(call.callId, 'refuse')}
+                            className="p-2 text-gray-500 hover:text-rose-600 bg-white border border-gray-100 rounded-xl disabled:opacity-50"
+                          >
+                            <X size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={approvingCallId === call.callId}
+                            onClick={() => handleCallApproval(call.callId, 'approve')}
+                            className="px-3 py-2 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-wider disabled:opacity-50 flex items-center gap-1"
+                          >
+                            {approvingCallId === call.callId ? (
+                              <RefreshCw size={12} className="animate-spin" />
+                            ) : (
+                              <Check size={12} />
+                            )}
+                            Valider
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* Grid section for lists */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Representative Withdrawals list */}
@@ -406,20 +607,31 @@ export function WalletCompanyPanel() {
             <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
               {transactions.map((tx) => {
                 const isDeposit = tx.type === 'deposit';
+                const isCharge = COMMISSION_CHARGE_TYPES.has(tx.type);
+                const commissionRep = tx.commission_rep;
+                const commissionHarx = tx.commission_harx;
                 return (
                   <div key={tx._id} className="flex items-center justify-between p-3.5 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-xl shrink-0 ${isDeposit ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-600'}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`p-2 rounded-xl shrink-0 ${isDeposit ? 'bg-emerald-100 text-emerald-600' : isCharge ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600'}`}>
                         {isDeposit ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
                       </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{tx.description}</h4>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-slate-800 line-clamp-1">
+                          {formatEscrowTxLabel(tx.type)}
+                        </h4>
+                        <p className="text-[9px] text-gray-500 line-clamp-1">{tx.description}</p>
+                        {isCharge && (commissionRep != null || commissionHarx != null) && (
+                          <p className="text-[9px] text-orange-600/90 font-bold mt-0.5">
+                            Rep 70%: {commissionRep?.toFixed(2)} € · HARX 30%: {commissionHarx?.toFixed(2)} €
+                          </p>
+                        )}
                         <span className="text-[9px] text-gray-400">{new Date(tx.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
 
                     <span className={`text-xs font-black shrink-0 ${isDeposit ? 'text-emerald-600' : 'text-slate-800'}`}>
-                      {isDeposit ? '+' : '-'}{tx.amount.toLocaleString()} €
+                      {isDeposit ? '+' : '-'}{tx.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                     </span>
                   </div>
                 );
@@ -554,6 +766,12 @@ export function WalletCompanyPanel() {
           </div>
         </div>
       )}
+
+      <style>{`
+        .calls-scroll-company { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        .calls-scroll-company::-webkit-scrollbar { width: 8px; height: 8px; }
+        .calls-scroll-company::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 9999px; }
+      `}</style>
     </div>
   );
 }
