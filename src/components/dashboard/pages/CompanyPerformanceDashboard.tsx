@@ -456,7 +456,7 @@ export function CompanyPerformanceDashboard() {
                     icon={<Briefcase className="w-6 h-6" />}
                     color="purple"
                     trendPct={null}
-                    trendLabel={t('performanceDashboard.metrics.repsAssigned')}
+                    trendLabel={selectedGig === 'all' ? 'Total cumulé sur tous les gigs' : 'Reps actifs sur ce gig'}
                 />
                 <MetricCard
                     title={t('performanceDashboard.metrics.totalLeads')}
@@ -464,7 +464,7 @@ export function CompanyPerformanceDashboard() {
                     icon={<Users className="w-6 h-6" />}
                     color="blue"
                     trendPct={null}
-                    trendLabel={t('performanceDashboard.metrics.repsAssigned')}
+                    trendLabel="Stock total de leads"
                 />
                 <MetricCard
                     title={t('performanceDashboard.metrics.totalCalls')}
@@ -601,9 +601,10 @@ function MetricCard({
     const showTrend = trendPct !== null && Number.isFinite(trendPct);
     const isPositive = showTrend && (trendPct as number) > 0;
     const isNeutral = showTrend && (trendPct as number) === 0;
-    const pillTone = !showTrend || isNeutral
-        ? 'bg-slate-100 text-slate-500'
-        : isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600';
+    let pillTone = 'bg-slate-100 text-slate-500';
+    if (showTrend && !isNeutral) {
+        pillTone = isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600';
+    }
 
     return (
         <div className="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 hover:shadow-xl transition-all duration-300 group">
@@ -611,13 +612,13 @@ function MetricCard({
                 <div className={`p-3 rounded-2xl ${colorClasses[color]} ring-1 transition-transform group-hover:scale-110 duration-300`}>
                     {icon}
                 </div>
-                <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${pillTone}`}>
+                <div className={`flex items-center gap-1 text-[10px] font-black tracking-wider uppercase px-2.5 py-1 rounded-full ${pillTone}`}>
                     {showTrend && !isNeutral && (isPositive
                         ? <ArrowUpRight className="w-3 h-3" />
                         : <ArrowDownRight className="w-3 h-3" />)}
                     {showTrend
                         ? `${isPositive ? '+' : ''}${Math.round(trendPct as number)}%`
-                        : '—'}
+                        : 'Total'}
                 </div>
             </div>
             <div className="space-y-1">
