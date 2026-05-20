@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Building2,
   Shield,
@@ -246,7 +245,6 @@ interface GigResponse {
 
 const CompanyOnboarding = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   // Remove early return - we need to render the component to show onboarding interface
 
   const [currentPhase, setCurrentPhase] = useState(1);
@@ -1168,7 +1166,8 @@ const CompanyOnboarding = () => {
         return;
       }
     } else if (displayedPhase === 4) {
-      navigate('/dashboard/profile');
+      // Company dashboard (KPI / opérations), not orchestrator onboarding nor profile settings.
+      window.dispatchEvent(new CustomEvent('openCompanyDashboard'));
     }
   };
 

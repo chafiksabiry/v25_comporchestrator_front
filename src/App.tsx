@@ -333,10 +333,16 @@ function AppContent() {
       window.location.hash = '#/orchestrator';
     };
 
+    const openCompanyDashboard = () => {
+      setActiveProject('dashboard');
+      navigate('/dashboard/main');
+    };
+
     window.addEventListener('tabChange', handleTabChange as EventListener);
     window.addEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
     window.addEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
     window.addEventListener('openComporchestrator', openComporchestrator);
+    window.addEventListener('openCompanyDashboard', openCompanyDashboard);
 
     // Initial Path correction
     if (location.pathname === '/' || location.pathname === '') {
@@ -348,8 +354,9 @@ function AppContent() {
       window.removeEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
       window.removeEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
       window.removeEventListener('openComporchestrator', openComporchestrator);
+      window.removeEventListener('openCompanyDashboard', openCompanyDashboard);
     };
-  }, [location.pathname, isZohoCallback, isZohoAuth]);
+  }, [location.pathname, isZohoCallback, isZohoAuth, navigate]);
 
   useEffect(() => {
     if (activeProject !== 'comporchestrator') {
