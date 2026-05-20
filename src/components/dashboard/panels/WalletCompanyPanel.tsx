@@ -567,19 +567,37 @@ export function WalletCompanyPanel() {
                               Valider
                             </button>
                           </div>
-                        ) : callsTab === 'validated' ? (
-                          <div className="flex flex-col items-end gap-1">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[9px] uppercase tracking-wider">
-                              <BadgeCheck size={10} /> Validé
-                            </span>
-                            {(call.repCallCommission || 0) > 0 && (
-                              <span className="text-[10px] text-slate-500 font-bold">
-                                Rep {call.repCallCommission?.toFixed(2)} €
-                                {hasSale && call.repTransactionCommission ? ` + ${call.repTransactionCommission.toFixed(2)} €` : ''}
+                        ) : callsTab === 'validated' ? (() => {
+                          const repCall = Number(call.repCallCommission || 0);
+                          const repTx = hasSale ? Number(call.repTransactionCommission || 0) : 0;
+                          const repShare = repCall + repTx;
+                          // rep gets 70%, so gross = repShare / 0.7
+                          const gross = repShare > 0 ? repShare / 0.7 : 0;
+                          const harxShare = gross > 0 ? gross - repShare : 0;
+                          const agentName = call.agent || 'Rep';
+                          return (
+                            <div className="flex flex-col items-end gap-1.5">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[9px] uppercase tracking-wider">
+                                <BadgeCheck size={10} /> Validé
                               </span>
-                            )}
-                          </div>
-                        ) : (
+                              {gross > 0 && (
+                                <>
+                                  <span className="text-sm font-black text-slate-900 tabular-nums">
+                                    {gross.toFixed(2)} €
+                                  </span>
+                                  <div className="text-[9px] font-bold leading-tight text-right space-y-0.5">
+                                    <div className="text-emerald-700">
+                                      70% {agentName} · {repShare.toFixed(2)} €
+                                    </div>
+                                    <div className="text-slate-500">
+                                      30% HARX · {harxShare.toFixed(2)} €
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })() : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-100 font-bold text-[9px] uppercase tracking-wider">
                             <X size={10} /> Refusé
                           </span>
