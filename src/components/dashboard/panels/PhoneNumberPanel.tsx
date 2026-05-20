@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Phone,
   Search,
@@ -12,9 +12,21 @@ import {
   AlertTriangle,
   X
 } from 'lucide-react';
+import { PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { gigsApi } from '../services/api/endpoints';
+
+type CheckoutStep = 'select' | 'paypal' | 'processing' | 'success';
+
+const safeParseJson = async (res: Response) => {
+  const txt = await res.text();
+  try {
+    return txt ? JSON.parse(txt) : {};
+  } catch {
+    return null;
+  }
+};
 
 interface PurchasedNumber {
   _id?: string;
@@ -64,15 +76,15 @@ export function PhoneNumberPanel() {
   // Checkout / payment state for the new Stripe-or-PayPal flow
   const [checkoutNumber, setCheckoutNumber] = useState<string | null>(null);
   const [checkoutMethod, setCheckoutMethod] = useState<'stripe' | 'paypal'>('stripe');
-  const [checkoutStep, setCheckoutStep] = useState<'select' | 'processing' | 'success'>('select');
+  const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('select');
   const [checkoutPaymentId, setCheckoutPaymentId] = useState<string | null>(null);
+  const [paypalClientId, setPaypalClientId] = useState<string | null>(null);
+  const [paypalEnabled, setPaypalEnabled] = useState(false);
+  const [paypalOrderId, setPaypalOrderId] = useState<string | null>(null);
+  const [linePrice, setLinePrice] = useState({ amountCents: 500, currency: 'EUR' });
 
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
-
-  // Default phone line setup fee — should ideally come from the backend
-  // checkout/init response. We display it before the user commits.
-  const LINE_PRICE = { amountCents: 500, currency: 'EUR' };
   const formatPrice = (cents: number, currency: string) =>
     `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} ${currency === 'EUR' ? '€' : currency}`;
 
@@ -192,29 +204,168 @@ export function PhoneNumberPanel() {
     if (checkoutStep === 'processing') return;
     setCheckoutNumber(null);
     setCheckoutPaymentId(null);
+    setPaypalOrderId(null);
     setCheckoutStep('select');
   };
 
-  // Step 2 — Stripe / PayPal payment then number provisioning.
-  // Flow: init payment -> (real or stub) provider confirmation ->
-  // confirm payment -> call existing /purchase/twilio with paymentId.
-  const handleConfirmPayment = async () => {
+  useEffect(() => {
+    if (!checkoutNumber) return;
+    (async () => {
+      try {
+        const res = await fetch(`${apiBaseUrl}/phone-numbers/checkout/config`);
+        const cfg = await safeParseJson(res);
+        if (!res.ok || !cfg) return;
+        if (cfg.pricing?.amountCents) {
+          setLinePrice({
+            amountCents: cfg.pricing.amountCents,
+            currency: cfg.pricing.currency || 'EUR'
+          });
+        }
+        if (cfg.paypal?.enabled && cfg.paypal.clientId) {
+          setPaypalEnabled(true);
+          setPaypalClientId(cfg.paypal.clientId);
+        } else {
+          setPaypalEnabled(false);
+          setPaypalClientId(null);
+        }
+      } catch (err) {
+        console.warn('[checkout] config unavailable', err);
+      }
+    })();
+  }, [checkoutNumber, apiBaseUrl]);
+
+  const initLineCheckout = useCallback(
+    async (provider: 'stripe' | 'paypal') => {
+      const initRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: checkoutNumber,
+          gigId: selectedGigIdForNumber,
+          companyId,
+          provider
+        })
+      });
+      const initData = await safeParseJson(initRes);
+      if (!initData) {
+        throw new Error('Réponse du serveur de paiement invalide. Veuillez réessayer.');
+      }
+      if (!initRes.ok || !initData?.paymentId) {
+        throw new Error(initData?.message || initData?.error || "Impossible d'initialiser le paiement.");
+      }
+      return initData as {
+        paymentId: string;
+        paypalOrderId?: string;
+        paypalClientId?: string;
+        checkoutUrl?: string;
+      };
+    },
+    [apiBaseUrl, checkoutNumber, companyId, selectedGigIdForNumber]
+  );
+
+  const confirmLineCheckout = useCallback(
+    async (paymentId: string, providerRef?: string) => {
+      const confirmRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId, providerRef })
+      });
+      const confirmData = await safeParseJson(confirmRes);
+      if (!confirmData) {
+        throw new Error('Réponse du serveur de paiement invalide. Veuillez réessayer.');
+      }
+      if (!confirmRes.ok || !confirmData?.success) {
+        throw new Error(confirmData?.message || confirmData?.error || 'Paiement non confirmé.');
+      }
+    },
+    [apiBaseUrl]
+  );
+
+  const provisionLine = useCallback(
+    async (paymentId: string) => {
+      if (!checkoutNumber || !selectedGigIdForNumber) return;
+
+      const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase/twilio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: checkoutNumber,
+          gigId: selectedGigIdForNumber,
+          companyId,
+          paymentId
+        })
+      });
+
+      if (!purchaseRes.ok) {
+        const err = await purchaseRes.json().catch(() => ({}));
+        throw new Error(err?.message || err?.error || "L'achat du numéro a échoué.");
+      }
+    },
+    [apiBaseUrl, checkoutNumber, companyId, selectedGigIdForNumber]
+  );
+
+  const finishSuccessfulPurchase = useCallback(
+    (method: 'stripe' | 'paypal') => {
+      if (!checkoutNumber) return;
+      setCheckoutStep('success');
+      toast.success(`Numéro ${checkoutNumber} acquis via ${method === 'stripe' ? 'Stripe' : 'PayPal'} !`);
+      setSearchResults(prev => prev.filter(n => n.phoneNumber !== checkoutNumber));
+      fetchData(true);
+    },
+    [checkoutNumber, fetchData]
+  );
+
+  const handlePaypalApprove = async (orderId: string) => {
+    if (!checkoutPaymentId || !checkoutNumber) return;
+
+    setCheckoutStep('processing');
+    setPurchasing(checkoutNumber);
+    try {
+      await confirmLineCheckout(checkoutPaymentId, orderId);
+      await provisionLine(checkoutPaymentId);
+      finishSuccessfulPurchase('paypal');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || 'Erreur lors du paiement PayPal.');
+      setCheckoutStep('paypal');
+    } finally {
+      setPurchasing(null);
+    }
+  };
+
+  const startPaypalCheckout = async () => {
+    if (!checkoutNumber || !selectedGigIdForNumber) return;
+    if (!paypalEnabled || !paypalClientId) {
+      toast.error('PayPal n\'est pas configuré sur le serveur (variables PAYPAL_*).');
+      return;
+    }
+
+    setPurchasing(checkoutNumber);
+    try {
+      const initData = await initLineCheckout('paypal');
+      if (!initData.paypalOrderId) {
+        throw new Error('La commande PayPal n\'a pas pu être créée.');
+      }
+      setCheckoutPaymentId(initData.paymentId);
+      setPaypalOrderId(initData.paypalOrderId);
+      if (initData.paypalClientId) setPaypalClientId(initData.paypalClientId);
+      setCheckoutStep('paypal');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || 'Impossible de démarrer le paiement PayPal.');
+    } finally {
+      setPurchasing(null);
+    }
+  };
+
+  const handleConfirmStripePayment = async () => {
     if (!checkoutNumber || !selectedGigIdForNumber) return;
 
     setCheckoutStep('processing');
     setPurchasing(checkoutNumber);
     try {
-      // 1. Init a payment intent / order on the backend.
-      // Some deployed backends may not yet expose the /checkout endpoints
-      // (older versions). We detect a 404 / non-JSON response and gracefully
-      // fall back to the legacy direct purchase so the user is never stuck.
       let paymentId: string | null = null;
       let checkoutSupported = true;
-
-      const safeParseJson = async (res: Response) => {
-        const txt = await res.text();
-        try { return txt ? JSON.parse(txt) : {}; } catch { return null; }
-      };
 
       const initRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/init`, {
         method: 'POST',
@@ -223,79 +374,62 @@ export function PhoneNumberPanel() {
           phoneNumber: checkoutNumber,
           gigId: selectedGigIdForNumber,
           companyId,
-          provider: checkoutMethod
+          provider: 'stripe'
         })
       });
 
       if (initRes.status === 404) {
-        // Backend not yet redeployed with checkout routes — legacy fallback.
         console.warn('[checkout] /checkout/init not available, falling back to legacy purchase.');
         checkoutSupported = false;
       } else {
         const initData = await safeParseJson(initRes);
-        if (!initData) {
-          throw new Error("Réponse du serveur de paiement invalide. Veuillez réessayer.");
-        }
-        if (!initRes.ok || !initData?.paymentId) {
+        if (!initData?.paymentId) {
           throw new Error(initData?.message || initData?.error || "Impossible d'initialiser le paiement.");
         }
         paymentId = initData.paymentId as string;
         setCheckoutPaymentId(paymentId);
 
-        // 2. If a real provider checkout URL is returned, open it. Otherwise
-        // we're in stub mode (no Stripe/PayPal SDK key yet) — we proceed
-        // directly to confirmation.
         if (initData.checkoutUrl && !String(initData.checkoutUrl).startsWith('internal://')) {
           window.open(initData.checkoutUrl, '_blank', 'noopener,noreferrer,width=520,height=720');
         }
 
-        // 3. Confirm the payment server-side.
-        const confirmRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/confirm`, {
+        await confirmLineCheckout(paymentId);
+      }
+
+      if (checkoutSupported && paymentId) {
+        await provisionLine(paymentId);
+      } else {
+        const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase/twilio`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentId })
+          body: JSON.stringify({
+            phoneNumber: checkoutNumber,
+            gigId: selectedGigIdForNumber,
+            companyId
+          })
         });
-        const confirmData = await safeParseJson(confirmRes);
-        if (!confirmData) {
-          throw new Error("Réponse du serveur de paiement invalide. Veuillez réessayer.");
-        }
-        if (!confirmRes.ok || !confirmData?.success) {
-          throw new Error(confirmData?.message || confirmData?.error || 'Paiement non confirmé.');
+        if (!purchaseRes.ok) {
+          const err = await purchaseRes.json().catch(() => ({}));
+          throw new Error(err?.message || err?.error || "L'achat du numéro a échoué.");
         }
       }
 
-      // 4. Now actually provision the Twilio number. Includes paymentId only
-      // when the checkout endpoints exist server-side; legacy backends accept
-      // the call without it.
-      const purchaseBody: Record<string, any> = {
-        phoneNumber: checkoutNumber,
-        gigId: selectedGigIdForNumber,
-        companyId,
-      };
-      if (checkoutSupported && paymentId) purchaseBody.paymentId = paymentId;
-
-      const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase/twilio`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(purchaseBody)
-      });
-
-      if (!purchaseRes.ok) {
-        const err = await purchaseRes.json().catch(() => ({}));
-        throw new Error(err?.message || err?.error || "L'achat du numéro a échoué.");
-      }
-
-      setCheckoutStep('success');
-      toast.success(`Numéro ${checkoutNumber} acquis via ${checkoutMethod === 'stripe' ? 'Stripe' : 'PayPal'} !`);
-      setSearchResults(prev => prev.filter(n => n.phoneNumber !== checkoutNumber));
-      fetchData(true);
+      finishSuccessfulPurchase('stripe');
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || "Erreur lors du paiement.");
+      toast.error(err?.message || 'Erreur lors du paiement.');
       setCheckoutStep('select');
     } finally {
       setPurchasing(null);
     }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (checkoutMethod === 'paypal') {
+      await startPaypalCheckout();
+      return;
+    }
+    await handleConfirmStripePayment();
   };
 
   if (loading) {
@@ -610,13 +744,13 @@ export function PhoneNumberPanel() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500 font-bold uppercase tracking-wider">Frais d'activation</span>
                   <span className="font-black text-slate-900">
-                    {formatPrice(LINE_PRICE.amountCents, LINE_PRICE.currency)}
+                    {formatPrice(linePrice.amountCents, linePrice.currency)}
                   </span>
                 </div>
                 <div className="pt-2 mt-2 border-t border-gray-200 flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-wider text-gray-500">Total à payer</span>
                   <span className="text-lg font-black text-slate-900">
-                    {formatPrice(LINE_PRICE.amountCents, LINE_PRICE.currency)}
+                    {formatPrice(linePrice.amountCents, linePrice.currency)}
                   </span>
                 </div>
               </div>
@@ -670,16 +804,75 @@ export function PhoneNumberPanel() {
                     </div>
                   </div>
 
+                  {checkoutMethod === 'paypal' && !paypalEnabled && (
+                    <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 font-medium">
+                      PayPal n&apos;est pas encore activé sur le serveur. Configurez{' '}
+                      <span className="font-bold">PAYPAL_CLIENT_ID</span> et{' '}
+                      <span className="font-bold">PAYPAL_CLIENT_SECRET</span> sur Railway.
+                    </p>
+                  )}
+
                   <button
                     type="button"
                     onClick={handleConfirmPayment}
-                    className="w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-300 shadow-md active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r from-slate-900 to-slate-800 text-white hover:from-orange-500 hover:to-rose-500"
+                    disabled={Boolean(purchasing) || (checkoutMethod === 'paypal' && !paypalEnabled)}
+                    className="w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-300 shadow-md active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r from-slate-900 to-slate-800 text-white hover:from-orange-500 hover:to-rose-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Lock size={14} />
-                    Payer {formatPrice(LINE_PRICE.amountCents, LINE_PRICE.currency)} avec{' '}
-                    {checkoutMethod === 'stripe' ? 'Stripe' : 'PayPal'}
+                    {purchasing
+                      ? 'Préparation…'
+                      : `Payer ${formatPrice(linePrice.amountCents, linePrice.currency)} avec ${
+                          checkoutMethod === 'stripe' ? 'Stripe' : 'PayPal'
+                        }`}
                   </button>
                 </>
+              )}
+
+              {checkoutStep === 'paypal' && paypalClientId && paypalOrderId && (
+                <div className="space-y-3">
+                  <p className="text-[11px] text-gray-500 text-center font-medium">
+                    Connectez-vous à PayPal pour valider le paiement de{' '}
+                    <span className="font-bold text-slate-800">
+                      {formatPrice(linePrice.amountCents, linePrice.currency)}
+                    </span>
+                    .
+                  </p>
+                  <PayPalScriptProvider
+                    options={{
+                      clientId: paypalClientId,
+                      currency: linePrice.currency,
+                      intent: 'capture'
+                    }}
+                  >
+                    <PayPalButtons
+                      style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' }}
+                      createOrder={() => paypalOrderId}
+                      onApprove={async (data) => {
+                        if (data.orderID) await handlePaypalApprove(data.orderID);
+                      }}
+                      onCancel={() => {
+                        toast.error('Paiement PayPal annulé.');
+                        setCheckoutStep('select');
+                        setPaypalOrderId(null);
+                      }}
+                      onError={(err) => {
+                        console.error('PayPal SDK error', err);
+                        toast.error('Erreur PayPal. Réessayez ou choisissez Stripe.');
+                        setCheckoutStep('select');
+                      }}
+                    />
+                  </PayPalScriptProvider>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCheckoutStep('select');
+                      setPaypalOrderId(null);
+                    }}
+                    className="w-full py-2 text-[11px] font-bold text-gray-500 hover:text-slate-800"
+                  >
+                    ← Changer de méthode
+                  </button>
+                </div>
               )}
 
               {checkoutStep === 'processing' && (
