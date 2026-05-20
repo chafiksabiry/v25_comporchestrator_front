@@ -90,6 +90,7 @@ export function WalletCompanyPanel() {
   const [agentWithdrawals, setAgentWithdrawals] = useState<AgentWithdrawal[]>([]);
   const [companyCalls, setCompanyCalls] = useState<CompanyCallRow[]>([]);
   const [approvingCallId, setApprovingCallId] = useState<string | null>(null);
+  const [callsTab, setCallsTab] = useState<'pending' | 'validated' | 'refused'>('pending');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -257,8 +258,18 @@ export function WalletCompanyPanel() {
   };
 
   const pendingValidationCalls = companyCalls.filter(
-    (c) => c.validByCompany !== true && c.valid !== true
+    (c) => c.validByCompany == null && c.valid !== true && c.valid !== false
   );
+  const validatedCalls = companyCalls.filter(
+    (c) => c.validByCompany === true || c.valid === true
+  );
+  const refusedCalls = companyCalls.filter(
+    (c) => c.validByCompany === false || c.valid === false
+  );
+  const visibleCalls =
+    callsTab === 'pending' ? pendingValidationCalls
+    : callsTab === 'validated' ? validatedCalls
+    : refusedCalls;
 
   const handleCallApproval = async (callId: string, action: 'approve' | 'refuse') => {
     setApprovingCallId(callId);
@@ -429,7 +440,7 @@ export function WalletCompanyPanel() {
 
       {/* Calls & transactions to validate — debits WalletCompany (70% rep / 30% HARX) */}
       <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h3 className="text-base font-black text-slate-800 tracking-tight">
               Validations appels & ventes
@@ -438,15 +449,39 @@ export function WalletCompanyPanel() {
               Chaque validation débite votre portefeuille : 70% pour le rep, 30% pour HARX.
             </p>
           </div>
-          <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-100 px-2.5 py-1 rounded-full font-bold uppercase">
-            {pendingValidationCalls.length} en attente
-          </span>
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl p-1">
+            {([
+              { id: 'pending', label: 'En attente', count: pendingValidationCalls.length, tone: 'text-amber-700' },
+              { id: 'validated', label: 'Validés', count: validatedCalls.length, tone: 'text-emerald-700' },
+              { id: 'refused', label: 'Refusés', count: refusedCalls.length, tone: 'text-rose-700' }
+            ] as const).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setCallsTab(tab.id)}
+                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                  callsTab === tab.id
+                    ? `bg-white shadow-sm border border-slate-200 ${tab.tone}`
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className="bg-slate-100 text-slate-600 px-1.5 rounded-full text-[9px]">{tab.count}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {pendingValidationCalls.length === 0 ? (
+        {visibleCalls.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-gray-100 rounded-[1.5rem] text-gray-400 gap-2">
             <CheckCircle2 size={32} className="text-emerald-500" />
-            <p className="text-sm font-bold">Aucune validation en attente.</p>
+            <p className="text-sm font-bold">
+              {callsTab === 'pending'
+                ? 'Aucune validation en attente.'
+                : callsTab === 'validated'
+                  ? "Aucun appel validé pour l'instant."
+                  : 'Aucun appel refusé.'}
+            </p>
           </div>
         ) : (
           <div className="overflow-auto max-h-[50vh] rounded-2xl border border-gray-50 calls-scroll-company">
@@ -458,16 +493,28 @@ export function WalletCompanyPanel() {
                   <th className="py-3 px-4 bg-white">Durée</th>
                   <th className="py-3 px-4 bg-white">IA</th>
                   <th className="py-3 px-4 bg-white">Vente</th>
-                  <th className="py-3 px-4 bg-white text-right">Action</th>
+                  <th className="py-3 px-4 bg-white text-right">
+                    {callsTab === 'pending' ? 'Action' : 'Statut'}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {pendingValidationCalls.map((call) => {
+                {visibleCalls.map((call) => {
                   const hasSale = call.validByReps === true;
                   return (
                     <tr key={call.callId} className="hover:bg-gray-50/80">
                       <td className="py-4 px-4">
-                        <div className="font-bold text-slate-800">{call.lead}</div>
+                        <div className="font-bold text-slate-800 flex items-center gap-2">
+                          <span>{call.lead}</span>
+                          {(call.validByCompany === true || call.valid === true) && (
+                            <span
+                              title="Appel validé"
+                              className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
+                            >
+                              <BadgeCheck size={12} />
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[10px] text-gray-400">{call.agent}</div>
                       </td>
                       <td className="py-4 px-4 text-gray-500">
@@ -496,29 +543,47 @@ export function WalletCompanyPanel() {
                         )}
                       </td>
                       <td className="py-4 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            disabled={approvingCallId === call.callId}
-                            onClick={() => handleCallApproval(call.callId, 'refuse')}
-                            className="p-2 text-gray-500 hover:text-rose-600 bg-white border border-gray-100 rounded-xl disabled:opacity-50"
-                          >
-                            <X size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={approvingCallId === call.callId}
-                            onClick={() => handleCallApproval(call.callId, 'approve')}
-                            className="px-3 py-2 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-wider disabled:opacity-50 flex items-center gap-1"
-                          >
-                            {approvingCallId === call.callId ? (
-                              <RefreshCw size={12} className="animate-spin" />
-                            ) : (
-                              <Check size={12} />
+                        {callsTab === 'pending' ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              disabled={approvingCallId === call.callId}
+                              onClick={() => handleCallApproval(call.callId, 'refuse')}
+                              className="p-2 text-gray-500 hover:text-rose-600 bg-white border border-gray-100 rounded-xl disabled:opacity-50"
+                            >
+                              <X size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={approvingCallId === call.callId}
+                              onClick={() => handleCallApproval(call.callId, 'approve')}
+                              className="px-3 py-2 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-wider disabled:opacity-50 flex items-center gap-1"
+                            >
+                              {approvingCallId === call.callId ? (
+                                <RefreshCw size={12} className="animate-spin" />
+                              ) : (
+                                <Check size={12} />
+                              )}
+                              Valider
+                            </button>
+                          </div>
+                        ) : callsTab === 'validated' ? (
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[9px] uppercase tracking-wider">
+                              <BadgeCheck size={10} /> Validé
+                            </span>
+                            {(call.repCallCommission || 0) > 0 && (
+                              <span className="text-[10px] text-slate-500 font-bold">
+                                Rep {call.repCallCommission?.toFixed(2)} €
+                                {hasSale && call.repTransactionCommission ? ` + ${call.repTransactionCommission.toFixed(2)} €` : ''}
+                              </span>
                             )}
-                            Valider
-                          </button>
-                        </div>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-100 font-bold text-[9px] uppercase tracking-wider">
+                            <X size={10} /> Refusé
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );
