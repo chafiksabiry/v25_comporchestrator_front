@@ -64,6 +64,44 @@ interface CompanyCallRow {
   recording_url_cloudinary?: string | null;
   transcript?: any[];
   ai_call_score?: any;
+  /** When the row comes from a RepTransaction, we attach the source doc so we
+   *  can render the authoritative commission split (instead of recomputing
+   *  from the call). */
+  repTx?: RepTransactionRow;
+}
+
+interface RepTransactionRow {
+  _id: string;
+  type: 'call_validated' | 'transaction' | 'bonus';
+  status: 'earned' | 'paid' | 'refused';
+  amount: number;
+  repShare: number;
+  harxShare: number;
+  description?: string;
+  createdAt: string;
+  sourceId?: string;
+  callId?: string;
+  gigId?: string;
+  repId?: string;
+  call?: {
+    _id: string;
+    sid?: string;
+    duration?: number;
+    startTime?: string;
+    direction?: string;
+    to?: string;
+    from?: string;
+    recording_url?: string | null;
+    recording_url_cloudinary?: string | null;
+    transcript?: any[];
+    ai_call_score?: any;
+    validByAI?: boolean | null;
+    transactionOccurred?: boolean;
+    lead?: string;
+    leadObj?: { First_Name: string; Last_Name: string };
+  } | null;
+  gig?: { _id: string; title?: string } | null;
+  rep?: { _id: string; firstName?: string; lastName?: string; email?: string } | null;
 }
 
 const AI_SCORE_META_KEYS = new Set([
@@ -131,6 +169,7 @@ export function WalletCompanyPanel() {
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [agentWithdrawals, setAgentWithdrawals] = useState<AgentWithdrawal[]>([]);
   const [companyCalls, setCompanyCalls] = useState<CompanyCallRow[]>([]);
+  const [repTransactions, setRepTransactions] = useState<RepTransactionRow[]>([]);
   const [approvingCallId, setApprovingCallId] = useState<string | null>(null);
   const [callsTab, setCallsTab] = useState<'pending' | 'validated' | 'refused'>('pending');
   const [bulkAnalysis, setBulkAnalysis] = useState<{ running: boolean; done: number; total: number }>({ running: false, done: 0, total: 0 });
@@ -172,7 +211,8 @@ export function WalletCompanyPanel() {
         }
       }
 
-      // 3. Calls & sales awaiting company validation
+      // 3. Calls & sales awaiting company validation (used for the "En attente" tab
+      //    and the bulk-analyze workflow).
       const callsRes = await fetch(`${apiBaseUrl}/escrow/calls/${companyId}`);
       if (callsRes.ok) {
         const callsData = await callsRes.json();
@@ -181,6 +221,26 @@ export function WalletCompanyPanel() {
         } else {
           setCompanyCalls([]);
         }
+      }
+
+      // 3.bis Company-side rep transaction ledger — the authoritative source
+      //       for everything that has actually been booked (validated calls,
+      //       sales, bonuses). Drives the "Validés" / "Refusés" tabs.
+      try {
+        const repTxRes = await fetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`);
+        if (repTxRes.ok) {
+          const repTxData = await repTxRes.json();
+          if (repTxData.success && Array.isArray(repTxData.data)) {
+            setRepTransactions(repTxData.data);
+          } else {
+            setRepTransactions([]);
+          }
+        } else {
+          setRepTransactions([]);
+        }
+      } catch (e) {
+        console.warn('rep transactions endpoint unavailable yet', e);
+        setRepTransactions([]);
       }
 
       // 4. Fetch representatives withdrawal requests pending validation
@@ -286,31 +346,57 @@ export function WalletCompanyPanel() {
     }
   };
 
-  // Validation = AI validation. Le wallet est débité automatiquement
-  // dès que l'IA valide un appel (pas besoin d'action manuelle).
+  // The "Validés" / "Refusés" tabs are now backed by the RepTransaction ledger
+  // (the authoritative commission record), NOT by raw calls. A call with
+  // `validByAI=true` only counts as validated once the corresponding
+  // RepTransaction row has been booked — that is what actually debits the
+  // WalletCompany.
   //
-  // Classification logic — priority order:
-  //   1) `validByAI` is explicit (true / false) → respect it.
-  //   2) `validByAI` is null but an AI score exists → classify on the score:
-  //        score >= AI_VALIDATION_THRESHOLD  → validated
-  //        score <  AI_VALIDATION_THRESHOLD  → refused
-  //      This makes the tabs actually useful as soon as a call has been
-  //      analyzed by the AI, even before reconciliation flips `validByAI`.
-  //   3) No score, no flag → pending.
-  const AI_VALIDATION_THRESHOLD = 50;
-  const classifyCall = (c: any): 'validated' | 'refused' | 'pending' => {
-    if (c.validByAI === true) return 'validated';
-    if (c.validByAI === false) return 'refused';
-    const ai = normalizeAiCallScore(c.ai_call_score);
-    const score = ai?.score;
-    if (typeof score === 'number') {
-      return score >= AI_VALIDATION_THRESHOLD ? 'validated' : 'refused';
-    }
-    return 'pending';
+  // "En attente" still shows raw calls without a RepTransaction so the company
+  // can chase down un-analyzed calls via the "Analyser tous" button.
+
+  // Convert a RepTransaction into a CompanyCallRow so we can reuse the
+  // existing table / modal rendering code. Bonuses (no call linked) still
+  // render as a row using the tx data for date / amount.
+  const repTxToRow = (tx: RepTransactionRow): CompanyCallRow => {
+    const repName = tx.rep
+      ? `${tx.rep.firstName || ''} ${tx.rep.lastName || ''}`.trim() || tx.rep.email || 'Rep'
+      : 'Rep';
+    const callIdStr = tx.call?._id?.toString() || tx.callId || tx.sourceId || tx._id;
+    const hasSale = tx.type === 'transaction';
+    return {
+      _id: callIdStr,
+      callId: callIdStr,
+      agent: repName,
+      lead: tx.call?.lead || (tx.type === 'bonus' ? 'Bonus manuel' : 'Lead'),
+      leadObj: tx.call?.leadObj,
+      direction: tx.call?.direction,
+      duration: tx.call?.duration || 0,
+      startTime: tx.call?.startTime || tx.createdAt,
+      createdAt: tx.createdAt,
+      status: tx.status,
+      validByCompany: null,
+      validByReps: hasSale,
+      validByAI: tx.status === 'refused' ? false : true,
+      valid: tx.status !== 'refused',
+      repCallCommission: tx.type === 'call_validated' ? tx.repShare : 0,
+      repTransactionCommission: tx.type === 'transaction' ? tx.repShare : 0,
+      transactionOccurred: hasSale || tx.call?.transactionOccurred === true,
+      recording_url: tx.call?.recording_url ?? null,
+      recording_url_cloudinary: tx.call?.recording_url_cloudinary ?? null,
+      transcript: tx.call?.transcript,
+      ai_call_score: tx.call?.ai_call_score,
+      repTx: tx
+    };
   };
-  const pendingValidationCalls = companyCalls.filter((c) => classifyCall(c) === 'pending');
-  const validatedCalls = companyCalls.filter((c) => classifyCall(c) === 'validated');
-  const refusedCalls = companyCalls.filter((c) => classifyCall(c) === 'refused');
+
+  const pendingValidationCalls = companyCalls.filter((c) => c.validByAI !== true && c.validByAI !== false);
+  const validatedCalls = repTransactions
+    .filter((tx) => tx.status === 'earned' || tx.status === 'paid')
+    .map(repTxToRow);
+  const refusedCalls = repTransactions
+    .filter((tx) => tx.status === 'refused')
+    .map(repTxToRow);
   const visibleCalls =
     callsTab === 'pending' ? pendingValidationCalls
     : callsTab === 'validated' ? validatedCalls
@@ -671,11 +757,20 @@ export function WalletCompanyPanel() {
                             </button>
                           </div>
                         ) : callsTab === 'validated' ? (() => {
-                          const repCall = Number(call.repCallCommission || 0);
-                          const repTx = hasSale ? Number(call.repTransactionCommission || 0) : 0;
-                          const repShare = repCall + repTx;
-                          const gross = repShare > 0 ? repShare / 0.7 : 0;
-                          const harxShare = gross > 0 ? gross - repShare : 0;
+                          // Prefer the RepTransaction figures when present (single
+                          // source of truth). Fallback to recomputed values for
+                          // legacy rows that still come from the raw call list.
+                          const tx = call.repTx;
+                          const gross = tx
+                            ? Number(tx.amount || 0)
+                            : (() => {
+                                const repCall = Number(call.repCallCommission || 0);
+                                const repTx = hasSale ? Number(call.repTransactionCommission || 0) : 0;
+                                const repShare = repCall + repTx;
+                                return repShare > 0 ? repShare / 0.7 : 0;
+                              })();
+                          const repShare = tx ? Number(tx.repShare || 0) : Number(((gross || 0) * 0.7).toFixed(2));
+                          const harxShare = tx ? Number(tx.harxShare || 0) : Number(((gross || 0) * 0.3).toFixed(2));
                           const agentName = call.agent || 'Rep';
                           return gross > 0 ? (
                             <div className="flex flex-col items-start gap-1">
@@ -690,6 +785,12 @@ export function WalletCompanyPanel() {
                                   30% HARX · {harxShare.toFixed(2)} €
                                 </div>
                               </div>
+                              {tx?.type === 'bonus' && (
+                                <span className="text-[9px] text-indigo-600 font-bold uppercase tracking-wider">Bonus</span>
+                              )}
+                              {tx?.type === 'transaction' && (
+                                <span className="text-[9px] text-amber-600 font-bold uppercase tracking-wider">Vente</span>
+                              )}
                             </div>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[9px] uppercase tracking-wider">
