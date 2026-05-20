@@ -630,15 +630,30 @@ function AppContent() {
 
           {/* Main Content Area */}
           <main className="flex-1 overflow-y-auto relative w-full h-full bg-white rounded-tl-[20px] shadow-2xl shadow-black/5">
-            <ProjectViewSwitch
-              activeView={activeProject}
-              dashboard={<DashboardApp />}
-              comporchestrator={
-                <div className="px-4 py-3 h-full pb-32">
-                  {renderContent()}
+            {showUpgradeModal ? (
+              <div className="relative h-full w-full bg-[#F8FAFC] overflow-y-auto">
+                <div className="absolute top-6 right-6 z-[90]">
+                  <button
+                    onClick={() => setShowUpgradeModal(false)}
+                    className="p-3 bg-gray-100 hover:bg-gray-200 rounded-2xl transition-all duration-300 text-gray-500 hover:text-gray-900 shadow-sm flex items-center gap-2"
+                    aria-label="Fermer"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
-              }
-            />
+                <Subscription />
+              </div>
+            ) : (
+              <ProjectViewSwitch
+                activeView={activeProject}
+                dashboard={<DashboardApp />}
+                comporchestrator={
+                  <div className="px-4 py-3 h-full pb-32">
+                    {renderContent()}
+                  </div>
+                }
+              />
+            )}
           </main>
         </div>
       </div>
@@ -660,27 +675,6 @@ function AppContent() {
         />
       )}
 
-      {/* Upgrade Plan Modal */}
-      {showUpgradeModal && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-7xl h-[85vh] bg-[#F8FAFC] rounded-[2.5rem] shadow-2xl overflow-y-auto border border-gray-100 flex flex-col">
-            {/* Modal dismiss button */}
-            <div className="absolute top-6 right-6 z-[90]">
-              <button 
-                onClick={() => setShowUpgradeModal(false)}
-                className="p-3 bg-gray-100 hover:bg-gray-200 rounded-2xl transition-all duration-300 text-gray-500 hover:text-gray-900 shadow-sm"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            {/* Modal Content */}
-            <div className="flex-grow">
-              <Subscription />
-            </div>
-          </div>
-        </div>
-      )}
     </StripeContainer>
   );
 }
