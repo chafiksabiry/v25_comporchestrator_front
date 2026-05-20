@@ -14,7 +14,8 @@ import {
   Star,
   Activity as ActivityIcon,
   Volume2,
-  Info
+  Info,
+  BadgeCheck
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -371,9 +372,14 @@ export function MinutesCompanyPanel() {
           <h3 className="text-base font-black text-slate-800 tracking-tight">
             Consommation d'appels & validations
           </h3>
-          <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold uppercase">
-            Historique d'appels
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold uppercase">
+              {calls.length} appel{calls.length > 1 ? 's' : ''}
+            </span>
+            <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold uppercase">
+              Historique d'appels
+            </span>
+          </div>
         </div>
 
         {calls.length === 0 ? (
@@ -385,23 +391,35 @@ export function MinutesCompanyPanel() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-auto max-h-[60vh] rounded-2xl border border-gray-50 calls-scroll">
             <table className="w-full text-left border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
                 <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                  <th className="py-3 px-4">Destinataire</th>
-                  <th className="py-3 px-4">Date & Heure</th>
-                  <th className="py-3 px-4">Durée</th>
-                  <th className="py-3 px-4">Score AI</th>
-                  <th className="py-3 px-4">Facturation</th>
-                  <th className="py-3 px-4 text-right">Détails</th>
+                  <th className="py-3 px-4 bg-white">Destinataire</th>
+                  <th className="py-3 px-4 bg-white">Date & Heure</th>
+                  <th className="py-3 px-4 bg-white">Durée</th>
+                  <th className="py-3 px-4 bg-white">Score AI</th>
+                  <th className="py-3 px-4 bg-white">Facturation</th>
+                  <th className="py-3 px-4 bg-white text-right">Détails</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 text-xs">
                 {(calls || []).map((call) => (
                   <tr key={call.callId} className="hover:bg-gray-50 transition-colors">
                     <td className="py-4 px-4 font-bold text-slate-800">
-                      {call.leadObj ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}` : call.lead || 'Inconnu'}
+                      <div className="flex items-center gap-2">
+                        <span>
+                          {call.leadObj ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}` : call.lead || 'Inconnu'}
+                        </span>
+                        {call.valid === true && (
+                          <span
+                            title="Appel validé"
+                            className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
+                          >
+                            <BadgeCheck size={12} />
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-4 px-4 text-gray-500">
                       {new Date(call.startTime).toLocaleString('fr-FR')}
@@ -687,6 +705,14 @@ export function MinutesCompanyPanel() {
         </div>,
         document.body
       )}
+
+      <style>{`
+        .calls-scroll { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        .calls-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+        .calls-scroll::-webkit-scrollbar-track { background: transparent; }
+        .calls-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 9999px; border: 2px solid transparent; background-clip: padding-box; }
+        .calls-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+      `}</style>
     </div>
   );
 }
