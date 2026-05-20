@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Wallet,
   CheckCircle2,
@@ -16,10 +17,14 @@ import {
   CreditCard,
   Building2,
   Phone,
-  BadgeCheck
+  BadgeCheck,
+  Star,
+  Brain,
+  MessageSquare
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
+import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 
 interface WalletState {
   companyId: string;
@@ -41,8 +46,12 @@ interface CompanyCallRow {
   callId: string;
   agent: string;
   lead: string;
+  leadObj?: { First_Name: string; Last_Name: string };
+  direction?: string;
   duration: number;
   startTime: string;
+  createdAt?: string;
+  status?: string;
   validByCompany: boolean | null;
   validByReps: boolean | null;
   validByAI: boolean | null;
@@ -50,6 +59,71 @@ interface CompanyCallRow {
   repCallCommission?: number;
   repTransactionCommission?: number;
   transactionOccurred?: boolean;
+  recording_url?: string | null;
+  recording_url_cloudinary?: string | null;
+  transcript?: any[];
+  ai_call_score?: any;
+}
+
+const AI_SCORE_META_KEYS = new Set([
+  'overall',
+  'transaction_detected',
+  'refusal_detected',
+  'score',
+  'sentiment',
+  'rubrics',
+  'transactionOccurred'
+]);
+
+interface NormalizedAiScore {
+  score: number | null;
+  sentimentLabel: string;
+  transactionDetected: boolean;
+  rubrics: Record<string, { score: number; feedback?: string }>;
+  overallFeedback?: string;
+}
+
+function normalizeAiCallScore(raw: unknown): NormalizedAiScore | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as Record<string, unknown>;
+  const overall = (data.overall as Record<string, unknown> | undefined) || {};
+  const rawScore = (overall.score ?? data.score) as number | undefined;
+  const sentiment = data['Sentiment analysis'] as Record<string, unknown> | undefined;
+  const sentimentScore = Number(sentiment?.score ?? -1);
+  const sentimentLabel =
+    sentimentScore >= 70 ? 'Positif'
+      : sentimentScore >= 40 ? 'Neutre'
+        : sentimentScore >= 0 ? 'Négatif'
+          : '—';
+  const rubrics: Record<string, { score: number; feedback?: string }> = {};
+  if (data.rubrics && typeof data.rubrics === 'object') {
+    for (const [k, v] of Object.entries(data.rubrics as Record<string, any>)) {
+      if (v && typeof v === 'object' && typeof v.score === 'number') {
+        rubrics[k] = { score: v.score, feedback: v.feedback };
+      }
+    }
+  } else {
+    for (const [k, v] of Object.entries(data)) {
+      if (AI_SCORE_META_KEYS.has(k)) continue;
+      if (v && typeof v === 'object' && typeof (v as any).score === 'number') {
+        rubrics[k] = { score: (v as any).score, feedback: (v as any).feedback };
+      }
+    }
+  }
+  return {
+    score: typeof rawScore === 'number' ? rawScore : null,
+    sentimentLabel,
+    transactionDetected: data.transaction_detected === true,
+    rubrics,
+    overallFeedback: (overall.feedback as string | undefined) || undefined
+  };
+}
+
+function formatFloatMinutesToMMSS(mins: number): string {
+  const totalSeconds = Math.max(0, Math.round(mins * 60));
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 export function WalletCompanyPanel() {
@@ -60,6 +134,8 @@ export function WalletCompanyPanel() {
   const [callsTab, setCallsTab] = useState<'pending' | 'validated' | 'refused'>('pending');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedCall, setSelectedCall] = useState<CompanyCallRow | null>(null);
+  const [selectedCallTab, setSelectedCallTab] = useState<'transcript' | 'insights'>('transcript');
 
   // Modals state
   const [showDepositModal, setShowDepositModal] = useState(false);
@@ -426,8 +502,8 @@ export function WalletCompanyPanel() {
         </div>
 
         {visibleCalls.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-gray-100 rounded-[1.5rem] text-gray-400 gap-2">
-            <CheckCircle2 size={32} className="text-emerald-500" />
+          <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-100 rounded-[1.5rem] text-gray-400 gap-3">
+            <Phone size={36} className="text-blue-500 animate-pulse" />
             <p className="text-sm font-bold">
               {callsTab === 'pending'
                 ? 'Aucune validation en attente.'
@@ -437,67 +513,65 @@ export function WalletCompanyPanel() {
             </p>
           </div>
         ) : (
-          <div className="overflow-auto max-h-[50vh] rounded-2xl border border-gray-50 calls-scroll-company">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="overflow-auto max-h-[60vh] rounded-2xl border border-gray-50 calls-scroll">
+            <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
                 <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                  <th className="py-3 px-4 bg-white">Rep / Lead</th>
-                  <th className="py-3 px-4 bg-white">Date</th>
+                  <th className="py-3 px-4 bg-white">Destinataire</th>
+                  <th className="py-3 px-4 bg-white">Date & Heure</th>
                   <th className="py-3 px-4 bg-white">Durée</th>
-                  <th className="py-3 px-4 bg-white">IA</th>
-                  <th className="py-3 px-4 bg-white">Vente</th>
-                  <th className="py-3 px-4 bg-white text-right">
-                    {callsTab === 'pending' ? 'Action' : 'Statut'}
+                  <th className="py-3 px-4 bg-white">Score AI</th>
+                  <th className="py-3 px-4 bg-white">
+                    {callsTab === 'pending' ? 'Action' : 'Commission'}
                   </th>
+                  <th className="py-3 px-4 bg-white text-right">Détails</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-50 text-xs">
                 {visibleCalls.map((call) => {
                   const hasSale = call.validByReps === true;
                   return (
-                    <tr key={call.callId} className="hover:bg-gray-50/80">
-                      <td className="py-4 px-4">
-                        <div className="font-bold text-slate-800 flex items-center gap-2">
-                          <span>{call.lead}</span>
+                    <tr key={call.callId} className="hover:bg-gray-50 transition-colors">
+                      <td className="py-4 px-4 font-bold text-slate-800">
+                        <div className="flex items-center gap-2">
+                          <span>
+                            {call.leadObj
+                              ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}`
+                              : call.lead || 'Inconnu'}
+                          </span>
                           {call.validByAI === true && (
                             <span
-                              title="Appel validé par l'IA — RepTransaction créée, wallet débité"
+                              title="Appel validé par l'IA"
                               className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
                             >
                               <BadgeCheck size={12} />
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-gray-400">{call.agent}</div>
+                        <div className="text-[10px] text-gray-400 font-bold mt-0.5">{call.agent}</div>
                       </td>
                       <td className="py-4 px-4 text-gray-500">
                         {new Date(call.startTime).toLocaleString('fr-FR')}
                       </td>
-                      <td className="py-4 px-4 font-bold tabular-nums text-slate-800">
-                        {Math.floor((call.duration || 0) / 60)}:
-                        {String((call.duration || 0) % 60).padStart(2, '0')}
+                      <td className="py-4 px-4 text-slate-900 font-bold tabular-nums">
+                        {formatFloatMinutesToMMSS((call.duration || 0) / 60)}
                       </td>
                       <td className="py-4 px-4">
-                        {call.validByAI === true ? (
-                          <span className="text-emerald-600 font-bold">Validé IA</span>
-                        ) : call.validByAI === false ? (
-                          <span className="text-rose-500 font-bold">Refusé</span>
-                        ) : (
-                          <span className="text-gray-400 italic">—</span>
-                        )}
+                        {(() => {
+                          const ai = normalizeAiCallScore(call.ai_call_score);
+                          return ai?.score != null ? (
+                            <div className="flex items-center gap-1 font-bold text-slate-800">
+                              <Star size={14} className="fill-amber-400 text-amber-400" />
+                              <span>{ai.score}/100</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic">Non noté</span>
+                          );
+                        })()}
                       </td>
                       <td className="py-4 px-4">
-                        {hasSale ? (
-                          <span className="inline-flex items-center gap-1 text-blue-600 font-bold">
-                            <BadgeCheck size={12} /> Déclarée
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 text-right">
                         {callsTab === 'pending' ? (
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center gap-2">
                             <button
                               type="button"
                               disabled={approvingCallId === call.callId}
@@ -524,37 +598,44 @@ export function WalletCompanyPanel() {
                           const repCall = Number(call.repCallCommission || 0);
                           const repTx = hasSale ? Number(call.repTransactionCommission || 0) : 0;
                           const repShare = repCall + repTx;
-                          // rep gets 70%, so gross = repShare / 0.7
                           const gross = repShare > 0 ? repShare / 0.7 : 0;
                           const harxShare = gross > 0 ? gross - repShare : 0;
                           const agentName = call.agent || 'Rep';
-                          return (
-                            <div className="flex flex-col items-end gap-1.5">
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[9px] uppercase tracking-wider">
-                                <BadgeCheck size={10} /> Validé
+                          return gross > 0 ? (
+                            <div className="flex flex-col items-start gap-1">
+                              <span className="text-sm font-black text-slate-900 tabular-nums">
+                                {gross.toFixed(2)} €
                               </span>
-                              {gross > 0 && (
-                                <>
-                                  <span className="text-sm font-black text-slate-900 tabular-nums">
-                                    {gross.toFixed(2)} €
-                                  </span>
-                                  <div className="text-[9px] font-bold leading-tight text-right space-y-0.5">
-                                    <div className="text-emerald-700">
-                                      70% {agentName} · {repShare.toFixed(2)} €
-                                    </div>
-                                    <div className="text-slate-500">
-                                      30% HARX · {harxShare.toFixed(2)} €
-                                    </div>
-                                  </div>
-                                </>
-                              )}
+                              <div className="text-[9px] font-bold leading-tight space-y-0.5">
+                                <div className="text-emerald-700">
+                                  70% {agentName} · {repShare.toFixed(2)} €
+                                </div>
+                                <div className="text-slate-500">
+                                  30% HARX · {harxShare.toFixed(2)} €
+                                </div>
+                              </div>
                             </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[9px] uppercase tracking-wider">
+                              <BadgeCheck size={10} /> Validé
+                            </span>
                           );
                         })() : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-100 font-bold text-[9px] uppercase tracking-wider">
                             <X size={10} /> Refusé
                           </span>
                         )}
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        <button
+                          onClick={() => {
+                            setSelectedCall(call);
+                            setSelectedCallTab('transcript');
+                          }}
+                          className="px-3 py-1.5 bg-slate-950 hover:bg-slate-900 text-white rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all"
+                        >
+                          Consulter
+                        </button>
                       </td>
                     </tr>
                   );
@@ -691,10 +772,155 @@ export function WalletCompanyPanel() {
         </div>
       )}
 
+      {/* Call Details Modal — same look & feel as the Calls panel */}
+      {selectedCall && createPortal(
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-4xl h-[85vh] bg-[#F8FAFC] rounded-[2.5rem] shadow-2xl border border-gray-100 flex flex-col overflow-hidden">
+
+            {/* Modal Header */}
+            <div className="p-6 bg-white border-b border-gray-100 shrink-0 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                  <Phone size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-800">
+                    Appel avec {selectedCall.leadObj
+                      ? `${selectedCall.leadObj.First_Name} ${selectedCall.leadObj.Last_Name}`
+                      : selectedCall.lead}
+                  </h3>
+                  <span className="text-[10px] text-gray-400 font-bold block mt-0.5">ID d'appel: {selectedCall.callId}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedCall(null)}
+                className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-xl transition-all"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Audio Player */}
+            {(selectedCall.recording_url || selectedCall.recording_url_cloudinary) && (
+              <div className="bg-slate-950 p-6 border-b border-white/5 shrink-0">
+                <PremiumAudioPlayer url={selectedCall.recording_url_cloudinary || selectedCall.recording_url || ''} />
+              </div>
+            )}
+
+            {/* Modal Body Tabs */}
+            <div className="bg-white border-b border-gray-100 shrink-0 flex items-center gap-2 px-6">
+              <button
+                onClick={() => setSelectedCallTab('transcript')}
+                className={`py-3.5 px-4 font-black text-xs uppercase tracking-wider transition-all border-b-2 ${selectedCallTab === 'transcript' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-400 hover:text-slate-700'}`}
+              >
+                Transcription
+              </button>
+              <button
+                onClick={() => setSelectedCallTab('insights')}
+                className={`py-3.5 px-4 font-black text-xs uppercase tracking-wider transition-all border-b-2 ${selectedCallTab === 'insights' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-400 hover:text-slate-700'}`}
+              >
+                Score & Insights AI
+              </button>
+            </div>
+
+            {/* Modal Tab Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {selectedCallTab === 'transcript' ? (
+                <div className="space-y-4">
+                  {Array.isArray(selectedCall.transcript) && selectedCall.transcript.length > 0 ? (
+                    selectedCall.transcript.map((utterance: any, index: number) => {
+                      const isRep = utterance.speaker === 'rep' || utterance.speaker === 'agent';
+                      return (
+                        <div key={index} className={`flex gap-3 max-w-[80%] ${isRep ? 'ml-auto flex-row-reverse' : ''}`}>
+                          <div className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-black ${isRep ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                            {isRep ? 'REP' : 'CLT'}
+                          </div>
+                          <div className={`p-4 rounded-2xl ${isRep ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white border border-gray-100 text-slate-800 rounded-tl-none'}`}>
+                            <p className="text-xs leading-relaxed">{utterance.text}</p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-12 text-gray-400">
+                      <MessageSquare size={36} className="mx-auto mb-2 text-gray-300" />
+                      <p className="text-xs">Aucune transcription disponible pour cet appel.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {(() => {
+                    const ai = normalizeAiCallScore(selectedCall.ai_call_score);
+                    return ai ? (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Note d'assurance Qualité</span>
+                            <span className="text-3xl font-black text-slate-900 mt-2">{ai.score ?? 0}/100</span>
+                            {ai.overallFeedback && (
+                              <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">{ai.overallFeedback}</p>
+                            )}
+                          </div>
+                          <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Sentiment Client</span>
+                            <span className="text-base font-black text-slate-900 mt-2">{ai.sentimentLabel}</span>
+                          </div>
+                          <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Transaction détectée</span>
+                            <span className={`text-xs font-black mt-2 ${ai.transactionDetected ? 'text-emerald-600' : 'text-slate-600'}`}>
+                              {ai.transactionDetected ? 'Oui' : 'Non'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {Object.keys(ai.rubrics).length > 0 && (
+                          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
+                            <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                              <Brain size={16} className="text-blue-500" />
+                              <span>Rubriques de notation AI</span>
+                            </h4>
+                            <div className="space-y-3.5">
+                              {Object.entries(ai.rubrics).map(([k, v]) => (
+                                <div key={k} className="flex flex-col gap-1.5 pb-3 border-b border-gray-50 last:border-0">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="font-bold text-slate-700 capitalize">{k.replace(/_/g, ' ')}</span>
+                                    <span className="font-black text-slate-900">{v.score}/100</span>
+                                  </div>
+                                  <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${v.score}%` }} />
+                                  </div>
+                                  {v.feedback && (
+                                    <p className="text-[10px] text-gray-500 italic mt-0.5">{v.feedback}</p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center py-12 text-gray-400">
+                        <Brain size={36} className="mx-auto mb-2 text-gray-300 animate-pulse" />
+                        <p className="text-xs">Analyse en attente d'exécution.</p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <style>{`
-        .calls-scroll-company { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
-        .calls-scroll-company::-webkit-scrollbar { width: 8px; height: 8px; }
-        .calls-scroll-company::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 9999px; }
+        .calls-scroll { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        .calls-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+        .calls-scroll::-webkit-scrollbar-track { background: transparent; }
+        .calls-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 9999px; border: 2px solid transparent; background-clip: padding-box; }
+        .calls-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
       `}</style>
     </div>
   );
