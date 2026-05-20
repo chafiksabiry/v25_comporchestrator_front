@@ -55,6 +55,12 @@ interface PerformanceStats {
     validNumbers: number;
     callsOver90s: number;
     answeringMachineCalls: number;
+    /** Calls flagged `validByAI === true` (the only authoritative validation signal). */
+    validatedCalls: number;
+    /** Calls where a sale / transaction was recorded (rep flag, IA detection, or explicit flag). */
+    transactionCalls: number;
+    /** Calls that never reached a human (status ≠ completed). */
+    unansweredCalls: number;
     callsByStatus: Record<string, number>;
     registeredReps: number;
 }
@@ -65,6 +71,9 @@ interface WindowedStats {
     validNumbers: number;
     callsOver90s: number;
     answeringMachineCalls: number;
+    validatedCalls: number;
+    transactionCalls: number;
+    unansweredCalls: number;
     callsByStatus: Record<string, number>;
 }
 
@@ -74,18 +83,29 @@ const EMPTY_WINDOW: WindowedStats = {
     validNumbers: 0,
     callsOver90s: 0,
     answeringMachineCalls: 0,
+    validatedCalls: 0,
+    transactionCalls: 0,
+    unansweredCalls: 0,
     callsByStatus: {}
 };
 
 function computeWindowedStats(calls: any[]): WindowedStats {
     const w: WindowedStats = { ...EMPTY_WINDOW, callsByStatus: {} };
     for (const call of calls) {
-        const status = call.status || 'Inconnu';
+        const status = (call.status || 'Inconnu').toString();
         w.callsByStatus[status] = (w.callsByStatus[status] || 0) + 1;
-        if (status === 'completed' || status === 'Completed') w.contactedLeads++;
+        const isCompleted = status === 'completed' || status === 'Completed';
+        if (isCompleted) w.contactedLeads++;
+        else w.unansweredCalls++;
         if (status !== 'Failed' && status !== 'invalid') w.validNumbers++;
         if ((call.duration || 0) >= 90) w.callsOver90s++;
         if (status.toLowerCase().includes('machine')) w.answeringMachineCalls++;
+        if (call.validByAI === true) w.validatedCalls++;
+        if (
+            call.transactionOccurred === true ||
+            call.validByReps === true ||
+            call.ai_call_score?.transaction_detected === true
+        ) w.transactionCalls++;
     }
     w.totalCalls = calls.length;
     return w;
@@ -131,6 +151,9 @@ export function CompanyPerformanceDashboard() {
         validNumbers: 0,
         callsOver90s: 0,
         answeringMachineCalls: 0,
+        validatedCalls: 0,
+        transactionCalls: 0,
+        unansweredCalls: 0,
         callsByStatus: {},
         registeredReps: 0
     });
@@ -206,48 +229,21 @@ export function CompanyPerformanceDashboard() {
                     const allCalls = Array.isArray(callsDataRaw.data) ? callsDataRaw.data : (Array.isArray(callsDataRaw) ? callsDataRaw : []);
                     setCallsList(allCalls);
 
-                    // Process Stats
-                    const statusCount: Record<string, number> = {};
-                    let valid = 0;
-                    let over90s = 0;
-                    let machines = 0;
-                    let contacted = 0;
-
-                    allCalls.forEach((call: any) => {
-                        // Status breakdown
-                        const status = call.status || 'Inconnu';
-                        statusCount[status] = (statusCount[status] || 0) + 1;
-
-                        // Contacted (successful calls)
-                        if (status === 'completed' || status === 'Completed') {
-                            contacted++;
-                        }
-
-                        // Valid Numbers (assuming any call that isn't failed/invalid is valid)
-                        if (status !== 'Failed' && status !== 'invalid') {
-                            valid++;
-                        }
-
-                        // Argumentation (> 90s)
-                        if (call.duration >= 90) {
-                            over90s++;
-                        }
-
-                        // Answering Machine
-                        if (status.toLowerCase().includes('machine')) {
-                            machines++;
-                        }
-                    });
-
+                    // All counters now come from the same shared helper so the
+                    // global snapshot and the windowed slices stay consistent.
+                    const agg = computeWindowedStats(allCalls);
                     setStats({
                         totalLeads,
-                        totalCalls: allCalls.length,
-                        contactedLeads: contacted,
-                        validNumbers: valid,
-                        callsOver90s: over90s,
-                        answeringMachineCalls: machines,
-                        callsByStatus: statusCount,
-                        registeredReps: 0 // Will be updated below
+                        totalCalls: agg.totalCalls,
+                        contactedLeads: agg.contactedLeads,
+                        validNumbers: agg.validNumbers,
+                        callsOver90s: agg.callsOver90s,
+                        answeringMachineCalls: agg.answeringMachineCalls,
+                        validatedCalls: agg.validatedCalls,
+                        transactionCalls: agg.transactionCalls,
+                        unansweredCalls: agg.unansweredCalls,
+                        callsByStatus: agg.callsByStatus,
+                        registeredReps: 0
                     });
                 }
 
@@ -330,15 +326,35 @@ export function CompanyPerformanceDashboard() {
         validNumbers: currentWindow.validNumbers,
         callsOver90s: currentWindow.callsOver90s,
         answeringMachineCalls: currentWindow.answeringMachineCalls,
+        validatedCalls: currentWindow.validatedCalls,
+        transactionCalls: currentWindow.transactionCalls,
+        unansweredCalls: currentWindow.unansweredCalls,
         callsByStatus: currentWindow.callsByStatus
     };
 
-    // Calculated rate metrics — all derived from the current window so the
-    // filter actually changes them.
-    const coverageRate = useMemo(() => displayStats.totalLeads > 0 ? (displayStats.contactedLeads / displayStats.totalLeads) * 100 : 0, [displayStats.totalLeads, displayStats.contactedLeads]);
-    const reachabilityRate = useMemo(() => displayStats.totalCalls > 0 ? (displayStats.validNumbers / displayStats.totalCalls) * 100 : 0, [displayStats.totalCalls, displayStats.validNumbers]);
-    const argumentationRate = useMemo(() => displayStats.contactedLeads > 0 ? (displayStats.callsOver90s / displayStats.contactedLeads) * 100 : 0, [displayStats.contactedLeads, displayStats.callsOver90s]);
-    const machineRate = useMemo(() => displayStats.totalCalls > 0 ? (displayStats.answeringMachineCalls / displayStats.totalCalls) * 100 : 0, [displayStats.totalCalls, displayStats.answeringMachineCalls]);
+    // Four rate metrics requested by the company team:
+    //   • Coverage    = total calls / total leads        (call activity vs lead stock)
+    //   • Non-answer  = unanswered  / total calls        (% of calls that never reached a human)
+    //   • Argumentation = validByAI=true / total calls   (validated calls — the audit-passing rate)
+    //   • Conversion  = transactions / total calls       (% of calls that closed a sale)
+    // All four are computed from the current time window so the filter
+    // (Quotidien / Hebdo / Mensuel / Annuel) actually changes them.
+    const coverageRate = useMemo(
+        () => displayStats.totalLeads > 0 ? (displayStats.totalCalls / displayStats.totalLeads) * 100 : 0,
+        [displayStats.totalLeads, displayStats.totalCalls]
+    );
+    const unansweredRate = useMemo(
+        () => displayStats.totalCalls > 0 ? (displayStats.unansweredCalls / displayStats.totalCalls) * 100 : 0,
+        [displayStats.totalCalls, displayStats.unansweredCalls]
+    );
+    const argumentationRate = useMemo(
+        () => displayStats.totalCalls > 0 ? (displayStats.validatedCalls / displayStats.totalCalls) * 100 : 0,
+        [displayStats.totalCalls, displayStats.validatedCalls]
+    );
+    const conversionRate = useMemo(
+        () => displayStats.totalCalls > 0 ? (displayStats.transactionCalls / displayStats.totalCalls) * 100 : 0,
+        [displayStats.totalCalls, displayStats.transactionCalls]
+    );
 
     // Chart Data — scoped to the current window so it matches the cards.
     // Buckets are keyed with a sortable key (so the X axis stays chronological)
@@ -544,31 +560,35 @@ export function CompanyPerformanceDashboard() {
                 />
             </div>
 
-            {/* Performance Ratios */}
+            {/* Performance Ratios — 4 KPIs requested by the company team */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <RatioCard
                     title={t('performanceDashboard.ratios.coverageRate')}
                     subtitle={t('performanceDashboard.ratios.coverageSubtitle')}
                     value={coverageRate}
                     color="harx"
+                    extra={`${displayStats.totalCalls.toLocaleString()} / ${displayStats.totalLeads.toLocaleString()}`}
                 />
                 <RatioCard
-                    title={t('performanceDashboard.ratios.reachabilityRate')}
-                    subtitle={t('performanceDashboard.ratios.reachabilitySubtitle')}
-                    value={reachabilityRate}
-                    color="emerald"
+                    title={t('performanceDashboard.ratios.unansweredRate')}
+                    subtitle={t('performanceDashboard.ratios.unansweredSubtitle')}
+                    value={unansweredRate}
+                    color="amber"
+                    extra={`${displayStats.unansweredCalls.toLocaleString()} / ${displayStats.totalCalls.toLocaleString()}`}
                 />
                 <RatioCard
                     title={t('performanceDashboard.ratios.argumentationRate')}
                     subtitle={t('performanceDashboard.ratios.argumentationSubtitle')}
                     value={argumentationRate}
                     color="blue"
+                    extra={`${displayStats.validatedCalls.toLocaleString()} / ${displayStats.totalCalls.toLocaleString()}`}
                 />
                 <RatioCard
-                    title={t('performanceDashboard.ratios.machineRate')}
-                    subtitle={t('performanceDashboard.ratios.machineSubtitle')}
-                    value={machineRate}
-                    color="amber"
+                    title={t('performanceDashboard.ratios.conversionRate')}
+                    subtitle={t('performanceDashboard.ratios.conversionSubtitle')}
+                    value={conversionRate}
+                    color="emerald"
+                    extra={`${displayStats.transactionCalls.toLocaleString()} / ${displayStats.totalCalls.toLocaleString()}`}
                 />
             </div>
 
@@ -682,10 +702,24 @@ function MetricCard({
     );
 }
 
-function RatioCard({ title, subtitle, value, color }: { title: string, subtitle: string, value: number, color: 'harx' | 'blue' | 'emerald' | 'amber' }) {
+function RatioCard({
+    title,
+    subtitle,
+    value,
+    color,
+    extra
+}: {
+    title: string;
+    subtitle: string;
+    value: number;
+    color: 'harx' | 'blue' | 'emerald' | 'amber';
+    /** Optional raw counters shown next to the percentage (e.g. "12 / 50"). */
+    extra?: string;
+}) {
     const barColor = color === 'harx' ? 'bg-harx-500' :
         color === 'blue' ? 'bg-blue-500' :
             color === 'emerald' ? 'bg-emerald-500' : 'bg-amber-500';
+    const clampedWidth = Math.max(0, Math.min(100, value));
 
     return (
         <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl border border-white/5 relative overflow-hidden group">
@@ -700,16 +734,21 @@ function RatioCard({ title, subtitle, value, color }: { title: string, subtitle:
                 </div>
 
                 <div className="space-y-2">
-                    <div className="flex items-end justify-between">
+                    <div className="flex items-end justify-between gap-2">
                         <div className="text-4xl font-black text-white italic tracking-tighter">
                             {value.toFixed(1)}<span className="text-lg ml-0.5 not-italic">%</span>
                         </div>
+                        {extra && (
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider tabular-nums pb-1">
+                                {extra}
+                            </div>
+                        )}
                     </div>
 
                     <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                         <div
                             className={`h-full ${barColor} transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(255,77,77,0.5)]`}
-                            style={{ width: `${value}%` }}
+                            style={{ width: `${clampedWidth}%` }}
                         />
                     </div>
                 </div>

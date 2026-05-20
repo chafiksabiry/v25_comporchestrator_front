@@ -101,13 +101,13 @@
     },
     "ratios": {
       "coverageRate": "Taux de Couverture",
-      "coverageSubtitle": "Leads Contactés / Total Leads",
-      "reachabilityRate": "Taux de Joignabilité",
-      "reachabilitySubtitle": "Numéros Valides / Total Appels",
+      "coverageSubtitle": "Total Appels / Total Leads",
+      "unansweredRate": "Taux de Non-Réponse",
+      "unansweredSubtitle": "Appels non décrochés / Total Appels",
       "argumentationRate": "Taux d'Argumentation",
-      "argumentationSubtitle": "Appels > 1min30 / Leads Joints",
-      "machineRate": "Taux de Répondeur",
-      "machineSubtitle": "Appels Répondeur / Total Appels"
+      "argumentationSubtitle": "Appels validés par l'IA / Total Appels",
+      "conversionRate": "Taux de Conversion",
+      "conversionSubtitle": "Transactions / Total Appels"
     },
     "charts": {
       "noData": "Aucune Donnée",
