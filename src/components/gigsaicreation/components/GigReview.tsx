@@ -572,6 +572,94 @@ export function GigReview({
         )}
       </div>
 
+      {/* Availability */}
+      {(() => {
+        const rawSchedules = (data.schedule as any)?.schedules as Array<{ day: string; hours: { start: string; end: string } }> | undefined;
+        const grouped = rawSchedules && rawSchedules.length > 0 ? groupSchedules(rawSchedules) : [];
+        const totalHours = (rawSchedules || []).reduce((acc, s) => {
+          const start = s?.hours?.start;
+          const end = s?.hours?.end;
+          if (!start || !end) return acc;
+          const [sh, sm] = start.split(':').map(Number);
+          const [eh, em] = end.split(':').map(Number);
+          const diff = (eh * 60 + em) - (sh * 60 + sm);
+          return acc + Math.max(0, diff);
+        }, 0);
+        const totalHoursDisplay = totalHours > 0
+          ? `${Math.floor(totalHours / 60)}h${totalHours % 60 ? String(totalHours % 60).padStart(2, '0') : ''}`
+          : '—';
+        const timezoneDisplay = (data as any).timezone || (data.schedule as any)?.timezone;
+        const hasAnyAvailability = grouped.length > 0 || timezoneDisplay;
+
+        return (
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8 mt-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-50 rounded-xl">
+                  <Calendar className="h-6 w-6 text-indigo-500" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Availability</h2>
+                  <p className="text-xs text-gray-400 font-medium italic mt-0.5">Plages horaires actives du gig</p>
+                </div>
+              </div>
+
+              {/* Summary pills */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" />
+                  {totalHoursDisplay} / semaine
+                </div>
+                {timezoneDisplay && (
+                  <div className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                    <MapPin className="w-3 h-3" />
+                    {String(timezoneDisplay)}
+                  </div>
+                )}
+                <div className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full text-[11px] font-black uppercase tracking-wider">
+                  {(rawSchedules || []).length} jours
+                </div>
+              </div>
+            </div>
+
+            {hasAnyAvailability ? (
+              grouped.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {grouped.map((slot, idx) => (
+                    <div
+                      key={idx}
+                      className="p-4 rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white flex items-center gap-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="p-2.5 bg-white border border-gray-100 rounded-xl shadow-sm">
+                        <Clock className="w-5 h-5 text-indigo-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 truncate">
+                          {slot.days.join(' · ')}
+                        </div>
+                        <div className="text-lg font-black text-gray-900 tabular-nums">
+                          {slot.hours.start}
+                          <span className="text-gray-300 font-bold mx-1.5">→</span>
+                          {slot.hours.end}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 rounded-2xl bg-gray-50 border border-gray-100 text-sm text-gray-500 font-medium italic">
+                  Aucune plage horaire renseignée — seule la timezone est définie.
+                </div>
+              )
+            ) : (
+              <div className="p-6 rounded-2xl bg-gray-50 border border-gray-100 text-sm text-gray-500 font-medium italic">
+                Aucune disponibilité configurée pour ce gig.
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Skills */}
       {data.skills && (
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8 mt-6">
