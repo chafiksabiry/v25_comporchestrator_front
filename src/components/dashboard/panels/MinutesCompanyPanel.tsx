@@ -76,12 +76,19 @@ export function MinutesCompanyPanel() {
       if (minsRes.ok) {
         const minsData = await minsRes.json();
         if (minsData.success && minsData.data) {
-          setMinutesWallet(minsData.data);
+          const data = minsData.data || {};
+          const safeWallet: MinutesState = {
+            companyId: data.companyId || companyId,
+            minutes: typeof data.minutes === 'number' ? data.minutes : 0,
+            purchasedMinutes: typeof data.purchasedMinutes === 'number' ? data.purchasedMinutes : 0,
+            consumedSeconds: typeof data.consumedSeconds === 'number' ? data.consumedSeconds : 0
+          };
+          setMinutesWallet(safeWallet);
 
           // Dispatch event to sync global header widget
           const event = new CustomEvent('balanceUpdated', {
             detail: {
-              minutes: minsData.data.minutes,
+              minutes: safeWallet.minutes,
             }
           });
           window.dispatchEvent(event);
@@ -92,8 +99,10 @@ export function MinutesCompanyPanel() {
       const callsRes = await fetch(`${apiBaseUrl}/escrow/calls/${companyId}`);
       if (callsRes.ok) {
         const callsData = await callsRes.json();
-        if (callsData.success && callsData.data) {
+        if (callsData.success && Array.isArray(callsData.data)) {
           setCalls(callsData.data);
+        } else {
+          setCalls([]);
         }
       }
 
@@ -307,7 +316,7 @@ export function MinutesCompanyPanel() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 text-xs">
-                {calls.map((call) => (
+                {(calls || []).map((call) => (
                   <tr key={call.callId} className="hover:bg-gray-50 transition-colors">
                     <td className="py-4 px-4 font-bold text-slate-800">
                       {call.leadObj ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}` : call.lead || 'Inconnu'}
@@ -505,8 +514,8 @@ export function MinutesCompanyPanel() {
             <div className="flex-1 overflow-y-auto p-6">
               {selectedCallTab === 'transcript' ? (
                 <div className="space-y-4">
-                  {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
-                    selectedCall.transcript.map((utterance, index) => {
+                  {Array.isArray(selectedCall.transcript) && selectedCall.transcript.length > 0 ? (
+                    selectedCall.transcript.map((utterance: any, index: number) => {
                       const isRep = utterance.speaker === 'rep' || utterance.speaker === 'agent';
                       return (
                         <div key={index} className={`flex gap-3 max-w-[80%] ${isRep ? 'ml-auto flex-row-reverse' : ''}`}>
@@ -548,7 +557,7 @@ export function MinutesCompanyPanel() {
                       </div>
 
                       {/* Critères détaillés */}
-                      {selectedCall.ai_call_score.rubrics && (
+                      {selectedCall.ai_call_score?.rubrics && typeof selectedCall.ai_call_score.rubrics === 'object' && (
                         <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
                           <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                             <Brain size={16} className="text-blue-500" />
