@@ -185,7 +185,7 @@ const Subscription: React.FC = () => {
       return;
     }
     if (paymentMethod === 'card' && !stripeEnabled) {
-      setErrorMessage("Stripe n'est pas configuré (STRIPE_SECRET_KEY sur Railway).");
+      setErrorMessage('Le paiement par carte est temporairement indisponible.');
       return;
     }
 
@@ -362,7 +362,7 @@ const Subscription: React.FC = () => {
                       }`}
                     >
                       <CreditCard size={18} />
-                      <span>Carte (Stripe)</span>
+                      <span>Carte bancaire</span>
                     </button>
                     <button
                       type="button"
@@ -382,8 +382,8 @@ const Subscription: React.FC = () => {
                     <Info size={16} className="shrink-0 text-blue-600" />
                     <span>
                       {paymentMethod === 'paypal'
-                        ? 'PayPal : paiement du premier mois, puis activation du plan. Une fenêtre PayPal s\'ouvrira.'
-                        : 'Stripe : abonnement mensuel avec essai 7 jours. Une fenêtre Stripe s\'ouvrira.'}
+                        ? 'Paiement du premier mois via PayPal puis activation du plan. Une fenêtre PayPal s\'ouvrira.'
+                        : 'Abonnement mensuel par carte avec essai 7 jours. Une fenêtre sécurisée s\'ouvrira.'}
                     </span>
                   </div>
 
@@ -397,7 +397,7 @@ const Subscription: React.FC = () => {
                     className="w-full py-3.5 bg-gradient-to-r from-[#EC4899] via-[#F43F5E] to-[#8B5CF6] text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     <Lock size={14} />
-                    Payer €{selectedPlan.price} avec {paymentMethod === 'paypal' ? 'PayPal' : 'Stripe'}
+                    Payer €{selectedPlan.price} par {paymentMethod === 'paypal' ? 'PayPal' : 'carte'}
                   </button>
                 </>
               )}

@@ -376,7 +376,7 @@ export function PhoneNumberPanel() {
     (method: 'stripe' | 'paypal') => {
       if (!checkoutNumber) return;
       setCheckoutStep('success');
-      toast.success(`Numéro ${checkoutNumber} acquis via ${method === 'stripe' ? 'Stripe' : 'PayPal'} !`);
+      toast.success(`Numéro ${checkoutNumber} acquis via ${method === 'stripe' ? 'carte bancaire' : 'PayPal'} !`);
       setSearchResults(prev => prev.filter(n => n.phoneNumber !== checkoutNumber));
       fetchData(true);
     },
@@ -441,7 +441,7 @@ export function PhoneNumberPanel() {
   const handleConfirmStripePayment = async () => {
     if (!checkoutNumber || !selectedGigIdForNumber) return;
     if (!stripeEnabled) {
-      toast.error("Stripe n'est pas configuré sur le serveur (STRIPE_SECRET_KEY).");
+      toast.error('Le paiement par carte est temporairement indisponible.');
       return;
     }
 
@@ -468,7 +468,7 @@ export function PhoneNumberPanel() {
           return;
         }
         if (outcome === 'closed') {
-          toast.error('Fenêtre Stripe fermée avant validation.');
+          toast.error('Fenêtre de paiement fermée avant validation.');
           setCheckoutStep('select');
           return;
         }
@@ -706,7 +706,7 @@ export function PhoneNumberPanel() {
                         Le Gig{selectedGigTitle ? <> <span className="font-bold">« {selectedGigTitle} »</span></> : null} dispose déjà du minimum requis
                         de <span className="font-bold">{MIN_PHONE_NUMBERS_PER_GIG}</span>{' '}
                         ligne{MIN_PHONE_NUMBERS_PER_GIG > 1 ? 's' : ''} active{MIN_PHONE_NUMBERS_PER_GIG > 1 ? 's' : ''}.
-                        Tout numéro supplémentaire devra être <span className="font-bold">acheté via Stripe ou PayPal</span>{' '}
+                        Tout numéro supplémentaire devra être <span className="font-bold">acheté par carte ou PayPal</span>{' '}
                         ({formatPrice(linePrice.amountCents, linePrice.currency)} par ligne) — votre portefeuille HARX n'est pas affecté.
                       </p>
                     </div>
@@ -749,12 +749,12 @@ export function PhoneNumberPanel() {
                         onClick={() => handlePurchaseNumber(numberString)}
                         disabled={purchasing !== null}
                         className="px-4 py-2.5 bg-slate-900 hover:bg-orange-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-                        title="Régler par Stripe ou PayPal — sans toucher au wallet"
+                        title="Régler par carte ou PayPal — sans toucher au portefeuille"
                       >
                         {purchasing === numberString
                           ? <RefreshCw size={12} className="animate-spin" />
                           : <CreditCard size={12} />}
-                        <span>{purchasing === numberString ? 'Paiement...' : 'Acheter (Stripe / PayPal)'}</span>
+                        <span>{purchasing === numberString ? 'Paiement...' : 'Acheter (Carte / PayPal)'}</span>
                       </button>
                     </div>
                   );
@@ -841,7 +841,7 @@ export function PhoneNumberPanel() {
                             <CheckCircle2 size={14} />
                           </span>
                         )}
-                        <span className="block text-sm font-black text-indigo-600 tracking-tight">Stripe</span>
+                        <span className="block text-sm font-black text-indigo-600 tracking-tight">Carte</span>
                         <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">
                           Carte bancaire
                         </span>
@@ -877,8 +877,7 @@ export function PhoneNumberPanel() {
                   )}
                   {checkoutMethod === 'stripe' && !stripeEnabled && (
                     <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 font-medium">
-                      Stripe n&apos;est pas encore activé. Configurez{' '}
-                      <span className="font-bold">STRIPE_SECRET_KEY</span> sur Railway.
+                      Le paiement par carte est temporairement indisponible.
                     </p>
                   )}
 
@@ -895,8 +894,8 @@ export function PhoneNumberPanel() {
                     <Lock size={14} />
                     {purchasing
                       ? 'Préparation…'
-                      : `Payer ${formatPrice(linePrice.amountCents, linePrice.currency)} avec ${
-                          checkoutMethod === 'stripe' ? 'Stripe' : 'PayPal'
+                      : `Payer ${formatPrice(linePrice.amountCents, linePrice.currency)} par ${
+                          checkoutMethod === 'stripe' ? 'carte' : 'PayPal'
                         }`}
                   </button>
                 </>
@@ -924,7 +923,7 @@ export function PhoneNumberPanel() {
                 <div className="flex flex-col items-center justify-center py-8 gap-3">
                   <RefreshCw size={32} className="animate-spin text-orange-500" />
                   <p className="text-xs font-black uppercase tracking-wider text-slate-700">
-                    Traitement du paiement {checkoutMethod === 'stripe' ? 'Stripe' : 'PayPal'}…
+                    Traitement du paiement par {checkoutMethod === 'stripe' ? 'carte' : 'PayPal'}…
                   </p>
                   <p className="text-[11px] text-gray-500 text-center max-w-xs">
                     Ne fermez pas cette fenêtre. Provisioning de votre ligne en cours.

@@ -240,7 +240,7 @@ export function paymentFlowErrorMessage(err: unknown): string {
     return 'Fenêtre PayPal fermée avant validation. Complétez le paiement sur PayPal.';
   }
   if (msg === 'STRIPE_CLOSED') {
-    return 'Fenêtre Stripe fermée avant validation. Complétez le paiement par carte.';
+    return 'Fenêtre de paiement fermée avant validation. Complétez le paiement par carte.';
   }
   return msg || 'Échec du paiement.';
 }
@@ -317,7 +317,7 @@ export async function runSubscriptionStripeFlow(
 ) {
   const initData = await initSubscriptionCheckout(apiBaseUrl, body);
   if (!initData.checkoutUrl) {
-    throw new Error('Session Stripe non créée.');
+    throw new Error('Session de paiement non créée.');
   }
   const popup = openCenteredPopup(initData.checkoutUrl, 'stripe-subscription');
   if (!popup) throw new Error('Autorisez les pop-ups pour finaliser le paiement par carte.');

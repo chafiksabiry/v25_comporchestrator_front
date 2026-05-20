@@ -237,7 +237,7 @@ export function MinutesCompanyPanel() {
       return;
     }
     if (paymentMethod === 'card' && !stripeEnabled) {
-      toast.error("Stripe n'est pas configuré sur le serveur (STRIPE_SECRET_KEY).");
+      toast.error('Le paiement par carte est temporairement indisponible.');
       return;
     }
 
@@ -305,7 +305,7 @@ export function MinutesCompanyPanel() {
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Recharge de Minutes d'Appel</h1>
           </div>
           <p className="text-sm text-gray-500">
-            Achetez des minutes de communication directement par Stripe ou PayPal pour alimenter les campagnes de vos représentants.
+            Achetez des minutes de communication par carte bancaire ou PayPal pour alimenter les campagnes de vos représentants.
           </p>
         </div>
 
@@ -576,7 +576,7 @@ export function MinutesCompanyPanel() {
                 <span>
                   Paiement sécurisé — le portefeuille cash HARX n&apos;est pas débité. Tarif : 1 € / minute.
                   {paymentMethod === 'paypal' && ' Une fenêtre PayPal s&apos;ouvrira pour valider le paiement.'}
-                  {paymentMethod === 'card' && ' Une fenêtre Stripe s&apos;ouvrira pour saisir votre carte.'}
+                  {paymentMethod === 'card' && ' Une fenêtre sécurisée s&apos;ouvrira pour saisir votre carte.'}
                 </span>
               </div>
 
