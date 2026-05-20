@@ -59,6 +59,65 @@ interface PerformanceStats {
     registeredReps: number;
 }
 
+interface WindowedStats {
+    totalCalls: number;
+    contactedLeads: number;
+    validNumbers: number;
+    callsOver90s: number;
+    answeringMachineCalls: number;
+    callsByStatus: Record<string, number>;
+}
+
+const EMPTY_WINDOW: WindowedStats = {
+    totalCalls: 0,
+    contactedLeads: 0,
+    validNumbers: 0,
+    callsOver90s: 0,
+    answeringMachineCalls: 0,
+    callsByStatus: {}
+};
+
+function computeWindowedStats(calls: any[]): WindowedStats {
+    const w: WindowedStats = { ...EMPTY_WINDOW, callsByStatus: {} };
+    for (const call of calls) {
+        const status = call.status || 'Inconnu';
+        w.callsByStatus[status] = (w.callsByStatus[status] || 0) + 1;
+        if (status === 'completed' || status === 'Completed') w.contactedLeads++;
+        if (status !== 'Failed' && status !== 'invalid') w.validNumbers++;
+        if ((call.duration || 0) >= 90) w.callsOver90s++;
+        if (status.toLowerCase().includes('machine')) w.answeringMachineCalls++;
+    }
+    w.totalCalls = calls.length;
+    return w;
+}
+
+function timeRangeWindowMs(range: 'daily' | 'weekly' | 'monthly' | 'yearly'): number {
+    const day = 24 * 60 * 60 * 1000;
+    switch (range) {
+        case 'daily':   return day;
+        case 'weekly':  return 7 * day;
+        case 'monthly': return 30 * day;
+        case 'yearly':  return 365 * day;
+    }
+}
+
+function computeTrendPct(current: number, previous: number): number {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+}
+
+function periodLabel(range: 'daily' | 'weekly' | 'monthly' | 'yearly', t: (k: string) => string): string {
+    const key = `performanceDashboard.metrics.vsPrevious_${range}`;
+    const translated = t(key);
+    if (translated && translated !== key) return translated;
+    switch (range) {
+        case 'daily':   return 'vs 24h précédentes';
+        case 'weekly':  return 'vs 7 jours précédents';
+        case 'monthly': return 'vs 30 jours précédents';
+        case 'yearly':  return 'vs 12 mois précédents';
+    }
+}
+
 export function CompanyPerformanceDashboard() {
     const { t } = useTranslation();
     const [selectedGig, setSelectedGig] = useState<string>('all');
@@ -183,33 +242,92 @@ export function CompanyPerformanceDashboard() {
         fetchData();
     }, [selectedGig]);
 
-    // Calculated Metrics
-    const coverageRate = useMemo(() => stats.totalLeads > 0 ? (stats.contactedLeads / stats.totalLeads) * 100 : 0, [stats]);
-    const reachabilityRate = useMemo(() => stats.totalCalls > 0 ? (stats.validNumbers / stats.totalCalls) * 100 : 0, [stats]);
-    const argumentationRate = useMemo(() => stats.contactedLeads > 0 ? (stats.callsOver90s / stats.contactedLeads) * 100 : 0, [stats]);
-    const machineRate = useMemo(() => stats.totalCalls > 0 ? (stats.answeringMachineCalls / stats.totalCalls) * 100 : 0, [stats]);
+    // Slice calls into current window vs previous window so we can show real
+    // period-over-period trends instead of hardcoded "+12%".
+    const { currentWindow, previousWindow } = useMemo(() => {
+        const now = Date.now();
+        const win = timeRangeWindowMs(timeRange);
+        const currentStart = now - win;
+        const previousStart = now - 2 * win;
+        const currentCalls: any[] = [];
+        const previousCalls: any[] = [];
+        for (const call of callsList) {
+            const ts = new Date(call.createdAt || call.date || 0).getTime();
+            if (Number.isNaN(ts)) continue;
+            if (ts >= currentStart && ts <= now) currentCalls.push(call);
+            else if (ts >= previousStart && ts < currentStart) previousCalls.push(call);
+        }
+        return {
+            currentWindow: computeWindowedStats(currentCalls),
+            previousWindow: computeWindowedStats(previousCalls)
+        };
+    }, [callsList, timeRange]);
 
-    // Chart Data
+    // Trends (period-over-period % change). null = no comparison available.
+    const trendTotalCalls = computeTrendPct(currentWindow.totalCalls, previousWindow.totalCalls);
+    const trendContacted = computeTrendPct(currentWindow.contactedLeads, previousWindow.contactedLeads);
+    const trendValid = computeTrendPct(currentWindow.validNumbers, previousWindow.validNumbers);
+
+    // Display stats — totalLeads and registeredReps are cumulative snapshots
+    // (no period filtering), so they stay on the unscoped values.
+    const displayStats = {
+        totalLeads: stats.totalLeads,
+        registeredReps: stats.registeredReps,
+        totalCalls: currentWindow.totalCalls,
+        contactedLeads: currentWindow.contactedLeads,
+        validNumbers: currentWindow.validNumbers,
+        callsOver90s: currentWindow.callsOver90s,
+        answeringMachineCalls: currentWindow.answeringMachineCalls,
+        callsByStatus: currentWindow.callsByStatus
+    };
+
+    // Calculated rate metrics — all derived from the current window so the
+    // filter actually changes them.
+    const coverageRate = useMemo(() => displayStats.totalLeads > 0 ? (displayStats.contactedLeads / displayStats.totalLeads) * 100 : 0, [displayStats.totalLeads, displayStats.contactedLeads]);
+    const reachabilityRate = useMemo(() => displayStats.totalCalls > 0 ? (displayStats.validNumbers / displayStats.totalCalls) * 100 : 0, [displayStats.totalCalls, displayStats.validNumbers]);
+    const argumentationRate = useMemo(() => displayStats.contactedLeads > 0 ? (displayStats.callsOver90s / displayStats.contactedLeads) * 100 : 0, [displayStats.contactedLeads, displayStats.callsOver90s]);
+    const machineRate = useMemo(() => displayStats.totalCalls > 0 ? (displayStats.answeringMachineCalls / displayStats.totalCalls) * 100 : 0, [displayStats.totalCalls, displayStats.answeringMachineCalls]);
+
+    // Chart Data — scoped to the current window so it matches the cards.
+    // Buckets are keyed with a sortable key (so the X axis stays chronological)
+    // and rendered as day-of-month numbers (or hour / month numbers).
     const histogramData = useMemo(() => {
-        // Group calls by date based on timeRange
-        const groups: Record<string, { calls: number, contacts: number }> = {};
+        const now = Date.now();
+        const win = timeRangeWindowMs(timeRange);
+        const start = now - win;
+        const groups: Record<string, { calls: number, contacts: number, label: string }> = {};
 
         callsList.forEach(call => {
-            const date = new Date(call.createdAt || call.date);
+            const ts = new Date(call.createdAt || call.date || 0).getTime();
+            if (Number.isNaN(ts) || ts < start || ts > now) return;
+            const date = new Date(ts);
             let key = '';
-            if (timeRange === 'daily') key = date.toLocaleDateString('fr-FR', { weekday: 'short' });
-            else if (timeRange === 'weekly') key = `Semaine ${Math.ceil(date.getDate() / 7)}`;
-            else if (timeRange === 'monthly') key = date.toLocaleDateString('fr-FR', { month: 'short' });
-            else key = date.getFullYear().toString();
+            let label = '';
+            if (timeRange === 'daily') {
+                const h = date.getHours();
+                key = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-${h}`;
+                label = `${h.toString().padStart(2, '0')}h`;
+            } else if (timeRange === 'weekly') {
+                key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+                label = date.getDate().toString().padStart(2, '0');
+            } else if (timeRange === 'monthly') {
+                key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+                label = date.getDate().toString().padStart(2, '0');
+            } else {
+                const m = date.getMonth() + 1;
+                key = `${date.getFullYear()}-${m.toString().padStart(2, '0')}`;
+                label = m.toString().padStart(2, '0');
+            }
 
-            if (!groups[key]) groups[key] = { calls: 0, contacts: 0 };
+            if (!groups[key]) groups[key] = { calls: 0, contacts: 0, label };
             groups[key].calls++;
             if (call.status === 'completed' || call.status === 'Completed') groups[key].contacts++;
         });
 
-        const labels = Object.keys(groups);
-        const callsData = labels.map(l => groups[l].calls);
-        const contactsData = labels.map(l => groups[l].contacts);
+        const sortedKeys = Object.keys(groups).sort();
+        const labels = sortedKeys.map(k => groups[k].label);
+        const callsData = sortedKeys.map(k => groups[k].calls);
+        const contactsData = sortedKeys.map(k => groups[k].contacts);
 
         return {
             labels: labels.length > 0 ? labels : [t('performanceDashboard.charts.noData')],
@@ -231,9 +349,9 @@ export function CompanyPerformanceDashboard() {
     }, [callsList, timeRange, t]);
 
     const statusChartData = {
-        labels: Object.keys(stats.callsByStatus),
+        labels: Object.keys(displayStats.callsByStatus),
         datasets: [{
-            data: Object.values(stats.callsByStatus),
+            data: Object.values(displayStats.callsByStatus),
             backgroundColor: [
                 '#10b981', // green-500
                 '#f59e0b', // amber-500
@@ -330,47 +448,47 @@ export function CompanyPerformanceDashboard() {
                 </div>
             </div>
 
-            {/* Top KPI Cards */}
+            {/* Top KPI Cards — periods + trends respect the timeRange filter */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <MetricCard
                     title={t('performanceDashboard.metrics.repsRegistered')}
-                    value={stats.registeredReps.toLocaleString()}
+                    value={displayStats.registeredReps.toLocaleString()}
                     icon={<Briefcase className="w-6 h-6" />}
                     color="purple"
-                    trend={t('performanceDashboard.metrics.repsAssigned')}
-                    isPositive={true}
+                    trendPct={null}
+                    trendLabel={t('performanceDashboard.metrics.repsAssigned')}
                 />
                 <MetricCard
                     title={t('performanceDashboard.metrics.totalLeads')}
-                    value={stats.totalLeads.toLocaleString()}
+                    value={displayStats.totalLeads.toLocaleString()}
                     icon={<Users className="w-6 h-6" />}
                     color="blue"
-                    trend={t('performanceDashboard.metrics.vsLastMonth12')}
-                    isPositive={true}
+                    trendPct={null}
+                    trendLabel={t('performanceDashboard.metrics.repsAssigned')}
                 />
                 <MetricCard
                     title={t('performanceDashboard.metrics.totalCalls')}
-                    value={stats.totalCalls.toLocaleString()}
+                    value={displayStats.totalCalls.toLocaleString()}
                     icon={<Phone className="w-6 h-6" />}
                     color="harx"
-                    trend={t('performanceDashboard.metrics.vsLastMonth8')}
-                    isPositive={true}
+                    trendPct={trendTotalCalls}
+                    trendLabel={periodLabel(timeRange, t)}
                 />
                 <MetricCard
                     title={t('performanceDashboard.metrics.contactedLeads')}
-                    value={stats.contactedLeads.toLocaleString()}
+                    value={displayStats.contactedLeads.toLocaleString()}
                     icon={<Target className="w-6 h-6" />}
                     color="emerald"
-                    trend={t('performanceDashboard.metrics.vsLastMonth15')}
-                    isPositive={true}
+                    trendPct={trendContacted}
+                    trendLabel={periodLabel(timeRange, t)}
                 />
                 <MetricCard
                     title={t('performanceDashboard.metrics.validNumbers')}
-                    value={stats.validNumbers.toLocaleString()}
+                    value={displayStats.validNumbers.toLocaleString()}
                     icon={<CheckCircle2 className="w-6 h-6" />}
                     color="amber"
-                    trend={t('performanceDashboard.metrics.vsLastMonth5')}
-                    isPositive={true}
+                    trendPct={trendValid}
+                    trendLabel={periodLabel(timeRange, t)}
                 />
             </div>
 
@@ -438,7 +556,7 @@ export function CompanyPerformanceDashboard() {
                             }} />
                         </div>
                         <div className="w-full space-y-3">
-                            {Object.entries(stats.callsByStatus).slice(0, 4).map(([status, count], idx) => (
+                            {Object.entries(displayStats.callsByStatus).slice(0, 4).map(([status, count], idx) => (
                                 <div key={status} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: (statusChartData.datasets[0].backgroundColor as string[])[idx] }} />
@@ -455,7 +573,23 @@ export function CompanyPerformanceDashboard() {
     );
 }
 
-function MetricCard({ title, value, icon, color, trend, isPositive }: { title: string, value: string, icon: React.ReactNode, color: 'harx' | 'blue' | 'emerald' | 'amber' | 'purple', trend: string, isPositive: boolean }) {
+function MetricCard({
+    title,
+    value,
+    icon,
+    color,
+    trendPct,
+    trendLabel
+}: {
+    title: string;
+    value: string;
+    icon: React.ReactNode;
+    color: 'harx' | 'blue' | 'emerald' | 'amber' | 'purple';
+    /** Period-over-period variation in %. `null` => no comparable data (snapshot stat). */
+    trendPct: number | null;
+    /** Human-readable comparison label, e.g. "vs 7 derniers jours". */
+    trendLabel: string;
+}) {
     const colorClasses = {
         harx: 'bg-harx-500/10 text-harx-500 ring-harx-500/20',
         blue: 'bg-blue-500/10 text-blue-500 ring-blue-500/20',
@@ -464,21 +598,32 @@ function MetricCard({ title, value, icon, color, trend, isPositive }: { title: s
         purple: 'bg-purple-500/10 text-purple-500 ring-purple-500/20'
     };
 
+    const showTrend = trendPct !== null && Number.isFinite(trendPct);
+    const isPositive = showTrend && (trendPct as number) > 0;
+    const isNeutral = showTrend && (trendPct as number) === 0;
+    const pillTone = !showTrend || isNeutral
+        ? 'bg-slate-100 text-slate-500'
+        : isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600';
+
     return (
         <div className="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 hover:shadow-xl transition-all duration-300 group">
             <div className="flex items-start justify-between mb-4">
                 <div className={`p-3 rounded-2xl ${colorClasses[color]} ring-1 transition-transform group-hover:scale-110 duration-300`}>
                     {icon}
                 </div>
-                <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                    {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                    {isPositive ? '+12%' : '-2%'}
+                <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${pillTone}`}>
+                    {showTrend && !isNeutral && (isPositive
+                        ? <ArrowUpRight className="w-3 h-3" />
+                        : <ArrowDownRight className="w-3 h-3" />)}
+                    {showTrend
+                        ? `${isPositive ? '+' : ''}${Math.round(trendPct as number)}%`
+                        : '—'}
                 </div>
             </div>
             <div className="space-y-1">
                 <h3 className="text-slate-500 text-xs font-black uppercase tracking-widest">{title}</h3>
                 <div className="text-3xl font-black text-slate-900 tracking-tight">{value}</div>
-                <p className="text-[10px] text-slate-400 font-medium italic pt-2">{trend}</p>
+                <p className="text-[10px] text-slate-400 font-medium italic pt-2">{trendLabel}</p>
             </div>
         </div>
     );
