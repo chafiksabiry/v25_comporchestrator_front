@@ -2,18 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Wallet,
-  CheckCircle2,
   AlertCircle,
   RefreshCw,
   X,
   Sparkles,
   DollarSign,
-  Calendar,
   Info,
   TrendingUp,
-  User,
-  Zap,
-  Check,
   CreditCard,
   Building2,
   Phone,
@@ -168,11 +163,8 @@ function formatFloatMinutesToMMSS(mins: number): string {
 export function WalletCompanyPanel() {
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [agentWithdrawals, setAgentWithdrawals] = useState<AgentWithdrawal[]>([]);
-  const [companyCalls, setCompanyCalls] = useState<CompanyCallRow[]>([]);
   const [repTransactions, setRepTransactions] = useState<RepTransactionRow[]>([]);
-  const [approvingCallId, setApprovingCallId] = useState<string | null>(null);
-  const [callsTab, setCallsTab] = useState<'pending' | 'validated' | 'refused'>('pending');
-  const [bulkAnalysis, setBulkAnalysis] = useState<{ running: boolean; done: number; total: number }>({ running: false, done: 0, total: 0 });
+  const [callsTab, setCallsTab] = useState<'validated' | 'refused'>('validated');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCall, setSelectedCall] = useState<CompanyCallRow | null>(null);
@@ -211,21 +203,10 @@ export function WalletCompanyPanel() {
         }
       }
 
-      // 3. Calls & sales awaiting company validation (used for the "En attente" tab
-      //    and the bulk-analyze workflow).
-      const callsRes = await fetch(`${apiBaseUrl}/escrow/calls/${companyId}`);
-      if (callsRes.ok) {
-        const callsData = await callsRes.json();
-        if (callsData.success && Array.isArray(callsData.data)) {
-          setCompanyCalls(callsData.data);
-        } else {
-          setCompanyCalls([]);
-        }
-      }
-
-      // 3.bis Company-side rep transaction ledger — the authoritative source
-      //       for everything that has actually been booked (validated calls,
-      //       sales, bonuses). Drives the "Validés" / "Refusés" tabs.
+      // Company-side rep transaction ledger — the ONLY source for this panel.
+      // Each row is a real commission booked by the backend (validated call,
+      // sale or bonus). We never display raw `calls` here anymore: the appels
+      // section lives in its own dedicated page.
       try {
         const repTxRes = await fetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`);
         if (repTxRes.ok) {
@@ -346,18 +327,10 @@ export function WalletCompanyPanel() {
     }
   };
 
-  // The "Validés" / "Refusés" tabs are now backed by the RepTransaction ledger
-  // (the authoritative commission record), NOT by raw calls. A call with
-  // `validByAI=true` only counts as validated once the corresponding
-  // RepTransaction row has been booked — that is what actually debits the
-  // WalletCompany.
-  //
-  // "En attente" still shows raw calls without a RepTransaction so the company
-  // can chase down un-analyzed calls via the "Analyser tous" button.
-
-  // Convert a RepTransaction into a CompanyCallRow so we can reuse the
-  // existing table / modal rendering code. Bonuses (no call linked) still
-  // render as a row using the tx data for date / amount.
+  // This section displays ONLY RepTransaction rows (the company-side
+  // commission ledger). Raw calls live on the dedicated "Appels" page; this
+  // panel never mixes them in. Each tx becomes a row via `repTxToRow` so the
+  // existing table + "Consulter" modal keep working unchanged.
   const repTxToRow = (tx: RepTransactionRow): CompanyCallRow => {
     const repName = tx.rep
       ? `${tx.rep.firstName || ''} ${tx.rep.lastName || ''}`.trim() || tx.rep.email || 'Rep'
@@ -390,97 +363,13 @@ export function WalletCompanyPanel() {
     };
   };
 
-  const pendingValidationCalls = companyCalls.filter((c) => c.validByAI !== true && c.validByAI !== false);
   const validatedCalls = repTransactions
     .filter((tx) => tx.status === 'earned' || tx.status === 'paid')
     .map(repTxToRow);
   const refusedCalls = repTransactions
     .filter((tx) => tx.status === 'refused')
     .map(repTxToRow);
-  const visibleCalls =
-    callsTab === 'pending' ? pendingValidationCalls
-    : callsTab === 'validated' ? validatedCalls
-    : refusedCalls;
-
-  const handleCallApproval = async (callId: string, action: 'approve' | 'refuse') => {
-    setApprovingCallId(callId);
-    try {
-      const res = await fetch(`${apiBaseUrl}/escrow/calls/approve/${callId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId, action })
-      });
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok && data.success) {
-        const booked = data.data?.repTransactions;
-        const callBooked = booked?.call;
-        if (action === 'approve' && callBooked) {
-          toast.success(
-            `Validé — débit ${callBooked.amount}€ (Rep 70%: ${callBooked.repShare}€ · HARX 30%: ${callBooked.harxShare}€)`
-          );
-        } else if (action === 'approve') {
-          toast.success('Appel / vente validé — portefeuille mis à jour.');
-        } else {
-          toast.success('Validation refusée.');
-        }
-        if (data.data?.walletCompany?.balance != null) {
-          setWallet({ companyId, balance: data.data.walletCompany.balance });
-          window.dispatchEvent(
-            new CustomEvent('balanceUpdated', { detail: { balance: data.data.walletCompany.balance } })
-          );
-        }
-        fetchData(true);
-      } else {
-        toast.error(data.error || 'Impossible de traiter la validation.');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Erreur lors de la validation.');
-    } finally {
-      setApprovingCallId(null);
-    }
-  };
-
-  // Bulk AI analysis — runs `POST /calls/:id/analyze` on each pending call so
-  // they all get `validByAI` populated and reconciliation booked. Used to
-  // catch up on calls that were created while auto-scoring was disabled.
-  const handleBulkAnalyze = async () => {
-    if (bulkAnalysis.running) return;
-    const targets = pendingValidationCalls.map(c => c._id).filter(Boolean) as string[];
-    if (targets.length === 0) {
-      toast('Aucun appel en attente à analyser.');
-      return;
-    }
-    if (!window.confirm(`Lancer l'analyse IA sur ${targets.length} appel(s) en attente ? Cela peut prendre plusieurs minutes.`)) return;
-
-    const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
-    const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
-
-    setBulkAnalysis({ running: true, done: 0, total: targets.length });
-    let ok = 0;
-    let ko = 0;
-
-    for (let i = 0; i < targets.length; i++) {
-      const callId = targets[i];
-      try {
-        const res = await fetch(`${callsBase}/calls/${callId}/analyze`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (res.ok) ok++;
-        else ko++;
-      } catch {
-        ko++;
-      }
-      setBulkAnalysis(prev => ({ ...prev, done: i + 1 }));
-    }
-
-    setBulkAnalysis({ running: false, done: 0, total: 0 });
-    if (ok > 0) toast.success(`${ok} appel(s) analysé(s) avec succès${ko > 0 ? ` — ${ko} échec(s).` : '.'}`);
-    if (ok === 0 && ko > 0) toast.error(`Aucun appel n'a pu être analysé (${ko} échec(s)).`);
-    fetchData(true);
-  };
+  const visibleCalls = callsTab === 'validated' ? validatedCalls : refusedCalls;
 
   const handleAgentWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'refuse') => {
     try {
@@ -609,39 +498,20 @@ export function WalletCompanyPanel() {
         </div>
       </div>
 
-      {/* Calls & transactions to validate — debits WalletCompany (70% rep / 30% HARX) */}
+      {/* Rep transaction ledger — debits WalletCompany (70% rep / 30% HARX) */}
       <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h3 className="text-base font-black text-slate-800 tracking-tight">
-              Validations appels & ventes
+              Commissions (ledger Rep)
             </h3>
             <p className="text-xs text-gray-500 mt-1">
-              Chaque validation débite votre portefeuille : 70% pour le rep, 30% pour HARX.
+              Une ligne par <code className="text-[10px] font-mono px-1 py-0.5 rounded bg-slate-100 text-slate-700">RepTransaction</code> bookée — 70% pour le rep, 30% pour HARX. Les appels en attente sont gérés depuis la page Appels.
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            {pendingValidationCalls.length > 0 && (
-              <button
-                type="button"
-                onClick={handleBulkAnalyze}
-                disabled={bulkAnalysis.running}
-                className={`px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all ${
-                  bulkAnalysis.running
-                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-wait'
-                    : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-transparent shadow-sm hover:shadow-md active:scale-95'
-                }`}
-                title="Lancer l'analyse IA sur tous les appels en attente"
-              >
-                <Brain className={`w-3.5 h-3.5 ${bulkAnalysis.running ? 'animate-pulse' : ''}`} />
-                {bulkAnalysis.running
-                  ? `Analyse ${bulkAnalysis.done}/${bulkAnalysis.total}`
-                  : `Analyser tous (${pendingValidationCalls.length})`}
-              </button>
-            )}
             <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl p-1">
               {([
-                { id: 'pending', label: 'En attente', count: pendingValidationCalls.length, tone: 'text-amber-700' },
                 { id: 'validated', label: 'Validés', count: validatedCalls.length, tone: 'text-emerald-700' },
                 { id: 'refused', label: 'Refusés', count: refusedCalls.length, tone: 'text-rose-700' }
               ] as const).map((tab) => (
@@ -667,11 +537,9 @@ export function WalletCompanyPanel() {
           <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-100 rounded-[1.5rem] text-gray-400 gap-3">
             <Phone size={36} className="text-blue-500 animate-pulse" />
             <p className="text-sm font-bold">
-              {callsTab === 'pending'
-                ? 'Aucune validation en attente.'
-                : callsTab === 'validated'
-                  ? "Aucun appel validé pour l'instant."
-                  : 'Aucun appel refusé.'}
+              {callsTab === 'validated'
+                ? "Aucune commission validée pour l'instant."
+                : 'Aucune commission refusée.'}
             </p>
           </div>
         ) : (
@@ -683,17 +551,15 @@ export function WalletCompanyPanel() {
                   <th className="py-3 px-4 bg-white">Date & Heure</th>
                   <th className="py-3 px-4 bg-white">Durée</th>
                   <th className="py-3 px-4 bg-white">Score AI</th>
-                  <th className="py-3 px-4 bg-white">
-                    {callsTab === 'pending' ? 'Action' : 'Commission'}
-                  </th>
+                  <th className="py-3 px-4 bg-white">Commission</th>
                   <th className="py-3 px-4 bg-white text-right">Détails</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 text-xs">
                 {visibleCalls.map((call) => {
-                  const hasSale = call.validByReps === true;
+                  const tx = call.repTx;
                   return (
-                    <tr key={call.callId} className="hover:bg-gray-50 transition-colors">
+                    <tr key={tx?._id || call.callId} className="hover:bg-gray-50 transition-colors">
                       <td className="py-4 px-4 font-bold text-slate-800">
                         <div className="flex items-center gap-2">
                           <span>
@@ -701,14 +567,14 @@ export function WalletCompanyPanel() {
                               ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}`
                               : call.lead || 'Inconnu'}
                           </span>
-                          {call.validByAI === true && (
+                          {tx?.status === 'earned' || tx?.status === 'paid' ? (
                             <span
-                              title="Appel validé par l'IA"
+                              title="Commission bookée"
                               className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
                             >
                               <BadgeCheck size={12} />
                             </span>
-                          )}
+                          ) : null}
                         </div>
                         <div className="text-[10px] text-gray-400 font-bold mt-0.5">{call.agent}</div>
                       </td>
@@ -716,7 +582,7 @@ export function WalletCompanyPanel() {
                         {new Date(call.startTime).toLocaleString('fr-FR')}
                       </td>
                       <td className="py-4 px-4 text-slate-900 font-bold tabular-nums">
-                        {formatFloatMinutesToMMSS((call.duration || 0) / 60)}
+                        {call.duration > 0 ? formatFloatMinutesToMMSS((call.duration || 0) / 60) : '—'}
                       </td>
                       <td className="py-4 px-4">
                         {(() => {
@@ -727,50 +593,15 @@ export function WalletCompanyPanel() {
                               <span>{ai.score}/100</span>
                             </div>
                           ) : (
-                            <span className="text-gray-400 italic">Non noté</span>
+                            <span className="text-gray-400 italic">—</span>
                           );
                         })()}
                       </td>
                       <td className="py-4 px-4">
-                        {callsTab === 'pending' ? (
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              disabled={approvingCallId === call.callId}
-                              onClick={() => handleCallApproval(call.callId, 'refuse')}
-                              className="p-2 text-gray-500 hover:text-rose-600 bg-white border border-gray-100 rounded-xl disabled:opacity-50"
-                            >
-                              <X size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              disabled={approvingCallId === call.callId}
-                              onClick={() => handleCallApproval(call.callId, 'approve')}
-                              className="px-3 py-2 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-wider disabled:opacity-50 flex items-center gap-1"
-                            >
-                              {approvingCallId === call.callId ? (
-                                <RefreshCw size={12} className="animate-spin" />
-                              ) : (
-                                <Check size={12} />
-                              )}
-                              Valider
-                            </button>
-                          </div>
-                        ) : callsTab === 'validated' ? (() => {
-                          // Prefer the RepTransaction figures when present (single
-                          // source of truth). Fallback to recomputed values for
-                          // legacy rows that still come from the raw call list.
-                          const tx = call.repTx;
-                          const gross = tx
-                            ? Number(tx.amount || 0)
-                            : (() => {
-                                const repCall = Number(call.repCallCommission || 0);
-                                const repTx = hasSale ? Number(call.repTransactionCommission || 0) : 0;
-                                const repShare = repCall + repTx;
-                                return repShare > 0 ? repShare / 0.7 : 0;
-                              })();
-                          const repShare = tx ? Number(tx.repShare || 0) : Number(((gross || 0) * 0.7).toFixed(2));
-                          const harxShare = tx ? Number(tx.harxShare || 0) : Number(((gross || 0) * 0.3).toFixed(2));
+                        {callsTab === 'validated' ? (() => {
+                          const gross = Number(tx?.amount || 0);
+                          const repShare = Number(tx?.repShare || 0);
+                          const harxShare = Number(tx?.harxShare || 0);
                           const agentName = call.agent || 'Rep';
                           return gross > 0 ? (
                             <div className="flex flex-col items-start gap-1">
