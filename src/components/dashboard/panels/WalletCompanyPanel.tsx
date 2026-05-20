@@ -288,15 +288,29 @@ export function WalletCompanyPanel() {
 
   // Validation = AI validation. Le wallet est débité automatiquement
   // dès que l'IA valide un appel (pas besoin d'action manuelle).
-  const pendingValidationCalls = companyCalls.filter(
-    (c) => c.validByAI == null
-  );
-  const validatedCalls = companyCalls.filter(
-    (c) => c.validByAI === true
-  );
-  const refusedCalls = companyCalls.filter(
-    (c) => c.validByAI === false
-  );
+  //
+  // Classification logic — priority order:
+  //   1) `validByAI` is explicit (true / false) → respect it.
+  //   2) `validByAI` is null but an AI score exists → classify on the score:
+  //        score >= AI_VALIDATION_THRESHOLD  → validated
+  //        score <  AI_VALIDATION_THRESHOLD  → refused
+  //      This makes the tabs actually useful as soon as a call has been
+  //      analyzed by the AI, even before reconciliation flips `validByAI`.
+  //   3) No score, no flag → pending.
+  const AI_VALIDATION_THRESHOLD = 50;
+  const classifyCall = (c: any): 'validated' | 'refused' | 'pending' => {
+    if (c.validByAI === true) return 'validated';
+    if (c.validByAI === false) return 'refused';
+    const ai = normalizeAiCallScore(c.ai_call_score);
+    const score = ai?.score;
+    if (typeof score === 'number') {
+      return score >= AI_VALIDATION_THRESHOLD ? 'validated' : 'refused';
+    }
+    return 'pending';
+  };
+  const pendingValidationCalls = companyCalls.filter((c) => classifyCall(c) === 'pending');
+  const validatedCalls = companyCalls.filter((c) => classifyCall(c) === 'validated');
+  const refusedCalls = companyCalls.filter((c) => classifyCall(c) === 'refused');
   const visibleCalls =
     callsTab === 'pending' ? pendingValidationCalls
     : callsTab === 'validated' ? validatedCalls

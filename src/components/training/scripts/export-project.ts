@@ -39,7 +39,7 @@ class ProjectExporter {
         resolve(zipPath);
       });
 
-      archive.on('error', (err) => {
+      archive.on('error', (err: any) => {
         reject(err);
       });
 
