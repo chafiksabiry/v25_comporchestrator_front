@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Users,
   Phone,
+  PhoneCall,
   Mail,
   MessageSquare,
   TrendingUp,
@@ -137,8 +138,6 @@ export function MasterSidebar({
     { icon: <LayoutDashboard size={20} />, label: t('sidebar.dashboard'), path: '/dashboard/main', key: 'premium-dashboard', alwaysShow: true, groupId: 1 },
     { icon: <TrendingUp size={20} />, label: t('sidebar.overview'), path: '/dashboard/overview', key: 'overview', alwaysShow: true, groupId: 1 },
 
-    { icon: <Wallet size={20} />, label: t('sidebar.wallet', 'Mon Portefeuille'), path: '/dashboard/wallet', key: 'wallet', alwaysShow: true, groupId: 1 },
-
     // Group 2
     { icon: <Phone size={20} />, label: t('sidebar.calls'), path: '/dashboard/calls', key: 'calls', alwaysShow: true, groupId: 2 },
     { icon: <UserPlus size={20} />, label: t('sidebar.leads'), path: '/dashboard/leads', key: 'leads', requiresLeads: true, groupId: 2 },
@@ -152,6 +151,7 @@ export function MasterSidebar({
     { icon: <Briefcase size={20} />, label: 'Gigs', path: '/dashboard/gigs', key: 'gigs', requiresGigs: true, groupId: 3 },
     { icon: <ScrollText size={20} />, label: t('sidebar.scriptGenerator'), path: '/dashboard/script-generator', key: 'script-generator', alwaysShow: true, groupId: 3 },
     { icon: <Book size={20} />, label: t('sidebar.knowledgeBase'), path: '/dashboard/knowledge-base', key: 'knowledge-base', alwaysShow: true, groupId: 3 },
+    { icon: <PhoneCall size={20} />, label: t('sidebar.telephony', 'Telephony'), path: '/dashboard/telephony', key: 'telephony', alwaysShow: true, groupId: 3 },
     { icon: <Plug size={20} />, label: 'Gig Activation', path: '/dashboard/gig-activation', key: 'integrations', alwaysShow: true, groupId: 3 },
     { icon: <ClipboardCheck size={20} />, label: t('sidebar.qualityAssurance'), path: '/dashboard/quality-assurance', key: 'quality-assurance', requiresRepMatching: true, groupId: 3 },
     { icon: <ScrollText size={20} />, label: t('sidebar.operations'), path: '/dashboard/operations', key: 'operations', requiresRepMatching: true, groupId: 3 },
