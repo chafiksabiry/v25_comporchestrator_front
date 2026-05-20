@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Check, CreditCard, Sparkles, X, ShieldCheck, Lock } from 'lucide-react';
+import { Check, CreditCard, Sparkles, X, ShieldCheck, Lock, DollarSign, Info } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import {
+  fetchSubscriptionCheckoutConfig,
+  paymentFlowErrorMessage,
+  runSubscriptionPaypalFlow,
+  runSubscriptionStripeFlow
+} from '../lib/paypalCheckout';
 
 interface Plan {
   _id?: string;
@@ -86,9 +92,14 @@ const Subscription: React.FC = () => {
   const [isLoadingSecret, setIsLoadingSecret] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activePriceId, setActivePriceId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
+  const [paypalEnabled, setPaypalEnabled] = useState(false);
+  const [stripeEnabled, setStripeEnabled] = useState(false);
 
   const companyId = Cookies.get('companyId');
   const userId = Cookies.get('userId');
+  const apiBaseUrl =
+    `${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003'}/api`;
 
   useEffect(() => {
     const fetchRealPlans = async () => {
@@ -127,37 +138,81 @@ const Subscription: React.FC = () => {
     checkCurrentSubscription();
   }, [companyId]);
 
-  const handleStartTrial = async (plan: Plan) => {
+  useEffect(() => {
+    if (!showCheckout) return;
+    fetchSubscriptionCheckoutConfig(apiBaseUrl).then((cfg) => {
+      setPaypalEnabled(cfg.paypalEnabled);
+      setStripeEnabled(cfg.stripeEnabled);
+    });
+  }, [showCheckout, apiBaseUrl]);
+
+  const refreshActivePlan = async () => {
+    if (!companyId) return;
+    try {
+      const response = await axios.get(`${apiBaseUrl}/subscriptions/current/${companyId}`);
+      const subData = response.data?.data;
+      if (subData && (subData.status === 'active' || subData.status === 'trialing')) {
+        const pid = subData.planId?.stripePriceId;
+        if (pid) setActivePriceId(pid);
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleSelectPlan = (plan: Plan) => {
     const priceId = plan.priceId || plan.stripePriceId;
     if (!priceId) {
       alert('ID de plan invalide.');
       return;
     }
-
     setSelectedPlan(plan);
+    setPaymentMethod('card');
+    setErrorMessage(null);
     setShowCheckout(true);
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!selectedPlan || !companyId || !userId) {
+      setErrorMessage('Session utilisateur ou entreprise manquante.');
+      return;
+    }
+    const priceId = selectedPlan.priceId || selectedPlan.stripePriceId;
+    if (!priceId) return;
+
+    if (paymentMethod === 'paypal' && !paypalEnabled) {
+      setErrorMessage("PayPal n'est pas configuré (PAYPAL_* sur Railway).");
+      return;
+    }
+    if (paymentMethod === 'card' && !stripeEnabled) {
+      setErrorMessage("Stripe n'est pas configuré (STRIPE_SECRET_KEY sur Railway).");
+      return;
+    }
+
     setIsLoadingSecret(true);
     setErrorMessage(null);
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/checkout`, {
+      const body = {
         userId,
         companyId,
         priceId,
-        planName: plan.name,
-        successUrl: `${window.location.origin}/company#/orchestrator?success=true`,
-        cancelUrl: `${window.location.origin}/company#/orchestrator?cancel=true`
-      });
+        planName: selectedPlan.name,
+        provider: paymentMethod === 'paypal' ? 'paypal' as const : 'stripe' as const
+      };
 
-      if (response.data && response.data.data && response.data.data.url) {
-        window.location.href = response.data.data.url;
+      if (paymentMethod === 'paypal') {
+        await runSubscriptionPaypalFlow(apiBaseUrl, body);
       } else {
-        setErrorMessage('Erreur lors de la création de la session de paiement.');
-        setIsLoadingSecret(false);
+        await runSubscriptionStripeFlow(apiBaseUrl, body);
       }
+
+      setShowCheckout(false);
+      await refreshActivePlan();
     } catch (err) {
-      console.error('Error creating checkout session:', err);
-      setErrorMessage('Une erreur est survenue lors de la redirection vers Stripe.');
+      console.error(err);
+      setErrorMessage(paymentFlowErrorMessage(err));
+    } finally {
       setIsLoadingSecret(false);
     }
   };
@@ -226,7 +281,7 @@ const Subscription: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={() => !isActive && handleStartTrial(plan)}
+                  onClick={() => !isActive && handleSelectPlan(plan)}
                   disabled={isActive}
                   className={`w-full py-4 px-6 rounded-2xl font-black text-sm uppercase tracking-[0.15em] transition-all duration-300 mb-8 transform ${
                     !isActive ? 'group-hover:scale-[1.02] active:scale-95' : ''
@@ -263,15 +318,14 @@ const Subscription: React.FC = () => {
         </div>
       </div>
 
-      {/* Checkout Modal Overlay */}
-      {showCheckout && (
+      {/* Checkout Modal — Stripe ou PayPal */}
+      {showCheckout && selectedPlan && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0a0b14]/80 backdrop-blur-md animate-fade-in">
           <div className="relative w-full max-w-lg bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-white/10">
-            {/* Modal Header */}
             <div className="absolute top-6 right-6 z-10">
-              <button 
+              <button
                 onClick={() => {
-                  setShowCheckout(false);
+                  if (!isLoadingSecret) setShowCheckout(false);
                 }}
                 className="p-3 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-all duration-300 text-gray-500 hover:text-gray-900 shadow-sm"
               >
@@ -280,29 +334,88 @@ const Subscription: React.FC = () => {
             </div>
 
             <div className="p-8">
-              <div className="flex items-center gap-4 mb-8">
+              <div className="flex items-center gap-4 mb-6">
                 <div className="h-14 w-14 bg-harx-50 rounded-2xl flex items-center justify-center text-harx-500 shadow-inner">
                   <ShieldCheck size={28} />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-gray-900 tracking-tight">Complete Subscription</h2>
-                  <div className="flex items-center gap-2 text-harx-500">
-                    <Lock size={12} />
-                    <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Secure checkout powered by Stripe</span>
-                  </div>
+                  <h2 className="text-2xl font-black text-gray-900 tracking-tight">Paiement sécurisé</h2>
+                  <p className="text-sm font-bold text-gray-500 mt-0.5">
+                    Plan {selectedPlan.name} — €{selectedPlan.price}/mois
+                  </p>
                 </div>
               </div>
 
-              {isLoadingSecret ? (
-                <div className="h-64 flex flex-col items-center justify-center gap-4 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
+              {!isLoadingSecret && (
+                <>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-2">
+                    Méthode de paiement
+                  </label>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('card')}
+                      className={`p-3 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all flex flex-col items-center gap-1.5 ${
+                        paymentMethod === 'card'
+                          ? 'border-harx-500 bg-harx-50/50 text-harx-600'
+                          : 'border-gray-100 bg-white text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      <CreditCard size={18} />
+                      <span>Carte (Stripe)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('paypal')}
+                      className={`p-3 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all flex flex-col items-center gap-1.5 ${
+                        paymentMethod === 'paypal'
+                          ? 'border-amber-500 bg-amber-50/50 text-amber-700'
+                          : 'border-gray-100 bg-white text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      <DollarSign size={18} />
+                      <span>PayPal</span>
+                    </button>
+                  </div>
+
+                  <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl flex gap-2.5 text-[10px] text-blue-800/80 font-bold leading-relaxed mb-4">
+                    <Info size={16} className="shrink-0 text-blue-600" />
+                    <span>
+                      {paymentMethod === 'paypal'
+                        ? 'PayPal : paiement du premier mois, puis activation du plan. Une fenêtre PayPal s\'ouvrira.'
+                        : 'Stripe : abonnement mensuel avec essai 7 jours. Une fenêtre Stripe s\'ouvrira.'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleConfirmPayment}
+                    disabled={
+                      (paymentMethod === 'paypal' && !paypalEnabled)
+                      || (paymentMethod === 'card' && !stripeEnabled)
+                    }
+                    className="w-full py-3.5 bg-gradient-to-r from-[#EC4899] via-[#F43F5E] to-[#8B5CF6] text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    <Lock size={14} />
+                    Payer €{selectedPlan.price} avec {paymentMethod === 'paypal' ? 'PayPal' : 'Stripe'}
+                  </button>
+                </>
+              )}
+
+              {isLoadingSecret && (
+                <div className="h-48 flex flex-col items-center justify-center gap-4 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
                   <div className="h-12 w-12 border-4 border-harx-500/20 border-t-harx-500 rounded-full animate-spin" />
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest animate-pulse">Redirecting to Secure Stripe Checkout...</p>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest animate-pulse text-center px-4">
+                    Finalisation du paiement…
+                  </p>
                 </div>
-              ) : errorMessage ? (
-                <div className="p-6 bg-red-50 rounded-2xl border border-red-100 text-red-600 text-center">
+              )}
+
+              {errorMessage && !isLoadingSecret && (
+                <div className="mt-4 p-4 bg-red-50 rounded-2xl border border-red-100 text-red-600 text-center">
                   <p className="text-sm font-bold">{errorMessage}</p>
                 </div>
-              ) : null}
+              )}
             </div>
           </div>
         </div>
