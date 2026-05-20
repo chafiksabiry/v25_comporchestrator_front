@@ -33,6 +33,16 @@
     "linePlural": "Lines",
     "company": "Company"
   },
+  "language": {
+    "title": "Change language",
+    "en": "English",
+    "fr": "French"
+  },
+  "phoneNumberPanel": {
+    "gigsCard": {
+      "description": "Each Gig must have at least as many phone numbers as the maximum number of Reps you plan to enroll on it to handle calls."
+    }
+  },
   "dashboard": {
     "title": "Smart Orchestrator Dashboard",
     "overview": {
