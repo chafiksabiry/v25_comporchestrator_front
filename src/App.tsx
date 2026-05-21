@@ -44,6 +44,7 @@ import StepGuideModal, { type StepGuideVariant } from './components/onboarding/S
 import {
   markStepGuideSeen,
   shouldShowStepGuide,
+  isOnboardingFullyCompleted,
 } from './hooks/useStepGuide';
 
 const TAB_ONBOARDING_STEPS: Record<string, { stepId: number; phaseId: number }> = {
@@ -62,7 +63,9 @@ function AppContent() {
     if (location.pathname.includes('/dashboard') || location.pathname !== '/' && location.pathname !== '') {
       return 'dashboard';
     }
-    return 'comporchestrator'; // default
+    // No path yet: returning users who finished every onboarding phase land on
+    // the dashboard; first-time users still see the orchestrator setup flow.
+    return isOnboardingFullyCompleted() ? 'dashboard' : 'comporchestrator';
   });
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -360,9 +363,16 @@ function AppContent() {
     window.addEventListener('openComporchestrator', openComporchestrator);
     window.addEventListener('openCompanyDashboard', openCompanyDashboard);
 
-    // Initial Path correction
+    // Initial Path correction.
+    // - First-time users (onboarding incomplete) start on the orchestrator setup.
+    // - Returning users who finished every phase land directly on the dashboard.
     if (location.pathname === '/' || location.pathname === '') {
-      window.location.hash = '#/orchestrator';
+      if (isOnboardingFullyCompleted()) {
+        setActiveProject('dashboard');
+        window.location.hash = '#/dashboard/main';
+      } else {
+        window.location.hash = '#/orchestrator';
+      }
     }
 
     return () => {
