@@ -827,7 +827,10 @@ const CompanyOnboarding = () => {
       : "";
     const hashParams = new URLSearchParams(hashQuery);
     const stripeReturned =
-      params.get("success") === "true" || hashParams.get("success") === "true";
+      params.get("success") === "true"
+      || hashParams.get("success") === "true"
+      || params.get("subscription") === "success"
+      || hashParams.get("subscription") === "success";
     if (!stripeReturned) return;
 
     const t1 = window.setTimeout(() => {

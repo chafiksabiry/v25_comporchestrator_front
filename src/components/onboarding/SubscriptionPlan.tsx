@@ -4,9 +4,10 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import {
   fetchSubscriptionCheckoutConfig,
-  paymentFlowErrorMessage,
-  runSubscriptionStripeFlow,
+  hasSubscriptionReturnFlag,
+  clearSubscriptionReturnFlag,
 } from '../../lib/paypalCheckout';
+import EmbeddedSubscriptionCheckout from '../stripe/EmbeddedSubscriptionCheckout';
 
 
 interface Plan {
@@ -28,6 +29,7 @@ const SubscriptionPlan = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activePriceId, setActivePriceId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<Plan | null>(null);
   const companyId = Cookies.get('companyId');
   const userId = Cookies.get('userId');
   const apiBaseUrl =
@@ -40,6 +42,21 @@ const SubscriptionPlan = () => {
       checkStepStatus();
       checkExistingSubscription();
     }
+  }, [companyId]);
+
+  // Retour Stripe (stripe-return.html → ?subscription=success)
+  useEffect(() => {
+    if (!hasSubscriptionReturnFlag() || !companyId) return;
+
+    const finalize = async () => {
+      clearSubscriptionReturnFlag();
+      await checkExistingSubscription();
+      await completeOnboardingStep();
+      window.dispatchEvent(
+        new CustomEvent('stepCompleted', { detail: { stepId: 11, phaseId: 4 } })
+      );
+    };
+    finalize();
   }, [companyId]);
 
   const fetchPlans = async () => {
@@ -143,7 +160,7 @@ const SubscriptionPlan = () => {
     }
   };
 
-  const handleStartTrial = async (priceId: string, planName: string) => {
+  const handleStartTrial = async (plan: Plan) => {
     if (!companyId || !userId) {
       setCheckoutError('Session utilisateur ou entreprise manquante.');
       return;
@@ -151,37 +168,31 @@ const SubscriptionPlan = () => {
 
     setIsLoading(true);
     setCheckoutError(null);
-
     try {
       const cfg = await fetchSubscriptionCheckoutConfig(apiBaseUrl);
       if (!cfg.stripeEnabled) {
         setCheckoutError('Le paiement par carte est temporairement indisponible.');
         return;
       }
-
-      await runSubscriptionStripeFlow(apiBaseUrl, {
-        userId,
-        companyId,
-        priceId,
-        planName,
-        provider: 'stripe',
-      });
-
-      setActivePriceId(priceId);
-      await completeOnboardingStep();
-      await checkExistingSubscription();
-
-      window.dispatchEvent(
-        new CustomEvent('stepCompleted', {
-          detail: { stepId: 11, phaseId: 4 },
-        })
-      );
+      setCheckoutPlan(plan);
     } catch (error) {
-      console.error('Checkout error:', error);
-      setCheckoutError(paymentFlowErrorMessage(error));
+      console.error('Checkout config error:', error);
+      setCheckoutError(error instanceof Error ? error.message : 'Erreur configuration paiement.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCheckoutSuccess = async () => {
+    if (checkoutPlan) {
+      setActivePriceId(checkoutPlan.stripePriceId);
+    }
+    setCheckoutPlan(null);
+    await completeOnboardingStep();
+    await checkExistingSubscription();
+    window.dispatchEvent(
+      new CustomEvent('stepCompleted', { detail: { stepId: 11, phaseId: 4 } })
+    );
   };
 
   return (
@@ -255,7 +266,7 @@ const SubscriptionPlan = () => {
               </div>
 
               <button
-                onClick={() => !isActive && handleStartTrial(plan.stripePriceId, plan.name)}
+                onClick={() => !isActive && handleStartTrial(plan)}
                 disabled={isLoading || isActive}
                 className={`w-full py-3 px-4 rounded-xl font-black text-[11px] uppercase tracking-[0.15em] transition-all duration-300 mb-6 transform ${
                   !isActive ? 'group-hover:scale-[1.02] active:scale-95' : ''
@@ -291,6 +302,24 @@ const SubscriptionPlan = () => {
             })}
         </div>
       </div>
+
+      {checkoutPlan && companyId && userId && (
+        <EmbeddedSubscriptionCheckout
+          open
+          apiBaseUrl={apiBaseUrl}
+          body={{
+            userId,
+            companyId,
+            priceId: checkoutPlan.stripePriceId,
+            planName: checkoutPlan.name,
+            provider: 'stripe',
+          }}
+          planName={checkoutPlan.name}
+          priceLabel={`€${checkoutPlan.price}/mois`}
+          onClose={() => setCheckoutPlan(null)}
+          onSuccess={handleCheckoutSuccess}
+        />
+      )}
     </div>
   );
 };
