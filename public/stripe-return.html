@@ -18,7 +18,7 @@
       .box {
         text-align: center;
         padding: 2rem;
-        max-width: 360px;
+        max-width: 420px;
       }
       h1 {
         font-size: 1.125rem;
@@ -29,27 +29,136 @@
         color: #64748b;
         font-size: 0.9rem;
       }
+      .err {
+        color: #dc2626;
+        margin-top: 1rem;
+        font-size: 0.85rem;
+      }
+      .spin {
+        width: 2rem;
+        height: 2rem;
+        border: 3px solid #e2e8f0;
+        border-top-color: #ec4899;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 1rem auto;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
   <body>
     <div class="box">
-      <h1>Paiement validé</h1>
-      <p>Vous pouvez fermer cette fenêtre. Le tableau de bord HARX finalise l&apos;achat.</p>
+      <div class="spin" id="loader"></div>
+      <h1 id="title">Finalisation de l&apos;abonnement…</h1>
+      <p id="msg">Redirection vers HARX en cours.</p>
+      <p class="err" id="err" hidden></p>
     </div>
     <script>
       (function () {
         var params = new URLSearchParams(location.search);
-        var payload = {
-          type: 'HARX_STRIPE_RETURN',
-          paymentId: params.get('paymentId'),
-          sessionId: params.get('session_id') || params.get('sessionId')
-        };
-        if (window.opener && !window.opener.closed) {
-          window.opener.postMessage(payload, '*');
+        var paymentId = params.get('paymentId');
+        var sessionId = params.get('session_id') || params.get('sessionId');
+        var returnTo = params.get('returnTo') || '/';
+        var apiBase = (params.get('apiBase') || '').replace(/\/$/, '');
+
+        var titleEl = document.getElementById('title');
+        var msgEl = document.getElementById('msg');
+        var errEl = document.getElementById('err');
+        var loaderEl = document.getElementById('loader');
+
+        function appendSuccessFlag(url) {
+          var flag = 'subscription=success';
+          if (url.indexOf('#') !== -1) {
+            var parts = url.split('#');
+            var hash = parts[1];
+            if (hash.indexOf('?') !== -1) {
+              return parts[0] + '#' + hash + '&' + flag;
+            }
+            return parts[0] + '#' + hash + '?' + flag;
+          }
+          try {
+            var u = new URL(url, location.origin);
+            u.searchParams.set('subscription', 'success');
+            return u.toString();
+          } catch (e) {
+            return url + (url.indexOf('?') !== -1 ? '&' : '?') + flag;
+          }
         }
-        setTimeout(function () {
-          window.close();
-        }, 600);
+
+        function notifyOpener(payload) {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(payload, '*');
+          }
+        }
+
+        function fail(message) {
+          loaderEl.hidden = true;
+          titleEl.textContent = 'Erreur';
+          msgEl.textContent = 'Le paiement Stripe a réussi mais la confirmation a échoué.';
+          errEl.textContent = message;
+          errEl.hidden = false;
+        }
+
+        function succeed() {
+          notifyOpener({
+            type: 'HARX_STRIPE_RETURN',
+            paymentId: paymentId,
+            sessionId: sessionId,
+          });
+          var dest = appendSuccessFlag(returnTo);
+          if (window.opener && !window.opener.closed) {
+            try {
+              window.opener.location.href = dest;
+            } catch (e) {
+              /* cross-origin opener */
+            }
+            window.close();
+            setTimeout(function () {
+              location.href = dest;
+            }, 400);
+            return;
+          }
+          location.replace(dest);
+        }
+
+        if (!paymentId || !sessionId) {
+          fail('Paramètres de retour Stripe manquants (paymentId ou session_id).');
+          return;
+        }
+        if (!apiBase) {
+          fail('URL API manquante. Redéployez le front et le back.');
+          return;
+        }
+
+        fetch(apiBase + '/subscriptions/checkout/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentId: paymentId, providerRef: sessionId }),
+        })
+          .then(function (res) {
+            return res.text().then(function (txt) {
+              var data = {};
+              try {
+                data = txt ? JSON.parse(txt) : {};
+              } catch (e) {
+                data = {};
+              }
+              if (!res.ok || !data.success) {
+                throw new Error(
+                  (data && (data.message || data.error)) ||
+                    'Confirmation serveur échouée (' + res.status + ')'
+                );
+              }
+              succeed();
+            });
+          })
+          .catch(function (err) {
+            fail(err && err.message ? err.message : 'Erreur réseau');
+          });
       })();
     </script>
   </body>

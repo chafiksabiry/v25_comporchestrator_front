@@ -6,8 +6,8 @@ import {
   fetchSubscriptionCheckoutConfig,
   paymentFlowErrorMessage,
   runSubscriptionPaypalFlow,
-  runSubscriptionStripeFlow
 } from '../lib/paypalCheckout';
+import EmbeddedSubscriptionCheckout from './stripe/EmbeddedSubscriptionCheckout';
 
 interface Plan {
   _id?: string;
@@ -95,6 +95,7 @@ const Subscription: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
   const [paypalEnabled, setPaypalEnabled] = useState(false);
   const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [stripeEmbeddedOpen, setStripeEmbeddedOpen] = useState(false);
 
   const companyId = Cookies.get('companyId');
   const userId = Cookies.get('userId');
@@ -203,12 +204,13 @@ const Subscription: React.FC = () => {
 
       if (paymentMethod === 'paypal') {
         await runSubscriptionPaypalFlow(apiBaseUrl, body);
+        setShowCheckout(false);
+        await refreshActivePlan();
       } else {
-        await runSubscriptionStripeFlow(apiBaseUrl, body);
+        // Carte : ouvrir Stripe Embedded Checkout (modal HARX)
+        setShowCheckout(false);
+        setStripeEmbeddedOpen(true);
       }
-
-      setShowCheckout(false);
-      await refreshActivePlan();
     } catch (err) {
       console.error(err);
       setErrorMessage(paymentFlowErrorMessage(err));
@@ -419,6 +421,27 @@ const Subscription: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {stripeEmbeddedOpen && selectedPlan && companyId && userId && (
+        <EmbeddedSubscriptionCheckout
+          open
+          apiBaseUrl={apiBaseUrl}
+          body={{
+            userId,
+            companyId,
+            priceId: (selectedPlan.priceId || selectedPlan.stripePriceId) as string,
+            planName: selectedPlan.name,
+            provider: 'stripe',
+          }}
+          planName={selectedPlan.name}
+          priceLabel={`€${selectedPlan.price}/mois`}
+          onClose={() => setStripeEmbeddedOpen(false)}
+          onSuccess={async () => {
+            setStripeEmbeddedOpen(false);
+            await refreshActivePlan();
+          }}
+        />
       )}
     </div>
   );

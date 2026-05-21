@@ -251,11 +251,40 @@ export type SubscriptionCheckoutInitBody = {
   priceId: string;
   planName: string;
   provider: 'stripe' | 'paypal';
+  returnUrl?: string;
+  apiBaseUrl?: string;
 };
+
+/** Current page URL to return after Stripe hosted checkout (hash-router safe). */
+export function getStripeCheckoutReturnUrl(): string {
+  return window.location.href.split(/[?&]subscription=/)[0];
+}
+
+export function hasSubscriptionReturnFlag(): boolean {
+  const search = new URLSearchParams(window.location.search);
+  if (search.get('subscription') === 'success') return true;
+  const hash = window.location.hash;
+  if (!hash.includes('?')) return false;
+  const hashQuery = hash.slice(hash.indexOf('?') + 1);
+  return new URLSearchParams(hashQuery).get('subscription') === 'success';
+}
+
+export function clearSubscriptionReturnFlag(): void {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('subscription');
+  if (url.hash.includes('?')) {
+    const [path, query] = url.hash.split('?');
+    const hp = new URLSearchParams(query);
+    hp.delete('subscription');
+    const q = hp.toString();
+    url.hash = q ? `${path}?${q}` : path;
+  }
+  window.history.replaceState({}, '', url.toString());
+}
 
 export async function initSubscriptionCheckout(
   apiBaseUrl: string,
-  body: SubscriptionCheckoutInitBody
+  body: SubscriptionCheckoutInitBody & { uiMode?: 'embedded' | 'hosted' }
 ) {
   const res = await fetch(`${apiBaseUrl}/subscriptions/checkout/init`, {
     method: 'POST',
@@ -272,6 +301,28 @@ export async function initSubscriptionCheckout(
     checkoutUrl?: string;
     paypalOrderId?: string;
     paypalApproveUrl?: string;
+    clientSecret?: string;
+    sessionId?: string;
+    uiMode?: 'embedded' | 'hosted';
+  };
+}
+
+/**
+ * Init an embedded Stripe Checkout session.
+ * Returns { paymentId, clientSecret, sessionId } to be passed to <EmbeddedCheckoutProvider/>.
+ */
+export async function initSubscriptionStripeEmbedded(
+  apiBaseUrl: string,
+  body: SubscriptionCheckoutInitBody
+) {
+  const data = await initSubscriptionCheckout(apiBaseUrl, { ...body, uiMode: 'embedded' });
+  if (!data.clientSecret) {
+    throw new Error("Stripe n'a pas renvoyé de client_secret.");
+  }
+  return {
+    paymentId: data.paymentId,
+    clientSecret: data.clientSecret,
+    sessionId: data.sessionId || '',
   };
 }
 
@@ -311,22 +362,24 @@ export async function runSubscriptionPaypalFlow(
   return initData;
 }
 
+/**
+ * Stripe subscription checkout via full-page redirect (reliable return from checkout.stripe.com).
+ * Confirmation runs on stripe-return.html; the app page handles ?subscription=success on return.
+ */
 export async function runSubscriptionStripeFlow(
   apiBaseUrl: string,
   body: SubscriptionCheckoutInitBody
-) {
-  const initData = await initSubscriptionCheckout(apiBaseUrl, body);
+): Promise<never> {
+  const initData = await initSubscriptionCheckout(apiBaseUrl, {
+    ...body,
+    returnUrl: body.returnUrl || getStripeCheckoutReturnUrl(),
+    apiBaseUrl: body.apiBaseUrl || apiBaseUrl,
+  });
   if (!initData.checkoutUrl) {
     throw new Error('Session de paiement non créée.');
   }
-  const popup = openCenteredPopup(initData.checkoutUrl, 'stripe-subscription');
-  if (!popup) throw new Error('Autorisez les pop-ups pour finaliser le paiement par carte.');
-  const outcome = await waitForStripePopup(popup);
-  if (outcome === 'cancelled') throw new Error('STRIPE_CANCELLED');
-  if (outcome === 'closed') throw new Error('STRIPE_CLOSED');
-  if (!popup.closed) popup.close();
-  await confirmSubscriptionCheckout(apiBaseUrl, initData.paymentId);
-  return initData;
+  window.location.assign(initData.checkoutUrl);
+  return new Promise(() => {}) as never;
 }
 
 export async function fetchSubscriptionCheckoutConfig(apiBaseUrl: string) {
