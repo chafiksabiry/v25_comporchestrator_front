@@ -518,7 +518,7 @@ export function PhoneNumberPanel() {
   }
 
   return (
-    <div className="relative w-full min-w-0 max-w-7xl mx-auto p-4 sm:p-6 space-y-6 animate-fade-in overflow-x-hidden">
+    <div className="relative w-full min-w-0 max-w-7xl mx-auto p-4 sm:p-6 space-y-6 animate-fade-in overflow-x-clip">
       {/* Decorative ambient orbs — contained inside panel */}
       <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-400/15 blur-3xl animate-blob -z-10" />
       <div className="pointer-events-none absolute top-1/3 -right-24 h-72 w-72 rounded-full bg-cyan-400/15 blur-3xl animate-blob animation-delay-2000 -z-10" />
