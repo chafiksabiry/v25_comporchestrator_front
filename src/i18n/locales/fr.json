@@ -313,6 +313,7 @@
       "kpi": {
         "totalBase": "Base totale",
         "totalBaseSub": "leads uploadés",
+        "totalBaseSubReal": "leads en base",
         "calledOnce": "Appelés ≥1x",
         "calledOnceSub": "68% couverture",
         "contacted": "Contactés",
