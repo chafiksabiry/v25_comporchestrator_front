@@ -270,6 +270,18 @@
       "fraud": "fraud",
       "appointment": "Booked"
     },
+    "perf": {
+      "title": "7-day performance",
+      "calls": "Calls",
+      "transactions": "Transactions",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
     "analysisTitle": "Voicemail & non-completed calls — analysis",
     "details": "Details",
     "mtd": {

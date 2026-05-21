@@ -37,8 +37,33 @@ import {
   MoreHorizontal,
   ChevronDown,
 } from 'lucide-react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Chart } from 'react-chartjs-2';
 import Cookies from 'js-cookie';
 import { useTranslation } from 'react-i18next';
+
+// Idempotent: other dashboards already register the same scales, registering
+// again is a no-op so it's safe to keep it co-located with the chart.
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 type TabId = 'overview' | 'leads' | 'calls' | 'results' | 'team' | 'wallet';
 
@@ -512,6 +537,9 @@ export default function OperationsDashboard() {
           </ul>
         </section>
       </div>
+
+      {/* ---------- Performance 7 jours ---------- */}
+      <Performance7Days />
 
       {/* ---------- Voicemail & non-aboutis analysis ---------- */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -1589,5 +1617,119 @@ function MtdCard({
         />
       </div>
     </div>
+  );
+}
+
+/* ---------------- 7-day performance chart ---------------- */
+
+/** Mixed bar (calls) + line (transactions) chart with dual Y-axes.
+ *  Uses the same color codes as the rest of the dashboard:
+ *  HARX coral for calls, emerald for transactions. */
+function Performance7Days() {
+  const { t } = useTranslation();
+
+  const labels = [
+    t('opsDashboard.perf.mon', 'Lun'),
+    t('opsDashboard.perf.tue', 'Mar'),
+    t('opsDashboard.perf.wed', 'Mer'),
+    t('opsDashboard.perf.thu', 'Jeu'),
+    t('opsDashboard.perf.fri', 'Ven'),
+    t('opsDashboard.perf.sat', 'Sam'),
+    t('opsDashboard.perf.sun', 'Dim'),
+  ];
+
+  const data = {
+    labels,
+    datasets: [
+      {
+        type: 'bar' as const,
+        label: t('opsDashboard.perf.calls', 'Appels'),
+        data: [195, 220, 240, 185, 250, 130, 85],
+        backgroundColor: 'rgba(255, 77, 77, 0.30)',
+        borderColor: '#ff4d4d',
+        borderWidth: 1,
+        borderRadius: 6,
+        borderSkipped: false,
+        yAxisID: 'y',
+        order: 2,
+      },
+      {
+        type: 'line' as const,
+        label: t('opsDashboard.perf.transactions', 'Transactions'),
+        data: [20, 25, 27, 15, 26, 12, 8],
+        borderColor: '#10b981',
+        backgroundColor: '#10b981',
+        tension: 0.4,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: '#10b981',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        yAxisID: 'y1',
+        order: 1,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index' as const, intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0f172a',
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: { size: 12, weight: 'bold' as const },
+        bodyFont: { size: 12 },
+        displayColors: true,
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8', font: { size: 11, weight: 'bold' as const } },
+      },
+      y: {
+        type: 'linear' as const,
+        position: 'left' as const,
+        title: {
+          display: true,
+          text: t('opsDashboard.perf.calls', 'Appels'),
+          color: '#ff4d4d',
+          font: { size: 10, weight: 'bold' as const },
+        },
+        grid: { color: 'rgba(15, 23, 42, 0.05)' },
+        ticks: { color: '#94a3b8', font: { size: 10 } },
+        beginAtZero: true,
+      },
+      y1: {
+        type: 'linear' as const,
+        position: 'right' as const,
+        title: {
+          display: true,
+          text: t('opsDashboard.perf.transactions', 'Transactions'),
+          color: '#10b981',
+          font: { size: 10, weight: 'bold' as const },
+        },
+        grid: { display: false },
+        ticks: { color: '#10b981', font: { size: 10, weight: 'bold' as const } },
+        beginAtZero: true,
+      },
+    },
+  };
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
+        <TrendingUp size={14} className="text-harx-500" />
+        {t('opsDashboard.perf.title', 'Performance 7 jours')}
+      </header>
+      <div className="h-[260px] w-full">
+        {/* The Chart component handles mixed bar+line types in a single canvas. */}
+        <Chart type="bar" data={data as any} options={options as any} />
+      </div>
+    </section>
   );
 }
