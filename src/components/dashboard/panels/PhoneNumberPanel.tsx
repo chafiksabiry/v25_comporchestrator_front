@@ -549,29 +549,64 @@ export function PhoneNumberPanel() {
             <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
           </button>
 
-          {/* Segmented tab control — indigo / violet active */}
-          <div className="relative bg-slate-100 p-1 rounded-2xl flex border border-slate-200 overflow-hidden max-w-full">
+          {/* Segmented tab control — animated gradient, attractive "Acheter" tab */}
+          <div className="relative bg-gradient-to-r from-indigo-50 via-violet-50 to-fuchsia-50 p-1 rounded-2xl flex border border-indigo-100 overflow-hidden max-w-full">
+            {/* Animated active pill */}
             <span
               aria-hidden
-              className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 transition-all duration-300 ease-out ${
+              className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 animate-gradient-x transition-all duration-300 ease-out ${
                 telephonyTab === 'my_numbers' ? 'left-1' : 'left-[calc(50%+0.05rem)]'
               }`}
             />
+
+            {/* Mes Lignes */}
             <button
               onClick={() => setTelephonyTab('my_numbers')}
               className={`relative z-10 px-3 sm:px-5 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs uppercase tracking-wider transition-colors duration-200 whitespace-nowrap ${
-                telephonyTab === 'my_numbers' ? 'text-white' : 'text-slate-500 hover:text-slate-900'
+                telephonyTab === 'my_numbers' ? 'text-white' : 'text-slate-500 hover:text-indigo-700'
               }`}
             >
               {t('phoneNumberPanel.tabs.myNumbersWithCount', { count: phoneNumbers.length })}
             </button>
+
+            {/* Acheter une ligne — animated CTA (vivid even when inactive) */}
             <button
               onClick={() => setTelephonyTab('buy')}
-              className={`relative z-10 px-3 sm:px-5 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs uppercase tracking-wider transition-colors duration-200 whitespace-nowrap ${
-                telephonyTab === 'buy' ? 'text-white' : 'text-slate-500 hover:text-slate-900'
+              className={`relative z-10 px-3 sm:px-5 py-2.5 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-wider whitespace-nowrap inline-flex items-center gap-1.5 transition-all duration-300 overflow-hidden ${
+                telephonyTab === 'buy'
+                  ? 'text-white'
+                  : 'bg-gradient-to-r from-indigo-50 via-violet-50 to-fuchsia-50 border border-fuchsia-200/80 hover:border-fuchsia-400 hover:from-indigo-100 hover:via-violet-100 hover:to-fuchsia-100 active:scale-[0.98]'
               }`}
             >
-              {t('phoneNumberPanel.tabs.buy')}
+              {telephonyTab !== 'buy' && (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 -translate-x-full animate-shine bg-gradient-to-r from-transparent via-white/70 to-transparent"
+                />
+              )}
+              <Sparkles
+                size={12}
+                className={
+                  telephonyTab === 'buy'
+                    ? 'text-white animate-pulse shrink-0'
+                    : 'text-fuchsia-600 animate-pulse-soft shrink-0'
+                }
+              />
+              <span
+                className={
+                  telephonyTab === 'buy'
+                    ? 'text-white'
+                    : 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent animate-gradient-x'
+                }
+              >
+                {t('phoneNumberPanel.tabs.buy')}
+              </span>
+              {telephonyTab !== 'buy' && (
+                <span className="relative flex h-1.5 w-1.5 ml-0.5 shrink-0">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-fuchsia-400 opacity-75 animate-ping" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-fuchsia-500" />
+                </span>
+              )}
             </button>
           </div>
         </div>
