@@ -175,11 +175,13 @@ export default function OperationsDashboard() {
     setGigDropdownOpen(false);
   };
 
-  // ----- Lead stats (total + called + contacted) — scoped by gig selector -----
+  // ----- Lead stats (total + called + contacted + exhausted) -----
   const [leadStats, setLeadStats] = useState<{
     total: number;
     called: number;
     contacted: number;
+    exhausted: number;
+    avgAttempts: number;
     coveragePct: number;
     reachablePct: number;
   } | null>(null);
@@ -212,6 +214,10 @@ export default function OperationsDashboard() {
           // (e.g. 2 / 7041 = 0.0284%) to "0".
           const contacted =
             typeof json.contacted === 'number' ? json.contacted : 0;
+          const exhausted =
+            typeof json.exhausted === 'number' ? json.exhausted : 0;
+          const avgAttempts =
+            typeof json.avgAttempts === 'number' ? json.avgAttempts : 0;
           const coveragePct =
             json.total > 0 ? (json.called / json.total) * 100 : 0;
           const reachablePct =
@@ -220,6 +226,8 @@ export default function OperationsDashboard() {
             total: json.total,
             called: json.called,
             contacted,
+            exhausted,
+            avgAttempts,
             coveragePct,
             reachablePct,
           });
@@ -840,6 +848,8 @@ function LeadsView({
     total: number;
     called: number;
     contacted: number;
+    exhausted: number;
+    avgAttempts: number;
     coveragePct: number;
     reachablePct: number;
   } | null;
@@ -850,12 +860,14 @@ function LeadsView({
   const MOCK_TOTAL = 12450;
   const MOCK_CALLED = 8466;
   const MOCK_CONTACTED = 5830;
+  const MOCK_EXHAUSTED = 812;
   const MOCK_COVERAGE = 68;
   const MOCK_REACHABLE = 47;
 
   const baseCount = leadStats?.total ?? MOCK_TOTAL;
   const calledCount = leadStats?.called ?? MOCK_CALLED;
   const contactedCount = leadStats?.contacted ?? MOCK_CONTACTED;
+  const exhaustedCount = leadStats?.exhausted ?? MOCK_EXHAUSTED;
   const coveragePct = leadStats?.coveragePct ?? MOCK_COVERAGE;
   const reachablePct = leadStats?.reachablePct ?? MOCK_REACHABLE;
 
@@ -999,7 +1011,7 @@ function LeadsView({
           tone="dark"
           icon={<BatteryLow size={14} />}
           label={t('opsDashboard.leads.kpi.exhausted', 'Épuisés')}
-          value="812"
+          value={exhaustedCount.toLocaleString('fr-FR')}
           sub={t('opsDashboard.leads.kpi.exhaustedSub', '>5 tentatives')}
         />
         <KpiCard
