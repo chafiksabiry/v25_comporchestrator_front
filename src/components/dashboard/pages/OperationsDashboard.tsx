@@ -175,8 +175,8 @@ export default function OperationsDashboard() {
     setGigDropdownOpen(false);
   };
 
-  // ----- Lead stats (total + called + contacted + exhausted) -----
-  const [leadStats, setLeadStats] = useState<{
+  // ----- Lead stats (KPIs + quality breakdown) -----
+  type LeadStats = {
     total: number;
     called: number;
     contacted: number;
@@ -184,7 +184,17 @@ export default function OperationsDashboard() {
     avgAttempts: number;
     coveragePct: number;
     reachablePct: number;
-  } | null>(null);
+    quality: {
+      valid: { count: number; pct: number };
+      unreachable: { count: number; pct: number };
+      wrong: { count: number; pct: number };
+      notInterested: { count: number; pct: number };
+      notAware: { count: number; pct: number };
+      alreadyInsured: { count: number; pct: number };
+    };
+    qualityScorePct: number;
+  };
+  const [leadStats, setLeadStats] = useState<LeadStats | null>(null);
 
   useEffect(() => {
     const companyId = Cookies.get('companyId');
@@ -222,6 +232,24 @@ export default function OperationsDashboard() {
             json.total > 0 ? (json.called / json.total) * 100 : 0;
           const reachablePct =
             json.called > 0 ? (contacted / json.called) * 100 : 0;
+
+          // Normalise the quality buckets — fall back to zero objects so
+          // the UI never crashes on a partial response.
+          const blank = { count: 0, pct: 0 };
+          const q = json.quality || {};
+          const quality = {
+            valid: q.valid || blank,
+            unreachable: q.unreachable || blank,
+            wrong: q.wrong || blank,
+            notInterested: q.notInterested || blank,
+            notAware: q.notAware || blank,
+            alreadyInsured: q.alreadyInsured || blank,
+          };
+          const qualityScorePct =
+            typeof json.qualityScorePct === 'number'
+              ? json.qualityScorePct
+              : quality.valid.pct;
+
           setLeadStats({
             total: json.total,
             called: json.called,
@@ -230,6 +258,8 @@ export default function OperationsDashboard() {
             avgAttempts,
             coveragePct,
             reachablePct,
+            quality,
+            qualityScorePct,
           });
         }
       } catch {
@@ -841,19 +871,26 @@ interface RepCoverage {
   warn?: boolean;
 }
 
-function LeadsView({
-  leadStats,
-}: {
-  leadStats: {
-    total: number;
-    called: number;
-    contacted: number;
-    exhausted: number;
-    avgAttempts: number;
-    coveragePct: number;
-    reachablePct: number;
-  } | null;
-}) {
+type LeadStatsProp = {
+  total: number;
+  called: number;
+  contacted: number;
+  exhausted: number;
+  avgAttempts: number;
+  coveragePct: number;
+  reachablePct: number;
+  quality: {
+    valid: { count: number; pct: number };
+    unreachable: { count: number; pct: number };
+    wrong: { count: number; pct: number };
+    notInterested: { count: number; pct: number };
+    notAware: { count: number; pct: number };
+    alreadyInsured: { count: number; pct: number };
+  };
+  qualityScorePct: number;
+};
+
+function LeadsView({ leadStats }: { leadStats: LeadStatsProp | null }) {
   const { t } = useTranslation();
   // Mock baseline used until the real stats land. Keeps the page presentable
   // for first-paint and for demo accounts that don't have data yet.
@@ -904,47 +941,60 @@ function LeadsView({
     defaultValue: '{{pct}}% joignables',
   });
 
+  // Base-quality buckets: pull straight from the backend when available,
+  // otherwise show the mock numbers so the layout never breaks.
+  const MOCK_QUALITY = {
+    valid: { count: 8516, pct: 68.4 },
+    unreachable: { count: 1531, pct: 12.3 },
+    wrong: { count: 511, pct: 4.1 },
+    notInterested: { count: 1083, pct: 8.7 },
+    notAware: { count: 398, pct: 3.2 },
+    alreadyInsured: { count: 411, pct: 3.3 },
+  };
+  const q = leadStats?.quality ?? MOCK_QUALITY;
+  const qualityScorePct = leadStats?.qualityScorePct ?? MOCK_QUALITY.valid.pct;
+
   const qualities: LeadQuality[] = [
     {
       key: 'valid',
       label: t('opsDashboard.leads.quality.valid', 'VALIDES JOIGNABLES'),
-      pct: 68.4,
-      leads: 8516,
+      pct: q.valid.pct,
+      leads: q.valid.count,
       tone: 'emerald',
     },
     {
       key: 'unreachable',
       label: t('opsDashboard.leads.quality.unreachable', 'INJOIGNABLES'),
-      pct: 12.3,
-      leads: 1531,
+      pct: q.unreachable.pct,
+      leads: q.unreachable.count,
       tone: 'amber',
     },
     {
       key: 'wrong',
       label: t('opsDashboard.leads.quality.wrong', 'FAUX NUMÉROS'),
-      pct: 4.1,
-      leads: 511,
+      pct: q.wrong.pct,
+      leads: q.wrong.count,
       tone: 'rose',
     },
     {
       key: 'notInterested',
       label: t('opsDashboard.leads.quality.notInterested', 'PAS INTÉRESSÉS'),
-      pct: 8.7,
-      leads: 1083,
+      pct: q.notInterested.pct,
+      leads: q.notInterested.count,
       tone: 'amber',
     },
     {
       key: 'notAware',
       label: t('opsDashboard.leads.quality.notAware', 'PAS AU COURANT'),
-      pct: 3.2,
-      leads: 398,
+      pct: q.notAware.pct,
+      leads: q.notAware.count,
       tone: 'amber',
     },
     {
       key: 'alreadyInsured',
       label: t('opsDashboard.leads.quality.alreadyInsured', 'DÉJÀ ASSURÉS'),
-      pct: 3.3,
-      leads: 411,
+      pct: q.alreadyInsured.pct,
+      leads: q.alreadyInsured.count,
       tone: 'amber',
     },
   ];
@@ -1060,20 +1110,41 @@ function LeadsView({
             })}
           </div>
 
-          {/* Warning footer */}
-          <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2.5 text-amber-900">
-            <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-600" />
-            <p className="text-[11px] font-medium leading-snug">
-              <span className="font-black">
-                {t('opsDashboard.leads.qualityWarningHead', 'Score qualité base : 68.4%')}
-              </span>{' '}
-              —{' '}
-              {t(
-                'opsDashboard.leads.qualityWarningBody',
-                "en dessous du seuil recommandé (75%). Envisager un nettoyage ou un nouvel upload."
-              )}
-            </p>
-          </div>
+          {/* Warning footer — green ≥75%, amber otherwise. */}
+          {(() => {
+            const isHealthy = qualityScorePct >= 75;
+            const wrapCls = isHealthy
+              ? 'mt-4 flex items-start gap-2 rounded-xl border border-emerald-300/60 bg-emerald-50 px-3 py-2.5 text-emerald-900'
+              : 'mt-4 flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2.5 text-amber-900';
+            const iconCls = isHealthy
+              ? 'mt-0.5 shrink-0 text-emerald-600'
+              : 'mt-0.5 shrink-0 text-amber-600';
+            const head = t('opsDashboard.leads.qualityScoreHead', {
+              pct: fmtPct(qualityScorePct),
+              defaultValue: 'Score qualité base : {{pct}}%',
+            });
+            const body = isHealthy
+              ? t(
+                  'opsDashboard.leads.qualityHealthyBody',
+                  'au-dessus du seuil recommandé (75%). Votre base est saine.'
+                )
+              : t(
+                  'opsDashboard.leads.qualityWarningBody',
+                  'en dessous du seuil recommandé (75%). Envisager un nettoyage ou un nouvel upload.'
+                );
+            return (
+              <div className={wrapCls}>
+                {isHealthy ? (
+                  <CheckCircle2 size={14} className={iconCls} />
+                ) : (
+                  <AlertTriangle size={14} className={iconCls} />
+                )}
+                <p className="text-[11px] font-medium leading-snug">
+                  <span className="font-black">{head}</span> — {body}
+                </p>
+              </div>
+            );
+          })()}
         </section>
 
         {/* Distribution tentatives + Rappels programmés */}

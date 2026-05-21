@@ -335,8 +335,10 @@
         "notAware": "PAS AU COURANT",
         "alreadyInsured": "DÉJÀ ASSURÉS"
       },
+      "qualityScoreHead": "Score qualité base : {{pct}}%",
       "qualityWarningHead": "Score qualité base : 68.4%",
       "qualityWarningBody": "en dessous du seuil recommandé (75%). Envisager un nettoyage ou un nouvel upload.",
+      "qualityHealthyBody": "au-dessus du seuil recommandé (75%). Votre base est saine.",
       "attemptsTitle": "Distribution tentatives",
       "attempts": {
         "one": "1 tentative",
