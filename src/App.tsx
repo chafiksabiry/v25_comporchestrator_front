@@ -45,6 +45,7 @@ import {
   markStepGuideSeen,
   shouldShowStepGuide,
   isOnboardingFullyCompleted,
+  syncOnboardingProgressFromApi,
 } from './hooks/useStepGuide';
 
 const TAB_ONBOARDING_STEPS: Record<string, { stepId: number; phaseId: number }> = {
@@ -83,6 +84,9 @@ function AppContent() {
     variant: StepGuideVariant;
   } | null>(null);
   const { shouldShowGuide, markGuideComplete } = useOrchestratorGuide();
+  const [onboardingComplete, setOnboardingComplete] = useState(() =>
+    isOnboardingFullyCompleted()
+  );
   const [balance, setBalance] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
@@ -219,11 +223,11 @@ function AppContent() {
     // 1. Reset logo error on change
     setLogoError(false);
 
-    // 2. Sync active project based on path
-    if (location.pathname.includes('/orchestrator')) {
-      setActiveProject('comporchestrator');
-    } else if (location.pathname.includes('/dashboard')) {
+    // 2. Sync active project based on path (finished onboarding never stays on orchestrator)
+    if (location.pathname.includes('/dashboard')) {
       setActiveProject('dashboard');
+    } else if (location.pathname.includes('/orchestrator') && !onboardingComplete) {
+      setActiveProject('comporchestrator');
     }
 
     // 3. Auth Check & Setup
@@ -296,7 +300,25 @@ function AppContent() {
                 setCompanyLogo(rawLogo);
                 localStorage.setItem('companyLogo', rawLogo);
               }
+
+              const finalCompanyId =
+                getCompanyId(company) || resolvedCompanyId || Cookies.get('companyId');
+              if (finalCompanyId) {
+                Cookies.set('companyId', finalCompanyId, { path: '/' });
+                const steps = await syncOnboardingProgressFromApi(finalCompanyId);
+                const complete = isOnboardingFullyCompleted(steps);
+                setOnboardingComplete(complete);
+                if (complete) markGuideComplete();
+              }
             }
+          }
+
+          const cookieCompanyId = Cookies.get('companyId');
+          if (cookieCompanyId) {
+            const steps = await syncOnboardingProgressFromApi(cookieCompanyId);
+            const complete = isOnboardingFullyCompleted(steps);
+            setOnboardingComplete(complete);
+            if (complete) markGuideComplete();
           }
         } catch (error) {
           console.error('Error fetching details:', error);
@@ -305,7 +327,9 @@ function AppContent() {
     };
 
     fetchData();
+  }, [location.pathname, isZohoCallback, isZohoAuth, onboardingComplete]);
 
+  useEffect(() => {
     const initializeZoho = async () => {
       ZohoService.getInstance();
     };
@@ -363,18 +387,6 @@ function AppContent() {
     window.addEventListener('openComporchestrator', openComporchestrator);
     window.addEventListener('openCompanyDashboard', openCompanyDashboard);
 
-    // Initial Path correction.
-    // - First-time users (onboarding incomplete) start on the orchestrator setup.
-    // - Returning users who finished every phase land directly on the dashboard.
-    if (location.pathname === '/' || location.pathname === '') {
-      if (isOnboardingFullyCompleted()) {
-        setActiveProject('dashboard');
-        window.location.hash = '#/dashboard/main';
-      } else {
-        window.location.hash = '#/orchestrator';
-      }
-    }
-
     return () => {
       window.removeEventListener('tabChange', handleTabChange as EventListener);
       window.removeEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
@@ -382,10 +394,39 @@ function AppContent() {
       window.removeEventListener('openComporchestrator', openComporchestrator);
       window.removeEventListener('openCompanyDashboard', openCompanyDashboard);
     };
-  }, [location.pathname, isZohoCallback, isZohoAuth, navigate]);
+  }, [location.pathname, isZohoCallback, isZohoAuth, navigate, markGuideComplete]);
+
+  // Returning users with all phases done: never stay on #/orchestrator — go to dashboard.
+  useEffect(() => {
+    if (!onboardingComplete || isZohoCallback || isZohoAuth) return;
+
+    const isOrchestratorRoute =
+      location.pathname === '/' ||
+      location.pathname === '' ||
+      location.pathname.includes('/orchestrator');
+
+    if (!isOrchestratorRoute) return;
+
+    setShowGuideModal(false);
+    setActiveProject('dashboard');
+    navigate('/dashboard/main', { replace: true });
+  }, [onboardingComplete, location.pathname, navigate, isZohoCallback, isZohoAuth]);
+
+  // Initial route: first visit → orchestrator; finished onboarding → dashboard.
+  useEffect(() => {
+    if (isZohoCallback || isZohoAuth) return;
+    if (location.pathname !== '/' && location.pathname !== '') return;
+
+    if (onboardingComplete) {
+      setActiveProject('dashboard');
+      navigate('/dashboard/main', { replace: true });
+    } else {
+      window.location.hash = '#/orchestrator';
+    }
+  }, [onboardingComplete, location.pathname, navigate, isZohoCallback, isZohoAuth]);
 
   useEffect(() => {
-    if (activeProject !== 'comporchestrator') {
+    if (activeProject !== 'comporchestrator' || onboardingComplete) {
       setShowGuideModal(false);
       return;
     }
@@ -398,7 +439,7 @@ function AppContent() {
       const timer = setTimeout(() => setShowGuideModal(true), 600);
       return () => clearTimeout(timer);
     }
-  }, [activeProject, shouldShowGuide, isZohoCallback, isZohoAuth, showUpgradeModal]);
+  }, [activeProject, shouldShowGuide, onboardingComplete, isZohoCallback, isZohoAuth, showUpgradeModal]);
 
   const handleGuideComplete = () => {
     markGuideComplete();
