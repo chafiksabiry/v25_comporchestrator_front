@@ -567,11 +567,6 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                     ))}
                   </div>
                 </div>
-
-                <div className="mt-6 pt-4 border-t border-indigo-100/30 flex items-center gap-2 text-[10px] text-indigo-600 font-extrabold uppercase tracking-wide">
-                  <Sparkles className="w-3 h-3 text-indigo-500 animate-pulse" />
-                  <span>Verified Neuro-profile pairable</span>
-                </div>
               </div>
             </div>
           </div>
