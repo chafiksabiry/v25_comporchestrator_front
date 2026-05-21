@@ -196,6 +196,22 @@ function AppContent() {
   const isZohoCallback = window.location.pathname === '/zoho-callback';
   const isZohoAuth = window.location.pathname === '/zoho-auth';
 
+  // Re-check auth when the page is restored from the bfcache (browser back/forward).
+  // Without this, React components are not re-mounted so the auth useEffect never runs again,
+  // and a logged-out user can see protected screens by pressing the browser Back button.
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      const stillLoggedIn = Boolean(Cookies.get('userId'));
+      const onPublicRoute = isZohoCallback || isZohoAuth;
+      if (!stillLoggedIn && !onPublicRoute) {
+        window.location.replace('/auth');
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [isZohoCallback, isZohoAuth]);
+
   useEffect(() => {
     // 1. Reset logo error on change
     setLogoError(false);
@@ -210,7 +226,7 @@ function AppContent() {
     // 3. Auth Check & Setup
     const userId = Cookies.get('userId');
     if (!userId && !isZohoCallback && !isZohoAuth) {
-      window.location.href = '/auth';
+      window.location.replace('/auth');
       return;
     }
 
@@ -412,7 +428,8 @@ function AppContent() {
     });
 
     localStorage.clear();
-    window.location.href = '/app1';
+    sessionStorage.clear();
+    window.location.replace('/app1');
   };
 
   const renderContent = () => {
