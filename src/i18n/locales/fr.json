@@ -354,7 +354,8 @@
       "appointmentsConfirmed": "RDV confirmés",
       "urgent": "urgent",
       "active": "actifs",
-      "coverageTitle": "Progression de couverture — par rep"
+      "coverageTitle": "Progression de couverture — par rep",
+      "noReps": "Aucun rep n’a encore appelé."
     },
     "results": {
       "kpi": {
