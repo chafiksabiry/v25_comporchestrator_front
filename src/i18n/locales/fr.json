@@ -39,8 +39,142 @@
     "fr": "Français"
   },
   "phoneNumberPanel": {
+    "loading": "Chargement de la téléphonie...",
+    "title": "Mes Lignes Téléphoniques",
+    "subtitle": "Achetez des numéros de téléphone et affectez-les directement à vos Gigs.",
+    "toasts": {
+      "refreshed": "Lignes téléphoniques actualisées.",
+      "unavailable": "Impossible d'accéder au service de téléphonie.",
+      "selectGigDestination": "Veuillez sélectionner un Gig avec un pays de destination.",
+      "noNumbersFound": "Aucun numéro disponible n'a été trouvé.",
+      "numbersFound": "{{count}} numéros disponibles trouvés !",
+      "unknownFormat": "Format de données inconnu reçu de la recherche.",
+      "searchError": "Erreur technique lors de la recherche.",
+      "searchFailed": "Échec de la recherche de numéros.",
+      "selectGigFirst": "Veuillez d'abord sélectionner un Gig à associer.",
+      "popupBlocked": "Veuillez autoriser les pop-ups pour finaliser le paiement.",
+      "paymentCancelled": "Paiement annulé.",
+      "paymentClosed": "Fenêtre de paiement fermée avant validation.",
+      "purchaseSuccessCard": "Numéro {{number}} acquis par carte bancaire !",
+      "purchaseSuccessPaypal": "Numéro {{number}} acquis via PayPal !",
+      "invalidPaymentResponse": "Réponse du serveur de paiement invalide. Veuillez réessayer.",
+      "cannotInitPayment": "Impossible d'initialiser le paiement.",
+      "paymentNotConfirmed": "Paiement non confirmé.",
+      "purchaseFailed": "L'achat du numéro a échoué.",
+      "paypalNotConfigured": "PayPal n'est pas configuré sur le serveur (variables PAYPAL_*).",
+      "paypalOrderFailed": "La commande PayPal n'a pas pu être créée.",
+      "paypalPopupBlocked": "Veuillez autoriser les pop-ups pour finaliser le paiement PayPal.",
+      "paypalCancelled": "Paiement PayPal annulé.",
+      "paypalClosed": "Fenêtre PayPal fermée avant validation. Complétez le paiement sur PayPal.",
+      "paypalNotConfirmed": "Paiement PayPal non confirmé.",
+      "paypalStartFailed": "Impossible de démarrer le paiement PayPal.",
+      "cardUnavailable": "Le paiement par carte est temporairement indisponible.",
+      "cardPopupBlocked": "Veuillez autoriser les pop-ups pour finaliser le paiement par carte.",
+      "cardCancelled": "Paiement par carte annulé.",
+      "cardClosed": "Fenêtre de paiement fermée avant validation.",
+      "paymentError": "Erreur lors du paiement."
+    },
+    "tabs": {
+      "myNumbersWithCount": "Mes Lignes ({{count}})",
+      "buy": "Acheter une ligne"
+    },
+    "hero": {
+      "activeNetwork": "Réseau Actif",
+      "rentedLabel": "Lignes Téléphoniques louées",
+      "lineSingular": "Ligne",
+      "linePlural": "Lignes",
+      "footer": "Numéros provisionnés & associés à vos Gigs"
+    },
     "gigsCard": {
+      "title": "Gigs & Lignes",
+      "quota": "Quota",
+      "configured": "Gigs configurés",
       "description": "Chaque Gig doit disposer d'au moins autant de numéros que le nombre maximum de Reps que vous souhaitez y inscrire pour passer les appels."
+    },
+    "myNumbers": {
+      "title": "Numéros de téléphone loués",
+      "activeSingular": "{{count}} actif",
+      "activePlural": "{{count}} actifs",
+      "empty": {
+        "title": "Vous ne possédez aucune ligne active.",
+        "description": "Recherchez et achetez un numéro de téléphone pour l'associer à votre campagne d'appel.",
+        "cta": "Rechercher un numéro"
+      },
+      "table": {
+        "number": "Numéro",
+        "gig": "Gig Associé",
+        "price": "Prix",
+        "status": "Statut",
+        "unassigned": "Non affecté",
+        "active": "actif"
+      }
+    },
+    "buy": {
+      "search": {
+        "title": "Rechercher une ligne",
+        "subtitle": "Sélectionnez le Gig pour cibler les numéros par pays.",
+        "assignLabel": "Affecter au Gig",
+        "chipActiveLinesSingular": "{{count}} ligne active",
+        "chipActiveLinesPlural": "{{count}} lignes actives",
+        "chipRepsSingular": "{{count}} rep",
+        "chipRepsPlural": "{{count}} reps",
+        "chipMinQuota": "Quota min : {{count}}",
+        "warningTitle": "Quota minimum atteint",
+        "warningWithTitleSingular": "Le Gig « {{title}} » dispose déjà du minimum requis de {{count}} ligne (1 par Rep inscrit).",
+        "warningWithTitlePlural": "Le Gig « {{title}} » dispose déjà du minimum requis de {{count}} lignes (1 par Rep inscrit).",
+        "warningSingular": "Le Gig dispose déjà du minimum requis de {{count}} ligne (1 par Rep inscrit).",
+        "warningPlural": "Le Gig dispose déjà du minimum requis de {{count}} lignes (1 par Rep inscrit).",
+        "searching": "Recherche...",
+        "submit": "Rechercher Lignes"
+      },
+      "results": {
+        "title": "Numéros disponibles",
+        "foundSingular": "{{count}} trouvé",
+        "foundPlural": "{{count}} trouvés",
+        "empty": "Lancez une recherche pour voir les numéros disponibles.",
+        "buying": "Paiement...",
+        "buy": "Acheter",
+        "buyTooltip": "Régler par carte ou PayPal — sans toucher au portefeuille"
+      }
+    },
+    "checkout": {
+      "secure": "Paiement sécurisé",
+      "heading": "Acquisition d'une ligne",
+      "intro": "Réglez par carte ou PayPal — votre portefeuille HARX n'est pas affecté.",
+      "summary": {
+        "number": "Numéro",
+        "fee": "Frais d'activation",
+        "total": "Total à payer"
+      },
+      "method": {
+        "label": "Méthode de paiement",
+        "card": "Carte",
+        "cardSub": "Carte bancaire",
+        "paypal": "PayPal",
+        "paypalSub": "Compte PayPal"
+      },
+      "stripeUnavailable": "Le paiement par carte est temporairement indisponible.",
+      "paypalUnavailable": "PayPal n'est pas encore activé sur le serveur.",
+      "preparing": "Préparation…",
+      "payWithCard": "Payer {{amount}} par carte",
+      "payWithPaypal": "Payer {{amount}} par PayPal",
+      "paypalStep": {
+        "title": "Validation sur PayPal…",
+        "body": "Validez le paiement de {{amount}} sur PayPal. Attendez la page « Paiement validé » — ne fermez pas la fenêtre avant.",
+        "footer": "La fenêtre se fermera automatiquement après confirmation."
+      },
+      "processingCard": "Traitement du paiement par carte…",
+      "processingPaypal": "Traitement du paiement par PayPal…",
+      "processingBody": "Ne fermez pas cette fenêtre. Provisioning de votre ligne en cours.",
+      "success": {
+        "title": "Paiement confirmé",
+        "body": "Votre nouvelle ligne <strong>{{number}}</strong> est active et associée à votre Gig.",
+        "cta": "Voir mes lignes"
+      },
+      "encrypted": "Paiement chiffré",
+      "ref": "Ref {{ref}}",
+      "noFee": "Aucun frais débité du wallet",
+      "close": "Fermer"
     }
   },
   "dashboard": {

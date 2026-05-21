@@ -46,6 +46,7 @@
           PayerID: params.get('PayerID')
         };
         if (window.opener && !window.opener.closed) {
+          // Parent (qiankun shell) is often on another origin — target must be '*' or the opener is never notified.
           window.opener.postMessage(payload, '*');
         }
         setTimeout(function () {
