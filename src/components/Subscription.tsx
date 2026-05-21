@@ -7,27 +7,52 @@ import StripePricingTable from './stripe/StripePricingTable';
 const Subscription: React.FC = () => {
   const [activePlanName, setActivePlanName] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] = useState<string | null>(null);
+  const [polling, setPolling] = useState(false);
   const companyId = Cookies.get('companyId');
   const apiBaseUrl =
     `${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003'}/api`;
 
-  useEffect(() => {
-    const checkCurrentSubscription = async () => {
-      if (!companyId) return;
-      try {
-        const response = await axios.get(`${apiBaseUrl}/subscriptions/current/${companyId}`);
-        const subData = response.data?.data;
-        if (subData && (subData.status === 'active' || subData.status === 'trialing')) {
-          if (subData.planId?.name) setActivePlanName(subData.planId.name);
-          setActiveStatus(subData.status);
-        }
-      } catch (error) {
-        console.error('Error checking current subscription:', error);
+  const fetchSubscription = async (): Promise<string | null> => {
+    if (!companyId) return null;
+    try {
+      const response = await axios.get(`${apiBaseUrl}/subscriptions/current/${companyId}`);
+      const subData = response.data?.data;
+      if (subData && (subData.status === 'active' || subData.status === 'trialing')) {
+        if (subData.planId?.name) setActivePlanName(subData.planId.name);
+        setActiveStatus(subData.status);
+        return subData.planId?.name || subData.status || 'active';
       }
-    };
+    } catch (error) {
+      console.error('Error checking current subscription:', error);
+    }
+    return null;
+  };
 
-    checkCurrentSubscription();
+  useEffect(() => {
+    fetchSubscription();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, apiBaseUrl]);
+
+  // After a Stripe Checkout success the user may land back on this page.
+  // Poll for up to 60s to surface the new plan as soon as the webhook fires.
+  useEffect(() => {
+    if (!companyId || activePlanName) return;
+    setPolling(true);
+    let attempts = 0;
+    const interval = window.setInterval(async () => {
+      attempts += 1;
+      const found = await fetchSubscription();
+      if (found || attempts >= 20) {
+        window.clearInterval(interval);
+        setPolling(false);
+      }
+    }, 3000);
+    return () => {
+      window.clearInterval(interval);
+      setPolling(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
 
   return (
     <div className="min-h-full bg-transparent p-3 relative">
@@ -60,6 +85,15 @@ const Subscription: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {!activePlanName && polling && (
+          <div className="mb-4 p-3 rounded-2xl border border-blue-100 bg-blue-50/60 flex items-center gap-3">
+            <div className="h-4 w-4 border-2 border-blue-500/30 border-t-blue-600 rounded-full animate-spin" />
+            <p className="text-xs font-bold text-blue-700">
+              Vérification du paiement en cours… Le plan apparaîtra dès que Stripe confirme.
+            </p>
+          </div>
+        )}
 
         {activePlanName && (
           <div className="mb-4 p-3 rounded-2xl border border-green-100 bg-green-50/60 flex items-center justify-between gap-3">

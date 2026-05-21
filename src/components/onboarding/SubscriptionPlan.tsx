@@ -7,12 +7,33 @@ import StripePricingTable from '../stripe/StripePricingTable';
 const SubscriptionPlan = () => {
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [activePlanName, setActivePlanName] = useState<string | null>(null);
+  const [polling, setPolling] = useState(false);
   const companyId = Cookies.get('companyId');
 
   useEffect(() => {
     if (!companyId) return;
     checkStepStatus();
     checkExistingSubscription();
+  }, [companyId]);
+
+  // Poll up to 60s for the webhook to activate the subscription after Stripe Checkout success.
+  useEffect(() => {
+    if (!companyId || activePlanName) return;
+    setPolling(true);
+    let attempts = 0;
+    const interval = window.setInterval(async () => {
+      attempts += 1;
+      await checkExistingSubscription();
+      if (activePlanName || attempts >= 20) {
+        window.clearInterval(interval);
+        setPolling(false);
+      }
+    }, 3000);
+    return () => {
+      window.clearInterval(interval);
+      setPolling(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
   // Stripe Pricing Table redirige vers Stripe Checkout (hosted). Au retour, success_url
@@ -132,6 +153,15 @@ const SubscriptionPlan = () => {
             </div>
           </div>
         </div>
+
+        {!activePlanName && polling && (
+          <div className="mb-4 p-3 rounded-2xl border border-blue-100 bg-blue-50/60 flex items-center gap-3">
+            <div className="h-4 w-4 border-2 border-blue-500/30 border-t-blue-600 rounded-full animate-spin" />
+            <p className="text-xs font-bold text-blue-700">
+              Vérification du paiement en cours… Le plan apparaîtra dès que Stripe confirme.
+            </p>
+          </div>
+        )}
 
         {activePlanName && (
           <div className="mb-4 p-3 rounded-2xl border border-green-100 bg-green-50/60 text-green-700 text-sm font-bold">
