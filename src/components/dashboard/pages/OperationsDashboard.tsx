@@ -33,7 +33,6 @@ import {
   Plus,
   Minus,
   Calculator,
-  MoreHorizontal,
   ChevronDown,
 } from 'lucide-react';
 import {
@@ -810,12 +809,6 @@ export default function OperationsDashboard() {
               </div>
             )}
           </div>
-          <button
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-700"
-            aria-label="More"
-          >
-            <MoreHorizontal size={16} />
-          </button>
         </div>
       </div>
 
