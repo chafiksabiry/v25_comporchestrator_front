@@ -87,6 +87,7 @@ function AppContent() {
   const [onboardingComplete, setOnboardingComplete] = useState(() =>
     isOnboardingFullyCompleted()
   );
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [balance, setBalance] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
@@ -322,7 +323,11 @@ function AppContent() {
           }
         } catch (error) {
           console.error('Error fetching details:', error);
+        } finally {
+          setOnboardingChecked(true);
         }
+      } else {
+        setOnboardingChecked(true);
       }
     };
 
@@ -430,6 +435,12 @@ function AppContent() {
       setShowGuideModal(false);
       return;
     }
+    // Wait for the API onboarding check to settle before showing the welcome modal.
+    // This prevents a brief flash for returning users with all phases completed.
+    if (!onboardingChecked) {
+      setShowGuideModal(false);
+      return;
+    }
     if (
       shouldShowGuide &&
       !isZohoCallback &&
@@ -439,7 +450,7 @@ function AppContent() {
       const timer = setTimeout(() => setShowGuideModal(true), 600);
       return () => clearTimeout(timer);
     }
-  }, [activeProject, shouldShowGuide, onboardingComplete, isZohoCallback, isZohoAuth, showUpgradeModal]);
+  }, [activeProject, shouldShowGuide, onboardingComplete, onboardingChecked, isZohoCallback, isZohoAuth, showUpgradeModal]);
 
   const handleGuideComplete = () => {
     markGuideComplete();
