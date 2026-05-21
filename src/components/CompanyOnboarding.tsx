@@ -822,7 +822,13 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     if (!companyId) return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("success") !== "true") return;
+    const hashQuery = window.location.hash.includes("?")
+      ? window.location.hash.slice(window.location.hash.indexOf("?") + 1)
+      : "";
+    const hashParams = new URLSearchParams(hashQuery);
+    const stripeReturned =
+      params.get("success") === "true" || hashParams.get("success") === "true";
+    if (!stripeReturned) return;
 
     const t1 = window.setTimeout(() => {
       loadCompanyProgress();

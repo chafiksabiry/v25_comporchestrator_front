@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Check, CreditCard, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import {
+  fetchSubscriptionCheckoutConfig,
+  paymentFlowErrorMessage,
+  runSubscriptionStripeFlow,
+} from '../../lib/paypalCheckout';
 
 
 interface Plan {
@@ -22,8 +27,11 @@ const SubscriptionPlan = () => {
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activePriceId, setActivePriceId] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const companyId = Cookies.get('companyId');
   const userId = Cookies.get('userId');
+  const apiBaseUrl =
+    `${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003'}/api`;
 
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {
@@ -136,26 +144,41 @@ const SubscriptionPlan = () => {
   };
 
   const handleStartTrial = async (priceId: string, planName: string) => {
+    if (!companyId || !userId) {
+      setCheckoutError('Session utilisateur ou entreprise manquante.');
+      return;
+    }
+
+    setIsLoading(true);
+    setCheckoutError(null);
+
     try {
-      setIsLoading(true);
-      
-      const response = await axios.post(`${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/checkout`, {
+      const cfg = await fetchSubscriptionCheckoutConfig(apiBaseUrl);
+      if (!cfg.stripeEnabled) {
+        setCheckoutError('Le paiement par carte est temporairement indisponible.');
+        return;
+      }
+
+      await runSubscriptionStripeFlow(apiBaseUrl, {
         userId,
         companyId,
         priceId,
         planName,
-        successUrl: `${window.location.origin}/company#/orchestrator?success=true`,
-        cancelUrl: `${window.location.origin}/company#/orchestrator?cancel=true`
+        provider: 'stripe',
       });
 
-      if (response.data && (response.data as any).data && (response.data as any).data.url) {
-        window.location.href = (response.data as any).data.url;
-      } else {
-        alert('Erreur lors de la création de la session de paiement.');
-      }
+      setActivePriceId(priceId);
+      await completeOnboardingStep();
+      await checkExistingSubscription();
+
+      window.dispatchEvent(
+        new CustomEvent('stepCompleted', {
+          detail: { stepId: 11, phaseId: 4 },
+        })
+      );
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Une erreur est survenue lors de la redirection vers Stripe.');
+      setCheckoutError(paymentFlowErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -185,6 +208,12 @@ const SubscriptionPlan = () => {
             </div>
           </div>
         </div>
+
+        {checkoutError && (
+          <div className="mb-4 p-4 bg-red-50 rounded-2xl border border-red-100 text-red-600 text-center">
+            <p className="text-sm font-bold">{checkoutError}</p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {plans.map((plan) => {
