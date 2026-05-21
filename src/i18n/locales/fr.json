@@ -256,6 +256,45 @@
       "avgDuration": "Durée moy.",
       "seriousCalls": "appels sérieux"
     },
+    "overview": {
+      "detail": "Détail",
+      "kpi": {
+        "wallet": "Wallet",
+        "walletSub": "2.8 jours restants",
+        "leadsBase": "Leads base",
+        "covered": "couverts",
+        "callsToday": "Appels aujourd'hui",
+        "vsYesterday": "vs hier",
+        "noBaseline": "pas de référence",
+        "seriousCalls": "Appels sérieux",
+        "rate": "taux",
+        "transactions": "Transactions",
+        "conversion": "conversion",
+        "quality": "Score qualité",
+        "qualitySub": "moyenne équipe"
+      },
+      "coverage": {
+        "title": "Couverture leads",
+        "calledAtLeastOnce": "Appelés au moins 1x",
+        "contacted": "Contactés (réponse)",
+        "remaining": "Non encore appelés",
+        "exhausted": "Épuisés (>5 tentatives)"
+      },
+      "outcomes": {
+        "title": "Résultats d'appels (aujourd'hui)",
+        "noData": "Aucun appel aujourd'hui"
+      },
+      "donut": {
+        "transaction": "Transaction",
+        "appointment": "RDV",
+        "argued": "Argumenté",
+        "callback": "Rappel",
+        "refusal": "Refus",
+        "voicemail": "Msg vocale",
+        "unreachable": "Injoignable",
+        "wrongNumber": "Faux numéro"
+      }
+    },
     "statusesTitle": "Statuts d'appels",
     "today": "aujourd'hui",
     "statuses": {
