@@ -203,6 +203,53 @@ export default function OperationsDashboard() {
   };
   const [leadStats, setLeadStats] = useState<LeadStats | null>(null);
 
+  // ----- Per-rep coverage (Leads view → "Progression de couverture") -----
+  type RepCoverageRow = {
+    userId: string;
+    name: string;
+    current: number;
+    target: number;
+    pct: number;
+  };
+  const [repCoverage, setRepCoverage] = useState<RepCoverageRow[] | null>(null);
+
+  useEffect(() => {
+    const companyId = Cookies.get('companyId');
+    if (!companyId) return;
+    const dashboardBase = (import.meta as any).env?.VITE_DASHBOARD_API;
+    if (!dashboardBase) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const params = new URLSearchParams({ limit: '8' });
+        if (selectedGigId && selectedGigId !== 'all') {
+          params.set('gigId', selectedGigId);
+        }
+        const url = `${dashboardBase}/leads/company/${companyId}/rep-coverage?${params.toString()}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (cancelled || !json.success || !Array.isArray(json.reps)) return;
+        setRepCoverage(
+          json.reps.map((r: any) => ({
+            userId: String(r.userId ?? ''),
+            name: typeof r.name === 'string' ? r.name : 'Rep',
+            current: Number(r.current) || 0,
+            target: Number(r.target) || 0,
+            pct: Number(r.pct) || 0,
+          }))
+        );
+      } catch {
+        // ignore — fall back to mock list on failure
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGigId]);
+
   useEffect(() => {
     const companyId = Cookies.get('companyId');
     if (!companyId) return;
@@ -658,7 +705,7 @@ export default function OperationsDashboard() {
 
       {/* ---------- Tab content ---------- */}
       {tab === 'leads' ? (
-        <LeadsView leadStats={leadStats} />
+        <LeadsView leadStats={leadStats} repCoverage={repCoverage} />
       ) : tab === 'results' ? (
         <ResultsView />
       ) : tab === 'team' ? (
@@ -914,7 +961,15 @@ type LeadStatsProp = {
   };
 };
 
-function LeadsView({ leadStats }: { leadStats: LeadStatsProp | null }) {
+function LeadsView({
+  leadStats,
+  repCoverage,
+}: {
+  leadStats: LeadStatsProp | null;
+  repCoverage:
+    | { userId: string; name: string; current: number; target: number; pct: number }[]
+    | null;
+}) {
   const { t } = useTranslation();
   // Mock baseline used until the real stats land. Keeps the page presentable
   // for first-paint and for demo accounts that don't have data yet.
@@ -1068,13 +1123,51 @@ function LeadsView({ leadStats }: { leadStats: LeadStatsProp | null }) {
     },
   ];
 
-  const reps: RepCoverage[] = [
+  // Rep coverage — real backend data when available, mock otherwise. Colors
+  // cycle through a fixed palette so reps stay visually distinguishable even
+  // when the list is long.
+  const REP_PALETTE: { bar: string; avatar: string }[] = [
+    { bar: 'bg-harx-500', avatar: 'bg-harx-500/15 text-harx-700' },
+    { bar: 'bg-blue-500', avatar: 'bg-blue-500/15 text-blue-700' },
+    { bar: 'bg-emerald-500', avatar: 'bg-emerald-500/15 text-emerald-700' },
+    { bar: 'bg-amber-500', avatar: 'bg-amber-500/15 text-amber-700' },
+    { bar: 'bg-rose-500', avatar: 'bg-rose-500/15 text-rose-700' },
+    { bar: 'bg-violet-500', avatar: 'bg-violet-500/15 text-violet-700' },
+    { bar: 'bg-cyan-500', avatar: 'bg-cyan-500/15 text-cyan-700' },
+    { bar: 'bg-fuchsia-500', avatar: 'bg-fuchsia-500/15 text-fuchsia-700' },
+  ];
+
+  const initialsOf = (full: string): string => {
+    const parts = full.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+    return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+  };
+
+  const MOCK_REPS: RepCoverage[] = [
     { initials: 'KA', name: 'Karima A.', current: 1050, target: 1250, bar: 'bg-harx-500', avatar: 'bg-harx-500/15 text-harx-700' },
     { initials: 'YO', name: 'Younes O.', current: 887, target: 1250, bar: 'bg-blue-500', avatar: 'bg-blue-500/15 text-blue-700' },
     { initials: 'SB', name: 'Sara B.', current: 788, target: 1250, bar: 'bg-emerald-500', avatar: 'bg-emerald-500/15 text-emerald-700' },
     { initials: 'AM', name: 'Amine M.', current: 675, target: 1250, bar: 'bg-amber-500', avatar: 'bg-amber-500/15 text-amber-700' },
     { initials: 'HB', name: 'Hassan B.', current: 388, target: 1250, bar: 'bg-rose-500', avatar: 'bg-rose-500/15 text-rose-700', warn: true },
   ];
+
+  const reps: RepCoverage[] =
+    repCoverage && repCoverage.length > 0
+      ? repCoverage.map((r, idx) => {
+          const palette = REP_PALETTE[idx % REP_PALETTE.length]!;
+          return {
+            initials: initialsOf(r.name),
+            name: r.name,
+            current: r.current,
+            target: r.target,
+            bar: palette.bar,
+            avatar: palette.avatar,
+            // Flag clearly under-performing reps (<35% of fair-share target)
+            warn: r.target > 0 && r.current / r.target < 0.35,
+          };
+        })
+      : MOCK_REPS;
 
   return (
     <>
@@ -1253,16 +1346,26 @@ function LeadsView({ leadStats }: { leadStats: LeadStatsProp | null }) {
         </header>
 
         <ul className="space-y-3">
-          {reps.map((rep) => {
-            const pct = Math.round((rep.current / rep.target) * 100);
+          {reps.length === 0 && (
+            <li className="text-[12px] italic text-slate-400">
+              {t('opsDashboard.leads.noReps', 'Aucun rep n’a encore appelé.')}
+            </li>
+          )}
+          {reps.map((rep, idx) => {
+            const pct =
+              rep.target > 0
+                ? Math.round((rep.current / rep.target) * 100)
+                : 0;
             return (
-              <li key={rep.initials} className="flex items-center gap-3">
+              <li key={`${rep.name}-${idx}`} className="flex items-center gap-3">
                 <span
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${rep.avatar}`}
                 >
                   {rep.initials}
                 </span>
-                <span className="w-24 shrink-0 text-[12px] font-bold text-slate-800">{rep.name}</span>
+                <span className="w-24 shrink-0 truncate text-[12px] font-bold text-slate-800">
+                  {rep.name}
+                </span>
                 <div className="flex h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
                   <div
                     className={`h-full ${rep.bar} transition-all duration-700 ease-out`}

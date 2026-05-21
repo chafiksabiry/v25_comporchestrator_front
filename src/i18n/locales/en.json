@@ -354,7 +354,8 @@
       "appointmentsConfirmed": "Confirmed appointments",
       "urgent": "urgent",
       "active": "active",
-      "coverageTitle": "Coverage progression — by rep"
+      "coverageTitle": "Coverage progression — by rep",
+      "noReps": "No rep has placed a call yet."
     },
     "results": {
       "kpi": {
