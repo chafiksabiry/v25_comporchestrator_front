@@ -229,9 +229,13 @@
   },
   "opsDashboard": {
     "header": {
-      "companyDashboard": "Company Dashboard",
+      "welcome": "Bienvenue, {{name}}",
+      "fallbackName": "à vous",
       "live": "Live",
-      "gigName": "Digital Assurance — Mutuelles Santé"
+      "gigName": "Digital Assurance — Mutuelles Santé",
+      "allGigs": "Tous les gigs",
+      "pickGig": "Sélectionner un gig",
+      "noGigs": "Aucun gig disponible"
     },
     "tabs": {
       "overview": "Vue globale",

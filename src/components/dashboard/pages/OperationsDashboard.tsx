@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Phone,
@@ -97,6 +97,84 @@ export default function OperationsDashboard() {
   const [tab, setTab] = useState<TabId>('overview');
   const [bannerOpen, setBannerOpen] = useState(true);
 
+  // Friendly greeting: use the user's first name if we can find one. Falls
+  // back to "there" when nothing is stored yet (e.g. a fresh login).
+  const userName = useMemo(() => {
+    const stored = (typeof window !== 'undefined' && localStorage.getItem('userFullName')) || '';
+    const first = stored.trim().split(/\s+/)[0];
+    return first || t('opsDashboard.header.fallbackName', 'there');
+  }, [t]);
+
+  // ----- Gig selector (real data) -----
+  // Persist the last picked gig so the dashboard remembers it between visits.
+  const [gigs, setGigs] = useState<Array<{ _id: string; title: string }>>([]);
+  const [selectedGigId, setSelectedGigId] = useState<string>(() => {
+    return (typeof window !== 'undefined' && localStorage.getItem('opsDashboard.selectedGigId')) || 'all';
+  });
+  const [gigDropdownOpen, setGigDropdownOpen] = useState(false);
+  const gigDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const companyId = Cookies.get('companyId');
+    if (!companyId) return;
+    const gigsApiUrl =
+      (import.meta as any).env?.VITE_GIGS_API ||
+      (import.meta as any).env?.VITE_API_URL_GIGS ||
+      'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+    (async () => {
+      try {
+        const res = await fetch(`${gigsApiUrl}/gigs/company/${companyId}?populate=companyId`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const list = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];
+        setGigs(list);
+        // If a previously remembered gig is no longer in the list, fall back to "all".
+        const stored = localStorage.getItem('opsDashboard.selectedGigId');
+        if (stored && stored !== 'all' && !list.find((g: any) => g._id === stored)) {
+          setSelectedGigId('all');
+        }
+      } catch {
+        // ignore — header shows the i18n default name when nothing is fetched
+      }
+    })();
+  }, []);
+
+  // Close the dropdown when the user clicks elsewhere or presses Escape.
+  useEffect(() => {
+    if (!gigDropdownOpen) return;
+    const onMouse = (e: MouseEvent) => {
+      if (gigDropdownRef.current && !gigDropdownRef.current.contains(e.target as Node)) {
+        setGigDropdownOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setGigDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', onMouse);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onMouse);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [gigDropdownOpen]);
+
+  const selectedGig = useMemo(
+    () => gigs.find((g) => g._id === selectedGigId) || null,
+    [gigs, selectedGigId]
+  );
+
+  const selectedGigLabel = selectedGig
+    ? selectedGig.title
+    : selectedGigId === 'all'
+    ? t('opsDashboard.header.allGigs', 'Tous les gigs')
+    : t('opsDashboard.header.gigName', 'Digital Assurance — Mutuelles Santé');
+
+  const handlePickGig = (id: string) => {
+    setSelectedGigId(id);
+    localStorage.setItem('opsDashboard.selectedGigId', id);
+    setGigDropdownOpen(false);
+  };
+
   // Real-data hook: we pull call counts the same way the previous dashboard
   // did so the top cards stay in sync with what the API actually exposes
   // for the company. Falls back to the mock numbers from the mock when the
@@ -112,9 +190,14 @@ export default function OperationsDashboard() {
     if (!callsApiUrl) return;
     const base = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
 
+    const params = new URLSearchParams({ companyId, limit: '2000' });
+    if (selectedGigId && selectedGigId !== 'all') {
+      params.set('gigId', selectedGigId);
+    }
+
     (async () => {
       try {
-        const res = await fetch(`${base}/calls?companyId=${companyId}&limit=2000`);
+        const res = await fetch(`${base}/calls?${params.toString()}`);
         if (!res.ok) return;
         const raw = await res.json();
         const list = Array.isArray(raw.data) ? raw.data : Array.isArray(raw) ? raw : [];
@@ -123,7 +206,7 @@ export default function OperationsDashboard() {
         // ignore — UI keeps the demo numbers
       }
     })();
-  }, []);
+  }, [selectedGigId]);
 
   // Slice the call list down to "today" so the cards mirror the design.
   // When the API yielded nothing we keep the mock numbers from the mock.
@@ -314,14 +397,11 @@ export default function OperationsDashboard() {
     <div className="max-w-7xl mx-auto space-y-5 pb-12 animate-in fade-in duration-500">
       {/* ---------- Brand header ---------- */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="text-xl font-black tracking-tight text-slate-900">
-            HARX<span className="text-harx-500">.AI</span>
-          </span>
-          <span className="rounded-full bg-harx-500 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-sm">
-            {t('opsDashboard.header.companyDashboard', 'Company Dashboard')}
-          </span>
-          <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">
+            {t('opsDashboard.header.welcome', { name: userName, defaultValue: 'Welcome, {{name}}' })}
+          </h1>
+          <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -331,12 +411,73 @@ export default function OperationsDashboard() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-[12px] font-bold text-slate-800 shadow-sm transition-colors hover:bg-slate-50">
-            <span className="truncate max-w-[260px]">
-              {t('opsDashboard.header.gigName', 'Digital Assurance — Mutuelles Santé')}
-            </span>
-            <ChevronDown size={14} className="text-slate-400" />
-          </button>
+          <div ref={gigDropdownRef} className="relative">
+            <button
+              onClick={() => setGigDropdownOpen((v) => !v)}
+              className={`flex items-center gap-2 rounded-xl border bg-white px-4 py-2 text-[12px] font-bold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 ${
+                gigDropdownOpen ? 'border-harx-500 ring-1 ring-harx-500/20' : 'border-slate-200'
+              }`}
+              aria-haspopup="listbox"
+              aria-expanded={gigDropdownOpen}
+            >
+              <span className="truncate max-w-[260px]">{selectedGigLabel}</span>
+              <ChevronDown
+                size={14}
+                className={`text-slate-400 transition-transform duration-200 ${
+                  gigDropdownOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {gigDropdownOpen && (
+              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {t('opsDashboard.header.pickGig', 'Sélectionner un gig')}
+                </div>
+                <ul className="max-h-[320px] overflow-y-auto py-1" role="listbox">
+                  <li>
+                    <button
+                      onClick={() => handlePickGig('all')}
+                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-[12px] font-bold transition-colors hover:bg-slate-50 ${
+                        selectedGigId === 'all' ? 'bg-harx-500/10 text-harx-700' : 'text-slate-700'
+                      }`}
+                      role="option"
+                      aria-selected={selectedGigId === 'all'}
+                    >
+                      <span>{t('opsDashboard.header.allGigs', 'Tous les gigs')}</span>
+                      {selectedGigId === 'all' && (
+                        <CheckCircle2 size={14} className="text-harx-500" />
+                      )}
+                    </button>
+                  </li>
+                  {gigs.length === 0 ? (
+                    <li className="px-3 py-3 text-center text-[11px] font-medium italic text-slate-400">
+                      {t('opsDashboard.header.noGigs', 'Aucun gig disponible')}
+                    </li>
+                  ) : (
+                    gigs.map((g) => (
+                      <li key={g._id}>
+                        <button
+                          onClick={() => handlePickGig(g._id)}
+                          className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[12px] font-bold transition-colors hover:bg-slate-50 ${
+                            selectedGigId === g._id ? 'bg-harx-500/10 text-harx-700' : 'text-slate-700'
+                          }`}
+                          role="option"
+                          aria-selected={selectedGigId === g._id}
+                          title={g.title}
+                        >
+                          <span className="truncate">{g.title}</span>
+                          {selectedGigId === g._id && (
+                            <CheckCircle2 size={14} className="shrink-0 text-harx-500" />
+                          )}
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
           <button
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-700"
             aria-label="More"
