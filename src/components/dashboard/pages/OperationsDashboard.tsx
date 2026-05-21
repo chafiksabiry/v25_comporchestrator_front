@@ -861,6 +861,7 @@ function LeadsView({
   const MOCK_CALLED = 8466;
   const MOCK_CONTACTED = 5830;
   const MOCK_EXHAUSTED = 812;
+  const MOCK_AVG_ATTEMPTS = 2.1;
   const MOCK_COVERAGE = 68;
   const MOCK_REACHABLE = 47;
 
@@ -868,8 +869,16 @@ function LeadsView({
   const calledCount = leadStats?.called ?? MOCK_CALLED;
   const contactedCount = leadStats?.contacted ?? MOCK_CONTACTED;
   const exhaustedCount = leadStats?.exhausted ?? MOCK_EXHAUSTED;
+  const avgAttempts = leadStats?.avgAttempts ?? MOCK_AVG_ATTEMPTS;
   const coveragePct = leadStats?.coveragePct ?? MOCK_COVERAGE;
   const reachablePct = leadStats?.reachablePct ?? MOCK_REACHABLE;
+
+  // "2.1x" with one decimal — but show an integer when the value is whole
+  // (e.g. "3x" not "3.0x") to stay readable.
+  const avgAttemptsLabel =
+    Number.isInteger(avgAttempts)
+      ? `${avgAttempts}x`
+      : `${avgAttempts.toFixed(1)}x`;
 
   const baseLabel =
     leadStats === null
@@ -1025,7 +1034,7 @@ function LeadsView({
           tone="default"
           icon={<Repeat size={14} className="text-blue-500" />}
           label={t('opsDashboard.leads.kpi.avgAttempts', 'Moy. tentatives')}
-          value="2.1x"
+          value={avgAttemptsLabel}
           sub={t('opsDashboard.leads.kpi.avgAttemptsSub', 'par lead appelé')}
         />
       </div>
