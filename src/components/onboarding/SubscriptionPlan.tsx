@@ -22,9 +22,73 @@ interface Plan {
   stripePriceId: string;
 }
 
-// Les plans seront récupérés dynamiquement depuis le backend
+const defaultPlans: Plan[] = [
+  {
+    _id: 'starter-default',
+    name: 'STARTER',
+    price: 99,
+    description: 'Start your campaigns with simplicity and efficiency',
+    features: [
+      'Active GIGs: 3',
+      'Active REPs: 5',
+      'AI Powered Gig Engine',
+      'AI Powered Script Engine',
+      'AI Powered Learning Planner',
+      'AI Powered GIGS REPS Matching',
+      'Qualified REPs on demand',
+      'Dashboard with Standard KPIs',
+      'Email support + assisted onboarding',
+    ],
+    isPopular: false,
+    buttonText: 'Start trial',
+    popular: false,
+    stripePriceId: '',
+  },
+  {
+    _id: 'growth-default',
+    name: 'GROWTH',
+    price: 249,
+    description: 'Drive multichannel efforts with AI automation',
+    features: [
+      'Active GIGs: 10',
+      'Active REPs: 15',
+      'Channels: Outbound Calls Only',
+      'All Starter Features',
+      'AI Powered Lead Management Engine',
+      'AI Powered Knowledge Base Engine',
+      'AI Powered Call Monitoring & Audit',
+      'Call storage - 3 months',
+      'Priority support + chat',
+    ],
+    isPopular: true,
+    buttonText: 'Start trial',
+    popular: true,
+    stripePriceId: '',
+  },
+  {
+    _id: 'scale-default',
+    name: 'SCALE',
+    price: 499,
+    description: 'Activate intelligence at scale',
+    features: [
+      'Active GIGs: 25',
+      'Active REPs: 50',
+      'Channels: Outbound Calls Only',
+      'Global Coverage',
+      'All Growth Features Included',
+      'Priority Support - live chat, email',
+      'Customization - Dashboard, Analytics',
+      'Full Integrations',
+    ],
+    isPopular: false,
+    buttonText: 'Start trial',
+    popular: false,
+    stripePriceId: '',
+  },
+];
+
 const SubscriptionPlan = () => {
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plans, setPlans] = useState<Plan[]>(defaultPlans);
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activePriceId, setActivePriceId] = useState<string | null>(null);
@@ -62,13 +126,20 @@ const SubscriptionPlan = () => {
   const fetchPlans = async () => {
     try {
       const response = await axios.get<Plan[]>(`${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/plans`);
-      // Ajouter les champs UI manquants si nécessaire
-      const formattedPlans = response.data.map((plan: Plan) => ({
-        ...plan,
-        buttonText: 'Start trial',
-        popular: plan.isPopular
-      }));
-      setPlans(formattedPlans);
+      if (!Array.isArray(response.data) || response.data.length === 0) {
+        // Keep defaultPlans on empty response.
+        return;
+      }
+      const formattedPlans = response.data
+        .filter((plan) => plan && plan.stripePriceId)
+        .map((plan: Plan) => ({
+          ...plan,
+          buttonText: 'Start trial',
+          popular: plan.isPopular,
+        }));
+      if (formattedPlans.length > 0) {
+        setPlans(formattedPlans);
+      }
     } catch (error) {
       console.error('Error fetching plans:', error);
     }
