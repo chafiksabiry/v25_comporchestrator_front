@@ -175,10 +175,12 @@ export default function OperationsDashboard() {
     setGigDropdownOpen(false);
   };
 
-  // ----- Lead count (depends on the selected gig) -----
-  // We fetch `/leads/company/:companyId/has-leads` which returns a `count`
-  // field — when a specific gig is picked we narrow it via `?gigId=`.
-  const [totalLeads, setTotalLeads] = useState<number | null>(null);
+  // ----- Lead stats (total + called ≥1x) — scoped by gig selector -----
+  const [leadStats, setLeadStats] = useState<{
+    total: number;
+    called: number;
+    coveragePct: number;
+  } | null>(null);
 
   useEffect(() => {
     const companyId = Cookies.get('companyId');
@@ -189,18 +191,30 @@ export default function OperationsDashboard() {
     let cancelled = false;
     (async () => {
       try {
-        let url = `${dashboardBase}/leads/company/${companyId}/has-leads`;
+        const params = new URLSearchParams();
         if (selectedGigId && selectedGigId !== 'all') {
-          url += `?gigId=${selectedGigId}`;
+          params.set('gigId', selectedGigId);
         }
+        const qs = params.toString();
+        const url = `${dashboardBase}/leads/company/${companyId}/stats${qs ? `?${qs}` : ''}`;
         const res = await fetch(url);
         if (!res.ok) return;
         const json = await res.json();
-        if (cancelled) return;
-        if (typeof json.count === 'number') {
-          setTotalLeads(json.count);
-        } else if (typeof json.total === 'number') {
-          setTotalLeads(json.total);
+        if (cancelled || !json.success) return;
+        if (
+          typeof json.total === 'number' &&
+          typeof json.called === 'number'
+        ) {
+          setLeadStats({
+            total: json.total,
+            called: json.called,
+            coveragePct:
+              typeof json.coveragePct === 'number'
+                ? json.coveragePct
+                : json.total > 0
+                ? Math.round((json.called / json.total) * 1000) / 10
+                : 0,
+          });
         }
       } catch {
         // ignore — Leads view keeps showing the previous (or placeholder) value
@@ -581,7 +595,7 @@ export default function OperationsDashboard() {
 
       {/* ---------- Tab content ---------- */}
       {tab === 'leads' ? (
-        <LeadsView totalLeads={totalLeads} />
+        <LeadsView leadStats={leadStats} />
       ) : tab === 'results' ? (
         <ResultsView />
       ) : tab === 'team' ? (
@@ -811,16 +825,31 @@ interface RepCoverage {
   warn?: boolean;
 }
 
-function LeadsView({ totalLeads }: { totalLeads: number | null }) {
+function LeadsView({
+  leadStats,
+}: {
+  leadStats: { total: number; called: number; coveragePct: number } | null;
+}) {
   const { t } = useTranslation();
-  // Mock baseline used until the real count lands. Keeps the page presentable
-  // for first-paint and for demo accounts that don't have leads yet.
+  // Mock baseline used until the real stats land. Keeps the page presentable
+  // for first-paint and for demo accounts that don't have data yet.
   const MOCK_TOTAL = 12450;
-  const baseCount = totalLeads !== null ? totalLeads : MOCK_TOTAL;
+  const MOCK_CALLED = 8466;
+  const MOCK_COVERAGE = 68;
+
+  const baseCount = leadStats?.total ?? MOCK_TOTAL;
+  const calledCount = leadStats?.called ?? MOCK_CALLED;
+  const coveragePct = leadStats?.coveragePct ?? MOCK_COVERAGE;
+
   const baseLabel =
-    totalLeads === null
+    leadStats === null
       ? t('opsDashboard.leads.kpi.totalBaseSub', 'leads uploadés')
       : t('opsDashboard.leads.kpi.totalBaseSubReal', 'leads en base');
+
+  const calledSub = t('opsDashboard.leads.kpi.calledOnceSub', {
+    pct: coveragePct,
+    defaultValue: '{{pct}}% couverture',
+  });
 
   const qualities: LeadQuality[] = [
     {
@@ -924,8 +953,8 @@ function LeadsView({ totalLeads }: { totalLeads: number | null }) {
           tone="default"
           icon={<PhoneIncoming size={14} className="text-harx-500" />}
           label={t('opsDashboard.leads.kpi.calledOnce', 'Appelés ≥1x')}
-          value="8,466"
-          sub={t('opsDashboard.leads.kpi.calledOnceSub', '68% couverture')}
+          value={calledCount.toLocaleString('fr-FR')}
+          sub={calledSub}
         />
         <KpiCard
           tone="default"
