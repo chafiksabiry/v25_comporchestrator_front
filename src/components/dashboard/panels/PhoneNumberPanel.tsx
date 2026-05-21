@@ -572,10 +572,10 @@ export function PhoneNumberPanel() {
             {/* Acheter une ligne — animated CTA (vivid even when inactive) */}
             <button
               onClick={() => setTelephonyTab('buy')}
-              className={`relative z-10 px-3 sm:px-5 py-2.5 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-wider whitespace-nowrap inline-flex items-center gap-1.5 transition-all duration-300 overflow-hidden ${
+              className={`relative z-10 px-3 sm:px-5 py-2.5 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-wider whitespace-nowrap inline-flex items-center gap-1.5 transition-all duration-300 ${
                 telephonyTab === 'buy'
                   ? 'text-white'
-                  : 'bg-gradient-to-r from-indigo-50 via-violet-50 to-fuchsia-50 border border-fuchsia-200/80 hover:border-fuchsia-400 hover:from-indigo-100 hover:via-violet-100 hover:to-fuchsia-100 active:scale-[0.98]'
+                  : 'bg-gradient-to-r from-indigo-50 via-violet-50 to-fuchsia-50 border border-fuchsia-200/80 hover:border-fuchsia-400 hover:from-indigo-100 hover:via-violet-100 hover:to-fuchsia-100 active:scale-[0.98] overflow-hidden'
               }`}
             >
               {telephonyTab !== 'buy' && (
@@ -585,24 +585,24 @@ export function PhoneNumberPanel() {
                 />
               )}
               <Sparkles
-                size={12}
+                size={13}
                 className={
                   telephonyTab === 'buy'
-                    ? 'text-white animate-pulse shrink-0'
-                    : 'text-fuchsia-600 animate-pulse-soft shrink-0'
+                    ? 'relative z-10 text-yellow-300 animate-pulse shrink-0'
+                    : 'relative z-10 text-fuchsia-600 animate-pulse-soft shrink-0'
                 }
               />
               <span
                 className={
                   telephonyTab === 'buy'
-                    ? 'text-white'
-                    : 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent animate-gradient-x'
+                    ? 'relative z-10 text-white'
+                    : 'relative z-10 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent animate-gradient-x'
                 }
               >
                 {t('phoneNumberPanel.tabs.buy')}
               </span>
               {telephonyTab !== 'buy' && (
-                <span className="relative flex h-1.5 w-1.5 ml-0.5 shrink-0">
+                <span className="relative z-10 flex h-1.5 w-1.5 ml-0.5 shrink-0">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-fuchsia-400 opacity-75 animate-ping" />
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-fuchsia-500" />
                 </span>
