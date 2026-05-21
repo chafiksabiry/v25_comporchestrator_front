@@ -205,15 +205,14 @@ export default function OperationsDashboard() {
           typeof json.total === 'number' &&
           typeof json.called === 'number'
         ) {
+          // Re-compute the coverage from raw counts so we keep precision —
+          // the backend pre-rounds to 1 decimal which would collapse very
+          // small ratios (e.g. 2 / 7041 = 0.0284%) to "0".
+          const ratio = json.total > 0 ? (json.called / json.total) * 100 : 0;
           setLeadStats({
             total: json.total,
             called: json.called,
-            coveragePct:
-              typeof json.coveragePct === 'number'
-                ? json.coveragePct
-                : json.total > 0
-                ? Math.round((json.called / json.total) * 1000) / 10
-                : 0,
+            coveragePct: ratio,
           });
         }
       } catch {
@@ -846,8 +845,18 @@ function LeadsView({
       ? t('opsDashboard.leads.kpi.totalBaseSub', 'leads uploadés')
       : t('opsDashboard.leads.kpi.totalBaseSubReal', 'leads en base');
 
+  // Smart-format the coverage so small ratios stay visible:
+  // ≥10 → integer (e.g. "68"), ≥1 → 1 decimal (e.g. "4.2"),
+  // ≥0.01 → 2 decimals (e.g. "0.03"), else 4 decimals (e.g. "0.0008").
+  const fmtPct = (p: number): string => {
+    if (!Number.isFinite(p) || p === 0) return '0';
+    if (p >= 10) return p.toFixed(0);
+    if (p >= 1) return p.toFixed(1);
+    if (p >= 0.01) return p.toFixed(2);
+    return p.toFixed(4);
+  };
   const calledSub = t('opsDashboard.leads.kpi.calledOnceSub', {
-    pct: coveragePct,
+    pct: fmtPct(coveragePct),
     defaultValue: '{{pct}}% couverture',
   });
 
@@ -1001,9 +1010,10 @@ function LeadsView({
           </header>
 
           <div className="grid grid-cols-2 gap-3">
-            {qualities.map((q) => (
-              <QualityTile key={q.key} {...q} />
-            ))}
+            {qualities.map((q) => {
+              const { key, ...rest } = q;
+              return <QualityTile key={key} {...rest} />;
+            })}
           </div>
 
           {/* Warning footer */}
