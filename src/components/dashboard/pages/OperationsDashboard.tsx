@@ -12,7 +12,6 @@ import {
   BarChart3,
   Wallet,
   ArrowUpRight,
-  X,
   ChevronRight,
   Database,
   PhoneIncoming,
@@ -213,8 +212,6 @@ interface RecentCall {
 export default function OperationsDashboard() {
   const { t } = useTranslation();
   const [tab, setTab] = useState<TabId>('overview');
-  const [bannerOpen, setBannerOpen] = useState(true);
-
   // Friendly greeting: use the user's first name if we can find one. Falls
   // back to "there" when nothing is stored yet (e.g. a fresh login).
   const userName = useMemo(() => {
@@ -821,40 +818,6 @@ export default function OperationsDashboard() {
           </button>
         </div>
       </div>
-
-      {/* ---------- Wallet / fraud alert banner ---------- */}
-      {bannerOpen && (
-        <div className="flex items-start gap-3 rounded-2xl border border-amber-300/70 bg-amber-50 px-5 py-3 text-amber-900">
-          <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-600" />
-          <p className="flex-1 text-sm font-medium leading-snug">
-            <span className="font-black">{t('opsDashboard.banner.wallet', 'Wallet')}</span> —{' '}
-            <span className="font-black">
-              {t('opsDashboard.banner.daysLeft', { count: 2.8, defaultValue: '2.8 jours restants' })}
-            </span>{' '}
-            {t('opsDashboard.banner.beforeShutdown', 'avant interruption')} ·{' '}
-            <span className="font-bold">
-              {t('opsDashboard.banner.leadsUnreachable', {
-                count: stats.unreachable,
-                defaultValue: '{{count}} leads injoignables détectés',
-              })}
-            </span>{' '}
-            ·{' '}
-            <span className="font-bold">
-              {t('opsDashboard.banner.fraudAlerts', {
-                count: stats.fraud,
-                defaultValue: '{{count}} alertes fraude non examinées',
-              })}
-            </span>
-          </p>
-          <button
-            onClick={() => setBannerOpen(false)}
-            className="rounded-lg p-1 text-amber-700 hover:bg-amber-100 transition-colors"
-            aria-label="Dismiss alert"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
 
       {/* ---------- Section tabs ---------- */}
       <div className="flex flex-wrap gap-2">
