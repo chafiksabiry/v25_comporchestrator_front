@@ -175,6 +175,43 @@ export default function OperationsDashboard() {
     setGigDropdownOpen(false);
   };
 
+  // ----- Lead count (depends on the selected gig) -----
+  // We fetch `/leads/company/:companyId/has-leads` which returns a `count`
+  // field — when a specific gig is picked we narrow it via `?gigId=`.
+  const [totalLeads, setTotalLeads] = useState<number | null>(null);
+
+  useEffect(() => {
+    const companyId = Cookies.get('companyId');
+    if (!companyId) return;
+    const dashboardBase = (import.meta as any).env?.VITE_DASHBOARD_API;
+    if (!dashboardBase) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        let url = `${dashboardBase}/leads/company/${companyId}/has-leads`;
+        if (selectedGigId && selectedGigId !== 'all') {
+          url += `?gigId=${selectedGigId}`;
+        }
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (cancelled) return;
+        if (typeof json.count === 'number') {
+          setTotalLeads(json.count);
+        } else if (typeof json.total === 'number') {
+          setTotalLeads(json.total);
+        }
+      } catch {
+        // ignore — Leads view keeps showing the previous (or placeholder) value
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGigId]);
+
   // Real-data hook: we pull call counts the same way the previous dashboard
   // did so the top cards stay in sync with what the API actually exposes
   // for the company. Falls back to the mock numbers from the mock when the
@@ -544,7 +581,7 @@ export default function OperationsDashboard() {
 
       {/* ---------- Tab content ---------- */}
       {tab === 'leads' ? (
-        <LeadsView />
+        <LeadsView totalLeads={totalLeads} />
       ) : tab === 'results' ? (
         <ResultsView />
       ) : tab === 'team' ? (
@@ -774,8 +811,16 @@ interface RepCoverage {
   warn?: boolean;
 }
 
-function LeadsView() {
+function LeadsView({ totalLeads }: { totalLeads: number | null }) {
   const { t } = useTranslation();
+  // Mock baseline used until the real count lands. Keeps the page presentable
+  // for first-paint and for demo accounts that don't have leads yet.
+  const MOCK_TOTAL = 12450;
+  const baseCount = totalLeads !== null ? totalLeads : MOCK_TOTAL;
+  const baseLabel =
+    totalLeads === null
+      ? t('opsDashboard.leads.kpi.totalBaseSub', 'leads uploadés')
+      : t('opsDashboard.leads.kpi.totalBaseSubReal', 'leads en base');
 
   const qualities: LeadQuality[] = [
     {
@@ -872,8 +917,8 @@ function LeadsView() {
           tone="primary"
           icon={<Database size={14} />}
           label={t('opsDashboard.leads.kpi.totalBase', 'Base totale')}
-          value="12,450"
-          sub={t('opsDashboard.leads.kpi.totalBaseSub', 'leads uploadés')}
+          value={baseCount.toLocaleString('fr-FR')}
+          sub={baseLabel}
         />
         <KpiCard
           tone="default"
