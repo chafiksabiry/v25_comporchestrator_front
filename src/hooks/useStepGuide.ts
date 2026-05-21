@@ -3,6 +3,11 @@ export type StepGuidePhase = 'before' | 'inside' | 'all';
 const beforeKey = (stepId: number) => `stepGuideBefore_${stepId}`;
 const insideKey = (stepId: number) => `stepGuideInside_${stepId}`;
 
+// All onboarding step IDs (4 phases × steps, see CompanyOnboarding.tsx)
+export const ALL_ONBOARDING_STEP_IDS: number[] = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+];
+
 export function getCompletedStepsFromStorage(): number[] {
   try {
     const raw = localStorage.getItem('companyOnboardingProgress');
@@ -12,6 +17,17 @@ export function getCompletedStepsFromStorage(): number[] {
   } catch {
     return [];
   }
+}
+
+/**
+ * Returns true when every onboarding step (all 4 phases) is marked as
+ * completed in `companyOnboardingProgress`. Used to skip the welcome
+ * orchestrator modal and to land returning users directly on the dashboard.
+ */
+export function isOnboardingFullyCompleted(completedSteps?: number[]): boolean {
+  const steps = completedSteps ?? getCompletedStepsFromStorage();
+  if (!steps.length) return false;
+  return ALL_ONBOARDING_STEP_IDS.every((id) => steps.includes(id));
 }
 
 export function isStepCompleted(
