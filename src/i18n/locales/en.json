@@ -317,7 +317,7 @@
         "calledOnce": "Called ≥1x",
         "calledOnceSub": "{{pct}}% coverage",
         "contacted": "Contacted",
-        "contactedSub": "47% reachable",
+        "contactedSub": "{{pct}}% reachable",
         "exhausted": "Exhausted",
         "exhaustedSub": ">5 attempts",
         "remaining": "Left to call",

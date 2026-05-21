@@ -175,11 +175,13 @@ export default function OperationsDashboard() {
     setGigDropdownOpen(false);
   };
 
-  // ----- Lead stats (total + called ≥1x) — scoped by gig selector -----
+  // ----- Lead stats (total + called + contacted) — scoped by gig selector -----
   const [leadStats, setLeadStats] = useState<{
     total: number;
     called: number;
+    contacted: number;
     coveragePct: number;
+    reachablePct: number;
   } | null>(null);
 
   useEffect(() => {
@@ -205,14 +207,21 @@ export default function OperationsDashboard() {
           typeof json.total === 'number' &&
           typeof json.called === 'number'
         ) {
-          // Re-compute the coverage from raw counts so we keep precision —
-          // the backend pre-rounds to 1 decimal which would collapse very
-          // small ratios (e.g. 2 / 7041 = 0.0284%) to "0".
-          const ratio = json.total > 0 ? (json.called / json.total) * 100 : 0;
+          // Re-compute ratios from raw counts so we keep precision —
+          // the backend pre-rounds which would collapse very small ratios
+          // (e.g. 2 / 7041 = 0.0284%) to "0".
+          const contacted =
+            typeof json.contacted === 'number' ? json.contacted : 0;
+          const coveragePct =
+            json.total > 0 ? (json.called / json.total) * 100 : 0;
+          const reachablePct =
+            json.called > 0 ? (contacted / json.called) * 100 : 0;
           setLeadStats({
             total: json.total,
             called: json.called,
-            coveragePct: ratio,
+            contacted,
+            coveragePct,
+            reachablePct,
           });
         }
       } catch {
@@ -827,25 +836,35 @@ interface RepCoverage {
 function LeadsView({
   leadStats,
 }: {
-  leadStats: { total: number; called: number; coveragePct: number } | null;
+  leadStats: {
+    total: number;
+    called: number;
+    contacted: number;
+    coveragePct: number;
+    reachablePct: number;
+  } | null;
 }) {
   const { t } = useTranslation();
   // Mock baseline used until the real stats land. Keeps the page presentable
   // for first-paint and for demo accounts that don't have data yet.
   const MOCK_TOTAL = 12450;
   const MOCK_CALLED = 8466;
+  const MOCK_CONTACTED = 5830;
   const MOCK_COVERAGE = 68;
+  const MOCK_REACHABLE = 47;
 
   const baseCount = leadStats?.total ?? MOCK_TOTAL;
   const calledCount = leadStats?.called ?? MOCK_CALLED;
+  const contactedCount = leadStats?.contacted ?? MOCK_CONTACTED;
   const coveragePct = leadStats?.coveragePct ?? MOCK_COVERAGE;
+  const reachablePct = leadStats?.reachablePct ?? MOCK_REACHABLE;
 
   const baseLabel =
     leadStats === null
       ? t('opsDashboard.leads.kpi.totalBaseSub', 'leads uploadés')
       : t('opsDashboard.leads.kpi.totalBaseSubReal', 'leads en base');
 
-  // Smart-format the coverage so small ratios stay visible:
+  // Smart-format the percentage so small ratios stay visible:
   // ≥10 → integer (e.g. "68"), ≥1 → 1 decimal (e.g. "4.2"),
   // ≥0.01 → 2 decimals (e.g. "0.03"), else 4 decimals (e.g. "0.0008").
   const fmtPct = (p: number): string => {
@@ -858,6 +877,10 @@ function LeadsView({
   const calledSub = t('opsDashboard.leads.kpi.calledOnceSub', {
     pct: fmtPct(coveragePct),
     defaultValue: '{{pct}}% couverture',
+  });
+  const contactedSub = t('opsDashboard.leads.kpi.contactedSub', {
+    pct: fmtPct(reachablePct),
+    defaultValue: '{{pct}}% joignables',
   });
 
   const qualities: LeadQuality[] = [
@@ -969,8 +992,8 @@ function LeadsView({
           tone="default"
           icon={<CheckCircle2 size={14} className="text-emerald-500" />}
           label={t('opsDashboard.leads.kpi.contacted', 'Contactés')}
-          value="5,830"
-          sub={t('opsDashboard.leads.kpi.contactedSub', '47% joignables')}
+          value={contactedCount.toLocaleString('fr-FR')}
+          sub={contactedSub}
         />
         <KpiCard
           tone="dark"
