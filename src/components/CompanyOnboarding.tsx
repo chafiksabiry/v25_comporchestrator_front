@@ -713,10 +713,14 @@ const CompanyOnboarding = () => {
       setDisplayedPhase(validPhase);
       setCompletedSteps(completedStepsState);
 
-      Cookies.set(
-        "companyOnboardingProgress",
-        JSON.stringify({ ...progress, completedSteps: completedStepsState })
-      );
+      const progressPayload = {
+        ...progress,
+        completedSteps: completedStepsState,
+        currentPhase: validPhase,
+        lastUpdated: new Date().toISOString(),
+      };
+      Cookies.set("companyOnboardingProgress", JSON.stringify(progressPayload));
+      localStorage.setItem("companyOnboardingProgress", JSON.stringify(progressPayload));
 
     } catch (error) {
       console.error("❌ Error loading company progress:", error);

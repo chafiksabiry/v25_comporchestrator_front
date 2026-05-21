@@ -1,17 +1,24 @@
+import Cookies from 'js-cookie';
+
 export type StepGuidePhase = 'before' | 'inside' | 'all';
 
 const beforeKey = (stepId: number) => `stepGuideBefore_${stepId}`;
 const insideKey = (stepId: number) => `stepGuideInside_${stepId}`;
 
-// All onboarding step IDs (4 phases × steps, see CompanyOnboarding.tsx)
-export const ALL_ONBOARDING_STEP_IDS: number[] = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+/**
+ * Required onboarding steps (non-disabled only — matches CompanyOnboarding.tsx).
+ * Steps 2 (KYC) and 7 (Reporting) are disabled and must not block completion.
+ */
+export const REQUIRED_ONBOARDING_STEP_IDS: number[] = [
+  1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13,
 ];
 
-export function getCompletedStepsFromStorage(): number[] {
+/** @deprecated use REQUIRED_ONBOARDING_STEP_IDS */
+export const ALL_ONBOARDING_STEP_IDS = REQUIRED_ONBOARDING_STEP_IDS;
+
+function parseCompletedSteps(raw: string | undefined | null): number[] {
+  if (!raw) return [];
   try {
-    const raw = localStorage.getItem('companyOnboardingProgress');
-    if (!raw) return [];
     const progress = JSON.parse(raw);
     return Array.isArray(progress.completedSteps) ? progress.completedSteps : [];
   } catch {
@@ -19,15 +26,49 @@ export function getCompletedStepsFromStorage(): number[] {
   }
 }
 
+export function getCompletedStepsFromStorage(): number[] {
+  // CompanyOnboarding persists progress in cookies; step events also use localStorage.
+  const fromCookie = parseCompletedSteps(Cookies.get('companyOnboardingProgress'));
+  if (fromCookie.length > 0) return fromCookie;
+  return parseCompletedSteps(localStorage.getItem('companyOnboardingProgress'));
+}
+
+export function persistOnboardingProgress(completedSteps: number[], currentPhase?: number): void {
+  const payload = {
+    currentPhase: currentPhase ?? 4,
+    completedSteps,
+    lastUpdated: new Date().toISOString(),
+  };
+  localStorage.setItem('companyOnboardingProgress', JSON.stringify(payload));
+  Cookies.set('companyOnboardingProgress', JSON.stringify(payload));
+}
+
 /**
- * Returns true when every onboarding step (all 4 phases) is marked as
- * completed in `companyOnboardingProgress`. Used to skip the welcome
- * orchestrator modal and to land returning users directly on the dashboard.
+ * Load onboarding progress from the company API and mirror it to cookie + localStorage.
+ */
+export async function syncOnboardingProgressFromApi(companyId: string): Promise<number[]> {
+  const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
+  if (!apiUrl || !companyId) return getCompletedStepsFromStorage();
+
+  try {
+    const res = await fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`);
+    if (!res.ok) return getCompletedStepsFromStorage();
+    const progress = await res.json();
+    const completedSteps = Array.isArray(progress.completedSteps) ? progress.completedSteps : [];
+    persistOnboardingProgress(completedSteps, progress.currentPhase);
+    return completedSteps;
+  } catch {
+    return getCompletedStepsFromStorage();
+  }
+}
+
+/**
+ * True when every required (non-disabled) onboarding step is completed.
  */
 export function isOnboardingFullyCompleted(completedSteps?: number[]): boolean {
   const steps = completedSteps ?? getCompletedStepsFromStorage();
   if (!steps.length) return false;
-  return ALL_ONBOARDING_STEP_IDS.every((id) => steps.includes(id));
+  return REQUIRED_ONBOARDING_STEP_IDS.every((id) => steps.includes(id));
 }
 
 export function isStepCompleted(
