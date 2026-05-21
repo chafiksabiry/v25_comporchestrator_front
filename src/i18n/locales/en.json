@@ -228,6 +228,11 @@
     }
   },
   "opsDashboard": {
+    "header": {
+      "companyDashboard": "Company Dashboard",
+      "live": "Live",
+      "gigName": "Digital Assurance — Mutuelles Santé"
+    },
     "tabs": {
       "overview": "Overview",
       "leads": "Leads",
@@ -287,6 +292,125 @@
       "beforeShutdown": "before shutdown",
       "leadsUnreachable": "{{count}} unreachable leads detected",
       "fraudAlerts": "{{count}} fraud alerts not reviewed"
+    },
+    "leads": {
+      "kpi": {
+        "totalBase": "Total base",
+        "totalBaseSub": "uploaded leads",
+        "calledOnce": "Called ≥1x",
+        "calledOnceSub": "68% coverage",
+        "contacted": "Contacted",
+        "contactedSub": "47% reachable",
+        "exhausted": "Exhausted",
+        "exhaustedSub": ">5 attempts",
+        "remaining": "Left to call",
+        "remainingSub": "~8 days left",
+        "avgAttempts": "Avg. attempts",
+        "avgAttemptsSub": "per called lead"
+      },
+      "qualityTitle": "Base quality",
+      "scoredCallsSuite": "from scored calls",
+      "quality": {
+        "valid": "VALID REACHABLE",
+        "unreachable": "UNREACHABLE",
+        "wrong": "WRONG NUMBERS",
+        "notInterested": "NOT INTERESTED",
+        "notAware": "NOT AWARE",
+        "alreadyInsured": "ALREADY INSURED"
+      },
+      "qualityWarningHead": "Base quality score: 68.4%",
+      "qualityWarningBody": "below the recommended threshold (75%). Consider cleaning or re-uploading.",
+      "attemptsTitle": "Attempt distribution",
+      "attempts": {
+        "one": "1 attempt",
+        "two": "2 attempts",
+        "three": "3 attempts",
+        "four": "4 attempts",
+        "five": "≥5 attempts (exhausted)"
+      },
+      "leads": "leads",
+      "callbacksTitle": "Scheduled callbacks",
+      "callbackToday": "To call back today",
+      "callbackWeek": "This week",
+      "appointmentsConfirmed": "Confirmed appointments",
+      "urgent": "urgent",
+      "active": "active",
+      "coverageTitle": "Coverage progression — by rep"
+    },
+    "results": {
+      "kpi": {
+        "transactions": "Transactions",
+        "transactionsSub": "12.2% conv.",
+        "appointments": "Appointments",
+        "appointmentsSub": "7.9% of engaged",
+        "callbacks": "Callbacks requested",
+        "callbacksSub": "14.8% of engaged",
+        "argued": "Argued",
+        "arguedSub": "18% of engaged",
+        "refusals": "Refusals",
+        "refusalsSub": "22.2% of engaged",
+        "pipeline": "Potential pipe",
+        "pipelineSub": "Appts + callbacks"
+      },
+      "issuesTitle": "Engaged-call outcomes",
+      "callsToday": "calls · today",
+      "issues": {
+        "transactionDone": "Transaction closed",
+        "transactionFailed": "Transaction failed",
+        "appointment": "Appointment booked",
+        "callback": "Callback requested",
+        "argued": "Argued (interested)",
+        "refusal": "Hard refusal",
+        "notInterested": "Not interested",
+        "alreadyInsured": "Already insured"
+      },
+      "distributionTitle": "Visual breakdown",
+      "hotPipeline": "Hot pipeline (Appts + callbacks)",
+      "toWork": "to work",
+      "refusalReopen": "Refusal reopen rate",
+      "low": "low",
+      "signatureDelay": "Avg. delay Appt → signature",
+      "days": "days",
+      "byRepTitle": "Outcomes by rep",
+      "thisMonth": "this month",
+      "table": {
+        "transaction": "Transaction",
+        "callback": "Callback",
+        "argued": "Argued",
+        "refusal": "Refusal"
+      }
+    },
+    "team": {
+      "kpi": {
+        "enrolled": "Enrolled",
+        "enrolledSub": "on this gig",
+        "activeWeek": "Active this week",
+        "lmsDone": "LMS completed",
+        "atRisk": "At risk",
+        "atRiskSub": "score < 50",
+        "avgScore": "Avg. score",
+        "avgScoreSub": "+3 vs last week",
+        "invitations": "Invitations",
+        "invitationsSub": "pending"
+      },
+      "leaderboardTitle": "Leaderboard — transactions this month",
+      "atRiskInline": "at risk",
+      "coveredLeads": "covered leads",
+      "onlyWord": "only"
+    },
+    "wallet": {
+      "kpi": {
+        "available": "Available",
+        "availableSub": "2.8 days",
+        "onHold": "On hold",
+        "onHoldSub": "validating",
+        "spentMtd": "Spent MTD",
+        "spentMtdSub": "this month",
+        "burnRate": "Burn rate",
+        "burnRateSub": "per day"
+      },
+      "txTitle": "Recent transactions",
+      "computeTopup": "Compute next top-up"
     }
   },
   "performanceDashboard": {
