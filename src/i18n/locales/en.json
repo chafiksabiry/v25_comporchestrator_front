@@ -227,6 +227,68 @@
       "growthLabDesc": "Performance scaling"
     }
   },
+  "opsDashboard": {
+    "tabs": {
+      "overview": "Overview",
+      "leads": "Leads",
+      "calls": "Calls",
+      "results": "Results",
+      "team": "Team",
+      "wallet": "Wallet"
+    },
+    "kpi": {
+      "totalToday": "Today's total",
+      "allStatus": "all statuses",
+      "serious": "Engaged",
+      "voicemail": "Voicemail",
+      "unreachable": "Unreachable",
+      "fraud": "Fraud detected",
+      "toReview": "to review",
+      "avgDuration": "Avg. duration",
+      "seriousCalls": "engaged calls"
+    },
+    "statusesTitle": "Call statuses",
+    "today": "today",
+    "statuses": {
+      "serious": "Engaged — argued",
+      "voicemail": "Voicemail",
+      "unreachable": "Unreachable",
+      "wrongNumber": "Wrong number",
+      "fraud": "Fraud",
+      "hangup": "Immediate hang-up"
+    },
+    "recentCallsTitle": "Recent calls",
+    "seeAll": "See all",
+    "tags": {
+      "transaction": "transaction",
+      "callbackJ2": "callback D+2",
+      "fraud": "fraud",
+      "appointment": "Booked"
+    },
+    "analysisTitle": "Voicemail & non-completed calls — analysis",
+    "details": "Details",
+    "mtd": {
+      "voicemail": "VOICEMAIL MTD",
+      "voicemailSub": "→ 18% called back on D+1",
+      "unreachable": "UNREACHABLE MTD",
+      "unreachableSub": "→ 41% called ≥3x",
+      "wrongNumbers": "WRONG NUMBERS MTD",
+      "wrongNumbersSub": "→ removed from base",
+      "bestSlot": "BEST TIME SLOT",
+      "bestSlotSub": "61% contact rate",
+      "worstSlot": "WORST TIME SLOT",
+      "worstSlotSub": "22% contact rate",
+      "autoCallbacks": "AUTO CALLBACKS SCHED.",
+      "autoCallbacksSub": "for today"
+    },
+    "banner": {
+      "wallet": "Wallet",
+      "daysLeft": "{{count}} days left",
+      "beforeShutdown": "before shutdown",
+      "leadsUnreachable": "{{count}} unreachable leads detected",
+      "fraudAlerts": "{{count}} fraud alerts not reviewed"
+    }
+  },
   "performanceDashboard": {
     "title": "Company Analytics",
     "subtitle": "Performance tracking & call metrics",

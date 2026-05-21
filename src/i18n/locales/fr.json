@@ -227,6 +227,68 @@
       "growthLabDesc": "Échelonnement des performances"
     }
   },
+  "opsDashboard": {
+    "tabs": {
+      "overview": "Vue globale",
+      "leads": "Leads",
+      "calls": "Appels",
+      "results": "Résultats",
+      "team": "Équipe",
+      "wallet": "Wallet"
+    },
+    "kpi": {
+      "totalToday": "Total aujourd'hui",
+      "allStatus": "tous statuts",
+      "serious": "Sérieux",
+      "voicemail": "Messagerie vocale",
+      "unreachable": "Injoignables",
+      "fraud": "Fraude détectée",
+      "toReview": "à examiner",
+      "avgDuration": "Durée moy.",
+      "seriousCalls": "appels sérieux"
+    },
+    "statusesTitle": "Statuts d'appels",
+    "today": "aujourd'hui",
+    "statuses": {
+      "serious": "Sérieux — argumenté",
+      "voicemail": "Messagerie vocale",
+      "unreachable": "Injoignable",
+      "wrongNumber": "Faux numéro",
+      "fraud": "Fraude",
+      "hangup": "Raccrochage immédiat"
+    },
+    "recentCallsTitle": "Appels récents",
+    "seeAll": "Voir tout",
+    "tags": {
+      "transaction": "transaction",
+      "callbackJ2": "rappel J+2",
+      "fraud": "fraude",
+      "appointment": "RDV fixé"
+    },
+    "analysisTitle": "Messagerie vocale & non aboutis — analyse",
+    "details": "Détails",
+    "mtd": {
+      "voicemail": "MSG VOCALE MTD",
+      "voicemailSub": "→ 18% rappelés en J+1",
+      "unreachable": "INJOIGNABLES MTD",
+      "unreachableSub": "→ 41% rappelés ≥3x",
+      "wrongNumbers": "FAUX NUMÉROS MTD",
+      "wrongNumbersSub": "→ retirés de la base",
+      "bestSlot": "MEILLEURE PLAGE HORAIRE",
+      "bestSlotSub": "taux contact 61%",
+      "worstSlot": "PIRE PLAGE HORAIRE",
+      "worstSlotSub": "taux contact 22%",
+      "autoCallbacks": "RAPPELS AUTO. PROG.",
+      "autoCallbacksSub": "pour aujourd'hui"
+    },
+    "banner": {
+      "wallet": "Wallet",
+      "daysLeft": "{{count}} jours restants",
+      "beforeShutdown": "avant interruption",
+      "leadsUnreachable": "{{count}} leads injoignables détectés",
+      "fraudAlerts": "{{count}} alertes fraude non examinées"
+    }
+  },
   "performanceDashboard": {
     "title": "Analyses Entreprise",
     "subtitle": "Suivi de performance & métriques d'appels",
