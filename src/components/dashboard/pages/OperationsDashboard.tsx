@@ -42,11 +42,12 @@ import {
   BarElement,
   PointElement,
   LineElement,
+  ArcElement,
   Tooltip,
   Legend,
   Filler,
 } from 'chart.js';
-import { Chart } from 'react-chartjs-2';
+import { Chart, Doughnut } from 'react-chartjs-2';
 import Cookies from 'js-cookie';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -59,6 +60,7 @@ ChartJS.register(
   BarElement,
   PointElement,
   LineElement,
+  ArcElement,
   Tooltip,
   Legend,
   Filler
@@ -709,6 +711,68 @@ export default function OperationsDashboard() {
     };
   }, [overviewMonth, callbacksStats]);
 
+  // ────────────────────────────────────────────────────────────────────
+  //  Vue globale — derived KPIs & deltas
+  //  - `transactionsToday`: outcomes-bucket lookup (single source of truth)
+  //  - `vsYesterdayPct`:    self-comparison from the analyzer 7-day series
+  //  - `qualityScore`:      avg validByAIPct across reps (proxy until the
+  //                         backend exposes a dedicated company-quality KPI)
+  //  All fields gracefully fall back to `null` when data is missing so the
+  //  KPI cards can render a "—" without crashing.
+  // ────────────────────────────────────────────────────────────────────
+  const overviewExtras = useMemo(() => {
+    const transactionsToday = countByOutcome.transaction ?? 0;
+    const conversionPct =
+      stats.total > 0 ? (transactionsToday / stats.total) * 100 : 0;
+
+    const series = overviewToday?.series7d ?? [];
+    let vsYesterdayPct: number | null = null;
+    if (series.length >= 2) {
+      const today = series[series.length - 1]?.total ?? 0;
+      const yest = series[series.length - 2]?.total ?? 0;
+      if (yest > 0) vsYesterdayPct = ((today - yest) / yest) * 100;
+      else if (today > 0) vsYesterdayPct = 100; // 0 → N transitions
+    }
+
+    // Quality score = mean of per-rep validByAIPct (each already a 0–100).
+    // We use month data so a single bad/good morning doesn't swing the KPI.
+    let qualityScore: number | null = null;
+    if (repsMonth && repsMonth.length > 0) {
+      const sum = repsMonth.reduce((acc, r) => acc + (r.validByAIPct || 0), 0);
+      qualityScore = Math.round(sum / repsMonth.length);
+    }
+
+    return { transactionsToday, conversionPct, vsYesterdayPct, qualityScore };
+  }, [countByOutcome, stats.total, overviewToday, repsMonth]);
+
+  // ────────────────────────────────────────────────────────────────────
+  //  "Résultats d'appels (aujourd'hui)" — donut chart data.
+  //  We collapse the raw `callOutcome` enum into 8 user-facing buckets
+  //  (transaction, RDV, argumenté, rappel, refus, msg vocale, injoignable,
+  //  faux numéro). Each bucket has a stable colour so legend ↔ slice ↔
+  //  underlying bar charts stay visually consistent across the dashboard.
+  // ────────────────────────────────────────────────────────────────────
+  const outcomeBuckets = useMemo(() => {
+    const c = countByOutcome;
+    const buckets = [
+      { key: 'transaction', label: t('opsDashboard.overview.donut.transaction', 'Transaction'), color: '#10b981', count: c.transaction ?? 0 },
+      { key: 'appointment', label: t('opsDashboard.overview.donut.appointment', 'RDV'),         color: '#8b5cf6', count: c.appointment ?? 0 },
+      { key: 'argued',      label: t('opsDashboard.overview.donut.argued', 'Argumenté'),        color: '#3b82f6', count: c.argued_interested ?? 0 },
+      { key: 'callback',    label: t('opsDashboard.overview.donut.callback', 'Rappel'),         color: '#f59e0b', count: c.callback_requested ?? 0 },
+      { key: 'refusal',     label: t('opsDashboard.overview.donut.refusal', 'Refus'),           color: '#ef4444', count: (c.refusal ?? 0) + (c.not_interested ?? 0) + (c.already_insured ?? 0) },
+      { key: 'voicemail',   label: t('opsDashboard.overview.donut.voicemail', 'Msg vocale'),    color: '#14b8a6', count: c.voicemail ?? 0 },
+      { key: 'unreachable', label: t('opsDashboard.overview.donut.unreachable', 'Injoignable'), color: '#94a3b8', count: (c.no_answer ?? 0) + (c.busy ?? 0) + (c.too_short ?? 0) },
+      { key: 'wrong',       label: t('opsDashboard.overview.donut.wrongNumber', 'Faux numéro'), color: '#f9a8d4', count: c.wrong_number ?? 0 },
+    ];
+    const total = buckets.reduce((sum, b) => sum + b.count, 0);
+    return buckets.map((b) => ({
+      ...b,
+      pct: total > 0 ? Math.round((b.count / total) * 1000) / 10 : 0,
+    }));
+  }, [countByOutcome, t]);
+
+  const donutHasData = outcomeBuckets.some((b) => b.count > 0);
+
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: t('opsDashboard.tabs.overview', 'Vue globale'), icon: <BarChart3 size={14} /> },
     { id: 'leads', label: t('opsDashboard.tabs.leads', 'Leads'), icon: <Users size={14} /> },
@@ -850,191 +914,31 @@ export default function OperationsDashboard() {
         <TeamView reps={repsMonth} />
       ) : tab === 'wallet' ? (
         <WalletView />
+      ) : tab === 'calls' ? (
+        // ── "Appels" tab keeps the legacy call-centric layout. ────────────
+        <CallsView
+          stats={stats}
+          statuses={statuses}
+          recentCalls={recentCalls}
+          mtd={mtd}
+          series7d={overviewToday?.series7d ?? null}
+          fmtDuration={fmtDuration}
+        />
       ) : (
-        // Vue globale + Appels share the same call-centric overview content.
-        <>
-      {/* ---------- KPI cards ---------- */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        <KpiCard
-          tone="primary"
-          icon={<Phone size={14} />}
-          label={t('opsDashboard.kpi.totalToday', 'Total aujourd\'hui')}
-          value={stats.total.toLocaleString('fr-FR')}
-          sub={t('opsDashboard.kpi.allStatus', 'tous statuts')}
+        // ── "Vue globale" — top-level KPIs + coverage + outcomes donut. ───
+        <OverviewView
+          stats={stats}
+          leadStats={leadStats}
+          transactionsToday={overviewExtras.transactionsToday}
+          conversionPct={overviewExtras.conversionPct}
+          vsYesterdayPct={overviewExtras.vsYesterdayPct}
+          qualityScore={overviewExtras.qualityScore}
+          outcomeBuckets={outcomeBuckets}
+          donutHasData={donutHasData}
+          series7d={overviewToday?.series7d ?? null}
+          onSeeLeads={() => setTab('leads')}
+          onSeeResults={() => setTab('results')}
         />
-        <KpiCard
-          tone="default"
-          icon={<Phone size={14} className="text-emerald-500" />}
-          label={t('opsDashboard.kpi.serious', 'Sérieux')}
-          value={stats.serious.toLocaleString('fr-FR')}
-          sub={`${stats.pctSerious.toFixed(1)}%`}
-        />
-        <KpiCard
-          tone="default"
-          icon={<Voicemail size={14} className="text-slate-500" />}
-          label={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')}
-          value={stats.voicemail.toLocaleString('fr-FR')}
-          sub={`${stats.pctVoicemail.toFixed(1)}%`}
-        />
-        <KpiCard
-          tone="default"
-          icon={<PhoneOff size={14} className="text-amber-500" />}
-          label={t('opsDashboard.kpi.unreachable', 'Injoignables')}
-          value={stats.unreachable.toLocaleString('fr-FR')}
-          sub={`${stats.pctUnreachable.toFixed(1)}%`}
-        />
-        <KpiCard
-          tone="dark"
-          icon={<ShieldAlert size={14} />}
-          label={t('opsDashboard.kpi.fraud', 'Fraude détectée')}
-          value={stats.fraud.toLocaleString('fr-FR')}
-          sub={t('opsDashboard.kpi.toReview', 'à examiner')}
-          subTone="rose"
-        />
-        <KpiCard
-          tone="default"
-          icon={<Clock size={14} className="text-slate-500" />}
-          label={t('opsDashboard.kpi.avgDuration', 'Durée moy.')}
-          value={fmtDuration(stats.avgDurationSec)}
-          sub={t('opsDashboard.kpi.seriousCalls', 'appels sérieux')}
-        />
-      </div>
-
-      {/* ---------- Statuses + Recent calls ---------- */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* Statuts d'appels */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <header className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
-              <span className="inline-flex h-5 w-1.5 rounded-sm bg-harx-500" />
-              {t('opsDashboard.statusesTitle', 'Statuts d\'appels')}
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              {t('opsDashboard.today', 'aujourd\'hui')}
-            </span>
-          </header>
-
-          <div className="space-y-4">
-            {statuses.map((s) => (
-              <div key={s.key}>
-                <div className="mb-1 flex items-center justify-between">
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold ${s.pill}`}
-                  >
-                    {s.label}
-                  </span>
-                  <span className="text-sm font-black tabular-nums text-slate-900">
-                    {s.count.toLocaleString('fr-FR')}{' '}
-                    <span className="text-[11px] font-bold text-slate-400">
-                      ({s.pct.toFixed(1)}%)
-                    </span>
-                  </span>
-                </div>
-                <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className={`h-full ${s.bar} transition-all duration-700 ease-out`}
-                    style={{ width: `${Math.max(0, Math.min(100, s.pct))}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Appels récents */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <header className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
-              <PhoneCall size={14} className="text-harx-500" />
-              {t('opsDashboard.recentCallsTitle', 'Appels récents')}
-            </div>
-            <button className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
-              {t('opsDashboard.seeAll', 'Voir tout')}
-              <ArrowUpRight size={12} />
-            </button>
-          </header>
-
-          <ul className="divide-y divide-slate-100">
-            {recentCalls.map((c, idx) => (
-              <li key={idx} className="flex items-center gap-3 py-2.5">
-                <ScoreBubble score={c.score} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-slate-900">
-                    {c.agent} <span className="text-slate-400">→</span> {c.lead}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {c.meta && (
-                      <span className="text-[11px] font-medium text-slate-500">{c.meta}</span>
-                    )}
-                    {c.tag && <Tag tone={c.tag.tone}>{c.tag.label}</Tag>}
-                  </div>
-                </div>
-                <span className="shrink-0 text-[11px] font-bold tabular-nums text-slate-400">
-                  {c.when}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      {/* ---------- Performance 7 jours ---------- */}
-      <Performance7Days series={overviewToday?.series7d ?? null} />
-
-      {/* ---------- Voicemail & non-aboutis analysis ---------- */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <header className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-black text-slate-900">
-            {t('opsDashboard.analysisTitle', 'Messagerie vocale & non aboutis — analyse')}
-          </h2>
-          <button className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-slate-700">
-            {t('opsDashboard.details', 'Détails')}
-            <ChevronRight size={12} />
-          </button>
-        </header>
-
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <MtdCard
-            label={t('opsDashboard.mtd.voicemail', 'MSG VOCALE MTD')}
-            value={mtd.voicemail.toLocaleString('fr-FR')}
-            sub={t('opsDashboard.mtd.voicemailSub', '→ 18% rappelés en J+1')}
-            tone="slate"
-          />
-          <MtdCard
-            label={t('opsDashboard.mtd.unreachable', 'INJOIGNABLES MTD')}
-            value={mtd.unreachable.toLocaleString('fr-FR')}
-            sub={t('opsDashboard.mtd.unreachableSub', '→ 41% rappelés ≥3x')}
-            tone="amber"
-          />
-          <MtdCard
-            label={t('opsDashboard.mtd.wrongNumbers', 'FAUX NUMÉROS MTD')}
-            value={mtd.wrongNumber.toLocaleString('fr-FR')}
-            sub={t('opsDashboard.mtd.wrongNumbersSub', '→ retirés de la base')}
-            tone="rose"
-          />
-          <MtdCard
-            label={t('opsDashboard.mtd.bestSlot', 'MEILLEURE PLAGE HORAIRE')}
-            value="10h-12h"
-            sub={t('opsDashboard.mtd.bestSlotSub', 'taux contact 61%')}
-            tone="emerald"
-            barPct={61}
-          />
-          <MtdCard
-            label={t('opsDashboard.mtd.worstSlot', 'PIRE PLAGE HORAIRE')}
-            value="18h-20h"
-            sub={t('opsDashboard.mtd.worstSlotSub', 'taux contact 22%')}
-            tone="rose"
-            barPct={22}
-          />
-          <MtdCard
-            label={t('opsDashboard.mtd.autoCallbacks', 'RAPPELS AUTO. PROG.')}
-            value={mtd.callbacksToday.toLocaleString('fr-FR')}
-            sub={t('opsDashboard.mtd.autoCallbacksSub', 'pour aujourd\'hui')}
-            tone="blue"
-          />
-        </div>
-      </section>
-        </>
       )}
     </div>
   );
@@ -2109,6 +2013,555 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
             </li>
           ))}
         </ul>
+      </section>
+    </>
+  );
+}
+
+/* ---------------- Overview view (Vue globale) ---------------- */
+
+interface OverviewKpiStats {
+  total: number;
+  serious: number;
+  pctSerious: number;
+}
+
+interface OverviewLeadStats {
+  total: number;
+  called: number;
+  contacted: number;
+  exhausted: number;
+  coveragePct: number;
+}
+
+interface OutcomeBucket {
+  key: string;
+  label: string;
+  color: string;
+  count: number;
+  pct: number;
+}
+
+/**
+ * Vue globale — high-level operations dashboard.
+ *
+ *  Layout (top → bottom):
+ *    1. Six KPI cards (Wallet · Leads · Appels · Sérieux · Transactions ·
+ *       Score qualité). Each card surfaces both the raw value and a
+ *       secondary metric (delta vs yesterday, % conversion, …).
+ *    2. Two side-by-side cards: "Couverture leads" (horizontal bars sourced
+ *       from /leads/.../stats) and "Résultats d'appels (aujourd'hui)" (donut
+ *       built from `overviewToday.statuses` collapsed into 8 buckets).
+ *    3. Performance 7 jours chart (shared with the Calls tab).
+ *
+ *  Why a separate component? Keeping the JSX inline inside the main
+ *  `OperationsDashboard` made the file very hard to scan and the JSX tree
+ *  often nested 10 levels deep. Extracting also lets us pass the navigation
+ *  callbacks (`onSeeLeads`, `onSeeResults`) explicitly so deep-linking from
+ *  the "Détail" buttons is type-safe.
+ */
+function OverviewView({
+  stats,
+  leadStats,
+  transactionsToday,
+  conversionPct,
+  vsYesterdayPct,
+  qualityScore,
+  outcomeBuckets,
+  donutHasData,
+  series7d,
+  onSeeLeads,
+  onSeeResults,
+}: {
+  stats: OverviewKpiStats;
+  leadStats: OverviewLeadStats | null;
+  transactionsToday: number;
+  conversionPct: number;
+  vsYesterdayPct: number | null;
+  qualityScore: number | null;
+  outcomeBuckets: OutcomeBucket[];
+  donutHasData: boolean;
+  series7d: Array<{ date: string; total: number; transactions: number }> | null;
+  onSeeLeads: () => void;
+  onSeeResults: () => void;
+}) {
+  const { t } = useTranslation();
+
+  // ── Leads-coverage rows. Fallback values keep the card meaningful when
+  //    /leads/.../stats hasn't responded yet (first paint).
+  const leadsBase = leadStats?.total ?? 0;
+  const called = leadStats?.called ?? 0;
+  const contacted = leadStats?.contacted ?? 0;
+  const exhausted = leadStats?.exhausted ?? 0;
+  const remaining = Math.max(0, leadsBase - called);
+  const pctOf = (n: number) => (leadsBase > 0 ? (n / leadsBase) * 100 : 0);
+
+  // ── KPI card 2 (Leads): "% couverts". Reuse the backend value when
+  //    available, otherwise compute locally.
+  const coveragePct = leadStats?.coveragePct ?? pctOf(called);
+
+  // ── Donut data — Chart.js doughnut.
+  const donutData = {
+    labels: outcomeBuckets.map((b) => b.label),
+    datasets: [
+      {
+        data: outcomeBuckets.map((b) => b.count),
+        backgroundColor: outcomeBuckets.map((b) => b.color),
+        borderColor: '#ffffff',
+        borderWidth: 2,
+        hoverOffset: 6,
+      },
+    ],
+  };
+  const donutOptions = {
+    cutout: '68%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0f172a',
+        padding: 10,
+        cornerRadius: 8,
+        titleFont: { size: 12, weight: 'bold' as const },
+        bodyFont: { size: 12 },
+        callbacks: {
+          label: (ctx: any) => {
+            const b = outcomeBuckets[ctx.dataIndex];
+            return ` ${b?.label}: ${b?.count} (${(b?.pct ?? 0).toFixed(1)}%)`;
+          },
+        },
+      },
+    },
+    maintainAspectRatio: false,
+  };
+
+  const fmtNum = (n: number) => n.toLocaleString('fr-FR');
+  const fmtDelta = (n: number | null) => {
+    if (n === null || Number.isNaN(n)) return t('opsDashboard.overview.kpi.noBaseline', 'pas de référence');
+    const sign = n > 0 ? '+' : '';
+    return `${sign}${n.toFixed(0)}% ${t('opsDashboard.overview.kpi.vsYesterday', 'vs hier')}`;
+  };
+
+  return (
+    <>
+      {/* ---------- KPI cards (6) ---------- */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        {/* 1) Wallet — primary highlight. Real-time wallet integration is
+            pending; we keep deterministic mock values so the dashboard ships
+            as a complete visual even when the wallet service is offline. */}
+        <KpiCard
+          tone="primary"
+          icon={<Wallet size={14} />}
+          label={t('opsDashboard.overview.kpi.wallet', 'Wallet')}
+          value="€3,240"
+          sub={t('opsDashboard.overview.kpi.walletSub', '2.8 jours restants')}
+        />
+
+        {/* 2) Leads base */}
+        <KpiCard
+          tone="default"
+          icon={<Users size={14} className="text-slate-500" />}
+          label={t('opsDashboard.overview.kpi.leadsBase', 'Leads base')}
+          value={fmtNum(leadsBase || 12450)}
+          sub={`${(coveragePct || 68).toFixed(0)}% ${t('opsDashboard.overview.kpi.covered', 'couverts')}`}
+        />
+
+        {/* 3) Appels aujourd'hui — with delta vs yesterday from series7d */}
+        <KpiCard
+          tone="default"
+          icon={<PhoneCall size={14} className="text-slate-500" />}
+          label={t('opsDashboard.overview.kpi.callsToday', 'Appels aujourd\'hui')}
+          value={fmtNum(stats.total)}
+          sub={fmtDelta(vsYesterdayPct)}
+        />
+
+        {/* 4) Appels sérieux */}
+        <KpiCard
+          tone="default"
+          icon={<CheckCircle2 size={14} className="text-emerald-500" />}
+          label={t('opsDashboard.overview.kpi.seriousCalls', 'Appels sérieux')}
+          value={fmtNum(stats.serious)}
+          sub={`${stats.pctSerious.toFixed(1)}% ${t('opsDashboard.overview.kpi.rate', 'taux')}`}
+        />
+
+        {/* 5) Transactions today */}
+        <KpiCard
+          tone="default"
+          icon={<TrendingUp size={14} className="text-slate-500" />}
+          label={t('opsDashboard.overview.kpi.transactions', 'Transactions')}
+          value={fmtNum(transactionsToday)}
+          sub={`${conversionPct.toFixed(1)}% ${t('opsDashboard.overview.kpi.conversion', 'conversion')}`}
+        />
+
+        {/* 6) Score qualité — avg validByAIPct across reps (month). */}
+        <KpiCard
+          tone="default"
+          icon={<Star size={14} className="text-slate-500" />}
+          label={t('opsDashboard.overview.kpi.quality', 'Score qualité')}
+          value={qualityScore !== null ? `${qualityScore}/100` : '—'}
+          sub={t('opsDashboard.overview.kpi.qualitySub', 'moyenne équipe')}
+        />
+      </div>
+
+      {/* ---------- Couverture leads + Résultats d'appels (donut) ---------- */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Couverture leads */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <header className="mb-5 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+              <Users size={14} className="text-rose-500" />
+              {t('opsDashboard.overview.coverage.title', 'Couverture leads')}
+            </div>
+            <button
+              onClick={onSeeLeads}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              {t('opsDashboard.overview.detail', 'Détail')}
+              <ArrowUpRight size={12} />
+            </button>
+          </header>
+
+          <div className="space-y-4">
+            <CoverageRow
+              label={t('opsDashboard.overview.coverage.calledAtLeastOnce', 'Appelés au moins 1x')}
+              value={`${fmtNum(called)} / ${fmtNum(leadsBase)}`}
+              pct={pctOf(called)}
+              color="bg-rose-500"
+            />
+            <CoverageRow
+              label={t('opsDashboard.overview.coverage.contacted', 'Contactés (réponse)')}
+              value={`${fmtNum(contacted)} / ${fmtNum(leadsBase)}`}
+              pct={pctOf(contacted)}
+              color="bg-blue-500"
+            />
+            <CoverageRow
+              label={t('opsDashboard.overview.coverage.remaining', 'Non encore appelés')}
+              value={fmtNum(remaining)}
+              pct={pctOf(remaining)}
+              color="bg-slate-300"
+              muted
+            />
+            <CoverageRow
+              label={t('opsDashboard.overview.coverage.exhausted', 'Épuisés (>5 tentatives)')}
+              value={fmtNum(exhausted)}
+              pct={pctOf(exhausted)}
+              color="bg-rose-400"
+              valueClassName="text-rose-600"
+            />
+          </div>
+        </section>
+
+        {/* Résultats d'appels (aujourd'hui) */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <header className="mb-5 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+              <PieChart size={14} className="text-rose-500" />
+              {t('opsDashboard.overview.outcomes.title', 'Résultats d\'appels (aujourd\'hui)')}
+            </div>
+            <button
+              onClick={onSeeResults}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              {t('opsDashboard.overview.detail', 'Détail')}
+              <ArrowUpRight size={12} />
+            </button>
+          </header>
+
+          <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-2">
+            {/* Donut */}
+            <div className="relative h-48">
+              {donutHasData ? (
+                <Doughnut data={donutData} options={donutOptions as any} />
+              ) : (
+                <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-200 text-[11px] font-bold text-slate-400">
+                  {t('opsDashboard.overview.outcomes.noData', 'Aucun appel aujourd\'hui')}
+                </div>
+              )}
+            </div>
+
+            {/* Legend */}
+            <ul className="grid grid-cols-1 gap-2 text-[11px] font-bold text-slate-700">
+              {outcomeBuckets.map((b) => (
+                <li key={b.key} className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 truncate">
+                    <span
+                      className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: b.color }}
+                    />
+                    <span className="truncate">{b.label}</span>
+                  </span>
+                  <span className="shrink-0 text-slate-500 tabular-nums">
+                    {b.pct.toFixed(0)}%
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      {/* ---------- Performance 7 jours ---------- */}
+      <Performance7Days series={series7d} />
+    </>
+  );
+}
+
+/** Horizontal coverage bar used in the "Couverture leads" card. */
+function CoverageRow({
+  label,
+  value,
+  pct,
+  color,
+  muted,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  pct: number;
+  color: string;
+  muted?: boolean;
+  valueClassName?: string;
+}) {
+  const safePct = Math.max(0, Math.min(100, pct));
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className={`text-[12px] font-bold ${muted ? 'text-slate-500' : 'text-slate-700'}`}>
+          {label}
+        </span>
+        <span className={`text-[12px] font-black tabular-nums ${valueClassName ?? 'text-slate-900'}`}>
+          {value}
+          <span className="ml-1 text-[11px] font-bold text-slate-400">
+            ({pct.toFixed(pct < 1 && pct > 0 ? 1 : 0)}%)
+          </span>
+        </span>
+      </div>
+      <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+        <div
+          className={`h-full ${color} transition-all duration-700 ease-out`}
+          style={{ width: `${safePct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Calls view (legacy detail tab) ---------------- */
+
+/**
+ * Detailed call-centric dashboard kept under the "Appels" tab.
+ *
+ * This component preserves the previous Vue-globale layout (KPI strip,
+ * call-status bars, recent calls, MTD analysis) so power users still have
+ * access to the granular breakdown while the new top-level Vue globale
+ * focuses on executive-friendly KPIs.
+ */
+function CallsView({
+  stats,
+  statuses,
+  recentCalls,
+  mtd,
+  series7d,
+  fmtDuration,
+}: {
+  stats: {
+    total: number;
+    serious: number;
+    voicemail: number;
+    unreachable: number;
+    fraud: number;
+    avgDurationSec: number;
+    pctSerious: number;
+    pctVoicemail: number;
+    pctUnreachable: number;
+  };
+  statuses: StatusBucket[];
+  recentCalls: RecentCall[];
+  mtd: { voicemail: number; unreachable: number; wrongNumber: number; callbacksToday: number };
+  series7d: Array<{ date: string; total: number; transactions: number }> | null;
+  fmtDuration: (sec: number) => string;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      {/* ---------- KPI cards ---------- */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        <KpiCard
+          tone="primary"
+          icon={<Phone size={14} />}
+          label={t('opsDashboard.kpi.totalToday', 'Total aujourd\'hui')}
+          value={stats.total.toLocaleString('fr-FR')}
+          sub={t('opsDashboard.kpi.allStatus', 'tous statuts')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<Phone size={14} className="text-emerald-500" />}
+          label={t('opsDashboard.kpi.serious', 'Sérieux')}
+          value={stats.serious.toLocaleString('fr-FR')}
+          sub={`${stats.pctSerious.toFixed(1)}%`}
+        />
+        <KpiCard
+          tone="default"
+          icon={<Voicemail size={14} className="text-slate-500" />}
+          label={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')}
+          value={stats.voicemail.toLocaleString('fr-FR')}
+          sub={`${stats.pctVoicemail.toFixed(1)}%`}
+        />
+        <KpiCard
+          tone="default"
+          icon={<PhoneOff size={14} className="text-amber-500" />}
+          label={t('opsDashboard.kpi.unreachable', 'Injoignables')}
+          value={stats.unreachable.toLocaleString('fr-FR')}
+          sub={`${stats.pctUnreachable.toFixed(1)}%`}
+        />
+        <KpiCard
+          tone="dark"
+          icon={<ShieldAlert size={14} />}
+          label={t('opsDashboard.kpi.fraud', 'Fraude détectée')}
+          value={stats.fraud.toLocaleString('fr-FR')}
+          sub={t('opsDashboard.kpi.toReview', 'à examiner')}
+          subTone="rose"
+        />
+        <KpiCard
+          tone="default"
+          icon={<Clock size={14} className="text-slate-500" />}
+          label={t('opsDashboard.kpi.avgDuration', 'Durée moy.')}
+          value={fmtDuration(stats.avgDurationSec)}
+          sub={t('opsDashboard.kpi.seriousCalls', 'appels sérieux')}
+        />
+      </div>
+
+      {/* ---------- Statuses + Recent calls ---------- */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <header className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+              <span className="inline-flex h-5 w-1.5 rounded-sm bg-harx-500" />
+              {t('opsDashboard.statusesTitle', 'Statuts d\'appels')}
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              {t('opsDashboard.today', 'aujourd\'hui')}
+            </span>
+          </header>
+
+          <div className="space-y-4">
+            {statuses.map((s) => (
+              <div key={s.key}>
+                <div className="mb-1 flex items-center justify-between">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold ${s.pill}`}
+                  >
+                    {s.label}
+                  </span>
+                  <span className="text-sm font-black tabular-nums text-slate-900">
+                    {s.count.toLocaleString('fr-FR')}{' '}
+                    <span className="text-[11px] font-bold text-slate-400">
+                      ({s.pct.toFixed(1)}%)
+                    </span>
+                  </span>
+                </div>
+                <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full ${s.bar} transition-all duration-700 ease-out`}
+                    style={{ width: `${Math.max(0, Math.min(100, s.pct))}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <header className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+              <PhoneCall size={14} className="text-harx-500" />
+              {t('opsDashboard.recentCallsTitle', 'Appels récents')}
+            </div>
+            <button className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
+              {t('opsDashboard.seeAll', 'Voir tout')}
+              <ArrowUpRight size={12} />
+            </button>
+          </header>
+
+          <ul className="divide-y divide-slate-100">
+            {recentCalls.map((c, idx) => (
+              <li key={idx} className="flex items-center gap-3 py-2.5">
+                <ScoreBubble score={c.score} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-slate-900">
+                    {c.agent} <span className="text-slate-400">→</span> {c.lead}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {c.meta && (
+                      <span className="text-[11px] font-medium text-slate-500">{c.meta}</span>
+                    )}
+                    {c.tag && <Tag tone={c.tag.tone}>{c.tag.label}</Tag>}
+                  </div>
+                </div>
+                <span className="shrink-0 text-[11px] font-bold tabular-nums text-slate-400">
+                  {c.when}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      {/* ---------- Performance 7 jours ---------- */}
+      <Performance7Days series={series7d} />
+
+      {/* ---------- Voicemail & non-aboutis analysis ---------- */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <header className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-black text-slate-900">
+            {t('opsDashboard.analysisTitle', 'Messagerie vocale & non aboutis — analyse')}
+          </h2>
+          <button className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-slate-700">
+            {t('opsDashboard.details', 'Détails')}
+            <ChevronRight size={12} />
+          </button>
+        </header>
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <MtdCard
+            label={t('opsDashboard.mtd.voicemail', 'MSG VOCALE MTD')}
+            value={mtd.voicemail.toLocaleString('fr-FR')}
+            sub={t('opsDashboard.mtd.voicemailSub', '→ 18% rappelés en J+1')}
+            tone="slate"
+          />
+          <MtdCard
+            label={t('opsDashboard.mtd.unreachable', 'INJOIGNABLES MTD')}
+            value={mtd.unreachable.toLocaleString('fr-FR')}
+            sub={t('opsDashboard.mtd.unreachableSub', '→ 41% rappelés ≥3x')}
+            tone="amber"
+          />
+          <MtdCard
+            label={t('opsDashboard.mtd.wrongNumbers', 'FAUX NUMÉROS MTD')}
+            value={mtd.wrongNumber.toLocaleString('fr-FR')}
+            sub={t('opsDashboard.mtd.wrongNumbersSub', '→ retirés de la base')}
+            tone="rose"
+          />
+          <MtdCard
+            label={t('opsDashboard.mtd.bestSlot', 'MEILLEURE PLAGE HORAIRE')}
+            value="10h-12h"
+            sub={t('opsDashboard.mtd.bestSlotSub', 'taux contact 61%')}
+            tone="emerald"
+            barPct={61}
+          />
+          <MtdCard
+            label={t('opsDashboard.mtd.worstSlot', 'PIRE PLAGE HORAIRE')}
+            value="18h-20h"
+            sub={t('opsDashboard.mtd.worstSlotSub', 'taux contact 22%')}
+            tone="rose"
+            barPct={22}
+          />
+          <MtdCard
+            label={t('opsDashboard.mtd.autoCallbacks', 'RAPPELS AUTO. PROG.')}
+            value={mtd.callbacksToday.toLocaleString('fr-FR')}
+            sub={t('opsDashboard.mtd.autoCallbacksSub', 'pour aujourd\'hui')}
+            tone="blue"
+          />
+        </div>
       </section>
     </>
   );

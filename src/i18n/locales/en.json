@@ -256,6 +256,45 @@
       "avgDuration": "Avg. duration",
       "seriousCalls": "engaged calls"
     },
+    "overview": {
+      "detail": "Detail",
+      "kpi": {
+        "wallet": "Wallet",
+        "walletSub": "2.8 days left",
+        "leadsBase": "Leads base",
+        "covered": "covered",
+        "callsToday": "Calls today",
+        "vsYesterday": "vs yesterday",
+        "noBaseline": "no baseline",
+        "seriousCalls": "Engaged calls",
+        "rate": "rate",
+        "transactions": "Transactions",
+        "conversion": "conversion",
+        "quality": "Quality score",
+        "qualitySub": "team average"
+      },
+      "coverage": {
+        "title": "Lead coverage",
+        "calledAtLeastOnce": "Called at least once",
+        "contacted": "Contacted (response)",
+        "remaining": "Not called yet",
+        "exhausted": "Exhausted (>5 attempts)"
+      },
+      "outcomes": {
+        "title": "Call outcomes (today)",
+        "noData": "No calls today"
+      },
+      "donut": {
+        "transaction": "Transaction",
+        "appointment": "Appt.",
+        "argued": "Argued",
+        "callback": "Callback",
+        "refusal": "Refused",
+        "voicemail": "Voicemail",
+        "unreachable": "Unreachable",
+        "wrongNumber": "Wrong number"
+      }
+    },
     "statusesTitle": "Call statuses",
     "today": "today",
     "statuses": {
