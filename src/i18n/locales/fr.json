@@ -317,7 +317,7 @@
         "calledOnce": "Appelés ≥1x",
         "calledOnceSub": "{{pct}}% couverture",
         "contacted": "Contactés",
-        "contactedSub": "47% joignables",
+        "contactedSub": "{{pct}}% joignables",
         "exhausted": "Épuisés",
         "exhaustedSub": ">5 tentatives",
         "remaining": "Reste à appeler",
