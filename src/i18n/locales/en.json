@@ -39,8 +39,142 @@
     "fr": "French"
   },
   "phoneNumberPanel": {
+    "loading": "Loading telephony...",
+    "title": "My Phone Lines",
+    "subtitle": "Purchase phone numbers and assign them directly to your Gigs.",
+    "toasts": {
+      "refreshed": "Phone lines refreshed.",
+      "unavailable": "Unable to reach the telephony service.",
+      "selectGigDestination": "Please select a Gig with a destination country.",
+      "noNumbersFound": "No available numbers were found.",
+      "numbersFound": "{{count}} available numbers found!",
+      "unknownFormat": "Unknown data format received from the search.",
+      "searchError": "Technical error during search.",
+      "searchFailed": "Number search failed.",
+      "selectGigFirst": "Please select a Gig to assign first.",
+      "popupBlocked": "Please allow pop-ups to complete the payment.",
+      "paymentCancelled": "Payment cancelled.",
+      "paymentClosed": "Payment window closed before validation.",
+      "purchaseSuccessCard": "Number {{number}} acquired by card!",
+      "purchaseSuccessPaypal": "Number {{number}} acquired via PayPal!",
+      "invalidPaymentResponse": "Invalid payment server response. Please try again.",
+      "cannotInitPayment": "Unable to initialize the payment.",
+      "paymentNotConfirmed": "Payment not confirmed.",
+      "purchaseFailed": "Number purchase failed.",
+      "paypalNotConfigured": "PayPal is not configured on the server (PAYPAL_* variables).",
+      "paypalOrderFailed": "PayPal order could not be created.",
+      "paypalPopupBlocked": "Please allow pop-ups to complete the PayPal payment.",
+      "paypalCancelled": "PayPal payment cancelled.",
+      "paypalClosed": "PayPal window closed before validation. Complete the payment on PayPal.",
+      "paypalNotConfirmed": "PayPal payment not confirmed.",
+      "paypalStartFailed": "Unable to start the PayPal payment.",
+      "cardUnavailable": "Card payment is temporarily unavailable.",
+      "cardPopupBlocked": "Please allow pop-ups to complete the card payment.",
+      "cardCancelled": "Card payment cancelled.",
+      "cardClosed": "Payment window closed before validation.",
+      "paymentError": "An error occurred during payment."
+    },
+    "tabs": {
+      "myNumbersWithCount": "My Lines ({{count}})",
+      "buy": "Buy a line"
+    },
+    "hero": {
+      "activeNetwork": "Active Network",
+      "rentedLabel": "Rented Phone Lines",
+      "lineSingular": "Line",
+      "linePlural": "Lines",
+      "footer": "Numbers provisioned & linked to your Gigs"
+    },
     "gigsCard": {
+      "title": "Gigs & Lines",
+      "quota": "Quota",
+      "configured": "Configured Gigs",
       "description": "Each Gig must have at least as many phone numbers as the maximum number of Reps you plan to enroll on it to handle calls."
+    },
+    "myNumbers": {
+      "title": "Rented phone numbers",
+      "activeSingular": "{{count}} active",
+      "activePlural": "{{count}} active",
+      "empty": {
+        "title": "You don't own any active lines yet.",
+        "description": "Search and purchase a phone number to link it to your calling campaign.",
+        "cta": "Search a number"
+      },
+      "table": {
+        "number": "Number",
+        "gig": "Linked Gig",
+        "price": "Price",
+        "status": "Status",
+        "unassigned": "Unassigned",
+        "active": "active"
+      }
+    },
+    "buy": {
+      "search": {
+        "title": "Search a line",
+        "subtitle": "Pick the Gig to target numbers by country.",
+        "assignLabel": "Assign to Gig",
+        "chipActiveLinesSingular": "{{count}} active line",
+        "chipActiveLinesPlural": "{{count}} active lines",
+        "chipRepsSingular": "{{count}} rep",
+        "chipRepsPlural": "{{count}} reps",
+        "chipMinQuota": "Min quota: {{count}}",
+        "warningTitle": "Minimum quota reached",
+        "warningWithTitleSingular": "Gig \"{{title}}\" already has the required minimum of {{count}} line (1 per enrolled Rep).",
+        "warningWithTitlePlural": "Gig \"{{title}}\" already has the required minimum of {{count}} lines (1 per enrolled Rep).",
+        "warningSingular": "Gig already has the required minimum of {{count}} line (1 per enrolled Rep).",
+        "warningPlural": "Gig already has the required minimum of {{count}} lines (1 per enrolled Rep).",
+        "searching": "Searching...",
+        "submit": "Search Lines"
+      },
+      "results": {
+        "title": "Available numbers",
+        "foundSingular": "{{count}} found",
+        "foundPlural": "{{count}} found",
+        "empty": "Run a search to see available numbers.",
+        "buying": "Paying...",
+        "buy": "Buy",
+        "buyTooltip": "Pay by card or PayPal — your wallet is untouched."
+      }
+    },
+    "checkout": {
+      "secure": "Secure payment",
+      "heading": "Line acquisition",
+      "intro": "Pay by card or PayPal — your HARX wallet is not affected.",
+      "summary": {
+        "number": "Number",
+        "fee": "Activation fee",
+        "total": "Total to pay"
+      },
+      "method": {
+        "label": "Payment method",
+        "card": "Card",
+        "cardSub": "Credit / debit card",
+        "paypal": "PayPal",
+        "paypalSub": "PayPal account"
+      },
+      "stripeUnavailable": "Card payment is temporarily unavailable.",
+      "paypalUnavailable": "PayPal is not yet enabled on the server.",
+      "preparing": "Preparing…",
+      "payWithCard": "Pay {{amount}} by card",
+      "payWithPaypal": "Pay {{amount}} by PayPal",
+      "paypalStep": {
+        "title": "Validating on PayPal…",
+        "body": "Validate the payment of {{amount}} on PayPal. Wait for the \"Payment confirmed\" page — do not close the window before.",
+        "footer": "The window will close automatically after confirmation."
+      },
+      "processingCard": "Processing card payment…",
+      "processingPaypal": "Processing PayPal payment…",
+      "processingBody": "Do not close this window. Provisioning your line in progress.",
+      "success": {
+        "title": "Payment confirmed",
+        "body": "Your new line <strong>{{number}}</strong> is now active and linked to your Gig.",
+        "cta": "View my lines"
+      },
+      "encrypted": "Encrypted payment",
+      "ref": "Ref {{ref}}",
+      "noFee": "No charge debited from wallet",
+      "close": "Close"
     }
   },
   "dashboard": {

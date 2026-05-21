@@ -204,7 +204,7 @@ export function PhoneNumberPanel() {
 
     } catch (err) {
       console.error('Error fetching telephony data:', err);
-      toast.error("Impossible d'accéder au service de téléphonie.");
+      toast.error(t('phoneNumberPanel.toasts.unavailable'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -218,7 +218,7 @@ export function PhoneNumberPanel() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchData(true);
-    toast.success('Lignes téléphoniques actualisées.', { id: 'refresh-tel-toast' });
+    toast.success(t('phoneNumberPanel.toasts.refreshed'), { id: 'refresh-tel-toast' });
   };
 
   const handleSearchNumbers = async (e: React.FormEvent) => {
@@ -234,7 +234,7 @@ export function PhoneNumberPanel() {
       const targetCountry = selectedGig?.destinationCountry;
       console.log('[handleSearchNumbers] targetCountry resolved to:', targetCountry);
       if (!targetCountry) {
-        toast.error('Veuillez sélectionner un Gig avec une destination country.');
+        toast.error(t('phoneNumberPanel.toasts.selectGigDestination'));
         return;
       }
 
@@ -246,23 +246,23 @@ export function PhoneNumberPanel() {
         if (Array.isArray(data)) {
           setSearchResults(data);
           if (data.length === 0) {
-            toast.error("Aucun numéro disponible n'a été trouvé.");
+            toast.error(t('phoneNumberPanel.toasts.noNumbersFound'));
           } else {
-            toast.success(`${data.length} numéros disponibles trouvés !`);
+            toast.success(t('phoneNumberPanel.toasts.numbersFound', { count: data.length }));
           }
         } else if (data.data && Array.isArray(data.data)) {
           setSearchResults(data.data);
         } else {
           setSearchResults([]);
-          toast.error("Format de données inconnu reçu de la recherche.");
+          toast.error(t('phoneNumberPanel.toasts.unknownFormat'));
         }
       } else {
         const errorData = await res.json().catch(() => ({}));
-        toast.error(errorData.error || "Erreur technique lors de la recherche.", { duration: 6000 });
+        toast.error(errorData.error || t('phoneNumberPanel.toasts.searchError'), { duration: 6000 });
       }
     } catch (err) {
       console.error(err);
-      toast.error('Échec de la recherche de numéros.');
+      toast.error(t('phoneNumberPanel.toasts.searchFailed'));
     } finally {
       setSearching(false);
     }
@@ -271,7 +271,7 @@ export function PhoneNumberPanel() {
   // Step 1 — open the payment modal (does NOT debit the wallet).
   const handlePurchaseNumber = (numberToBuy: string) => {
     if (!selectedGigIdForNumber) {
-      toast.error("Veuillez d'abord sélectionner un Gig à associer.");
+      toast.error(t('phoneNumberPanel.toasts.selectGigFirst'));
       return;
     }
     setCheckoutNumber(numberToBuy);
@@ -322,10 +322,10 @@ export function PhoneNumberPanel() {
       });
       const initData = await safeParseJson(initRes);
       if (!initData) {
-        throw new Error('Réponse du serveur de paiement invalide. Veuillez réessayer.');
+        throw new Error(t('phoneNumberPanel.toasts.invalidPaymentResponse'));
       }
       if (!initRes.ok || !initData?.paymentId) {
-        throw new Error(initData?.message || initData?.error || "Impossible d'initialiser le paiement.");
+        throw new Error(initData?.message || initData?.error || t('phoneNumberPanel.toasts.cannotInitPayment'));
       }
       return initData as {
         paymentId: string;
@@ -334,7 +334,7 @@ export function PhoneNumberPanel() {
         checkoutUrl?: string;
       };
     },
-    [apiBaseUrl, checkoutNumber, companyId, selectedGigIdForNumber]
+    [apiBaseUrl, checkoutNumber, companyId, selectedGigIdForNumber, t]
   );
 
   const confirmLineCheckout = useCallback(
@@ -346,13 +346,13 @@ export function PhoneNumberPanel() {
       });
       const confirmData = await safeParseJson(confirmRes);
       if (!confirmData) {
-        throw new Error('Réponse du serveur de paiement invalide. Veuillez réessayer.');
+        throw new Error(t('phoneNumberPanel.toasts.invalidPaymentResponse'));
       }
       if (!confirmRes.ok || !confirmData?.success) {
-        throw new Error(confirmData?.message || confirmData?.error || 'Paiement non confirmé.');
+        throw new Error(confirmData?.message || confirmData?.error || t('phoneNumberPanel.toasts.paymentNotConfirmed'));
       }
     },
-    [apiBaseUrl]
+    [apiBaseUrl, t]
   );
 
   const provisionLine = useCallback(
@@ -372,27 +372,31 @@ export function PhoneNumberPanel() {
 
       if (!purchaseRes.ok) {
         const err = await purchaseRes.json().catch(() => ({}));
-        throw new Error(err?.message || err?.error || "L'achat du numéro a échoué.");
+        throw new Error(err?.message || err?.error || t('phoneNumberPanel.toasts.purchaseFailed'));
       }
     },
-    [apiBaseUrl, checkoutNumber, companyId, selectedGigIdForNumber]
+    [apiBaseUrl, checkoutNumber, companyId, selectedGigIdForNumber, t]
   );
 
   const finishSuccessfulPurchase = useCallback(
     (method: 'stripe' | 'paypal') => {
       if (!checkoutNumber) return;
       setCheckoutStep('success');
-      toast.success(`Numéro ${checkoutNumber} acquis via ${method === 'stripe' ? 'carte bancaire' : 'PayPal'} !`);
+      toast.success(
+        method === 'stripe'
+          ? t('phoneNumberPanel.toasts.purchaseSuccessCard', { number: checkoutNumber })
+          : t('phoneNumberPanel.toasts.purchaseSuccessPaypal', { number: checkoutNumber })
+      );
       setSearchResults(prev => prev.filter(n => n.phoneNumber !== checkoutNumber));
       fetchData(true);
     },
-    [checkoutNumber, fetchData]
+    [checkoutNumber, fetchData, t]
   );
 
   const startPaypalCheckout = async () => {
     if (!checkoutNumber || !selectedGigIdForNumber) return;
     if (!paypalEnabled) {
-      toast.error("PayPal n'est pas configuré sur le serveur (variables PAYPAL_*).");
+      toast.error(t('phoneNumberPanel.toasts.paypalNotConfigured'));
       return;
     }
 
@@ -400,26 +404,26 @@ export function PhoneNumberPanel() {
     try {
       const initData = await initLineCheckout('paypal');
       if (!initData.paypalApproveUrl || !initData.paymentId) {
-        throw new Error("La commande PayPal n'a pas pu être créée.");
+        throw new Error(t('phoneNumberPanel.toasts.paypalOrderFailed'));
       }
       setCheckoutPaymentId(initData.paymentId);
       setCheckoutStep('paypal');
 
       const popup = openCenteredPopup(initData.paypalApproveUrl, 'paypal-checkout');
       if (!popup) {
-        throw new Error('Veuillez autoriser les pop-ups pour finaliser le paiement PayPal.');
+        throw new Error(t('phoneNumberPanel.toasts.paypalPopupBlocked'));
       }
 
       const paymentId = initData.paymentId;
       const outcome = await waitForPaypalPopup(popup);
 
       if (outcome === 'cancelled') {
-        toast.error('Paiement PayPal annulé.');
+        toast.error(t('phoneNumberPanel.toasts.paypalCancelled'));
         setCheckoutStep('select');
         return;
       }
       if (outcome === 'closed') {
-        toast.error('Fenêtre PayPal fermée avant validation. Complétez le paiement sur PayPal.');
+        toast.error(t('phoneNumberPanel.toasts.paypalClosed'));
         setCheckoutStep('select');
         return;
       }
@@ -432,12 +436,12 @@ export function PhoneNumberPanel() {
         finishSuccessfulPurchase('paypal');
       } catch (captureErr: any) {
         console.error(captureErr);
-        toast.error(captureErr?.message || 'Paiement PayPal non confirmé.');
+        toast.error(captureErr?.message || t('phoneNumberPanel.toasts.paypalNotConfirmed'));
         setCheckoutStep('select');
       }
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || 'Impossible de démarrer le paiement PayPal.');
+      toast.error(err?.message || t('phoneNumberPanel.toasts.paypalStartFailed'));
       setCheckoutStep('select');
     } finally {
       setPurchasing(null);
@@ -447,7 +451,7 @@ export function PhoneNumberPanel() {
   const handleConfirmStripePayment = async () => {
     if (!checkoutNumber || !selectedGigIdForNumber) return;
     if (!stripeEnabled) {
-      toast.error('Le paiement par carte est temporairement indisponible.');
+      toast.error(t('phoneNumberPanel.toasts.cardUnavailable'));
       return;
     }
 
@@ -464,17 +468,17 @@ export function PhoneNumberPanel() {
       if (!isStubCheckout) {
         const popup = openCenteredPopup(checkoutUrl as string, 'stripe-checkout');
         if (!popup) {
-          throw new Error('Veuillez autoriser les pop-ups pour finaliser le paiement par carte.');
+          throw new Error(t('phoneNumberPanel.toasts.cardPopupBlocked'));
         }
         setCheckoutStep('paypal'); // reuse same waiting UI
         const outcome = await waitForStripePopup(popup);
         if (outcome === 'cancelled') {
-          toast.error('Paiement par carte annulé.');
+          toast.error(t('phoneNumberPanel.toasts.cardCancelled'));
           setCheckoutStep('select');
           return;
         }
         if (outcome === 'closed') {
-          toast.error('Fenêtre de paiement fermée avant validation.');
+          toast.error(t('phoneNumberPanel.toasts.cardClosed'));
           setCheckoutStep('select');
           return;
         }
@@ -487,7 +491,7 @@ export function PhoneNumberPanel() {
       finishSuccessfulPurchase('stripe');
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || 'Erreur lors du paiement.');
+      toast.error(err?.message || t('phoneNumberPanel.toasts.paymentError'));
       setCheckoutStep('select');
     } finally {
       setPurchasing(null);
@@ -506,8 +510,8 @@ export function PhoneNumberPanel() {
     return (
       <div className="flex h-[70vh] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="h-12 w-12 animate-spin text-slate-900" />
-          <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Chargement de la téléphonie...</p>
+          <RefreshCw className="h-12 w-12 animate-spin text-indigo-600" />
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">{t('phoneNumberPanel.loading')}</p>
         </div>
       </div>
     );
@@ -515,23 +519,24 @@ export function PhoneNumberPanel() {
 
   return (
     <div className="relative w-full min-w-0 max-w-7xl mx-auto p-4 sm:p-6 space-y-6 animate-fade-in overflow-x-hidden">
-      {/* Decorative ambient orbs — contained inside panel (no fixed = no page overflow) */}
-      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-500/10 blur-3xl animate-blob -z-10" />
-      <div className="pointer-events-none absolute top-1/3 -right-24 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl animate-blob animation-delay-2000 -z-10" />
+      {/* Decorative ambient orbs — contained inside panel */}
+      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-400/15 blur-3xl animate-blob -z-10" />
+      <div className="pointer-events-none absolute top-1/3 -right-24 h-72 w-72 rounded-full bg-cyan-400/15 blur-3xl animate-blob animation-delay-2000 -z-10" />
+      <div className="pointer-events-none absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-fuchsia-400/10 blur-3xl animate-blob animation-delay-4000 -z-10" />
 
       {/* Header section */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 min-w-0">
         <div className="min-w-0">
           <div className="flex items-center gap-3 mb-1">
-            <span className="p-2.5 rounded-2xl bg-slate-900 text-white">
+            <span className="p-2.5 rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 text-white">
               <Phone size={22} />
             </span>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">
-              Mes Lignes Téléphoniques
+            <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+              {t('phoneNumberPanel.title')}
             </h1>
           </div>
           <p className="text-sm text-slate-500 max-w-xl">
-            Achetez des numéros de téléphone et affectez-les directement à vos Gigs.
+            {t('phoneNumberPanel.subtitle')}
           </p>
         </div>
 
@@ -539,16 +544,16 @@ export function PhoneNumberPanel() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl transition-colors duration-200 text-slate-600 hover:text-slate-900 disabled:opacity-50 shrink-0"
+            className="p-3 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-2xl transition-colors duration-200 text-slate-600 hover:text-indigo-600 disabled:opacity-50 shrink-0"
           >
             <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
           </button>
 
-          {/* Segmented tab control — sober slate */}
+          {/* Segmented tab control — indigo / violet active */}
           <div className="relative bg-slate-100 p-1 rounded-2xl flex border border-slate-200 overflow-hidden max-w-full">
             <span
               aria-hidden
-              className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-xl bg-slate-900 transition-all duration-300 ease-out ${
+              className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 transition-all duration-300 ease-out ${
                 telephonyTab === 'my_numbers' ? 'left-1' : 'left-[calc(50%+0.05rem)]'
               }`}
             />
@@ -558,7 +563,7 @@ export function PhoneNumberPanel() {
                 telephonyTab === 'my_numbers' ? 'text-white' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              Mes Lignes ({phoneNumbers.length})
+              {t('phoneNumberPanel.tabs.myNumbersWithCount', { count: phoneNumbers.length })}
             </button>
             <button
               onClick={() => setTelephonyTab('buy')}
@@ -566,7 +571,7 @@ export function PhoneNumberPanel() {
                 telephonyTab === 'buy' ? 'text-white' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              Acheter une ligne
+              {t('phoneNumberPanel.tabs.buy')}
             </button>
           </div>
         </div>
@@ -574,78 +579,84 @@ export function PhoneNumberPanel() {
 
       {/* Info Stats Card */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 min-w-0">
-        {/* Hero card — purchased lines */}
-        <div className="md:col-span-2 group relative overflow-hidden rounded-3xl bg-slate-950 p-7 text-white border border-slate-800">
-          {/* Subtle ambient gradient */}
-          <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 h-72 w-72 bg-indigo-500/15 rounded-full blur-3xl animate-blob" />
-          <div className="absolute left-0 bottom-0 -translate-x-12 translate-y-12 h-56 w-56 bg-cyan-500/10 rounded-full blur-3xl animate-blob animation-delay-2000" />
+        {/* Hero card — purchased lines (indigo → violet → fuchsia) */}
+        <div className="md:col-span-2 group relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 p-7 text-white">
+          {/* Animated ambient orbs */}
+          <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 h-72 w-72 bg-fuchsia-400/40 rounded-full blur-3xl animate-blob" />
+          <div className="absolute left-0 bottom-0 -translate-x-12 translate-y-12 h-56 w-56 bg-cyan-400/30 rounded-full blur-3xl animate-blob animation-delay-2000" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-48 w-48 bg-indigo-300/20 rounded-full blur-3xl animate-blob animation-delay-4000" />
 
           {/* Subtle grid overlay */}
           <div
-            className="absolute inset-0 opacity-[0.06]"
+            className="absolute inset-0 opacity-[0.08]"
             style={{
               backgroundImage:
-                'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+                'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)',
               backgroundSize: '32px 32px'
             }}
           />
 
           <div className="relative z-10 flex flex-col justify-between h-full gap-6">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-400/30">
+              <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100 bg-emerald-500/25 px-3 py-1.5 rounded-full border border-emerald-300/40">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75 animate-ping" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-300" />
                 </span>
-                Réseau Actif
+                {t('phoneNumberPanel.hero.activeNetwork')}
               </span>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 border border-white/10">
-                <Radio size={22} className="text-slate-300" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 border border-white/25">
+                <Radio size={22} className="text-white" />
               </div>
             </div>
 
             <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] block mb-2">
-                Lignes Téléphoniques louées
+              <span className="text-[10px] text-white/80 font-bold uppercase tracking-[0.2em] block mb-2">
+                {t('phoneNumberPanel.hero.rentedLabel')}
               </span>
               <div className="flex items-baseline gap-2">
                 <span className="text-6xl font-black tracking-tighter text-white">
                   {phoneNumbers.length}
                 </span>
-                <span className="text-base text-slate-400 font-bold uppercase tracking-wider">
-                  Ligne{phoneNumbers.length !== 1 ? 's' : ''}
+                <span className="text-base text-white/70 font-bold uppercase tracking-wider">
+                  {phoneNumbers.length !== 1
+                    ? t('phoneNumberPanel.hero.linePlural')
+                    : t('phoneNumberPanel.hero.lineSingular')}
                 </span>
               </div>
-              <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-400">
-                <Sparkles size={12} className="text-slate-500" />
-                <span>Numéros provisionnés & associés à vos Gigs</span>
+              <div className="mt-3 flex items-center gap-2 text-[11px] text-white/70">
+                <Sparkles size={12} className="text-yellow-200" />
+                <span>{t('phoneNumberPanel.hero.footer')}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Gigs card */}
-        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-6">
+        {/* Gigs card — cyan / teal */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-50 via-white to-teal-50 border border-cyan-100 p-6">
+          <div className="absolute -right-8 -top-8 h-40 w-40 bg-cyan-300/30 rounded-full blur-2xl animate-pulse-soft" />
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-slate-700 font-bold text-[10px] uppercase tracking-[0.2em]">
-                <span className="p-1.5 rounded-lg bg-slate-900 text-white">
+              <div className="flex items-center gap-2 text-cyan-700 font-bold text-[10px] uppercase tracking-[0.2em]">
+                <span className="p-1.5 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
                   <Briefcase size={12} />
                 </span>
-                <span>Gigs & Lignes</span>
+                <span>{t('phoneNumberPanel.gigsCard.title')}</span>
               </div>
-              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-[9px] font-black uppercase tracking-wider">
-                Quota
+              <span className="px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 border border-cyan-200 text-[9px] font-black uppercase tracking-wider">
+                {t('phoneNumberPanel.gigsCard.quota')}
               </span>
             </div>
 
-            <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Gigs configurés</h3>
-            <span className="text-5xl font-black tracking-tight text-slate-900 block mb-3">
+            <h3 className="text-cyan-600/80 text-[10px] font-bold uppercase tracking-wider mb-1">
+              {t('phoneNumberPanel.gigsCard.configured')}
+            </h3>
+            <span className="text-5xl font-black tracking-tight bg-gradient-to-br from-cyan-600 to-teal-600 bg-clip-text text-transparent block mb-3">
               {gigsAndReps.length}
             </span>
 
             <p className="text-[11px] text-slate-600 leading-relaxed flex items-start gap-1.5">
-              <Users size={12} className="text-slate-400 shrink-0 mt-0.5" />
+              <Users size={12} className="text-cyan-500 shrink-0 mt-0.5" />
               <span>{t('phoneNumberPanel.gigsCard.description')}</span>
             </p>
           </div>
@@ -657,39 +668,41 @@ export function PhoneNumberPanel() {
         <div className="relative bg-white rounded-3xl border border-slate-200 p-6 space-y-5 min-w-0 overflow-hidden">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-slate-900 text-white">
+              <span className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
                 <Hash size={12} />
               </span>
-              Numéros de téléphone loués
+              {t('phoneNumberPanel.myNumbers.title')}
             </h3>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full">
-              {phoneNumbers.length} actif{phoneNumbers.length > 1 ? 's' : ''}
+            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full">
+              {phoneNumbers.length > 1
+                ? t('phoneNumberPanel.myNumbers.activePlural', { count: phoneNumbers.length })
+                : t('phoneNumberPanel.myNumbers.activeSingular', { count: phoneNumbers.length })}
             </span>
           </div>
 
           {phoneNumbers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50 text-slate-400 gap-3">
-              <Phone size={44} className="text-slate-400 animate-bounce" />
-              <p className="text-sm font-bold text-slate-700">Vous ne possédez aucune ligne active.</p>
+            <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-indigo-200 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 text-slate-400 gap-3">
+              <Phone size={44} className="text-indigo-400 animate-bounce" />
+              <p className="text-sm font-bold text-slate-700">{t('phoneNumberPanel.myNumbers.empty.title')}</p>
               <p className="text-xs text-slate-500 text-center max-w-xs mb-2">
-                Recherchez et achetez un numéro de téléphone pour l'associer à votre campagne d'appel.
+                {t('phoneNumberPanel.myNumbers.empty.description')}
               </p>
               <button
                 onClick={() => setTelephonyTab('buy')}
-                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-colors"
+                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-colors"
               >
-                Rechercher un numéro
+                {t('phoneNumberPanel.myNumbers.empty.cta')}
               </button>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 border-b border-slate-100">
-                    <th className="py-3 px-4">Numéro</th>
-                    <th className="py-3 px-4">Gig Associé</th>
-                    <th className="py-3 px-4">Prix</th>
-                    <th className="py-3 px-4">Statut</th>
+                  <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 border-b border-indigo-100">
+                    <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.number')}</th>
+                    <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.gig')}</th>
+                    <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.price')}</th>
+                    <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.status')}</th>
                   </tr>
                 </thead>
                 <tbody className="text-xs">
@@ -698,11 +711,11 @@ export function PhoneNumberPanel() {
                     return (
                       <tr
                         key={num.phoneNumber}
-                        className="group border-t border-slate-50 hover:bg-slate-50/60 transition-colors duration-200"
+                        className="group border-t border-slate-50 hover:bg-indigo-50/40 transition-colors duration-200"
                       >
                         <td className="py-4 px-4 font-black text-slate-900 tracking-tight">
                           <div className="flex items-center gap-2">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-50 to-violet-50 text-indigo-600 border border-indigo-100">
                               <Hash size={14} />
                             </span>
                             <span>{num.phoneNumber}</span>
@@ -710,8 +723,8 @@ export function PhoneNumberPanel() {
                         </td>
                         <td className="py-4 px-4 font-bold text-slate-700">
                           {linkedGig
-                            ? <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">{linkedGig.title}</span>
-                            : <span className="text-slate-400 italic">Non affecté</span>}
+                            ? <span className="px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100">{linkedGig.title}</span>
+                            : <span className="text-slate-400 italic">{t('phoneNumberPanel.myNumbers.table.unassigned')}</span>}
                         </td>
                         <td className="py-4 px-4 font-black text-slate-900 tabular-nums">
                           {typeof num.price === 'number' && num.price > 0
@@ -719,12 +732,12 @@ export function PhoneNumberPanel() {
                             : <span className="text-slate-400 italic font-normal">—</span>}
                         </td>
                         <td className="py-4 px-4">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-black text-[9px] uppercase tracking-wider">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border border-emerald-100 font-black text-[9px] uppercase tracking-wider">
                             <span className="relative flex h-1.5 w-1.5">
                               <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
                               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                             </span>
-                            {num.status || 'actif'}
+                            {num.status || t('phoneNumberPanel.myNumbers.table.active')}
                           </span>
                         </td>
                       </tr>
@@ -741,22 +754,24 @@ export function PhoneNumberPanel() {
           <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-5 min-w-0">
             <div>
               <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-slate-900 text-white">
+                <span className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
                   <Search size={12} />
                 </span>
-                Rechercher une ligne
+                {t('phoneNumberPanel.buy.search.title')}
               </h3>
-              <p className="text-xs text-slate-500 mt-1">Sélectionnez le Gig pour cibler les numéros par pays.</p>
+              <p className="text-xs text-slate-500 mt-1">{t('phoneNumberPanel.buy.search.subtitle')}</p>
             </div>
 
             <form onSubmit={handleSearchNumbers} className="space-y-4">
 
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Affecter au Gig</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block mb-1">
+                  {t('phoneNumberPanel.buy.search.assignLabel')}
+                </label>
                 <select
                   value={selectedGigIdForNumber}
                   onChange={(e) => setSelectedGigIdForNumber(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-900 focus:outline-none focus:border-slate-900 focus:bg-white transition-colors"
+                  className="w-full px-4 py-3 bg-indigo-50/40 border border-indigo-100 rounded-xl font-bold text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
                 >
                   {gigsAndReps.map((g) => (
                     <option key={g.gigId} value={g.gigId}>{g.title}</option>
@@ -764,16 +779,20 @@ export function PhoneNumberPanel() {
                 </select>
                 {selectedGigIdForNumber && (
                   <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-bold uppercase tracking-wider">
                       <Phone size={10} />
-                      {numbersForSelectedGig.length} ligne{numbersForSelectedGig.length > 1 ? 's' : ''} active{numbersForSelectedGig.length > 1 ? 's' : ''}
+                      {numbersForSelectedGig.length > 1
+                        ? t('phoneNumberPanel.buy.search.chipActiveLinesPlural', { count: numbersForSelectedGig.length })
+                        : t('phoneNumberPanel.buy.search.chipActiveLinesSingular', { count: numbersForSelectedGig.length })}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-100 text-[10px] font-bold uppercase tracking-wider">
                       <Users size={10} />
-                      {selectedGigRepsCount} rep{selectedGigRepsCount > 1 ? 's' : ''}
+                      {selectedGigRepsCount > 1
+                        ? t('phoneNumberPanel.buy.search.chipRepsPlural', { count: selectedGigRepsCount })
+                        : t('phoneNumberPanel.buy.search.chipRepsSingular', { count: selectedGigRepsCount })}
                     </span>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold uppercase tracking-wider">
-                      Quota min&nbsp;: {minRequiredForSelectedGig}
+                      {t('phoneNumberPanel.buy.search.chipMinQuota', { count: minRequiredForSelectedGig })}
                     </span>
                   </div>
                 )}
@@ -781,20 +800,23 @@ export function PhoneNumberPanel() {
 
               {/* Warning: minimum reached — extra numbers must be paid */}
               {selectedGigIdForNumber && selectedGigHasReachedMinimum && (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-4">
                   <div className="flex items-start gap-3">
                     <span className="shrink-0 p-1.5 rounded-xl bg-amber-100 text-amber-700 border border-amber-200">
                       <AlertTriangle size={16} />
                     </span>
                     <div className="space-y-1">
                       <p className="text-xs font-black text-amber-900 tracking-tight">
-                        Quota minimum atteint
+                        {t('phoneNumberPanel.buy.search.warningTitle')}
                       </p>
                       <p className="text-[11px] text-amber-800 leading-relaxed">
-                        Le Gig{selectedGigTitle ? <> <span className="font-bold">« {selectedGigTitle} »</span></> : null}{' '}
-                        dispose déjà du minimum requis de{' '}
-                        <span className="font-bold">{minRequiredForSelectedGig}</span>{' '}
-                        ligne{minRequiredForSelectedGig > 1 ? 's' : ''} (1 par Rep inscrit).
+                        {selectedGigTitle
+                          ? (minRequiredForSelectedGig > 1
+                              ? t('phoneNumberPanel.buy.search.warningWithTitlePlural', { title: selectedGigTitle, count: minRequiredForSelectedGig })
+                              : t('phoneNumberPanel.buy.search.warningWithTitleSingular', { title: selectedGigTitle, count: minRequiredForSelectedGig }))
+                          : (minRequiredForSelectedGig > 1
+                              ? t('phoneNumberPanel.buy.search.warningPlural', { count: minRequiredForSelectedGig })
+                              : t('phoneNumberPanel.buy.search.warningSingular', { count: minRequiredForSelectedGig }))}
                       </p>
                     </div>
                   </div>
@@ -804,10 +826,10 @@ export function PhoneNumberPanel() {
               <button
                 type="submit"
                 disabled={searching}
-                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-colors duration-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 hover:from-indigo-700 hover:via-violet-700 hover:to-fuchsia-700 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-colors duration-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {searching ? <RefreshCw size={16} className="animate-spin" /> : <Search size={16} />}
-                <span>{searching ? 'Recherche...' : 'Rechercher Lignes'}</span>
+                <span>{searching ? t('phoneNumberPanel.buy.search.searching') : t('phoneNumberPanel.buy.search.submit')}</span>
               </button>
             </form>
           </div>
@@ -816,24 +838,26 @@ export function PhoneNumberPanel() {
           <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 space-y-5 min-w-0 overflow-hidden">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-slate-900 text-white">
+                <span className="p-1.5 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
                   <Sparkles size={12} />
                 </span>
-                Numéros disponibles
+                {t('phoneNumberPanel.buy.results.title')}
               </h3>
               {searchResults.length > 0 && (
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full">
-                  {searchResults.length} trouvé{searchResults.length > 1 ? 's' : ''}
+                <span className="text-[10px] font-black uppercase tracking-wider text-cyan-700 bg-cyan-50 border border-cyan-100 px-3 py-1 rounded-full">
+                  {searchResults.length > 1
+                    ? t('phoneNumberPanel.buy.results.foundPlural', { count: searchResults.length })
+                    : t('phoneNumberPanel.buy.results.foundSingular', { count: searchResults.length })}
                 </span>
               )}
             </div>
 
             {searchResults.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                <span className="p-3 rounded-2xl bg-slate-100">
-                  <Search size={28} className="text-slate-400" />
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3 border-2 border-dashed border-cyan-200 rounded-2xl bg-gradient-to-br from-cyan-50 to-teal-50">
+                <span className="p-3 rounded-2xl bg-gradient-to-br from-cyan-100 to-teal-100">
+                  <Search size={28} className="text-cyan-600" />
                 </span>
-                <p className="text-xs font-bold text-slate-600">Lancez une recherche pour voir les numéros disponibles.</p>
+                <p className="text-xs font-bold text-slate-600">{t('phoneNumberPanel.buy.results.empty')}</p>
               </div>
             ) : (
               <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin">
@@ -842,10 +866,10 @@ export function PhoneNumberPanel() {
                   return (
                     <div
                       key={numberString}
-                      className="group p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:border-slate-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0 transition-colors duration-200"
+                      className="group p-4 bg-gradient-to-r from-cyan-50/50 via-white to-indigo-50/50 rounded-2xl border border-slate-100 hover:border-indigo-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0 transition-colors duration-200"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-700">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-50 to-teal-50 border border-cyan-100 text-cyan-700">
                           <Hash size={15} />
                         </span>
                         <span className="text-sm font-black text-slate-900 tracking-tight tabular-nums truncate">{numberString}</span>
@@ -854,13 +878,13 @@ export function PhoneNumberPanel() {
                       <button
                         onClick={() => handlePurchaseNumber(numberString)}
                         disabled={purchasing !== null}
-                        className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-colors duration-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
-                        title="Régler par carte ou PayPal — sans toucher au portefeuille"
+                        className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-colors duration-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                        title={t('phoneNumberPanel.buy.results.buyTooltip')}
                       >
                         {purchasing === numberString
                           ? <RefreshCw size={12} className="animate-spin" />
                           : <CreditCard size={12} />}
-                        <span>{purchasing === numberString ? 'Paiement...' : 'Acheter'}</span>
+                        <span>{purchasing === numberString ? t('phoneNumberPanel.buy.results.buying') : t('phoneNumberPanel.buy.results.buy')}</span>
                       </button>
                     </div>
                   );
@@ -879,47 +903,49 @@ export function PhoneNumberPanel() {
       {checkoutNumber && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden border border-slate-200">
-            {/* Header */}
-            <div className="relative px-6 py-5 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+            {/* Header — indigo / violet / fuchsia gradient */}
+            <div className="relative px-6 py-5 bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 text-white overflow-hidden">
+              <div className="absolute -right-8 -top-8 h-32 w-32 bg-white/15 rounded-full blur-2xl animate-blob" />
+              <div className="absolute -left-8 -bottom-8 h-24 w-24 bg-cyan-300/20 rounded-full blur-2xl animate-blob animation-delay-2000" />
               <button
                 onClick={closeCheckoutModal}
                 disabled={checkoutStep === 'processing'}
-                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/10 transition disabled:opacity-30"
-                aria-label="Close"
+                className="absolute top-4 right-4 z-20 p-1.5 rounded-full hover:bg-white/15 transition disabled:opacity-30"
+                aria-label={t('phoneNumberPanel.checkout.close')}
               >
                 <X size={16} />
               </button>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="p-2 rounded-xl bg-white/10 text-white border border-white/15">
+              <div className="relative z-10 flex items-center gap-2 mb-1">
+                <span className="p-2 rounded-xl bg-white/15 text-white border border-white/25">
                   <CreditCard size={18} />
                 </span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
-                  Paiement sécurisé
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90">
+                  {t('phoneNumberPanel.checkout.secure')}
                 </span>
               </div>
-              <h2 className="text-xl font-black tracking-tight">Acquisition d'une ligne</h2>
-              <p className="text-xs text-gray-300 mt-1">
-                Réglez par carte ou PayPal — votre portefeuille HARX n'est pas affecté.
+              <h2 className="relative z-10 text-xl font-black tracking-tight">{t('phoneNumberPanel.checkout.heading')}</h2>
+              <p className="relative z-10 text-xs text-white/80 mt-1">
+                {t('phoneNumberPanel.checkout.intro')}
               </p>
             </div>
 
             {/* Body */}
             <div className="p-6 space-y-5">
               {/* Order summary */}
-              <div className="rounded-2xl bg-gray-50 border border-gray-100 p-4 space-y-2">
+              <div className="rounded-2xl bg-gradient-to-br from-indigo-50/60 to-violet-50/60 border border-indigo-100 p-4 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500 font-bold uppercase tracking-wider">Numéro</span>
+                  <span className="text-indigo-600/80 font-bold uppercase tracking-wider">{t('phoneNumberPanel.checkout.summary.number')}</span>
                   <span className="font-black text-slate-900 tracking-tight">{checkoutNumber}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500 font-bold uppercase tracking-wider">Frais d'activation</span>
+                  <span className="text-indigo-600/80 font-bold uppercase tracking-wider">{t('phoneNumberPanel.checkout.summary.fee')}</span>
                   <span className="font-black text-slate-900">
                     {formatPrice(linePrice.amountCents, linePrice.currency)}
                   </span>
                 </div>
-                <div className="pt-2 mt-2 border-t border-gray-200 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-gray-500">Total à payer</span>
-                  <span className="text-lg font-black text-slate-900">
+                <div className="pt-2 mt-2 border-t border-indigo-200/50 flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700">{t('phoneNumberPanel.checkout.summary.total')}</span>
+                  <span className="text-lg font-black bg-gradient-to-r from-indigo-600 to-fuchsia-600 bg-clip-text text-transparent">
                     {formatPrice(linePrice.amountCents, linePrice.currency)}
                   </span>
                 </div>
@@ -929,8 +955,8 @@ export function PhoneNumberPanel() {
               {checkoutStep === 'select' && (
                 <>
                   <div>
-                    <span className="block text-[10px] font-black uppercase tracking-wider text-gray-400 mb-2">
-                      Méthode de paiement
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
+                      {t('phoneNumberPanel.checkout.method.label')}
                     </span>
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -938,8 +964,8 @@ export function PhoneNumberPanel() {
                         onClick={() => setCheckoutMethod('stripe')}
                         className={`relative p-4 rounded-2xl border-2 transition-colors text-left ${
                           checkoutMethod === 'stripe'
-                            ? 'border-slate-900 bg-slate-50'
-                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                            ? 'border-indigo-500 bg-gradient-to-br from-indigo-50 to-violet-50'
+                            : 'border-slate-200 hover:border-indigo-300 bg-white'
                         }`}
                       >
                         {checkoutMethod === 'stripe' && (
@@ -947,9 +973,9 @@ export function PhoneNumberPanel() {
                             <CheckCircle2 size={14} />
                           </span>
                         )}
-                        <span className="block text-sm font-black text-indigo-600 tracking-tight">Carte</span>
-                        <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">
-                          Carte bancaire
+                        <span className="block text-sm font-black text-indigo-600 tracking-tight">{t('phoneNumberPanel.checkout.method.card')}</span>
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
+                          {t('phoneNumberPanel.checkout.method.cardSub')}
                         </span>
                       </button>
                       <button
@@ -957,8 +983,8 @@ export function PhoneNumberPanel() {
                         onClick={() => setCheckoutMethod('paypal')}
                         className={`relative p-4 rounded-2xl border-2 transition-colors text-left ${
                           checkoutMethod === 'paypal'
-                            ? 'border-amber-500 bg-amber-50'
-                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                            ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-orange-50'
+                            : 'border-slate-200 hover:border-amber-300 bg-white'
                         }`}
                       >
                         {checkoutMethod === 'paypal' && (
@@ -966,9 +992,9 @@ export function PhoneNumberPanel() {
                             <CheckCircle2 size={14} />
                           </span>
                         )}
-                        <span className="block text-sm font-black text-amber-600 tracking-tight">PayPal</span>
-                        <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">
-                          Compte PayPal
+                        <span className="block text-sm font-black text-amber-600 tracking-tight">{t('phoneNumberPanel.checkout.method.paypal')}</span>
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
+                          {t('phoneNumberPanel.checkout.method.paypalSub')}
                         </span>
                       </button>
                     </div>
@@ -976,14 +1002,12 @@ export function PhoneNumberPanel() {
 
                   {checkoutMethod === 'paypal' && !paypalEnabled && (
                     <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 font-medium">
-                      PayPal n&apos;est pas encore activé sur le serveur. Configurez{' '}
-                      <span className="font-bold">PAYPAL_CLIENT_ID</span> et{' '}
-                      <span className="font-bold">PAYPAL_CLIENT_SECRET</span> sur Railway.
+                      {t('phoneNumberPanel.checkout.paypalUnavailable')}
                     </p>
                   )}
                   {checkoutMethod === 'stripe' && !stripeEnabled && (
                     <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 font-medium">
-                      Le paiement par carte est temporairement indisponible.
+                      {t('phoneNumberPanel.checkout.stripeUnavailable')}
                     </p>
                   )}
 
@@ -995,14 +1019,14 @@ export function PhoneNumberPanel() {
                       || (checkoutMethod === 'paypal' && !paypalEnabled)
                       || (checkoutMethod === 'stripe' && !stripeEnabled)
                     }
-                    className="w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-colors duration-200 active:scale-95 flex items-center justify-center gap-2 bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-colors duration-200 active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 text-white hover:from-indigo-700 hover:via-violet-700 hover:to-fuchsia-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Lock size={14} />
                     {purchasing
-                      ? 'Préparation…'
-                      : `Payer ${formatPrice(linePrice.amountCents, linePrice.currency)} par ${
-                          checkoutMethod === 'stripe' ? 'carte' : 'PayPal'
-                        }`}
+                      ? t('phoneNumberPanel.checkout.preparing')
+                      : checkoutMethod === 'stripe'
+                        ? t('phoneNumberPanel.checkout.payWithCard', { amount: formatPrice(linePrice.amountCents, linePrice.currency) })
+                        : t('phoneNumberPanel.checkout.payWithPaypal', { amount: formatPrice(linePrice.amountCents, linePrice.currency) })}
                   </button>
                 </>
               )}
@@ -1010,58 +1034,59 @@ export function PhoneNumberPanel() {
               {checkoutStep === 'paypal' && (
                 <div className="flex flex-col items-center justify-center py-6 gap-3">
                   <RefreshCw size={28} className="animate-spin text-amber-500" />
-                  <p className="text-sm font-black text-slate-900 tracking-tight">Validation sur PayPal…</p>
-                  <p className="text-[11px] text-gray-500 text-center max-w-xs">
-                    Validez le paiement de{' '}
-                    <span className="font-bold text-slate-800">
-                      {formatPrice(linePrice.amountCents, linePrice.currency)}
-                    </span>{' '}
-                    sur PayPal. Attendez la page «&nbsp;Paiement validé&nbsp;» — ne fermez pas la
-                    fenêtre avant.
+                  <p className="text-sm font-black text-slate-900 tracking-tight">{t('phoneNumberPanel.checkout.paypalStep.title')}</p>
+                  <p className="text-[11px] text-slate-500 text-center max-w-xs">
+                    {t('phoneNumberPanel.checkout.paypalStep.body', { amount: formatPrice(linePrice.amountCents, linePrice.currency) })}
                   </p>
-                  <p className="text-[10px] text-gray-400 text-center max-w-xs">
-                    La fenêtre se fermera automatiquement après confirmation.
+                  <p className="text-[10px] text-slate-400 text-center max-w-xs">
+                    {t('phoneNumberPanel.checkout.paypalStep.footer')}
                   </p>
                 </div>
               )}
 
               {checkoutStep === 'processing' && (
                 <div className="flex flex-col items-center justify-center py-8 gap-3">
-                  <RefreshCw size={32} className="animate-spin text-slate-900" />
+                  <RefreshCw size={32} className="animate-spin text-indigo-600" />
                   <p className="text-xs font-black uppercase tracking-wider text-slate-700">
-                    Traitement du paiement par {checkoutMethod === 'stripe' ? 'carte' : 'PayPal'}…
+                    {checkoutMethod === 'stripe'
+                      ? t('phoneNumberPanel.checkout.processingCard')
+                      : t('phoneNumberPanel.checkout.processingPaypal')}
                   </p>
-                  <p className="text-[11px] text-gray-500 text-center max-w-xs">
-                    Ne fermez pas cette fenêtre. Provisioning de votre ligne en cours.
+                  <p className="text-[11px] text-slate-500 text-center max-w-xs">
+                    {t('phoneNumberPanel.checkout.processingBody')}
                   </p>
                 </div>
               )}
 
               {checkoutStep === 'success' && (
                 <div className="flex flex-col items-center justify-center py-6 gap-3">
-                  <span className="p-3 rounded-full bg-emerald-100 text-emerald-600">
+                  <span className="p-3 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 text-emerald-600 border border-emerald-200">
                     <CheckCircle2 size={28} />
                   </span>
-                  <p className="text-sm font-black text-slate-900 tracking-tight">Paiement confirmé</p>
-                  <p className="text-[11px] text-gray-500 text-center max-w-xs">
-                    Votre nouvelle ligne <span className="font-bold">{checkoutNumber}</span> est active et
-                    associée à votre Gig.
-                  </p>
+                  <p className="text-sm font-black text-slate-900 tracking-tight">{t('phoneNumberPanel.checkout.success.title')}</p>
+                  <p
+                    className="text-[11px] text-slate-500 text-center max-w-xs"
+                    dangerouslySetInnerHTML={{
+                      __html: t('phoneNumberPanel.checkout.success.body', { number: checkoutNumber })
+                    }}
+                  />
                   <button
                     type="button"
                     onClick={() => {
                       closeCheckoutModal();
                       setTelephonyTab('my_numbers');
                     }}
-                    className="mt-2 px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-wider bg-slate-900 hover:bg-slate-800 text-white"
+                    className="mt-2 px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-wider bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white"
                   >
-                    Voir mes lignes
+                    {t('phoneNumberPanel.checkout.success.cta')}
                   </button>
                 </div>
               )}
 
-              <p className="text-[10px] text-gray-400 text-center">
-                Paiement chiffré · {checkoutPaymentId ? `Ref ${String(checkoutPaymentId).slice(-8)}` : 'Aucun frais débité du wallet'}
+              <p className="text-[10px] text-slate-400 text-center">
+                {t('phoneNumberPanel.checkout.encrypted')} · {checkoutPaymentId
+                  ? t('phoneNumberPanel.checkout.ref', { ref: String(checkoutPaymentId).slice(-8) })
+                  : t('phoneNumberPanel.checkout.noFee')}
               </p>
             </div>
           </div>
