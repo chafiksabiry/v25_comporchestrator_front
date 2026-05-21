@@ -315,7 +315,7 @@
         "totalBaseSub": "leads uploadés",
         "totalBaseSubReal": "leads en base",
         "calledOnce": "Appelés ≥1x",
-        "calledOnceSub": "68% couverture",
+        "calledOnceSub": "{{pct}}% couverture",
         "contacted": "Contactés",
         "contactedSub": "47% joignables",
         "exhausted": "Épuisés",
