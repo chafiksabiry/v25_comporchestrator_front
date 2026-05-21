@@ -175,7 +175,7 @@ export default function OperationsDashboard() {
     setGigDropdownOpen(false);
   };
 
-  // ----- Lead stats (KPIs + quality breakdown) -----
+  // ----- Lead stats (KPIs + quality + attempts breakdown) -----
   type LeadStats = {
     total: number;
     called: number;
@@ -193,6 +193,13 @@ export default function OperationsDashboard() {
       alreadyInsured: { count: number; pct: number };
     };
     qualityScorePct: number;
+    attemptDistribution: {
+      one: { count: number; pct: number };
+      two: { count: number; pct: number };
+      three: { count: number; pct: number };
+      four: { count: number; pct: number };
+      fivePlus: { count: number; pct: number };
+    };
   };
   const [leadStats, setLeadStats] = useState<LeadStats | null>(null);
 
@@ -250,6 +257,15 @@ export default function OperationsDashboard() {
               ? json.qualityScorePct
               : quality.valid.pct;
 
+          const ad = json.attemptDistribution || {};
+          const attemptDistribution = {
+            one: ad.one || blank,
+            two: ad.two || blank,
+            three: ad.three || blank,
+            four: ad.four || blank,
+            fivePlus: ad.fivePlus || blank,
+          };
+
           setLeadStats({
             total: json.total,
             called: json.called,
@@ -260,6 +276,7 @@ export default function OperationsDashboard() {
             reachablePct,
             quality,
             qualityScorePct,
+            attemptDistribution,
           });
         }
       } catch {
@@ -888,6 +905,13 @@ type LeadStatsProp = {
     alreadyInsured: { count: number; pct: number };
   };
   qualityScorePct: number;
+  attemptDistribution: {
+    one: { count: number; pct: number };
+    two: { count: number; pct: number };
+    three: { count: number; pct: number };
+    four: { count: number; pct: number };
+    fivePlus: { count: number; pct: number };
+  };
 };
 
 function LeadsView({ leadStats }: { leadStats: LeadStatsProp | null }) {
@@ -999,35 +1023,46 @@ function LeadsView({ leadStats }: { leadStats: LeadStatsProp | null }) {
     },
   ];
 
+  // Attempt distribution — real data from the backend; mock fallback keeps
+  // the layout populated while waiting for data or on demo accounts.
+  const MOCK_AD = {
+    one:      { count: 3124, pct: 37 },
+    two:      { count: 2810, pct: 33 },
+    three:    { count: 1520, pct: 18 },
+    four:     { count: 1000, pct: 12 },
+    fivePlus: { count: 812,  pct: 6.5 },
+  };
+  const ad = leadStats?.attemptDistribution ?? MOCK_AD;
+
   const attempts: AttemptBucket[] = [
     {
       label: t('opsDashboard.leads.attempts.one', '1 tentative'),
-      leads: 3124,
-      pct: 37,
+      leads: ad.one.count,
+      pct: ad.one.pct,
       bar: 'bg-harx-500',
     },
     {
       label: t('opsDashboard.leads.attempts.two', '2 tentatives'),
-      leads: 2810,
-      pct: 33,
+      leads: ad.two.count,
+      pct: ad.two.pct,
       bar: 'bg-harx-400',
     },
     {
       label: t('opsDashboard.leads.attempts.three', '3 tentatives'),
-      leads: 1520,
-      pct: 18,
+      leads: ad.three.count,
+      pct: ad.three.pct,
       bar: 'bg-harx-300',
     },
     {
       label: t('opsDashboard.leads.attempts.four', '4 tentatives'),
-      leads: 1000,
-      pct: 12,
+      leads: ad.four.count,
+      pct: ad.four.pct,
       bar: 'bg-blue-500',
     },
     {
       label: t('opsDashboard.leads.attempts.five', '≥5 tentatives (épuisés)'),
-      leads: 812,
-      pct: 6.5,
+      leads: ad.fivePlus.count,
+      pct: ad.fivePlus.pct,
       bar: 'bg-rose-500',
       textTone: 'text-rose-600',
     },
@@ -1161,7 +1196,7 @@ function LeadsView({ leadStats }: { leadStats: LeadStatsProp | null }) {
                   <span className="text-[12px] font-bold text-slate-700">{a.label}</span>
                   <span className={`text-[12px] font-black tabular-nums ${a.textTone || 'text-slate-900'}`}>
                     {a.leads.toLocaleString('fr-FR')} {t('opsDashboard.leads.leads', 'leads')}{' '}
-                    <span className="text-slate-400 font-bold">({a.pct}%)</span>
+                    <span className="text-slate-400 font-bold">({fmtPct(a.pct)}%)</span>
                   </span>
                 </div>
                 <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
