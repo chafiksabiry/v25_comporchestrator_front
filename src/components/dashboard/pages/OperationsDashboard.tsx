@@ -14,6 +14,28 @@ import {
   ArrowUpRight,
   X,
   ChevronRight,
+  Database,
+  PhoneIncoming,
+  CheckCircle2,
+  BatteryLow,
+  Hourglass,
+  Repeat,
+  ShieldCheck,
+  ListChecks,
+  CalendarClock,
+  Star,
+  TrendingUp,
+  XCircle,
+  PieChart,
+  Activity,
+  GraduationCap,
+  Mail,
+  Sparkles,
+  Plus,
+  Minus,
+  Calculator,
+  MoreHorizontal,
+  ChevronDown,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useTranslation } from 'react-i18next';
@@ -265,6 +287,40 @@ export default function OperationsDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-5 pb-12 animate-in fade-in duration-500">
+      {/* ---------- Brand header ---------- */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className="text-xl font-black tracking-tight text-slate-900">
+            HARX<span className="text-harx-500">.AI</span>
+          </span>
+          <span className="rounded-full bg-harx-500 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-sm">
+            {t('opsDashboard.header.companyDashboard', 'Company Dashboard')}
+          </span>
+          <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            {t('opsDashboard.header.live', 'Live')}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-[12px] font-bold text-slate-800 shadow-sm transition-colors hover:bg-slate-50">
+            <span className="truncate max-w-[260px]">
+              {t('opsDashboard.header.gigName', 'Digital Assurance — Mutuelles Santé')}
+            </span>
+            <ChevronDown size={14} className="text-slate-400" />
+          </button>
+          <button
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-700"
+            aria-label="More"
+          >
+            <MoreHorizontal size={16} />
+          </button>
+        </div>
+      </div>
+
       {/* ---------- Wallet / fraud alert banner ---------- */}
       {bannerOpen && (
         <div className="flex items-start gap-3 rounded-2xl border border-amber-300/70 bg-amber-50 px-5 py-3 text-amber-900">
@@ -320,6 +376,18 @@ export default function OperationsDashboard() {
         })}
       </div>
 
+      {/* ---------- Tab content ---------- */}
+      {tab === 'leads' ? (
+        <LeadsView />
+      ) : tab === 'results' ? (
+        <ResultsView />
+      ) : tab === 'team' ? (
+        <TeamView />
+      ) : tab === 'wallet' ? (
+        <WalletView />
+      ) : (
+        // Vue globale + Appels share the same call-centric overview content.
+        <>
       {/* ---------- KPI cards ---------- */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <KpiCard
@@ -498,7 +566,882 @@ export default function OperationsDashboard() {
           />
         </div>
       </section>
+        </>
+      )}
     </div>
+  );
+}
+
+/* ---------------- Leads view ---------------- */
+
+interface LeadQuality {
+  key: string;
+  label: string;
+  pct: number;
+  leads: number;
+  tone: 'emerald' | 'amber' | 'rose';
+}
+
+interface AttemptBucket {
+  label: string;
+  leads: number;
+  pct: number;
+  /** Tailwind class for the colored bar */
+  bar: string;
+  /** Tailwind class for the right-hand count text */
+  textTone?: string;
+}
+
+interface RepCoverage {
+  initials: string;
+  name: string;
+  current: number;
+  target: number;
+  /** Tailwind class for the bar fill */
+  bar: string;
+  /** Tailwind class for the avatar background */
+  avatar: string;
+  /** Optional warning marker (e.g. red triangle for under-performers) */
+  warn?: boolean;
+}
+
+function LeadsView() {
+  const { t } = useTranslation();
+
+  const qualities: LeadQuality[] = [
+    {
+      key: 'valid',
+      label: t('opsDashboard.leads.quality.valid', 'VALIDES JOIGNABLES'),
+      pct: 68.4,
+      leads: 8516,
+      tone: 'emerald',
+    },
+    {
+      key: 'unreachable',
+      label: t('opsDashboard.leads.quality.unreachable', 'INJOIGNABLES'),
+      pct: 12.3,
+      leads: 1531,
+      tone: 'amber',
+    },
+    {
+      key: 'wrong',
+      label: t('opsDashboard.leads.quality.wrong', 'FAUX NUMÉROS'),
+      pct: 4.1,
+      leads: 511,
+      tone: 'rose',
+    },
+    {
+      key: 'notInterested',
+      label: t('opsDashboard.leads.quality.notInterested', 'PAS INTÉRESSÉS'),
+      pct: 8.7,
+      leads: 1083,
+      tone: 'amber',
+    },
+    {
+      key: 'notAware',
+      label: t('opsDashboard.leads.quality.notAware', 'PAS AU COURANT'),
+      pct: 3.2,
+      leads: 398,
+      tone: 'amber',
+    },
+    {
+      key: 'alreadyInsured',
+      label: t('opsDashboard.leads.quality.alreadyInsured', 'DÉJÀ ASSURÉS'),
+      pct: 3.3,
+      leads: 411,
+      tone: 'amber',
+    },
+  ];
+
+  const attempts: AttemptBucket[] = [
+    {
+      label: t('opsDashboard.leads.attempts.one', '1 tentative'),
+      leads: 3124,
+      pct: 37,
+      bar: 'bg-harx-500',
+    },
+    {
+      label: t('opsDashboard.leads.attempts.two', '2 tentatives'),
+      leads: 2810,
+      pct: 33,
+      bar: 'bg-harx-400',
+    },
+    {
+      label: t('opsDashboard.leads.attempts.three', '3 tentatives'),
+      leads: 1520,
+      pct: 18,
+      bar: 'bg-harx-300',
+    },
+    {
+      label: t('opsDashboard.leads.attempts.four', '4 tentatives'),
+      leads: 1000,
+      pct: 12,
+      bar: 'bg-blue-500',
+    },
+    {
+      label: t('opsDashboard.leads.attempts.five', '≥5 tentatives (épuisés)'),
+      leads: 812,
+      pct: 6.5,
+      bar: 'bg-rose-500',
+      textTone: 'text-rose-600',
+    },
+  ];
+
+  const reps: RepCoverage[] = [
+    { initials: 'KA', name: 'Karima A.', current: 1050, target: 1250, bar: 'bg-harx-500', avatar: 'bg-harx-500/15 text-harx-700' },
+    { initials: 'YO', name: 'Younes O.', current: 887, target: 1250, bar: 'bg-blue-500', avatar: 'bg-blue-500/15 text-blue-700' },
+    { initials: 'SB', name: 'Sara B.', current: 788, target: 1250, bar: 'bg-emerald-500', avatar: 'bg-emerald-500/15 text-emerald-700' },
+    { initials: 'AM', name: 'Amine M.', current: 675, target: 1250, bar: 'bg-amber-500', avatar: 'bg-amber-500/15 text-amber-700' },
+    { initials: 'HB', name: 'Hassan B.', current: 388, target: 1250, bar: 'bg-rose-500', avatar: 'bg-rose-500/15 text-rose-700', warn: true },
+  ];
+
+  return (
+    <>
+      {/* ---------- Leads KPI cards ---------- */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        <KpiCard
+          tone="primary"
+          icon={<Database size={14} />}
+          label={t('opsDashboard.leads.kpi.totalBase', 'Base totale')}
+          value="12,450"
+          sub={t('opsDashboard.leads.kpi.totalBaseSub', 'leads uploadés')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<PhoneIncoming size={14} className="text-harx-500" />}
+          label={t('opsDashboard.leads.kpi.calledOnce', 'Appelés ≥1x')}
+          value="8,466"
+          sub={t('opsDashboard.leads.kpi.calledOnceSub', '68% couverture')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<CheckCircle2 size={14} className="text-emerald-500" />}
+          label={t('opsDashboard.leads.kpi.contacted', 'Contactés')}
+          value="5,830"
+          sub={t('opsDashboard.leads.kpi.contactedSub', '47% joignables')}
+        />
+        <KpiCard
+          tone="dark"
+          icon={<BatteryLow size={14} />}
+          label={t('opsDashboard.leads.kpi.exhausted', 'Épuisés')}
+          value="812"
+          sub={t('opsDashboard.leads.kpi.exhaustedSub', '>5 tentatives')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<Hourglass size={14} className="text-slate-500" />}
+          label={t('opsDashboard.leads.kpi.remaining', 'Reste à appeler')}
+          value="3,984"
+          sub={t('opsDashboard.leads.kpi.remainingSub', '~8 jours restants')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<Repeat size={14} className="text-blue-500" />}
+          label={t('opsDashboard.leads.kpi.avgAttempts', 'Moy. tentatives')}
+          value="2.1x"
+          sub={t('opsDashboard.leads.kpi.avgAttemptsSub', 'par lead appelé')}
+        />
+      </div>
+
+      {/* ---------- Quality of base + Attempt distribution ---------- */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Qualité de la base */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <header className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+              <ShieldCheck size={14} className="text-harx-500" />
+              {t('opsDashboard.leads.qualityTitle', 'Qualité de la base')}
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              {t('opsDashboard.leads.scoredCallsSuite', 'suite appels scorés')}
+            </span>
+          </header>
+
+          <div className="grid grid-cols-2 gap-3">
+            {qualities.map((q) => (
+              <QualityTile key={q.key} {...q} />
+            ))}
+          </div>
+
+          {/* Warning footer */}
+          <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2.5 text-amber-900">
+            <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-600" />
+            <p className="text-[11px] font-medium leading-snug">
+              <span className="font-black">
+                {t('opsDashboard.leads.qualityWarningHead', 'Score qualité base : 68.4%')}
+              </span>{' '}
+              —{' '}
+              {t(
+                'opsDashboard.leads.qualityWarningBody',
+                "en dessous du seuil recommandé (75%). Envisager un nettoyage ou un nouvel upload."
+              )}
+            </p>
+          </div>
+        </section>
+
+        {/* Distribution tentatives + Rappels programmés */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
+            <ListChecks size={14} className="text-harx-500" />
+            {t('opsDashboard.leads.attemptsTitle', 'Distribution tentatives')}
+          </header>
+
+          <div className="space-y-3">
+            {attempts.map((a, idx) => (
+              <div key={idx}>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[12px] font-bold text-slate-700">{a.label}</span>
+                  <span className={`text-[12px] font-black tabular-nums ${a.textTone || 'text-slate-900'}`}>
+                    {a.leads.toLocaleString('fr-FR')} {t('opsDashboard.leads.leads', 'leads')}{' '}
+                    <span className="text-slate-400 font-bold">({a.pct}%)</span>
+                  </span>
+                </div>
+                <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full ${a.bar} transition-all duration-700 ease-out`}
+                    style={{ width: `${Math.max(2, Math.min(100, a.pct))}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Rappels programmés */}
+          <div className="mt-5 border-t border-slate-100 pt-4">
+            <header className="mb-3 flex items-center gap-2 text-sm font-black text-slate-900">
+              <CalendarClock size={14} className="text-harx-500" />
+              {t('opsDashboard.leads.callbacksTitle', 'Rappels programmés')}
+            </header>
+            <ul className="space-y-2">
+              <li className="flex items-center justify-between py-1.5">
+                <span className="text-[12px] font-bold text-slate-700">
+                  {t('opsDashboard.leads.callbackToday', "À rappeler aujourd'hui")}
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="text-sm font-black tabular-nums text-slate-900">143</span>
+                  <Tag tone="rose">{t('opsDashboard.leads.urgent', 'urgent')}</Tag>
+                </span>
+              </li>
+              <li className="flex items-center justify-between py-1.5">
+                <span className="text-[12px] font-bold text-slate-700">
+                  {t('opsDashboard.leads.callbackWeek', 'Cette semaine')}
+                </span>
+                <span className="text-sm font-black tabular-nums text-slate-900">389</span>
+              </li>
+              <li className="flex items-center justify-between py-1.5">
+                <span className="text-[12px] font-bold text-slate-700">
+                  {t('opsDashboard.leads.appointmentsConfirmed', 'RDV confirmés')}
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="text-sm font-black tabular-nums text-slate-900">67</span>
+                  <Tag tone="emerald">{t('opsDashboard.leads.active', 'actifs')}</Tag>
+                </span>
+              </li>
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      {/* ---------- Coverage progression per rep ---------- */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
+          <Trophy size={14} className="text-harx-500" />
+          {t('opsDashboard.leads.coverageTitle', 'Progression de couverture — par rep')}
+        </header>
+
+        <ul className="space-y-3">
+          {reps.map((rep) => {
+            const pct = Math.round((rep.current / rep.target) * 100);
+            return (
+              <li key={rep.initials} className="flex items-center gap-3">
+                <span
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${rep.avatar}`}
+                >
+                  {rep.initials}
+                </span>
+                <span className="w-24 shrink-0 text-[12px] font-bold text-slate-800">{rep.name}</span>
+                <div className="flex h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full ${rep.bar} transition-all duration-700 ease-out`}
+                    style={{ width: `${Math.max(2, Math.min(100, pct))}%` }}
+                  />
+                </div>
+                <span
+                  className={`shrink-0 text-[11px] font-black tabular-nums ${
+                    rep.warn ? 'text-rose-600' : 'text-slate-700'
+                  }`}
+                >
+                  {rep.current.toLocaleString('fr-FR')}/{rep.target.toLocaleString('fr-FR')} ({pct}%)
+                  {rep.warn && <AlertTriangle size={11} className="ml-1 inline-block text-rose-500" />}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    </>
+  );
+}
+
+function QualityTile({
+  label,
+  pct,
+  leads,
+  tone,
+}: {
+  label: string;
+  pct: number;
+  leads: number;
+  tone: 'emerald' | 'amber' | 'rose';
+}) {
+  const valueColor = {
+    emerald: 'text-emerald-600',
+    amber: 'text-amber-600',
+    rose: 'text-rose-600',
+  }[tone];
+  const dotColor = {
+    emerald: 'bg-emerald-500',
+    amber: 'bg-amber-500',
+    rose: 'bg-rose-500',
+  }[tone];
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+      <div className="text-[9px] font-black uppercase tracking-wider text-slate-400">{label}</div>
+      <div className={`mt-1 text-xl font-black leading-none ${valueColor}`}>{pct}%</div>
+      <div className="mt-1.5 flex items-center justify-between">
+        <span className="text-[10px] font-bold text-slate-500">
+          {leads.toLocaleString('fr-FR')} leads
+        </span>
+        <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`} />
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Results view ---------------- */
+
+interface IssueBucket {
+  label: string;
+  count: number;
+  pct: number;
+  tone: 'emerald' | 'rose' | 'violet' | 'amber' | 'blue';
+}
+
+interface RepIssueRow {
+  name: string;
+  transaction: number;
+  rdv: number;
+  rappel: number;
+  argumente: number;
+  refus: number;
+  convPct: number;
+  warn?: boolean;
+  nameTone?: 'harx' | 'slate' | 'rose';
+  convTone?: 'emerald' | 'amber' | 'rose';
+}
+
+function ResultsView() {
+  const { t } = useTranslation();
+
+  const issues: IssueBucket[] = [
+    { label: t('opsDashboard.results.issues.transactionDone', 'Transaction aboutie'), count: 23, pct: 12.2, tone: 'emerald' },
+    { label: t('opsDashboard.results.issues.transactionFailed', 'Transaction non aboutie'), count: 18, pct: 9.5, tone: 'rose' },
+    { label: t('opsDashboard.results.issues.appointment', 'RDV fixé'), count: 15, pct: 7.9, tone: 'violet' },
+    { label: t('opsDashboard.results.issues.callback', 'Rappel demandé'), count: 28, pct: 14.8, tone: 'amber' },
+    { label: t('opsDashboard.results.issues.argued', 'Argumenté (intéressé)'), count: 34, pct: 18.0, tone: 'emerald' },
+    { label: t('opsDashboard.results.issues.refusal', 'Refus catégorique'), count: 42, pct: 22.2, tone: 'rose' },
+    { label: t('opsDashboard.results.issues.notInterested', 'Pas intéressé'), count: 16, pct: 8.5, tone: 'amber' },
+    { label: t('opsDashboard.results.issues.alreadyInsured', 'Déjà assuré'), count: 13, pct: 6.9, tone: 'blue' },
+  ];
+
+  const repRows: RepIssueRow[] = [
+    { name: 'Karima A.', transaction: 67, rdv: 18, rappel: 32, argumente: 41, refus: 89, convPct: 15.5, nameTone: 'harx', convTone: 'emerald' },
+    { name: 'Younes O.', transaction: 54, rdv: 12, rappel: 28, argumente: 35, refus: 94, convPct: 12.1, convTone: 'emerald' },
+    { name: 'Sara B.', transaction: 48, rdv: 15, rappel: 21, argumente: 38, refus: 102, convPct: 10.8, convTone: 'amber' },
+    { name: 'Amine M.', transaction: 41, rdv: 9, rappel: 18, argumente: 29, refus: 118, convPct: 9.2, convTone: 'amber' },
+    { name: 'Hassan B.', transaction: 3, rdv: 1, rappel: 4, argumente: 6, refus: 41, convPct: 3.1, warn: true, nameTone: 'rose', convTone: 'rose' },
+  ];
+
+  return (
+    <>
+      {/* KPI row */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        <KpiCard
+          tone="primary"
+          icon={<Star size={14} />}
+          label={t('opsDashboard.results.kpi.transactions', 'Transactions')}
+          value="23"
+          sub={t('opsDashboard.results.kpi.transactionsSub', '12.2% conv.')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<CalendarClock size={14} className="text-violet-500" />}
+          label={t('opsDashboard.results.kpi.appointments', 'RDV fixés')}
+          value="15"
+          sub={t('opsDashboard.results.kpi.appointmentsSub', '7.9% des sérieux')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<Repeat size={14} className="text-amber-500" />}
+          label={t('opsDashboard.results.kpi.callbacks', 'Rappels demandés')}
+          value="28"
+          sub={t('opsDashboard.results.kpi.callbacksSub', '14.8% des sérieux')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<CheckCircle2 size={14} className="text-emerald-500" />}
+          label={t('opsDashboard.results.kpi.argued', 'Argumentés')}
+          value="34"
+          sub={t('opsDashboard.results.kpi.arguedSub', '18% des sérieux')}
+        />
+        <KpiCard
+          tone="dark"
+          icon={<XCircle size={14} />}
+          label={t('opsDashboard.results.kpi.refusals', 'Refus')}
+          value="42"
+          sub={t('opsDashboard.results.kpi.refusalsSub', '22.2% des sérieux')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<TrendingUp size={14} className="text-blue-500" />}
+          label={t('opsDashboard.results.kpi.pipeline', 'Pipe potentiel')}
+          value="43"
+          sub={t('opsDashboard.results.kpi.pipelineSub', 'RDV + rappels')}
+        />
+      </div>
+
+      {/* Issues + visual breakdown */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Issues des appels sérieux */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <header className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+              <BarChart3 size={14} className="text-harx-500" />
+              {t('opsDashboard.results.issuesTitle', 'Issues des appels sérieux')}
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              189 {t('opsDashboard.results.callsToday', 'appels · aujourd\'hui')}
+            </span>
+          </header>
+
+          <div className="grid grid-cols-2 gap-3">
+            {issues.map((i, idx) => (
+              <IssueTile key={idx} {...i} />
+            ))}
+          </div>
+        </section>
+
+        {/* Répartition visuelle */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
+            <PieChart size={14} className="text-harx-500" />
+            {t('opsDashboard.results.distributionTitle', 'Répartition visuelle')}
+          </header>
+
+          <div className="mb-5 flex items-center justify-center">
+            <DonutChart segments={issues.map((i) => ({ pct: i.pct, tone: i.tone }))} />
+          </div>
+
+          <ul className="space-y-2 border-t border-slate-100 pt-3">
+            <li className="flex items-center justify-between py-1.5 text-[12px]">
+              <span className="font-bold text-slate-700">
+                {t('opsDashboard.results.hotPipeline', 'Pipeline chaud (RDV + rappels)')}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="font-black tabular-nums text-slate-900">43 leads</span>
+                <Tag tone="emerald">{t('opsDashboard.results.toWork', 'à travailler')}</Tag>
+              </span>
+            </li>
+            <li className="flex items-center justify-between py-1.5 text-[12px]">
+              <span className="font-bold text-slate-700">
+                {t('opsDashboard.results.refusalReopen', 'Taux de réouverture refus')}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="font-black tabular-nums text-slate-900">8.3%</span>
+                <Tag tone="amber">{t('opsDashboard.results.low', 'faible')}</Tag>
+              </span>
+            </li>
+            <li className="flex items-center justify-between py-1.5 text-[12px]">
+              <span className="font-bold text-slate-700">
+                {t('opsDashboard.results.signatureDelay', 'Délai moy. RDV → signature')}
+              </span>
+              <span className="font-black tabular-nums text-slate-900">
+                2.4 {t('opsDashboard.results.days', 'jours')}
+              </span>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      {/* Issues par rep — table */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <header className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+            <Users size={14} className="text-harx-500" />
+            {t('opsDashboard.results.byRepTitle', 'Issues par rep')}
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            {t('opsDashboard.results.thisMonth', 'ce mois')}
+          </span>
+        </header>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-[12px]">
+            <thead>
+              <tr className="border-b border-slate-100 text-left text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <th className="py-2 pr-4 font-black">Rep</th>
+                <th className="py-2 pr-4 font-black text-emerald-500">
+                  {t('opsDashboard.results.table.transaction', 'Transaction')}
+                </th>
+                <th className="py-2 pr-4 font-black text-violet-500">RDV</th>
+                <th className="py-2 pr-4 font-black text-amber-500">
+                  {t('opsDashboard.results.table.callback', 'Rappel')}
+                </th>
+                <th className="py-2 pr-4 font-black text-blue-500">
+                  {t('opsDashboard.results.table.argued', 'Argumenté')}
+                </th>
+                <th className="py-2 pr-4 font-black text-rose-500">
+                  {t('opsDashboard.results.table.refusal', 'Refus')}
+                </th>
+                <th className="py-2 pr-0 font-black">Conv.%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {repRows.map((r, idx) => {
+                const nameColor =
+                  r.nameTone === 'harx' ? 'text-harx-600' : r.nameTone === 'rose' ? 'text-rose-600' : 'text-slate-800';
+                const convColor =
+                  r.convTone === 'emerald' ? 'text-emerald-600' : r.convTone === 'amber' ? 'text-amber-600' : 'text-rose-600';
+                return (
+                  <tr key={idx} className="border-b border-slate-50 last:border-0">
+                    <td className={`py-2.5 pr-4 font-bold ${nameColor}`}>{r.name}</td>
+                    <td className="py-2.5 pr-4 font-black tabular-nums text-emerald-600">{r.transaction}</td>
+                    <td className="py-2.5 pr-4 font-bold tabular-nums text-slate-700">{r.rdv}</td>
+                    <td className="py-2.5 pr-4 font-bold tabular-nums text-slate-700">{r.rappel}</td>
+                    <td className="py-2.5 pr-4 font-bold tabular-nums text-slate-700">{r.argumente}</td>
+                    <td className="py-2.5 pr-4 font-bold tabular-nums text-slate-700">{r.refus}</td>
+                    <td className={`py-2.5 pr-0 font-black tabular-nums ${convColor}`}>
+                      {r.convPct.toFixed(1)}%
+                      {r.warn && <AlertTriangle size={11} className="ml-1 inline-block text-rose-500" />}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function IssueTile({
+  label,
+  count,
+  pct,
+  tone,
+}: {
+  label: string;
+  count: number;
+  pct: number;
+  tone: 'emerald' | 'rose' | 'violet' | 'amber' | 'blue';
+}) {
+  const tones: Record<string, { strip: string; value: string }> = {
+    emerald: { strip: 'border-l-emerald-500', value: 'text-emerald-600' },
+    rose: { strip: 'border-l-rose-500', value: 'text-rose-600' },
+    violet: { strip: 'border-l-violet-500', value: 'text-violet-600' },
+    amber: { strip: 'border-l-amber-500', value: 'text-amber-600' },
+    blue: { strip: 'border-l-blue-500', value: 'text-blue-600' },
+  };
+  const c = tones[tone];
+
+  return (
+    <div className={`rounded-xl border-l-4 ${c.strip} border-y border-r border-slate-200 bg-slate-50/60 p-3`}>
+      <div className="text-[11px] font-bold text-slate-700">{label}</div>
+      <div className="mt-1 flex items-baseline gap-1.5">
+        <span className={`text-xl font-black leading-none tabular-nums ${c.value}`}>{count}</span>
+      </div>
+      <div className="mt-0.5 text-[10px] font-bold text-slate-400 tabular-nums">{pct.toFixed(1)}%</div>
+    </div>
+  );
+}
+
+/** Minimalist SVG donut chart. Colored segments come from the same tone
+ *  palette as the IssueTile so the visual is consistent with the cards. */
+function DonutChart({ segments }: { segments: Array<{ pct: number; tone: string }> }) {
+  const colors: Record<string, string> = {
+    emerald: '#10b981',
+    rose: '#ef4444',
+    violet: '#8b5cf6',
+    amber: '#f59e0b',
+    blue: '#3b82f6',
+  };
+
+  // Normalize so segments fill the ring (their percentages refer to the
+  // serious-call total, not 100%, so we rescale them to a 360° ring).
+  const total = segments.reduce((s, x) => s + x.pct, 0);
+  const r = 60;
+  const cx = 70;
+  const cy = 70;
+  let acc = 0;
+
+  const polar = (a: number) => {
+    const rad = ((a - 90) * Math.PI) / 180;
+    return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
+  };
+
+  return (
+    <svg viewBox="0 0 140 140" width="160" height="160" className="block">
+      {segments.map((seg, idx) => {
+        const start = (acc / total) * 360;
+        acc += seg.pct;
+        const end = (acc / total) * 360;
+        const [sx, sy] = polar(start);
+        const [ex, ey] = polar(end);
+        const large = end - start > 180 ? 1 : 0;
+        const d = `M ${cx} ${cy} L ${sx} ${sy} A ${r} ${r} 0 ${large} 1 ${ex} ${ey} Z`;
+        return <path key={idx} d={d} fill={colors[seg.tone] || '#cbd5e1'} />;
+      })}
+      <circle cx={cx} cy={cy} r={32} fill="#ffffff" />
+    </svg>
+  );
+}
+
+/* ---------------- Team view ---------------- */
+
+interface RepLeaderboard {
+  rank: number;
+  initials: string;
+  name: string;
+  score: number;
+  convPct: number;
+  leadsCovered: number;
+  transactions: number;
+  avatar: string;
+  warn?: boolean;
+}
+
+function TeamView() {
+  const { t } = useTranslation();
+
+  const reps: RepLeaderboard[] = [
+    { rank: 1, initials: 'KA', name: 'Karima A.', score: 84, convPct: 15.5, leadsCovered: 1050, transactions: 67, avatar: 'bg-harx-500/15 text-harx-700' },
+    { rank: 2, initials: 'YO', name: 'Younes O.', score: 79, convPct: 12.1, leadsCovered: 887, transactions: 54, avatar: 'bg-blue-500/15 text-blue-700' },
+    { rank: 3, initials: 'SB', name: 'Sara B.', score: 77, convPct: 10.8, leadsCovered: 788, transactions: 48, avatar: 'bg-emerald-500/15 text-emerald-700' },
+    { rank: 4, initials: 'AM', name: 'Amine M.', score: 71, convPct: 9.2, leadsCovered: 675, transactions: 41, avatar: 'bg-amber-500/15 text-amber-700' },
+    { rank: 5, initials: 'HB', name: 'Hassan B.', score: 38, convPct: 3.1, leadsCovered: 388, transactions: 3, avatar: 'bg-rose-500/15 text-rose-700', warn: true },
+  ];
+
+  return (
+    <>
+      {/* KPI row */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        <KpiCard
+          tone="primary"
+          icon={<Users size={14} />}
+          label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')}
+          value="18"
+          sub={t('opsDashboard.team.kpi.enrolledSub', 'sur ce gig')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<Activity size={14} className="text-emerald-500" />}
+          label={t('opsDashboard.team.kpi.activeWeek', 'Actifs semaine')}
+          value="14"
+          sub="78%"
+        />
+        <KpiCard
+          tone="default"
+          icon={<GraduationCap size={14} className="text-blue-500" />}
+          label={t('opsDashboard.team.kpi.lmsDone', 'LMS complété')}
+          value="16/18"
+          sub="89%"
+        />
+        <KpiCard
+          tone="dark"
+          icon={<AlertTriangle size={14} />}
+          label={t('opsDashboard.team.kpi.atRisk', 'À risque')}
+          value="2"
+          sub={t('opsDashboard.team.kpi.atRiskSub', 'score < 50')}
+          subTone="rose"
+        />
+        <KpiCard
+          tone="default"
+          icon={<Sparkles size={14} className="text-amber-500" />}
+          label={t('opsDashboard.team.kpi.avgScore', 'Score moyen')}
+          value="74/100"
+          sub={t('opsDashboard.team.kpi.avgScoreSub', '+3 vs semaine')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<Mail size={14} className="text-slate-500" />}
+          label={t('opsDashboard.team.kpi.invitations', 'Invitations')}
+          value="6"
+          sub={t('opsDashboard.team.kpi.invitationsSub', 'en attente')}
+        />
+      </div>
+
+      {/* Leaderboard */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
+          <Trophy size={14} className="text-harx-500" />
+          {t('opsDashboard.team.leaderboardTitle', 'Leaderboard — transactions ce mois')}
+        </header>
+
+        <ul className="divide-y divide-slate-100">
+          {reps.map((r) => (
+            <li
+              key={r.rank}
+              className={`flex items-center gap-3 py-3 ${r.warn ? 'rounded-xl bg-rose-50/40 px-2' : ''}`}
+            >
+              <span
+                className={`shrink-0 text-[12px] font-black tabular-nums ${
+                  r.warn ? 'text-rose-500' : 'text-slate-500'
+                }`}
+              >
+                {r.rank}
+              </span>
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${r.avatar}`}
+              >
+                {r.initials}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`text-sm font-black ${
+                    r.warn ? 'text-rose-600' : r.rank === 1 ? 'text-harx-600' : 'text-slate-900'
+                  }`}
+                >
+                  {r.name}
+                  {r.warn && (
+                    <span className="ml-2 text-[11px] font-bold text-rose-500">
+                      {t('opsDashboard.team.atRiskInline', 'à risque')}
+                    </span>
+                  )}
+                </p>
+                <p className={`text-[11px] font-medium ${r.warn ? 'text-rose-500' : 'text-slate-500'}`}>
+                  score {r.score} · conv. {r.convPct.toFixed(1)}% · {r.leadsCovered.toLocaleString('fr-FR')}{' '}
+                  {t('opsDashboard.team.coveredLeads', 'leads couverts')}
+                  {r.warn && ` ${t('opsDashboard.team.onlyWord', 'seulement')}`}
+                </p>
+              </div>
+              <span
+                className={`shrink-0 text-2xl font-black tabular-nums ${
+                  r.warn ? 'text-rose-500' : r.rank === 1 ? 'text-emerald-500' : 'text-slate-700'
+                }`}
+              >
+                {r.transactions}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </>
+  );
+}
+
+/* ---------------- Wallet view ---------------- */
+
+interface WalletTx {
+  type: 'topup' | 'floor' | 'commission';
+  label: string;
+  amount: number;
+  date: string;
+}
+
+function WalletView() {
+  const { t } = useTranslation();
+
+  const txs: WalletTx[] = [
+    { type: 'topup', label: 'Top-up', amount: 10000, date: '12 mai' },
+    { type: 'floor', label: 'Floor — Karima A. (214 appels)', amount: -856, date: '12 mai' },
+    { type: 'commission', label: 'Commission — 23 transactions', amount: -1150, date: '12 mai' },
+    { type: 'floor', label: 'Floor — Younes O. (178 appels)', amount: -712, date: '11 mai' },
+    { type: 'commission', label: 'Commission — 19 transactions', amount: -950, date: '11 mai' },
+  ];
+
+  const formatEur = (n: number) => {
+    const sign = n > 0 ? '+' : n < 0 ? '−' : '';
+    return `${sign}€${Math.abs(n).toLocaleString('fr-FR')}`;
+  };
+
+  return (
+    <>
+      {/* KPI row */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <KpiCard
+          tone="primary"
+          icon={<Wallet size={14} />}
+          label={t('opsDashboard.wallet.kpi.available', 'Disponible')}
+          value="€3,240"
+          sub={t('opsDashboard.wallet.kpi.availableSub', '2.8 jours')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<Hourglass size={14} className="text-slate-500" />}
+          label={t('opsDashboard.wallet.kpi.onHold', 'On hold')}
+          value="€1,370"
+          sub={t('opsDashboard.wallet.kpi.onHoldSub', 'en validation')}
+        />
+        <KpiCard
+          tone="default"
+          icon={<TrendingUp size={14} className="text-slate-500" />}
+          label={t('opsDashboard.wallet.kpi.spentMtd', 'Dépensé MTD')}
+          value="€7,080"
+          sub={t('opsDashboard.wallet.kpi.spentMtdSub', 'ce mois')}
+        />
+        <KpiCard
+          tone="dark"
+          icon={<Activity size={14} />}
+          label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')}
+          value="€1,156"
+          sub={t('opsDashboard.wallet.kpi.burnRateSub', 'par jour')}
+        />
+      </div>
+
+      {/* Transactions récentes */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
+          <span className="inline-flex h-5 w-1.5 rounded-sm bg-harx-500" />
+          {t('opsDashboard.wallet.txTitle', 'Transactions récentes')}
+        </header>
+
+        <ul className="divide-y divide-slate-100">
+          {txs.map((tx, idx) => {
+            const isCredit = tx.amount > 0;
+            return (
+              <li key={idx} className="flex items-center gap-3 py-2.5">
+                <span
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                    isCredit
+                      ? 'bg-emerald-500/15 text-emerald-600'
+                      : 'bg-rose-500/15 text-rose-600'
+                  }`}
+                >
+                  {isCredit ? <Plus size={12} /> : <Minus size={12} />}
+                </span>
+                <span className="flex-1 truncate text-[13px] font-bold text-slate-800">{tx.label}</span>
+                <span
+                  className={`shrink-0 text-[12px] font-black tabular-nums ${
+                    isCredit ? 'text-emerald-600' : 'text-rose-600'
+                  }`}
+                >
+                  {formatEur(tx.amount)} · {tx.date}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      {/* Top-up CTA */}
+      <button className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-harx-500 px-6 py-4 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-harx-500/30 transition-all hover:-translate-y-0.5 hover:bg-harx-600">
+        <Calculator size={16} />
+        {t('opsDashboard.wallet.computeTopup', 'Calculer le prochain top-up')}
+        <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+      </button>
+    </>
   );
 }
 
