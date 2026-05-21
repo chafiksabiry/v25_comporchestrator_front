@@ -51,6 +51,7 @@ import {
 import { Chart } from 'react-chartjs-2';
 import Cookies from 'js-cookie';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 // Idempotent: other dashboards already register the same scales, registering
 // again is a no-op so it's safe to keep it co-located with the chart.
@@ -64,6 +65,123 @@ ChartJS.register(
   Legend,
   Filler
 );
+
+/** Base URL for call analytics (`v25_dash_calls_backend`). */
+function getCallsApiBase(): string | null {
+  const raw =
+    (import.meta as any).env?.VITE_API_URL_CALL ||
+    (import.meta as any).env?.VITE_DASHBOARD_API;
+  if (!raw) return null;
+  return raw.endsWith('/api') ? raw : `${raw}/api`;
+}
+
+function todayIsoRange(): { from: string; to: string } {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  return { from: start.toISOString(), to: new Date().toISOString() };
+}
+
+function monthIsoRange(): { from: string; to: string } {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  return { from: start.toISOString(), to: now.toISOString() };
+}
+
+function gigQuery(gigId: string): string {
+  return gigId && gigId !== 'all' ? `gigId=${encodeURIComponent(gigId)}&` : '';
+}
+
+function timeAgo(iso: string | Date | null | undefined): string {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 60_000) return `${Math.max(1, Math.floor(ms / 1000))}m`;
+  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m`;
+  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h`;
+  return `${Math.floor(ms / 86_400_000)}j`;
+}
+
+function initialsOf(full: string): string {
+  const parts = full.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+}
+
+type AnalyticsOverview = {
+  totals: {
+    total: number;
+    serious: number;
+    fraud: number;
+    voicemail: number;
+    unreachable: number;
+    avgDuration: number;
+  };
+  statuses: Array<{ outcome: string; count: number }>;
+  series7d: Array<{ date: string; total: number; serious: number; transactions: number }>;
+};
+
+type AnalyticsOutcome = { outcome: string; count: number; pct: number };
+
+type AnalyticsRep = {
+  userId: string;
+  name: string;
+  total: number;
+  transaction: number;
+  appointment: number;
+  callbacks: number;
+  argued: number;
+  refusal: number;
+  serious: number;
+  validByAIPct: number;
+  avgScore: number;
+};
+
+type RecentCallApi = {
+  _id: string;
+  createdAt?: string;
+  duration?: number;
+  outcome?: string;
+  score?: number | null;
+  repName?: string | null;
+  leadName?: string | null;
+};
+
+type CallbacksStats = { today: number; week: number; appointmentsConfirmed: number };
+
+/** Map persisted / derived callOutcome → UI tag on recent-call rows. */
+function outcomeTag(
+  outcome: string | null | undefined,
+  t: TFunction
+): RecentCall['tag'] | undefined {
+  if (!outcome) return undefined;
+  const map: Record<string, RecentCall['tag']> = {
+    transaction: { label: t('opsDashboard.tags.transaction', 'transaction'), tone: 'emerald' },
+    appointment: { label: t('opsDashboard.tags.appointment', 'RDV fixé'), tone: 'violet' },
+    callback_requested: { label: t('opsDashboard.tags.callbackJ2', 'rappel'), tone: 'amber' },
+    fraud: { label: t('opsDashboard.tags.fraud', 'fraude'), tone: 'rose' },
+    voicemail: {
+      label: t('opsDashboard.statuses.voicemail', 'messagerie vocale'),
+      tone: 'slate',
+    },
+    no_answer: {
+      label: t('opsDashboard.statuses.unreachable', 'injoignable').toLowerCase(),
+      tone: 'amber',
+    },
+    busy: {
+      label: t('opsDashboard.statuses.unreachable', 'injoignable').toLowerCase(),
+      tone: 'amber',
+    },
+    wrong_number: { label: t('opsDashboard.statuses.wrongNumber', 'faux numéro'), tone: 'rose' },
+    argued_interested: { label: t('opsDashboard.results.issues.argued', 'Argumenté'), tone: 'emerald' },
+    refusal: { label: t('opsDashboard.results.issues.refusal', 'Refus'), tone: 'rose' },
+    not_interested: { label: t('opsDashboard.results.issues.notInterested', 'Pas intéressé'), tone: 'amber' },
+    already_insured: {
+      label: t('opsDashboard.results.issues.alreadyInsured', 'Déjà assuré'),
+      tone: 'slate',
+    },
+  };
+  return map[outcome];
+}
 
 type TabId = 'overview' | 'leads' | 'calls' | 'results' | 'team' | 'wallet';
 
@@ -336,79 +454,124 @@ export default function OperationsDashboard() {
     };
   }, [selectedGigId]);
 
-  // Real-data hook: we pull call counts the same way the previous dashboard
-  // did so the top cards stay in sync with what the API actually exposes
-  // for the company. Falls back to the mock numbers from the mock when the
-  // backend is unreachable so the page never renders empty.
-  const [calls, setCalls] = useState<any[] | null>(null);
+  // ----- Call analytics (v25_dash_calls_backend) -----
+  const [overviewToday, setOverviewToday] = useState<AnalyticsOverview | null>(null);
+  const [overviewMonth, setOverviewMonth] = useState<AnalyticsOverview | null>(null);
+  const [recentCallsApi, setRecentCallsApi] = useState<RecentCallApi[] | null>(null);
+  const [outcomesMonth, setOutcomesMonth] = useState<{
+    total: number;
+    outcomes: AnalyticsOutcome[];
+  } | null>(null);
+  const [repsMonth, setRepsMonth] = useState<AnalyticsRep[] | null>(null);
+  const [callbacksStats, setCallbacksStats] = useState<CallbacksStats | null>(null);
 
   useEffect(() => {
     const companyId = Cookies.get('companyId');
-    if (!companyId) return;
-    const callsApiUrl =
-      (import.meta as any).env?.VITE_API_URL_CALL ||
-      (import.meta as any).env?.VITE_DASHBOARD_API;
-    if (!callsApiUrl) return;
-    const base = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
+    const base = getCallsApiBase();
+    if (!companyId || !base) return;
 
-    const params = new URLSearchParams({ companyId, limit: '2000' });
-    if (selectedGigId && selectedGigId !== 'all') {
-      params.set('gigId', selectedGigId);
-    }
+    let cancelled = false;
+    const gq = gigQuery(selectedGigId);
+    const today = todayIsoRange();
+    const month = monthIsoRange();
 
     (async () => {
       try {
-        const res = await fetch(`${base}/calls?${params.toString()}`);
-        if (!res.ok) return;
-        const raw = await res.json();
-        const list = Array.isArray(raw.data) ? raw.data : Array.isArray(raw) ? raw : [];
-        setCalls(list);
+        const [ovToday, ovMonth, recent, outcomes, reps, cb] = await Promise.all([
+          fetch(
+            `${base}/calls/company/${companyId}/analytics/overview?${gq}from=${encodeURIComponent(today.from)}&to=${encodeURIComponent(today.to)}`
+          ),
+          fetch(
+            `${base}/calls/company/${companyId}/analytics/overview?${gq}from=${encodeURIComponent(month.from)}&to=${encodeURIComponent(month.to)}`
+          ),
+          fetch(`${base}/calls/company/${companyId}/analytics/recent?${gq}limit=8`),
+          fetch(
+            `${base}/calls/company/${companyId}/analytics/outcomes?${gq}from=${encodeURIComponent(month.from)}&to=${encodeURIComponent(month.to)}`
+          ),
+          fetch(
+            `${base}/calls/company/${companyId}/analytics/reps?${gq}from=${encodeURIComponent(month.from)}&to=${encodeURIComponent(month.to)}&limit=12`
+          ),
+          fetch(
+            `${base}/calls/company/${companyId}/analytics/callbacks${
+              selectedGigId && selectedGigId !== 'all'
+                ? `?gigId=${encodeURIComponent(selectedGigId)}`
+                : ''
+            }`
+          ),
+        ]);
+
+        if (cancelled) return;
+
+        if (ovToday.ok) {
+          const j = await ovToday.json();
+          if (j.success && j.totals) {
+            setOverviewToday({
+              totals: j.totals,
+              statuses: j.statuses || [],
+              series7d: j.series7d || [],
+            });
+          }
+        }
+        if (ovMonth.ok) {
+          const j = await ovMonth.json();
+          if (j.success && j.totals) {
+            setOverviewMonth({
+              totals: j.totals,
+              statuses: j.statuses || [],
+              series7d: j.series7d || [],
+            });
+          }
+        }
+        if (recent.ok) {
+          const j = await recent.json();
+          if (j.success && Array.isArray(j.calls)) setRecentCallsApi(j.calls);
+        }
+        if (outcomes.ok) {
+          const j = await outcomes.json();
+          if (j.success && Array.isArray(j.outcomes)) {
+            setOutcomesMonth({ total: j.total ?? 0, outcomes: j.outcomes });
+          }
+        }
+        if (reps.ok) {
+          const j = await reps.json();
+          if (j.success && Array.isArray(j.reps)) setRepsMonth(j.reps);
+        }
+        if (cb.ok) {
+          const j = await cb.json();
+          if (j.success) {
+            setCallbacksStats({
+              today: j.today ?? 0,
+              week: j.week ?? 0,
+              appointmentsConfirmed: j.appointmentsConfirmed ?? 0,
+            });
+          }
+        }
       } catch {
-        // ignore — UI keeps the demo numbers
+        // keep mock fallbacks
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedGigId]);
 
-  // Slice the call list down to "today" so the cards mirror the design.
-  // When the API yielded nothing we keep the mock numbers from the mock.
-  const today = useMemo(() => {
-    if (!calls) return null;
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const ms = start.getTime();
-    return calls.filter((c) => {
-      const ts = new Date(c.createdAt || c.date || 0).getTime();
-      return ts >= ms;
-    });
-  }, [calls]);
-
   const stats = useMemo(() => {
-    // Mock baseline — gets overridden by real numbers when available.
-    let total = 247;
-    let serious = 189;
-    let voicemail = 34;
-    let unreachable = 17;
-    let fraud = 2;
-    let avgDurationSec = 4 * 60 + 12;
-
-    if (today && today.length > 0) {
-      total = today.length;
-      serious = today.filter((c) => c.validByAI === true).length;
-      voicemail = today.filter((c) =>
-        (c.status || '').toLowerCase().includes('machine')
-      ).length;
-      unreachable = today.filter((c) => {
-        const s = (c.status || '').toLowerCase();
-        return s && s !== 'completed';
-      }).length;
-      fraud = today.filter(
-        (c) => c.ai_call_score?.fraud_detected === true || c.fraud === true
-      ).length;
-      const seriousCalls = today.filter((c) => c.validByAI === true);
-      const dur = seriousCalls.reduce((a, c) => a + (c.duration || 0), 0);
-      avgDurationSec = seriousCalls.length > 0 ? Math.round(dur / seriousCalls.length) : 0;
-    }
-
+    const MOCK = {
+      total: 247,
+      serious: 189,
+      voicemail: 34,
+      unreachable: 17,
+      fraud: 2,
+      avgDurationSec: 4 * 60 + 12,
+    };
+    const t = overviewToday?.totals;
+    const total = t?.total ?? MOCK.total;
+    const serious = t?.serious ?? MOCK.serious;
+    const voicemail = t?.voicemail ?? MOCK.voicemail;
+    const unreachable = t?.unreachable ?? MOCK.unreachable;
+    const fraud = t?.fraud ?? MOCK.fraud;
+    const avgDurationSec = t?.avgDuration ?? MOCK.avgDurationSec;
     const pct = (n: number) => (total > 0 ? Math.round((n / total) * 1000) / 10 : 0);
 
     return {
@@ -422,10 +585,23 @@ export default function OperationsDashboard() {
       pctVoicemail: pct(voicemail),
       pctUnreachable: pct(unreachable),
     };
-  }, [today]);
+  }, [overviewToday]);
 
-  const statuses: StatusBucket[] = useMemo(
-    () => [
+  const countByOutcome = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const s of overviewToday?.statuses ?? []) {
+      if (s.outcome) m[s.outcome] = s.count;
+    }
+    return m;
+  }, [overviewToday]);
+
+  const statuses: StatusBucket[] = useMemo(() => {
+    const pct = (n: number) =>
+      stats.total > 0 ? Math.round((n / stats.total) * 1000) / 10 : 0;
+    const wrong = countByOutcome.wrong_number ?? 0;
+    const hangup = countByOutcome.too_short ?? 0;
+
+    return [
       {
         key: 'serious',
         label: t('opsDashboard.statuses.serious', 'Sérieux — argumenté'),
@@ -456,8 +632,8 @@ export default function OperationsDashboard() {
       {
         key: 'wrong-number',
         label: t('opsDashboard.statuses.wrongNumber', 'Faux numéro'),
-        count: 5,
-        pct: 2.0,
+        count: wrong,
+        pct: pct(wrong),
         bar: 'bg-rose-400',
         dot: 'bg-rose-400',
         pill: 'bg-rose-50 text-rose-700 border-rose-200',
@@ -466,7 +642,7 @@ export default function OperationsDashboard() {
         key: 'fraud',
         label: t('opsDashboard.statuses.fraud', 'Fraude'),
         count: stats.fraud,
-        pct: stats.total > 0 ? Math.round((stats.fraud / stats.total) * 1000) / 10 : 0,
+        pct: pct(stats.fraud),
         bar: 'bg-rose-600',
         dot: 'bg-rose-600',
         pill: 'bg-rose-50 text-rose-700 border-rose-200',
@@ -474,27 +650,21 @@ export default function OperationsDashboard() {
       {
         key: 'hangup',
         label: t('opsDashboard.statuses.hangup', 'Raccrochage immédiat'),
-        count: 0,
-        pct: 0,
+        count: hangup,
+        pct: pct(hangup),
         bar: 'bg-slate-300',
         dot: 'bg-slate-300',
         pill: 'bg-slate-100 text-slate-500 border-slate-200',
       },
-    ],
-    [stats, t]
-  );
+    ];
+  }, [stats, countByOutcome, t]);
 
-  // The recent-calls list is a presentational sample — the per-call lead
-  // metadata we'd need (lead first/last name, agent name, AI score) is
-  // currently not joined into the /calls endpoint response, so we keep it
-  // visual until that join lands on the backend. The wiring above already
-  // tolerates real data being substituted later.
-  const recentCalls: RecentCall[] = [
+  const MOCK_RECENT: RecentCall[] = [
     {
       score: 92,
       agent: 'Karima A.',
       lead: 'M. Dupont',
-      meta: '5m43s · script 96%',
+      meta: '5m43s',
       tag: { label: t('opsDashboard.tags.transaction', 'transaction'), tone: 'emerald' },
       when: '2m',
     },
@@ -506,38 +676,42 @@ export default function OperationsDashboard() {
       tag: { label: t('opsDashboard.tags.callbackJ2', 'rappel J+2'), tone: 'amber' },
       when: '5m',
     },
-    {
-      score: 19,
-      agent: 'Hassan B.',
-      lead: 'M. Leblanc',
-      meta: '0m12s',
-      tag: { label: t('opsDashboard.tags.fraud', 'fraude'), tone: 'rose' },
-      when: '8m',
-    },
-    {
-      score: 88,
-      agent: 'Sara B.',
-      lead: 'Mme Rousseau',
-      meta: '4m55s',
-      tag: { label: t('opsDashboard.tags.appointment', 'RDV fixé'), tone: 'violet' },
-      when: '11m',
-    },
-    {
-      score: null,
-      agent: 'Amine M.',
-      lead: 'M. Garnier',
-      meta: t('opsDashboard.statuses.voicemail', 'messagerie vocale'),
-      when: '14m',
-    },
-    {
-      score: null,
-      agent: 'Karima A.',
-      lead: 'Mme Petit',
-      meta: '',
-      tag: { label: t('opsDashboard.statuses.unreachable', 'injoignable').toLowerCase(), tone: 'amber' },
-      when: '18m',
-    },
   ];
+
+  const recentCalls: RecentCall[] = useMemo(() => {
+    if (!recentCallsApi?.length) return MOCK_RECENT;
+    return recentCallsApi.map((c) => {
+      const dur = c.duration ?? 0;
+      const m = Math.floor(dur / 60);
+      const s = dur % 60;
+      const meta =
+        dur > 0
+          ? `${m}m${s.toString().padStart(2, '0')}s${c.score != null ? ` · ${Math.round(c.score)}%` : ''}`
+          : '';
+      return {
+        score: c.score ?? null,
+        agent: c.repName || t('opsDashboard.recent.unknownRep', 'Rep'),
+        lead: (c.leadName || '').trim() || t('opsDashboard.recent.unknownLead', 'Lead'),
+        meta,
+        tag: outcomeTag(c.outcome, t),
+        when: timeAgo(c.createdAt),
+      };
+    });
+  }, [recentCallsApi, t]);
+
+  const mtd = useMemo(() => {
+    const mt = overviewMonth?.totals;
+    const monthOutcomes: Record<string, number> = {};
+    for (const s of overviewMonth?.statuses ?? []) {
+      if (s.outcome) monthOutcomes[s.outcome] = s.count;
+    }
+    return {
+      voicemail: mt?.voicemail ?? 0,
+      unreachable: mt?.unreachable ?? 0,
+      wrongNumber: monthOutcomes.wrong_number ?? 0,
+      callbacksToday: callbacksStats?.today ?? 0,
+    };
+  }, [overviewMonth, callbacksStats]);
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: t('opsDashboard.tabs.overview', 'Vue globale'), icon: <BarChart3 size={14} /> },
@@ -660,15 +834,15 @@ export default function OperationsDashboard() {
             {t('opsDashboard.banner.beforeShutdown', 'avant interruption')} ·{' '}
             <span className="font-bold">
               {t('opsDashboard.banner.leadsUnreachable', {
-                count: 12,
-                defaultValue: '12 leads injoignables détectés',
+                count: stats.unreachable,
+                defaultValue: '{{count}} leads injoignables détectés',
               })}
             </span>{' '}
             ·{' '}
             <span className="font-bold">
               {t('opsDashboard.banner.fraudAlerts', {
-                count: 2,
-                defaultValue: '2 alertes fraude non examinées',
+                count: stats.fraud,
+                defaultValue: '{{count}} alertes fraude non examinées',
               })}
             </span>
           </p>
@@ -705,11 +879,19 @@ export default function OperationsDashboard() {
 
       {/* ---------- Tab content ---------- */}
       {tab === 'leads' ? (
-        <LeadsView leadStats={leadStats} repCoverage={repCoverage} />
+        <LeadsView
+          leadStats={leadStats}
+          repCoverage={repCoverage}
+          callbacksStats={callbacksStats}
+        />
       ) : tab === 'results' ? (
-        <ResultsView />
+        <ResultsView
+          outcomes={outcomesMonth}
+          reps={repsMonth}
+          seriousToday={stats.serious}
+        />
       ) : tab === 'team' ? (
-        <TeamView />
+        <TeamView reps={repsMonth} />
       ) : tab === 'wallet' ? (
         <WalletView />
       ) : (
@@ -841,7 +1023,7 @@ export default function OperationsDashboard() {
       </div>
 
       {/* ---------- Performance 7 jours ---------- */}
-      <Performance7Days />
+      <Performance7Days series={overviewToday?.series7d ?? null} />
 
       {/* ---------- Voicemail & non-aboutis analysis ---------- */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -858,19 +1040,19 @@ export default function OperationsDashboard() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <MtdCard
             label={t('opsDashboard.mtd.voicemail', 'MSG VOCALE MTD')}
-            value="412"
+            value={mtd.voicemail.toLocaleString('fr-FR')}
             sub={t('opsDashboard.mtd.voicemailSub', '→ 18% rappelés en J+1')}
             tone="slate"
           />
           <MtdCard
             label={t('opsDashboard.mtd.unreachable', 'INJOIGNABLES MTD')}
-            value="203"
+            value={mtd.unreachable.toLocaleString('fr-FR')}
             sub={t('opsDashboard.mtd.unreachableSub', '→ 41% rappelés ≥3x')}
             tone="amber"
           />
           <MtdCard
             label={t('opsDashboard.mtd.wrongNumbers', 'FAUX NUMÉROS MTD')}
-            value="61"
+            value={mtd.wrongNumber.toLocaleString('fr-FR')}
             sub={t('opsDashboard.mtd.wrongNumbersSub', '→ retirés de la base')}
             tone="rose"
           />
@@ -890,7 +1072,7 @@ export default function OperationsDashboard() {
           />
           <MtdCard
             label={t('opsDashboard.mtd.autoCallbacks', 'RAPPELS AUTO. PROG.')}
-            value="143"
+            value={mtd.callbacksToday.toLocaleString('fr-FR')}
             sub={t('opsDashboard.mtd.autoCallbacksSub', 'pour aujourd\'hui')}
             tone="blue"
           />
@@ -964,11 +1146,13 @@ type LeadStatsProp = {
 function LeadsView({
   leadStats,
   repCoverage,
+  callbacksStats,
 }: {
   leadStats: LeadStatsProp | null;
   repCoverage:
     | { userId: string; name: string; current: number; target: number; pct: number }[]
     | null;
+  callbacksStats: CallbacksStats | null;
 }) {
   const { t } = useTranslation();
   // Mock baseline used until the real stats land. Keeps the page presentable
@@ -1314,23 +1498,33 @@ function LeadsView({
                   {t('opsDashboard.leads.callbackToday', "À rappeler aujourd'hui")}
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="text-sm font-black tabular-nums text-slate-900">143</span>
-                  <Tag tone="rose">{t('opsDashboard.leads.urgent', 'urgent')}</Tag>
+                  <span className="text-sm font-black tabular-nums text-slate-900">
+                    {(callbacksStats?.today ?? 0).toLocaleString('fr-FR')}
+                  </span>
+                  {(callbacksStats?.today ?? 0) > 0 && (
+                    <Tag tone="rose">{t('opsDashboard.leads.urgent', 'urgent')}</Tag>
+                  )}
                 </span>
               </li>
               <li className="flex items-center justify-between py-1.5">
                 <span className="text-[12px] font-bold text-slate-700">
                   {t('opsDashboard.leads.callbackWeek', 'Cette semaine')}
                 </span>
-                <span className="text-sm font-black tabular-nums text-slate-900">389</span>
+                <span className="text-sm font-black tabular-nums text-slate-900">
+                  {(callbacksStats?.week ?? 0).toLocaleString('fr-FR')}
+                </span>
               </li>
               <li className="flex items-center justify-between py-1.5">
                 <span className="text-[12px] font-bold text-slate-700">
                   {t('opsDashboard.leads.appointmentsConfirmed', 'RDV confirmés')}
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="text-sm font-black tabular-nums text-slate-900">67</span>
-                  <Tag tone="emerald">{t('opsDashboard.leads.active', 'actifs')}</Tag>
+                  <span className="text-sm font-black tabular-nums text-slate-900">
+                    {(callbacksStats?.appointmentsConfirmed ?? 0).toLocaleString('fr-FR')}
+                  </span>
+                  {(callbacksStats?.appointmentsConfirmed ?? 0) > 0 && (
+                    <Tag tone="emerald">{t('opsDashboard.leads.active', 'actifs')}</Tag>
+                  )}
                 </span>
               </li>
             </ul>
@@ -1447,27 +1641,87 @@ interface RepIssueRow {
   convTone?: 'emerald' | 'amber' | 'rose';
 }
 
-function ResultsView() {
+const RESULT_ISSUE_DEFS: Array<{
+  outcome: string;
+  labelKey: string;
+  defaultLabel: string;
+  tone: IssueBucket['tone'];
+}> = [
+  { outcome: 'transaction', labelKey: 'opsDashboard.results.issues.transactionDone', defaultLabel: 'Transaction aboutie', tone: 'emerald' },
+  { outcome: 'appointment', labelKey: 'opsDashboard.results.issues.appointment', defaultLabel: 'RDV fixé', tone: 'violet' },
+  { outcome: 'callback_requested', labelKey: 'opsDashboard.results.issues.callback', defaultLabel: 'Rappel demandé', tone: 'amber' },
+  { outcome: 'argued_interested', labelKey: 'opsDashboard.results.issues.argued', defaultLabel: 'Argumenté (intéressé)', tone: 'emerald' },
+  { outcome: 'refusal', labelKey: 'opsDashboard.results.issues.refusal', defaultLabel: 'Refus catégorique', tone: 'rose' },
+  { outcome: 'not_interested', labelKey: 'opsDashboard.results.issues.notInterested', defaultLabel: 'Pas intéressé', tone: 'amber' },
+  { outcome: 'already_insured', labelKey: 'opsDashboard.results.issues.alreadyInsured', defaultLabel: 'Déjà assuré', tone: 'blue' },
+  { outcome: 'connected_no_sale', labelKey: 'opsDashboard.results.issues.transactionFailed', defaultLabel: 'Transaction non aboutie', tone: 'rose' },
+];
+
+function ResultsView({
+  outcomes,
+  reps,
+  seriousToday,
+}: {
+  outcomes: { total: number; outcomes: AnalyticsOutcome[] } | null;
+  reps: AnalyticsRep[] | null;
+  seriousToday: number;
+}) {
   const { t } = useTranslation();
 
-  const issues: IssueBucket[] = [
-    { label: t('opsDashboard.results.issues.transactionDone', 'Transaction aboutie'), count: 23, pct: 12.2, tone: 'emerald' },
-    { label: t('opsDashboard.results.issues.transactionFailed', 'Transaction non aboutie'), count: 18, pct: 9.5, tone: 'rose' },
-    { label: t('opsDashboard.results.issues.appointment', 'RDV fixé'), count: 15, pct: 7.9, tone: 'violet' },
-    { label: t('opsDashboard.results.issues.callback', 'Rappel demandé'), count: 28, pct: 14.8, tone: 'amber' },
-    { label: t('opsDashboard.results.issues.argued', 'Argumenté (intéressé)'), count: 34, pct: 18.0, tone: 'emerald' },
-    { label: t('opsDashboard.results.issues.refusal', 'Refus catégorique'), count: 42, pct: 22.2, tone: 'rose' },
-    { label: t('opsDashboard.results.issues.notInterested', 'Pas intéressé'), count: 16, pct: 8.5, tone: 'amber' },
-    { label: t('opsDashboard.results.issues.alreadyInsured', 'Déjà assuré'), count: 13, pct: 6.9, tone: 'blue' },
-  ];
+  const byOutcome = useMemo(() => {
+    const m: Record<string, AnalyticsOutcome> = {};
+    for (const o of outcomes?.outcomes ?? []) m[o.outcome] = o;
+    return m;
+  }, [outcomes]);
 
-  const repRows: RepIssueRow[] = [
-    { name: 'Karima A.', transaction: 67, rdv: 18, rappel: 32, argumente: 41, refus: 89, convPct: 15.5, nameTone: 'harx', convTone: 'emerald' },
-    { name: 'Younes O.', transaction: 54, rdv: 12, rappel: 28, argumente: 35, refus: 94, convPct: 12.1, convTone: 'emerald' },
-    { name: 'Sara B.', transaction: 48, rdv: 15, rappel: 21, argumente: 38, refus: 102, convPct: 10.8, convTone: 'amber' },
-    { name: 'Amine M.', transaction: 41, rdv: 9, rappel: 18, argumente: 29, refus: 118, convPct: 9.2, convTone: 'amber' },
-    { name: 'Hassan B.', transaction: 3, rdv: 1, rappel: 4, argumente: 6, refus: 41, convPct: 3.1, warn: true, nameTone: 'rose', convTone: 'rose' },
-  ];
+  const issues: IssueBucket[] = useMemo(() => {
+    const MOCK: IssueBucket[] = [
+      { label: t('opsDashboard.results.issues.transactionDone', 'Transaction aboutie'), count: 23, pct: 12.2, tone: 'emerald' },
+      { label: t('opsDashboard.results.issues.appointment', 'RDV fixé'), count: 15, pct: 7.9, tone: 'violet' },
+      { label: t('opsDashboard.results.issues.callback', 'Rappel demandé'), count: 28, pct: 14.8, tone: 'amber' },
+      { label: t('opsDashboard.results.issues.argued', 'Argumenté (intéressé)'), count: 34, pct: 18.0, tone: 'emerald' },
+      { label: t('opsDashboard.results.issues.refusal', 'Refus catégorique'), count: 42, pct: 22.2, tone: 'rose' },
+    ];
+    if (!outcomes?.outcomes.length) return MOCK;
+    return RESULT_ISSUE_DEFS.map((def) => {
+      const row = byOutcome[def.outcome];
+      return {
+        label: t(def.labelKey, def.defaultLabel),
+        count: row?.count ?? 0,
+        pct: row?.pct ?? 0,
+        tone: def.tone,
+      };
+    }).filter((i) => i.count > 0);
+  }, [outcomes, byOutcome, t]);
+
+  const repRows: RepIssueRow[] = useMemo(() => {
+    const MOCK: RepIssueRow[] = [
+      { name: 'Karima A.', transaction: 67, rdv: 18, rappel: 32, argumente: 41, refus: 89, convPct: 15.5, nameTone: 'harx', convTone: 'emerald' },
+    ];
+    if (!reps?.length) return MOCK;
+    return reps.map((r, idx) => {
+      const convPct =
+        r.total > 0 ? Math.round((r.transaction / r.total) * 1000) / 10 : 0;
+      const warn = convPct < 5 || r.avgScore < 50;
+      return {
+        name: r.name,
+        transaction: r.transaction,
+        rdv: r.appointment,
+        rappel: r.callbacks,
+        argumente: r.argued,
+        refus: r.refusal,
+        convPct,
+        warn,
+        nameTone: warn ? 'rose' : idx === 0 ? 'harx' : 'slate',
+        convTone: convPct >= 12 ? 'emerald' : convPct >= 6 ? 'amber' : 'rose',
+      };
+    });
+  }, [reps]);
+
+  const count = (key: string) => byOutcome[key]?.count ?? 0;
+  const pctSerious = (n: number) =>
+    seriousToday > 0 ? ((n / seriousToday) * 100).toFixed(1) : '0';
+  const pipelineHot = count('appointment') + count('callback_requested');
 
   return (
     <>
@@ -1477,42 +1731,57 @@ function ResultsView() {
           tone="primary"
           icon={<Star size={14} />}
           label={t('opsDashboard.results.kpi.transactions', 'Transactions')}
-          value="23"
-          sub={t('opsDashboard.results.kpi.transactionsSub', '12.2% conv.')}
+          value={count('transaction').toLocaleString('fr-FR')}
+          sub={t('opsDashboard.results.kpi.transactionsSub', {
+            pct: byOutcome.transaction?.pct?.toFixed(1) ?? '0',
+            defaultValue: '{{pct}}% conv.',
+          })}
         />
         <KpiCard
           tone="default"
           icon={<CalendarClock size={14} className="text-violet-500" />}
           label={t('opsDashboard.results.kpi.appointments', 'RDV fixés')}
-          value="15"
-          sub={t('opsDashboard.results.kpi.appointmentsSub', '7.9% des sérieux')}
+          value={count('appointment').toLocaleString('fr-FR')}
+          sub={t('opsDashboard.results.kpi.appointmentsSub', {
+            pct: pctSerious(count('appointment')),
+            defaultValue: '{{pct}}% des sérieux',
+          })}
         />
         <KpiCard
           tone="default"
           icon={<Repeat size={14} className="text-amber-500" />}
           label={t('opsDashboard.results.kpi.callbacks', 'Rappels demandés')}
-          value="28"
-          sub={t('opsDashboard.results.kpi.callbacksSub', '14.8% des sérieux')}
+          value={count('callback_requested').toLocaleString('fr-FR')}
+          sub={t('opsDashboard.results.kpi.callbacksSub', {
+            pct: pctSerious(count('callback_requested')),
+            defaultValue: '{{pct}}% des sérieux',
+          })}
         />
         <KpiCard
           tone="default"
           icon={<CheckCircle2 size={14} className="text-emerald-500" />}
           label={t('opsDashboard.results.kpi.argued', 'Argumentés')}
-          value="34"
-          sub={t('opsDashboard.results.kpi.arguedSub', '18% des sérieux')}
+          value={count('argued_interested').toLocaleString('fr-FR')}
+          sub={t('opsDashboard.results.kpi.arguedSub', {
+            pct: pctSerious(count('argued_interested')),
+            defaultValue: '{{pct}}% des sérieux',
+          })}
         />
         <KpiCard
           tone="dark"
           icon={<XCircle size={14} />}
           label={t('opsDashboard.results.kpi.refusals', 'Refus')}
-          value="42"
-          sub={t('opsDashboard.results.kpi.refusalsSub', '22.2% des sérieux')}
+          value={count('refusal').toLocaleString('fr-FR')}
+          sub={t('opsDashboard.results.kpi.refusalsSub', {
+            pct: pctSerious(count('refusal')),
+            defaultValue: '{{pct}}% des sérieux',
+          })}
         />
         <KpiCard
           tone="default"
           icon={<TrendingUp size={14} className="text-blue-500" />}
           label={t('opsDashboard.results.kpi.pipeline', 'Pipe potentiel')}
-          value="43"
+          value={pipelineHot.toLocaleString('fr-FR')}
           sub={t('opsDashboard.results.kpi.pipelineSub', 'RDV + rappels')}
         />
       </div>
@@ -1527,7 +1796,8 @@ function ResultsView() {
               {t('opsDashboard.results.issuesTitle', 'Issues des appels sérieux')}
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              189 {t('opsDashboard.results.callsToday', 'appels · aujourd\'hui')}
+              {seriousToday.toLocaleString('fr-FR')}{' '}
+              {t('opsDashboard.results.callsToday', 'appels sérieux · aujourd\'hui')}
             </span>
           </header>
 
@@ -1555,7 +1825,9 @@ function ResultsView() {
                 {t('opsDashboard.results.hotPipeline', 'Pipeline chaud (RDV + rappels)')}
               </span>
               <span className="flex items-center gap-2">
-                <span className="font-black tabular-nums text-slate-900">43 leads</span>
+                <span className="font-black tabular-nums text-slate-900">
+                  {pipelineHot.toLocaleString('fr-FR')} leads
+                </span>
                 <Tag tone="emerald">{t('opsDashboard.results.toWork', 'à travailler')}</Tag>
               </span>
             </li>
@@ -1728,16 +2000,51 @@ interface RepLeaderboard {
   warn?: boolean;
 }
 
-function TeamView() {
+const TEAM_PALETTE = [
+  'bg-harx-500/15 text-harx-700',
+  'bg-blue-500/15 text-blue-700',
+  'bg-emerald-500/15 text-emerald-700',
+  'bg-amber-500/15 text-amber-700',
+  'bg-rose-500/15 text-rose-700',
+];
+
+function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
   const { t } = useTranslation();
 
-  const reps: RepLeaderboard[] = [
-    { rank: 1, initials: 'KA', name: 'Karima A.', score: 84, convPct: 15.5, leadsCovered: 1050, transactions: 67, avatar: 'bg-harx-500/15 text-harx-700' },
-    { rank: 2, initials: 'YO', name: 'Younes O.', score: 79, convPct: 12.1, leadsCovered: 887, transactions: 54, avatar: 'bg-blue-500/15 text-blue-700' },
-    { rank: 3, initials: 'SB', name: 'Sara B.', score: 77, convPct: 10.8, leadsCovered: 788, transactions: 48, avatar: 'bg-emerald-500/15 text-emerald-700' },
-    { rank: 4, initials: 'AM', name: 'Amine M.', score: 71, convPct: 9.2, leadsCovered: 675, transactions: 41, avatar: 'bg-amber-500/15 text-amber-700' },
-    { rank: 5, initials: 'HB', name: 'Hassan B.', score: 38, convPct: 3.1, leadsCovered: 388, transactions: 3, avatar: 'bg-rose-500/15 text-rose-700', warn: true },
-  ];
+  const reps: RepLeaderboard[] = useMemo(() => {
+    const MOCK: RepLeaderboard[] = [
+      { rank: 1, initials: 'KA', name: 'Karima A.', score: 84, convPct: 15.5, leadsCovered: 1050, transactions: 67, avatar: TEAM_PALETTE[0]! },
+    ];
+    if (!repsApi?.length) return MOCK;
+    const sorted = [...repsApi].sort((a, b) => b.transaction - a.transaction);
+    return sorted.map((r, idx) => {
+      const convPct = r.total > 0 ? Math.round((r.transaction / r.total) * 1000) / 10 : 0;
+      const warn = r.avgScore < 50 || convPct < 5;
+      return {
+        rank: idx + 1,
+        initials: initialsOf(r.name),
+        name: r.name,
+        score: Math.round(r.avgScore),
+        convPct,
+        leadsCovered: r.serious,
+        transactions: r.transaction,
+        avatar: TEAM_PALETTE[idx % TEAM_PALETTE.length]!,
+        warn,
+      };
+    });
+  }, [repsApi]);
+
+  const teamKpis = useMemo(() => {
+    const list = repsApi ?? [];
+    const enrolled = list.length;
+    const active = list.filter((r) => r.total > 0).length;
+    const atRisk = list.filter((r) => r.avgScore < 50).length;
+    const avgScore =
+      enrolled > 0
+        ? Math.round(list.reduce((s, r) => s + r.avgScore, 0) / enrolled)
+        : 0;
+    return { enrolled, active, atRisk, avgScore };
+  }, [repsApi]);
 
   return (
     <>
@@ -1747,28 +2054,32 @@ function TeamView() {
           tone="primary"
           icon={<Users size={14} />}
           label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')}
-          value="18"
-          sub={t('opsDashboard.team.kpi.enrolledSub', 'sur ce gig')}
+          value={teamKpis.enrolled.toLocaleString('fr-FR')}
+          sub={t('opsDashboard.team.kpi.enrolledSub', 'reps avec appels')}
         />
         <KpiCard
           tone="default"
           icon={<Activity size={14} className="text-emerald-500" />}
-          label={t('opsDashboard.team.kpi.activeWeek', 'Actifs semaine')}
-          value="14"
-          sub="78%"
+          label={t('opsDashboard.team.kpi.activeWeek', 'Actifs (MTD)')}
+          value={teamKpis.active.toLocaleString('fr-FR')}
+          sub={
+            teamKpis.enrolled > 0
+              ? `${Math.round((teamKpis.active / teamKpis.enrolled) * 100)}%`
+              : '—'
+          }
         />
         <KpiCard
           tone="default"
           icon={<GraduationCap size={14} className="text-blue-500" />}
           label={t('opsDashboard.team.kpi.lmsDone', 'LMS complété')}
-          value="16/18"
-          sub="89%"
+          value="—"
+          sub={t('opsDashboard.team.kpi.lmsPending', 'bientôt')}
         />
         <KpiCard
           tone="dark"
           icon={<AlertTriangle size={14} />}
           label={t('opsDashboard.team.kpi.atRisk', 'À risque')}
-          value="2"
+          value={teamKpis.atRisk.toLocaleString('fr-FR')}
           sub={t('opsDashboard.team.kpi.atRiskSub', 'score < 50')}
           subTone="rose"
         />
@@ -1776,8 +2087,8 @@ function TeamView() {
           tone="default"
           icon={<Sparkles size={14} className="text-amber-500" />}
           label={t('opsDashboard.team.kpi.avgScore', 'Score moyen')}
-          value="74/100"
-          sub={t('opsDashboard.team.kpi.avgScoreSub', '+3 vs semaine')}
+          value={`${teamKpis.avgScore}/100`}
+          sub={t('opsDashboard.team.kpi.avgScoreSub', 'MTD')}
         />
         <KpiCard
           tone="default"
@@ -2103,26 +2414,47 @@ function MtdCard({
 /** Mixed bar (calls) + line (transactions) chart with dual Y-axes.
  *  Uses the same color codes as the rest of the dashboard:
  *  HARX coral for calls, emerald for transactions. */
-function Performance7Days() {
+function Performance7Days({
+  series,
+}: {
+  series: Array<{ date: string; total: number; transactions: number }> | null;
+}) {
   const { t } = useTranslation();
 
-  const labels = [
-    t('opsDashboard.perf.mon', 'Lun'),
-    t('opsDashboard.perf.tue', 'Mar'),
-    t('opsDashboard.perf.wed', 'Mer'),
-    t('opsDashboard.perf.thu', 'Jeu'),
-    t('opsDashboard.perf.fri', 'Ven'),
-    t('opsDashboard.perf.sat', 'Sam'),
-    t('opsDashboard.perf.sun', 'Dim'),
-  ];
+  const chartPoints = useMemo(() => {
+    const MOCK_CALLS = [195, 220, 240, 185, 250, 130, 85];
+    const MOCK_TX = [20, 25, 27, 15, 26, 12, 8];
+    const dayKeys: string[] = [];
+    const dayLabels: string[] = [];
+    const weekday = (d: Date) =>
+      [t('opsDashboard.perf.sun', 'Dim'), t('opsDashboard.perf.mon', 'Lun'), t('opsDashboard.perf.tue', 'Mar'), t('opsDashboard.perf.wed', 'Mer'), t('opsDashboard.perf.thu', 'Jeu'), t('opsDashboard.perf.fri', 'Ven'), t('opsDashboard.perf.sat', 'Sam')][d.getDay()];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      dayKeys.push(d.toISOString().slice(0, 10));
+      dayLabels.push(weekday(d));
+    }
+
+    if (!series?.length) {
+      return { labels: dayLabels, calls: MOCK_CALLS, transactions: MOCK_TX };
+    }
+
+    const byDate = Object.fromEntries(series.map((s) => [s.date, s]));
+    return {
+      labels: dayLabels,
+      calls: dayKeys.map((k) => byDate[k]?.total ?? 0),
+      transactions: dayKeys.map((k) => byDate[k]?.transactions ?? 0),
+    };
+  }, [series, t]);
 
   const data = {
-    labels,
+    labels: chartPoints.labels,
     datasets: [
       {
         type: 'bar' as const,
         label: t('opsDashboard.perf.calls', 'Appels'),
-        data: [195, 220, 240, 185, 250, 130, 85],
+        data: chartPoints.calls,
         backgroundColor: 'rgba(255, 77, 77, 0.30)',
         borderColor: '#ff4d4d',
         borderWidth: 1,
@@ -2134,7 +2466,7 @@ function Performance7Days() {
       {
         type: 'line' as const,
         label: t('opsDashboard.perf.transactions', 'Transactions'),
-        data: [20, 25, 27, 15, 26, 12, 8],
+        data: chartPoints.transactions,
         borderColor: '#10b981',
         backgroundColor: '#10b981',
         tension: 0.4,
