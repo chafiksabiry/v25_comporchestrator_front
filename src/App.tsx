@@ -559,7 +559,14 @@ function AppContent() {
           <header className={`bg-black h-16 flex items-center shrink-0 px-5 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-6">
-                {globalBackConfig && (
+                {/* "Back to onboarding" shortcut.
+                    Hidden while the user is inside the dashboard shell —
+                    they already have the full sidebar to navigate between
+                    Script Generator, Knowledge Base, etc. The button only
+                    makes sense from the orchestrator's standalone step
+                    pages where the rep is otherwise stranded with no
+                    return path. */}
+                {globalBackConfig && activeProject !== 'dashboard' && (
                   <button
                     onClick={globalBackConfig.action}
                     className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-gradient-harx/10 border border-harx-500/20 text-harx-600 hover:bg-gradient-harx/20 transition-all duration-300 group shadow-sm shadow-harx-500/5 animate-in slide-in-from-left-4 fade-in"
