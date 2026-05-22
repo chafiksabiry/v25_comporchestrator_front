@@ -2695,11 +2695,18 @@ interface WalletEntryListItem {
 interface RepPayoutItem {
   _id: string;
   createdAt?: string;
+  startTime?: string;
+  duration?: number;
+  score?: number | null;
   repName?: string | null;
   gigName?: string | null;
+  price?: number;
   repCallCommission?: number;
+  platformCallCommission?: number;
   repTransactionCommission?: number;
+  platformTransactionCommission?: number;
   totalCommission?: number;
+  platformCommission?: number;
   validByAI?: boolean;
   hasTransaction?: boolean;
 }
@@ -2806,6 +2813,30 @@ function WalletView() {
     });
   };
 
+  /** Full timestamp shown next to a rep payout, e.g. "10/05/2026 10:07:30". */
+  const formatDateTime = (iso?: string) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
+  /** "M:SS" call duration from seconds. */
+  const formatDuration = (seconds?: number) => {
+    const s = Math.max(0, Math.floor(seconds || 0));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2, '0')}`;
+  };
+
+  /** Pretty euro amount without sign (e.g. "2.80 €"). */
+  const formatEurPlain = (n: number) =>
+    `${(Math.abs(n) || 0).toLocaleString('fr-FR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} €`;
+
   const labelForWallet = (e: WalletEntryListItem): string => {
     if (e.description && e.description.trim()) return e.description.trim();
     if (e.type) {
@@ -2816,17 +2847,6 @@ function WalletView() {
     return '—';
   };
 
-  const labelForRep = (p: RepPayoutItem): string => {
-    const rep = p.repName || t('opsDashboard.wallet.repUnknown', 'Rep');
-    const gigSuffix = p.gigName ? ` (${p.gigName})` : '';
-    if (p.hasTransaction && (p.repTransactionCommission || 0) > 0) {
-      return t('opsDashboard.wallet.repTxSale', { rep, defaultValue: `Vente signée — ${rep}` }) + gigSuffix;
-    }
-    if (p.validByAI) {
-      return t('opsDashboard.wallet.repCallValidated', { rep, defaultValue: `Appel validé — ${rep}` }) + gigSuffix;
-    }
-    return t('opsDashboard.wallet.repCommission', { rep, defaultValue: `Commission — ${rep}` }) + gigSuffix;
-  };
 
   return (
     <>
@@ -2936,23 +2956,73 @@ function WalletView() {
                 );
               }
 
-              // Rep commission payout — always a debit from the company wallet.
+              // Rep commission payout — rich row matching the rep dashboard
+              // "appels validés" layout: rep name, status pill, datetime,
+              // duration, AI score, amount and 70/30 split breakdown.
               const payout = item.data;
-              const total = Number(payout.totalCommission) || 0;
-              const label = labelForRep(payout);
+              const repShare = Number(payout.totalCommission) || 0;
+              const platformShare =
+                Number(payout.platformCommission) ||
+                Math.max(0, (Number(payout.price) || 0) - repShare);
+              const total = repShare + platformShare;
+              const repPct = total > 0 ? Math.round((repShare / total) * 100) : 70;
+              const platformPct = total > 0 ? 100 - repPct : 30;
+              const isSale = payout.hasTransaction && (payout.repTransactionCommission || 0) > 0;
+              const badgeLabel = isSale
+                ? t('opsDashboard.wallet.repBadgeSale', 'VENTE SIGNÉE')
+                : t('opsDashboard.wallet.repBadgeValidated', 'APPEL VALIDÉ');
+
               return (
-                <li key={`r-${payout._id}`} className="flex items-center gap-3 py-2.5">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-600">
-                    <Users size={12} />
+                <li
+                  key={`r-${payout._id}`}
+                  className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-3 py-3 text-[12px]"
+                >
+                  {/* Rep name */}
+                  <span
+                    className="truncate font-black uppercase tracking-wide text-slate-800"
+                    title={payout.repName || ''}
+                  >
+                    {payout.repName || t('opsDashboard.wallet.repUnknown', 'Rep')}
                   </span>
-                  <span className="flex-1 truncate text-[13px] font-bold text-slate-800" title={label}>
-                    {label}
-                    <span className="ml-2 inline-flex items-center rounded-full bg-violet-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-violet-600 border border-violet-100">
-                      {t('opsDashboard.wallet.repBadge', 'Rep')}
+
+                  {/* Status pill */}
+                  <span
+                    className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                      isSale
+                        ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                        : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                    }`}
+                  >
+                    {badgeLabel}
+                  </span>
+
+                  {/* Datetime */}
+                  <span className="shrink-0 tabular-nums text-slate-500">
+                    {formatDateTime(payout.startTime || payout.createdAt)}
+                  </span>
+
+                  {/* Duration */}
+                  <span className="shrink-0 font-black tabular-nums text-slate-700">
+                    {formatDuration(payout.duration)}
+                  </span>
+
+                  {/* AI score */}
+                  <span className="inline-flex shrink-0 items-center gap-1 font-black tabular-nums text-slate-700">
+                    <Star size={12} className="text-amber-400 fill-amber-400" />
+                    {payout.score != null ? `${Math.round(Number(payout.score))}/100` : '—'}
+                  </span>
+
+                  {/* Amount + 70/30 breakdown */}
+                  <span className="shrink-0 text-right">
+                    <span className="block font-black tabular-nums text-rose-600">
+                      − {formatEurPlain(total)}
                     </span>
-                  </span>
-                  <span className="shrink-0 text-[12px] font-black tabular-nums text-rose-600">
-                    {formatEur(-total)} · {formatDate(payout.createdAt)}
+                    <span className="block text-[10px] font-bold text-slate-500">
+                      {repPct}% Rep · {formatEurPlain(repShare)}
+                    </span>
+                    <span className="block text-[10px] font-bold text-slate-500">
+                      {platformPct}% HARX · {formatEurPlain(platformShare)}
+                    </span>
                   </span>
                 </li>
               );

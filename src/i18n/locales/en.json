@@ -486,10 +486,9 @@
         "adjustment": "Adjustment"
       },
       "repBadge": "Rep",
+      "repBadgeValidated": "CALL VALIDATED",
+      "repBadgeSale": "SALE SIGNED",
       "repUnknown": "Rep",
-      "repCallValidated": "Call validated — {{rep}}",
-      "repTxSale": "Sale signed — {{rep}}",
-      "repCommission": "Commission — {{rep}}",
       "computeTopup": "Compute next top-up"
     }
   },
