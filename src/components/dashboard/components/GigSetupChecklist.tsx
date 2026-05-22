@@ -87,10 +87,11 @@ function getContinueTarget(stepId: number): string {
 }
 
 /** Routes that should show the full multi-gig banner. Anything else with
- *  no step match hides the widget entirely (e.g. wallet, settings). */
+ *  no step match hides the widget entirely (e.g. wallet, overview,
+ *  settings — overview is a static landing page redirecting to the
+ *  orchestrator so it has no need for the setup checklist). */
 const FULL_BANNER_PATHS = new Set<string>([
   '/dashboard/main',
-  '/dashboard/overview',
   '/dashboard/gigs',
   '/dashboard',
 ]);
