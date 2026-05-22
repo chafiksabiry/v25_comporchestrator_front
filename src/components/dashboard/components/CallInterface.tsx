@@ -30,6 +30,14 @@ interface CallInterfaceProps {
   callId: string;
 }
 
+interface AiAssistResponse {
+  suggestion?: string;
+}
+
+interface TwilioTokenResponse {
+  token: string;
+}
+
 declare global {
   interface Window {
     webkitSpeechRecognition: any;
@@ -152,11 +160,11 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, onSavi
         }))
       };
 
-      const response = await axios.post(apiUrl, payload);
-      
+      const response = await axios.post<AiAssistResponse>(apiUrl, payload);
 
-      if (response.data?.suggestion) {
-        const { content, category, priority } = processMarkdownResponse(response.data.suggestion);
+      const suggestion = response.data?.suggestion;
+      if (suggestion) {
+        const { content, category, priority } = processMarkdownResponse(suggestion);
 
         if (content.trim()) {
           const newMessage: AIAssistantMessage = {
@@ -306,7 +314,9 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, onSavi
 
       try {
         // Existing Twilio implementation
-        const response = await axios.get(`${import.meta.env.VITE_API_URL_CALL}/api/calls/token`);
+        const response = await axios.get<TwilioTokenResponse>(
+          `${import.meta.env.VITE_API_URL_CALL}/api/calls/token`
+        );
         const token = response.data.token;
 
         const newDevice = new Device(token, {
