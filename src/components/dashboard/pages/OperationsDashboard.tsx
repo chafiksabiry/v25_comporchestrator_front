@@ -2690,27 +2690,82 @@ interface WalletEntryListItem {
   createdAt?: string;
 }
 
-/** Rep commission payout returned by `/rep-transactions/company/:id`
- *  (source of truth: the `reptransactions` collection). */
-interface RepPayoutItem {
+/** Row from `GET /api/escrow/company/rep-transactions/:companyId` — same shape
+ *  as `WalletCompanyPanel` (`reptransactions` collection). */
+interface RepTransactionRow {
   _id: string;
-  createdAt?: string;
-  startTime?: string;
-  duration?: number;
-  score?: number | null;
-  repName?: string | null;
-  gigName?: string | null;
-  price?: number;
-  repCallCommission?: number;
-  platformCallCommission?: number;
-  repTransactionCommission?: number;
-  platformTransactionCommission?: number;
-  totalCommission?: number;
-  platformCommission?: number;
-  validByAI?: boolean;
-  aiRefusalReason?: string | null;
-  aiCallStatus?: string | null;
-  hasTransaction?: boolean;
+  type: 'call_validated' | 'transaction' | 'bonus';
+  status: 'earned' | 'paid' | 'refused';
+  amount: number;
+  repShare: number;
+  harxShare: number;
+  description?: string;
+  createdAt: string;
+  sourceId?: string;
+  callId?: string;
+  gigId?: string;
+  repId?: string;
+  call?: {
+    _id: string;
+    duration?: number;
+    startTime?: string;
+    ai_call_score?: Record<string, unknown>;
+    leadObj?: { First_Name?: string; Last_Name?: string };
+    lead?: string;
+  } | null;
+  gig?: { _id: string; title?: string } | null;
+  rep?: { _id: string; firstName?: string; lastName?: string; email?: string } | null;
+}
+
+function repTxCauseLabel(type?: string): { label: string; tone: string } {
+  switch (type) {
+    case 'call_validated':
+      return { label: 'Appel validé', tone: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' };
+    case 'transaction':
+      return { label: 'Vente', tone: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' };
+    case 'bonus':
+      return { label: 'Bonus', tone: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200' };
+    default:
+      return { label: type || '—', tone: 'bg-slate-50 text-slate-600 ring-1 ring-slate-200' };
+  }
+}
+
+function repTxRecipient(tx: RepTransactionRow): string {
+  const lead = tx.call?.leadObj;
+  if (lead?.First_Name || lead?.Last_Name) {
+    return `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim();
+  }
+  if (tx.rep) {
+    const n = `${tx.rep.firstName || ''} ${tx.rep.lastName || ''}`.trim();
+    if (n) return n;
+    if (tx.rep.email) return tx.rep.email;
+  }
+  return tx.call?.lead || '—';
+}
+
+function repTxAgentName(tx: RepTransactionRow): string {
+  if (tx.rep) {
+    const n = `${tx.rep.firstName || ''} ${tx.rep.lastName || ''}`.trim();
+    return n || tx.rep.email || 'Rep';
+  }
+  return 'Rep';
+}
+
+function repTxAiScore(tx: RepTransactionRow): number | null {
+  const raw = tx.call?.ai_call_score;
+  if (!raw) return null;
+  const overall = raw.overall as { score?: number } | undefined;
+  const s = overall?.score ?? raw.score;
+  return typeof s === 'number' ? s : null;
+}
+
+/** Call `duration` is stored in seconds (same as `WalletCompanyPanel`). */
+function formatDurationFromCallSeconds(seconds?: number): string {
+  const s = Math.max(0, Math.floor(seconds || 0));
+  if (s === 0) return '—';
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${String(r).padStart(2, '0')}`;
 }
 
 type WalletTab = 'validated' | 'refused' | 'deposits';
@@ -2718,18 +2773,24 @@ type WalletTab = 'validated' | 'refused' | 'deposits';
 function WalletView() {
   const { t, i18n } = useTranslation();
 
-  // ── "Mouvements du portefeuille" — three buckets (validated/refused/deposits)
-  //  driven by the same datasource as the rep dashboard.
   const [walletEntries, setWalletEntries] = useState<WalletEntryListItem[]>([]);
-  const [validatedCalls, setValidatedCalls] = useState<RepPayoutItem[]>([]);
-  const [refusedCalls, setRefusedCalls] = useState<RepPayoutItem[]>([]);
+  const [repTransactions, setRepTransactions] = useState<RepTransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<WalletTab>('validated');
   const [detail, setDetail] = useState<
-    | { kind: 'rep'; data: RepPayoutItem }
+    | { kind: 'rep'; data: RepTransactionRow }
     | { kind: 'wallet'; data: WalletEntryListItem }
     | null
   >(null);
+
+  const validatedTx = useMemo(
+    () => repTransactions.filter((tx) => tx.status === 'earned' || tx.status === 'paid'),
+    [repTransactions]
+  );
+  const refusedTx = useMemo(
+    () => repTransactions.filter((tx) => tx.status === 'refused'),
+    [repTransactions]
+  );
 
   useEffect(() => {
     const companyId = Cookies.get('companyId');
@@ -2739,25 +2800,15 @@ function WalletView() {
     }
     const walletApi =
       (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3003/api';
-    const callsApi = getCallsApiBase();
 
     let cancelled = false;
 
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [walletRes, validRes, refusedRes] = await Promise.all([
+        const [walletRes, repTxRes] = await Promise.all([
           fetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
-          callsApi
-            ? fetch(
-                `${callsApi}/rep-transactions/company/${companyId}?status=validated&limit=50`
-              ).catch(() => null)
-            : Promise.resolve(null),
-          callsApi
-            ? fetch(
-                `${callsApi}/rep-transactions/company/${companyId}?status=refused&limit=50`
-              ).catch(() => null)
-            : Promise.resolve(null),
+          fetch(`${walletApi}/escrow/company/rep-transactions/${companyId}`).catch(() => null),
         ]);
 
         if (cancelled) return;
@@ -2769,10 +2820,9 @@ function WalletView() {
             : Array.isArray(json)
             ? json
             : [];
-          // Deposits tab only shows credits.
           setWalletEntries(
             [...list]
-              .filter((e) => e.direction === 'credit' || e.type === 'deposit')
+              .filter((e) => e.direction === 'credit' && e.status !== 'failed')
               .sort((a, b) => {
                 const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
                 const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -2783,18 +2833,11 @@ function WalletView() {
           setWalletEntries([]);
         }
 
-        if (validRes?.ok) {
-          const json = await validRes.json();
-          setValidatedCalls(Array.isArray(json?.payouts) ? json.payouts : []);
+        if (repTxRes?.ok) {
+          const json = await repTxRes.json();
+          setRepTransactions(Array.isArray(json?.data) ? json.data : []);
         } else {
-          setValidatedCalls([]);
-        }
-
-        if (refusedRes?.ok) {
-          const json = await refusedRes.json();
-          setRefusedCalls(Array.isArray(json?.payouts) ? json.payouts : []);
-        } else {
-          setRefusedCalls([]);
+          setRepTransactions([]);
         }
       } catch (err) {
         console.warn('Failed to load wallet movements', err);
@@ -2842,14 +2885,6 @@ function WalletView() {
     if (Number.isNaN(d.getTime())) return '—';
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  };
-
-  /** "M:SS" call duration from seconds. */
-  const formatDuration = (seconds?: number) => {
-    const s = Math.max(0, Math.floor(seconds || 0));
-    const m = Math.floor(s / 60);
-    const r = s % 60;
-    return `${m}:${String(r).padStart(2, '0')}`;
   };
 
   /** Pretty euro amount without sign (e.g. "2.80 €"). */
@@ -2909,8 +2944,8 @@ function WalletView() {
         loading={loading}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        validated={validatedCalls}
-        refused={refusedCalls}
+        validated={validatedTx}
+        refused={refusedTx}
         deposits={walletEntries}
         onConsult={(item) => setDetail(item)}
         t={t}
@@ -2918,7 +2953,6 @@ function WalletView() {
         formatEur={formatEur}
         formatDateTime={formatDateTime}
         formatDate={formatDate}
-        formatDuration={formatDuration}
         labelForWallet={labelForWallet}
       />
 
@@ -2931,7 +2965,6 @@ function WalletView() {
           formatEurPlain={formatEurPlain}
           formatEur={formatEur}
           formatDateTime={formatDateTime}
-          formatDuration={formatDuration}
           labelForWallet={labelForWallet}
         />
       )}
@@ -2952,12 +2985,12 @@ interface WalletMovementsProps {
   loading: boolean;
   activeTab: WalletTab;
   setActiveTab: (t: WalletTab) => void;
-  validated: RepPayoutItem[];
-  refused: RepPayoutItem[];
+  validated: RepTransactionRow[];
+  refused: RepTransactionRow[];
   deposits: WalletEntryListItem[];
   onConsult: (
     item:
-      | { kind: 'rep'; data: RepPayoutItem }
+      | { kind: 'rep'; data: RepTransactionRow }
       | { kind: 'wallet'; data: WalletEntryListItem }
   ) => void;
   t: TFunction;
@@ -2965,7 +2998,6 @@ interface WalletMovementsProps {
   formatEur: (n: number) => string;
   formatDateTime: (iso?: string) => string;
   formatDate: (iso?: string) => string;
-  formatDuration: (s?: number) => string;
   labelForWallet: (e: WalletEntryListItem) => string;
 }
 
@@ -2982,7 +3014,6 @@ function WalletMovements({
   formatEur,
   formatDateTime,
   formatDate,
-  formatDuration,
   labelForWallet,
 }: WalletMovementsProps) {
   const tabs: Array<{ id: WalletTab; label: string; count: number; tone: string }> = [
@@ -3097,75 +3128,69 @@ function WalletMovements({
               </tr>
             </thead>
             <tbody>
-              {(rows as RepPayoutItem[]).map((p) => {
-                const repShare = Number(p.totalCommission) || 0;
-                const platformShare =
-                  Number(p.platformCommission) ||
-                  Math.max(0, (Number(p.price) || 0) - repShare);
-                const total = repShare + platformShare;
-                const repPct = total > 0 ? Math.round((repShare / total) * 100) : 70;
-                const platformPct = total > 0 ? 100 - repPct : 30;
-                const isSale =
-                  p.hasTransaction && (p.repTransactionCommission || 0) > 0;
-                const isRefused = activeTab === 'refused';
-                const badgeLabel = isRefused
-                  ? t('opsDashboard.wallet.repBadgeRefused', 'REFUSÉ')
-                  : isSale
-                  ? t('opsDashboard.wallet.repBadgeSale', 'VENTE SIGNÉE')
-                  : t('opsDashboard.wallet.repBadgeValidated', 'APPEL VALIDÉ');
-                const badgeTone = isRefused
-                  ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
-                  : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200';
+              {(rows as RepTransactionRow[]).map((tx) => {
+                const cause = repTxCauseLabel(tx.type);
+                const isRefusedTab = activeTab === 'refused';
+                const gross = Number(tx.amount) || 0;
+                const repShare = Number(tx.repShare) || 0;
+                const harxShare = Number(tx.harxShare) || 0;
+                const agentName = repTxAgentName(tx);
+                const score = repTxAiScore(tx);
 
                 return (
                   <tr
-                    key={p._id}
+                    key={tx._id}
                     className="border-b border-slate-50 text-[12px] last:border-b-0 hover:bg-slate-50/60"
                   >
                     <td className="px-5 py-3.5 font-black uppercase tracking-wide text-slate-800">
-                      <span className="block max-w-[180px] truncate" title={p.repName || ''}>
-                        {p.repName || t('opsDashboard.wallet.repUnknown', 'Rep')}
+                      <span className="block max-w-[180px] truncate" title={repTxRecipient(tx)}>
+                        {repTxRecipient(tx)}
                       </span>
                     </td>
                     <td className="px-3 py-3.5">
                       <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${badgeTone}`}
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${cause.tone}`}
+                        title={tx.description || cause.label}
                       >
-                        {badgeLabel}
+                        {cause.label}
                       </span>
                     </td>
                     <td className="px-3 py-3.5 tabular-nums text-slate-500">
-                      {formatDateTime(p.startTime || p.createdAt)}
+                      {formatDateTime(tx.call?.startTime || tx.createdAt)}
                     </td>
                     <td className="px-3 py-3.5 font-black tabular-nums text-slate-700">
-                      {formatDuration(p.duration)}
+                      {formatDurationFromCallSeconds(tx.call?.duration)}
                     </td>
                     <td className="px-3 py-3.5">
                       <span className="inline-flex items-center gap-1 font-black tabular-nums text-slate-700">
                         <Star size={12} className="fill-amber-400 text-amber-400" />
-                        {p.score != null ? `${Math.round(Number(p.score))}/100` : '—'}
+                        {score != null ? `${Math.round(score)}/100` : '—'}
                       </span>
                     </td>
                     <td className="px-3 py-3.5 text-right">
-                      {isRefused ? (
-                        <span className="font-black tabular-nums text-slate-400">—</span>
-                      ) : (
+                      {isRefusedTab ? (
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                          {t('opsDashboard.wallet.repBadgeRefused', 'Refusé (aucun débit)')}
+                        </span>
+                      ) : gross > 0 ? (
                         <>
                           <span className="block font-black tabular-nums text-rose-600">
-                            − {formatEurPlain(total)}
+                            − {formatEurPlain(gross)}
                           </span>
                           <span className="block text-[10px] font-bold text-slate-500">
-                            {repPct}% Rep · {formatEurPlain(repShare)}
+                            70% {agentName} · {formatEurPlain(repShare)}
                           </span>
                           <span className="block text-[10px] font-bold text-slate-500">
-                            {platformPct}% HARX · {formatEurPlain(platformShare)}
+                            30% HARX · {formatEurPlain(harxShare)}
                           </span>
                         </>
+                      ) : (
+                        <span className="font-black tabular-nums text-slate-400">—</span>
                       )}
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <button
-                        onClick={() => onConsult({ kind: 'rep', data: p })}
+                        onClick={() => onConsult({ kind: 'rep', data: tx })}
                         className="rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-slate-700"
                       >
                         {t('opsDashboard.wallet.consult', 'Consulter')}
@@ -3259,14 +3284,13 @@ function WalletMovements({
 
 interface MovementDetailModalProps {
   item:
-    | { kind: 'rep'; data: RepPayoutItem }
+    | { kind: 'rep'; data: RepTransactionRow }
     | { kind: 'wallet'; data: WalletEntryListItem };
   onClose: () => void;
   t: TFunction;
   formatEurPlain: (n: number) => string;
   formatEur: (n: number) => string;
   formatDateTime: (iso?: string) => string;
-  formatDuration: (s?: number) => string;
   labelForWallet: (e: WalletEntryListItem) => string;
 }
 
@@ -3277,7 +3301,6 @@ function MovementDetailModal({
   formatEurPlain,
   formatEur,
   formatDateTime,
-  formatDuration,
   labelForWallet,
 }: MovementDetailModalProps) {
   return (
@@ -3298,7 +3321,7 @@ function MovementDetailModal({
             </p>
             <h4 className="mt-1 text-lg font-black text-slate-900">
               {item.kind === 'rep'
-                ? item.data.repName || t('opsDashboard.wallet.repUnknown', 'Rep')
+                ? repTxRecipient(item.data)
                 : labelForWallet(item.data)}
             </h4>
           </div>
@@ -3313,59 +3336,61 @@ function MovementDetailModal({
 
         {item.kind === 'rep' ? (
           <dl className="space-y-2 text-[12px]">
-            {item.data.gigName && (
-              <Row label={t('opsDashboard.wallet.detail.gig', 'Gig')} value={item.data.gigName} />
+            <Row
+              label={t('opsDashboard.wallet.col.cause', 'Cause')}
+              value={repTxCauseLabel(item.data.type).label}
+            />
+            <Row
+              label="Rep"
+              value={repTxAgentName(item.data)}
+            />
+            {item.data.gig?.title && (
+              <Row label={t('opsDashboard.wallet.detail.gig', 'Gig')} value={item.data.gig.title} />
             )}
             <Row
               label={t('opsDashboard.wallet.col.datetime', 'Date & heure')}
-              value={formatDateTime(item.data.startTime || item.data.createdAt)}
+              value={formatDateTime(item.data.call?.startTime || item.data.createdAt)}
             />
             <Row
               label={t('opsDashboard.wallet.col.duration', 'Durée')}
-              value={formatDuration(item.data.duration)}
+              value={formatDurationFromCallSeconds(item.data.call?.duration)}
             />
             <Row
               label={t('opsDashboard.wallet.col.score', 'Score AI')}
-              value={
-                item.data.score != null ? `${Math.round(Number(item.data.score))}/100` : '—'
-              }
+              value={(() => {
+                const s = repTxAiScore(item.data);
+                return s != null ? `${Math.round(s)}/100` : '—';
+              })()}
             />
-            {item.data.aiRefusalReason && (
+            {item.data.description && (
               <Row
-                label={t('opsDashboard.wallet.detail.refusalReason', 'Motif de refus')}
-                value={item.data.aiRefusalReason}
+                label={t('opsDashboard.wallet.detail.note', 'Note')}
+                value={item.data.description}
               />
             )}
-            <div className="mt-3 rounded-xl bg-slate-50 p-3">
-              <Row
-                label={t('opsDashboard.wallet.detail.totalCommission', 'Commission totale')}
-                value={`− ${formatEurPlain(
-                  (Number(item.data.totalCommission) || 0) +
-                    (Number(item.data.platformCommission) ||
-                      Math.max(
-                        0,
-                        (Number(item.data.price) || 0) -
-                          (Number(item.data.totalCommission) || 0)
-                      ))
-                )}`}
-                tone="rose"
-              />
-              <Row
-                label={t('opsDashboard.wallet.detail.repShare', 'Part rep (70%)')}
-                value={formatEurPlain(Number(item.data.totalCommission) || 0)}
-              />
-              <Row
-                label={t('opsDashboard.wallet.detail.platformShare', 'Part HARX (30%)')}
-                value={formatEurPlain(
-                  Number(item.data.platformCommission) ||
-                    Math.max(
-                      0,
-                      (Number(item.data.price) || 0) -
-                        (Number(item.data.totalCommission) || 0)
-                    )
-                )}
-              />
-            </div>
+            {item.data.status === 'refused' ? (
+              <div className="mt-3 rounded-xl bg-slate-50 p-3">
+                <p className="text-[11px] font-bold text-slate-500">
+                  {t('opsDashboard.wallet.repBadgeRefused', 'Refusé (aucun débit)')}
+                </p>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-xl bg-slate-50 p-3">
+                <Row
+                  label={t('opsDashboard.wallet.detail.totalCommission', 'Commission totale')}
+                  value={`− ${formatEurPlain(Number(item.data.amount) || 0)}`}
+                  tone="rose"
+                />
+                <Row
+                  label={t('opsDashboard.wallet.detail.repShare', 'Part rep (70%)')}
+                  value={formatEurPlain(Number(item.data.repShare) || 0)}
+                />
+                <Row
+                  label={t('opsDashboard.wallet.detail.platformShare', 'Part HARX (30%)')}
+                  value={formatEurPlain(Number(item.data.harxShare) || 0)}
+                />
+              </div>
+            )}
           </dl>
         ) : (
           <dl className="space-y-2 text-[12px]">
