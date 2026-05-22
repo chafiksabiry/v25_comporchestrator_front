@@ -213,7 +213,17 @@ export function PhoneNumberPanel() {
         if (gigsResult.success && gigsResult.data) {
           setGigsAndReps(gigsResult.data);
           if (gigsResult.data.length > 0 && !selectedGigIdForNumber) {
-            setSelectedGigIdForNumber(gigsResult.data[0].gigId);
+            // Prefer `?gigId=<id>` from the URL (set by the gig-setup
+            // warning's Continue button) so the rep lands directly on
+            // the right gig in the Buy tab.
+            const urlGigId =
+              new URLSearchParams(location.search).get('gigId') || '';
+            const preferred = gigsResult.data.find(
+              (g: any) => g.gigId === urlGigId
+            );
+            setSelectedGigIdForNumber(
+              preferred ? preferred.gigId : gigsResult.data[0].gigId
+            );
           }
         }
       }
@@ -405,8 +415,25 @@ export function PhoneNumberPanel() {
       );
       setSearchResults(prev => prev.filter(n => n.phoneNumber !== checkoutNumber));
       fetchData(true);
+      // Notify the gig-setup checklist (and any other listener) that one
+      // of the per-gig setup steps just progressed so it can re-probe the
+      // backend without a full page refresh.
+      try {
+        window.dispatchEvent(
+          new CustomEvent('harx:gig-step-progress', {
+            detail: {
+              stepId: 4,
+              gigId: selectedGigIdForNumber || undefined,
+              source: 'phone-number-purchase',
+              method,
+            },
+          })
+        );
+      } catch {
+        // Older browsers without CustomEvent — non-blocking.
+      }
     },
-    [checkoutNumber, fetchData, t]
+    [checkoutNumber, fetchData, selectedGigIdForNumber, t]
   );
 
   const startPaypalCheckout = async () => {

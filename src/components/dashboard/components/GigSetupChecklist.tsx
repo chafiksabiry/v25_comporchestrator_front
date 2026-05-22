@@ -82,8 +82,14 @@ const PATH_TO_STEP: Record<string, number> = Object.entries(
   return acc;
 }, {});
 
-function getContinueTarget(stepId: number): string {
-  return STEP_CONTINUE_TARGET[stepId] || STEP_DASHBOARD_PATH[stepId];
+function getContinueTarget(stepId: number, gigId?: string): string {
+  const base = STEP_CONTINUE_TARGET[stepId] || STEP_DASHBOARD_PATH[stepId];
+  if (!base) return '#';
+  if (!gigId) return base;
+  // Append `gigId=<id>` to the target URL so the destination page can
+  // auto-select that specific gig instead of defaulting to the first.
+  const separator = base.includes('?') ? '&' : '?';
+  return `${base}${separator}gigId=${encodeURIComponent(gigId)}`;
 }
 
 /** Routes that should show the full multi-gig banner. Anything else with
@@ -302,8 +308,25 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
   const [dismissedSignature, setDismissedSignature] = useState<string | null>(
     null
   );
+  /** Bumped whenever any setup step just progressed so the probe useEffect
+   *  re-runs and refreshes the per-gig status without a page refresh. */
+  const [progressNonce, setProgressNonce] = useState(0);
+
+  // Listen for cross-component "step just progressed" signals so the
+  // checklist re-probes the backend without a page refresh. Components
+  // like `PhoneNumberPanel`, `ScriptGenerator`, `KnowledgeBase`, etc.
+  // can dispatch `harx:gig-step-progress` with a `{ stepId, gigId? }`
+  // payload after a successful mutation.
+  useEffect(() => {
+    const onProgress = () => setProgressNonce((n) => n + 1);
+    window.addEventListener('harx:gig-step-progress', onProgress as EventListener);
+    return () =>
+      window.removeEventListener('harx:gig-step-progress', onProgress as EventListener);
+  }, []);
 
   // Fetch gigs only when the parent didn't already inject them.
+  // Re-runs when a `harx:gig-step-progress` event bumps `progressNonce`
+  // so gig statuses (e.g. `to_activate` → `active`) refresh live.
   useEffect(() => {
     if (gigsProp || !companyId) return;
     let cancelled = false;
@@ -321,7 +344,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
     return () => {
       cancelled = true;
     };
-  }, [companyId, gigsProp]);
+  }, [companyId, gigsProp, progressNonce]);
 
   const allGigs = gigsProp ?? fetchedGigs ?? [];
   const pendingGigs = useMemo(
@@ -396,7 +419,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
     return () => {
       cancelled = true;
     };
-  }, [companyId, userId, pendingGigIdsKey]);
+  }, [companyId, userId, pendingGigIdsKey, progressNonce]);
 
   // Sequential setup flow: every step must be completed before the next
   // one unlocks. Matching is intentionally not part of this list — it
@@ -486,7 +509,19 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
           {STEP_CONTINUE_TARGET[currentStepId] && (
             <button
               type="button"
-              onClick={() => navigate(getContinueTarget(currentStepId))}
+              onClick={() =>
+                navigate(
+                  // If exactly one gig still needs this step, deep-link
+                  // straight to it so the destination panel auto-selects
+                  // that gig in its dropdown.
+                  getContinueTarget(
+                    currentStepId,
+                    gigsMissingThisStep.length === 1
+                      ? gigsMissingThisStep[0]._id
+                      : undefined
+                  )
+                )
+              }
               className="hidden shrink-0 items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:from-amber-600 hover:to-orange-600 active:scale-95 sm:inline-flex"
               title={t('gigDetails.setupBanner.continue', {
                 label: stepDef.label,
@@ -642,7 +677,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                   {checklist.map((step) => {
                     const Icon = step.icon;
                     const done = !!(status && status[step.id]);
-                    const targetPath = getContinueTarget(step.id);
+                    const targetPath = getContinueTarget(step.id, gig._id);
                     const isNext = !done && step.id === nextActionableStepId;
                     const isLocked = !done && !isNext;
                     return (
