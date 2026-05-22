@@ -2708,26 +2708,33 @@ interface RepPayoutItem {
   totalCommission?: number;
   platformCommission?: number;
   validByAI?: boolean;
+  aiRefusalReason?: string | null;
+  aiCallStatus?: string | null;
   hasTransaction?: boolean;
 }
 
-/** Unified row for the merged "Recent transactions" feed. */
-type TxFeedItem =
-  | { kind: 'wallet'; data: WalletEntryListItem }
-  | { kind: 'rep';   data: RepPayoutItem };
+type WalletTab = 'validated' | 'refused' | 'deposits';
 
 function WalletView() {
   const { t, i18n } = useTranslation();
 
-  // ── Recent transactions — company wallet entries + rep payouts ─────
-  const [feed, setFeed] = useState<TxFeedItem[] | null>(null);
-  const [feedLoading, setFeedLoading] = useState(true);
+  // ── "Mouvements du portefeuille" — three buckets (validated/refused/deposits)
+  //  driven by the same datasource as the rep dashboard.
+  const [walletEntries, setWalletEntries] = useState<WalletEntryListItem[]>([]);
+  const [validatedCalls, setValidatedCalls] = useState<RepPayoutItem[]>([]);
+  const [refusedCalls, setRefusedCalls] = useState<RepPayoutItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<WalletTab>('validated');
+  const [detail, setDetail] = useState<
+    | { kind: 'rep'; data: RepPayoutItem }
+    | { kind: 'wallet'; data: WalletEntryListItem }
+    | null
+  >(null);
 
   useEffect(() => {
     const companyId = Cookies.get('companyId');
     if (!companyId) {
-      setFeed([]);
-      setFeedLoading(false);
+      setLoading(false);
       return;
     }
     const walletApi =
@@ -2737,47 +2744,62 @@ function WalletView() {
     let cancelled = false;
 
     const fetchAll = async () => {
+      setLoading(true);
       try {
-        const [walletRes, repRes] = await Promise.all([
+        const [walletRes, validRes, refusedRes] = await Promise.all([
           fetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
           callsApi
-            ? fetch(`${callsApi}/calls/company/${companyId}/analytics/rep-payouts?limit=15`).catch(() => null)
+            ? fetch(
+                `${callsApi}/calls/company/${companyId}/analytics/rep-payouts?status=validated&limit=50`
+              ).catch(() => null)
+            : Promise.resolve(null),
+          callsApi
+            ? fetch(
+                `${callsApi}/calls/company/${companyId}/analytics/rep-payouts?status=refused&limit=50`
+              ).catch(() => null)
             : Promise.resolve(null),
         ]);
 
         if (cancelled) return;
 
-        const walletList: WalletEntryListItem[] = [];
         if (walletRes?.ok) {
           const json = await walletRes.json();
-          walletList.push(
-            ...(Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [])
+          const list: WalletEntryListItem[] = Array.isArray(json?.data)
+            ? json.data
+            : Array.isArray(json)
+            ? json
+            : [];
+          // Deposits tab only shows credits.
+          setWalletEntries(
+            [...list]
+              .filter((e) => e.direction === 'credit' || e.type === 'deposit')
+              .sort((a, b) => {
+                const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return tb - ta;
+              })
           );
+        } else {
+          setWalletEntries([]);
         }
 
-        const repList: RepPayoutItem[] = [];
-        if (repRes?.ok) {
-          const json = await repRes.json();
-          repList.push(...(Array.isArray(json?.payouts) ? json.payouts : []));
+        if (validRes?.ok) {
+          const json = await validRes.json();
+          setValidatedCalls(Array.isArray(json?.payouts) ? json.payouts : []);
+        } else {
+          setValidatedCalls([]);
         }
 
-        const merged: TxFeedItem[] = [
-          ...walletList.map((d) => ({ kind: 'wallet' as const, data: d })),
-          ...repList.map((d) => ({ kind: 'rep' as const, data: d })),
-        ];
-
-        merged.sort((a, b) => {
-          const ta = a.data.createdAt ? new Date(a.data.createdAt).getTime() : 0;
-          const tb = b.data.createdAt ? new Date(b.data.createdAt).getTime() : 0;
-          return tb - ta;
-        });
-
-        setFeed(merged.slice(0, 12));
+        if (refusedRes?.ok) {
+          const json = await refusedRes.json();
+          setRefusedCalls(Array.isArray(json?.payouts) ? json.payouts : []);
+        } else {
+          setRefusedCalls([]);
+        }
       } catch (err) {
-        console.warn('Failed to load wallet transactions feed', err);
-        if (!cancelled) setFeed([]);
+        console.warn('Failed to load wallet movements', err);
       } finally {
-        if (!cancelled) setFeedLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
@@ -2882,154 +2904,37 @@ function WalletView() {
         />
       </div>
 
-      {/* Transactions récentes — real wallet entries (latest 8) */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
-          <span className="inline-flex h-5 w-1.5 rounded-sm bg-harx-500" />
-          {t('opsDashboard.wallet.txTitle', 'Transactions récentes')}
-        </header>
+      {/* Mouvements du portefeuille — three-tab ledger */}
+      <WalletMovements
+        loading={loading}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        validated={validatedCalls}
+        refused={refusedCalls}
+        deposits={walletEntries}
+        onConsult={(item) => setDetail(item)}
+        t={t}
+        formatEurPlain={formatEurPlain}
+        formatEur={formatEur}
+        formatDateTime={formatDateTime}
+        formatDate={formatDate}
+        formatDuration={formatDuration}
+        labelForWallet={labelForWallet}
+      />
 
-        {feedLoading ? (
-          <ul className="divide-y divide-slate-100">
-            {[0, 1, 2].map((n) => (
-              <li key={n} className="flex items-center gap-3 py-2.5 animate-pulse">
-                <span className="h-6 w-6 shrink-0 rounded-full bg-slate-100" />
-                <span className="h-3 flex-1 rounded bg-slate-100" />
-                <span className="h-3 w-24 rounded bg-slate-100" />
-              </li>
-            ))}
-          </ul>
-        ) : feed && feed.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
-              {t('opsDashboard.wallet.txEmpty', 'Aucune transaction pour le moment')}
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {(feed || []).map((item) => {
-              if (item.kind === 'wallet') {
-                const entry = item.data;
-                const amount = Number(entry.amount) || 0;
-                const isCredit = entry.direction
-                  ? entry.direction === 'credit'
-                  : amount > 0;
-                const signedAmount = isCredit ? Math.abs(amount) : -Math.abs(amount);
-                const isPending = entry.status === 'pending';
-                const isFailed = entry.status === 'failed';
-                const label = labelForWallet(entry);
-                return (
-                  <li
-                    key={`w-${entry._id}`}
-                    className={`flex items-center gap-3 py-2.5 ${isFailed ? 'opacity-60' : ''}`}
-                  >
-                    <span
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-                        isCredit
-                          ? 'bg-emerald-500/15 text-emerald-600'
-                          : 'bg-rose-500/15 text-rose-600'
-                      }`}
-                    >
-                      {isCredit ? <Plus size={12} /> : <Minus size={12} />}
-                    </span>
-                    <span className="flex-1 truncate text-[13px] font-bold text-slate-800" title={label}>
-                      {label}
-                      {isPending && (
-                        <span className="ml-2 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-amber-600 border border-amber-100">
-                          pending
-                        </span>
-                      )}
-                      {isFailed && (
-                        <span className="ml-2 inline-flex items-center rounded-full bg-rose-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-rose-600 border border-rose-100">
-                          failed
-                        </span>
-                      )}
-                    </span>
-                    <span
-                      className={`shrink-0 text-[12px] font-black tabular-nums ${
-                        isCredit ? 'text-emerald-600' : 'text-rose-600'
-                      }`}
-                    >
-                      {formatEur(signedAmount)} · {formatDate(entry.createdAt)}
-                    </span>
-                  </li>
-                );
-              }
-
-              // Rep commission payout — rich row matching the rep dashboard
-              // "appels validés" layout: rep name, status pill, datetime,
-              // duration, AI score, amount and 70/30 split breakdown.
-              const payout = item.data;
-              const repShare = Number(payout.totalCommission) || 0;
-              const platformShare =
-                Number(payout.platformCommission) ||
-                Math.max(0, (Number(payout.price) || 0) - repShare);
-              const total = repShare + platformShare;
-              const repPct = total > 0 ? Math.round((repShare / total) * 100) : 70;
-              const platformPct = total > 0 ? 100 - repPct : 30;
-              const isSale = payout.hasTransaction && (payout.repTransactionCommission || 0) > 0;
-              const badgeLabel = isSale
-                ? t('opsDashboard.wallet.repBadgeSale', 'VENTE SIGNÉE')
-                : t('opsDashboard.wallet.repBadgeValidated', 'APPEL VALIDÉ');
-
-              return (
-                <li
-                  key={`r-${payout._id}`}
-                  className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-3 py-3 text-[12px]"
-                >
-                  {/* Rep name */}
-                  <span
-                    className="truncate font-black uppercase tracking-wide text-slate-800"
-                    title={payout.repName || ''}
-                  >
-                    {payout.repName || t('opsDashboard.wallet.repUnknown', 'Rep')}
-                  </span>
-
-                  {/* Status pill */}
-                  <span
-                    className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
-                      isSale
-                        ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                        : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                    }`}
-                  >
-                    {badgeLabel}
-                  </span>
-
-                  {/* Datetime */}
-                  <span className="shrink-0 tabular-nums text-slate-500">
-                    {formatDateTime(payout.startTime || payout.createdAt)}
-                  </span>
-
-                  {/* Duration */}
-                  <span className="shrink-0 font-black tabular-nums text-slate-700">
-                    {formatDuration(payout.duration)}
-                  </span>
-
-                  {/* AI score */}
-                  <span className="inline-flex shrink-0 items-center gap-1 font-black tabular-nums text-slate-700">
-                    <Star size={12} className="text-amber-400 fill-amber-400" />
-                    {payout.score != null ? `${Math.round(Number(payout.score))}/100` : '—'}
-                  </span>
-
-                  {/* Amount + 70/30 breakdown */}
-                  <span className="shrink-0 text-right">
-                    <span className="block font-black tabular-nums text-rose-600">
-                      − {formatEurPlain(total)}
-                    </span>
-                    <span className="block text-[10px] font-bold text-slate-500">
-                      {repPct}% Rep · {formatEurPlain(repShare)}
-                    </span>
-                    <span className="block text-[10px] font-bold text-slate-500">
-                      {platformPct}% HARX · {formatEurPlain(platformShare)}
-                    </span>
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      {/* Detail modal */}
+      {detail && (
+        <MovementDetailModal
+          item={detail}
+          onClose={() => setDetail(null)}
+          t={t}
+          formatEurPlain={formatEurPlain}
+          formatEur={formatEur}
+          formatDateTime={formatDateTime}
+          formatDuration={formatDuration}
+          labelForWallet={labelForWallet}
+        />
+      )}
 
       {/* Top-up CTA */}
       <button className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-harx-500 px-6 py-4 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-harx-500/30 transition-all hover:-translate-y-0.5 hover:bg-harx-600">
@@ -3038,6 +2943,485 @@ function WalletView() {
         <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       </button>
     </>
+  );
+}
+
+/* ---------------- Wallet movements panel ---------------- */
+
+interface WalletMovementsProps {
+  loading: boolean;
+  activeTab: WalletTab;
+  setActiveTab: (t: WalletTab) => void;
+  validated: RepPayoutItem[];
+  refused: RepPayoutItem[];
+  deposits: WalletEntryListItem[];
+  onConsult: (
+    item:
+      | { kind: 'rep'; data: RepPayoutItem }
+      | { kind: 'wallet'; data: WalletEntryListItem }
+  ) => void;
+  t: TFunction;
+  formatEurPlain: (n: number) => string;
+  formatEur: (n: number) => string;
+  formatDateTime: (iso?: string) => string;
+  formatDate: (iso?: string) => string;
+  formatDuration: (s?: number) => string;
+  labelForWallet: (e: WalletEntryListItem) => string;
+}
+
+function WalletMovements({
+  loading,
+  activeTab,
+  setActiveTab,
+  validated,
+  refused,
+  deposits,
+  onConsult,
+  t,
+  formatEurPlain,
+  formatEur,
+  formatDateTime,
+  formatDate,
+  formatDuration,
+  labelForWallet,
+}: WalletMovementsProps) {
+  const tabs: Array<{ id: WalletTab; label: string; count: number; tone: string }> = [
+    {
+      id: 'validated',
+      label: t('opsDashboard.wallet.tabs.validated', 'Validés'),
+      count: validated.length,
+      tone: 'emerald',
+    },
+    {
+      id: 'refused',
+      label: t('opsDashboard.wallet.tabs.refused', 'Refusés'),
+      count: refused.length,
+      tone: 'rose',
+    },
+    {
+      id: 'deposits',
+      label: t('opsDashboard.wallet.tabs.deposits', 'Dépôts'),
+      count: deposits.length,
+      tone: 'sky',
+    },
+  ];
+
+  const isCalls = activeTab === 'validated' || activeTab === 'refused';
+  const rows = activeTab === 'validated' ? validated : activeTab === 'refused' ? refused : deposits;
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {/* Header */}
+      <header className="flex flex-col gap-3 border-b border-slate-100 p-5 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h3 className="flex items-center gap-2 text-sm font-black text-slate-900">
+            <span className="inline-flex h-5 w-1.5 rounded-sm bg-harx-500" />
+            {t('opsDashboard.wallet.movementsTitle', 'Mouvements du portefeuille')}
+          </h3>
+          <p className="mt-1 max-w-xl text-[11px] text-slate-500">
+            {t(
+              'opsDashboard.wallet.movementsSubtitle',
+              'Commissions (débits, 70% rep / 30% HARX) et dépôts (crédits) du compte cash. Les appels en attente sont gérés depuis la page Appels.'
+            )}
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 p-1">
+          {tabs.map((tab) => {
+            const active = activeTab === tab.id;
+            const badgeTone =
+              tab.tone === 'emerald'
+                ? 'bg-emerald-500 text-white'
+                : tab.tone === 'rose'
+                ? 'bg-rose-500 text-white'
+                : 'bg-sky-500 text-white';
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`group flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all ${
+                  active
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {tab.label}
+                <span
+                  className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-black ${
+                    active ? badgeTone : 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </header>
+
+      {/* Table */}
+      {loading ? (
+        <div className="p-5">
+          <ul className="space-y-2">
+            {[0, 1, 2].map((n) => (
+              <li
+                key={n}
+                className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 animate-pulse"
+              >
+                <span className="h-3 w-32 rounded bg-slate-100" />
+                <span className="h-3 flex-1 rounded bg-slate-100" />
+                <span className="h-3 w-24 rounded bg-slate-100" />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="px-5 py-12 text-center">
+          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+            {t('opsDashboard.wallet.txEmpty', 'Aucun mouvement pour le moment')}
+          </p>
+        </div>
+      ) : isCalls ? (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[820px] text-left">
+            <thead>
+              <tr className="border-b border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <th className="px-5 py-3">{t('opsDashboard.wallet.col.recipient', 'Destinataire')}</th>
+                <th className="px-3 py-3">{t('opsDashboard.wallet.col.cause', 'Cause')}</th>
+                <th className="px-3 py-3">{t('opsDashboard.wallet.col.datetime', 'Date & heure')}</th>
+                <th className="px-3 py-3">{t('opsDashboard.wallet.col.duration', 'Durée')}</th>
+                <th className="px-3 py-3">{t('opsDashboard.wallet.col.score', 'Score AI')}</th>
+                <th className="px-3 py-3 text-right">{t('opsDashboard.wallet.col.commission', 'Commission')}</th>
+                <th className="px-5 py-3 text-right">{t('opsDashboard.wallet.col.details', 'Détails')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(rows as RepPayoutItem[]).map((p) => {
+                const repShare = Number(p.totalCommission) || 0;
+                const platformShare =
+                  Number(p.platformCommission) ||
+                  Math.max(0, (Number(p.price) || 0) - repShare);
+                const total = repShare + platformShare;
+                const repPct = total > 0 ? Math.round((repShare / total) * 100) : 70;
+                const platformPct = total > 0 ? 100 - repPct : 30;
+                const isSale =
+                  p.hasTransaction && (p.repTransactionCommission || 0) > 0;
+                const isRefused = activeTab === 'refused';
+                const badgeLabel = isRefused
+                  ? t('opsDashboard.wallet.repBadgeRefused', 'REFUSÉ')
+                  : isSale
+                  ? t('opsDashboard.wallet.repBadgeSale', 'VENTE SIGNÉE')
+                  : t('opsDashboard.wallet.repBadgeValidated', 'APPEL VALIDÉ');
+                const badgeTone = isRefused
+                  ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+                  : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200';
+
+                return (
+                  <tr
+                    key={p._id}
+                    className="border-b border-slate-50 text-[12px] last:border-b-0 hover:bg-slate-50/60"
+                  >
+                    <td className="px-5 py-3.5 font-black uppercase tracking-wide text-slate-800">
+                      <span className="block max-w-[180px] truncate" title={p.repName || ''}>
+                        {p.repName || t('opsDashboard.wallet.repUnknown', 'Rep')}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3.5">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${badgeTone}`}
+                      >
+                        {badgeLabel}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3.5 tabular-nums text-slate-500">
+                      {formatDateTime(p.startTime || p.createdAt)}
+                    </td>
+                    <td className="px-3 py-3.5 font-black tabular-nums text-slate-700">
+                      {formatDuration(p.duration)}
+                    </td>
+                    <td className="px-3 py-3.5">
+                      <span className="inline-flex items-center gap-1 font-black tabular-nums text-slate-700">
+                        <Star size={12} className="fill-amber-400 text-amber-400" />
+                        {p.score != null ? `${Math.round(Number(p.score))}/100` : '—'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3.5 text-right">
+                      {isRefused ? (
+                        <span className="font-black tabular-nums text-slate-400">—</span>
+                      ) : (
+                        <>
+                          <span className="block font-black tabular-nums text-rose-600">
+                            − {formatEurPlain(total)}
+                          </span>
+                          <span className="block text-[10px] font-bold text-slate-500">
+                            {repPct}% Rep · {formatEurPlain(repShare)}
+                          </span>
+                          <span className="block text-[10px] font-bold text-slate-500">
+                            {platformPct}% HARX · {formatEurPlain(platformShare)}
+                          </span>
+                        </>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <button
+                        onClick={() => onConsult({ kind: 'rep', data: p })}
+                        className="rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-slate-700"
+                      >
+                        {t('opsDashboard.wallet.consult', 'Consulter')}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        /* Deposits */
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left">
+            <thead>
+              <tr className="border-b border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <th className="px-5 py-3">{t('opsDashboard.wallet.col.source', 'Source')}</th>
+                <th className="px-3 py-3">{t('opsDashboard.wallet.col.cause', 'Cause')}</th>
+                <th className="px-3 py-3">{t('opsDashboard.wallet.col.datetime', 'Date & heure')}</th>
+                <th className="px-3 py-3 text-right">{t('opsDashboard.wallet.col.amount', 'Montant')}</th>
+                <th className="px-5 py-3 text-right">{t('opsDashboard.wallet.col.details', 'Détails')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(rows as WalletEntryListItem[]).map((entry) => {
+                const amount = Number(entry.amount) || 0;
+                const isPending = entry.status === 'pending';
+                const isFailed = entry.status === 'failed';
+                const label = labelForWallet(entry);
+                return (
+                  <tr
+                    key={entry._id}
+                    className={`border-b border-slate-50 text-[12px] last:border-b-0 hover:bg-slate-50/60 ${
+                      isFailed ? 'opacity-60' : ''
+                    }`}
+                  >
+                    <td className="px-5 py-3.5">
+                      <span className="inline-flex items-center gap-2 font-black uppercase tracking-wide text-slate-800">
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
+                          <Plus size={12} />
+                        </span>
+                        {t(`opsDashboard.wallet.txTypes.${entry.type || 'deposit'}`, {
+                          defaultValue: entry.type || 'Dépôt',
+                        })}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3.5 text-slate-700">
+                      <span className="block max-w-[260px] truncate" title={label}>
+                        {label}
+                      </span>
+                      {isPending && (
+                        <span className="ml-0 mt-1 inline-flex items-center rounded-full border border-amber-100 bg-amber-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-amber-600">
+                          pending
+                        </span>
+                      )}
+                      {isFailed && (
+                        <span className="ml-0 mt-1 inline-flex items-center rounded-full border border-rose-100 bg-rose-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-rose-600">
+                          failed
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3.5 tabular-nums text-slate-500">
+                      {formatDateTime(entry.createdAt) !== '—'
+                        ? formatDateTime(entry.createdAt)
+                        : formatDate(entry.createdAt)}
+                    </td>
+                    <td className="px-3 py-3.5 text-right font-black tabular-nums text-emerald-600">
+                      {formatEur(amount)}
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <button
+                        onClick={() => onConsult({ kind: 'wallet', data: entry })}
+                        className="rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-slate-700"
+                      >
+                        {t('opsDashboard.wallet.consult', 'Consulter')}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ---------------- Movement detail modal ---------------- */
+
+interface MovementDetailModalProps {
+  item:
+    | { kind: 'rep'; data: RepPayoutItem }
+    | { kind: 'wallet'; data: WalletEntryListItem };
+  onClose: () => void;
+  t: TFunction;
+  formatEurPlain: (n: number) => string;
+  formatEur: (n: number) => string;
+  formatDateTime: (iso?: string) => string;
+  formatDuration: (s?: number) => string;
+  labelForWallet: (e: WalletEntryListItem) => string;
+}
+
+function MovementDetailModal({
+  item,
+  onClose,
+  t,
+  formatEurPlain,
+  formatEur,
+  formatDateTime,
+  formatDuration,
+  labelForWallet,
+}: MovementDetailModalProps) {
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="mb-4 flex items-start justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              {item.kind === 'rep'
+                ? t('opsDashboard.wallet.detail.repTitle', 'Commission rep')
+                : t('opsDashboard.wallet.detail.depositTitle', 'Dépôt')}
+            </p>
+            <h4 className="mt-1 text-lg font-black text-slate-900">
+              {item.kind === 'rep'
+                ? item.data.repName || t('opsDashboard.wallet.repUnknown', 'Rep')
+                : labelForWallet(item.data)}
+            </h4>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            aria-label="close"
+          >
+            <XCircle size={20} />
+          </button>
+        </header>
+
+        {item.kind === 'rep' ? (
+          <dl className="space-y-2 text-[12px]">
+            {item.data.gigName && (
+              <Row label={t('opsDashboard.wallet.detail.gig', 'Gig')} value={item.data.gigName} />
+            )}
+            <Row
+              label={t('opsDashboard.wallet.col.datetime', 'Date & heure')}
+              value={formatDateTime(item.data.startTime || item.data.createdAt)}
+            />
+            <Row
+              label={t('opsDashboard.wallet.col.duration', 'Durée')}
+              value={formatDuration(item.data.duration)}
+            />
+            <Row
+              label={t('opsDashboard.wallet.col.score', 'Score AI')}
+              value={
+                item.data.score != null ? `${Math.round(Number(item.data.score))}/100` : '—'
+              }
+            />
+            {item.data.aiRefusalReason && (
+              <Row
+                label={t('opsDashboard.wallet.detail.refusalReason', 'Motif de refus')}
+                value={item.data.aiRefusalReason}
+              />
+            )}
+            <div className="mt-3 rounded-xl bg-slate-50 p-3">
+              <Row
+                label={t('opsDashboard.wallet.detail.totalCommission', 'Commission totale')}
+                value={`− ${formatEurPlain(
+                  (Number(item.data.totalCommission) || 0) +
+                    (Number(item.data.platformCommission) ||
+                      Math.max(
+                        0,
+                        (Number(item.data.price) || 0) -
+                          (Number(item.data.totalCommission) || 0)
+                      ))
+                )}`}
+                tone="rose"
+              />
+              <Row
+                label={t('opsDashboard.wallet.detail.repShare', 'Part rep (70%)')}
+                value={formatEurPlain(Number(item.data.totalCommission) || 0)}
+              />
+              <Row
+                label={t('opsDashboard.wallet.detail.platformShare', 'Part HARX (30%)')}
+                value={formatEurPlain(
+                  Number(item.data.platformCommission) ||
+                    Math.max(
+                      0,
+                      (Number(item.data.price) || 0) -
+                        (Number(item.data.totalCommission) || 0)
+                    )
+                )}
+              />
+            </div>
+          </dl>
+        ) : (
+          <dl className="space-y-2 text-[12px]">
+            {item.data.type && (
+              <Row
+                label={t('opsDashboard.wallet.col.cause', 'Cause')}
+                value={t(`opsDashboard.wallet.txTypes.${item.data.type}`, {
+                  defaultValue: item.data.type,
+                })}
+              />
+            )}
+            <Row
+              label={t('opsDashboard.wallet.col.datetime', 'Date & heure')}
+              value={formatDateTime(item.data.createdAt)}
+            />
+            {item.data.status && (
+              <Row label={t('opsDashboard.wallet.detail.status', 'Statut')} value={item.data.status} />
+            )}
+            {item.data.description && (
+              <Row
+                label={t('opsDashboard.wallet.detail.note', 'Note')}
+                value={item.data.description}
+              />
+            )}
+            <div className="mt-3 rounded-xl bg-emerald-50/40 p-3">
+              <Row
+                label={t('opsDashboard.wallet.col.amount', 'Montant')}
+                value={formatEur(Number(item.data.amount) || 0)}
+                tone="emerald"
+              />
+            </div>
+          </dl>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Row({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: 'rose' | 'emerald';
+}) {
+  const valueColor =
+    tone === 'rose' ? 'text-rose-600' : tone === 'emerald' ? 'text-emerald-600' : 'text-slate-900';
+  return (
+    <div className="flex items-center justify-between gap-3 py-1">
+      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+        {label}
+      </span>
+      <span className={`text-right font-black tabular-nums ${valueColor}`}>{value}</span>
+    </div>
   );
 }
 

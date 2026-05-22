@@ -488,7 +488,38 @@
       "repBadge": "Rep",
       "repBadgeValidated": "APPEL VALIDÉ",
       "repBadgeSale": "VENTE SIGNÉE",
+      "repBadgeRefused": "REFUSÉ",
       "repUnknown": "Rep",
+      "movementsTitle": "Mouvements du portefeuille",
+      "movementsSubtitle": "Commissions (débits, 70% rep / 30% HARX) et dépôts (crédits) du compte cash. Les appels en attente sont gérés depuis la page Appels.",
+      "consult": "Consulter",
+      "tabs": {
+        "validated": "Validés",
+        "refused": "Refusés",
+        "deposits": "Dépôts"
+      },
+      "col": {
+        "recipient": "Destinataire",
+        "source": "Source",
+        "cause": "Cause",
+        "datetime": "Date & heure",
+        "duration": "Durée",
+        "score": "Score AI",
+        "commission": "Commission",
+        "amount": "Montant",
+        "details": "Détails"
+      },
+      "detail": {
+        "repTitle": "Commission rep",
+        "depositTitle": "Dépôt",
+        "gig": "Gig",
+        "refusalReason": "Motif de refus",
+        "totalCommission": "Commission totale",
+        "repShare": "Part rep (70%)",
+        "platformShare": "Part HARX (30%)",
+        "status": "Statut",
+        "note": "Note"
+      },
       "computeTopup": "Calculer le prochain top-up"
     }
   },
