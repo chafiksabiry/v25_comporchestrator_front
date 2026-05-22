@@ -477,6 +477,14 @@
         "burnRateSub": "par jour"
       },
       "txTitle": "Transactions récentes",
+      "txLoading": "Chargement des transactions…",
+      "txEmpty": "Aucune transaction pour le moment",
+      "txTypes": {
+        "deposit": "Dépôt",
+        "withdrawal": "Retrait",
+        "refund": "Remboursement",
+        "adjustment": "Ajustement"
+      },
       "computeTopup": "Calculer le prochain top-up"
     }
   },

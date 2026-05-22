@@ -2680,27 +2680,114 @@ function CallsView({
 
 /* ---------------- Wallet view ---------------- */
 
-interface WalletTx {
-  type: 'topup' | 'floor' | 'commission';
-  label: string;
-  amount: number;
-  date: string;
+/** Wallet-company entry as returned by `/wallet-company/entries/:companyId`.
+ *  Shared shape with `WalletCompanyPanel`. We only need a subset of the
+ *  fields to render the recent-transactions list. */
+interface WalletEntryListItem {
+  _id: string;
+  type?: 'deposit' | 'withdrawal' | 'refund' | 'adjustment';
+  direction?: 'credit' | 'debit';
+  amount?: number;
+  status?: 'pending' | 'completed' | 'failed';
+  description?: string;
+  createdAt?: string;
 }
 
 function WalletView() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
-  const txs: WalletTx[] = [
-    { type: 'topup', label: 'Top-up', amount: 10000, date: '12 mai' },
-    { type: 'floor', label: 'Floor — Karima A. (214 appels)', amount: -856, date: '12 mai' },
-    { type: 'commission', label: 'Commission — 23 transactions', amount: -1150, date: '12 mai' },
-    { type: 'floor', label: 'Floor — Younes O. (178 appels)', amount: -712, date: '11 mai' },
-    { type: 'commission', label: 'Commission — 19 transactions', amount: -950, date: '11 mai' },
-  ];
+  // ── Recent transactions — real wallet-company entries ──────────────
+  //  The Wallet tab used to render a hard-coded list of 5 placeholder
+  //  rows. We now pull the latest entries from the same endpoint used
+  //  by `WalletCompanyPanel` so the figures match the dedicated wallet
+  //  view and stay in sync with deposits / debits as they happen.
+  const [entries, setEntries] = useState<WalletEntryListItem[] | null>(null);
+  const [entriesLoading, setEntriesLoading] = useState(true);
+
+  useEffect(() => {
+    const companyId = Cookies.get('companyId');
+    if (!companyId) {
+      setEntries([]);
+      setEntriesLoading(false);
+      return;
+    }
+    const apiBaseUrl =
+      (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3003/api';
+
+    let cancelled = false;
+
+    const fetchEntries = async () => {
+      try {
+        const res = await fetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (cancelled) return;
+        const list: WalletEntryListItem[] = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json)
+          ? json
+          : [];
+        // Newest first, capped at 8 rows so the panel stays compact.
+        const sorted = [...list].sort((a, b) => {
+          const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return tb - ta;
+        });
+        setEntries(sorted.slice(0, 8));
+      } catch (err) {
+        console.warn('Failed to load wallet entries for transactions list', err);
+        if (!cancelled) setEntries([]);
+      } finally {
+        if (!cancelled) setEntriesLoading(false);
+      }
+    };
+
+    fetchEntries();
+
+    // Re-pull whenever the balance changes (deposit / withdrawal / refund
+    // from the wallet panel or the header bar) so the list reflects the
+    // event without a manual refresh.
+    const handleBalanceUpdated = () => fetchEntries();
+    window.addEventListener('balanceUpdated', handleBalanceUpdated);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('balanceUpdated', handleBalanceUpdated);
+    };
+  }, []);
 
   const formatEur = (n: number) => {
     const sign = n > 0 ? '+' : n < 0 ? '−' : '';
-    return `${sign}€${Math.abs(n).toLocaleString('fr-FR')}`;
+    return `${sign}€${Math.abs(n).toLocaleString('fr-FR', {
+      minimumFractionDigits: Math.abs(n) % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  /** Localised, short date label ("12 mai", "May 12") matching the
+   *  current i18n language. Falls back gracefully if `createdAt` is
+   *  missing/invalid. */
+  const formatDate = (iso?: string) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString(i18n.language || 'fr-FR', {
+      day: '2-digit',
+      month: 'short',
+    });
+  };
+
+  /** Best-effort human label for a wallet entry. Uses the persisted
+   *  description (e.g. "Floor — Karima A. (214 appels)") when present,
+   *  otherwise falls back to a localised entry-type label. */
+  const labelFor = (e: WalletEntryListItem): string => {
+    if (e.description && e.description.trim()) return e.description.trim();
+    if (e.type) {
+      return t(`opsDashboard.wallet.txTypes.${e.type}`, {
+        defaultValue: e.type.charAt(0).toUpperCase() + e.type.slice(1),
+      });
+    }
+    return '—';
   };
 
   return (
@@ -2737,39 +2824,85 @@ function WalletView() {
         />
       </div>
 
-      {/* Transactions récentes */}
+      {/* Transactions récentes — real wallet entries (latest 8) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
           <span className="inline-flex h-5 w-1.5 rounded-sm bg-harx-500" />
           {t('opsDashboard.wallet.txTitle', 'Transactions récentes')}
         </header>
 
-        <ul className="divide-y divide-slate-100">
-          {txs.map((tx, idx) => {
-            const isCredit = tx.amount > 0;
-            return (
-              <li key={idx} className="flex items-center gap-3 py-2.5">
-                <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-                    isCredit
-                      ? 'bg-emerald-500/15 text-emerald-600'
-                      : 'bg-rose-500/15 text-rose-600'
-                  }`}
-                >
-                  {isCredit ? <Plus size={12} /> : <Minus size={12} />}
-                </span>
-                <span className="flex-1 truncate text-[13px] font-bold text-slate-800">{tx.label}</span>
-                <span
-                  className={`shrink-0 text-[12px] font-black tabular-nums ${
-                    isCredit ? 'text-emerald-600' : 'text-rose-600'
-                  }`}
-                >
-                  {formatEur(tx.amount)} · {tx.date}
-                </span>
+        {entriesLoading ? (
+          <ul className="divide-y divide-slate-100">
+            {[0, 1, 2].map((n) => (
+              <li key={n} className="flex items-center gap-3 py-2.5 animate-pulse">
+                <span className="h-6 w-6 shrink-0 rounded-full bg-slate-100" />
+                <span className="h-3 flex-1 rounded bg-slate-100" />
+                <span className="h-3 w-24 rounded bg-slate-100" />
               </li>
-            );
-          })}
-        </ul>
+            ))}
+          </ul>
+        ) : entries && entries.length === 0 ? (
+          <div className="py-8 text-center">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              {t('opsDashboard.wallet.txEmpty', 'Aucune transaction pour le moment')}
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {(entries || []).map((entry) => {
+              const amount = Number(entry.amount) || 0;
+              // `direction` is the source of truth when set; fall back to
+              // sign of `amount` for legacy entries.
+              const isCredit = entry.direction
+                ? entry.direction === 'credit'
+                : amount > 0;
+              const signedAmount = isCredit ? Math.abs(amount) : -Math.abs(amount);
+              const isPending = entry.status === 'pending';
+              const isFailed = entry.status === 'failed';
+              return (
+                <li
+                  key={entry._id}
+                  className={`flex items-center gap-3 py-2.5 ${
+                    isFailed ? 'opacity-60' : ''
+                  }`}
+                >
+                  <span
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                      isCredit
+                        ? 'bg-emerald-500/15 text-emerald-600'
+                        : 'bg-rose-500/15 text-rose-600'
+                    }`}
+                  >
+                    {isCredit ? <Plus size={12} /> : <Minus size={12} />}
+                  </span>
+                  <span
+                    className="flex-1 truncate text-[13px] font-bold text-slate-800"
+                    title={labelFor(entry)}
+                  >
+                    {labelFor(entry)}
+                    {isPending && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-amber-600 border border-amber-100">
+                        pending
+                      </span>
+                    )}
+                    {isFailed && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-rose-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-rose-600 border border-rose-100">
+                        failed
+                      </span>
+                    )}
+                  </span>
+                  <span
+                    className={`shrink-0 text-[12px] font-black tabular-nums ${
+                      isCredit ? 'text-emerald-600' : 'text-rose-600'
+                    }`}
+                  >
+                    {formatEur(signedAmount)} · {formatDate(entry.createdAt)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       {/* Top-up CTA */}
