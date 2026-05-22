@@ -1592,9 +1592,20 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       if (data.data) {
         setGigs(data.data);
-        // Set the first gig as selected by default if available
         if (data.data.length > 0) {
-          setSelectedGigId(data.data[0]._id);
+          // If the URL carries `?gigId=<id>` (e.g. the rep clicked
+          // "Continue" from the gig-setup warning), prefer that gig.
+          // Otherwise fall back to the first gig in the list.
+          let targetGigId: string = data.data[0]._id;
+          try {
+            const urlGigId = new URLSearchParams(window.location.search).get('gigId');
+            if (urlGigId && data.data.some((g: any) => g._id === urlGigId)) {
+              targetGigId = urlGigId;
+            }
+          } catch {
+            // Non-browser environment or malformed URL — keep default.
+          }
+          setSelectedGigId(targetGigId);
         }
       }
     } catch (error) {
