@@ -824,7 +824,26 @@
     "standard": "Standard",
     "reps": "reps",
     "terminate": "Terminate Intelligence Asset",
-    "detailsBtn": "Details"
+    "detailsBtn": "Details",
+    "setupBanner": {
+      "title": "Finish setting up this gig",
+      "subtitle": "Complete the remaining steps below to take your gig all the way to activation. The Subscription plan is handled separately and is not blocking.",
+      "progress": "{{done}} / {{total}} completed",
+      "completed": "Completed",
+      "pending": "Pending",
+      "completedTitle": "{{label}} — completed",
+      "pendingTitle": "{{label}} — pending",
+      "steps": {
+        "telephony": "Telephony Setup",
+        "uploadContacts": "Upload Contacts",
+        "callScript": "Call Script",
+        "knowledgeBase": "Knowledge Base",
+        "repOnboarding": "REP Onboarding",
+        "sessionPlanning": "Session Planning",
+        "gigActivation": "Gig Activation",
+        "matchReps": "Match HARX Reps"
+      }
+    }
   },
   "uploadContacts": {
     "title": "Upload Contacts",

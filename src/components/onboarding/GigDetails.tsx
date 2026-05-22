@@ -201,19 +201,20 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
   // (Subscription Plan) — the only billing-related step that should not
   // gate operational readiness. The icons / colors track the same visual
   // language used by the orchestrator phase tabs so the banner feels like
-  // a natural extension of the setup checklist.
+  // a natural extension of the setup checklist. Labels are sourced from
+  // i18n so the banner stays in sync with the active language toggle.
   const setupChecklist = useMemo(
     () => [
-      { id: 4, label: 'Telephony Setup', icon: Phone, tone: 'sky' as const },
-      { id: 5, label: 'Upload Contacts', icon: Users, tone: 'indigo' as const },
-      { id: 6, label: 'Call Script', icon: FileText, tone: 'violet' as const },
-      { id: 8, label: 'Knowledge Base', icon: BookOpen, tone: 'amber' as const },
-      { id: 9, label: 'REP Onboarding', icon: UserCheck, tone: 'rose' as const },
-      { id: 10, label: 'Session Planning', icon: Calendar, tone: 'teal' as const },
-      { id: 12, label: 'Gig Activation', icon: Rocket, tone: 'emerald' as const },
-      { id: 13, label: 'Match HARX Reps', icon: Sparkles, tone: 'purple' as const },
+      { id: 4, label: t('gigDetails.setupBanner.steps.telephony'), icon: Phone, tone: 'sky' as const },
+      { id: 5, label: t('gigDetails.setupBanner.steps.uploadContacts'), icon: Users, tone: 'indigo' as const },
+      { id: 6, label: t('gigDetails.setupBanner.steps.callScript'), icon: FileText, tone: 'violet' as const },
+      { id: 8, label: t('gigDetails.setupBanner.steps.knowledgeBase'), icon: BookOpen, tone: 'amber' as const },
+      { id: 9, label: t('gigDetails.setupBanner.steps.repOnboarding'), icon: UserCheck, tone: 'rose' as const },
+      { id: 10, label: t('gigDetails.setupBanner.steps.sessionPlanning'), icon: Calendar, tone: 'teal' as const },
+      { id: 12, label: t('gigDetails.setupBanner.steps.gigActivation'), icon: Rocket, tone: 'emerald' as const },
+      { id: 13, label: t('gigDetails.setupBanner.steps.matchReps'), icon: Sparkles, tone: 'purple' as const },
     ],
-    []
+    [t]
   );
 
   const missingSteps = useMemo(
@@ -463,19 +464,20 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
               </div>
               <div className="flex-1">
                 <h2 className="text-base font-black uppercase tracking-wider text-amber-900">
-                  Finish setting up this gig
+                  {t('gigDetails.setupBanner.title')}
                 </h2>
                 <p className="mt-1 text-[12px] font-medium leading-relaxed text-amber-800/80">
-                  Complete the remaining steps below to take your gig all the
-                  way to activation. The Subscription plan is handled
-                  separately and is not blocking.
+                  {t('gigDetails.setupBanner.subtitle')}
                 </p>
 
                 {/* Progress bar */}
                 <div className="mt-4">
                   <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-amber-700">
                     <span>
-                      {completedCount} / {setupChecklist.length} completed
+                      {t('gigDetails.setupBanner.progress', {
+                        done: completedCount,
+                        total: setupChecklist.length,
+                      })}
                     </span>
                     <span>{progressPct}%</span>
                   </div>
@@ -494,6 +496,9 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
               {setupChecklist.map((step) => {
                 const Icon = step.icon;
                 const done = completedSteps.includes(step.id);
+                const titleKey = done
+                  ? 'gigDetails.setupBanner.completedTitle'
+                  : 'gigDetails.setupBanner.pendingTitle';
                 return (
                   <div
                     key={step.id}
@@ -502,7 +507,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
                         ? 'border-emerald-100 bg-emerald-50/80'
                         : 'border-slate-100 bg-white'
                     }`}
-                    title={done ? `${step.label} — completed` : `${step.label} — pending`}
+                    title={t(titleKey, { label: step.label })}
                   >
                     <div
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${
@@ -530,7 +535,9 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
                           done ? 'text-emerald-500/80' : 'text-slate-400'
                         }`}
                       >
-                        {done ? 'Completed' : 'Pending'}
+                        {done
+                          ? t('gigDetails.setupBanner.completed')
+                          : t('gigDetails.setupBanner.pending')}
                       </div>
                     </div>
                   </div>

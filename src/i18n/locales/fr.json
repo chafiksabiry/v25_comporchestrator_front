@@ -824,7 +824,26 @@
     "standard": "Standard",
     "reps": "reps",
     "terminate": "Terminer l'actif d'intelligence",
-    "detailsBtn": "Détails"
+    "detailsBtn": "Détails",
+    "setupBanner": {
+      "title": "Finalisez la configuration de ce gig",
+      "subtitle": "Complétez les étapes restantes ci-dessous pour amener votre gig jusqu'à l'activation. Le plan d'abonnement est géré séparément et n'est pas bloquant.",
+      "progress": "{{done}} / {{total}} complétées",
+      "completed": "Complétée",
+      "pending": "En attente",
+      "completedTitle": "{{label}} — complétée",
+      "pendingTitle": "{{label}} — en attente",
+      "steps": {
+        "telephony": "Configuration téléphonie",
+        "uploadContacts": "Import des contacts",
+        "callScript": "Script d'appel",
+        "knowledgeBase": "Base de connaissances",
+        "repOnboarding": "Onboarding des REP",
+        "sessionPlanning": "Planification des sessions",
+        "gigActivation": "Activation du gig",
+        "matchReps": "Matcher des REPs HARX"
+      }
+    }
   },
   "uploadContacts": {
     "title": "Importer des Contacts",
