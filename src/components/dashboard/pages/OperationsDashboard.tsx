@@ -2680,9 +2680,7 @@ function CallsView({
 
 /* ---------------- Wallet view ---------------- */
 
-/** Wallet-company entry as returned by `/wallet-company/entries/:companyId`.
- *  Shared shape with `WalletCompanyPanel`. We only need a subset of the
- *  fields to render the recent-transactions list. */
+/** Wallet-company entry as returned by `/wallet-company/entries/:companyId`. */
 interface WalletEntryListItem {
   _id: string;
   type?: 'deposit' | 'withdrawal' | 'refund' | 'adjustment';
@@ -2693,61 +2691,92 @@ interface WalletEntryListItem {
   createdAt?: string;
 }
 
+/** Rep commission payout returned by `/calls/company/:id/analytics/rep-payouts`. */
+interface RepPayoutItem {
+  _id: string;
+  createdAt?: string;
+  repName?: string | null;
+  gigName?: string | null;
+  repCallCommission?: number;
+  repTransactionCommission?: number;
+  totalCommission?: number;
+  validByAI?: boolean;
+  hasTransaction?: boolean;
+}
+
+/** Unified row for the merged "Recent transactions" feed. */
+type TxFeedItem =
+  | { kind: 'wallet'; data: WalletEntryListItem }
+  | { kind: 'rep';   data: RepPayoutItem };
+
 function WalletView() {
   const { t, i18n } = useTranslation();
 
-  // ── Recent transactions — real wallet-company entries ──────────────
-  //  The Wallet tab used to render a hard-coded list of 5 placeholder
-  //  rows. We now pull the latest entries from the same endpoint used
-  //  by `WalletCompanyPanel` so the figures match the dedicated wallet
-  //  view and stay in sync with deposits / debits as they happen.
-  const [entries, setEntries] = useState<WalletEntryListItem[] | null>(null);
-  const [entriesLoading, setEntriesLoading] = useState(true);
+  // ── Recent transactions — company wallet entries + rep payouts ─────
+  const [feed, setFeed] = useState<TxFeedItem[] | null>(null);
+  const [feedLoading, setFeedLoading] = useState(true);
 
   useEffect(() => {
     const companyId = Cookies.get('companyId');
     if (!companyId) {
-      setEntries([]);
-      setEntriesLoading(false);
+      setFeed([]);
+      setFeedLoading(false);
       return;
     }
-    const apiBaseUrl =
+    const walletApi =
       (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3003/api';
+    const callsApi = getCallsApiBase();
 
     let cancelled = false;
 
-    const fetchEntries = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await fetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
+        const [walletRes, repRes] = await Promise.all([
+          fetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
+          callsApi
+            ? fetch(`${callsApi}/calls/company/${companyId}/analytics/rep-payouts?limit=15`).catch(() => null)
+            : Promise.resolve(null),
+        ]);
+
         if (cancelled) return;
-        const list: WalletEntryListItem[] = Array.isArray(json?.data)
-          ? json.data
-          : Array.isArray(json)
-          ? json
-          : [];
-        // Newest first, capped at 8 rows so the panel stays compact.
-        const sorted = [...list].sort((a, b) => {
-          const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+        const walletList: WalletEntryListItem[] = [];
+        if (walletRes?.ok) {
+          const json = await walletRes.json();
+          walletList.push(
+            ...(Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [])
+          );
+        }
+
+        const repList: RepPayoutItem[] = [];
+        if (repRes?.ok) {
+          const json = await repRes.json();
+          repList.push(...(Array.isArray(json?.payouts) ? json.payouts : []));
+        }
+
+        const merged: TxFeedItem[] = [
+          ...walletList.map((d) => ({ kind: 'wallet' as const, data: d })),
+          ...repList.map((d) => ({ kind: 'rep' as const, data: d })),
+        ];
+
+        merged.sort((a, b) => {
+          const ta = a.data.createdAt ? new Date(a.data.createdAt).getTime() : 0;
+          const tb = b.data.createdAt ? new Date(b.data.createdAt).getTime() : 0;
           return tb - ta;
         });
-        setEntries(sorted.slice(0, 8));
+
+        setFeed(merged.slice(0, 12));
       } catch (err) {
-        console.warn('Failed to load wallet entries for transactions list', err);
-        if (!cancelled) setEntries([]);
+        console.warn('Failed to load wallet transactions feed', err);
+        if (!cancelled) setFeed([]);
       } finally {
-        if (!cancelled) setEntriesLoading(false);
+        if (!cancelled) setFeedLoading(false);
       }
     };
 
-    fetchEntries();
+    fetchAll();
 
-    // Re-pull whenever the balance changes (deposit / withdrawal / refund
-    // from the wallet panel or the header bar) so the list reflects the
-    // event without a manual refresh.
-    const handleBalanceUpdated = () => fetchEntries();
+    const handleBalanceUpdated = () => fetchAll();
     window.addEventListener('balanceUpdated', handleBalanceUpdated);
 
     return () => {
@@ -2777,10 +2806,7 @@ function WalletView() {
     });
   };
 
-  /** Best-effort human label for a wallet entry. Uses the persisted
-   *  description (e.g. "Floor — Karima A. (214 appels)") when present,
-   *  otherwise falls back to a localised entry-type label. */
-  const labelFor = (e: WalletEntryListItem): string => {
+  const labelForWallet = (e: WalletEntryListItem): string => {
     if (e.description && e.description.trim()) return e.description.trim();
     if (e.type) {
       return t(`opsDashboard.wallet.txTypes.${e.type}`, {
@@ -2788,6 +2814,18 @@ function WalletView() {
       });
     }
     return '—';
+  };
+
+  const labelForRep = (p: RepPayoutItem): string => {
+    const rep = p.repName || t('opsDashboard.wallet.repUnknown', 'Rep');
+    const gigSuffix = p.gigName ? ` (${p.gigName})` : '';
+    if (p.hasTransaction && (p.repTransactionCommission || 0) > 0) {
+      return t('opsDashboard.wallet.repTxSale', { rep, defaultValue: `Vente signée — ${rep}` }) + gigSuffix;
+    }
+    if (p.validByAI) {
+      return t('opsDashboard.wallet.repCallValidated', { rep, defaultValue: `Appel validé — ${rep}` }) + gigSuffix;
+    }
+    return t('opsDashboard.wallet.repCommission', { rep, defaultValue: `Commission — ${rep}` }) + gigSuffix;
   };
 
   return (
@@ -2831,7 +2869,7 @@ function WalletView() {
           {t('opsDashboard.wallet.txTitle', 'Transactions récentes')}
         </header>
 
-        {entriesLoading ? (
+        {feedLoading ? (
           <ul className="divide-y divide-slate-100">
             {[0, 1, 2].map((n) => (
               <li key={n} className="flex items-center gap-3 py-2.5 animate-pulse">
@@ -2841,7 +2879,7 @@ function WalletView() {
               </li>
             ))}
           </ul>
-        ) : entries && entries.length === 0 ? (
+        ) : feed && feed.length === 0 ? (
           <div className="py-8 text-center">
             <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
               {t('opsDashboard.wallet.txEmpty', 'Aucune transaction pour le moment')}
@@ -2849,54 +2887,72 @@ function WalletView() {
           </div>
         ) : (
           <ul className="divide-y divide-slate-100">
-            {(entries || []).map((entry) => {
-              const amount = Number(entry.amount) || 0;
-              // `direction` is the source of truth when set; fall back to
-              // sign of `amount` for legacy entries.
-              const isCredit = entry.direction
-                ? entry.direction === 'credit'
-                : amount > 0;
-              const signedAmount = isCredit ? Math.abs(amount) : -Math.abs(amount);
-              const isPending = entry.status === 'pending';
-              const isFailed = entry.status === 'failed';
+            {(feed || []).map((item) => {
+              if (item.kind === 'wallet') {
+                const entry = item.data;
+                const amount = Number(entry.amount) || 0;
+                const isCredit = entry.direction
+                  ? entry.direction === 'credit'
+                  : amount > 0;
+                const signedAmount = isCredit ? Math.abs(amount) : -Math.abs(amount);
+                const isPending = entry.status === 'pending';
+                const isFailed = entry.status === 'failed';
+                const label = labelForWallet(entry);
+                return (
+                  <li
+                    key={`w-${entry._id}`}
+                    className={`flex items-center gap-3 py-2.5 ${isFailed ? 'opacity-60' : ''}`}
+                  >
+                    <span
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                        isCredit
+                          ? 'bg-emerald-500/15 text-emerald-600'
+                          : 'bg-rose-500/15 text-rose-600'
+                      }`}
+                    >
+                      {isCredit ? <Plus size={12} /> : <Minus size={12} />}
+                    </span>
+                    <span className="flex-1 truncate text-[13px] font-bold text-slate-800" title={label}>
+                      {label}
+                      {isPending && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-amber-600 border border-amber-100">
+                          pending
+                        </span>
+                      )}
+                      {isFailed && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-rose-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-rose-600 border border-rose-100">
+                          failed
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className={`shrink-0 text-[12px] font-black tabular-nums ${
+                        isCredit ? 'text-emerald-600' : 'text-rose-600'
+                      }`}
+                    >
+                      {formatEur(signedAmount)} · {formatDate(entry.createdAt)}
+                    </span>
+                  </li>
+                );
+              }
+
+              // Rep commission payout — always a debit from the company wallet.
+              const payout = item.data;
+              const total = Number(payout.totalCommission) || 0;
+              const label = labelForRep(payout);
               return (
-                <li
-                  key={entry._id}
-                  className={`flex items-center gap-3 py-2.5 ${
-                    isFailed ? 'opacity-60' : ''
-                  }`}
-                >
-                  <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-                      isCredit
-                        ? 'bg-emerald-500/15 text-emerald-600'
-                        : 'bg-rose-500/15 text-rose-600'
-                    }`}
-                  >
-                    {isCredit ? <Plus size={12} /> : <Minus size={12} />}
+                <li key={`r-${payout._id}`} className="flex items-center gap-3 py-2.5">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-600">
+                    <Users size={12} />
                   </span>
-                  <span
-                    className="flex-1 truncate text-[13px] font-bold text-slate-800"
-                    title={labelFor(entry)}
-                  >
-                    {labelFor(entry)}
-                    {isPending && (
-                      <span className="ml-2 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-amber-600 border border-amber-100">
-                        pending
-                      </span>
-                    )}
-                    {isFailed && (
-                      <span className="ml-2 inline-flex items-center rounded-full bg-rose-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-rose-600 border border-rose-100">
-                        failed
-                      </span>
-                    )}
+                  <span className="flex-1 truncate text-[13px] font-bold text-slate-800" title={label}>
+                    {label}
+                    <span className="ml-2 inline-flex items-center rounded-full bg-violet-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-violet-600 border border-violet-100">
+                      {t('opsDashboard.wallet.repBadge', 'Rep')}
+                    </span>
                   </span>
-                  <span
-                    className={`shrink-0 text-[12px] font-black tabular-nums ${
-                      isCredit ? 'text-emerald-600' : 'text-rose-600'
-                    }`}
-                  >
-                    {formatEur(signedAmount)} · {formatDate(entry.createdAt)}
+                  <span className="shrink-0 text-[12px] font-black tabular-nums text-rose-600">
+                    {formatEur(-total)} · {formatDate(payout.createdAt)}
                   </span>
                 </li>
               );
