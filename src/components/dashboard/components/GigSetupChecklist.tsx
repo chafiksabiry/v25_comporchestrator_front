@@ -1,22 +1,25 @@
 /**
  * GigSetupChecklist
  *
- * Reusable warning banner that surfaces orchestrator steps still required
- * before a gig can go live (telephony, contacts, script, KB, e-learning,
- * session planning, gig activation, REP matching). Used in two places:
+ * Per-gig setup warning. For every gig that is still pending activation
+ * (status `to_activate` / `pending` / `draft`) we render its own card
+ * listing only the steps that are missing FOR THAT SPECIFIC GIG — not
+ * the company-wide tracker. Each missing step has a "Continue" button
+ * that navigates inside the dashboard shell (no orchestrator redirect).
  *
- *  1. `OperationsDashboard` (Dashboard home) — alerts the rep as soon as
- *     they land on the dashboard that they still have setup to finish.
- *  2. `GigDetails` (Gigs list) — duplicated inline there for legacy reasons
- *     but this component is meant to gradually become the single source.
+ * Per-step source of truth:
+ *   • 4  Telephony          → `/phone-numbers` filtered by gigId
+ *   • 5  Upload Contacts    → `/leads/.../has-leads?gigId=`
+ *   • 6  Call Script        → `/rag/scripts?gigId=`
+ *   • 8  Knowledge Base     → `/documents?gigId=`
+ *   • 9  REP Onboarding     → company-wide tracker (no per-gig endpoint)
+ *   • 10 Session Planning   → `gig.availability.schedule.length > 0`
+ *   • 12 Gig Activation     → `gig.status === 'active'`
+ *   • 13 Match HARX Reps    → company-wide tracker
  *
- * Behaviour:
- *  - Hidden when there is no pending gig OR no missing setup step.
- *  - Each pending step has a "Continue" button that navigates inside the
- *    dashboard shell (no orchestrator wizard redirect).
- *  - Excludes the Subscription Plan (step 11) — billing is non-blocking.
- *  - Re-syncs progress from `/onboarding-progress` so the banner stays in
- *    sync when the rep finishes a step in another tab.
+ * Used by:
+ *   - `OperationsDashboard` (Dashboard home)
+ *   - `GigDetails` (Gigs panel)
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -29,6 +32,8 @@ import {
   BookOpen,
   Calendar,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   FileText,
   Phone,
   Rocket,
@@ -67,13 +72,13 @@ export interface MinimalGig {
   _id: string;
   title?: string;
   status: string;
+  availability?: { schedule?: any[] };
+  [key: string]: any;
 }
 
 interface Props {
   /** Inject gigs from a parent fetch to skip the duplicate request. */
   gigs?: MinimalGig[];
-  /** Compact layout (smaller padding, icon, fewer columns). */
-  compact?: boolean;
 }
 
 const toneStyles: Record<string, string> = {
@@ -87,34 +92,132 @@ const toneStyles: Record<string, string> = {
   purple: 'bg-purple-50 text-purple-600 border-purple-100',
 };
 
-export default function GigSetupChecklist({ gigs: gigsProp, compact }: Props) {
+/** Best-effort env resolver — falls back to known prod URLs so the widget
+ *  works on Netlify even when the local `.env` file is incomplete. */
+function envOr(key: string, fallback: string): string {
+  const val = (import.meta as any).env?.[key];
+  return val || fallback;
+}
+
+const GIGS_API = () =>
+  envOr('VITE_API_URL_GIGS', envOr('VITE_GIGS_API', 'https://v25gigsmanualcreationbackend-production.up.railway.app/api'));
+const PHONE_API = () =>
+  envOr('VITE_API_BASE_URL', 'https://v25gigsmanualcreationbackend-production.up.railway.app/api');
+const DASHBOARD_API = () =>
+  envOr('VITE_DASHBOARD_API', 'https://v25dashboardbackend-production.up.railway.app/api');
+const KB_API = () => {
+  const base = envOr('VITE_BACKEND_KNOWLEDGEBASE_API', 'https://v25knowledgebasebackend-production.up.railway.app');
+  return base.endsWith('/api') ? base : `${base}/api`;
+};
+
+/** Best-effort fetch that resolves to `false` on any error. The banner
+ *  should never crash the dashboard if a side-service is down — we just
+ *  treat it as "not done" so the rep is nudged to verify. */
+async function safeBool(promise: Promise<boolean>): Promise<boolean> {
+  try {
+    return await promise;
+  } catch {
+    return false;
+  }
+}
+
+/** Check the 4 API-backed steps for a single gig. Steps 9, 10, 12, 13
+ *  are derived locally (status + availability + company tracker). */
+async function probeGigSetup(
+  gig: MinimalGig,
+  companyId: string,
+  userId: string,
+  phoneNumbersByGig: Record<string, boolean>,
+  companyDoneSteps: number[]
+): Promise<Record<number, boolean>> {
+  const gigId = gig._id;
+  const isActive = normalizeGigStatus(gig.status) === 'active';
+
+  // Local-only checks (no network round-trip).
+  const localDone: Record<number, boolean> = {
+    9: companyDoneSteps.includes(9) || isActive,
+    10: (gig.availability?.schedule?.length ?? 0) > 0,
+    12: isActive,
+    13: companyDoneSteps.includes(13) || isActive,
+  };
+
+  // Telephony — feed from the pre-fetched phone-numbers map.
+  const telephonyDone = !!phoneNumbersByGig[gigId];
+
+  // Run network checks in parallel.
+  const [contactsDone, scriptDone, kbDone] = await Promise.all([
+    safeBool(
+      (async () => {
+        const r = await fetch(
+          `${DASHBOARD_API()}/leads/company/${companyId}/has-leads?gigId=${gigId}`
+        );
+        if (!r.ok) return false;
+        const j = await r.json();
+        return Number(j?.count) > 0;
+      })()
+    ),
+    safeBool(
+      (async () => {
+        const r = await fetch(`${KB_API()}/rag/scripts?gigId=${gigId}`);
+        if (!r.ok) return false;
+        const j = await r.json().catch(() => null);
+        const list = Array.isArray(j?.data) ? j.data : Array.isArray(j) ? j : [];
+        return list.length > 0;
+      })()
+    ),
+    safeBool(
+      (async () => {
+        const params = new URLSearchParams({ gigId });
+        if (userId) params.append('userId', userId);
+        const r = await fetch(`${KB_API()}/documents?${params.toString()}`);
+        if (!r.ok) return false;
+        const j = await r.json().catch(() => null);
+        const list = Array.isArray(j?.documents)
+          ? j.documents
+          : Array.isArray(j?.data)
+          ? j.data
+          : Array.isArray(j)
+          ? j
+          : [];
+        return list.length > 0;
+      })()
+    ),
+  ]);
+
+  return {
+    4: telephonyDone || isActive,
+    5: contactsDone || isActive,
+    6: scriptDone || isActive,
+    8: kbDone || isActive,
+    ...localDone,
+  };
+}
+
+export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const companyId = Cookies.get('companyId');
+  const companyId = Cookies.get('companyId') || '';
+  const userId = Cookies.get('userId') || localStorage.getItem('userId') || '';
 
   const [fetchedGigs, setFetchedGigs] = useState<MinimalGig[] | null>(null);
-  const [completedSteps, setCompletedSteps] = useState<number[]>(() =>
+  const [companyDoneSteps, setCompanyDoneSteps] = useState<number[]>(() =>
     getCompletedStepsFromStorage()
   );
+  /** gigId → { stepId → done }. Populated by `probeGigSetup` once per gig. */
+  const [gigStepStatus, setGigStepStatus] = useState<Record<string, Record<number, boolean>>>({});
+  /** Toggle to collapse/expand individual gig cards. Default = expanded. */
+  const [collapsedGigs, setCollapsedGigs] = useState<Record<string, boolean>>({});
 
   // Fetch gigs only when the parent didn't already inject them.
   useEffect(() => {
     if (gigsProp || !companyId) return;
     let cancelled = false;
-    const apiUrl =
-      (import.meta as any).env?.VITE_GIGS_API ||
-      (import.meta as any).env?.VITE_API_URL_GIGS ||
-      'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
     (async () => {
       try {
-        const res = await fetch(`${apiUrl}/gigs/company/${companyId}?populate=companyId`);
+        const res = await fetch(`${GIGS_API()}/gigs/company/${companyId}?populate=companyId`);
         if (!res.ok) return;
         const json = await res.json();
-        const list = Array.isArray(json.data)
-          ? json.data
-          : Array.isArray(json)
-          ? json
-          : [];
+        const list = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];
         if (!cancelled) setFetchedGigs(list);
       } catch {
         // Silent fail — widget just hides if we can't reach the API.
@@ -125,23 +228,81 @@ export default function GigSetupChecklist({ gigs: gigsProp, compact }: Props) {
     };
   }, [companyId, gigsProp]);
 
-  // Pull latest onboarding progress from the API. Falls back to the local
-  // copy when offline (see useStepGuide.syncOnboardingProgressFromApi).
+  // Refresh the company-wide tracker for the steps we can't verify per-gig
+  // (REP Onboarding, Match HARX Reps).
   useEffect(() => {
     if (!companyId) return;
     let cancelled = false;
     (async () => {
       try {
         const steps = await syncOnboardingProgressFromApi(companyId);
-        if (!cancelled) setCompletedSteps(steps);
+        if (!cancelled) setCompanyDoneSteps(steps);
       } catch {
-        // ignore — fall back to whatever's already in state
+        // keep the local fallback
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [companyId]);
+
+  const allGigs = gigsProp ?? fetchedGigs ?? [];
+  const pendingGigs = useMemo(
+    () => allGigs.filter((g) => isGigPendingActivation(g.status)),
+    [allGigs]
+  );
+
+  // Pre-fetch phone numbers ONCE for all pending gigs (`/phone-numbers`
+  // returns the full list). Then `probeGigSetup` only does a hash lookup.
+  // Re-runs when the list of pending gig ids changes.
+  const pendingGigIdsKey = useMemo(
+    () => pendingGigs.map((g) => g._id).sort().join(','),
+    [pendingGigs]
+  );
+
+  useEffect(() => {
+    if (!companyId || pendingGigs.length === 0) return;
+    let cancelled = false;
+
+    (async () => {
+      // 1. Pre-fetch the phone-number directory.
+      const phoneByGig: Record<string, boolean> = {};
+      try {
+        const r = await fetch(`${PHONE_API()}/phone-numbers`);
+        if (r.ok) {
+          const j = await r.json();
+          const list = Array.isArray(j?.data)
+            ? j.data
+            : Array.isArray(j)
+            ? j
+            : [];
+          for (const n of list) {
+            if (n?.gigId) phoneByGig[String(n.gigId)] = true;
+          }
+        }
+      } catch {
+        // ignore — every gig's telephony will be marked not-done
+      }
+
+      // 2. Probe each pending gig in parallel.
+      const probes = await Promise.all(
+        pendingGigs.map((g) =>
+          probeGigSetup(g, companyId, userId, phoneByGig, companyDoneSteps)
+        )
+      );
+
+      if (cancelled) return;
+      const next: Record<string, Record<number, boolean>> = {};
+      pendingGigs.forEach((g, i) => {
+        next[g._id] = probes[i];
+      });
+      setGigStepStatus(next);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, userId, pendingGigIdsKey, companyDoneSteps]);
 
   const checklist = useMemo(
     () => [
@@ -157,173 +318,174 @@ export default function GigSetupChecklist({ gigs: gigsProp, compact }: Props) {
     [t]
   );
 
-  const allGigs = gigsProp ?? fetchedGigs ?? [];
-  const pendingGigs = useMemo(
-    () => allGigs.filter((g) => isGigPendingActivation(g.status)),
-    [allGigs]
-  );
-
-  // A pending gig logically means step 12 (Gig Activation) is still not
-  // done for that gig — even if the company-wide tracker reports it as
-  // complete (because another gig was activated previously). Force-mark
-  // it as missing so the rep always sees the "Continue" button.
-  const effectiveCompletedSteps = useMemo(() => {
-    if (pendingGigs.length === 0) return completedSteps;
-    return completedSteps.filter((id) => id !== 12);
-  }, [completedSteps, pendingGigs.length]);
-
-  const missingSteps = useMemo(
-    () => checklist.filter((s) => !effectiveCompletedSteps.includes(s.id)),
-    [checklist, effectiveCompletedSteps]
-  );
-
   if (pendingGigs.length === 0) return null;
 
-  const completedCount = checklist.length - missingSteps.length;
-  const progressPct = Math.round((completedCount / checklist.length) * 100);
-
-  const titleSize = compact ? 'text-sm' : 'text-base';
-  const padding = compact ? 'p-5' : 'p-6 sm:p-7';
-  const iconBoxSize = compact ? 'h-10 w-10' : 'h-12 w-12';
-  const stepIconBoxSize = compact ? 'h-7 w-7' : 'h-8 w-8';
+  const toggleCollapse = (gigId: string) =>
+    setCollapsedGigs((prev) => ({ ...prev, [gigId]: !prev[gigId] }));
 
   return (
     <div
       role="status"
-      className={`relative overflow-hidden rounded-3xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-white to-amber-50/40 ${padding} shadow-md shadow-amber-100/40 animate-in slide-in-from-bottom-2 fade-in duration-500`}
+      className="relative overflow-hidden rounded-3xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-white to-amber-50/40 p-5 sm:p-6 shadow-md shadow-amber-100/40 animate-in slide-in-from-bottom-2 fade-in duration-500"
     >
       <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-amber-400/10 blur-3xl" />
 
-      <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-start">
-        {/* Title + progress */}
-        <div className="flex items-start gap-4 lg:max-w-xs">
-          <div
-            className={`flex shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/30 ${iconBoxSize}`}
-          >
-            <AlertCircle className={compact ? 'h-5 w-5' : 'h-6 w-6'} />
-          </div>
-          <div className="flex-1">
-            <h2 className={`font-black uppercase tracking-wider text-amber-900 ${titleSize}`}>
-              {t('gigDetails.setupBanner.title')}
-            </h2>
-            <p className="mt-1 text-[12px] font-medium leading-relaxed text-amber-800/80">
-              {t('opsDashboard.setupChecklist.pendingGigs', {
-                count: pendingGigs.length,
-                defaultValue:
-                  pendingGigs.length > 1
-                    ? '{{count}} gigs awaiting setup to activate.'
-                    : '{{count}} gig awaiting setup to activate.',
-              })}
-            </p>
-
-            {/* Progress bar */}
-            <div className="mt-4">
-              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-amber-700">
-                <span>
-                  {t('gigDetails.setupBanner.progress', {
-                    done: completedCount,
-                    total: checklist.length,
-                  })}
-                </span>
-                <span>{progressPct}%</span>
-              </div>
-              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-amber-100">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-700 ease-out"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Pending gig titles — gives the rep context on what's blocked. */}
-            <ul className="mt-3 flex flex-wrap gap-1.5">
-              {pendingGigs.slice(0, 3).map((g) => (
-                <li
-                  key={g._id}
-                  className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-white/80 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700"
-                  title={g.title}
-                >
-                  <span className="max-w-[180px] truncate">{g.title || g._id}</span>
-                </li>
-              ))}
-              {pendingGigs.length > 3 && (
-                <li className="inline-flex items-center rounded-lg border border-amber-200 bg-white/80 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700">
-                  +{pendingGigs.length - 3}
-                </li>
-              )}
-            </ul>
-          </div>
+      {/* Banner header */}
+      <div className="relative z-10 flex items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/30">
+          <AlertCircle className="h-5 w-5" />
         </div>
+        <div className="flex-1">
+          <h2 className="text-sm font-black uppercase tracking-wider text-amber-900">
+            {t('gigDetails.setupBanner.title')}
+          </h2>
+          <p className="mt-1 text-[11px] font-medium leading-relaxed text-amber-800/80">
+            {t('opsDashboard.setupChecklist.pendingGigs', {
+              count: pendingGigs.length,
+              defaultValue:
+                pendingGigs.length > 1
+                  ? '{{count}} gigs awaiting setup to activate.'
+                  : '{{count}} gig awaiting setup to activate.',
+            })}
+          </p>
+        </div>
+      </div>
 
-        {/* Checklist grid */}
-        <div
-          className={`grid flex-1 grid-cols-1 gap-2.5 sm:grid-cols-2 ${
-            compact ? 'xl:grid-cols-3' : 'xl:grid-cols-3'
-          }`}
-        >
-          {checklist.map((step) => {
-            const Icon = step.icon;
-            const done = effectiveCompletedSteps.includes(step.id);
-            const targetPath = STEP_DASHBOARD_PATH[step.id];
-            const titleKey = done
-              ? 'gigDetails.setupBanner.completedTitle'
-              : 'gigDetails.setupBanner.pendingTitle';
-            return (
-              <div
-                key={step.id}
-                className={`flex items-center gap-2.5 rounded-2xl border px-3 py-2.5 transition-all ${
-                  done
-                    ? 'border-emerald-100 bg-emerald-50/80'
-                    : 'border-slate-100 bg-white hover:border-amber-200 hover:shadow-sm'
-                }`}
-                title={t(titleKey, { label: step.label })}
-              >
-                <div
-                  className={`flex shrink-0 items-center justify-center rounded-xl border ${stepIconBoxSize} ${
-                    done
-                      ? 'bg-emerald-500 text-white border-emerald-500'
-                      : toneStyles[step.tone]
-                  }`}
-                >
-                  {done ? (
-                    <CheckCircle2 className="h-4 w-4" />
-                  ) : (
-                    <Icon className="h-4 w-4" />
-                  )}
-                </div>
+      {/* One card per pending gig */}
+      <div className="relative z-10 mt-4 space-y-3">
+        {pendingGigs.map((gig) => {
+          const status = gigStepStatus[gig._id];
+          const isProbing = !status;
+          const missing = checklist.filter((s) => !(status && status[s.id]));
+          const completedCount = checklist.length - missing.length;
+          const progressPct = Math.round((completedCount / checklist.length) * 100);
+          const isCollapsed = collapsedGigs[gig._id] ?? false;
+
+          return (
+            <div
+              key={gig._id}
+              className="rounded-2xl border border-amber-200/70 bg-white p-4 shadow-sm"
+            >
+              {/* Gig header row */}
+              <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <div
-                    className={`truncate text-[11px] font-black uppercase tracking-wider ${
-                      done ? 'text-emerald-700' : 'text-slate-700'
-                    }`}
-                  >
-                    {step.label}
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex shrink-0 items-center rounded-lg border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-700">
+                      {normalizeGigStatus(gig.status)}
+                    </span>
+                    <h3
+                      className="truncate text-[13px] font-black text-slate-800"
+                      title={gig.title}
+                    >
+                      {gig.title || gig._id}
+                    </h3>
                   </div>
-                  <div
-                    className={`text-[10px] font-bold uppercase tracking-wider ${
-                      done ? 'text-emerald-500/80' : 'text-slate-400'
-                    }`}
-                  >
-                    {done
-                      ? t('gigDetails.setupBanner.completed')
-                      : t('gigDetails.setupBanner.pending')}
+                  {/* Per-gig progress bar */}
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-amber-700">
+                      <span>
+                        {isProbing
+                          ? t('opsDashboard.setupChecklist.checking', {
+                              defaultValue: 'Checking…',
+                            })
+                          : t('gigDetails.setupBanner.progress', {
+                              done: completedCount,
+                              total: checklist.length,
+                            })}
+                      </span>
+                      <span>{isProbing ? '…' : `${progressPct}%`}</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-amber-100">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-700 ease-out"
+                        style={{ width: isProbing ? '15%' : `${progressPct}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-                {!done && targetPath && (
-                  <button
-                    type="button"
-                    onClick={() => navigate(targetPath)}
-                    className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:from-amber-600 hover:to-orange-600 hover:shadow-md hover:shadow-amber-500/40 active:scale-95"
-                    title={t('gigDetails.setupBanner.continue', { label: step.label })}
-                  >
-                    {t('gigDetails.setupBanner.continueBtn')}
-                    <ArrowRight className="h-3 w-3" />
-                  </button>
-                )}
+
+                <button
+                  type="button"
+                  onClick={() => toggleCollapse(gig._id)}
+                  className="shrink-0 rounded-xl border border-slate-200 bg-white p-1.5 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800"
+                  aria-label={isCollapsed ? 'Expand' : 'Collapse'}
+                >
+                  {isCollapsed ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronUp className="h-4 w-4" />
+                  )}
+                </button>
               </div>
-            );
-          })}
-        </div>
+
+              {/* Per-gig step list */}
+              {!isCollapsed && (
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  {checklist.map((step) => {
+                    const Icon = step.icon;
+                    const done = !!(status && status[step.id]);
+                    const targetPath = STEP_DASHBOARD_PATH[step.id];
+                    return (
+                      <div
+                        key={step.id}
+                        className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 transition-all ${
+                          done
+                            ? 'border-emerald-100 bg-emerald-50/80'
+                            : 'border-slate-100 bg-white hover:border-amber-200 hover:shadow-sm'
+                        }`}
+                      >
+                        <div
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border ${
+                            done
+                              ? 'bg-emerald-500 text-white border-emerald-500'
+                              : toneStyles[step.tone]
+                          }`}
+                        >
+                          {done ? (
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          ) : (
+                            <Icon className="h-3.5 w-3.5" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div
+                            className={`truncate text-[11px] font-black uppercase tracking-wider ${
+                              done ? 'text-emerald-700' : 'text-slate-700'
+                            }`}
+                          >
+                            {step.label}
+                          </div>
+                          <div
+                            className={`text-[9px] font-bold uppercase tracking-wider ${
+                              done ? 'text-emerald-500/80' : 'text-slate-400'
+                            }`}
+                          >
+                            {done
+                              ? t('gigDetails.setupBanner.completed')
+                              : t('gigDetails.setupBanner.pending')}
+                          </div>
+                        </div>
+                        {!done && targetPath && (
+                          <button
+                            type="button"
+                            onClick={() => navigate(targetPath)}
+                            className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:from-amber-600 hover:to-orange-600 active:scale-95"
+                            title={t('gigDetails.setupBanner.continue', {
+                              label: step.label,
+                            })}
+                          >
+                            {t('gigDetails.setupBanner.continueBtn')}
+                            <ArrowRight className="h-2.5 w-2.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

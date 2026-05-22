@@ -2,45 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import Swal from 'sweetalert2';
-import { useNavigate } from 'react-router-dom';
 import { GigReview } from '../gigsaicreation/components/GigReview';
 import GigDetailsView from './GigDetailsView';
 import {
-  Clock,
-  Users,
   Plus,
   Trash2,
   ArrowRight,
   AlertCircle,
-  Phone,
-  FileText,
-  BookOpen,
-  Calendar,
-  Rocket,
-  Sparkles,
-  CheckCircle2,
-  UserCheck,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import {
-  getCompletedStepsFromStorage,
-  syncOnboardingProgressFromApi,
-} from '../../hooks/useStepGuide';
-
-// Map orchestrator step IDs to the in-dashboard route the rep should land
-// on to finish that step. Used by the setup banner so each pending item
-// has a "Continue" button that stays inside the dashboard shell — no
-// redirection back to the orchestrator wizard.
-const STEP_DASHBOARD_PATH: Record<number, string> = {
-  4: '/dashboard/telephony',        // Telephony
-  5: '/dashboard/leads',            // Upload Contacts (lead management)
-  6: '/dashboard/script-generator', // Call Script
-  8: '/dashboard/knowledge-base',   // Knowledge Base
-  9: '/dashboard/training',         // E-learning / Rep Onboarding
-  10: '/dashboard/scheduler',       // Session Planning
-  12: '/dashboard/gig-activation',  // Gig Activation
-  13: '/dashboard/rep-matching',    // Match HARX Reps
-};
+import GigSetupChecklist from '../dashboard/components/GigSetupChecklist';
 
 interface Gig {
   _id: string;
@@ -187,17 +158,11 @@ function shouldWarnForGig(gig: Gig): boolean {
 
 const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
-  const [completedSteps, setCompletedSteps] = useState<number[]>(() =>
-    getCompletedStepsFromStorage()
-  );
   const companyId = Cookies.get('companyId');
-
-  
 
   useEffect(() => {
     const fetchGigs = async () => {
@@ -221,87 +186,13 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
     fetchGigs();
   }, [companyId, refreshKey]);
 
-  // Refresh onboarding completion in the background so the banner reflects
-  // what's actually persisted on the company-API (e.g. when the rep
-  // completes a step in another tab). Falls back to the cookie/local copy
-  // when offline. Step 11 (Subscription Plan) is intentionally excluded
-  // from the banner per product spec — it's billing, not setup.
-  useEffect(() => {
-    if (!companyId) return;
-    let cancelled = false;
-    (async () => {
-      const steps = await syncOnboardingProgressFromApi(companyId);
-      if (!cancelled) setCompletedSteps(steps);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [companyId, refreshKey]);
-
-  // Required setup steps surfaced in the banner. Mirrors the orchestrator
-  // phase definitions in `CompanyOnboarding.tsx` minus step 11
-  // (Subscription Plan) — the only billing-related step that should not
-  // gate operational readiness. The icons / colors track the same visual
-  // language used by the orchestrator phase tabs so the banner feels like
-  // a natural extension of the setup checklist. Labels are sourced from
-  // i18n so the banner stays in sync with the active language toggle.
-  const setupChecklist = useMemo(
-    () => [
-      { id: 4, label: t('gigDetails.setupBanner.steps.telephony'), icon: Phone, tone: 'sky' as const },
-      { id: 5, label: t('gigDetails.setupBanner.steps.uploadContacts'), icon: Users, tone: 'indigo' as const },
-      { id: 6, label: t('gigDetails.setupBanner.steps.callScript'), icon: FileText, tone: 'violet' as const },
-      { id: 8, label: t('gigDetails.setupBanner.steps.knowledgeBase'), icon: BookOpen, tone: 'amber' as const },
-      { id: 9, label: t('gigDetails.setupBanner.steps.repOnboarding'), icon: UserCheck, tone: 'rose' as const },
-      { id: 10, label: t('gigDetails.setupBanner.steps.sessionPlanning'), icon: Calendar, tone: 'teal' as const },
-      { id: 12, label: t('gigDetails.setupBanner.steps.gigActivation'), icon: Rocket, tone: 'emerald' as const },
-      { id: 13, label: t('gigDetails.setupBanner.steps.matchReps'), icon: Sparkles, tone: 'purple' as const },
-    ],
-    [t]
-  );
-
-  // Gigs that still need activation (status in to_activate / pending / draft).
-  // The commission model is no longer part of the rule — any unfinished gig
-  // should surface the checklist regardless of how it's monetised.
+  // Pending gigs are surfaced by the shared `GigSetupChecklist` widget below
+  // (per-gig API probing + Continue buttons). Here we only need to know if a
+  // row should pulse amber for visual emphasis.
   const gigsNeedingWarning = useMemo(
     () => gigs.filter(shouldWarnForGig),
     [gigs]
   );
-
-  // A pending gig logically means step 12 (Gig Activation) is still not
-  // done for that gig — even if the company-wide tracker reports it as
-  // complete (because another gig was activated previously). Force-mark
-  // it as missing so the banner always surfaces the "Continue" button.
-  const effectiveCompletedSteps = useMemo(() => {
-    if (gigsNeedingWarning.length === 0) return completedSteps;
-    return completedSteps.filter((id) => id !== 12);
-  }, [completedSteps, gigsNeedingWarning.length]);
-
-  const missingSteps = useMemo(
-    () => setupChecklist.filter((step) => !effectiveCompletedSteps.includes(step.id)),
-    [setupChecklist, effectiveCompletedSteps]
-  );
-
-  // Global banner: at least one pending gig — even if the company-wide
-  // checklist is otherwise complete, the pending gig itself still needs
-  // activation, so we always want the rep to see the action buttons.
-  const showBanner = gigsNeedingWarning.length > 0;
-
-  const toneStyles: Record<
-    'sky' | 'indigo' | 'violet' | 'amber' | 'rose' | 'teal' | 'emerald' | 'purple',
-    string
-  > = {
-    sky: 'bg-sky-50 text-sky-600 border-sky-100',
-    indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
-    violet: 'bg-violet-50 text-violet-600 border-violet-100',
-    amber: 'bg-amber-50 text-amber-600 border-amber-100',
-    rose: 'bg-rose-50 text-rose-600 border-rose-100',
-    teal: 'bg-teal-50 text-teal-600 border-teal-100',
-    emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-    purple: 'bg-purple-50 text-purple-600 border-purple-100',
-  };
-
-  const completedCount = setupChecklist.length - missingSteps.length;
-  const progressPct = Math.round((completedCount / setupChecklist.length) * 100);
 
   const getStatusColor = (status: string) => {
     if (!status) {
@@ -505,126 +396,16 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-slate-50 rounded-full pointer-events-none border border-slate-100/30" />
       </div>
 
-      {/* ── Setup Checklist Banner ───────────────────────────────────────
-          Shown after the rep has created at least one gig and reminds
-          them which orchestrator steps are still required before the
-          gig can go live. Excludes the Subscription Plan step (id 11)
-          and never redirects to the orchestrator: the list is purely
-          informational so the rep stays in the dashboard.
+      {/* ── Per-gig Setup Checklist ─────────────────────────────────────
+          Shared widget. For every gig still in `to_activate` / `pending`
+          it queries the real per-gig state (phone numbers, leads, scripts,
+          KB documents, schedule, activation) and renders one card per gig
+          with the missing steps + "Continue" buttons. Hides itself when
+          no gig needs attention.
        ───────────────────────────────────────────────────────────────── */}
-      {showBanner && (
-        <div
-          role="status"
-          className="relative z-10 overflow-hidden rounded-3xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-white to-amber-50/40 p-6 sm:p-7 shadow-md shadow-amber-100/40 animate-slide-up"
-        >
-          {/* Soft glow */}
-          <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-amber-400/10 blur-3xl" />
-
-          <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-start">
-            {/* Title block */}
-            <div className="flex items-start gap-4 lg:max-w-xs">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/30">
-                <AlertCircle className="h-6 w-6" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-base font-black uppercase tracking-wider text-amber-900">
-                  {t('gigDetails.setupBanner.title')}
-                </h2>
-                <p className="mt-1 text-[12px] font-medium leading-relaxed text-amber-800/80">
-                  {t('gigDetails.setupBanner.subtitle')}
-                </p>
-
-                {/* Progress bar */}
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-amber-700">
-                    <span>
-                      {t('gigDetails.setupBanner.progress', {
-                        done: completedCount,
-                        total: setupChecklist.length,
-                      })}
-                    </span>
-                    <span>{progressPct}%</span>
-                  </div>
-                  <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-amber-100">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-700 ease-out"
-                      style={{ width: `${progressPct}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Checklist grid */}
-            <div className="grid flex-1 grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-              {setupChecklist.map((step) => {
-                const Icon = step.icon;
-                const done = effectiveCompletedSteps.includes(step.id);
-                const targetPath = STEP_DASHBOARD_PATH[step.id];
-                const titleKey = done
-                  ? 'gigDetails.setupBanner.completedTitle'
-                  : 'gigDetails.setupBanner.pendingTitle';
-                return (
-                  <div
-                    key={step.id}
-                    className={`flex items-center gap-2.5 rounded-2xl border px-3 py-2.5 transition-all ${
-                      done
-                        ? 'border-emerald-100 bg-emerald-50/80'
-                        : 'border-slate-100 bg-white hover:border-amber-200 hover:shadow-sm'
-                    }`}
-                    title={t(titleKey, { label: step.label })}
-                  >
-                    <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${
-                        done
-                          ? 'bg-emerald-500 text-white border-emerald-500'
-                          : toneStyles[step.tone]
-                      }`}
-                    >
-                      {done ? (
-                        <CheckCircle2 className="h-4 w-4" />
-                      ) : (
-                        <Icon className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div
-                        className={`truncate text-[11px] font-black uppercase tracking-wider ${
-                          done ? 'text-emerald-700' : 'text-slate-700'
-                        }`}
-                      >
-                        {step.label}
-                      </div>
-                      <div
-                        className={`text-[10px] font-bold uppercase tracking-wider ${
-                          done ? 'text-emerald-500/80' : 'text-slate-400'
-                        }`}
-                      >
-                        {done
-                          ? t('gigDetails.setupBanner.completed')
-                          : t('gigDetails.setupBanner.pending')}
-                      </div>
-                    </div>
-                    {!done && targetPath && (
-                      <button
-                        type="button"
-                        onClick={() => navigate(targetPath)}
-                        className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:from-amber-600 hover:to-orange-600 hover:shadow-md hover:shadow-amber-500/40 active:scale-95"
-                        title={t('gigDetails.setupBanner.continue', {
-                          label: step.label,
-                        })}
-                      >
-                        {t('gigDetails.setupBanner.continueBtn')}
-                        <ArrowRight className="h-3 w-3" />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      <div className="relative z-10">
+        <GigSetupChecklist gigs={gigs as any} />
+      </div>
 
       {gigs.length === 0 ? (
         <div className="text-center py-16 bg-white border border-slate-100 rounded-3xl shadow-sm z-10 relative">
@@ -760,35 +541,13 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
                   </div>
                 </div>
 
-                {rowWarn && missingSteps.length > 0 && (
+                {rowWarn && (
                   <div
                     role="status"
-                    className="mt-2 flex flex-col gap-2 rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-2.5 text-[11px] font-bold leading-snug text-amber-900 sm:flex-row sm:items-center sm:justify-between"
+                    className="mt-2 flex items-center gap-2 rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-2 text-[11px] font-bold leading-snug text-amber-900"
                   >
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                      <span>
-                        {t('gigDetails.setupBanner.rowWarningWithCount', {
-                          count: missingSteps.length,
-                          defaultValue: t('gigDetails.setupBanner.rowWarning'),
-                        })}
-                      </span>
-                    </div>
-                    {(() => {
-                      const next = missingSteps[0];
-                      const nextPath = next && STEP_DASHBOARD_PATH[next.id];
-                      if (!next || !nextPath) return null;
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => navigate(nextPath)}
-                          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-500 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:bg-amber-600 hover:shadow-md active:scale-95"
-                        >
-                          {t('gigDetails.setupBanner.continueBtn')} {next.label}
-                          <ArrowRight className="h-3 w-3" />
-                        </button>
-                      );
-                    })()}
+                    <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+                    <span>{t('gigDetails.setupBanner.rowWarning')}</span>
                   </div>
                 )}
                 </div>
