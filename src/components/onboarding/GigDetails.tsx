@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import Swal from 'sweetalert2';
-import { GigReview } from '../gigsaicreation/components/GigReview';
 import GigDetailsView from './GigDetailsView';
 import {
   Plus,
@@ -188,10 +187,6 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
   // Pending gigs are surfaced by the shared `GigSetupChecklist` widget below
   // (per-gig API probing + Continue buttons). Here we only need to know if a
   // row should pulse amber for visual emphasis.
-  const gigsNeedingWarning = useMemo(
-    () => gigs.filter(shouldWarnForGig),
-    [gigs]
-  );
 
   const getStatusColor = (status: string) => {
     if (!status) {
@@ -239,17 +234,6 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
           border: 'border-slate-200'
         };
     }
-  };
-
-
-  const getAvailabilityText = (availability: Gig['availability']) => {
-    if (!availability) return t('gigDetails.availability.notSpecified');
-
-    if (availability.schedule && availability.schedule.length > 0) {
-      const days = availability.schedule.length;
-      return `${days} ${t('gigDetails.availability.daysPerWeek')}`;
-    }
-    return t('gigDetails.availability.flexible');
   };
 
   if (isLoading) {
