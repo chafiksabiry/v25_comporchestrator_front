@@ -871,6 +871,13 @@
       }
     }
   },
+  "gigCreation": {
+    "activationWarning": {
+      "title": "This gig will stay inactive until every setup step is completed",
+      "body": "Creating the gig is only the first step. Once saved, you'll need to complete each of the steps below from the dashboard before the gig can be activated and the first call placed.",
+      "stepsLabel": "Steps remaining after creation:"
+    }
+  },
   "uploadContacts": {
     "title": "Upload Contacts",
     "subtitle": "Import, manage, and organize your leads efficiently with AI precision.",

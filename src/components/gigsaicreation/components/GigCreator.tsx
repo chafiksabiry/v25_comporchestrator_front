@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
+  AlertTriangle,
   Brain,
   Save,
   Briefcase,
@@ -8,6 +10,11 @@ import {
   Globe2,
   DollarSign,
   Users,
+  Phone,
+  BookOpen,
+  GraduationCap,
+  Calendar,
+  Rocket,
 } from "lucide-react";
 import { GigReview } from "./GigReview";
 import { analyzeTitleAndGenerateDescription, generateSkills } from "../lib/ai";
@@ -146,6 +153,7 @@ interface GigCreatorProps {
 const API_URL = import.meta.env.VITE_API_URL_GIGS || 'http://localhost:3000';
 
 export function GigCreator({ children }: GigCreatorProps) {
+  const { t } = useTranslation();
   const [currentSection, setCurrentSection] = useState(sections[0].id);
   const [gigData, setGigData] = useState<GigData>({
     ...initialGigData,
@@ -554,9 +562,57 @@ export function GigCreator({ children }: GigCreatorProps) {
     );
   }
 
+  // ── Activation warning ────────────────────────────────────────────
+  //  Reminds the rep that creating the gig is only the first step:
+  //  the gig will stay in `to_activate` status until every downstream
+  //  setup item is completed from the dashboard (Telephony → Contacts
+  //  → Script → KB → REP Onboarding → Sessions → Activation).
+  //  Re-using the same step labels as `GigSetupChecklist` keeps the
+  //  wording perfectly aligned between the warning and the checklist
+  //  that will surface right after the gig is saved.
+  const activationSteps = [
+    { key: 'telephony', icon: Phone },
+    { key: 'uploadContacts', icon: Users },
+    { key: 'callScript', icon: FileText },
+    { key: 'knowledgeBase', icon: BookOpen },
+    { key: 'repOnboarding', icon: GraduationCap },
+    { key: 'sessionPlanning', icon: Calendar },
+    { key: 'gigActivation', icon: Rocket },
+  ] as const;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full h-full py-8 px-4">
+        <div className="mb-4 overflow-hidden rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 via-white to-amber-50/40 px-5 py-4 shadow-sm shadow-amber-100/40">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow shadow-amber-500/30">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-[12px] font-black uppercase tracking-wider text-amber-900">
+                {t('gigCreation.activationWarning.title')}
+              </h3>
+              <p className="mt-1 text-[11px] font-medium leading-relaxed text-amber-800/80">
+                {t('gigCreation.activationWarning.body')}
+              </p>
+              <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-amber-700">
+                {t('gigCreation.activationWarning.stepsLabel')}
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {activationSteps.map(({ key, icon: Icon }) => (
+                  <li
+                    key={key}
+                    className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-white/80 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-amber-700"
+                  >
+                    <Icon className="h-3 w-3" />
+                    {t(`gigDetails.setupBanner.steps.${key}`)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white rounded-xl shadow-xl">
           {children({
             data: gigData,
