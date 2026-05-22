@@ -31,7 +31,6 @@ import {
   Mail,
   Sparkles,
   Plus,
-  Minus,
   Calculator,
   ChevronDown,
 } from 'lucide-react';
@@ -2691,7 +2690,8 @@ interface WalletEntryListItem {
   createdAt?: string;
 }
 
-/** Rep commission payout returned by `/calls/company/:id/analytics/rep-payouts`. */
+/** Rep commission payout returned by `/rep-transactions/company/:id`
+ *  (source of truth: the `reptransactions` collection). */
 interface RepPayoutItem {
   _id: string;
   createdAt?: string;
@@ -2750,12 +2750,12 @@ function WalletView() {
           fetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
           callsApi
             ? fetch(
-                `${callsApi}/calls/company/${companyId}/analytics/rep-payouts?status=validated&limit=50`
+                `${callsApi}/rep-transactions/company/${companyId}?status=validated&limit=50`
               ).catch(() => null)
             : Promise.resolve(null),
           callsApi
             ? fetch(
-                `${callsApi}/calls/company/${companyId}/analytics/rep-payouts?status=refused&limit=50`
+                `${callsApi}/rep-transactions/company/${companyId}?status=refused&limit=50`
               ).catch(() => null)
             : Promise.resolve(null),
         ]);
