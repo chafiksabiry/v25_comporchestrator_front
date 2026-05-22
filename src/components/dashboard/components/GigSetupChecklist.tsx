@@ -52,7 +52,8 @@ import {
  *  brings the banner back so the rep can't permanently silence it while
  *  setup is still pending. */
 
-/** Step id → in-dashboard route. Keeps the rep inside the shell. */
+/** Step id → in-dashboard route. Keeps the rep inside the shell.
+ *  Pure pathname (no query string) so the inverse map below stays simple. */
 const STEP_DASHBOARD_PATH: Record<number, string> = {
   4: '/dashboard/telephony',
   5: '/dashboard/leads',
@@ -63,6 +64,15 @@ const STEP_DASHBOARD_PATH: Record<number, string> = {
   12: '/dashboard/gig-activation',
 };
 
+/** Optional Continue-button override per step. Use this when the rep
+ *  should land on a specific tab / action inside the destination page
+ *  rather than its default landing view. */
+const STEP_CONTINUE_TARGET: Record<number, string> = {
+  // Telephony defaults to "My Lines"; we want the rep to land on "Buy a
+  // line" because the warning means the gig has zero numbers yet.
+  4: '/dashboard/telephony?action=buy',
+};
+
 /** Inverse map — given a pathname, returns the step id this page is
  *  responsible for (used to render the compact per-component warning). */
 const PATH_TO_STEP: Record<string, number> = Object.entries(
@@ -71,6 +81,10 @@ const PATH_TO_STEP: Record<string, number> = Object.entries(
   acc[path] = Number(id);
   return acc;
 }, {});
+
+function getContinueTarget(stepId: number): string {
+  return STEP_CONTINUE_TARGET[stepId] || STEP_DASHBOARD_PATH[stepId];
+}
 
 /** Routes that should show the full multi-gig banner. Anything else with
  *  no step match hides the widget entirely (e.g. wallet, settings). */
@@ -468,6 +482,19 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
               )}
             </div>
           </div>
+          {STEP_CONTINUE_TARGET[currentStepId] && (
+            <button
+              type="button"
+              onClick={() => navigate(getContinueTarget(currentStepId))}
+              className="hidden shrink-0 items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:from-amber-600 hover:to-orange-600 active:scale-95 sm:inline-flex"
+              title={t('gigDetails.setupBanner.continue', {
+                label: stepDef.label,
+              })}
+            >
+              {t('gigDetails.setupBanner.continueBtn')}
+              <ArrowRight className="h-2.5 w-2.5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => navigate('/dashboard/gigs')}
@@ -614,7 +641,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                   {checklist.map((step) => {
                     const Icon = step.icon;
                     const done = !!(status && status[step.id]);
-                    const targetPath = STEP_DASHBOARD_PATH[step.id];
+                    const targetPath = getContinueTarget(step.id);
                     const isNext = !done && step.id === nextActionableStepId;
                     const isLocked = !done && !isNext;
                     return (

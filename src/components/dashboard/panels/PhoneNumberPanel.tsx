@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import {
   Phone,
   Search,
@@ -138,13 +139,28 @@ interface GigAndReps {
 
 export function PhoneNumberPanel() {
   const { t } = useTranslation();
+  const location = useLocation();
   const [phoneNumbers, setPhoneNumbers] = useState<PurchasedNumber[]>([]);
   const [gigsAndReps, setGigsAndReps] = useState<GigAndReps[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Telephony Search & Purchase states
-  const [telephonyTab, setTelephonyTab] = useState<'my_numbers' | 'buy'>('my_numbers');
+  // Telephony Search & Purchase states. Default to "My lines" but allow
+  // deep-linking into the "Buy a line" tab via `?action=buy` — the gig
+  // setup warning relies on this so the rep lands directly on the buy
+  // form when they click Continue from the dashboard checklist.
+  const initialTab: 'my_numbers' | 'buy' =
+    new URLSearchParams(location.search).get('action') === 'buy'
+      ? 'buy'
+      : 'my_numbers';
+  const [telephonyTab, setTelephonyTab] = useState<'my_numbers' | 'buy'>(initialTab);
+
+  // Keep the tab in sync if the rep navigates between `?action=buy`
+  // links without unmounting the panel.
+  useEffect(() => {
+    const action = new URLSearchParams(location.search).get('action');
+    if (action === 'buy') setTelephonyTab('buy');
+  }, [location.search]);
 
   const [selectedGigIdForNumber, setSelectedGigIdForNumber] = useState('');
   const [searchLimit, setSearchLimit] = useState('10');
