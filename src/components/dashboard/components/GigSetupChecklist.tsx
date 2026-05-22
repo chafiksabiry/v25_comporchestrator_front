@@ -48,28 +48,9 @@ import {
   X,
 } from 'lucide-react';
 
-/** SessionStorage key used to remember the rep dismissed the banner.
- *  Tied to a signature that combines the pending gig IDs + their current
- *  statuses — as soon as a status changes (or a new gig is added) the
- *  signature is invalidated and the banner re-appears automatically. */
-const DISMISS_STORAGE_KEY = 'harx:gigSetupChecklist:dismissed';
-
-function readDismissedSignature(): string | null {
-  try {
-    return sessionStorage.getItem(DISMISS_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeDismissedSignature(sig: string | null): void {
-  try {
-    if (sig === null) sessionStorage.removeItem(DISMISS_STORAGE_KEY);
-    else sessionStorage.setItem(DISMISS_STORAGE_KEY, sig);
-  } catch {
-    // Storage may be disabled (private mode) — degrade silently.
-  }
-}
+/** The dismissal is intentionally in-memory only. A page refresh always
+ *  brings the banner back so the rep can't permanently silence it while
+ *  setup is still pending. */
 
 /** Step id → in-dashboard route. Keeps the rep inside the shell. */
 const STEP_DASHBOARD_PATH: Record<number, string> = {
@@ -302,9 +283,9 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
   const [gigStepStatus, setGigStepStatus] = useState<Record<string, Record<number, boolean>>>({});
   /** Toggle to collapse/expand individual gig cards. Default = expanded. */
   const [collapsedGigs, setCollapsedGigs] = useState<Record<string, boolean>>({});
-  /** Session-scoped dismissal — see DISMISS_STORAGE_KEY. */
+  /** In-memory dismissal — resets on every page refresh. */
   const [dismissedSignature, setDismissedSignature] = useState<string | null>(
-    () => readDismissedSignature()
+    null
   );
 
   // Fetch gigs only when the parent didn't already inject them.
@@ -356,7 +337,6 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
 
   const handleDismiss = () => {
     setDismissedSignature(dismissSignature);
-    writeDismissedSignature(dismissSignature);
   };
 
   useEffect(() => {
