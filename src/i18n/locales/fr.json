@@ -485,6 +485,11 @@
         "refund": "Remboursement",
         "adjustment": "Ajustement"
       },
+      "repBadge": "Rep",
+      "repUnknown": "Rep",
+      "repCallValidated": "Appel validé — {{rep}}",
+      "repTxSale": "Vente signée — {{rep}}",
+      "repCommission": "Commission — {{rep}}",
       "computeTopup": "Calculer le prochain top-up"
     }
   },
