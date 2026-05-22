@@ -231,7 +231,8 @@
     "setupChecklist": {
       "pendingGigs_one": "{{count}} gig awaiting setup before activation.",
       "pendingGigs_other": "{{count}} gigs awaiting setup before activation.",
-      "pendingGigs": "{{count}} gig(s) awaiting setup before activation."
+      "pendingGigs": "{{count}} gig(s) awaiting setup before activation.",
+      "checking": "Checking…"
     },
     "header": {
       "welcome": "Welcome, {{name}}",

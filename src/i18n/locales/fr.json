@@ -240,7 +240,8 @@
     "setupChecklist": {
       "pendingGigs_one": "{{count}} gig en attente de configuration pour passer à l'activation.",
       "pendingGigs_other": "{{count}} gigs en attente de configuration pour passer à l'activation.",
-      "pendingGigs": "{{count}} gig(s) en attente de configuration pour passer à l'activation."
+      "pendingGigs": "{{count}} gig(s) en attente de configuration pour passer à l'activation.",
+      "checking": "Vérification…"
     },
     "tabs": {
       "overview": "Vue globale",
