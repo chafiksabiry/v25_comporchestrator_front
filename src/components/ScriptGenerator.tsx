@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2, Briefcase, FileText, CheckCircle, Shield, Compass, BookOpen, Check, ChevronDown, GraduationCap, ChevronRight } from 'lucide-react';
 import apiClient from '../api/knowledgeClient';
 import ScriptChatPanel from './script-generator/ScriptChatPanel';
@@ -155,6 +156,14 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
 
 const ScriptGenerator: React.FC = () => {
   const { t } = useTranslation();
+  // `useLocation` lets us know whether ScriptGenerator is mounted under
+  // the dashboard shell (`/dashboard/script-generator`) or inside the
+  // orchestrator switch (no router path → no `/dashboard/` prefix). We
+  // use that to decide whether the "Retour" button stays inside the
+  // dashboard or kicks the user back to the onboarding step.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isInDashboard = location.pathname.startsWith('/dashboard');
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState('');
@@ -191,7 +200,29 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
+  // Context-aware back button.
+  // When ScriptGenerator is mounted inside the dashboard we never want
+  // to kick the rep out into the orchestrator — `Retour` should walk
+  // them back through ScriptGenerator's own internal stack:
+  //   1. interactive cockpit (activeScriptMessage set) → script list
+  //   2. script chat (selectedGig set, no active script)  → gig picker
+  //   3. nothing selected                                 → /dashboard/main
+  // When mounted inside the orchestrator the original behaviour is
+  // preserved: dispatch a `tabChange` to return to the onboarding step.
   const handleBackToOrchestrator = () => {
+    if (isInDashboard) {
+      if (activeScriptMessage) {
+        setActiveScriptMessage(null);
+        return;
+      }
+      if (selectedGig) {
+        setSelectedGig(null);
+        return;
+      }
+      navigate('/dashboard/main');
+      return;
+    }
+
     const event = new CustomEvent('tabChange', {
       detail: { tab: 'company-onboarding' }
     });
@@ -425,7 +456,12 @@ const ScriptGenerator: React.FC = () => {
     }
   }, [gigs]);
 
+  // Global "Back to onboarding" header button.
+  // Only relevant in the orchestrator — inside the dashboard the rep has
+  // the full sidebar to navigate, so we skip the dispatch entirely
+  // (matches the `activeProject !== 'dashboard'` guard in App.tsx).
   useEffect(() => {
+    if (isInDashboard) return;
     window.dispatchEvent(new CustomEvent('setGlobalBack', {
       detail: {
         label: 'BACK TO ONBOARDING',
@@ -440,7 +476,7 @@ const ScriptGenerator: React.FC = () => {
     return () => {
       window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
     };
-  }, []);
+  }, [isInDashboard]);
 
   useEffect(() => {
     if (messagesContainerRef.current) {
