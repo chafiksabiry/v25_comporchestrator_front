@@ -51,7 +51,6 @@ import { Chart, Doughnut } from 'react-chartjs-2';
 import Cookies from 'js-cookie';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import GigSetupChecklist from '../components/GigSetupChecklist';
 
 // Idempotent: other dashboards already register the same scales, registering
 // again is a no-op so it's safe to keep it co-located with the chart.
@@ -960,13 +959,6 @@ export default function OperationsDashboard() {
           </div>
         </div>
       </div>
-
-      {/* ---------- Setup checklist (pending gigs) ---------- */}
-      {/* Surface any gig that's still in `to_activate` / `pending` so the
-          rep can finish telephony, contacts, script, KB, e-learning, session
-          planning and gig activation without leaving the dashboard. The
-          widget hides itself when there's nothing to warn about. */}
-      <GigSetupChecklist gigs={gigs as any} />
 
       {/* ---------- Section tabs ---------- */}
       <div className="flex flex-wrap gap-2">

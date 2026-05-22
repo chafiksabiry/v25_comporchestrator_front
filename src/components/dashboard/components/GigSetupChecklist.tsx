@@ -16,7 +16,7 @@
  *   • 6  Call Script        → `/rag/scripts?gigId=`
  *   • 8  Knowledge Base     → `/documents?gigId=`
  *   • 9  REP Onboarding     → `/training_journeys/trainer/companyId/:id?gigId=`
- *   • 10 Session Planning   → `gig.availability.schedule.length > 0`
+ *   • 10 Session Planning   → `/time-slots?gigId=` (matching backend)
  *   • 12 Gig Activation     → `gig.status === 'active'`
  *
  * Match HARX Reps is intentionally excluded — matching happens after the
@@ -27,7 +27,7 @@
  *   - `GigDetails` (Gigs panel)
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
@@ -45,7 +45,31 @@ import {
   Rocket,
   UserCheck,
   Users,
+  X,
 } from 'lucide-react';
+
+/** SessionStorage key used to remember the rep dismissed the banner.
+ *  Tied to a signature that combines the pending gig IDs + their current
+ *  statuses — as soon as a status changes (or a new gig is added) the
+ *  signature is invalidated and the banner re-appears automatically. */
+const DISMISS_STORAGE_KEY = 'harx:gigSetupChecklist:dismissed';
+
+function readDismissedSignature(): string | null {
+  try {
+    return sessionStorage.getItem(DISMISS_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeDismissedSignature(sig: string | null): void {
+  try {
+    if (sig === null) sessionStorage.removeItem(DISMISS_STORAGE_KEY);
+    else sessionStorage.setItem(DISMISS_STORAGE_KEY, sig);
+  } catch {
+    // Storage may be disabled (private mode) — degrade silently.
+  }
+}
 
 /** Step id → in-dashboard route. Keeps the rep inside the shell. */
 const STEP_DASHBOARD_PATH: Record<number, string> = {
@@ -116,6 +140,9 @@ const TRAINING_API = () => {
   );
   return base.endsWith('/api') ? base : `${base}/api`;
 };
+/** Same endpoint family used by `schedulerService.ts` (time-slots + matching). */
+const MATCHING_API = () =>
+  envOr('VITE_MATCHING_API_URL', 'https://v25matchingbackend-production.up.railway.app/api');
 
 /** Best-effort fetch that resolves to `false` on any error. The banner
  *  should never crash the dashboard if a side-service is down — we just
@@ -146,9 +173,9 @@ async function probeGigSetup(
   // request shared across all gigs in the batch).
   const telephonyDone = !!phoneNumbersByGig[gigId];
 
-  // Run the network probes in parallel. Each `safeBool` wraps a fetch +
-  // small parsing helper so a 4xx/5xx never crashes the dashboard.
-  const [contactsDone, scriptDone, kbDone, repOnboardingDone] = await Promise.all([
+  // Run every network probe in parallel. Each `safeBool` wraps a fetch
+  // + small parsing helper so a 4xx/5xx never crashes the dashboard.
+  const [contactsDone, scriptDone, kbDone, repOnboardingDone, sessionsDone] = await Promise.all([
     safeBool(
       (async () => {
         const r = await fetch(
@@ -206,11 +233,23 @@ async function probeGigSetup(
         return list.length > 0;
       })()
     ),
+    safeBool(
+      (async () => {
+        // Session Planning is tracked as time-slots on the matching
+        // backend (same endpoint family as `schedulerService.ts`).
+        // The gig needs at least one slot to be considered planned.
+        const r = await fetch(`${MATCHING_API()}/time-slots?gigId=${gigId}`);
+        if (!r.ok) return false;
+        const j = await r.json().catch(() => null);
+        const list = Array.isArray(j?.data)
+          ? j.data
+          : Array.isArray(j)
+          ? j
+          : [];
+        return list.length > 0;
+      })()
+    ),
   ]);
-
-  // Step 10 — `SchedulerPanel` is still on mock data, so we trust the
-  // gig's own availability sub-document (filled in during gig creation).
-  const sessionsDone = (gig.availability?.schedule?.length ?? 0) > 0;
 
   // Active gigs are considered fully set up regardless of what the
   // micro-services return (they've already passed activation).
@@ -240,6 +279,10 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
   const [gigStepStatus, setGigStepStatus] = useState<Record<string, Record<number, boolean>>>({});
   /** Toggle to collapse/expand individual gig cards. Default = expanded. */
   const [collapsedGigs, setCollapsedGigs] = useState<Record<string, boolean>>({});
+  /** Session-scoped dismissal — see DISMISS_STORAGE_KEY. */
+  const [dismissedSignature, setDismissedSignature] = useState<string | null>(
+    () => readDismissedSignature()
+  );
 
   // Fetch gigs only when the parent didn't already inject them.
   useEffect(() => {
@@ -274,6 +317,24 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
     () => pendingGigs.map((g) => g._id).sort().join(','),
     [pendingGigs]
   );
+
+  // Dismissal signature: pending gig ids + their statuses. As soon as a
+  // gig progresses or a new one is added, the signature changes and the
+  // banner re-appears even if the rep clicked "close" earlier.
+  const dismissSignature = useMemo(
+    () =>
+      pendingGigs
+        .map((g) => `${g._id}:${normalizeGigStatus(g.status)}`)
+        .sort()
+        .join('|'),
+    [pendingGigs]
+  );
+  const isDismissed = !!dismissedSignature && dismissedSignature === dismissSignature;
+
+  const handleDismiss = () => {
+    setDismissedSignature(dismissSignature);
+    writeDismissedSignature(dismissSignature);
+  };
 
   useEffect(() => {
     if (!companyId || pendingGigs.length === 0) return;
@@ -335,7 +396,7 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
     [t]
   );
 
-  if (pendingGigs.length === 0) return null;
+  if (pendingGigs.length === 0 || isDismissed) return null;
 
   const toggleCollapse = (gigId: string) =>
     setCollapsedGigs((prev) => ({ ...prev, [gigId]: !prev[gigId] }));
@@ -366,6 +427,17 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
             })}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="shrink-0 rounded-xl border border-amber-200 bg-white/70 p-1.5 text-amber-700 transition-colors hover:bg-white hover:text-amber-900"
+          aria-label={t('gigDetails.setupBanner.dismiss', {
+            defaultValue: 'Dismiss',
+          })}
+          title={t('gigDetails.setupBanner.dismiss', { defaultValue: 'Dismiss' })}
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
       {/* One card per pending gig */}

@@ -11,7 +11,6 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import GigSetupChecklist from '../dashboard/components/GigSetupChecklist';
 
 interface Gig {
   _id: string;
@@ -394,17 +393,6 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
         </div>
         {/* Subtle geometric circles */}
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-slate-50 rounded-full pointer-events-none border border-slate-100/30" />
-      </div>
-
-      {/* ── Per-gig Setup Checklist ─────────────────────────────────────
-          Shared widget. For every gig still in `to_activate` / `pending`
-          it queries the real per-gig state (phone numbers, leads, scripts,
-          KB documents, schedule, activation) and renders one card per gig
-          with the missing steps + "Continue" buttons. Hides itself when
-          no gig needs attention.
-       ───────────────────────────────────────────────────────────────── */}
-      <div className="relative z-10">
-        <GigSetupChecklist gigs={gigs as any} />
       </div>
 
       {gigs.length === 0 ? (
