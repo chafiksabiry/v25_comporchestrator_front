@@ -28,7 +28,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
 import {
@@ -81,6 +81,24 @@ const STEP_DASHBOARD_PATH: Record<number, string> = {
   10: '/dashboard/scheduler',
   12: '/dashboard/gig-activation',
 };
+
+/** Inverse map — given a pathname, returns the step id this page is
+ *  responsible for (used to render the compact per-component warning). */
+const PATH_TO_STEP: Record<string, number> = Object.entries(
+  STEP_DASHBOARD_PATH
+).reduce<Record<string, number>>((acc, [id, path]) => {
+  acc[path] = Number(id);
+  return acc;
+}, {});
+
+/** Routes that should show the full multi-gig banner. Anything else with
+ *  no step match hides the widget entirely (e.g. wallet, settings). */
+const FULL_BANNER_PATHS = new Set<string>([
+  '/dashboard/main',
+  '/dashboard/overview',
+  '/dashboard/gigs',
+  '/dashboard',
+]);
 
 function normalizeGigStatus(status: string | undefined): string {
   return (status || '').toLowerCase().replace(/-/g, '_');
@@ -271,6 +289,11 @@ async function probeGigSetup(
 const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  /** When the rep is on a step page (e.g. /dashboard/telephony) we only
+   *  render a small per-component warning for that specific step. */
+  const currentStepId: number | null = PATH_TO_STEP[location.pathname] ?? null;
+  const isFullBannerRoute = FULL_BANNER_PATHS.has(location.pathname);
   const companyId = Cookies.get('companyId') || '';
   const userId = Cookies.get('userId') || localStorage.getItem('userId') || '';
 
@@ -398,8 +421,101 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
 
   if (pendingGigs.length === 0 || isDismissed) return null;
 
+  // Hide the widget on routes that aren't related to any setup step
+  // (wallet, settings, calls, analytics, …). We only ever surface it on
+  // the dashboard, gigs list, or one of the dedicated step pages.
+  if (!isFullBannerRoute && currentStepId === null) return null;
+
   const toggleCollapse = (gigId: string) =>
     setCollapsedGigs((prev) => ({ ...prev, [gigId]: !prev[gigId] }));
+
+  // ────────────────────────────────────────────────────────────────────
+  //  Compact variant — rendered on the dedicated step pages. Lists only
+  //  the gigs that still need THIS specific step, with a small "Continue"
+  //  shortcut. The big banner stays exclusive to the dashboard / gigs.
+  // ────────────────────────────────────────────────────────────────────
+  if (!isFullBannerRoute && currentStepId !== null) {
+    const stepDef = checklist.find((s) => s.id === currentStepId);
+    if (!stepDef) return null;
+    const gigsMissingThisStep = pendingGigs.filter((g) => {
+      const status = gigStepStatus[g._id];
+      return !(status && status[currentStepId]);
+    });
+    if (gigsMissingThisStep.length === 0) return null;
+    const StepIcon = stepDef.icon;
+    return (
+      <div
+        role="status"
+        className="relative overflow-hidden rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 via-white to-amber-50/40 px-4 py-3 shadow-sm shadow-amber-100/40 animate-in slide-in-from-top-2 fade-in duration-300"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow shadow-amber-500/30">
+            <StepIcon className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-black uppercase tracking-wider text-amber-900">
+              {t('gigDetails.setupBanner.stepWarningTitle', {
+                step: stepDef.label,
+                defaultValue: 'Action required: {{step}}',
+              })}
+            </div>
+            <div className="mt-0.5 text-[10px] font-bold leading-snug text-amber-800/80">
+              {t('gigDetails.setupBanner.stepWarningBody', {
+                count: gigsMissingThisStep.length,
+                step: stepDef.label,
+                defaultValue:
+                  gigsMissingThisStep.length > 1
+                    ? '{{count}} gigs still need this step.'
+                    : '{{count}} gig still needs this step.',
+              })}
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {gigsMissingThisStep.slice(0, 4).map((g) => (
+                <span
+                  key={g._id}
+                  className="inline-flex items-center rounded-md border border-amber-200 bg-white/80 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-700"
+                  title={g.title}
+                >
+                  <span className="max-w-[160px] truncate">
+                    {g.title || g._id}
+                  </span>
+                </span>
+              ))}
+              {gigsMissingThisStep.length > 4 && (
+                <span className="inline-flex items-center rounded-md border border-amber-200 bg-white/80 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-700">
+                  +{gigsMissingThisStep.length - 4}
+                </span>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/gigs')}
+            className="hidden shrink-0 items-center gap-1 rounded-lg border border-amber-200 bg-white px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-700 transition-colors hover:bg-amber-50 sm:inline-flex"
+            title={t('gigDetails.setupBanner.viewAll', {
+              defaultValue: 'View all',
+            })}
+          >
+            {t('gigDetails.setupBanner.viewAll', { defaultValue: 'View all' })}
+            <ArrowRight className="h-2.5 w-2.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="shrink-0 rounded-lg border border-amber-200 bg-white/70 p-1 text-amber-700 transition-colors hover:bg-white hover:text-amber-900"
+            aria-label={t('gigDetails.setupBanner.dismiss', {
+              defaultValue: 'Dismiss',
+            })}
+            title={t('gigDetails.setupBanner.dismiss', {
+              defaultValue: 'Dismiss',
+            })}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

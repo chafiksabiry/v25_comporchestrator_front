@@ -846,6 +846,11 @@
       "next": "Prochaine étape",
       "locked": "Verrouillée",
       "dismiss": "Fermer",
+      "stepWarningTitle": "Action requise : {{step}}",
+      "stepWarningBody_one": "{{count}} gig nécessite encore cette étape.",
+      "stepWarningBody_other": "{{count}} gigs nécessitent encore cette étape.",
+      "stepWarningBody": "{{count}} gig(s) nécessite(nt) encore cette étape.",
+      "viewAll": "Voir tous",
       "steps": {
         "telephony": "Configuration téléphonie",
         "uploadContacts": "Import des contacts",

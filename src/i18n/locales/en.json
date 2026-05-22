@@ -846,6 +846,11 @@
       "next": "Next step",
       "locked": "Locked",
       "dismiss": "Dismiss",
+      "stepWarningTitle": "Action required: {{step}}",
+      "stepWarningBody_one": "{{count}} gig still needs this step.",
+      "stepWarningBody_other": "{{count}} gigs still need this step.",
+      "stepWarningBody": "{{count}} gig(s) still need this step.",
+      "viewAll": "View all",
       "steps": {
         "telephony": "Telephony Setup",
         "uploadContacts": "Upload Contacts",
