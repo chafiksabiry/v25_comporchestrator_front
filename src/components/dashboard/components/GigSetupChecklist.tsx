@@ -563,115 +563,133 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
   return (
     <div
       role="status"
-      className="relative overflow-hidden rounded-3xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-white to-amber-50/40 p-5 sm:p-6 shadow-md shadow-amber-100/40 animate-in slide-in-from-bottom-2 fade-in duration-500"
+      className="relative overflow-hidden rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-white to-amber-50/40 px-4 py-3 shadow-sm shadow-amber-100/40 animate-in slide-in-from-bottom-2 fade-in duration-500"
     >
-      <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-amber-400/10 blur-3xl" />
-
-      {/* Banner header */}
-      <div className="relative z-10 flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/30">
-          <AlertCircle className="h-5 w-5" />
+      {/* Banner header — compact: icon + one-line title + dismiss */}
+      <div className="relative z-10 flex items-center gap-2.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow shadow-amber-500/30">
+          <AlertCircle className="h-4 w-4" />
         </div>
-        <div className="flex-1">
-          <h2 className="text-sm font-black uppercase tracking-wider text-amber-900">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[11px] font-black uppercase tracking-wider text-amber-900">
             {t('gigDetails.setupBanner.title')}
           </h2>
-          <p className="mt-1 text-[11px] font-medium leading-relaxed text-amber-800/80">
+          <p className="text-[10px] font-bold leading-snug text-amber-800/70">
             {t('opsDashboard.setupChecklist.pendingGigs', {
               count: pendingGigs.length,
               defaultValue:
                 pendingGigs.length > 1
-                  ? '{{count}} gigs awaiting setup to activate.'
-                  : '{{count}} gig awaiting setup to activate.',
+                  ? '{{count}} gigs awaiting setup before activation.'
+                  : '{{count}} gig awaiting setup before activation.',
             })}
           </p>
         </div>
         <button
           type="button"
           onClick={handleDismiss}
-          className="shrink-0 rounded-xl border border-amber-200 bg-white/70 p-1.5 text-amber-700 transition-colors hover:bg-white hover:text-amber-900"
+          className="shrink-0 rounded-lg border border-amber-200 bg-white/70 p-1 text-amber-700 transition-colors hover:bg-white hover:text-amber-900"
           aria-label={t('gigDetails.setupBanner.dismiss', {
             defaultValue: 'Dismiss',
           })}
           title={t('gigDetails.setupBanner.dismiss', { defaultValue: 'Dismiss' })}
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      {/* One card per pending gig */}
-      <div className="relative z-10 mt-4 space-y-3">
+      {/* One row per pending gig — collapsed by default; the 7-tile grid is
+          only revealed when the rep clicks the chevron. Keeps the banner
+          one-line-per-gig in the common case while still letting power
+          users drill into the full sequential checklist if needed. */}
+      <div className="relative z-10 mt-2.5 space-y-1.5">
         {pendingGigs.map((gig) => {
           const status = gigStepStatus[gig._id];
           const isProbing = !status;
           const missing = checklist.filter((s) => !(status && status[s.id]));
           const completedCount = checklist.length - missing.length;
           const progressPct = Math.round((completedCount / checklist.length) * 100);
-          const isCollapsed = collapsedGigs[gig._id] ?? false;
+          // Default = collapsed so the banner stays compact. The rep
+          // expands a card only if they want the full step grid.
+          const isCollapsed = collapsedGigs[gig._id] ?? true;
           // Sequential gating: only the first non-done step is actionable.
           // Later pending steps are shown as locked so the rep follows the
           // intended order (Telephony → Contacts → Script → KB → REP
           // Onboarding → Sessions → Gig Activation).
           const nextActionableStepId = missing[0]?.id;
+          const nextStep =
+            nextActionableStepId != null
+              ? checklist.find((s) => s.id === nextActionableStepId)
+              : null;
 
           return (
             <div
               key={gig._id}
-              className="rounded-2xl border border-amber-200/70 bg-white p-4 shadow-sm"
+              className="rounded-xl border border-amber-200/70 bg-white px-3 py-2 shadow-sm"
             >
-              {/* Gig header row */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex shrink-0 items-center rounded-lg border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-700">
-                      {normalizeGigStatus(gig.status)}
-                    </span>
-                    <h3
-                      className="truncate text-[13px] font-black text-slate-800"
-                      title={gig.title}
-                    >
-                      {gig.title || gig._id}
-                    </h3>
-                  </div>
-                  {/* Per-gig progress bar */}
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-amber-700">
-                      <span>
-                        {isProbing
-                          ? t('opsDashboard.setupChecklist.checking', {
-                              defaultValue: 'Checking…',
-                            })
-                          : t('gigDetails.setupBanner.progress', {
-                              done: completedCount,
-                              total: checklist.length,
-                            })}
-                      </span>
-                      <span>{isProbing ? '…' : `${progressPct}%`}</span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-amber-100">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-700 ease-out"
-                        style={{ width: isProbing ? '15%' : `${progressPct}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
+              {/* Single-line gig row: status pill · title · progress · next-step
+                  shortcut · expand/collapse chevron. Everything stays on one
+                  row at sm+ so the banner footprint is tiny by default. */}
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-flex shrink-0 items-center rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-amber-700"
+                  title={normalizeGigStatus(gig.status)}
+                >
+                  {normalizeGigStatus(gig.status)}
+                </span>
+                <h3
+                  className="truncate text-[12px] font-black text-slate-800"
+                  title={gig.title}
+                >
+                  {gig.title || gig._id}
+                </h3>
+                <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-700">
+                  <span className="hidden sm:inline">
+                    {isProbing
+                      ? t('opsDashboard.setupChecklist.checking', {
+                          defaultValue: 'Checking…',
+                        })
+                      : `${completedCount}/${checklist.length}`}
+                  </span>
+                  <span className="h-1 w-16 overflow-hidden rounded-full bg-amber-100">
+                    <span
+                      className="block h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-700 ease-out"
+                      style={{ width: isProbing ? '15%' : `${progressPct}%` }}
+                    />
+                  </span>
+                  <span>{isProbing ? '…' : `${progressPct}%`}</span>
+                </span>
+                {nextStep && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate(getContinueTarget(nextStep.id, gig._id))
+                    }
+                    className="hidden shrink-0 items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:from-amber-600 hover:to-orange-600 active:scale-95 sm:inline-flex"
+                    title={t('gigDetails.setupBanner.continue', {
+                      label: nextStep.label,
+                    })}
+                  >
+                    <span className="max-w-[120px] truncate">{nextStep.label}</span>
+                    <ArrowRight className="h-2.5 w-2.5" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => toggleCollapse(gig._id)}
-                  className="shrink-0 rounded-xl border border-slate-200 bg-white p-1.5 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800"
+                  className="shrink-0 rounded-lg border border-slate-200 bg-white p-1 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800"
                   aria-label={isCollapsed ? 'Expand' : 'Collapse'}
                 >
                   {isCollapsed ? (
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-3.5 w-3.5" />
                   ) : (
-                    <ChevronUp className="h-4 w-4" />
+                    <ChevronUp className="h-3.5 w-3.5" />
                   )}
                 </button>
               </div>
 
-              {/* Per-gig step list */}
+              {/* Per-gig step list — only rendered when the rep expands the
+                  card (the row above is already actionable thanks to the
+                  inline "Next step" Continue button). */}
               {!isCollapsed && (
                 <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {checklist.map((step) => {
