@@ -1,21 +1,26 @@
 /**
  * GigSetupChecklist
  *
- * Per-gig setup warning. For every gig that is still pending activation
- * (status `to_activate` / `pending` / `draft`) we render its own card
- * listing only the steps that are missing FOR THAT SPECIFIC GIG — not
- * the company-wide tracker. Each missing step has a "Continue" button
- * that navigates inside the dashboard shell (no orchestrator redirect).
+ * Per-gig setup warning. For every gig still in `to_activate` / `pending` /
+ * `draft` we render its own card listing only the steps that are missing
+ * FOR THAT SPECIFIC GIG — not the company-wide tracker.
  *
- * Per-step source of truth:
+ * Steps are sequential: only the next pending step gets an active
+ * "Continue →" button. Later pending steps are shown as "locked" so the
+ * rep finishes the flow in order (Telephony → Contacts → Script → KB →
+ * REP Onboarding → Session Planning → Gig Activation).
+ *
+ * Per-step source of truth (every check hits the real backend):
  *   • 4  Telephony          → `/phone-numbers` filtered by gigId
  *   • 5  Upload Contacts    → `/leads/.../has-leads?gigId=`
  *   • 6  Call Script        → `/rag/scripts?gigId=`
  *   • 8  Knowledge Base     → `/documents?gigId=`
- *   • 9  REP Onboarding     → company-wide tracker (no per-gig endpoint)
+ *   • 9  REP Onboarding     → `/training_journeys/trainer/companyId/:id?gigId=`
  *   • 10 Session Planning   → `gig.availability.schedule.length > 0`
  *   • 12 Gig Activation     → `gig.status === 'active'`
- *   • 13 Match HARX Reps    → company-wide tracker
+ *
+ * Match HARX Reps is intentionally excluded — matching happens after the
+ * gig is live and is owned by a different surface.
  *
  * Used by:
  *   - `OperationsDashboard` (Dashboard home)
@@ -35,16 +40,12 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
+  Lock,
   Phone,
   Rocket,
-  Sparkles,
   UserCheck,
   Users,
 } from 'lucide-react';
-import {
-  getCompletedStepsFromStorage,
-  syncOnboardingProgressFromApi,
-} from '../../../hooks/useStepGuide';
 
 /** Step id → in-dashboard route. Keeps the rep inside the shell. */
 const STEP_DASHBOARD_PATH: Record<number, string> = {
@@ -55,7 +56,6 @@ const STEP_DASHBOARD_PATH: Record<number, string> = {
   9: '/dashboard/training',
   10: '/dashboard/scheduler',
   12: '/dashboard/gig-activation',
-  13: '/dashboard/rep-matching',
 };
 
 function normalizeGigStatus(status: string | undefined): string {
@@ -109,6 +109,13 @@ const KB_API = () => {
   const base = envOr('VITE_BACKEND_KNOWLEDGEBASE_API', 'https://v25knowledgebasebackend-production.up.railway.app');
   return base.endsWith('/api') ? base : `${base}/api`;
 };
+const TRAINING_API = () => {
+  const base = envOr(
+    'VITE_TRAINING_BACKEND_URL',
+    'https://v25platformtrainingbackend-production.up.railway.app'
+  );
+  return base.endsWith('/api') ? base : `${base}/api`;
+};
 
 /** Best-effort fetch that resolves to `false` on any error. The banner
  *  should never crash the dashboard if a side-service is down — we just
@@ -121,31 +128,27 @@ async function safeBool(promise: Promise<boolean>): Promise<boolean> {
   }
 }
 
-/** Check the 4 API-backed steps for a single gig. Steps 9, 10, 12, 13
- *  are derived locally (status + availability + company tracker). */
+/** Check every setup step for a single gig against the real backends.
+ *  Returns a `{ stepId: done }` map. Step 10 (Session Planning) is
+ *  derived from the gig's own availability since the scheduler backend
+ *  is still mocked in `SchedulerPanel`. Step 12 (Gig Activation) is the
+ *  gig's `status === 'active'`. */
 async function probeGigSetup(
   gig: MinimalGig,
   companyId: string,
   userId: string,
-  phoneNumbersByGig: Record<string, boolean>,
-  companyDoneSteps: number[]
+  phoneNumbersByGig: Record<string, boolean>
 ): Promise<Record<number, boolean>> {
   const gigId = gig._id;
   const isActive = normalizeGigStatus(gig.status) === 'active';
 
-  // Local-only checks (no network round-trip).
-  const localDone: Record<number, boolean> = {
-    9: companyDoneSteps.includes(9) || isActive,
-    10: (gig.availability?.schedule?.length ?? 0) > 0,
-    12: isActive,
-    13: companyDoneSteps.includes(13) || isActive,
-  };
-
-  // Telephony — feed from the pre-fetched phone-numbers map.
+  // Telephony — feed from the pre-fetched phone-numbers map (single
+  // request shared across all gigs in the batch).
   const telephonyDone = !!phoneNumbersByGig[gigId];
 
-  // Run network checks in parallel.
-  const [contactsDone, scriptDone, kbDone] = await Promise.all([
+  // Run the network probes in parallel. Each `safeBool` wraps a fetch +
+  // small parsing helper so a 4xx/5xx never crashes the dashboard.
+  const [contactsDone, scriptDone, kbDone, repOnboardingDone] = await Promise.all([
     safeBool(
       (async () => {
         const r = await fetch(
@@ -182,14 +185,47 @@ async function probeGigSetup(
         return list.length > 0;
       })()
     ),
+    safeBool(
+      (async () => {
+        // `RepOnboarding` lists training journeys for a (company, gig) pair.
+        // If at least one journey exists we consider step 9 done for the gig.
+        const r = await fetch(
+          `${TRAINING_API()}/training_journeys/trainer/companyId/${companyId}?gigId=${gigId}`
+        );
+        if (!r.ok) return false;
+        const j = await r.json().catch(() => null);
+        const list = Array.isArray(j?.data?.journeys)
+          ? j.data.journeys
+          : Array.isArray(j?.data)
+          ? j.data
+          : Array.isArray(j?.journeys)
+          ? j.journeys
+          : Array.isArray(j)
+          ? j
+          : [];
+        return list.length > 0;
+      })()
+    ),
   ]);
 
+  // Step 10 — `SchedulerPanel` is still on mock data, so we trust the
+  // gig's own availability sub-document (filled in during gig creation).
+  const sessionsDone = (gig.availability?.schedule?.length ?? 0) > 0;
+
+  // Active gigs are considered fully set up regardless of what the
+  // micro-services return (they've already passed activation).
+  if (isActive) {
+    return { 4: true, 5: true, 6: true, 8: true, 9: true, 10: true, 12: true };
+  }
+
   return {
-    4: telephonyDone || isActive,
-    5: contactsDone || isActive,
-    6: scriptDone || isActive,
-    8: kbDone || isActive,
-    ...localDone,
+    4: telephonyDone,
+    5: contactsDone,
+    6: scriptDone,
+    8: kbDone,
+    9: repOnboardingDone,
+    10: sessionsDone,
+    12: false,
   };
 }
 
@@ -200,9 +236,6 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
   const userId = Cookies.get('userId') || localStorage.getItem('userId') || '';
 
   const [fetchedGigs, setFetchedGigs] = useState<MinimalGig[] | null>(null);
-  const [companyDoneSteps, setCompanyDoneSteps] = useState<number[]>(() =>
-    getCompletedStepsFromStorage()
-  );
   /** gigId → { stepId → done }. Populated by `probeGigSetup` once per gig. */
   const [gigStepStatus, setGigStepStatus] = useState<Record<string, Record<number, boolean>>>({});
   /** Toggle to collapse/expand individual gig cards. Default = expanded. */
@@ -227,24 +260,6 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
       cancelled = true;
     };
   }, [companyId, gigsProp]);
-
-  // Refresh the company-wide tracker for the steps we can't verify per-gig
-  // (REP Onboarding, Match HARX Reps).
-  useEffect(() => {
-    if (!companyId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const steps = await syncOnboardingProgressFromApi(companyId);
-        if (!cancelled) setCompanyDoneSteps(steps);
-      } catch {
-        // keep the local fallback
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [companyId]);
 
   const allGigs = gigsProp ?? fetchedGigs ?? [];
   const pendingGigs = useMemo(
@@ -287,7 +302,7 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
       // 2. Probe each pending gig in parallel.
       const probes = await Promise.all(
         pendingGigs.map((g) =>
-          probeGigSetup(g, companyId, userId, phoneByGig, companyDoneSteps)
+          probeGigSetup(g, companyId, userId, phoneByGig)
         )
       );
 
@@ -302,8 +317,11 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [companyId, userId, pendingGigIdsKey, companyDoneSteps]);
+  }, [companyId, userId, pendingGigIdsKey]);
 
+  // Sequential setup flow: every step must be completed before the next
+  // one unlocks. Matching is intentionally not part of this list — it
+  // belongs to the post-activation flow on the Rep Matching panel.
   const checklist = useMemo(
     () => [
       { id: 4, label: t('gigDetails.setupBanner.steps.telephony'), icon: Phone, tone: 'sky' as const },
@@ -313,7 +331,6 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
       { id: 9, label: t('gigDetails.setupBanner.steps.repOnboarding'), icon: UserCheck, tone: 'rose' as const },
       { id: 10, label: t('gigDetails.setupBanner.steps.sessionPlanning'), icon: Calendar, tone: 'teal' as const },
       { id: 12, label: t('gigDetails.setupBanner.steps.gigActivation'), icon: Rocket, tone: 'emerald' as const },
-      { id: 13, label: t('gigDetails.setupBanner.steps.matchReps'), icon: Sparkles, tone: 'purple' as const },
     ],
     [t]
   );
@@ -360,6 +377,11 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
           const completedCount = checklist.length - missing.length;
           const progressPct = Math.round((completedCount / checklist.length) * 100);
           const isCollapsed = collapsedGigs[gig._id] ?? false;
+          // Sequential gating: only the first non-done step is actionable.
+          // Later pending steps are shown as locked so the rep follows the
+          // intended order (Telephony → Contacts → Script → KB → REP
+          // Onboarding → Sessions → Gig Activation).
+          const nextActionableStepId = missing[0]?.id;
 
           return (
             <div
@@ -425,24 +447,32 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
                     const Icon = step.icon;
                     const done = !!(status && status[step.id]);
                     const targetPath = STEP_DASHBOARD_PATH[step.id];
+                    const isNext = !done && step.id === nextActionableStepId;
+                    const isLocked = !done && !isNext;
                     return (
                       <div
                         key={step.id}
                         className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 transition-all ${
                           done
                             ? 'border-emerald-100 bg-emerald-50/80'
-                            : 'border-slate-100 bg-white hover:border-amber-200 hover:shadow-sm'
+                            : isNext
+                            ? 'border-amber-300 bg-amber-50/70 shadow-sm shadow-amber-200/40 ring-1 ring-amber-200'
+                            : 'border-slate-100 bg-slate-50/50 opacity-70'
                         }`}
                       >
                         <div
                           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border ${
                             done
                               ? 'bg-emerald-500 text-white border-emerald-500'
+                              : isLocked
+                              ? 'bg-slate-100 text-slate-400 border-slate-200'
                               : toneStyles[step.tone]
                           }`}
                         >
                           {done ? (
                             <CheckCircle2 className="h-3.5 w-3.5" />
+                          ) : isLocked ? (
+                            <Lock className="h-3.5 w-3.5" />
                           ) : (
                             <Icon className="h-3.5 w-3.5" />
                           )}
@@ -450,22 +480,36 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
                         <div className="min-w-0 flex-1">
                           <div
                             className={`truncate text-[11px] font-black uppercase tracking-wider ${
-                              done ? 'text-emerald-700' : 'text-slate-700'
+                              done
+                                ? 'text-emerald-700'
+                                : isLocked
+                                ? 'text-slate-500'
+                                : 'text-slate-800'
                             }`}
                           >
                             {step.label}
                           </div>
                           <div
                             className={`text-[9px] font-bold uppercase tracking-wider ${
-                              done ? 'text-emerald-500/80' : 'text-slate-400'
+                              done
+                                ? 'text-emerald-500/80'
+                                : isLocked
+                                ? 'text-slate-400'
+                                : 'text-amber-600'
                             }`}
                           >
                             {done
                               ? t('gigDetails.setupBanner.completed')
-                              : t('gigDetails.setupBanner.pending')}
+                              : isLocked
+                              ? t('gigDetails.setupBanner.locked', {
+                                  defaultValue: 'Locked',
+                                })
+                              : t('gigDetails.setupBanner.next', {
+                                  defaultValue: 'Next',
+                                })}
                           </div>
                         </div>
-                        {!done && targetPath && (
+                        {isNext && targetPath && (
                           <button
                             type="button"
                             onClick={() => navigate(targetPath)}

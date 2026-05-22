@@ -843,6 +843,8 @@
       "pendingTitle": "{{label}} — pending",
       "continueBtn": "Continue",
       "continue": "Continue: {{label}}",
+      "next": "Next step",
+      "locked": "Locked",
       "steps": {
         "telephony": "Telephony Setup",
         "uploadContacts": "Upload Contacts",

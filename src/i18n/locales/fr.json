@@ -843,6 +843,8 @@
       "pendingTitle": "{{label}} — en attente",
       "continueBtn": "Continuer",
       "continue": "Continuer : {{label}}",
+      "next": "Prochaine étape",
+      "locked": "Verrouillée",
       "steps": {
         "telephony": "Configuration téléphonie",
         "uploadContacts": "Import des contacts",
