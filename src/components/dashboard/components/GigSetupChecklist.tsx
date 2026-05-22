@@ -27,7 +27,7 @@
  *   - `GigDetails` (Gigs panel)
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
@@ -268,7 +268,7 @@ async function probeGigSetup(
   };
 }
 
-export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
+const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const companyId = Cookies.get('companyId') || '';
@@ -605,4 +605,6 @@ export default function GigSetupChecklist({ gigs: gigsProp }: Props) {
       </div>
     </div>
   );
-}
+};
+
+export default GigSetupChecklist;
