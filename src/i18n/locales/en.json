@@ -477,6 +477,14 @@
         "burnRateSub": "per day"
       },
       "txTitle": "Recent transactions",
+      "txLoading": "Loading transactions…",
+      "txEmpty": "No transactions yet",
+      "txTypes": {
+        "deposit": "Deposit",
+        "withdrawal": "Withdrawal",
+        "refund": "Refund",
+        "adjustment": "Adjustment"
+      },
       "computeTopup": "Compute next top-up"
     }
   },
