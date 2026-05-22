@@ -41,6 +41,10 @@ function CallsPanel() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedProvider, setSelectedProvider] = useState<'twilio' | 'qalqul'>('twilio');
+  // Tracks the CallInterface's post-hangup save chain. We use it to disable
+  // the modal's "X" button so reps can't dismiss the dialog mid-save and
+  // orphan the call server-side (no DB row → no AI analysis).
+  const [isCallSaving, setIsCallSaving] = useState(false);
   const navigate = useNavigate();
   const { currentUser, loading: authLoading } = useAuth();
 
@@ -279,8 +283,17 @@ function CallsPanel() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full relative">
             <button
-              onClick={() => setActiveCall(null)}
-              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full"
+              onClick={() => {
+                if (isCallSaving) return;
+                setActiveCall(null);
+              }}
+              disabled={isCallSaving}
+              title={isCallSaving ? 'Saving call… please wait' : 'Close'}
+              className={`absolute top-4 right-4 p-2 rounded-full transition-opacity ${
+                isCallSaving
+                  ? 'opacity-30 cursor-not-allowed'
+                  : 'hover:bg-gray-100'
+              }`}
             >
               <X className="w-5 h-5" />
             </button>
@@ -289,8 +302,10 @@ function CallsPanel() {
               agentId={activeCall.agentId}
               onEnd={() => {
                 setActiveCall(null);
+                setIsCallSaving(false);
               }}
               onCallSaved={fetchCalls}
+              onSavingChange={setIsCallSaving}
               provider={selectedProvider}
               callId={activeCall.callId}
             />

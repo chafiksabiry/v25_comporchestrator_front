@@ -22,6 +22,9 @@ interface CallInterfaceProps {
   agentId: string;
   onEnd: () => void;
   onCallSaved?: () => void;
+  /** Notifies the parent when the post-hangup save chain starts/stops so it
+   *  can disable the modal's close button while the call is being persisted. */
+  onSavingChange?: (isSaving: boolean) => void;
   provider?: 'twilio';
   keepAIPanelAfterCall?: boolean;
   callId: string;
@@ -34,7 +37,7 @@ declare global {
   }
 }
 
-export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provider = 'twilio', keepAIPanelAfterCall = true, callId }: CallInterfaceProps) {
+export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, onSavingChange, provider = 'twilio', keepAIPanelAfterCall = true, callId }: CallInterfaceProps) {
   // Constants for audio processing and transcription
   const SPEECH_THRESHOLD = 0.015;
   const SILENCE_TIMEOUT = 2000;
@@ -73,6 +76,13 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
     AIAssistantAPI.setCallEnded(false);
     AIAssistantAPI.clearMessages();
   }, []);
+
+  // Mirror `isSaving` to the parent so it can grey-out the close button
+  // (e.g. the X in `CallsPanel`). Without this, the rep could dismiss the
+  // modal mid-save and lose the call row server-side.
+  useEffect(() => {
+    onSavingChange?.(isSaving);
+  }, [isSaving, onSavingChange]);
 
   const processMarkdownResponse = (markdown: string): { content: string, category: 'suggestion' | 'alert' | 'info' | 'action', priority: 'high' | 'medium' | 'low' } => {
     // Extract the main content without markdown headers and formatting
@@ -578,22 +588,34 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
                 // Mise à jour du gestionnaire de messages WebSocket
                 newWs.onmessage = handleWebSocketMessage;
 
-                // Set up cleanup for call end
+                // Set up cleanup for call end.
+                //  ⚠️  Save flow design notes:
+                //   - We DO NOT call `onEnd()` immediately. The parent uses
+                //     it to unmount the modal, which would dump the React
+                //     subtree (and any in-flight save promise that touches
+                //     local state) before Twilio's recording is ready.
+                //   - Cleanup releases audio resources — it is purely
+                //     "best-effort" and runs in parallel with the save so
+                //     a stuck/slow AudioContext.close() can't block the
+                //     network calls that actually persist the call.
+                //   - The "Saving call…" overlay (driven by `isSaving`)
+                //     keeps the user from navigating away mid-save, which
+                //     is what made calls disappear when reps switched
+                //     tabs right after hanging up.
                 conn.on("disconnect", async () => {
-
-                  
-
                   const currentCallSid = conn.parameters.CallSid;
-                  onEnd();
-                  try {
-                    // First do the cleanup to ensure resources are released
-                    await cleanup();
-                    
+                  setIsSaving(true);
+                  setCallStatus("ended");
 
-                    // Save call details using global state
+                  // Release audio resources in the background — failures
+                  // here are non-fatal and must not block the save.
+                  cleanup().catch((err) => {
+                    console.warn("⚠️ Non-blocking cleanup error:", err);
+                  });
+
+                  try {
                     if (currentCallSid) {
                       await AIAssistantAPI.saveCallToDB();
-                      
                       if (onCallSaved) {
                         onCallSaved();
                       }
@@ -601,10 +623,13 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
                       console.warn("⚠️ No CallSid available for saving call details");
                     }
                   } catch (error) {
-                    console.error("❌ Error during cleanup or save:", error);
+                    console.error("❌ Error saving call:", error);
                   } finally {
-                    setCallStatus("ended");
-                    /* onEnd(); */
+                    setIsSaving(false);
+                    // Close the modal only AFTER the save completes so the
+                    // post-call AI analyzer (auto-triggered by the calls
+                    // backend) has the call row to score against.
+                    onEnd();
                   }
                 });
 
@@ -662,8 +687,6 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
 
   const handleEndCall = async () => {
     try {
-      
-
       // Mark call as ended in global component
       AIAssistantAPI.setCallEnded(true);
 
@@ -677,18 +700,25 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
         socketRef.current.disconnect();
       }
 
-      // Update call status
+      // Show the "Saving call…" overlay immediately so the rep can't
+      // navigate away before Twilio's `disconnect` event fires and the
+      // save chain runs to completion. The modal will be closed by the
+      // disconnect handler once the call is persisted server-side.
+      setIsSaving(true);
       setCallStatus('ended');
 
-      // The disconnect handler will handle cleanup and saving
       if (connection) {
+        // Triggers Twilio's `disconnect` event → save handler above.
         connection.disconnect();
+      } else {
+        // Edge case: user clicked End before the connection was
+        // established. Nothing to save — close the modal directly.
+        setIsSaving(false);
+        onEnd();
       }
-
-      // Close the interface
-      onEnd();
     } catch (error) {
       console.error('❌ Error ending call:', error);
+      setIsSaving(false);
       onEnd();
     }
   };
@@ -697,6 +727,27 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
     return (
       <div className="text-center text-red-600">
         <p>{error}</p>
+      </div>
+    );
+  }
+
+  // While the post-hangup save chain is running we lock the modal so the
+  // rep can't navigate away and abort the upload / DB write. The "Saving
+  // call…" overlay also gives explicit feedback that the AI analyzer will
+  // pick up the call automatically once the save completes.
+  if (isSaving) {
+    return (
+      <div className="text-center py-6">
+        <div className="mb-4 flex justify-center">
+          <div className="h-12 w-12 rounded-full border-4 border-rose-100 border-t-rose-500 animate-spin" />
+        </div>
+        <div className="text-base font-black uppercase tracking-widest text-slate-800 mb-1">
+          Saving call…
+        </div>
+        <p className="text-xs font-medium text-slate-500 max-w-xs mx-auto leading-relaxed">
+          Please stay on this screen. The AI analysis runs automatically
+          right after the call is saved.
+        </p>
       </div>
     );
   }
