@@ -291,6 +291,90 @@ export default function OperationsDashboard() {
     setGigDropdownOpen(false);
   };
 
+  // ----- Company wallet (real balance + runway days) -----
+  //  Source of truth: same endpoint used by `WalletCompanyPanel` so the
+  //  Overview KPI never drifts from the dedicated wallet page. We also
+  //  subscribe to the global `balanceUpdated` event (dispatched by the
+  //  header + wallet panel after deposit/withdraw) to stay in sync without
+  //  re-polling. `walletDaysLeft` is derived from the average daily debit
+  //  computed from the last 30 days of wallet entries — if the company has
+  //  no spend history yet, we expose `null` and the UI falls back to the
+  //  generic translated sub-text.
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [walletDaysLeft, setWalletDaysLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    const companyId = Cookies.get('companyId');
+    if (!companyId) return;
+    const apiBaseUrl =
+      (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3003/api';
+
+    let cancelled = false;
+
+    const computeDailyBurn = (entries: Array<{ direction?: string; amount?: number; createdAt?: string }>) => {
+      if (!Array.isArray(entries) || entries.length === 0) return 0;
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      let debitsTotal = 0;
+      let oldestTs = Date.now();
+      for (const e of entries) {
+        const amt = Number(e?.amount) || 0;
+        if (e?.direction !== 'debit' || amt <= 0) continue;
+        const ts = e?.createdAt ? new Date(e.createdAt).getTime() : NaN;
+        if (!Number.isFinite(ts) || ts < cutoff) continue;
+        debitsTotal += amt;
+        if (ts < oldestTs) oldestTs = ts;
+      }
+      if (debitsTotal <= 0) return 0;
+      const spanDays = Math.max(1, Math.ceil((Date.now() - oldestTs) / (24 * 60 * 60 * 1000)));
+      return debitsTotal / spanDays;
+    };
+
+    const fetchWallet = async () => {
+      try {
+        const [walletRes, entriesRes] = await Promise.all([
+          fetch(`${apiBaseUrl}/wallet-company/${companyId}`),
+          fetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
+        ]);
+
+        if (walletRes.ok) {
+          const walletJson = await walletRes.json();
+          if (!cancelled && walletJson?.success && walletJson?.data) {
+            const bal = Number(walletJson.data.balance) || 0;
+            setWalletBalance(bal);
+
+            let burn = 0;
+            if (entriesRes && entriesRes.ok) {
+              const entriesJson = await entriesRes.json();
+              if (entriesJson?.success && Array.isArray(entriesJson.data)) {
+                burn = computeDailyBurn(entriesJson.data);
+              }
+            }
+            setWalletDaysLeft(burn > 0 ? bal / burn : null);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch company wallet for overview KPI', err);
+      }
+    };
+
+    fetchWallet();
+
+    // Keep the KPI in sync with deposits/withdrawals fired by the header
+    // bar (`App.tsx`) and the dedicated wallet panel.
+    const handleBalanceUpdated = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && typeof detail.balance === 'number') {
+        setWalletBalance(detail.balance);
+      }
+    };
+    window.addEventListener('balanceUpdated', handleBalanceUpdated);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('balanceUpdated', handleBalanceUpdated);
+    };
+  }, []);
+
   // ----- Lead stats (KPIs + quality + attempts breakdown) -----
   type LeadStats = {
     total: number;
@@ -936,6 +1020,8 @@ export default function OperationsDashboard() {
           outcomeBuckets={outcomeBuckets}
           donutHasData={donutHasData}
           series7d={overviewToday?.series7d ?? null}
+          walletBalance={walletBalance}
+          walletDaysLeft={walletDaysLeft}
           onSeeLeads={() => setTab('leads')}
           onSeeResults={() => setTab('results')}
         />
@@ -2070,6 +2156,8 @@ function OverviewView({
   outcomeBuckets,
   donutHasData,
   series7d,
+  walletBalance,
+  walletDaysLeft,
   onSeeLeads,
   onSeeResults,
 }: {
@@ -2082,6 +2170,8 @@ function OverviewView({
   outcomeBuckets: OutcomeBucket[];
   donutHasData: boolean;
   series7d: Array<{ date: string; total: number; transactions: number }> | null;
+  walletBalance: number | null;
+  walletDaysLeft: number | null;
   onSeeLeads: () => void;
   onSeeResults: () => void;
 }) {
@@ -2141,19 +2231,40 @@ function OverviewView({
     return `${sign}${n.toFixed(0)}% ${t('opsDashboard.overview.kpi.vsYesterday', 'vs hier')}`;
   };
 
+  // Wallet card — fed from the real `/wallet-company/:companyId` endpoint.
+  // While the request is in-flight we render an em-dash so the user knows
+  // the figure isn't a hardcoded placeholder. "Days left" comes from a
+  // 30-day rolling burn rate; when there's no spend yet we fall back to
+  // the generic translated sub-text.
+  const walletValue =
+    walletBalance === null
+      ? '—'
+      : `€${walletBalance.toLocaleString('fr-FR', {
+          minimumFractionDigits: walletBalance % 1 === 0 ? 0 : 2,
+          maximumFractionDigits: 2,
+        })}`;
+  const walletSub =
+    walletDaysLeft !== null && Number.isFinite(walletDaysLeft)
+      ? t('opsDashboard.overview.kpi.walletSubDynamic', {
+          days: walletDaysLeft.toFixed(1),
+          defaultValue: '{{days}} jours restants',
+        })
+      : t('opsDashboard.overview.kpi.walletSubFallback', 'Solde disponible');
+
   return (
     <>
       {/* ---------- KPI cards (6) ---------- */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        {/* 1) Wallet — primary highlight. Real-time wallet integration is
-            pending; we keep deterministic mock values so the dashboard ships
-            as a complete visual even when the wallet service is offline. */}
+        {/* 1) Wallet — real company balance from `/wallet-company/:companyId`.
+            The runway ("days left") is derived from the 30-day debit rolling
+            average; if no debits exist yet the sub falls back to a neutral
+            "Solde disponible" caption. */}
         <KpiCard
           tone="primary"
           icon={<Wallet size={14} />}
           label={t('opsDashboard.overview.kpi.wallet', 'Wallet')}
-          value="€3,240"
-          sub={t('opsDashboard.overview.kpi.walletSub', '2.8 jours restants')}
+          value={walletValue}
+          sub={walletSub}
         />
 
         {/* 2) Leads base */}

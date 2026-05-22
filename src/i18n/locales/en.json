@@ -261,6 +261,8 @@
       "kpi": {
         "wallet": "Wallet",
         "walletSub": "2.8 days left",
+        "walletSubDynamic": "{{days}} days left",
+        "walletSubFallback": "Available balance",
         "leadsBase": "Leads base",
         "covered": "covered",
         "callsToday": "Calls today",
