@@ -142,9 +142,39 @@ interface GigResponse {
 
 interface GigDetailsProps {
   onAddNew?: () => void;
+  /** Bump after gig creation so the list + setup warnings refresh. */
+  refreshKey?: number;
 }
 
-const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
+/** Normalised gig status (API may return `to_activate`, `TO_ACTIVATE`, etc.). */
+function normalizeGigStatus(status: string | undefined): string {
+  return (status || '').toLowerCase().replace(/-/g, '_');
+}
+
+/** True when the gig is created but not yet activated (still in setup). */
+function isGigPendingActivation(gig: Gig): boolean {
+  const s = normalizeGigStatus(gig.status);
+  if (s === 'active') return false;
+  return ['to_activate', 'pending', 'draft'].includes(s);
+}
+
+/** Per-call commission; 0 or missing means "call" channel is not used — no setup warning. */
+function getCallCommissionPerCall(gig: Gig): number {
+  const raw = gig.commission?.commission_per_call;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Show setup/activation warning for this gig when:
+ * - status is still pending activation, AND
+ * - commission per call is strictly greater than 0.
+ */
+function shouldWarnForGig(gig: Gig): boolean {
+  return isGigPendingActivation(gig) && getCallCommissionPerCall(gig) > 0;
+}
+
+const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => {
   const { t } = useTranslation();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -177,7 +207,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
     };
 
     fetchGigs();
-  }, [companyId]);
+  }, [companyId, refreshKey]);
 
   // Refresh onboarding completion in the background so the banner reflects
   // what's actually persisted on the company-API (e.g. when the rep
@@ -194,7 +224,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
     return () => {
       cancelled = true;
     };
-  }, [companyId]);
+  }, [companyId, refreshKey]);
 
   // Required setup steps surfaced in the banner. Mirrors the orchestrator
   // phase definitions in `CompanyOnboarding.tsx` minus step 11
@@ -222,11 +252,17 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
     [setupChecklist, completedSteps]
   );
 
-  // Banner is shown only after the user has at least one gig (so it isn't
-  // noise on the empty state) and while at least one setup step is still
-  // pending. It never includes any link/button to the orchestrator — per
-  // product spec, the rep stays inside the dashboard.
-  const showBanner = gigs.length > 0 && missingSteps.length > 0;
+  // Gigs that still need activation AND have call commission > 0 (if call
+  // is 0, we skip the warning — outbound-call gigs only).
+  const gigsNeedingWarning = useMemo(
+    () => gigs.filter(shouldWarnForGig),
+    [gigs]
+  );
+
+  // Global banner: at least one eligible gig + company setup steps still open.
+  // Never redirects to orchestrator — informational only.
+  const showBanner =
+    gigsNeedingWarning.length > 0 && missingSteps.length > 0;
 
   const toneStyles: Record<
     'sky' | 'indigo' | 'violet' | 'amber' | 'rose' | 'teal' | 'emerald' | 'purple',
@@ -253,12 +289,18 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
         border: 'border-slate-200'
       };
     }
-    switch (status.toLowerCase()) {
+    switch (status.toLowerCase().replace(/-/g, '_')) {
       case 'active':
         return {
           bg: 'bg-emerald-50/75 backdrop-blur-xs',
           text: 'text-emerald-600',
           border: 'border-emerald-100'
+        };
+      case 'to_activate':
+        return {
+          bg: 'bg-amber-50/75 backdrop-blur-xs',
+          text: 'text-amber-700',
+          border: 'border-amber-200'
         };
       case 'pending':
         return {
@@ -572,12 +614,20 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
           <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 p-4 space-y-3 min-h-0 bg-slate-50/20">
             {gigs.map((gig, index) => {
               const statusColors = getStatusColor(gig.status);
+              const rowWarn = shouldWarnForGig(gig);
 
               return (
                 <div
                   key={gig._id}
-                  className="grid grid-cols-12 gap-4 items-center rounded-2xl bg-white border border-slate-100/80 p-5 transition-all duration-300 hover:border-purple-200/80 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-500/[0.02] group cursor-default animate-fade-in-row"
+                  className="animate-fade-in-row"
                   style={{ animationDelay: `${index * 60}ms` }}
+                >
+                <div
+                  className={`grid grid-cols-12 gap-4 items-center rounded-2xl bg-white border p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg group cursor-default ${
+                    rowWarn
+                      ? 'border-amber-200/90 ring-1 ring-amber-100/80 hover:border-amber-300 hover:shadow-amber-500/[0.06]'
+                      : 'border-slate-100/80 hover:border-purple-200/80 hover:shadow-purple-500/[0.02]'
+                  }`}
                 >
                   {/* Status */}
                   <div className="col-span-2">
@@ -672,6 +722,17 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </button>
                   </div>
+                </div>
+
+                {rowWarn && (
+                  <div
+                    role="status"
+                    className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-2.5 text-[11px] font-bold leading-snug text-amber-900"
+                  >
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <span>{t('gigDetails.setupBanner.rowWarning')}</span>
+                  </div>
+                )}
                 </div>
               );
             })}

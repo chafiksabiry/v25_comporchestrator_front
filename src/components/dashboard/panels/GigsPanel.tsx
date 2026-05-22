@@ -4,14 +4,20 @@ import GigDetails from "../../onboarding/GigDetails";
 
 export default function GigsPanel() {
   const [showGigCreation, setShowGigCreation] = useState(false);
+  const [listRefreshKey, setListRefreshKey] = useState(0);
+
+  const handleBackFromCreation = () => {
+    setShowGigCreation(false);
+    setListRefreshKey((k) => k + 1);
+  };
 
   if (showGigCreation) {
     return (
       <div className="w-full">
         <PrompAI
-          onBackToGigs={() => setShowGigCreation(false)}
-          onBack={() => setShowGigCreation(false)}
-          onBackToOnboarding={() => setShowGigCreation(false)}
+          onBackToGigs={handleBackFromCreation}
+          onBack={handleBackFromCreation}
+          onBackToOnboarding={handleBackFromCreation}
         />
       </div>
     );
@@ -21,6 +27,7 @@ export default function GigsPanel() {
     <div className="w-full">
       <GigDetails
         onAddNew={() => setShowGigCreation(true)}
+        refreshKey={listRefreshKey}
       />
     </div>
   );

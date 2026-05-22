@@ -828,6 +828,7 @@
     "setupBanner": {
       "title": "Finish setting up this gig",
       "subtitle": "Complete the remaining steps below to take your gig all the way to activation. The Subscription plan is handled separately and is not blocking.",
+      "rowWarning": "Activation pending — complete the setup steps to launch this gig.",
       "progress": "{{done}} / {{total}} completed",
       "completed": "Completed",
       "pending": "Pending",
