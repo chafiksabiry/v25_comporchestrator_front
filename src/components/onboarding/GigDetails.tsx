@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import Swal from 'sweetalert2';
+import { useNavigate } from 'react-router-dom';
 import { GigReview } from '../gigsaicreation/components/GigReview';
 import GigDetailsView from './GigDetailsView';
 import {
@@ -25,6 +26,21 @@ import {
   getCompletedStepsFromStorage,
   syncOnboardingProgressFromApi,
 } from '../../hooks/useStepGuide';
+
+// Map orchestrator step IDs to the in-dashboard route the rep should land
+// on to finish that step. Used by the setup banner so each pending item
+// has a "Continue" button that stays inside the dashboard shell — no
+// redirection back to the orchestrator wizard.
+const STEP_DASHBOARD_PATH: Record<number, string> = {
+  4: '/dashboard/telephony',        // Telephony
+  5: '/dashboard/leads',            // Upload Contacts (lead management)
+  6: '/dashboard/script-generator', // Call Script
+  8: '/dashboard/knowledge-base',   // Knowledge Base
+  9: '/dashboard/training',         // E-learning / Rep Onboarding
+  10: '/dashboard/scheduler',       // Session Planning
+  12: '/dashboard/gig-activation',  // Gig Activation
+  13: '/dashboard/rep-matching',    // Match HARX Reps
+};
 
 interface Gig {
   _id: string;
@@ -158,24 +174,20 @@ function isGigPendingActivation(gig: Gig): boolean {
   return ['to_activate', 'pending', 'draft'].includes(s);
 }
 
-/** Per-call commission; 0 or missing means "call" channel is not used — no setup warning. */
-function getCallCommissionPerCall(gig: Gig): number {
-  const raw = gig.commission?.commission_per_call;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : 0;
-}
-
 /**
- * Show setup/activation warning for this gig when:
- * - status is still pending activation, AND
- * - commission per call is strictly greater than 0.
+ * Show setup/activation warning for this gig when its status is still
+ * pending activation (created but not yet active). The commission model
+ * is no longer part of the rule — any unfinished gig should surface the
+ * checklist so the rep can complete telephony, contacts, script, KB,
+ * e-learning, session planning and activation before going live.
  */
 function shouldWarnForGig(gig: Gig): boolean {
-  return isGigPendingActivation(gig) && getCallCommissionPerCall(gig) > 0;
+  return isGigPendingActivation(gig);
 }
 
 const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -534,10 +546,11 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
             </div>
 
             {/* Checklist grid */}
-            <div className="grid flex-1 grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid flex-1 grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
               {setupChecklist.map((step) => {
                 const Icon = step.icon;
                 const done = completedSteps.includes(step.id);
+                const targetPath = STEP_DASHBOARD_PATH[step.id];
                 const titleKey = done
                   ? 'gigDetails.setupBanner.completedTitle'
                   : 'gigDetails.setupBanner.pendingTitle';
@@ -547,7 +560,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
                     className={`flex items-center gap-2.5 rounded-2xl border px-3 py-2.5 transition-all ${
                       done
                         ? 'border-emerald-100 bg-emerald-50/80'
-                        : 'border-slate-100 bg-white'
+                        : 'border-slate-100 bg-white hover:border-amber-200 hover:shadow-sm'
                     }`}
                     title={t(titleKey, { label: step.label })}
                   >
@@ -582,6 +595,19 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
                           : t('gigDetails.setupBanner.pending')}
                       </div>
                     </div>
+                    {!done && targetPath && (
+                      <button
+                        type="button"
+                        onClick={() => navigate(targetPath)}
+                        className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:from-amber-600 hover:to-orange-600 hover:shadow-md hover:shadow-amber-500/40 active:scale-95"
+                        title={t('gigDetails.setupBanner.continue', {
+                          label: step.label,
+                        })}
+                      >
+                        {t('gigDetails.setupBanner.continueBtn')}
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -724,13 +750,35 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
                   </div>
                 </div>
 
-                {rowWarn && (
+                {rowWarn && missingSteps.length > 0 && (
                   <div
                     role="status"
-                    className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-2.5 text-[11px] font-bold leading-snug text-amber-900"
+                    className="mt-2 flex flex-col gap-2 rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-2.5 text-[11px] font-bold leading-snug text-amber-900 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                    <span>{t('gigDetails.setupBanner.rowWarning')}</span>
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                      <span>
+                        {t('gigDetails.setupBanner.rowWarningWithCount', {
+                          count: missingSteps.length,
+                          defaultValue: t('gigDetails.setupBanner.rowWarning'),
+                        })}
+                      </span>
+                    </div>
+                    {(() => {
+                      const next = missingSteps[0];
+                      const nextPath = next && STEP_DASHBOARD_PATH[next.id];
+                      if (!next || !nextPath) return null;
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => navigate(nextPath)}
+                          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-500 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:bg-amber-600 hover:shadow-md active:scale-95"
+                        >
+                          {t('gigDetails.setupBanner.continueBtn')} {next.label}
+                          <ArrowRight className="h-3 w-3" />
+                        </button>
+                      );
+                    })()}
                   </div>
                 )}
                 </div>
