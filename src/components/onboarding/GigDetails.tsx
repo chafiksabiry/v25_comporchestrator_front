@@ -259,22 +259,32 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
     [t]
   );
 
-  const missingSteps = useMemo(
-    () => setupChecklist.filter((step) => !completedSteps.includes(step.id)),
-    [setupChecklist, completedSteps]
-  );
-
-  // Gigs that still need activation AND have call commission > 0 (if call
-  // is 0, we skip the warning — outbound-call gigs only).
+  // Gigs that still need activation (status in to_activate / pending / draft).
+  // The commission model is no longer part of the rule — any unfinished gig
+  // should surface the checklist regardless of how it's monetised.
   const gigsNeedingWarning = useMemo(
     () => gigs.filter(shouldWarnForGig),
     [gigs]
   );
 
-  // Global banner: at least one eligible gig + company setup steps still open.
-  // Never redirects to orchestrator — informational only.
-  const showBanner =
-    gigsNeedingWarning.length > 0 && missingSteps.length > 0;
+  // A pending gig logically means step 12 (Gig Activation) is still not
+  // done for that gig — even if the company-wide tracker reports it as
+  // complete (because another gig was activated previously). Force-mark
+  // it as missing so the banner always surfaces the "Continue" button.
+  const effectiveCompletedSteps = useMemo(() => {
+    if (gigsNeedingWarning.length === 0) return completedSteps;
+    return completedSteps.filter((id) => id !== 12);
+  }, [completedSteps, gigsNeedingWarning.length]);
+
+  const missingSteps = useMemo(
+    () => setupChecklist.filter((step) => !effectiveCompletedSteps.includes(step.id)),
+    [setupChecklist, effectiveCompletedSteps]
+  );
+
+  // Global banner: at least one pending gig — even if the company-wide
+  // checklist is otherwise complete, the pending gig itself still needs
+  // activation, so we always want the rep to see the action buttons.
+  const showBanner = gigsNeedingWarning.length > 0;
 
   const toneStyles: Record<
     'sky' | 'indigo' | 'violet' | 'amber' | 'rose' | 'teal' | 'emerald' | 'purple',
@@ -549,7 +559,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
             <div className="grid flex-1 grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
               {setupChecklist.map((step) => {
                 const Icon = step.icon;
-                const done = completedSteps.includes(step.id);
+                const done = effectiveCompletedSteps.includes(step.id);
                 const targetPath = STEP_DASHBOARD_PATH[step.id];
                 const titleKey = done
                   ? 'gigDetails.setupBanner.completedTitle'
