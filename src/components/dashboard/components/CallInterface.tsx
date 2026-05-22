@@ -4,7 +4,6 @@ import { Device, Call } from '@twilio/voice-sdk';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { AIAssistantAPI } from './GlobalAIAssistant';
-import { useNavigate } from 'react-router-dom';
 
 type CallStatus = 'idle' | 'initiating' | 'active' | 'ended';
 
@@ -63,16 +62,12 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, onSavi
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const { currentUser } = useAuth();
 
-  const [lastProcessedTranscript, setLastProcessedTranscript] = useState<string>('');
-  const [transcriptBuffer, setTranscriptBuffer] = useState<string>('');
   const transcriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isProcessingTranscript, setIsProcessingTranscript] = useState(false);
   const [lastProcessedText, setLastProcessedText] = useState<string>('');
   const [currentSpeechSegment, setCurrentSpeechSegment] = useState<string>('');
   const [lastSpeechTimestamp, setLastSpeechTimestamp] = useState<number>(0);
-  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
 
-  const navigate = useNavigate();
   const socketRef = useRef<any>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -218,35 +213,6 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, onSavi
   };
 
   // Mise à jour de la fonction d'analyse audio
-  const analyzeAudio = useCallback((dataArray: Float32Array) => {
-    let rms = 0;
-    let peak = 0;
-    for (let i = 0; i < dataArray.length; i++) {
-      const amplitude = Math.abs(dataArray[i]);
-      rms += amplitude * amplitude;
-      peak = Math.max(peak, amplitude);
-    }
-
-    rms = Math.sqrt(rms / dataArray.length);
-    const now = Date.now();
-    const isActive = rms > SPEECH_THRESHOLD;
-
-    if (isActive) {
-      setLastSpeechTimestamp(now);
-      if (!isSpeaking) {
-        setIsSpeaking(true);
-        
-      }
-    } else if (isSpeaking && hasEnoughSilence()) {
-      setIsSpeaking(false);
-      
-      if (currentSpeechSegment && currentSpeechSegment.trim().length > 0) {
-        processTranscriptionSegment(currentSpeechSegment, false);
-      }
-    }
-
-    return { rms, peak, isActive };
-  }, [isSpeaking, lastSpeechTimestamp, currentSpeechSegment]);
 
   // Mise à jour du gestionnaire de messages WebSocket
   const handleWebSocketMessage = (event: MessageEvent) => {
@@ -347,7 +313,6 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, onSavi
         setCallStatus("initiating");
 
         conn.on('connect', () => {
-          const callSid = conn.parameters.CallSid;
           
         });
 

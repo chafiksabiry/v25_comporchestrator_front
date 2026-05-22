@@ -871,6 +871,13 @@
       }
     }
   },
+  "gigCreation": {
+    "activationWarning": {
+      "title": "Le gig restera inactif tant que toutes les étapes ne seront pas complétées",
+      "body": "Créer le gig n'est que la première étape. Une fois enregistré, vous devrez compléter chacune des étapes ci-dessous depuis le dashboard avant que le gig puisse être activé et qu'un appel puisse être passé.",
+      "stepsLabel": "Étapes restantes après la création :"
+    }
+  },
   "uploadContacts": {
     "title": "Importer des Contacts",
     "subtitle": "Importez, gérez et organisez vos leads efficacement avec la précision de l'IA.",
