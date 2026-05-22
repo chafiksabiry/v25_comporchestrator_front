@@ -488,7 +488,38 @@
       "repBadge": "Rep",
       "repBadgeValidated": "CALL VALIDATED",
       "repBadgeSale": "SALE SIGNED",
+      "repBadgeRefused": "REFUSED",
       "repUnknown": "Rep",
+      "movementsTitle": "Wallet movements",
+      "movementsSubtitle": "Commissions (debits, 70% rep / 30% HARX) and deposits (credits) on the cash account. Pending calls are handled from the Calls page.",
+      "consult": "View",
+      "tabs": {
+        "validated": "Validated",
+        "refused": "Refused",
+        "deposits": "Deposits"
+      },
+      "col": {
+        "recipient": "Recipient",
+        "source": "Source",
+        "cause": "Cause",
+        "datetime": "Date & time",
+        "duration": "Duration",
+        "score": "AI Score",
+        "commission": "Commission",
+        "amount": "Amount",
+        "details": "Details"
+      },
+      "detail": {
+        "repTitle": "Rep commission",
+        "depositTitle": "Deposit",
+        "gig": "Gig",
+        "refusalReason": "Refusal reason",
+        "totalCommission": "Total commission",
+        "repShare": "Rep share (70%)",
+        "platformShare": "HARX share (30%)",
+        "status": "Status",
+        "note": "Note"
+      },
       "computeTopup": "Compute next top-up"
     }
   },
