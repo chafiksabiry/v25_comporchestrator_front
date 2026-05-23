@@ -380,7 +380,7 @@
         "wrong": "WRONG NUMBERS",
         "notInterested": "NOT INTERESTED",
         "notAware": "NOT AWARE",
-        "alreadyInsured": "ALREADY INSURED"
+        "alreadyEquipped": "ALREADY EQUIPPED"
       },
       "qualityScoreHead": "Base quality score: {{pct}}%",
       "qualityWarningHead": "Base quality score: 68.4%",
@@ -429,7 +429,7 @@
         "argued": "Argued (interested)",
         "refusal": "Hard refusal",
         "notInterested": "Not interested",
-        "alreadyInsured": "Already insured"
+        "alreadyEquipped": "Already equipped"
       },
       "distributionTitle": "Visual breakdown",
       "hotPipeline": "Hot pipeline (Appts + callbacks)",
