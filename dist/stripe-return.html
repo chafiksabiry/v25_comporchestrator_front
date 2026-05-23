@@ -65,7 +65,8 @@
         var returnTo = params.get('returnTo') || '/';
         var apiBase = (params.get('apiBase') || '').replace(/\/$/, '');
         var flow = (params.get('flow') || 'subscription').toLowerCase();
-        var isPayment = flow === 'payment' || flow === 'wallet' || flow === 'minutes';
+        var isPayment = flow === 'payment' || flow === 'wallet' || flow === 'minutes' || flow === 'phone_line';
+        var confirmPathParam = (params.get('confirmPath') || '').trim();
 
         var titleEl = document.getElementById('title');
         var msgEl = document.getElementById('msg');
@@ -142,9 +143,21 @@
           return;
         }
 
-        var confirmPath = isPayment
-          ? '/payments/checkout/confirm'
-          : '/subscriptions/checkout/confirm';
+        var confirmPath;
+        if (confirmPathParam) {
+          if (/^[a-z]+:\/\//i.test(confirmPathParam)) {
+            fail('confirmPath invalide.');
+            return;
+          }
+          confirmPath =
+            confirmPathParam.charAt(0) === '/'
+              ? confirmPathParam
+              : '/' + confirmPathParam;
+        } else {
+          confirmPath = isPayment
+            ? '/payments/checkout/confirm'
+            : '/subscriptions/checkout/confirm';
+        }
 
         fetch(apiBase + confirmPath, {
           method: 'POST',
