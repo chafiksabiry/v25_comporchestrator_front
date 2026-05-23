@@ -136,7 +136,6 @@ export function MasterSidebar({
   const dashboardItems = [
     // Group 1
     { icon: <LayoutDashboard size={20} />, label: t('sidebar.dashboard'), path: '/dashboard/main', key: 'premium-dashboard', alwaysShow: true, groupId: 1 },
-    { icon: <TrendingUp size={20} />, label: t('sidebar.overview'), path: '/dashboard/overview', key: 'overview', alwaysShow: true, groupId: 1 },
 
     // Group 2
     { icon: <Phone size={20} />, label: t('sidebar.calls'), path: '/dashboard/calls', key: 'calls', alwaysShow: true, groupId: 2 },

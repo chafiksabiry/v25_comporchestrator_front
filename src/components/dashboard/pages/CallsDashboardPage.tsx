@@ -159,9 +159,29 @@ export default function CallsDashboardPage() {
     return String(raw);
   };
 
+  const callGigTitle = (call: any): string => {
+    const fromLead = call?.lead?.gigId?.title || call?.lead?.gigId?.name;
+    if (fromLead) return String(fromLead);
+    const id = callGigId(call);
+    const match = gigs.find((g) => g._id === id);
+    return match?.title || '';
+  };
+
+  const callIdStr = (call: any): string => {
+    const raw = call?._id;
+    if (!raw) return '';
+    if (typeof raw === 'object' && (raw as any).$oid) return String((raw as any).$oid);
+    return String(raw);
+  };
+
   const filteredCalls = calls.filter(call => {
-    const leadName = `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.toLowerCase();
-    const matchesSearch = leadName.includes(searchTerm.toLowerCase());
+    const q = searchTerm.trim().toLowerCase();
+    const leadName = `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      leadName.includes(q) ||
+      callGigTitle(call).toLowerCase().includes(q) ||
+      callIdStr(call).toLowerCase().includes(q);
     const matchesStatus = statusFilter === 'all' || call.status === statusFilter;
     const matchesGig = gigFilter === 'all' || callGigId(call) === gigFilter;
     return matchesSearch && matchesStatus && matchesGig;
@@ -184,10 +204,14 @@ export default function CallsDashboardPage() {
             <Search className="w-5 h-5 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by lead name..."
+              placeholder={t(
+                'calls.search.placeholder',
+                'Rechercher par prospect, gig ou ID…'
+              )}
               className="bg-transparent border-none outline-none text-sm font-medium text-slate-700 w-64"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label={t('calls.search.label', 'Rechercher des appels')}
             />
           </div>
 
