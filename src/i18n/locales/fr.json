@@ -47,6 +47,7 @@
       "unavailable": "Impossible d'accéder au service de téléphonie.",
       "selectGigDestination": "Veuillez sélectionner un Gig avec un pays de destination.",
       "noNumbersFound": "Aucun numéro disponible n'a été trouvé.",
+      "regulatoryBlocked": "Ces numéros nécessitent un bundle réglementaire Twilio approuvé. Soumettez vos documents dans la console Twilio ou choisissez une autre région.",
       "numbersFound": "{{count}} numéros disponibles trouvés !",
       "unknownFormat": "Format de données inconnu reçu de la recherche.",
       "searchError": "Erreur technique lors de la recherche.",
