@@ -23,6 +23,7 @@ import toast from 'react-hot-toast';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 import {
   fetchPaymentConfig,
+  getOrchestratorApiBase,
   paymentFlowErrorMessage,
   runPaypalCheckoutFlow,
   runStripeCheckoutFlow
@@ -218,7 +219,7 @@ export function WalletCompanyPanel() {
   const [submittingWithdraw, setSubmittingWithdraw] = useState(false);
 
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
+  const apiBaseUrl = getOrchestratorApiBase();
 
   const fetchData = async (isSilent = false) => {
     if (!isSilent) setLoading(true);

@@ -5,6 +5,17 @@ const RETURN_ORIGINS = new Set([
   'https://harx25pageslinks.netlify.app'
 ]);
 
+/** Orchestrator backend API base (…/api) used for payments & subscriptions. */
+export function getOrchestratorApiBase(): string {
+  const raw =
+    import.meta.env.VITE_API_BASE_URL
+    || import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL
+    || import.meta.env.VITE_COMPANY_ORCHESTRATOR_URL
+    || 'https://v25comporchestratorback-production.up.railway.app/api';
+  const base = String(raw).replace(/\/$/, '');
+  return base.endsWith('/api') ? base : `${base}/api`;
+}
+
 export const safeParseJson = async (res: Response) => {
   const txt = await res.text();
   try {
@@ -87,7 +98,11 @@ export async function initCompanyCheckout(apiBaseUrl: string, body: CheckoutInit
   const res = await fetch(`${apiBaseUrl}/payments/checkout/init`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify({
+      ...body,
+      returnUrl: window.location.href.split(/[?&]payment=/)[0],
+      apiBaseUrl: apiBaseUrl || getOrchestratorApiBase(),
+    })
   });
   const data = await safeParseJson(res);
   if (!data) throw new Error('Réponse du serveur de paiement invalide.');
