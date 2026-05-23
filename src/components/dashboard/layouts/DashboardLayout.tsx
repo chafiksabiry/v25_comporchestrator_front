@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import GigSetupChecklist from '../components/GigSetupChecklist';
+import StepCompletionToaster from '../components/StepCompletionToaster';
 
 export function DashboardLayout() {
   return (
@@ -11,6 +12,9 @@ export function DashboardLayout() {
             Gigs, …). Dismissible for the current session; re-appears when a
             gig's status changes or a new pending gig is added. */}
         <GigSetupChecklist />
+        {/* Listens for `harx:gig-step-complete` events and surfaces a
+            unified "Continue →" toast that routes to the next step. */}
+        <StepCompletionToaster />
         <Outlet />
       </div>
     </div>
