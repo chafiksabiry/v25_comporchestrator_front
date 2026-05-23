@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  SETUP_STEP_FIELDS,
+  SetupStepField,
+  markGigStepDone,
+} from '../services/gigSetupSync';
 import axios from 'axios';
 import {
   CheckCircle,
@@ -47,6 +53,30 @@ interface Gig {
   updatedAt: string;
   submittedBy?: string;
   issues?: string[];
+  /** Per-step activation checklist persisted by the gigs backend.
+   *  Activation is blocked unless every flag (except `gigActivation`
+   *  itself, which is the outcome of this very screen) is `true`. */
+  setupSteps?: Partial<Record<SetupStepField, boolean>>;
+}
+
+/** Steps that MUST be completed before a gig can be activated.
+ *  `gigActivation` is excluded — it is set by the backend hook as a
+ *  side effect of the very action this screen performs. */
+const REQUIRED_SETUP_STEPS: SetupStepField[] = SETUP_STEP_FIELDS.filter(
+  (f) => f !== 'gigActivation'
+);
+
+/** Returns the setup steps that are still pending for a given gig.
+ *  When the gig has no `setupSteps` field at all we conservatively
+ *  consider every step missing — the rep is guided to complete them
+ *  before activation. */
+function getMissingSetupSteps(gig: Pick<Gig, 'setupSteps'>): SetupStepField[] {
+  const steps = gig.setupSteps || {};
+  return REQUIRED_SETUP_STEPS.filter((f) => !steps[f]);
+}
+
+function isGigSetupComplete(gig: Pick<Gig, 'setupSteps'>): boolean {
+  return getMissingSetupSteps(gig).length === 0;
 }
 
 interface Company {
@@ -117,6 +147,7 @@ interface LanguagesResponse {
   message: string;
 }
 const ApprovalPublishing = () => {
+  const { t } = useTranslation();
   const [expandedGig, setExpandedGig] = useState<string | null>(null);
   const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
   const [filter, setFilter] = useState('all');
@@ -369,7 +400,8 @@ const ApprovalPublishing = () => {
             createdAt: gig.createdAt,
             updatedAt: gig.updatedAt,
             submittedBy: gig.submittedBy || gig.companyName || gig.company?.name || company?.name || 'Company',
-            issues: gig.issues || []
+            issues: gig.issues || [],
+            setupSteps: gig.setupSteps || undefined,
           };
           
           return transformed;
@@ -519,6 +551,22 @@ const ApprovalPublishing = () => {
   // API Functions
   const approveGig = async (gigId: string) => {
     try {
+      const gig = gigs.find((g) => g._id === gigId);
+      if (gig && !isGigSetupComplete(gig)) {
+        const missing = getMissingSetupSteps(gig);
+        const labels = missing
+          .map((f) => t(`gigDetails.setupBanner.steps.${f}`))
+          .join(', ');
+        toast.error(
+          t('gigActivation.setupIncomplete', {
+            count: missing.length,
+            steps: labels,
+          }),
+          { duration: 6000, position: 'top-right' }
+        );
+        return;
+      }
+
       const isBalanceSufficient = await checkCompanyBalance();
       if (!isBalanceSufficient) {
         toast.error("Solde insuffisant. Vous devez alimenter votre compte pour activer ce gig.", {
@@ -572,8 +620,19 @@ const ApprovalPublishing = () => {
 
       // Update the gig status locally instead of refreshing
       setGigs(prevGigs => prevGigs.map(gig =>
-        gig._id === gigId ? { ...gig, status: 'active' } : gig
+        gig._id === gigId
+          ? {
+              ...gig,
+              status: 'active',
+              setupSteps: {
+                ...(gig.setupSteps || {}),
+                gigActivation: true,
+              },
+            }
+          : gig
       ));
+
+      markGigStepDone(gigId, 'gigActivation', true);
 
       // Mark step 12 (phase 4) as completed since we now have an active gig
       await markStep12AsCompleted();
@@ -1166,6 +1225,18 @@ const ApprovalPublishing = () => {
   };
 
   const approveSelectedGigs = async () => {
+    const incompleteSelected = selectedGigs.filter((id) => {
+      const g = gigs.find((x) => x._id === id);
+      return g && !isGigSetupComplete(g);
+    });
+    if (incompleteSelected.length > 0) {
+      toast.error(
+        t('gigActivation.bulkSetupIncomplete', { count: incompleteSelected.length }),
+        { duration: 6000, position: 'top-right' }
+      );
+      return;
+    }
+
     const isBalanceSufficient = await checkCompanyBalance();
     if (!isBalanceSufficient) {
       toast.error("Solde insuffisant. Vous devez alimenter votre compte pour activer ces gigs.", {
@@ -2525,6 +2596,38 @@ const ApprovalPublishing = () => {
     );
   }
 
+  const selectedHasIncompleteSetup =
+    selectedGigs.length > 0 &&
+    selectedGigs.some((id) => {
+      const g = gigs.find((x) => x._id === id);
+      return g && !isGigSetupComplete(g);
+    });
+
+  const renderActivateButton = (gig: Gig) => {
+    const ready = isGigSetupComplete(gig);
+    const missingCount = getMissingSetupSteps(gig).length;
+    return (
+      <button
+        type="button"
+        disabled={!ready}
+        title={
+          !ready
+            ? t('gigActivation.activateDisabledHint', { count: missingCount })
+            : undefined
+        }
+        onClick={() => {
+          if (ready) approveGig(gig._id);
+        }}
+        className={`inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 ${
+          !ready ? 'cursor-not-allowed opacity-50 hover:bg-green-600' : ''
+        }`}
+      >
+        <CheckCircle className="mr-2 h-4 w-4" />
+        Active
+      </button>
+    );
+  };
+
   // Main View
   return (
     <div className="w-full py-2 space-y-4 animate-in fade-in duration-500">
@@ -2546,11 +2649,17 @@ const ApprovalPublishing = () => {
           </div>
           <div className="flex items-center gap-3">
             <button
-              className={`px-6 py-2.5 font-black rounded-2xl shadow-xl transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2 ${selectedGigs.length > 0
-                ? 'bg-white text-emerald-600 hover:bg-emerald-50 border border-white'
-                : 'bg-white/10 text-white/50 cursor-not-allowed border border-white/10 backdrop-blur-sm'
-                }`}
-              disabled={selectedGigs.length === 0}
+              className={`px-6 py-2.5 font-black rounded-2xl shadow-xl transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2 ${
+                selectedGigs.length > 0 && !selectedHasIncompleteSetup
+                  ? 'bg-white text-emerald-600 hover:bg-emerald-50 border border-white'
+                  : 'bg-white/10 text-white/50 cursor-not-allowed border border-white/10 backdrop-blur-sm'
+              }`}
+              disabled={selectedGigs.length === 0 || selectedHasIncompleteSetup}
+              title={
+                selectedHasIncompleteSetup
+                  ? t('gigActivation.bulkActivateDisabled')
+                  : undefined
+              }
               onClick={approveSelectedGigs}
             >
               <CheckCircle className="h-4 w-4" />
@@ -2701,6 +2810,18 @@ const ApprovalPublishing = () => {
                           {gig.category || 'No category'}
                           {gig.budget && ` • ${gig.budget}`}
                         </p>
+                        {!isGigSetupComplete(gig) &&
+                          (gig.status === 'pending' ||
+                            gig.status === 'to_activate' ||
+                            gig.status === 'draft' ||
+                            gig.status === 'submitted') && (
+                            <p className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-600">
+                              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                              {t('gigActivation.stepsRemaining', {
+                                count: getMissingSetupSteps(gig).length,
+                              })}
+                            </p>
+                          )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
@@ -2761,6 +2882,26 @@ const ApprovalPublishing = () => {
                       </div>
                     )}
 
+                    {!isGigSetupComplete(gig) && (
+                      <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3">
+                        <div className="flex gap-2">
+                          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
+                          <div>
+                            <p className="text-sm font-semibold text-amber-900">
+                              {t('gigActivation.setupIncompleteBanner')}
+                            </p>
+                            <ul className="mt-2 list-inside list-disc text-sm text-amber-800">
+                              {getMissingSetupSteps(gig).map((field) => (
+                                <li key={field}>
+                                  {t(`gigDetails.setupBanner.steps.${field}`)}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {gig.issues && gig.issues.length > 0 && (
                       <div className="mb-4 rounded-md bg-yellow-50 p-3">
                         <div className="flex">
@@ -2787,13 +2928,7 @@ const ApprovalPublishing = () => {
                       {/* Boutons d'action selon le statut actuel */}
                       {(gig.status === 'pending' || gig.status === 'to_activate' || gig.status === 'draft' || gig.status === 'submitted') && (
                         <>
-                          <button
-                            onClick={() => approveGig(gig._id)}
-                            className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
-                          >
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Active
-                          </button>
+                          {renderActivateButton(gig)}
                           <button
                             onClick={() => rejectGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
@@ -2832,13 +2967,7 @@ const ApprovalPublishing = () => {
 
                       {(gig.status === 'rejected' || gig.status === 'declined' || gig.status === 'cancelled' || gig.status === 'inactive') && (
                         <>
-                          <button
-                            onClick={() => approveGig(gig._id)}
-                            className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
-                          >
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Active
-                          </button>
+                          {renderActivateButton(gig)}
                           <button
                             onClick={() => archiveGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
@@ -2851,13 +2980,7 @@ const ApprovalPublishing = () => {
 
                       {gig.status === 'archived' && (
                         <>
-                          <button
-                            onClick={() => approveGig(gig._id)}
-                            className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
-                          >
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Active
-                          </button>
+                          {renderActivateButton(gig)}
                           <button
                             onClick={() => rejectGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
