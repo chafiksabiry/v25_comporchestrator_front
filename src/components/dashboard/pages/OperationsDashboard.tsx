@@ -31,7 +31,6 @@ import {
   Mail,
   Sparkles,
   Plus,
-  Calculator,
   ChevronDown,
 } from 'lucide-react';
 import {
@@ -2972,13 +2971,6 @@ function WalletView() {
           labelForWallet={labelForWallet}
         />
       )}
-
-      {/* Top-up CTA */}
-      <button className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-harx-500 px-6 py-4 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-harx-500/30 transition-all hover:-translate-y-0.5 hover:bg-harx-600">
-        <Calculator size={16} />
-        {t('opsDashboard.wallet.computeTopup', 'Calculer le prochain top-up')}
-        <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-      </button>
     </>
   );
 }
@@ -3056,15 +3048,15 @@ function WalletMovements({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="wallet-movements-scroll max-h-[420px] overflow-auto">
           <table className="w-full min-w-[820px] text-left">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
               <tr className="border-b border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                <th className="px-5 py-3">{t('opsDashboard.wallet.col.source', 'Source')}</th>
-                <th className="px-3 py-3">{t('opsDashboard.wallet.col.cause', 'Cause')}</th>
-                <th className="px-3 py-3">{t('opsDashboard.wallet.col.datetime', 'Date & heure')}</th>
-                <th className="px-3 py-3 text-right">{t('opsDashboard.wallet.col.amount', 'Montant')}</th>
-                <th className="px-5 py-3 text-right">{t('opsDashboard.wallet.col.details', 'Détails')}</th>
+                <th className="bg-white px-5 py-3">{t('opsDashboard.wallet.col.source', 'Source')}</th>
+                <th className="bg-white px-3 py-3">{t('opsDashboard.wallet.col.cause', 'Cause')}</th>
+                <th className="bg-white px-3 py-3">{t('opsDashboard.wallet.col.datetime', 'Date & heure')}</th>
+                <th className="bg-white px-3 py-3 text-right">{t('opsDashboard.wallet.col.amount', 'Montant')}</th>
+                <th className="bg-white px-5 py-3 text-right">{t('opsDashboard.wallet.col.details', 'Détails')}</th>
               </tr>
             </thead>
             <tbody>
@@ -3197,6 +3189,13 @@ function WalletMovements({
           </table>
         </div>
       )}
+      <style>{`
+        .wallet-movements-scroll { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        .wallet-movements-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+        .wallet-movements-scroll::-webkit-scrollbar-track { background: transparent; }
+        .wallet-movements-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 9999px; border: 2px solid transparent; background-clip: padding-box; }
+        .wallet-movements-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+      `}</style>
     </section>
   );
 }
