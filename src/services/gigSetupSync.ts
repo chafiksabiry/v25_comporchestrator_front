@@ -39,6 +39,49 @@ export const STEP_ID_TO_FIELD: Record<number, SetupStepField> = {
   12: 'gigActivation',
 };
 
+/** Sequential order in which the rep should complete each step.
+ *  Used by `getNextStepRoute` to drive the "Continue →" CTA after
+ *  every successful action. Activation comes last. */
+export const STEP_FIELD_ORDER: SetupStepField[] = [
+  'telephony',
+  'uploadContacts',
+  'callScript',
+  'knowledgeBase',
+  'repOnboarding',
+  'sessionPlanning',
+  'gigActivation',
+];
+
+/** Dashboard route mounted for each step. Mirrors the in-dashboard
+ *  shell `<Route>` definitions in `App.tsx`. */
+export const STEP_FIELD_TO_ROUTE: Record<SetupStepField, string> = {
+  telephony: '/dashboard/telephony',
+  uploadContacts: '/dashboard/leads',
+  callScript: '/dashboard/script-generator',
+  knowledgeBase: '/dashboard/knowledge-base',
+  repOnboarding: '/dashboard/training',
+  sessionPlanning: '/dashboard/scheduler',
+  gigActivation: '/dashboard/gig-activation',
+};
+
+/** Returns the dashboard route the rep should land on after completing
+ *  the given step. Falls back to the gigs list once every step is done. */
+export function getNextStepRoute(
+  completedField: SetupStepField,
+  gigId?: string
+): string {
+  const idx = STEP_FIELD_ORDER.indexOf(completedField);
+  const nextField =
+    idx === -1 || idx >= STEP_FIELD_ORDER.length - 1
+      ? null
+      : STEP_FIELD_ORDER[idx + 1];
+
+  const base = nextField ? STEP_FIELD_TO_ROUTE[nextField] : '/dashboard/gigs';
+  if (!gigId) return base;
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}gigId=${encodeURIComponent(gigId)}`;
+}
+
 function envOr(key: string, fallback: string): string {
   const val = (import.meta as any).env?.[key];
   return val || fallback;
@@ -79,6 +122,17 @@ export async function markGigStepDone(
           detail: { stepId: fieldToStepId(field), gigId, field, value },
         })
       );
+      // When a step has just been completed, surface a unified
+      // "Continue →" CTA via the top-level toast listener. We never
+      // show it on a regression (value === false).
+      if (value) {
+        const nextRoute = getNextStepRoute(field, gigId);
+        window.dispatchEvent(
+          new CustomEvent('harx:gig-step-complete', {
+            detail: { gigId, field, nextRoute },
+          })
+        );
+      }
     } catch {
       // no-op — non-browser env
     }

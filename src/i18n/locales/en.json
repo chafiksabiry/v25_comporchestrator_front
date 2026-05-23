@@ -903,6 +903,12 @@
         "sessionPlanning": "Session Planning",
         "gigActivation": "Gig Activation",
         "matchReps": "Match HARX Reps"
+      },
+      "toast": {
+        "stepCompleted": "{{step}} completed",
+        "nextStepHint": "Next step: {{next}}",
+        "allDone": "All steps completed!",
+        "cta": "Continue →"
       }
     }
   },
