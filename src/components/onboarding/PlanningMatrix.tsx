@@ -4,6 +4,7 @@ import { enUS } from 'date-fns/locale';
 import { TimeSlot, Rep } from '../../types/scheduler';
 import { Clock, Calendar, Save } from 'lucide-react';
 import { schedulerApi } from '../../services/schedulerService';
+import { markGigStepDone } from '../../services/gigSetupSync';
 
 interface PlanningMatrixProps {
     selectedDate: Date;
@@ -124,6 +125,14 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                 
                 const response = await schedulerApi.bulkUpsertTimeSlots(gigId, slotsToUpdate);
                 
+            }
+
+            // Persist `setupSteps.sessionPlanning` for this gig so the
+            // dashboard checklist + "Continue →" toast reflect progress
+            // as soon as the rep saves at least one capacity row.
+            const hasAnyCapacity = slotsToUpdate.some((s) => (s.capacity || 0) > 0);
+            if (hasAnyCapacity && gigId) {
+                markGigStepDone(String(gigId), 'sessionPlanning', true);
             }
 
             onRefresh();
