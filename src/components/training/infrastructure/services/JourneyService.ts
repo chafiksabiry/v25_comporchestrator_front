@@ -2,6 +2,7 @@
 import { ApiClient } from '../../lib/api';
 import { TrainingJourney, TrainingModule } from '../../types';
 import { extractObjectId, isValidMongoId } from '../../lib/mongoUtils';
+import { markGigStepDone } from '../../../../services/gigSetupSync';
 import React from 'react';
 export interface LaunchJourneyRequest {
   journey: TrainingJourney;
@@ -223,6 +224,14 @@ export class JourneyService {
     const savedJourney = response.data.journey || response.data;
     const savedJourneyId = extractObjectId(savedJourney?.id || savedJourney?._id) || journeyId;
 
+    // Persist `setupSteps.repOnboarding` on the targeted gig as soon as
+    // a journey exists for it. We only mark it when a real (non-stub)
+    // gigId was supplied — manual journeys created outside of a gig
+    // shouldn't flip the per-gig checklist.
+    if (cleanGigId) {
+      markGigStepDone(cleanGigId, 'repOnboarding', true);
+    }
+
     return {
       ...response.data,
       success: true,
@@ -385,6 +394,13 @@ export class JourneyService {
 
     const launchedJourney = launchResponse.data.journey || launchResponse.data;
     const launchedJourneyId = extractObjectId(launchedJourney?.id || launchedJourney?._id) || journeyIdToUse;
+
+    // A launched journey is the strongest signal that REP onboarding
+    // is configured for this gig — persist the flag so the dashboard
+    // checklist (and the "Continue →" toast) reflects progress.
+    if (cleanGigId) {
+      markGigStepDone(cleanGigId, 'repOnboarding', true);
+    }
 
     return {
       ...launchResponse.data,
