@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar } from 'lucide-react';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 
 export default function CallsDashboardPage() {
@@ -551,6 +551,51 @@ export default function CallsDashboardPage() {
                             </p>
                           </div>
                         ))}
+                      </div>
+
+                      {/* Statuts & Réponses Prospect */}
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-4 px-4 pt-2">
+                          <div className="h-px flex-1 bg-slate-200/60"></div>
+                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Statuts & Réponses Prospect</h5>
+                          <div className="h-px flex-1 bg-slate-200/60"></div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[
+                            { label: 'Pas intéressé', key: "PAS INTÉRESSÉS", icon: ShieldAlert, color: 'rose' },
+                            { label: 'Pas au courant', key: "PAS AU COURANT", icon: Globe, color: 'blue' },
+                            { label: 'Déjà équipé / Fourni', key: "DÉJÀ ÉQUIPÉS", icon: ShieldCheck, color: 'indigo' },
+                            { label: 'Prise de RDV', key: "RDV", icon: Calendar, color: 'emerald' },
+                            { label: 'À plus tard / Rappel', key: "A plus tard", icon: Clock, color: 'amber' }
+                          ].map((metric, mIdx) => {
+                            const metricData = selectedCall.ai_call_score?.[metric.key];
+                            if (!metricData) return null;
+                            const score = metricData?.score || 0;
+                            const scoreColorClass = score >= 50 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50';
+                            const passed = typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50;
+
+                            return (
+                              <div key={mIdx} className="bg-white rounded-[20px] p-4 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300 flex flex-col justify-between">
+                                <div className="flex justify-between items-start mb-3">
+                                  <div className={`w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
+                                    <metric.icon className="w-5 h-5" />
+                                  </div>
+                                  <div className="text-right">
+                                    <span className={`text-base font-black ${scoreColorClass} px-2.5 py-1 rounded-lg`}>
+                                      {passed ? 'Oui' : 'Non'} ({score}%)
+                                    </span>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Détecté</p>
+                                  </div>
+                                </div>
+                                <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-1.5">{metric.label}</h5>
+                                <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
+                                  &quot;{metric.data?.feedback || metricData?.feedback || 'Aucune citation détectée.'}&quot;
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       <div className="bg-white rounded-[32px] border border-emerald-100 shadow-xl overflow-hidden relative group p-10">

@@ -380,7 +380,7 @@
         "wrong": "FAUX NUMÉROS",
         "notInterested": "PAS INTÉRESSÉS",
         "notAware": "PAS AU COURANT",
-        "alreadyInsured": "DÉJÀ ASSURÉS"
+        "alreadyEquipped": "DÉJÀ ÉQUIPÉS"
       },
       "qualityScoreHead": "Score qualité base : {{pct}}%",
       "qualityWarningHead": "Score qualité base : 68.4%",
@@ -429,7 +429,7 @@
         "argued": "Argumenté (intéressé)",
         "refusal": "Refus catégorique",
         "notInterested": "Pas intéressé",
-        "alreadyInsured": "Déjà assuré"
+        "alreadyEquipped": "Déjà équipé"
       },
       "distributionTitle": "Répartition visuelle",
       "hotPipeline": "Pipeline chaud (RDV + rappels)",

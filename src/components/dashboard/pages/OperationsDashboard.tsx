@@ -173,8 +173,8 @@ function outcomeTag(
     argued_interested: { label: t('opsDashboard.results.issues.argued', 'Argumenté'), tone: 'emerald' },
     refusal: { label: t('opsDashboard.results.issues.refusal', 'Refus'), tone: 'rose' },
     not_interested: { label: t('opsDashboard.results.issues.notInterested', 'Pas intéressé'), tone: 'amber' },
-    already_insured: {
-      label: t('opsDashboard.results.issues.alreadyInsured', 'Déjà assuré'),
+    already_equipped: {
+      label: t('opsDashboard.results.issues.alreadyEquipped', 'Déjà équipé'),
       tone: 'slate',
     },
   };
@@ -388,7 +388,7 @@ export default function OperationsDashboard() {
       wrong: { count: number; pct: number };
       notInterested: { count: number; pct: number };
       notAware: { count: number; pct: number };
-      alreadyInsured: { count: number; pct: number };
+      alreadyEquipped: { count: number; pct: number };
     };
     qualityScorePct: number;
     attemptDistribution: {
@@ -495,7 +495,7 @@ export default function OperationsDashboard() {
             wrong: q.wrong || blank,
             notInterested: q.notInterested || blank,
             notAware: q.notAware || blank,
-            alreadyInsured: q.alreadyInsured || blank,
+            alreadyEquipped: q.alreadyEquipped || blank,
           };
           const qualityScorePct =
             typeof json.qualityScorePct === 'number'
@@ -841,7 +841,7 @@ export default function OperationsDashboard() {
       { key: 'appointment', label: t('opsDashboard.overview.donut.appointment', 'RDV'),         color: '#8b5cf6', count: c.appointment ?? 0 },
       { key: 'argued',      label: t('opsDashboard.overview.donut.argued', 'Argumenté'),        color: '#3b82f6', count: c.argued_interested ?? 0 },
       { key: 'callback',    label: t('opsDashboard.overview.donut.callback', 'Rappel'),         color: '#f59e0b', count: c.callback_requested ?? 0 },
-      { key: 'refusal',     label: t('opsDashboard.overview.donut.refusal', 'Refus'),           color: '#ef4444', count: (c.refusal ?? 0) + (c.not_interested ?? 0) + (c.already_insured ?? 0) },
+      { key: 'refusal',     label: t('opsDashboard.overview.donut.refusal', 'Refus'),           color: '#ef4444', count: (c.refusal ?? 0) + (c.not_interested ?? 0) + (c.already_equipped ?? 0) },
       { key: 'voicemail',   label: t('opsDashboard.overview.donut.voicemail', 'Msg vocale'),    color: '#14b8a6', count: c.voicemail ?? 0 },
       { key: 'unreachable', label: t('opsDashboard.overview.donut.unreachable', 'Injoignable'), color: '#94a3b8', count: (c.no_answer ?? 0) + (c.busy ?? 0) + (c.too_short ?? 0) },
       { key: 'wrong',       label: t('opsDashboard.overview.donut.wrongNumber', 'Faux numéro'), color: '#f9a8d4', count: c.wrong_number ?? 0 },
@@ -1075,7 +1075,7 @@ type LeadStatsProp = {
     wrong: { count: number; pct: number };
     notInterested: { count: number; pct: number };
     notAware: { count: number; pct: number };
-    alreadyInsured: { count: number; pct: number };
+    alreadyEquipped: { count: number; pct: number };
   };
   qualityScorePct: number;
   attemptDistribution: {
@@ -1156,7 +1156,7 @@ function LeadsView({
     wrong: { count: 511, pct: 4.1 },
     notInterested: { count: 1083, pct: 8.7 },
     notAware: { count: 398, pct: 3.2 },
-    alreadyInsured: { count: 411, pct: 3.3 },
+    alreadyEquipped: { count: 411, pct: 3.3 },
   };
   const q = leadStats?.quality ?? MOCK_QUALITY;
   const qualityScorePct = leadStats?.qualityScorePct ?? MOCK_QUALITY.valid.pct;
@@ -1198,10 +1198,10 @@ function LeadsView({
       tone: 'amber',
     },
     {
-      key: 'alreadyInsured',
-      label: t('opsDashboard.leads.quality.alreadyInsured', 'DÉJÀ ASSURÉS'),
-      pct: q.alreadyInsured.pct,
-      leads: q.alreadyInsured.count,
+      key: 'alreadyEquipped',
+      label: t('opsDashboard.leads.quality.alreadyEquipped', 'DÉJÀ ÉQUIPÉS'),
+      pct: q.alreadyEquipped.pct,
+      leads: q.alreadyEquipped.count,
       tone: 'amber',
     },
   ];
@@ -1597,7 +1597,7 @@ const RESULT_ISSUE_DEFS: Array<{
   { outcome: 'argued_interested', labelKey: 'opsDashboard.results.issues.argued', defaultLabel: 'Argumenté (intéressé)', tone: 'emerald' },
   { outcome: 'refusal', labelKey: 'opsDashboard.results.issues.refusal', defaultLabel: 'Refus catégorique', tone: 'rose' },
   { outcome: 'not_interested', labelKey: 'opsDashboard.results.issues.notInterested', defaultLabel: 'Pas intéressé', tone: 'amber' },
-  { outcome: 'already_insured', labelKey: 'opsDashboard.results.issues.alreadyInsured', defaultLabel: 'Déjà assuré', tone: 'blue' },
+  { outcome: 'already_equipped', labelKey: 'opsDashboard.results.issues.alreadyEquipped', defaultLabel: 'Déjà équipé / Fournisseur', tone: 'blue' },
   { outcome: 'connected_no_sale', labelKey: 'opsDashboard.results.issues.transactionFailed', defaultLabel: 'Transaction non aboutie', tone: 'rose' },
 ];
 
