@@ -7,6 +7,7 @@ import apiClient from '../api/knowledgeClient';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { OnboardingService } from './training/infrastructure/services/OnboardingService';
+import { markGigStepDone } from '../services/gigSetupSync';
 
 interface DocumentAnalysis {
   summary: string;
@@ -453,6 +454,13 @@ const KnowledgeBase: React.FC = () => {
         fetchCallRecords(),
         updateOnboardingProgress().catch(err => console.error('Onboarding update failed:', err))
       ]);
+
+      // Persist `setupSteps.knowledgeBase` for the targeted gig so the
+      // dashboard checklist reflects progress immediately. We only mark
+      // it when the user picked a specific gig (not the "all" bucket).
+      if (uploadGigId && uploadGigId !== 'all') {
+        markGigStepDone(uploadGigId, 'knowledgeBase', true);
+      }
 
       setUploadFiles([]);
       setUploadTags('');
