@@ -19,7 +19,7 @@ import {
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { gigsApi } from '../services/api/endpoints';
-import { waitForStripePopup } from '../../../lib/paypalCheckout';
+import { waitForStripePopup, getOrchestratorApiBase } from '../../../lib/paypalCheckout';
 import { markGigStepDone } from '../../../services/gigSetupSync';
 
 type CheckoutStep = 'select' | 'paypal' | 'processing' | 'success';
@@ -179,7 +179,25 @@ export function PhoneNumberPanel() {
   const [linePrice, setLinePrice] = useState({ amountCents: 500, currency: 'EUR' });
 
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
+  // In production we MUST resolve to the live orchestrator backend; the old
+  // localhost default would silently break checkout for every deployed user.
+  const apiBaseUrl = getOrchestratorApiBase();
+
+  // Orphan recovery: PhoneNumberPayment rows that are `succeeded` but whose
+  // Twilio number purchase never completed (e.g. popup-mode flow where the
+  // parent dashboard got navigated away before `purchase/twilio` could fire).
+  // We surface these in a banner so the user can recover without re-paying.
+  type OrphanPayment = {
+    paymentId: string;
+    phoneNumber: string;
+    gigId: string | null;
+    provider: 'stripe' | 'paypal';
+    amount: number;
+    currency: string;
+    createdAt: string;
+  };
+  const [orphanPayments, setOrphanPayments] = useState<OrphanPayment[]>([]);
+  const [recoveringPaymentId, setRecoveringPaymentId] = useState<string | null>(null);
   const formatPrice = (cents: number, currency: string) =>
     `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} ${currency === 'EUR' ? '€' : currency}`;
 
@@ -242,9 +260,63 @@ export function PhoneNumberPanel() {
     fetchData();
   }, [companyId]);
 
+  // Orphan-payment detection: query the backend for any PhoneNumberPayments
+  // that are `succeeded` but whose Twilio purchase never finished. If we find
+  // any, render a banner so the user can recover without paying again.
+  const fetchOrphanPayments = useCallback(async () => {
+    if (!companyId) return;
+    try {
+      const res = await fetch(`${apiBaseUrl}/phone-numbers/checkout/orphans/${companyId}`);
+      const data = await safeParseJson(res);
+      if (!res.ok || !data?.success) return;
+      setOrphanPayments(Array.isArray(data.orphans) ? data.orphans : []);
+    } catch (err) {
+      console.warn('[telephony] orphan-payment lookup failed', err);
+    }
+  }, [apiBaseUrl, companyId]);
+
+  useEffect(() => {
+    fetchOrphanPayments();
+  }, [fetchOrphanPayments]);
+
+  const recoverOrphanPayment = useCallback(
+    async (paymentId: string) => {
+      setRecoveringPaymentId(paymentId);
+      try {
+        const res = await fetch(`${apiBaseUrl}/phone-numbers/checkout/recover`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentId })
+        });
+        const data = await safeParseJson(res);
+        if (!res.ok || !data?.success) {
+          throw new Error(data?.message || data?.error || 'Recovery failed');
+        }
+        toast.success(
+          t('phoneNumberPanel.toasts.recovered', {
+            defaultValue: 'Numéro provisionné. Bienvenue dans HARX !'
+          })
+        );
+        await Promise.all([fetchData(true), fetchOrphanPayments()]);
+      } catch (err: any) {
+        console.error('[telephony] recover failed', err);
+        toast.error(
+          err?.message
+            || t('phoneNumberPanel.toasts.recoverFailed', {
+              defaultValue: 'Provisionnement impossible. Réessayez plus tard.'
+            })
+        );
+      } finally {
+        setRecoveringPaymentId(null);
+      }
+    },
+    [apiBaseUrl, fetchData, fetchOrphanPayments, t]
+  );
+
   const handleRefresh = () => {
     setRefreshing(true);
     fetchData(true);
+    fetchOrphanPayments();
     toast.success(t('phoneNumberPanel.toasts.refreshed'), { id: 'refresh-tel-toast' });
   };
 
@@ -344,7 +416,14 @@ export function PhoneNumberPanel() {
           phoneNumber: checkoutNumber,
           gigId: selectedGigIdForNumber,
           companyId,
-          provider
+          provider,
+          // Tell the backend exactly where stripe-return.html should be able
+          // to call back (`apiBase`) and where the user originally came from
+          // (`returnTo`) — so the static return page never has to guess and
+          // can't accidentally redirect into the standalone orchestrator MF
+          // and log the user out of the qiankun shell.
+          apiBaseUrl,
+          returnUrl: window.location.href.split(/[?&]payment=/)[0]
         })
       });
       const initData = await safeParseJson(initRes);
@@ -416,6 +495,7 @@ export function PhoneNumberPanel() {
       );
       setSearchResults(prev => prev.filter(n => n.phoneNumber !== checkoutNumber));
       fetchData(true);
+      fetchOrphanPayments();
       // Persist the telephony flag on the gig document right away so the
       // dashboard checklist reflects progress even before the user opens
       // it again. `markGigStepDone` also re-emits `harx:gig-step-progress`
@@ -424,7 +504,7 @@ export function PhoneNumberPanel() {
         markGigStepDone(selectedGigIdForNumber, 'telephony', true);
       }
     },
-    [checkoutNumber, fetchData, selectedGigIdForNumber, t]
+    [checkoutNumber, fetchData, fetchOrphanPayments, selectedGigIdForNumber, t]
   );
 
   const startPaypalCheckout = async () => {
@@ -645,6 +725,75 @@ export function PhoneNumberPanel() {
           </div>
         </div>
       </div>
+
+      {/* Recovery banner — succeeded line payments that never finished
+          provisioning (e.g. popup got navigated away mid-flow). One click
+          re-runs the Twilio purchase using the existing payment, no charge. */}
+      {orphanPayments.length > 0 && (
+        <div className="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-5 space-y-3">
+          <div className="flex items-start gap-3">
+            <span className="shrink-0 p-2 rounded-xl bg-amber-100 text-amber-700 border border-amber-200">
+              <AlertTriangle size={18} />
+            </span>
+            <div className="min-w-0">
+              <h3 className="text-sm font-black text-amber-900 tracking-tight">
+                {t('phoneNumberPanel.recovery.title', {
+                  defaultValue: 'Paiement(s) en attente de provisionnement'
+                })}
+              </h3>
+              <p className="text-[11px] text-amber-800 leading-relaxed mt-1">
+                {t('phoneNumberPanel.recovery.body', {
+                  defaultValue:
+                    "Vous avez payé pour ces lignes mais le numéro Twilio n'a pas encore été activé. Cliquez sur \"Activer\" pour finaliser sans repayer."
+                })}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {orphanPayments.map((p) => (
+              <div
+                key={p.paymentId}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white/60 border border-amber-200 rounded-2xl px-3 py-2"
+              >
+                <div className="min-w-0 flex items-center gap-2">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 text-amber-700 border border-amber-200">
+                    <Hash size={14} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-slate-900 tracking-tight tabular-nums">
+                      {p.phoneNumber}
+                    </p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
+                      {formatPrice(p.amount, p.currency)} · {p.provider}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => recoverOrphanPayment(p.paymentId)}
+                  disabled={recoveringPaymentId === p.paymentId}
+                  className="shrink-0 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-black text-[11px] uppercase tracking-wider rounded-xl transition-colors duration-200 active:scale-95 disabled:opacity-60 flex items-center justify-center gap-1.5"
+                >
+                  {recoveringPaymentId === p.paymentId ? (
+                    <RefreshCw size={12} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={12} />
+                  )}
+                  <span>
+                    {recoveringPaymentId === p.paymentId
+                      ? t('phoneNumberPanel.recovery.activating', {
+                          defaultValue: 'Activation…'
+                        })
+                      : t('phoneNumberPanel.recovery.activate', {
+                          defaultValue: 'Activer'
+                        })}
+                  </span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Info Stats Card */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 min-w-0">

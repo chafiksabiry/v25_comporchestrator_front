@@ -118,19 +118,16 @@
             paymentId: paymentId,
             sessionId: sessionId,
           });
-          var dest = appendSuccessFlag(returnTo);
           if (window.opener && !window.opener.closed) {
-            try {
-              window.opener.location.href = dest;
-            } catch (e) {
-              /* cross-origin opener */
-            }
-            window.close();
+            titleEl.textContent = 'Paiement confirmé';
+            msgEl.textContent = 'Vous pouvez fermer cette fenêtre.';
+            loaderEl.hidden = true;
             setTimeout(function () {
-              location.href = dest;
-            }, 400);
+              try { window.close(); } catch (e) { /* ignore */ }
+            }, 600);
             return;
           }
+          var dest = appendSuccessFlag(returnTo);
           location.replace(dest);
         }
 
