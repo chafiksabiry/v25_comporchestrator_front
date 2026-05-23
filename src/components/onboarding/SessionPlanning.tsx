@@ -27,6 +27,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { PlanningMatrix } from './PlanningMatrix';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 
 // Helper to generate a consistent color from a string
 const stringToColor = (str: string) => {
@@ -218,6 +219,20 @@ const updateOnboardingProgress = async () => {
 
 export default function SessionPlanning() {
   const { t } = useTranslation();
+  const location = useLocation();
+  /** Read `?gigId=` from the URL once. Used to pre-select the gig
+   *  when the rep is funnelled in from the dashboard "Continue →"
+   *  CTA (which always appends the gigId). Falls back to the first
+   *  gig in the list when absent. */
+  const urlGigId = useMemo(() => {
+    try {
+      const params = new URLSearchParams(location.search || '');
+      const id = params.get('gigId');
+      return id && /^[a-f\d]{24}$/i.test(id) ? id : null;
+    } catch {
+      return null;
+    }
+  }, [location.search]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
@@ -253,9 +268,14 @@ export default function SessionPlanning() {
         if (Array.isArray(gigData)) {
           const mappedProjects = gigData.map(mapBackendGigToGig);
           setProjects(mappedProjects);
-          // Set default selected project
+          // Honor `?gigId=` from the URL (used by the dashboard
+          // "Continue →" CTA) when it matches one of the loaded gigs.
+          // Otherwise default to the first project.
           if (mappedProjects.length > 0) {
-            setSelectedGigId(mappedProjects[0].id);
+            const targeted =
+              urlGigId &&
+              mappedProjects.find((p: Gig) => String(p.id) === String(urlGigId));
+            setSelectedGigId(targeted ? String(targeted.id) : mappedProjects[0].id);
           }
 
         }
@@ -273,7 +293,7 @@ export default function SessionPlanning() {
 
     initAI();
     fetchGigs();
-  }, [userRole]);
+  }, [userRole, urlGigId]);
 
   // Fetch Slots and Agents for the selected Gig
   const fetchData = async () => {
