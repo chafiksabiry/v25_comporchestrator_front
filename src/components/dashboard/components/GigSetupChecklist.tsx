@@ -32,6 +32,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
 import {
+  markGigSteps,
+  STEP_ID_TO_FIELD,
+  type SetupSteps,
+} from '../../../services/gigSetupSync';
+import {
   AlertCircle,
   ArrowRight,
   BookOpen,
@@ -173,6 +178,26 @@ async function safeBool(promise: Promise<boolean>): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** Probe-result → DB sync. Whenever the live probes find a step
+ *  has progressed since last time, push the diff to the backend via
+ *  the shared `markGigSteps` helper. Same util is used directly by
+ *  each step page after a successful mutation. */
+async function persistSetupSteps(
+  gigId: string,
+  liveFlags: Record<number, boolean>,
+  storedSteps?: Partial<SetupSteps>
+): Promise<void> {
+  const diff: Partial<SetupSteps> = {};
+  for (const [stepIdStr, field] of Object.entries(STEP_ID_TO_FIELD)) {
+    const stepId = Number(stepIdStr);
+    const next = !!liveFlags[stepId];
+    const prev = !!storedSteps?.[field];
+    if (next !== prev) diff[field] = next;
+  }
+  if (Object.keys(diff).length === 0) return;
+  await markGigSteps(gigId, diff);
 }
 
 /** Check every setup step for a single gig against the real backends.
@@ -414,6 +439,17 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
         next[g._id] = probes[i];
       });
       setGigStepStatus(next);
+
+      // 3. Persist any drift between the live probe and the stored
+      //    `setupSteps` field so the gig document stays in sync. We
+      //    only fire PATCH calls for gigs that actually changed.
+      pendingGigs.forEach((g, i) => {
+        persistSetupSteps(
+          g._id,
+          probes[i],
+          (g as any).setupSteps as Partial<SetupSteps> | undefined
+        );
+      });
     })();
 
     return () => {

@@ -20,6 +20,7 @@ import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { gigsApi } from '../services/api/endpoints';
 import { waitForStripePopup } from '../../../lib/paypalCheckout';
+import { markGigStepDone } from '../../../services/gigSetupSync';
 
 type CheckoutStep = 'select' | 'paypal' | 'processing' | 'success';
 
@@ -415,22 +416,12 @@ export function PhoneNumberPanel() {
       );
       setSearchResults(prev => prev.filter(n => n.phoneNumber !== checkoutNumber));
       fetchData(true);
-      // Notify the gig-setup checklist (and any other listener) that one
-      // of the per-gig setup steps just progressed so it can re-probe the
-      // backend without a full page refresh.
-      try {
-        window.dispatchEvent(
-          new CustomEvent('harx:gig-step-progress', {
-            detail: {
-              stepId: 4,
-              gigId: selectedGigIdForNumber || undefined,
-              source: 'phone-number-purchase',
-              method,
-            },
-          })
-        );
-      } catch {
-        // Older browsers without CustomEvent — non-blocking.
+      // Persist the telephony flag on the gig document right away so the
+      // dashboard checklist reflects progress even before the user opens
+      // it again. `markGigStepDone` also re-emits `harx:gig-step-progress`
+      // so any mounted checklist re-renders instantly.
+      if (selectedGigIdForNumber) {
+        markGigStepDone(selectedGigIdForNumber, 'telephony', true);
       }
     },
     [checkoutNumber, fetchData, selectedGigIdForNumber, t]

@@ -27,6 +27,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
+import { markGigStepDone } from '../../services/gigSetupSync';
 import { useTranslation } from 'react-i18next';
 
 interface Lead {
@@ -885,6 +886,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         setUploadSuccess(true);
         setUploadProgress(100);
         toast.success(t('uploadContacts.success.savedContacts', { count: savedCount }));
+
+        // Persist the per-gig setupSteps.uploadContacts flag so the
+        // dashboard checklist reflects progress immediately.
+        if (savedCount > 0 && selectedGigId) {
+          markGigStepDone(selectedGigId, 'uploadContacts', true);
+        }
 
         // Les leads sont maintenant ajoutés, on peut mettre à jour l'état local si nécessaire
         // Pour l'instant, on se fie au rechargement ou à la réponse

@@ -5,6 +5,7 @@ import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2, Briefcase, FileText, C
 import apiClient from '../api/knowledgeClient';
 import ScriptChatPanel from './script-generator/ScriptChatPanel';
 import { ClaudePromptToolkit } from './script-generator/ClaudePromptToolkit';
+import { markGigStepDone } from '../services/gigSetupSync';
 import { useTranslation } from 'react-i18next';
 import { InteractiveScriptCockpit, InteractiveStage } from './script-generator/InteractiveScriptCockpit';
 import { JourneyService } from './training/infrastructure/services/JourneyService';
@@ -638,6 +639,12 @@ const ScriptGenerator: React.FC = () => {
       setValidatedScriptIds(prev => ({ ...prev, [String(savedScriptId)]: true }));
 
       await markOnboardingScriptStepCompleted();
+
+      // Persist the per-gig `setupSteps.callScript` flag so the
+      // dashboard checklist reflects progress without re-probing.
+      if (selectedGig?._id) {
+        markGigStepDone(String(selectedGig._id), 'callScript', true);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Échec de l’enregistrement du script');
     } finally {
@@ -865,6 +872,7 @@ const ScriptGenerator: React.FC = () => {
       setValidatedScriptIds((prev) => ({ ...prev, [String(savedScriptId)]: true, [message.id]: true }));
       if (selectedGig?._id) {
         fetchSavedScripts(selectedGig._id);
+        markGigStepDone(String(selectedGig._id), 'callScript', true);
       }
       await markOnboardingScriptStepCompleted();
     } catch (err: any) {
