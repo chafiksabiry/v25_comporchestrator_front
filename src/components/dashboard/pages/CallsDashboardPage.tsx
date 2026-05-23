@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar } from 'lucide-react';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
+import { useTranslation } from 'react-i18next';
 
 export default function CallsDashboardPage() {
+  const { t, i18n } = useTranslation();
   const [calls, setCalls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCall, setSelectedCall] = useState<any | null>(null);
@@ -528,29 +530,41 @@ export default function CallsDashboardPage() {
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
-                          { label: 'Agent Fluency', data: selectedCall.ai_call_score?.["Agent fluency"], icon: Globe },
-                          { label: 'Sentiment Analysis', data: selectedCall.ai_call_score?.["Sentiment analysis"], icon: ActivityIcon },
-                          { label: 'Fraud Detection', data: selectedCall.ai_call_score?.["Fraud detection"], icon: ShieldAlert },
-                          { label: 'Script Coherence', data: selectedCall.ai_call_score?.["Script coherence"], icon: ShieldCheck },
-                          { label: 'Argumentation Quality', data: selectedCall.ai_call_score?.["Argumentation"], icon: TrendingUp },
-                          { label: 'Transaction Analysis', data: selectedCall.ai_call_score?.["Transaction analysis"], icon: TrendingUp }
-                        ].map((metric, mIdx) => (
-                          <div key={mIdx} className="bg-white rounded-[20px] p-4 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300">
-                            <div className="flex justify-between items-start mb-3">
-                              <div className={`w-10 h-10 rounded-xl bg-harx-50 text-harx-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
-                                <metric.icon className="w-5 h-5" />
+                          { label: t('calls.metrics.fluency', 'Agent Fluency'), key: "Agent fluency", icon: Globe },
+                          { label: t('calls.metrics.sentiment', 'Sentiment Analysis'), key: "Sentiment analysis", icon: ActivityIcon },
+                          { label: t('calls.metrics.fraud', 'Fraud Detection'), key: "Fraud detection", icon: ShieldAlert },
+                          { label: t('calls.metrics.coherence', 'Script Coherence'), key: "Script coherence", icon: ShieldCheck },
+                          { label: t('calls.metrics.argumentation', 'Argumentation Quality'), key: "Argumentation", icon: TrendingUp },
+                          { label: t('calls.metrics.transaction', 'Transaction Analysis'), key: "Transaction analysis", icon: TrendingUp }
+                        ].map((metric, mIdx) => {
+                          const metricData = selectedCall.ai_call_score?.[metric.key];
+                          
+                          const isFraudMetric = metric.key === "Fraud detection";
+                          const originalScore = metricData?.score || 0;
+                          const score = isFraudMetric ? (100 - originalScore) : originalScore;
+
+                          const rawFeedback = i18n.language === 'en'
+                            ? (metricData?.feedback_en || metricData?.feedback || '')
+                            : (metricData?.feedback_fr || metricData?.feedback || '');
+
+                          return (
+                            <div key={mIdx} className="bg-white rounded-[20px] p-4 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300 flex flex-col justify-between">
+                              <div className="flex justify-between items-start mb-3">
+                                <div className={`w-10 h-10 rounded-xl bg-harx-50 text-harx-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
+                                  <metric.icon className="w-5 h-5" />
+                                </div>
+                                <div className="text-right">
+                                  <span className={`text-xl font-black text-harx-600`}>{score}%</span>
+                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Score</p>
+                                </div>
                               </div>
-                              <div className="text-right">
-                                <span className={`text-xl font-black text-harx-600`}>{metric.data?.score || 0}%</span>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Score</p>
-                              </div>
+                              <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-1.5">{metric.label}</h5>
+                              <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
+                                &quot;{rawFeedback || (i18n.language === 'en' ? 'Comprehensive analysis completed.' : 'Analyse détaillée terminée.')}&quot;
+                              </p>
                             </div>
-                            <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-1.5">{metric.label}</h5>
-                            <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
-                              &quot;{metric.data?.feedback || 'Comprehensive analysis completed.'}&quot;
-                            </p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       {/* Statuts & Réponses Prospect */}
@@ -590,7 +604,9 @@ export default function CallsDashboardPage() {
                                 </div>
                                 <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-1.5">{metric.label}</h5>
                                 <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
-                                  &quot;{metric.data?.feedback || metricData?.feedback || 'Aucune citation détectée.'}&quot;
+                                  &quot;{i18n.language === 'en'
+                                    ? (metricData?.feedback_en || metricData?.feedback || 'No quote detected.')
+                                    : (metricData?.feedback_fr || metricData?.feedback || 'Aucune citation détectée.')}&quot;
                                 </p>
                               </div>
                             );
@@ -612,7 +628,9 @@ export default function CallsDashboardPage() {
                           </div>
                           <div className="bg-emerald-50/50 rounded-2xl p-8 border border-emerald-100/50">
                             <p className="text-lg font-bold text-emerald-900 leading-relaxed italic">
-                              &quot;{selectedCall.ai_call_score?.overall?.feedback || 'The agent demonstrated standard performance.'}&quot;
+                              &quot;{i18n.language === 'en'
+                                ? (selectedCall.ai_summary_en || selectedCall.ai_call_score?.overall?.feedback_en || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || 'The agent demonstrated standard performance.')
+                                : (selectedCall.ai_summary_fr || selectedCall.ai_call_score?.overall?.feedback_fr || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || 'L\'agent a fait preuve de performances standards.')}&quot;
                             </p>
                           </div>
                         </div>
