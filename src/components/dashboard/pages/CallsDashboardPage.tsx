@@ -337,25 +337,36 @@ export default function CallsDashboardPage() {
 
       {/* Modal Overlay */}
       {selectedCall && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 animate-in fade-in duration-300 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}>
-          <div className="relative bg-white w-full max-w-4xl max-h-[85vh] rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-white/20" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-6 animate-in fade-in duration-300 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}>
+          <div className="relative bg-white w-full md:max-w-4xl h-[95vh] md:h-auto max-h-[95vh] md:max-h-[85vh] rounded-[24px] md:rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-white/20" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
-              <div className="flex flex-col">
-                <h2 className="text-base font-black text-slate-900 uppercase tracking-widest">
-                  {selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim() : 'Call Details'}
-                </h2>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
-                  {new Date(selectedCall.createdAt || selectedCall.date).toLocaleString()}
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5 opacity-60">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md">
-                    Call ID: {typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id}
-                  </span>
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+              <div className="flex justify-between items-start md:block flex-1">
+                <div>
+                  <h2 className="text-base font-black text-slate-900 uppercase tracking-widest">
+                    {selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim() : 'Call Details'}
+                  </h2>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
+                    {new Date(selectedCall.createdAt || selectedCall.date).toLocaleString()}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5 opacity-60">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md">
+                      Call ID: {typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id}
+                    </span>
+                  </div>
+                </div>
+                {/* Close button on mobile */}
+                <div className="md:hidden">
+                  <button
+                    onClick={() => setSelectedCall(null)}
+                    className="p-2 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-xl border border-slate-100 transition-all shadow-sm"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
-              <div className="flex-1 max-w-sm">
+              <div className="w-full md:w-auto md:flex-1 max-w-md">
                 {(() => {
                   const recordingUrl = selectedCall.recording_url_cloudinary || selectedCall.recording_url;
                   if (!recordingUrl) return <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">No recording</div>;
@@ -364,8 +375,8 @@ export default function CallsDashboardPage() {
                 })()}
               </div>
 
-              <div className="flex items-center gap-2">
-
+              {/* Close button on desktop */}
+              <div className="hidden md:flex items-center gap-2">
                 <button
                   onClick={() => setSelectedCall(null)}
                   className="p-2 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-xl border border-slate-100 transition-all shadow-sm"
@@ -478,7 +489,7 @@ export default function CallsDashboardPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-5 bg-slate-50/30">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50/30">
               {activeTab === 'transcript' ? (
                 <div className="max-w-4xl mx-auto space-y-6">
                   {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
@@ -642,7 +653,7 @@ export default function CallsDashboardPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-8 py-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+            <div className="px-4 py-4 md:px-8 md:py-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
               <button
                 onClick={() => setSelectedCall(null)}
                 className="px-8 py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all shadow-lg"
