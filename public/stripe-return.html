@@ -118,19 +118,28 @@
             paymentId: paymentId,
             sessionId: sessionId,
           });
-          var dest = appendSuccessFlag(returnTo);
+          // Popup flow: the parent dashboard is still mounted and is driving
+          // the rest of the purchase (waitForStripePopup -> confirm -> provision).
+          // We MUST NOT navigate the parent — doing so kicks the user out of
+          // the qiankun shell (e.g. harx25pageslinks.netlify.app -> the static
+          // orchestrator MF host), which destroys their session and shows up
+          // as "déconnect from page". Just notify, update the UI, and close.
           if (window.opener && !window.opener.closed) {
-            try {
-              window.opener.location.href = dest;
-            } catch (e) {
-              /* cross-origin opener */
-            }
-            window.close();
+            titleEl.textContent = 'Paiement confirmé';
+            msgEl.textContent = 'Vous pouvez fermer cette fenêtre.';
+            loaderEl.hidden = true;
+            // Give the opener ~600ms to receive the postMessage and react,
+            // then close ourselves. If window.close() is blocked (e.g. the
+            // popup was opened in a way the browser refuses to close), fall
+            // back to keeping the success message visible.
             setTimeout(function () {
-              location.href = dest;
-            }, 400);
+              try { window.close(); } catch (e) { /* ignore */ }
+            }, 600);
             return;
           }
+          // Full-page redirect flow (no opener): navigate this tab back to
+          // the originating route with a success flag.
+          var dest = appendSuccessFlag(returnTo);
           location.replace(dest);
         }
 
