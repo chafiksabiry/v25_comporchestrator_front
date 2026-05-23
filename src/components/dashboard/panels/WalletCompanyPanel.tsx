@@ -118,6 +118,23 @@ interface RepTransactionRow {
   rep?: { _id: string; firstName?: string; lastName?: string; email?: string } | null;
 }
 
+interface UnifiedTransactionRow {
+  id: string;
+  type: 'deposit_entry' | 'rep_transaction';
+  date: Date;
+  createdAt: string;
+  source: string;
+  cause: string;
+  status: string;
+  amount: number;
+  repShare?: number;
+  harxShare?: number;
+  callRow?: CompanyCallRow;
+  txType?: string;
+  depositType?: string;
+  description?: string;
+}
+
 const AI_SCORE_META_KEYS = new Set([
   'overall',
   'transaction_detected',
@@ -199,7 +216,6 @@ export function WalletCompanyPanel() {
   const [agentWithdrawals, setAgentWithdrawals] = useState<AgentWithdrawal[]>([]);
   const [repTransactions, setRepTransactions] = useState<RepTransactionRow[]>([]);
   const [walletEntries, setWalletEntries] = useState<WalletEntryRow[]>([]);
-  const [callsTab, setCallsTab] = useState<'validated' | 'refused' | 'deposits'>('validated');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCall, setSelectedCall] = useState<CompanyCallRow | null>(null);
@@ -436,22 +452,49 @@ export function WalletCompanyPanel() {
     };
   };
 
-  const validatedCalls = repTransactions
-    .filter((tx) => tx.status === 'earned' || tx.status === 'paid')
-    .map(repTxToRow);
-  const refusedCalls = repTransactions
-    .filter((tx) => tx.status === 'refused')
-    .map(repTxToRow);
-  // Deposit-side entries (credits) — the "Dépôts" tab is a pure wallet
-  // ledger view (no calls). We keep refunds in here too since they're
-  // credits to the wallet from the company's perspective.
-  const depositEntries = walletEntries.filter((e) =>
-    e.direction === 'credit' && e.status !== 'failed'
-  );
-  const visibleCalls =
-    callsTab === 'validated' ? validatedCalls
-    : callsTab === 'refused' ? refusedCalls
-    : [];
+  const unifiedMovements: UnifiedTransactionRow[] = [
+    ...repTransactions.map((tx) => {
+      const callRow = repTxToRow(tx);
+      const repName = tx.rep
+        ? `${tx.rep.firstName || ''} ${tx.rep.lastName || ''}`.trim() || tx.rep.email || 'Rep'
+        : 'Rep';
+      return {
+        id: tx._id,
+        type: 'rep_transaction' as const,
+        date: new Date(tx.createdAt),
+        createdAt: tx.createdAt,
+        source: repName,
+        cause: tx.type,
+        status: tx.status,
+        amount: tx.amount,
+        repShare: tx.repShare,
+        harxShare: tx.harxShare,
+        callRow,
+        txType: tx.type
+      };
+    }),
+    ...walletEntries
+      .filter((e) => e.direction === 'credit' && e.status !== 'failed')
+      .map((entry) => {
+        const typeLabel =
+          entry.type === 'deposit' ? 'Dépôt'
+          : entry.type === 'refund' ? 'Remboursement'
+          : entry.type === 'adjustment' ? 'Ajustement'
+          : entry.type;
+        return {
+          id: entry._id,
+          type: 'deposit_entry' as const,
+          date: new Date(entry.createdAt),
+          createdAt: entry.createdAt,
+          source: typeLabel,
+          cause: entry.description || '—',
+          status: entry.status,
+          amount: entry.amount,
+          depositType: entry.type,
+          description: entry.description
+        };
+      })
+  ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
   const handleAgentWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'refuse') => {
     try {
@@ -582,210 +625,128 @@ export function WalletCompanyPanel() {
 
       {/* Wallet ledger — credits (deposits) + debits (commissions) */}
       <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h3 className="text-base font-black text-slate-800 tracking-tight">
-              Mouvements du portefeuille
-            </h3>
-            <p className="text-xs text-gray-500 mt-1">
-              Commissions (débits, 70% rep / 30% HARX) et dépôts (crédits) du compte cash. Les appels en attente sont gérés depuis la page Appels.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl p-1">
-              {([
-                { id: 'validated', label: 'Validés', count: validatedCalls.length, tone: 'text-rose-700' },
-                { id: 'refused', label: 'Refusés', count: refusedCalls.length, tone: 'text-slate-600' },
-                { id: 'deposits', label: 'Dépôts', count: depositEntries.length, tone: 'text-emerald-700' }
-              ] as const).map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setCallsTab(tab.id)}
-                  className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                    callsTab === tab.id
-                      ? `bg-white shadow-sm border border-slate-200 ${tab.tone}`
-                      : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                  <span className="bg-slate-100 text-slate-600 px-1.5 rounded-full text-[9px]">{tab.count}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+        <div>
+          <h3 className="text-base font-black text-slate-800 tracking-tight">
+            Mouvements du portefeuille
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">
+            Commissions (débits, 70% rep / 30% HARX) et dépôts (crédits) du compte cash. Les appels en attente sont gérés depuis la page Appels.
+          </p>
         </div>
 
-        {callsTab === 'deposits' ? (
-          depositEntries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-100 rounded-[1.5rem] text-gray-400 gap-3">
-              <Sparkles size={36} className="text-emerald-500 animate-pulse" />
-              <p className="text-sm font-bold">Aucun dépôt pour l'instant.</p>
-              <p className="text-[11px] text-gray-400 font-medium">
-                Utilisez « Créditer Portefeuille » pour effectuer votre premier dépôt.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-auto max-h-[60vh] rounded-2xl border border-gray-50 calls-scroll">
-              <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
-                  <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                    <th className="py-3 px-4 bg-white">Type</th>
-                    <th className="py-3 px-4 bg-white">Date & Heure</th>
-                    <th className="py-3 px-4 bg-white">Description</th>
-                    <th className="py-3 px-4 bg-white">Solde après</th>
-                    <th className="py-3 px-4 bg-white text-right">Montant</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 text-xs">
-                  {depositEntries.map((entry) => {
-                    const typeLabel =
-                      entry.type === 'deposit' ? 'Dépôt'
-                      : entry.type === 'refund' ? 'Remboursement'
-                      : entry.type === 'adjustment' ? 'Ajustement'
-                      : entry.type;
-                    return (
-                      <tr key={entry._id} className="hover:bg-gray-50 transition-colors">
-                        <td className="py-4 px-4">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[10px] uppercase tracking-wider">
-                            <Sparkles size={10} /> {typeLabel}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-gray-500">
-                          {new Date(entry.createdAt).toLocaleString('fr-FR')}
-                        </td>
-                        <td className="py-4 px-4 text-slate-700 max-w-md truncate" title={entry.description}>
-                          {entry.description || '—'}
-                        </td>
-                        <td className="py-4 px-4 text-slate-700 font-bold tabular-nums">
-                          {entry.balanceAfter != null
-                            ? `${Number(entry.balanceAfter).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`
-                            : '—'}
-                        </td>
-                        <td className="py-4 px-4 text-right">
-                          <span className="text-sm font-black text-emerald-600 tabular-nums">
-                            + {Number(entry.amount || 0).toFixed(2)} €
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )
-        ) : visibleCalls.length === 0 ? (
+        {unifiedMovements.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-100 rounded-[1.5rem] text-gray-400 gap-3">
             <Phone size={36} className="text-blue-500 animate-pulse" />
-            <p className="text-sm font-bold">
-              {callsTab === 'validated'
-                ? "Aucune commission validée pour l'instant."
-                : 'Aucune commission refusée.'}
-            </p>
+            <p className="text-sm font-bold">Aucun mouvement pour l'instant.</p>
           </div>
         ) : (
           <div className="overflow-auto max-h-[60vh] rounded-2xl border border-gray-50 calls-scroll">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
                 <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                  <th className="py-3 px-4 bg-white">Destinataire</th>
+                  <th className="py-3 px-4 bg-white">Source</th>
                   <th className="py-3 px-4 bg-white">Cause</th>
                   <th className="py-3 px-4 bg-white">Date & Heure</th>
-                  <th className="py-3 px-4 bg-white">Durée</th>
-                  <th className="py-3 px-4 bg-white">Score AI</th>
-                  <th className="py-3 px-4 bg-white">Commission</th>
+                  <th className="py-3 px-4 bg-white">Montant</th>
                   <th className="py-3 px-4 bg-white text-right">Détails</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 text-xs">
-                {visibleCalls.map((call) => {
-                  const tx = call.repTx;
-                  const cause = repTxCauseLabel(tx?.type);
-                  return (
-                    <tr key={tx?._id || call.callId} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-4 px-4 font-bold text-slate-800">
-                        <span>
-                          {call.leadObj
-                            ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}`
-                            : call.lead || 'Inconnu'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border font-bold text-[10px] uppercase tracking-wider ${cause.tone}`}
-                          title={tx?.description || cause.label}
-                        >
-                          {cause.label}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-gray-500">
-                        {new Date(call.startTime).toLocaleString('fr-FR')}
-                      </td>
-                      <td className="py-4 px-4 text-slate-900 font-bold tabular-nums">
-                        {call.duration > 0 ? formatFloatMinutesToMMSS((call.duration || 0) / 60) : '—'}
-                      </td>
-                      <td className="py-4 px-4">
-                        {(() => {
-                          const ai = normalizeAiCallScore(call.ai_call_score);
-                          return ai?.score != null ? (
-                            <div className="flex items-center gap-1 font-bold text-slate-800">
-                              <Star size={14} className="fill-amber-400 text-amber-400" />
-                              <span>{ai.score}/100</span>
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 italic">—</span>
-                          );
-                        })()}
-                      </td>
-                      <td className="py-4 px-4">
-                        {callsTab === 'validated' ? (() => {
-                          const gross = Number(tx?.amount || 0);
-                          const repShare = Number(tx?.repShare || 0);
-                          const harxShare = Number(tx?.harxShare || 0);
-                          const agentName = call.agent;
-                          return gross > 0 ? (
-                            <div className="flex flex-col items-start gap-1">
-                              {/* Commission = debit on the company wallet → rendered with a
-                                  minus sign, in rose, so the company sees "money out". */}
-                              <span
-                                className="text-sm font-black text-rose-600 tabular-nums"
-                                title="Débit du portefeuille company"
-                              >
-                                − {gross.toFixed(2)} €
-                              </span>
-                              <div className="text-[9px] font-bold leading-tight space-y-0.5">
-                                <div className="text-slate-600">
-                                  70% {agentName} · {repShare.toFixed(2)} €
-                                </div>
-                                <div className="text-slate-500">
-                                  30% HARX · {harxShare.toFixed(2)} €
+                {unifiedMovements.map((movement) => {
+                  if (movement.type === 'deposit_entry') {
+                    return (
+                      <tr key={movement.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-4 px-4">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[10px] uppercase tracking-wider">
+                            <Sparkles size={10} /> {movement.source}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-slate-700 max-w-md truncate" title={movement.cause}>
+                          {movement.cause}
+                        </td>
+                        <td className="py-4 px-4 text-gray-500">
+                          {new Date(movement.createdAt).toLocaleString('fr-FR')}
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className="text-sm font-black text-emerald-600 tabular-nums">
+                            + {Number(movement.amount || 0).toFixed(2)} €
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-right">
+                          {/* No details button for deposits */}
+                        </td>
+                      </tr>
+                    );
+                  } else {
+                    const txType = movement.txType;
+                    const cause = repTxCauseLabel(txType);
+                    const isRefused = movement.status === 'refused';
+                    return (
+                      <tr key={movement.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-4 px-4 font-bold text-slate-800">
+                          {movement.source}
+                        </td>
+                        <td className="py-4 px-4">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border font-bold text-[10px] uppercase tracking-wider ${cause.tone}`}
+                            title={cause.label}
+                          >
+                            {cause.label}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-gray-500">
+                          {new Date(movement.createdAt).toLocaleString('fr-FR')}
+                        </td>
+                        <td className="py-4 px-4">
+                          {isRefused ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-100 font-bold text-[9px] uppercase tracking-wider">
+                              <X size={10} /> Refusé (aucun débit)
+                            </span>
+                          ) : (() => {
+                            const gross = Number(movement.amount || 0);
+                            const repShare = Number(movement.repShare || 0);
+                            const harxShare = Number(movement.harxShare || 0);
+                            const agentName = movement.source;
+                            return gross > 0 ? (
+                              <div className="flex flex-col items-start gap-1">
+                                <span
+                                  className="text-sm font-black text-rose-600 tabular-nums"
+                                  title="Débit du portefeuille company"
+                                >
+                                  − {gross.toFixed(2)} €
+                                </span>
+                                <div className="text-[9px] font-bold leading-tight space-y-0.5">
+                                  <div className="text-slate-600">
+                                    70% {agentName} · {repShare.toFixed(2)} €
+                                  </div>
+                                  <div className="text-slate-500">
+                                    30% HARX · {harxShare.toFixed(2)} €
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-100 font-bold text-[9px] uppercase tracking-wider">
-                              <BadgeCheck size={10} /> Débité
-                            </span>
-                          );
-                        })() : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-100 font-bold text-[9px] uppercase tracking-wider">
-                            <X size={10} /> Refusé (aucun débit)
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 text-right">
-                        <button
-                          onClick={() => {
-                            setSelectedCall(call);
-                            setSelectedCallTab('transcript');
-                          }}
-                          className="px-3 py-1.5 bg-slate-950 hover:bg-slate-900 text-white rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all"
-                        >
-                          Consulter
-                        </button>
-                      </td>
-                    </tr>
-                  );
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-100 font-bold text-[9px] uppercase tracking-wider">
+                                <BadgeCheck size={10} /> Débité
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td className="py-4 px-4 text-right">
+                          {movement.callRow && (
+                            <button
+                              onClick={() => {
+                                setSelectedCall(movement.callRow!);
+                                setSelectedCallTab('transcript');
+                              }}
+                              className="px-3 py-1.5 bg-slate-950 hover:bg-slate-900 text-white rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all"
+                            >
+                              Consulter
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  }
                 })}
               </tbody>
             </table>
