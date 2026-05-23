@@ -182,22 +182,6 @@ export function PhoneNumberPanel() {
   // In production we MUST resolve to the live orchestrator backend; the old
   // localhost default would silently break checkout for every deployed user.
   const apiBaseUrl = getOrchestratorApiBase();
-
-  // Orphan recovery: PhoneNumberPayment rows that are `succeeded` but whose
-  // Twilio number purchase never completed (e.g. popup-mode flow where the
-  // parent dashboard got navigated away before `purchase/twilio` could fire).
-  // We surface these in a banner so the user can recover without re-paying.
-  type OrphanPayment = {
-    paymentId: string;
-    phoneNumber: string;
-    gigId: string | null;
-    provider: 'stripe' | 'paypal';
-    amount: number;
-    currency: string;
-    createdAt: string;
-  };
-  const [orphanPayments, setOrphanPayments] = useState<OrphanPayment[]>([]);
-  const [recoveringPaymentId, setRecoveringPaymentId] = useState<string | null>(null);
   const formatPrice = (cents: number, currency: string) =>
     `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} ${currency === 'EUR' ? '€' : currency}`;
 
@@ -260,63 +244,9 @@ export function PhoneNumberPanel() {
     fetchData();
   }, [companyId]);
 
-  // Orphan-payment detection: query the backend for any PhoneNumberPayments
-  // that are `succeeded` but whose Twilio purchase never finished. If we find
-  // any, render a banner so the user can recover without paying again.
-  const fetchOrphanPayments = useCallback(async () => {
-    if (!companyId) return;
-    try {
-      const res = await fetch(`${apiBaseUrl}/phone-numbers/checkout/orphans/${companyId}`);
-      const data = await safeParseJson(res);
-      if (!res.ok || !data?.success) return;
-      setOrphanPayments(Array.isArray(data.orphans) ? data.orphans : []);
-    } catch (err) {
-      console.warn('[telephony] orphan-payment lookup failed', err);
-    }
-  }, [apiBaseUrl, companyId]);
-
-  useEffect(() => {
-    fetchOrphanPayments();
-  }, [fetchOrphanPayments]);
-
-  const recoverOrphanPayment = useCallback(
-    async (paymentId: string) => {
-      setRecoveringPaymentId(paymentId);
-      try {
-        const res = await fetch(`${apiBaseUrl}/phone-numbers/checkout/recover`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentId })
-        });
-        const data = await safeParseJson(res);
-        if (!res.ok || !data?.success) {
-          throw new Error(data?.message || data?.error || 'Recovery failed');
-        }
-        toast.success(
-          t('phoneNumberPanel.toasts.recovered', {
-            defaultValue: 'Numéro provisionné. Bienvenue dans HARX !'
-          })
-        );
-        await Promise.all([fetchData(true), fetchOrphanPayments()]);
-      } catch (err: any) {
-        console.error('[telephony] recover failed', err);
-        toast.error(
-          err?.message
-            || t('phoneNumberPanel.toasts.recoverFailed', {
-              defaultValue: 'Provisionnement impossible. Réessayez plus tard.'
-            })
-        );
-      } finally {
-        setRecoveringPaymentId(null);
-      }
-    },
-    [apiBaseUrl, fetchData, fetchOrphanPayments, t]
-  );
-
   const handleRefresh = () => {
     setRefreshing(true);
     fetchData(true);
-    fetchOrphanPayments();
     toast.success(t('phoneNumberPanel.toasts.refreshed'), { id: 'refresh-tel-toast' });
   };
 
@@ -342,6 +272,18 @@ export function PhoneNumberPanel() {
       const res = await fetch(endpoint);
       if (res.ok) {
         const data = await res.json();
+        if (data?.regulatoryBlocked) {
+          setSearchResults([]);
+          toast.error(
+            data.message
+              || t('phoneNumberPanel.toasts.regulatoryBlocked', {
+                defaultValue:
+                  'Ces numéros nécessitent un bundle réglementaire Twilio approuvé. Soumettez vos documents ou choisissez une autre région.'
+              }),
+            { duration: 8000 }
+          );
+          return;
+        }
         if (Array.isArray(data)) {
           setSearchResults(data);
           if (data.length === 0) {
@@ -351,6 +293,13 @@ export function PhoneNumberPanel() {
           }
         } else if (data.data && Array.isArray(data.data)) {
           setSearchResults(data.data);
+        } else if (Array.isArray(data.numbers)) {
+          setSearchResults(data.numbers);
+          if (data.numbers.length === 0) {
+            toast.error(t('phoneNumberPanel.toasts.noNumbersFound'));
+          } else {
+            toast.success(t('phoneNumberPanel.toasts.numbersFound', { count: data.numbers.length }));
+          }
         } else {
           setSearchResults([]);
           toast.error(t('phoneNumberPanel.toasts.unknownFormat'));
@@ -495,7 +444,6 @@ export function PhoneNumberPanel() {
       );
       setSearchResults(prev => prev.filter(n => n.phoneNumber !== checkoutNumber));
       fetchData(true);
-      fetchOrphanPayments();
       // Persist the telephony flag on the gig document right away so the
       // dashboard checklist reflects progress even before the user opens
       // it again. `markGigStepDone` also re-emits `harx:gig-step-progress`
@@ -504,7 +452,7 @@ export function PhoneNumberPanel() {
         markGigStepDone(selectedGigIdForNumber, 'telephony', true);
       }
     },
-    [checkoutNumber, fetchData, fetchOrphanPayments, selectedGigIdForNumber, t]
+    [checkoutNumber, fetchData, selectedGigIdForNumber, t]
   );
 
   const startPaypalCheckout = async () => {
