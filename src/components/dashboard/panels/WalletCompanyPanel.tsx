@@ -872,17 +872,17 @@ export function WalletCompanyPanel() {
 
       {/* Call Details Modal — same look & feel as the Calls panel */}
       {selectedCall && createPortal(
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-4xl h-[85vh] bg-[#F8FAFC] rounded-[2.5rem] shadow-2xl border border-gray-100 flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-5xl h-[92vh] md:h-[88vh] max-h-[92vh] md:max-h-[88vh] bg-[#F8FAFC] rounded-[24px] md:rounded-[36px] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
 
             {/* Modal Header */}
-            <div className="p-6 bg-white border-b border-gray-100 shrink-0 flex items-center justify-between">
+            <div className="p-4 sm:p-6 bg-white border-b border-gray-100 shrink-0 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
                   <Phone size={18} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-800">
+                  <h3 className="text-sm font-black text-slate-800 leading-snug">
                     Appel avec {selectedCall.leadObj
                       ? `${selectedCall.leadObj.First_Name} ${selectedCall.leadObj.Last_Name}`
                       : selectedCall.lead}
@@ -893,7 +893,7 @@ export function WalletCompanyPanel() {
 
               <button
                 onClick={() => setSelectedCall(null)}
-                className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-xl transition-all"
+                className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-xl transition-all shrink-0"
               >
                 <X size={18} />
               </button>
@@ -901,13 +901,13 @@ export function WalletCompanyPanel() {
 
             {/* Audio Player */}
             {(selectedCall.recording_url || selectedCall.recording_url_cloudinary) && (
-              <div className="bg-slate-950 p-6 border-b border-white/5 shrink-0">
+              <div className="bg-slate-950 p-4 sm:p-6 border-b border-white/5 shrink-0">
                 <PremiumAudioPlayer url={selectedCall.recording_url_cloudinary || selectedCall.recording_url || ''} />
               </div>
             )}
 
             {/* Modal Body Tabs */}
-            <div className="bg-white border-b border-gray-100 shrink-0 flex items-center gap-2 px-6">
+            <div className="bg-white border-b border-gray-100 shrink-0 flex items-center gap-2 px-4 sm:px-6 overflow-x-auto whitespace-nowrap scrollbar-none">
               <button
                 onClick={() => setSelectedCallTab('transcript')}
                 className={`py-3.5 px-4 font-black text-xs uppercase tracking-wider transition-all border-b-2 ${selectedCallTab === 'transcript' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-400 hover:text-slate-700'}`}
@@ -923,18 +923,18 @@ export function WalletCompanyPanel() {
             </div>
 
             {/* Modal Tab Content */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-slate-50/20 custom-scrollbar">
               {selectedCallTab === 'transcript' ? (
-                <div className="space-y-4">
+                <div className="space-y-4 max-w-4xl mx-auto">
                   {Array.isArray(selectedCall.transcript) && selectedCall.transcript.length > 0 ? (
                     selectedCall.transcript.map((utterance: any, index: number) => {
                       const isRep = utterance.speaker === 'rep' || utterance.speaker === 'agent';
                       return (
-                        <div key={index} className={`flex gap-3 max-w-[80%] ${isRep ? 'ml-auto flex-row-reverse' : ''}`}>
+                        <div key={index} className={`flex gap-3 max-w-[85%] sm:max-w-[80%] ${isRep ? 'ml-auto flex-row-reverse' : ''}`}>
                           <div className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-black ${isRep ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>
                             {isRep ? 'REP' : 'CLT'}
                           </div>
-                          <div className={`p-4 rounded-2xl ${isRep ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white border border-gray-100 text-slate-800 rounded-tl-none'}`}>
+                          <div className={`p-4 rounded-2xl ${isRep ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white border border-gray-100 text-slate-800 rounded-tl-none shadow-sm'}`}>
                             <p className="text-xs leading-relaxed">{utterance.text}</p>
                           </div>
                         </div>
@@ -948,24 +948,24 @@ export function WalletCompanyPanel() {
                   )}
                 </div>
               ) : (
-                <div className="space-y-6">
+                <div className="space-y-6 max-w-5xl mx-auto">
                   {(() => {
                     const ai = normalizeAiCallScore(selectedCall.ai_call_score);
                     return ai ? (
                       <>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Note d'assurance Qualité</span>
                             <span className="text-3xl font-black text-slate-900 mt-2">{ai.score ?? 0}/100</span>
                             {ai.overallFeedback && (
-                              <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">{ai.overallFeedback}</p>
+                              <p className="text-[10px] text-gray-500 mt-2 leading-relaxed italic border-t border-slate-50 pt-2">{ai.overallFeedback}</p>
                             )}
                           </div>
-                          <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                          <div className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Sentiment Client</span>
                             <span className="text-base font-black text-slate-900 mt-2">{ai.sentimentLabel}</span>
                           </div>
-                          <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                          <div className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Transaction détectée</span>
                             <span className={`text-xs font-black mt-2 ${ai.transactionDetected ? 'text-emerald-600' : 'text-slate-600'}`}>
                               {ai.transactionDetected ? 'Oui' : 'Non'}
@@ -974,12 +974,12 @@ export function WalletCompanyPanel() {
                         </div>
 
                         {Object.keys(ai.rubrics).length > 0 && (
-                          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
-                            <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                          <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+                            <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2 pb-2 border-b border-slate-50">
                               <Brain size={16} className="text-blue-500" />
                               <span>Rubriques de notation AI</span>
                             </h4>
-                            <div className="space-y-3.5">
+                            <div className="space-y-4">
                               {Object.entries(ai.rubrics).map(([k, v]) => (
                                 <div key={k} className="flex flex-col gap-1.5 pb-3 border-b border-gray-50 last:border-0">
                                   <div className="flex items-center justify-between text-xs">
@@ -990,7 +990,7 @@ export function WalletCompanyPanel() {
                                     <div className="h-full bg-blue-500 rounded-full" style={{ width: `${v.score}%` }} />
                                   </div>
                                   {v.feedback && (
-                                    <p className="text-[10px] text-gray-500 italic mt-0.5">{v.feedback}</p>
+                                    <p className="text-[10px] text-gray-500 italic mt-0.5 leading-relaxed bg-slate-50/50 p-2 rounded-lg border border-slate-100/50">&quot;{v.feedback}&quot;</p>
                                   )}
                                 </div>
                               ))}

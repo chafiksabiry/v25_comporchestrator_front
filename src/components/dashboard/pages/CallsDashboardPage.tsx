@@ -337,19 +337,19 @@ export default function CallsDashboardPage() {
 
       {/* Modal Overlay */}
       {selectedCall && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-6 animate-in fade-in duration-300 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}>
-          <div className="relative bg-white w-full md:max-w-4xl h-[95vh] md:h-auto max-h-[95vh] md:max-h-[85vh] rounded-[24px] md:rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-white/20" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-300 bg-slate-905/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}>
+          <div className="relative bg-white w-full md:max-w-5xl h-[92vh] md:h-[88vh] max-h-[92vh] md:max-h-[88vh] rounded-[24px] md:rounded-[36px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-slate-100/80" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-              <div className="flex justify-between items-start md:block flex-1">
+            <div className="px-4 py-4 md:px-8 md:py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10 shrink-0">
+              <div className="flex justify-between items-start md:items-center w-full md:w-auto flex-1">
                 <div>
-                  <h2 className="text-base font-black text-slate-900 uppercase tracking-widest">
+                  <h2 className="text-sm md:text-base font-black text-slate-900 uppercase tracking-widest leading-snug">
                     {selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim() : 'Call Details'}
                   </h2>
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
                     {new Date(selectedCall.createdAt || selectedCall.date).toLocaleString()}
                   </p>
-                  <div className="flex items-center gap-1.5 mt-0.5 opacity-60">
+                  <div className="flex items-center gap-1.5 mt-1 opacity-60">
                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md">
                       Call ID: {typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id}
                     </span>
@@ -366,7 +366,7 @@ export default function CallsDashboardPage() {
                 </div>
               </div>
 
-              <div className="w-full md:w-auto md:flex-1 max-w-md">
+              <div className="w-full md:w-auto md:flex-1 max-w-full md:max-w-md shrink-0">
                 {(() => {
                   const recordingUrl = selectedCall.recording_url_cloudinary || selectedCall.recording_url;
                   if (!recordingUrl) return <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">No recording</div>;
@@ -376,7 +376,7 @@ export default function CallsDashboardPage() {
               </div>
 
               {/* Close button on desktop */}
-              <div className="hidden md:flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => setSelectedCall(null)}
                   className="p-2 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-xl border border-slate-100 transition-all shadow-sm"
@@ -386,76 +386,76 @@ export default function CallsDashboardPage() {
               </div>
             </div>
 
-            {/* Tabs */}
-            <div className="px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-4">
+            {/* Tabs & Decision Panel */}
+            <div className="px-4 py-3 md:px-8 md:py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 bg-white shrink-0">
+              <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 lg:pb-0">
                 <button
                   onClick={() => setActiveTab('transcript')}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'transcript' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'transcript' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
                 >
                   <MessageSquare className="w-4 h-4" />
                   Transcript
                 </button>
                 <button
                   onClick={() => setActiveTab('insights')}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'insights' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'insights' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
                 >
                   <ActivityIcon className="w-4 h-4" />
                   AI Insights
                 </button>
               </div>
 
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
                 {/* Section Décision de l'IA */}
-                <div className="flex items-center gap-4">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[120px]">La décision de l'IA:</span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest sm:min-w-[100px]">Décision de l'IA:</span>
                   
                   {/* Appel */}
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex items-center gap-1.5 text-slate-400" title="Appel">
-                      <Phone className="w-4 h-4" />
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Appel</span>
+                  <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100">
+                    <div className="flex items-center gap-1 text-slate-400" title="Appel">
+                      <Phone className="w-3.5 h-3.5" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Appel</span>
                     </div>
                     {selectedCall.validByAI === true ? (
-                      <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm" title="Validé par AI">
-                        <Check className="w-3.5 h-3.5" />
+                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100" title="Validé par AI">
+                        <Check className="w-3 h-3" />
                       </span>
                     ) : selectedCall.validByAI === false ? (
-                      <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm" title="Refusé par AI">
-                        <X className="w-3.5 h-3.5" />
+                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title="Refusé par AI">
+                        <X className="w-3 h-3" />
                       </span>
                     ) : (
-                      <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-slate-50 text-slate-400 border border-slate-100/40 shadow-sm" title="En cours">
-                        <Clock className="w-3.5 h-3.5 animate-pulse" />
+                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-slate-50 text-slate-400 border border-slate-100" title="En cours">
+                        <Clock className="w-3 h-3 animate-pulse" />
                       </span>
                     )}
                   </div>
 
                   {/* Transaction (IA part) */}
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex items-center gap-1.5 text-slate-400" title="Transaction">
-                      <CreditCard className="w-4 h-4" />
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction</span>
+                  <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100">
+                    <div className="flex items-center gap-1 text-slate-400" title="Transaction">
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Trans.</span>
                     </div>
                     {selectedCall.transaction?.validByCompany === true ? (
-                      <span className="inline-flex items-center justify-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm">
-                        <Check className="w-3.5 h-3.5" />
+                      <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">
+                        <Check className="w-3 h-3" />
                         -{(selectedCall.lead?.gigId?.commission?.transactionCommission || selectedCall.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€
                       </span>
                     ) : selectedCall.transaction?.validByCompany === false ? (
-                      <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm" title="Refusé">
-                        <X className="w-3.5 h-3.5" />
+                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title="Refusé">
+                        <X className="w-3 h-3" />
                       </span>
                     ) : (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         {selectedCall.validByAI !== null && selectedCall.validByAI !== undefined && selectedCall.transaction?.validByAI === false && (
-                          <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm" title="Refusé AI">
-                            <X className="w-3.5 h-3.5" />
+                          <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title="Refusé AI">
+                            <X className="w-3 h-3" />
                           </span>
                         )}
                         {selectedCall.validByAI !== null && selectedCall.validByAI !== undefined && selectedCall.transaction?.validByAI === true && (
-                          <span className="inline-flex items-center justify-center p-1.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm" title="Wait for Validation">
-                            <Clock className="w-3.5 h-3.5 animate-pulse" />
+                          <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100" title="Wait for Validation">
+                            <Clock className="w-3 h-3 animate-pulse" />
                           </span>
                         )}
                       </div>
@@ -465,19 +465,19 @@ export default function CallsDashboardPage() {
 
                 {/* Section Votre Décision */}
                 {selectedCall.transaction?.validByCompany === null && (
-                  <div className="flex items-center gap-4">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[120px]">Votre décision:</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest sm:min-w-[80px]">Votre choix:</span>
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, true)}
-                        className="p-1.5 rounded-full transition-all flex items-center justify-center shadow-sm bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60"
+                        className="p-1.5 rounded-xl transition-all flex items-center justify-center shadow-sm bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60"
                         title="Valider"
                       >
                         <Check className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, false)}
-                        className="p-1.5 rounded-full transition-all flex items-center justify-center shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60"
+                        className="p-1.5 rounded-xl transition-all flex items-center justify-center shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60"
                         title="Refuser"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -489,7 +489,7 @@ export default function CallsDashboardPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50/30">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-slate-50/20 custom-scrollbar">
               {activeTab === 'transcript' ? (
                 <div className="max-w-4xl mx-auto space-y-6">
                   {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
@@ -539,110 +539,163 @@ export default function CallsDashboardPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[
-                          { label: t('calls.metrics.fluency', 'Agent Fluency'), key: "Agent fluency", icon: Globe },
-                          { label: t('calls.metrics.sentiment', 'Sentiment Analysis'), key: "Sentiment analysis", icon: ActivityIcon },
-                          { label: t('calls.metrics.fraud', 'Fraud Detection'), key: "Fraud detection", icon: ShieldAlert },
-                          { label: t('calls.metrics.coherence', 'Script Coherence'), key: "Script coherence", icon: ShieldCheck },
-                          { label: t('calls.metrics.argumentation', 'Argumentation Quality'), key: "Argumentation", icon: TrendingUp },
-                          { label: t('calls.metrics.transaction', 'Transaction Analysis'), key: "Transaction analysis", icon: TrendingUp }
-                        ].map((metric, mIdx) => {
-                          const metricData = selectedCall.ai_call_score?.[metric.key];
-                          
-                          const isFraudMetric = metric.key === "Fraud detection";
-                          const originalScore = metricData?.score || 0;
-                          const score = isFraudMetric ? (100 - originalScore) : originalScore;
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                        {(() => {
+                          const colorMap: Record<string, { bg: string, text: string, bgBar: string }> = {
+                            emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', bgBar: 'bg-emerald-500' },
+                            blue: { bg: 'bg-blue-50', text: 'text-blue-600', bgBar: 'bg-blue-500' },
+                            rose: { bg: 'bg-rose-50', text: 'text-rose-600', bgBar: 'bg-rose-500' },
+                            indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', bgBar: 'bg-indigo-500' },
+                            amber: { bg: 'bg-amber-50', text: 'text-amber-600', bgBar: 'bg-amber-500' },
+                            violet: { bg: 'bg-violet-50', text: 'text-violet-600', bgBar: 'bg-violet-500' },
+                          };
 
-                          const rawFeedback = i18n.language === 'en'
-                            ? (metricData?.feedback_en || metricData?.feedback || '')
-                            : (metricData?.feedback_fr || metricData?.feedback || '');
+                          return [
+                            { label: t('calls.metrics.fluency', 'Agent Fluency'), key: "Agent fluency", icon: Globe, color: 'emerald' },
+                            { label: t('calls.metrics.sentiment', 'Sentiment Analysis'), key: "Sentiment analysis", icon: ActivityIcon, color: 'blue' },
+                            { label: t('calls.metrics.fraud', 'Fraud Detection'), key: "Fraud detection", icon: ShieldAlert, color: 'rose' },
+                            { label: t('calls.metrics.coherence', 'Script Coherence'), key: "Script coherence", icon: ShieldCheck, color: 'indigo' },
+                            { label: t('calls.metrics.argumentation', 'Argumentation Quality'), key: "Argumentation", icon: TrendingUp, color: 'amber' },
+                            { label: t('calls.metrics.transaction', 'Transaction Analysis'), key: "Transaction analysis", icon: TrendingUp, color: 'emerald' }
+                          ].map((metric, mIdx) => {
+                            const metricData = selectedCall.ai_call_score?.[metric.key];
+                            
+                            const isFraudMetric = metric.key === "Fraud detection";
+                            const originalScore = metricData?.score || 0;
+                            const score = isFraudMetric ? (100 - originalScore) : originalScore;
 
-                          return (
-                            <div key={mIdx} className="bg-white rounded-[20px] p-4 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300 flex flex-col justify-between">
-                              <div className="flex justify-between items-start mb-3">
-                                <div className={`w-10 h-10 rounded-xl bg-harx-50 text-harx-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
-                                  <metric.icon className="w-5 h-5" />
+                            const rawFeedback = i18n.language === 'en'
+                              ? (metricData?.feedback_en || metricData?.feedback || '')
+                              : (metricData?.feedback_fr || metricData?.feedback || '');
+
+                            const theme = colorMap[metric.color] || { bg: 'bg-slate-50', text: 'text-slate-600', bgBar: 'bg-slate-500' };
+
+                            return (
+                              <div key={mIdx} className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                                <div>
+                                  <div className="flex justify-between items-start mb-4 sm:mb-6">
+                                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${theme.bg} ${theme.text} flex items-center justify-center shadow-sm shrink-0`}>
+                                      <metric.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                    </div>
+                                    <div className="text-right">
+                                      <span className={`text-base sm:text-lg font-black ${theme.text}`}>{score}%</span>
+                                      <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Score</p>
+                                    </div>
+                                  </div>
+                                  <h5 className="text-[11px] sm:text-[12px] font-black text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <span className={`w-1.5 h-3.5 ${theme.bgBar} rounded-full`}></span>
+                                    {metric.label}
+                                  </h5>
                                 </div>
-                                <div className="text-right">
-                                  <span className={`text-xl font-black text-harx-600`}>{score}%</span>
-                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Score</p>
+                                <div className="mt-2">
+                                  <div className="text-xs sm:text-[13px] font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl sm:rounded-2xl p-4 border border-slate-50 group-hover:bg-white group-hover:border-slate-100 transition-all max-h-[160px] overflow-y-auto custom-scrollbar italic">
+                                    {rawFeedback ? rawFeedback.split('"').map((part, i) =>
+                                      i % 2 === 1 ? (
+                                        <span key={i} className="bg-amber-100/50 text-amber-900 font-bold px-1 rounded border-b border-amber-200 not-italic">&quot;{part}&quot;</span>
+                                      ) : part
+                                    ) : (i18n.language === 'en' ? 'Detailed analysis completed.' : 'Analyse détaillée terminée.')}
+                                  </div>
                                 </div>
                               </div>
-                              <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-1.5">{metric.label}</h5>
-                              <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
-                                &quot;{rawFeedback || (i18n.language === 'en' ? 'Comprehensive analysis completed.' : 'Analyse détaillée terminée.')}&quot;
-                              </p>
-                            </div>
-                          );
-                        })}
+                            );
+                          });
+                        })()}
                       </div>
 
                       {/* Statuts & Réponses Prospect */}
                       <div className="space-y-4">
                         <div className="flex items-center gap-4 px-4 pt-2">
                           <div className="h-px flex-1 bg-slate-200/60"></div>
-                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Statuts & Réponses Prospect</h5>
+                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">Statuts & Réponses Prospect</h5>
                           <div className="h-px flex-1 bg-slate-200/60"></div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {[
-                            { label: 'Pas intéressé', key: "PAS INTÉRESSÉS", icon: ShieldAlert, color: 'rose' },
-                            { label: 'Pas au courant', key: "PAS AU COURANT", icon: Globe, color: 'blue' },
-                            { label: 'Déjà équipé / Fourni', key: "DÉJÀ ÉQUIPÉS", icon: ShieldCheck, color: 'indigo' },
-                            { label: 'Prise de RDV', key: "RDV", icon: Calendar, color: 'emerald' },
-                            { label: 'À plus tard / Rappel', key: "A plus tard", icon: Clock, color: 'amber' }
-                          ].map((metric, mIdx) => {
-                            const metricData = selectedCall.ai_call_score?.[metric.key];
-                            if (!metricData) return null;
-                            const score = metricData?.score || 0;
-                            const scoreColorClass = score >= 50 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50';
-                            const passed = typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50;
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                          {(() => {
+                            const colorMap: Record<string, { bg: string, text: string, bgBar: string }> = {
+                              emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', bgBar: 'bg-emerald-500' },
+                              blue: { bg: 'bg-blue-50', text: 'text-blue-600', bgBar: 'bg-blue-500' },
+                              rose: { bg: 'bg-rose-50', text: 'text-rose-600', bgBar: 'bg-rose-500' },
+                              indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', bgBar: 'bg-indigo-500' },
+                              amber: { bg: 'bg-amber-50', text: 'text-amber-600', bgBar: 'bg-amber-500' },
+                            };
 
-                            return (
-                              <div key={mIdx} className="bg-white rounded-[20px] p-4 border border-slate-100 shadow-xl group hover:shadow-2xl transition-all duration-300 flex flex-col justify-between">
-                                <div className="flex justify-between items-start mb-3">
-                                  <div className={`w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center transition-transform group-hover:scale-110`}>
-                                    <metric.icon className="w-5 h-5" />
+                            return [
+                              { label: 'Pas intéressé', key: "PAS INTÉRESSÉS", icon: ShieldAlert, color: 'rose' },
+                              { label: 'Pas au courant', key: "PAS AU COURANT", icon: Globe, color: 'blue' },
+                              { label: 'Déjà équipé / Fourni', key: "DÉJÀ ÉQUIPÉS", icon: ShieldCheck, color: 'indigo' },
+                              { label: 'Prise de RDV', key: "RDV", icon: Calendar, color: 'emerald' },
+                              { label: 'À plus tard / Rappel', key: "A plus tard", icon: Clock, color: 'amber' }
+                            ].map((metric, mIdx) => {
+                              const metricData = selectedCall.ai_call_score?.[metric.key];
+                              if (!metricData) return null;
+                              const score = metricData?.score || 0;
+                              const scoreColorClass = score >= 50 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50';
+                              const passed = typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50;
+
+                              const theme = colorMap[metric.color] || { bg: 'bg-slate-50', text: 'text-slate-600', bgBar: 'bg-slate-500' };
+
+                              return (
+                                <div key={mIdx} className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                                  <div>
+                                    <div className="flex justify-between items-start mb-4 sm:mb-6">
+                                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${theme.bg} ${theme.text} flex items-center justify-center shadow-sm shrink-0`}>
+                                        <metric.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                      </div>
+                                      <div className="text-right">
+                                        <span className={`text-xs sm:text-sm font-black ${scoreColorClass} px-2.5 py-1 rounded-xl shadow-sm border border-transparent`}>
+                                          {passed ? 'Oui' : 'Non'} ({score}%)
+                                        </span>
+                                        <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Détecté</p>
+                                      </div>
+                                    </div>
+                                    <h5 className="text-[11px] sm:text-[12px] font-black text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                      <span className={`w-1.5 h-3.5 ${theme.bgBar} rounded-full`}></span>
+                                      {metric.label}
+                                    </h5>
                                   </div>
-                                  <div className="text-right">
-                                    <span className={`text-base font-black ${scoreColorClass} px-2.5 py-1 rounded-lg`}>
-                                      {passed ? 'Oui' : 'Non'} ({score}%)
-                                    </span>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Détecté</p>
+                                  <div className="mt-2">
+                                    <div className="text-xs sm:text-[13px] font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl sm:rounded-2xl p-4 border border-slate-50 group-hover:bg-white group-hover:border-slate-100 transition-all max-h-[160px] overflow-y-auto custom-scrollbar italic">
+                                      {metricData?.feedback ? metricData.feedback.split('"').map((part, i) =>
+                                        i % 2 === 1 ? (
+                                          <span key={i} className="bg-amber-100/50 text-amber-900 font-bold px-1 rounded border-b border-amber-200 not-italic">&quot;{part}&quot;</span>
+                                        ) : part
+                                      ) : (i18n.language === 'en' ? 'No quote detected.' : 'Aucune citation détectée.')}
+                                    </div>
                                   </div>
                                 </div>
-                                <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-1.5">{metric.label}</h5>
-                                <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
-                                  &quot;{i18n.language === 'en'
-                                    ? (metricData?.feedback_en || metricData?.feedback || 'No quote detected.')
-                                    : (metricData?.feedback_fr || metricData?.feedback || 'Aucune citation détectée.')}&quot;
-                                </p>
-                              </div>
-                            );
-                          })}
+                              );
+                            });
+                          })()}
                         </div>
                       </div>
 
-                      <div className="bg-white rounded-[32px] border border-emerald-100 shadow-xl overflow-hidden relative group p-10">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-emerald-500/10 transition-colors"></div>
-                        <div className="relative z-10">
-                          <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                              <Star className="w-6 h-6" />
+                      {/* Executive Summary Section */}
+                      <div className="relative group">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-[28px] sm:rounded-[40px] blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
+                        <div className="relative bg-white rounded-[28px] sm:rounded-[40px] border border-emerald-100/50 shadow-2xl shadow-emerald-500/5 p-6 sm:p-10 overflow-hidden">
+                          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full -mr-40 -mt-40 blur-3xl"></div>
+
+                          <div className="relative z-10">
+                            <div className="flex items-center gap-4 sm:gap-6 mb-6">
+                              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 shrink-0">
+                                <Star className="w-6 h-6 sm:w-8 sm:h-8" />
+                              </div>
+                              <div>
+                                <h4 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-widest">Executive Summary</h4>
+                                <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">Overall AI Evaluation</p>
+                              </div>
                             </div>
-                            <div>
-                              <h4 className="text-lg font-black text-slate-900 uppercase tracking-widest">Executive Summary</h4>
-                              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Overall AI Evaluation</p>
+
+                            <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-inner">
+                              <p className="text-base sm:text-xl font-bold text-slate-800 leading-relaxed italic relative">
+                                <span className="absolute -left-2 -top-4 sm:-left-4 sm:-top-4 text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50">&quot;</span>
+                                {i18n.language === 'en'
+                                  ? (selectedCall.ai_summary_en || selectedCall.ai_call_score?.overall?.feedback_en || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || 'The agent demonstrated standard performance.')
+                                  : (selectedCall.ai_summary_fr || selectedCall.ai_call_score?.overall?.feedback_fr || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || 'L\'agent a fait preuve de performances standards.')}
+                                <span className="text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50 ml-1 leading-none align-bottom">&quot;</span>
+                              </p>
                             </div>
-                          </div>
-                          <div className="bg-emerald-50/50 rounded-2xl p-8 border border-emerald-100/50">
-                            <p className="text-lg font-bold text-emerald-900 leading-relaxed italic">
-                              &quot;{i18n.language === 'en'
-                                ? (selectedCall.ai_summary_en || selectedCall.ai_call_score?.overall?.feedback_en || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || 'The agent demonstrated standard performance.')
-                                : (selectedCall.ai_summary_fr || selectedCall.ai_call_score?.overall?.feedback_fr || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || 'L\'agent a fait preuve de performances standards.')}&quot;
-                            </p>
                           </div>
                         </div>
                       </div>
@@ -653,10 +706,10 @@ export default function CallsDashboardPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-4 py-4 md:px-8 md:py-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+            <div className="px-4 py-4 md:px-8 md:py-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 shrink-0">
               <button
                 onClick={() => setSelectedCall(null)}
-                className="px-8 py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all shadow-lg"
+                className="px-6 py-2.5 sm:px-8 sm:py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 shrink-0"
               >
                 Close Details
               </button>
