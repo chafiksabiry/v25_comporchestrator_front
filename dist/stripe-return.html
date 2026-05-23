@@ -53,7 +53,7 @@
   <body>
     <div class="box">
       <div class="spin" id="loader"></div>
-      <h1 id="title">Finalisation de l&apos;abonnement…</h1>
+      <h1 id="title">Finalisation du paiement…</h1>
       <p id="msg">Redirection vers HARX en cours.</p>
       <p class="err" id="err" hidden></p>
     </div>
@@ -64,14 +64,21 @@
         var sessionId = params.get('session_id') || params.get('sessionId');
         var returnTo = params.get('returnTo') || '/';
         var apiBase = (params.get('apiBase') || '').replace(/\/$/, '');
+        var flow = (params.get('flow') || 'subscription').toLowerCase();
+        var isPayment = flow === 'payment' || flow === 'wallet' || flow === 'minutes';
 
         var titleEl = document.getElementById('title');
         var msgEl = document.getElementById('msg');
         var errEl = document.getElementById('err');
         var loaderEl = document.getElementById('loader');
 
+        titleEl.textContent = isPayment
+          ? 'Finalisation du paiement…'
+          : "Finalisation de l'abonnement…";
+
         function appendSuccessFlag(url) {
-          var flag = 'subscription=success';
+          var flagKey = isPayment ? 'payment' : 'subscription';
+          var flag = flagKey + '=success';
           if (url.indexOf('#') !== -1) {
             var parts = url.split('#');
             var hash = parts[1];
@@ -82,7 +89,7 @@
           }
           try {
             var u = new URL(url, location.origin);
-            u.searchParams.set('subscription', 'success');
+            u.searchParams.set(flagKey, 'success');
             return u.toString();
           } catch (e) {
             return url + (url.indexOf('?') !== -1 ? '&' : '?') + flag;
@@ -106,6 +113,7 @@
         function succeed() {
           notifyOpener({
             type: 'HARX_STRIPE_RETURN',
+            flow: flow,
             paymentId: paymentId,
             sessionId: sessionId,
           });
@@ -134,7 +142,11 @@
           return;
         }
 
-        fetch(apiBase + '/subscriptions/checkout/confirm', {
+        var confirmPath = isPayment
+          ? '/payments/checkout/confirm'
+          : '/subscriptions/checkout/confirm';
+
+        fetch(apiBase + confirmPath, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ paymentId: paymentId, providerRef: sessionId }),
