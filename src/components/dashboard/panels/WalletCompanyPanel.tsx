@@ -15,7 +15,8 @@ import {
   BadgeCheck,
   Star,
   Brain,
-  MessageSquare
+  MessageSquare,
+  Plus
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -116,23 +117,6 @@ interface RepTransactionRow {
   } | null;
   gig?: { _id: string; title?: string } | null;
   rep?: { _id: string; firstName?: string; lastName?: string; email?: string } | null;
-}
-
-interface UnifiedTransactionRow {
-  id: string;
-  type: 'deposit_entry' | 'rep_transaction';
-  date: Date;
-  createdAt: string;
-  source: string;
-  cause: string;
-  status: string;
-  amount: number;
-  repShare?: number;
-  harxShare?: number;
-  callRow?: CompanyCallRow;
-  txType?: string;
-  depositType?: string;
-  description?: string;
 }
 
 const AI_SCORE_META_KEYS = new Set([
@@ -452,49 +436,27 @@ export function WalletCompanyPanel() {
     };
   };
 
-  const unifiedMovements: UnifiedTransactionRow[] = [
-    ...repTransactions.map((tx) => {
-      const callRow = repTxToRow(tx);
-      const repName = tx.rep
-        ? `${tx.rep.firstName || ''} ${tx.rep.lastName || ''}`.trim() || tx.rep.email || 'Rep'
-        : 'Rep';
-      return {
-        id: tx._id,
-        type: 'rep_transaction' as const,
-        date: new Date(tx.createdAt),
-        createdAt: tx.createdAt,
-        source: repName,
-        cause: tx.type,
-        status: tx.status,
-        amount: tx.amount,
-        repShare: tx.repShare,
-        harxShare: tx.harxShare,
-        callRow,
-        txType: tx.type
-      };
-    }),
-    ...walletEntries
+  const unifiedMovements = React.useMemo(() => {
+    const reps = repTransactions.map((tx) => ({
+      kind: 'rep' as const,
+      id: tx._id,
+      date: tx.call?.startTime || tx.createdAt,
+      raw: tx,
+    }));
+    const deposits = walletEntries
       .filter((e) => e.direction === 'credit' && e.status !== 'failed')
-      .map((entry) => {
-        const typeLabel =
-          entry.type === 'deposit' ? 'Dépôt'
-          : entry.type === 'refund' ? 'Remboursement'
-          : entry.type === 'adjustment' ? 'Ajustement'
-          : entry.type;
-        return {
-          id: entry._id,
-          type: 'deposit_entry' as const,
-          date: new Date(entry.createdAt),
-          createdAt: entry.createdAt,
-          source: typeLabel,
-          cause: entry.description || '—',
-          status: entry.status,
-          amount: entry.amount,
-          depositType: entry.type,
-          description: entry.description
-        };
-      })
-  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+      .map((entry) => ({
+        kind: 'wallet' as const,
+        id: entry._id,
+        date: entry.createdAt,
+        raw: entry,
+      }));
+    return [...reps, ...deposits].sort((a, b) => {
+      const da = a.date ? new Date(a.date).getTime() : 0;
+      const db = b.date ? new Date(b.date).getTime() : 0;
+      return db - da;
+    });
+  }, [repTransactions, walletEntries]);
 
   const handleAgentWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'refuse') => {
     try {
@@ -618,12 +580,7 @@ export function WalletCompanyPanel() {
             <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Total à liquider</span>
             <span className="text-lg font-black text-slate-800">
               {agentWithdrawals.reduce((sum, w) => sum + w.amount, 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Wallet ledger — credits (deposits) + debits (commissions) */}
+            </span>      {/* Wallet ledger — credits (deposits) + debits (commissions) */}
       <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
         <div>
           <h3 className="text-base font-black text-slate-800 tracking-tight">
@@ -647,102 +604,118 @@ export function WalletCompanyPanel() {
                   <th className="py-3 px-4 bg-white">Source</th>
                   <th className="py-3 px-4 bg-white">Cause</th>
                   <th className="py-3 px-4 bg-white">Date & Heure</th>
-                  <th className="py-3 px-4 bg-white">Montant</th>
+                  <th className="py-3 px-4 bg-white text-right">Montant</th>
                   <th className="py-3 px-4 bg-white text-right">Détails</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 text-xs">
                 {unifiedMovements.map((movement) => {
-                  if (movement.type === 'deposit_entry') {
+                  if (movement.kind === 'wallet') {
+                    const entry = movement.raw;
+                    const typeLabel =
+                      entry.type === 'deposit' ? 'Dépôt'
+                      : entry.type === 'refund' ? 'Remboursement'
+                      : entry.type === 'adjustment' ? 'Ajustement'
+                      : entry.type;
                     return (
                       <tr key={movement.id} className="hover:bg-gray-50 transition-colors">
                         <td className="py-4 px-4">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[10px] uppercase tracking-wider">
-                            <Sparkles size={10} /> {movement.source}
+                          <span className="inline-flex items-center gap-2 font-bold text-slate-800 text-[11px] uppercase tracking-wider">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
+                              <Plus size={10} />
+                            </span>
+                            {typeLabel}
                           </span>
                         </td>
-                        <td className="py-4 px-4 text-slate-700 max-w-md truncate" title={movement.cause}>
-                          {movement.cause}
+                        <td className="py-4 px-4 text-slate-700 max-w-md truncate" title={entry.description}>
+                          {entry.description || '—'}
                         </td>
                         <td className="py-4 px-4 text-gray-500">
-                          {new Date(movement.createdAt).toLocaleString('fr-FR')}
+                          {new Date(entry.createdAt).toLocaleString('fr-FR')}
                         </td>
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-4 text-right">
                           <span className="text-sm font-black text-emerald-600 tabular-nums">
-                            + {Number(movement.amount || 0).toFixed(2)} €
+                            + {Number(entry.amount || 0).toFixed(2)} €
                           </span>
                         </td>
                         <td className="py-4 px-4 text-right">
-                          {/* No details button for deposits */}
+                          {/* Wallet entry does not have extra call details, leave blank */}
                         </td>
                       </tr>
                     );
                   } else {
-                    const txType = movement.txType;
-                    const cause = repTxCauseLabel(txType);
-                    const isRefused = movement.status === 'refused';
+                    const tx = movement.raw;
+                    const call = repTxToRow(tx);
+                    const cause = repTxCauseLabel(tx.type);
+                    const isRefused = tx.status === 'refused';
+                    const gross = Number(tx.amount || 0);
+                    const repShare = Number(tx.repShare || 0);
+                    const harxShare = Number(tx.harxShare || 0);
+                    const agentName = call.agent;
+
                     return (
                       <tr key={movement.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="py-4 px-4 font-bold text-slate-800">
-                          {movement.source}
+                        <td className="py-4 px-4">
+                          <span className="inline-flex items-center gap-2 font-bold text-slate-800 text-[11px] uppercase tracking-wider">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/15 text-indigo-600">
+                              <Phone size={10} />
+                            </span>
+                            <span className="block max-w-[180px] truncate" title={call.leadObj ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}` : call.lead}>
+                              {call.leadObj
+                                ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}`
+                                : call.lead || 'Inconnu'}
+                            </span>
+                          </span>
                         </td>
                         <td className="py-4 px-4">
                           <span
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border font-bold text-[10px] uppercase tracking-wider ${cause.tone}`}
-                            title={cause.label}
+                            title={tx.description || cause.label}
                           >
                             {cause.label}
                           </span>
                         </td>
                         <td className="py-4 px-4 text-gray-500">
-                          {new Date(movement.createdAt).toLocaleString('fr-FR')}
+                          {new Date(call.startTime).toLocaleString('fr-FR')}
                         </td>
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-4 text-right">
                           {isRefused ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-100 font-bold text-[9px] uppercase tracking-wider">
                               <X size={10} /> Refusé (aucun débit)
                             </span>
-                          ) : (() => {
-                            const gross = Number(movement.amount || 0);
-                            const repShare = Number(movement.repShare || 0);
-                            const harxShare = Number(movement.harxShare || 0);
-                            const agentName = movement.source;
-                            return gross > 0 ? (
-                              <div className="flex flex-col items-start gap-1">
-                                <span
-                                  className="text-sm font-black text-rose-600 tabular-nums"
-                                  title="Débit du portefeuille company"
-                                >
-                                  − {gross.toFixed(2)} €
-                                </span>
-                                <div className="text-[9px] font-bold leading-tight space-y-0.5">
-                                  <div className="text-slate-600">
-                                    70% {agentName} · {repShare.toFixed(2)} €
-                                  </div>
-                                  <div className="text-slate-500">
-                                    30% HARX · {harxShare.toFixed(2)} €
-                                  </div>
+                          ) : gross > 0 ? (
+                            <div className="flex flex-col items-end gap-1">
+                              <span
+                                className="text-sm font-black text-rose-600 tabular-nums"
+                                title="Débit du portefeuille company"
+                              >
+                                − {gross.toFixed(2)} €
+                              </span>
+                              <div className="text-[9px] font-bold leading-tight space-y-0.5 text-right">
+                                <div className="text-slate-600">
+                                  70% {agentName} · {repShare.toFixed(2)} €
+                                </div>
+                                <div className="text-slate-500">
+                                  30% HARX · {harxShare.toFixed(2)} €
                                 </div>
                               </div>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-100 font-bold text-[9px] uppercase tracking-wider">
-                                <BadgeCheck size={10} /> Débité
-                              </span>
-                            );
-                          })()}
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-100 font-bold text-[9px] uppercase tracking-wider">
+                              <BadgeCheck size={10} /> Débité
+                            </span>
+                          )}
                         </td>
                         <td className="py-4 px-4 text-right">
-                          {movement.callRow && (
-                            <button
-                              onClick={() => {
-                                setSelectedCall(movement.callRow!);
-                                setSelectedCallTab('transcript');
-                              }}
-                              className="px-3 py-1.5 bg-slate-950 hover:bg-slate-900 text-white rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all"
-                            >
-                              Consulter
-                            </button>
-                          )}
+                          <button
+                            onClick={() => {
+                              setSelectedCall(call);
+                              setSelectedCallTab('transcript');
+                            }}
+                            className="px-3 py-1.5 bg-slate-950 hover:bg-slate-900 text-white rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all"
+                          >
+                            Consulter
+                          </button>
                         </td>
                       </tr>
                     );
