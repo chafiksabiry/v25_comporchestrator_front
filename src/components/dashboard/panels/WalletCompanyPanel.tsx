@@ -580,7 +580,12 @@ export function WalletCompanyPanel() {
             <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Total à liquider</span>
             <span className="text-lg font-black text-slate-800">
               {agentWithdrawals.reduce((sum, w) => sum + w.amount, 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-            </span>      {/* Wallet ledger — credits (deposits) + debits (commissions) */}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Wallet ledger — credits (deposits) + debits (commissions) */}
       <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
         <div>
           <h3 className="text-base font-black text-slate-800 tracking-tight">
