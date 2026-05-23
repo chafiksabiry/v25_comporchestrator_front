@@ -380,7 +380,13 @@ export function PhoneNumberPanel() {
         throw new Error(t('phoneNumberPanel.toasts.invalidPaymentResponse'));
       }
       if (!initRes.ok || !initData?.paymentId) {
-        throw new Error(initData?.message || initData?.error || t('phoneNumberPanel.toasts.cannotInitPayment'));
+        const err: any = new Error(
+          initData?.message || initData?.error || t('phoneNumberPanel.toasts.cannotInitPayment')
+        );
+        // Surface the structured error code so callers can react (e.g. close
+        // the modal entirely instead of bouncing back to the method picker).
+        if (initData?.code) err.code = initData.code;
+        throw err;
       }
       return initData as {
         paymentId: string;
@@ -503,6 +509,13 @@ export function PhoneNumberPanel() {
       }
     } catch (err: any) {
       console.error(err);
+      // Regulatory pre-payment block: close the whole modal — no payment can
+      // proceed for this number until the bundle is approved.
+      if (err?.code === 'REGULATORY_BUNDLE_REQUIRED') {
+        toast.error(err.message, { duration: 8000 });
+        closeCheckoutModal();
+        return;
+      }
       toast.error(err?.message || t('phoneNumberPanel.toasts.paypalStartFailed'));
       setCheckoutStep('select');
     } finally {
@@ -553,6 +566,11 @@ export function PhoneNumberPanel() {
       finishSuccessfulPurchase('stripe');
     } catch (err: any) {
       console.error(err);
+      if (err?.code === 'REGULATORY_BUNDLE_REQUIRED') {
+        toast.error(err.message, { duration: 8000 });
+        closeCheckoutModal();
+        return;
+      }
       toast.error(err?.message || t('phoneNumberPanel.toasts.paymentError'));
       setCheckoutStep('select');
     } finally {
