@@ -919,6 +919,15 @@
       "stepsLabel": "Étapes restantes après la création :"
     }
   },
+  "gigActivation": {
+    "setupIncomplete": "Configuration incomplète ({{count}} étape(s) restante(s)) : {{steps}}",
+    "bulkSetupIncomplete": "{{count}} gig(s) sélectionné(s) n'ont pas terminé toutes les étapes de configuration.",
+    "bulkActivateDisabled": "Complétez toutes les étapes de configuration pour les gigs sélectionnés avant l'activation.",
+    "activateDisabledHint": "{{count}} étape(s) de configuration restante(s) avant activation",
+    "stepsRemaining": "{{count}} étape(s) restante(s)",
+    "setupIncompleteBanner": "Ce gig ne peut pas être activé tant que les étapes suivantes ne sont pas complétées :",
+    "completeSetupFirst": "Compléter la configuration"
+  },
   "uploadContacts": {
     "title": "Importer des Contacts",
     "subtitle": "Importez, gérez et organisez vos leads efficacement avec la précision de l'IA.",

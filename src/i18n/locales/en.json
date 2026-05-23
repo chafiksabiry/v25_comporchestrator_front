@@ -919,6 +919,15 @@
       "stepsLabel": "Steps remaining after creation:"
     }
   },
+  "gigActivation": {
+    "setupIncomplete": "Setup incomplete ({{count}} step(s) remaining): {{steps}}",
+    "bulkSetupIncomplete": "{{count}} selected gig(s) have not completed all setup steps.",
+    "bulkActivateDisabled": "Complete all setup steps for the selected gigs before activating.",
+    "activateDisabledHint": "{{count}} setup step(s) remaining before activation",
+    "stepsRemaining": "{{count}} step(s) remaining",
+    "setupIncompleteBanner": "This gig cannot be activated until the following steps are completed:",
+    "completeSetupFirst": "Complete setup"
+  },
   "uploadContacts": {
     "title": "Upload Contacts",
     "subtitle": "Import, manage, and organize your leads efficiently with AI precision.",
