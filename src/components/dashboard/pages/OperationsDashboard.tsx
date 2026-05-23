@@ -2768,29 +2768,37 @@ function formatDurationFromCallSeconds(seconds?: number): string {
   return `${m}:${String(r).padStart(2, '0')}`;
 }
 
-type WalletTab = 'validated' | 'refused' | 'deposits';
-
 function WalletView() {
   const { t, i18n } = useTranslation();
 
   const [walletEntries, setWalletEntries] = useState<WalletEntryListItem[]>([]);
   const [repTransactions, setRepTransactions] = useState<RepTransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<WalletTab>('validated');
   const [detail, setDetail] = useState<
     | { kind: 'rep'; data: RepTransactionRow }
     | { kind: 'wallet'; data: WalletEntryListItem }
     | null
   >(null);
 
-  const validatedTx = useMemo(
-    () => repTransactions.filter((tx) => tx.status === 'earned' || tx.status === 'paid'),
-    [repTransactions]
-  );
-  const refusedTx = useMemo(
-    () => repTransactions.filter((tx) => tx.status === 'refused'),
-    [repTransactions]
-  );
+  const unifiedMovements = useMemo(() => {
+    const reps = repTransactions.map((tx) => ({
+      kind: 'rep' as const,
+      id: tx._id,
+      date: tx.call?.startTime || tx.createdAt,
+      raw: tx,
+    }));
+    const deposits = walletEntries.map((entry) => ({
+      kind: 'wallet' as const,
+      id: entry._id,
+      date: entry.createdAt || '',
+      raw: entry,
+    }));
+    return [...reps, ...deposits].sort((a, b) => {
+      const da = a.date ? new Date(a.date).getTime() : 0;
+      const db = b.date ? new Date(b.date).getTime() : 0;
+      return db - da;
+    });
+  }, [repTransactions, walletEntries]);
 
   useEffect(() => {
     const companyId = Cookies.get('companyId');
@@ -2939,14 +2947,10 @@ function WalletView() {
         />
       </div>
 
-      {/* Mouvements du portefeuille — three-tab ledger */}
+      {/* Mouvements du portefeuille — unified date-sorted ledger */}
       <WalletMovements
         loading={loading}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        validated={validatedTx}
-        refused={refusedTx}
-        deposits={walletEntries}
+        movements={unifiedMovements}
         onConsult={(item) => setDetail(item)}
         t={t}
         formatEurPlain={formatEurPlain}
@@ -2983,11 +2987,10 @@ function WalletView() {
 
 interface WalletMovementsProps {
   loading: boolean;
-  activeTab: WalletTab;
-  setActiveTab: (t: WalletTab) => void;
-  validated: RepTransactionRow[];
-  refused: RepTransactionRow[];
-  deposits: WalletEntryListItem[];
+  movements: Array<
+    | { kind: 'rep'; id: string; date: string; raw: RepTransactionRow }
+    | { kind: 'wallet'; id: string; date: string; raw: WalletEntryListItem }
+  >;
   onConsult: (
     item:
       | { kind: 'rep'; data: RepTransactionRow }
@@ -3003,11 +3006,7 @@ interface WalletMovementsProps {
 
 function WalletMovements({
   loading,
-  activeTab,
-  setActiveTab,
-  validated,
-  refused,
-  deposits,
+  movements,
   onConsult,
   t,
   formatEurPlain,
@@ -3016,30 +3015,6 @@ function WalletMovements({
   formatDate,
   labelForWallet,
 }: WalletMovementsProps) {
-  const tabs: Array<{ id: WalletTab; label: string; count: number; tone: string }> = [
-    {
-      id: 'validated',
-      label: t('opsDashboard.wallet.tabs.validated', 'Validés'),
-      count: validated.length,
-      tone: 'emerald',
-    },
-    {
-      id: 'refused',
-      label: t('opsDashboard.wallet.tabs.refused', 'Refusés'),
-      count: refused.length,
-      tone: 'rose',
-    },
-    {
-      id: 'deposits',
-      label: t('opsDashboard.wallet.tabs.deposits', 'Dépôts'),
-      count: deposits.length,
-      tone: 'sky',
-    },
-  ];
-
-  const isCalls = activeTab === 'validated' || activeTab === 'refused';
-  const rows = activeTab === 'validated' ? validated : activeTab === 'refused' ? refused : deposits;
-
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
       {/* Header */}
@@ -3055,39 +3030,6 @@ function WalletMovements({
               'Commissions (débits, 70% rep / 30% HARX) et dépôts (crédits) du compte cash. Les appels en attente sont gérés depuis la page Appels.'
             )}
           </p>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 p-1">
-          {tabs.map((tab) => {
-            const active = activeTab === tab.id;
-            const badgeTone =
-              tab.tone === 'emerald'
-                ? 'bg-emerald-500 text-white'
-                : tab.tone === 'rose'
-                ? 'bg-rose-500 text-white'
-                : 'bg-sky-500 text-white';
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`group flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all ${
-                  active
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {tab.label}
-                <span
-                  className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-black ${
-                    active ? badgeTone : 'bg-slate-200 text-slate-600'
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
         </div>
       </header>
 
@@ -3107,105 +3049,15 @@ function WalletMovements({
             ))}
           </ul>
         </div>
-      ) : rows.length === 0 ? (
+      ) : movements.length === 0 ? (
         <div className="px-5 py-12 text-center">
           <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
             {t('opsDashboard.wallet.txEmpty', 'Aucun mouvement pour le moment')}
           </p>
         </div>
-      ) : isCalls ? (
+      ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left">
-            <thead>
-              <tr className="border-b border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                <th className="px-5 py-3">{t('opsDashboard.wallet.col.recipient', 'Destinataire')}</th>
-                <th className="px-3 py-3">{t('opsDashboard.wallet.col.cause', 'Cause')}</th>
-                <th className="px-3 py-3">{t('opsDashboard.wallet.col.datetime', 'Date & heure')}</th>
-                <th className="px-3 py-3">{t('opsDashboard.wallet.col.duration', 'Durée')}</th>
-                <th className="px-3 py-3">{t('opsDashboard.wallet.col.score', 'Score AI')}</th>
-                <th className="px-3 py-3 text-right">{t('opsDashboard.wallet.col.commission', 'Commission')}</th>
-                <th className="px-5 py-3 text-right">{t('opsDashboard.wallet.col.details', 'Détails')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(rows as RepTransactionRow[]).map((tx) => {
-                const cause = repTxCauseLabel(tx.type);
-                const isRefusedTab = activeTab === 'refused';
-                const gross = Number(tx.amount) || 0;
-                const repShare = Number(tx.repShare) || 0;
-                const harxShare = Number(tx.harxShare) || 0;
-                const agentName = repTxAgentName(tx);
-                const score = repTxAiScore(tx);
-
-                return (
-                  <tr
-                    key={tx._id}
-                    className="border-b border-slate-50 text-[12px] last:border-b-0 hover:bg-slate-50/60"
-                  >
-                    <td className="px-5 py-3.5 font-black uppercase tracking-wide text-slate-800">
-                      <span className="block max-w-[180px] truncate" title={repTxRecipient(tx)}>
-                        {repTxRecipient(tx)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3.5">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${cause.tone}`}
-                        title={tx.description || cause.label}
-                      >
-                        {cause.label}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3.5 tabular-nums text-slate-500">
-                      {formatDateTime(tx.call?.startTime || tx.createdAt)}
-                    </td>
-                    <td className="px-3 py-3.5 font-black tabular-nums text-slate-700">
-                      {formatDurationFromCallSeconds(tx.call?.duration)}
-                    </td>
-                    <td className="px-3 py-3.5">
-                      <span className="inline-flex items-center gap-1 font-black tabular-nums text-slate-700">
-                        <Star size={12} className="fill-amber-400 text-amber-400" />
-                        {score != null ? `${Math.round(score)}/100` : '—'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3.5 text-right">
-                      {isRefusedTab ? (
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                          {t('opsDashboard.wallet.repBadgeRefused', 'Refusé (aucun débit)')}
-                        </span>
-                      ) : gross > 0 ? (
-                        <>
-                          <span className="block font-black tabular-nums text-rose-600">
-                            − {formatEurPlain(gross)}
-                          </span>
-                          <span className="block text-[10px] font-bold text-slate-500">
-                            70% {agentName} · {formatEurPlain(repShare)}
-                          </span>
-                          <span className="block text-[10px] font-bold text-slate-500">
-                            30% HARX · {formatEurPlain(harxShare)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="font-black tabular-nums text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <button
-                        onClick={() => onConsult({ kind: 'rep', data: tx })}
-                        className="rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-slate-700"
-                      >
-                        {t('opsDashboard.wallet.consult', 'Consulter')}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        /* Deposits */
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left">
             <thead>
               <tr className="border-b border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400">
                 <th className="px-5 py-3">{t('opsDashboard.wallet.col.source', 'Source')}</th>
@@ -3216,61 +3068,130 @@ function WalletMovements({
               </tr>
             </thead>
             <tbody>
-              {(rows as WalletEntryListItem[]).map((entry) => {
-                const amount = Number(entry.amount) || 0;
-                const isPending = entry.status === 'pending';
-                const isFailed = entry.status === 'failed';
-                const label = labelForWallet(entry);
-                return (
-                  <tr
-                    key={entry._id}
-                    className={`border-b border-slate-50 text-[12px] last:border-b-0 hover:bg-slate-50/60 ${
-                      isFailed ? 'opacity-60' : ''
-                    }`}
-                  >
-                    <td className="px-5 py-3.5">
-                      <span className="inline-flex items-center gap-2 font-black uppercase tracking-wide text-slate-800">
-                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
-                          <Plus size={12} />
+              {movements.map((movement) => {
+                if (movement.kind === 'wallet') {
+                  const entry = movement.raw;
+                  const amount = Number(entry.amount) || 0;
+                  const isPending = entry.status === 'pending';
+                  const isFailed = entry.status === 'failed';
+                  const label = labelForWallet(entry);
+                  return (
+                    <tr
+                      key={movement.id}
+                      className={`border-b border-slate-50 text-[12px] last:border-b-0 hover:bg-slate-50/60 ${
+                        isFailed ? 'opacity-60' : ''
+                      }`}
+                    >
+                      <td className="px-5 py-3.5">
+                        <span className="inline-flex items-center gap-2 font-black uppercase tracking-wide text-slate-800">
+                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
+                            <Plus size={12} />
+                          </span>
+                          {t(`opsDashboard.wallet.txTypes.${entry.type || 'deposit'}`, {
+                            defaultValue: entry.type || 'Dépôt',
+                          })}
                         </span>
-                        {t(`opsDashboard.wallet.txTypes.${entry.type || 'deposit'}`, {
-                          defaultValue: entry.type || 'Dépôt',
-                        })}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3.5 text-slate-700">
-                      <span className="block max-w-[260px] truncate" title={label}>
-                        {label}
-                      </span>
-                      {isPending && (
-                        <span className="ml-0 mt-1 inline-flex items-center rounded-full border border-amber-100 bg-amber-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-amber-600">
-                          pending
+                      </td>
+                      <td className="px-3 py-3.5 text-slate-700">
+                        <span className="block max-w-[260px] truncate" title={label}>
+                          {label}
                         </span>
-                      )}
-                      {isFailed && (
-                        <span className="ml-0 mt-1 inline-flex items-center rounded-full border border-rose-100 bg-rose-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-rose-600">
-                          failed
+                        {isPending && (
+                          <span className="ml-0 mt-1 inline-flex items-center rounded-full border border-amber-100 bg-amber-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-amber-600">
+                            pending
+                          </span>
+                        )}
+                        {isFailed && (
+                          <span className="ml-0 mt-1 inline-flex items-center rounded-full border border-rose-100 bg-rose-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-rose-600">
+                            failed
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3.5 tabular-nums text-slate-500">
+                        {formatDateTime(entry.createdAt) !== '—'
+                          ? formatDateTime(entry.createdAt)
+                          : formatDate(entry.createdAt)}
+                      </td>
+                      <td className="px-3 py-3.5 text-right font-black tabular-nums text-emerald-600">
+                        {formatEur(amount)}
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <button
+                          onClick={() => onConsult({ kind: 'wallet', data: entry })}
+                          className="rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-slate-700"
+                        >
+                          {t('opsDashboard.wallet.consult', 'Consulter')}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                } else {
+                  const tx = movement.raw;
+                  const cause = repTxCauseLabel(tx.type);
+                  const isRefused = tx.status === 'refused';
+                  const gross = Number(tx.amount) || 0;
+                  const repShare = Number(tx.repShare) || 0;
+                  const harxShare = Number(tx.harxShare) || 0;
+                  const agentName = repTxAgentName(tx);
+
+                  return (
+                    <tr
+                      key={movement.id}
+                      className="border-b border-slate-50 text-[12px] last:border-b-0 hover:bg-slate-50/60"
+                    >
+                      <td className="px-5 py-3.5">
+                        <span className="inline-flex items-center gap-2 font-black uppercase tracking-wide text-slate-800">
+                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500/15 text-indigo-600">
+                            <Phone size={12} />
+                          </span>
+                          <span className="block max-w-[180px] truncate" title={repTxRecipient(tx)}>
+                            {repTxRecipient(tx)}
+                          </span>
                         </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-3.5 tabular-nums text-slate-500">
-                      {formatDateTime(entry.createdAt) !== '—'
-                        ? formatDateTime(entry.createdAt)
-                        : formatDate(entry.createdAt)}
-                    </td>
-                    <td className="px-3 py-3.5 text-right font-black tabular-nums text-emerald-600">
-                      {formatEur(amount)}
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <button
-                        onClick={() => onConsult({ kind: 'wallet', data: entry })}
-                        className="rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-slate-700"
-                      >
-                        {t('opsDashboard.wallet.consult', 'Consulter')}
-                      </button>
-                    </td>
-                  </tr>
-                );
+                      </td>
+                      <td className="px-3 py-3.5">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${cause.tone}`}
+                          title={tx.description || cause.label}
+                        >
+                          {cause.label}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3.5 tabular-nums text-slate-500">
+                        {formatDateTime(tx.call?.startTime || tx.createdAt)}
+                      </td>
+                      <td className="px-3 py-3.5 text-right">
+                        {isRefused ? (
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                            {t('opsDashboard.wallet.repBadgeRefused', 'Refusé (aucun débit)')}
+                          </span>
+                        ) : gross > 0 ? (
+                          <>
+                            <span className="block font-black tabular-nums text-rose-600">
+                              − {formatEurPlain(gross)}
+                            </span>
+                            <span className="block text-[10px] font-bold text-slate-500">
+                              70% {agentName} · {formatEurPlain(repShare)}
+                            </span>
+                            <span className="block text-[10px] font-bold text-slate-500">
+                              30% HARX · {formatEurPlain(harxShare)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="font-black tabular-nums text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <button
+                          onClick={() => onConsult({ kind: 'rep', data: tx })}
+                          className="rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-slate-700"
+                        >
+                          {t('opsDashboard.wallet.consult', 'Consulter')}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                }
               })}
             </tbody>
           </table>
