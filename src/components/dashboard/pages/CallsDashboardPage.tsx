@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase } from 'lucide-react';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
 
@@ -12,6 +12,8 @@ export default function CallsDashboardPage() {
   const [activeTab, setActiveTab] = useState<'transcript' | 'insights'>('transcript');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [gigFilter, setGigFilter] = useState<string>('all');
+  const [gigs, setGigs] = useState<Array<{ _id: string; title: string }>>([]);
   const [openDropdownId, setOpenDropdownId] = useState<{ callId: string; type: 'validation' | 'transaction' } | null>(null);
 
   const companyId = Cookies.get('companyId');
@@ -21,8 +23,25 @@ export default function CallsDashboardPage() {
   useEffect(() => {
     if (companyId) {
       fetchCalls();
+      fetchGigs();
     }
   }, [companyId]);
+
+  const fetchGigs = async () => {
+    try {
+      const gigsApiUrl =
+        (import.meta as any).env?.VITE_GIGS_API ||
+        (import.meta as any).env?.VITE_API_URL_GIGS ||
+        'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+      const res = await fetch(`${gigsApiUrl}/gigs/company/${companyId}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      const list = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];
+      setGigs(list);
+    } catch (error) {
+      console.error('Error fetching gigs:', error);
+    }
+  };
 
   const fetchCalls = async () => {
     try {
@@ -129,11 +148,23 @@ export default function CallsDashboardPage() {
     }
   };
 
+  const callGigId = (call: any): string => {
+    const raw =
+      call?.lead?.gigId?._id ||
+      call?.lead?.gigId ||
+      call?.gigId?._id ||
+      call?.gigId;
+    if (!raw) return '';
+    if (typeof raw === 'object' && (raw as any).$oid) return String((raw as any).$oid);
+    return String(raw);
+  };
+
   const filteredCalls = calls.filter(call => {
     const leadName = `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.toLowerCase();
     const matchesSearch = leadName.includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || call.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesGig = gigFilter === 'all' || callGigId(call) === gigFilter;
+    return matchesSearch && matchesStatus && matchesGig;
   });
 
   return (
@@ -161,16 +192,34 @@ export default function CallsDashboardPage() {
           </div>
 
           <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-slate-200 px-4 py-2 flex items-center gap-3 shadow-sm">
+            <Briefcase className="w-5 h-5 text-slate-400" />
+            <select
+              className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer max-w-[200px]"
+              value={gigFilter}
+              onChange={(e) => setGigFilter(e.target.value)}
+              title={t('calls.filters.gig', 'Filtrer par gig')}
+            >
+              <option value="all">{t('calls.filters.allGigs', 'Tous les gigs')}</option>
+              {gigs.map((g) => (
+                <option key={g._id} value={g._id}>
+                  {g.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-slate-200 px-4 py-2 flex items-center gap-3 shadow-sm">
             <Filter className="w-5 h-5 text-slate-400" />
             <select
               className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
+              title={t('calls.filters.status', 'Filtrer par statut')}
             >
-              <option value="all">All Status</option>
-              <option value="completed">Completed</option>
-              <option value="missed">Missed</option>
-              <option value="failed">Failed</option>
+              <option value="all">{t('calls.filters.allStatus', 'Tous les statuts')}</option>
+              <option value="completed">{t('calls.status.completed', 'Terminé')}</option>
+              <option value="missed">{t('calls.status.missed', 'Manqué')}</option>
+              <option value="failed">{t('calls.status.failed', 'Échoué')}</option>
             </select>
           </div>
         </div>
