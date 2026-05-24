@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
+import WalletTopUpModal from './wallet/WalletTopUpModal';
 
 interface Gig {
   _id: string;
@@ -170,47 +171,10 @@ const ApprovalPublishing = () => {
   const [balance, setBalance] = useState<number | null>(null);
   const [showBalanceWarning, setShowBalanceWarning] = useState(true);
   const [showDepositModal, setShowDepositModal] = useState(false);
-  const [depositAmount, setDepositAmount] = useState('1000');
-  const [submittingDeposit, setSubmittingDeposit] = useState(false);
 
-  const handleDeposit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsed = parseFloat(depositAmount);
-    if (isNaN(parsed) || parsed <= 0) {
-      toast.error('Veuillez entrer un montant valide.');
-      return;
-    }
-
-    setSubmittingDeposit(true);
-    try {
-      const companyId = Cookies.get('companyId');
-      if (!companyId) return;
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL || 'http://localhost:3003/api';
-      const res = await fetch(`${apiBaseUrl}/wallet-company/deposit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyId,
-          amount: parsed,
-          description: 'Rechargement de solde (Validation onboarding)'
-        })
-      });
-
-      if (res.ok) {
-        toast.success(`Succès ! ${parsed.toLocaleString('fr-FR')} € ont été ajoutés à votre solde.`);
-        setShowDepositModal(false);
-        fetchBalance();
-        window.dispatchEvent(new CustomEvent('refreshBalance'));
-      } else {
-        const errorData = await res.json();
-        toast.error(errorData.error || 'Échec du rechargement.');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Erreur lors du rechargement.');
-    } finally {
-      setSubmittingDeposit(false);
-    }
+  const handleWalletTopUpSuccess = () => {
+    fetchBalance();
+    window.dispatchEvent(new CustomEvent('refreshBalance'));
   };
 
   const fetchBalance = async () => {
@@ -3111,112 +3075,12 @@ const ApprovalPublishing = () => {
           </button>
         </div>
       </div> */}
-      {/* Deposit Modal Overlay */}
-      {showDepositModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-300">
-          <div className="bg-white border border-slate-100 rounded-[2.5rem] w-full max-w-xl max-h-[90vh] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 relative flex flex-col p-8">
-            
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl">
-                  <DollarSign className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-slate-950 tracking-tight leading-none">Alimenter Votre Solde Cash</h3>
-                  <p className="text-[10px] text-emerald-600 font-extrabold uppercase tracking-widest mt-1">Rechargement Sécurisé</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowDepositModal(false)}
-                className="text-slate-400 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 p-2 rounded-2xl transition-all"
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <form onSubmit={handleDeposit} className="flex-1 flex flex-col overflow-hidden mt-6 space-y-6">
-              <p className="text-xs text-slate-500 font-medium leading-relaxed font-sans">
-                Rechargez votre solde cash disponible en Euros (€) pour financer vos campagnes et activer vos gigs.
-              </p>
-
-              {/* Value Packages Selection */}
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Choisissez un Forfait de Rechargement</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { eur: 200, label: 'Starter', popular: false },
-                    { eur: 1000, label: 'Growth', popular: true },
-                    { eur: 3000, label: 'Enterprise', popular: false },
-                  ].map((pkg) => (
-                    <button
-                      key={pkg.eur}
-                      type="button"
-                      onClick={() => setDepositAmount(pkg.eur.toString())}
-                      className={`relative p-4 border text-center rounded-2xl flex flex-col justify-between transition-all cursor-pointer h-24 ${
-                        depositAmount === pkg.eur.toString()
-                          ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 shadow-sm ring-1 ring-emerald-500'
-                          : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      {pkg.popular && (
-                        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[7px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow">Popular</span>
-                      )}
-                      <div className="text-[10px] text-slate-400 font-bold mt-1">{pkg.label}</div>
-                      <div className="font-extrabold text-sm text-slate-900 leading-none">{pkg.eur.toLocaleString()} €</div>
-                      <div className="text-[8px] text-slate-400 font-bold uppercase tracking-wider pb-1">Unique</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Amount Input */}
-              <div className="relative">
-                <label htmlFor="custom_deposit_amount" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ou Saisissez un Montant Personnalisé</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <span className="text-slate-400 font-bold text-sm">€</span>
-                  </div>
-                  <input
-                    type="number"
-                    id="custom_deposit_amount"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    className="w-full pl-8 pr-12 py-3 bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-bold text-slate-800 transition-all focus:outline-none"
-                    placeholder="Montant personnalisé"
-                    min="1"
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">EUR</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowDepositModal(false)}
-                  className="px-4 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-wider transition-all"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingDeposit}
-                  className={`px-5 py-2.5 bg-gradient-harx text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-lg active:scale-95 transition-all flex items-center gap-2 ${
-                    submittingDeposit ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {submittingDeposit ? 'Traitement...' : 'Confirmer le Dépôt'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <WalletTopUpModal
+        open={showDepositModal}
+        onClose={() => setShowDepositModal(false)}
+        companyId={Cookies.get('companyId')}
+        onSuccess={handleWalletTopUpSuccess}
+      />
     </div>
   );
 };
