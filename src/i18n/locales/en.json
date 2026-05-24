@@ -760,6 +760,18 @@
         "description": "Your first phone line is offered for {{days}} days at no cost. Use it to test calls end-to-end before adding a payment method.",
         "noPayment": "No Stripe / PayPal required for this activation"
       },
+      "payment": {
+        "amountLabel": "Amount due",
+        "note": "One-time setup fee charged when the line is activated.",
+        "stripe": "Pay with card",
+        "card": "Stripe Checkout",
+        "wallet": "PayPal Wallet",
+        "popupOpen": "Complete the payment in the popup window. We'll provision the line as soon as it succeeds.",
+        "loadConfigError": "Could not load payment options. Please refresh and try again.",
+        "missingContext": "Missing company or gig context — please reload the page.",
+        "missingCheckoutUrl": "The payment provider did not return a checkout URL.",
+        "popupBlocked": "The payment window was blocked by your browser. Please allow popups and try again."
+      },
       "purchasing": {
         "title": "Activating number...",
         "subtitle": "We're provisioning your Twilio infrastructure. This usually takes a few seconds."
