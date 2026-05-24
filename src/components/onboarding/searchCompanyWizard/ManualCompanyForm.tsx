@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import {
@@ -7,6 +7,7 @@ import {
   Calendar,
   Check,
   Globe,
+  HelpCircle,
   Image as ImageIcon,
   Linkedin,
   Loader2,
@@ -22,6 +23,9 @@ import {
 import { useTranslation } from "react-i18next";
 import { saveCompanyData } from "./api/companyApi";
 import { redirectToCompanyOnboarding } from "./navigation";
+import ManualCompanyGuideModal from "./ManualCompanyGuideModal";
+
+const MANUAL_GUIDE_STORAGE_KEY = "manualCompanyGuideSeen";
 
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string | undefined;
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string | undefined;
@@ -71,7 +75,26 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      const seen = localStorage.getItem(MANUAL_GUIDE_STORAGE_KEY);
+      if (seen !== "true") setShowGuide(true);
+    } catch {
+      setShowGuide(true);
+    }
+  }, []);
+
+  const handleCloseGuide = () => {
+    try {
+      localStorage.setItem(MANUAL_GUIDE_STORAGE_KEY, "true");
+    } catch {
+      /* ignore storage errors */
+    }
+    setShowGuide(false);
+  };
 
   const cloudinaryConfigured = Boolean(CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET);
 
@@ -249,6 +272,7 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
 
   return (
     <div className="mx-auto max-w-5xl p-6 animate-fade-in">
+      <ManualCompanyGuideModal isOpen={showGuide} onClose={handleCloseGuide} />
       <div className="relative rounded-3xl border border-slate-200 bg-white shadow-xl overflow-hidden">
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-harx-50 to-harx-alt-50">
           <button
@@ -261,7 +285,17 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
           <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-harx-700 to-harx-alt-700">
             {t("searchCompanyWizard.manual.title", "Create Company Manually")}
           </h2>
-          <div className="w-[90px]" />
+          <button
+            type="button"
+            onClick={() => setShowGuide(true)}
+            title={t("searchCompanyWizard.manual.guide.openBtn", "View guide")}
+            className="group inline-flex items-center gap-1.5 rounded-xl border border-harx-100 bg-white/90 px-3 py-2 text-xs font-black uppercase tracking-wider text-harx-600 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-white"
+          >
+            <HelpCircle size={14} className="transition-transform group-hover:rotate-12" />
+            <span className="hidden sm:inline">
+              {t("searchCompanyWizard.manual.guide.openBtn", "Guide")}
+            </span>
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-8">
