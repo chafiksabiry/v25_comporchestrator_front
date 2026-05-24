@@ -842,7 +842,39 @@
       "beforeHeading": "Prêt à commencer : {{title}} ?",
       "insideHint": "Remplissez les champs ci-dessous, puis revenez à l'onboarding une fois terminé.",
       "beforeStart": "Entrer dans cette étape",
-      "start": "Compris, c'est parti"
+      "start": "Compris, c'est parti",
+      "step1": {
+        "beforeDescription": "C'est la base de votre compte HARX : un profil d'entreprise propre et complet que vos REPs et leads verront. Cela prend moins de 2 minutes — choisissez le mode qui correspond à votre situation.",
+        "insideDescription": "Tapez le nom de votre entreprise, collez l'URL d'un site, ou créez le profil manuellement. Tout reste modifiable avant publication.",
+        "modesLabel": "Trois façons de créer votre profil",
+        "tipsLabel": "Astuces",
+        "modes": {
+          "search": {
+            "title": "Rechercher par nom",
+            "desc": "Tapez le nom de l'entreprise — l'IA la trouve sur le web et pré-remplit tout."
+          },
+          "scrape": {
+            "title": "Coller l'URL d'un site",
+            "desc": "Nous scrapons la page pour extraire téléphone, réseaux sociaux et contact."
+          },
+          "manual": {
+            "title": "Créer manuellement",
+            "desc": "Pas de site ? Utilisez le formulaire pour tout saisir, avec upload du logo."
+          }
+        },
+        "tips": {
+          "before": [
+            "Il suffit du nom de l'entreprise OU de son site web pour commencer.",
+            "Chaque champ est modifiable avant la publication.",
+            "Logo, mission et coordonnées sont remplis automatiquement quand c'est possible."
+          ],
+          "inside": [
+            "Cliquez sur \"Modifier\" sur n'importe quel champ une fois le profil chargé.",
+            "Pour de meilleures coordonnées, collez le site web plutôt que juste le nom.",
+            "Vous pouvez basculer en création manuelle à tout moment via le bouton flottant."
+          ]
+        }
+      }
     }
   },
   "gigDetails": {
@@ -1076,13 +1108,25 @@
         "industry": "Secteur",
         "founded": "Année de création",
         "headquarters": "Siège social",
-        "logo": "URL du logo (optionnel)",
+        "logo": "Logo",
         "overview": "Présentation",
         "mission": "Mission",
         "email": "Email",
         "phone": "Téléphone",
         "address": "Adresse",
         "website": "Site web"
+      },
+      "logo": {
+        "dropOrClick": "Déposez votre logo ici ou cliquez pour téléverser",
+        "hint": "PNG, JPG, SVG · max 5 Mo",
+        "uploading": "Téléversement…",
+        "replace": "Remplacer",
+        "remove": "Supprimer",
+        "uploadFailed": "Échec du téléversement du logo",
+        "invalidType": "Veuillez choisir un fichier image.",
+        "tooBig": "L'image doit faire moins de 5 Mo.",
+        "notConfigured": "Cloudinary n'est pas configuré. Définissez VITE_CLOUDINARY_CLOUD_NAME et VITE_CLOUDINARY_UPLOAD_PRESET.",
+        "fallbackPasteUrl": "Cloudinary n'est pas configuré — collez une URL d'image ci-dessous."
       },
       "placeholders": {
         "overview": "Décrivez l'entreprise, son activité et son marché…",

@@ -130,6 +130,17 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
         }
       }
 
+      if (result.link) {
+        try {
+          const generated = await generateCompanyProfileFromUrl(result.link, logoUrl);
+          if (!generated.logo && logoUrl) generated.logo = logoUrl;
+          setProfile(generated);
+          return;
+        } catch (scrapeErr) {
+          console.warn('Scrape fallback to plain generate:', scrapeErr);
+        }
+      }
+
       const companyInfo = [
         `Company Name: ${result.title}`,
         `Website: ${result.link}`,
