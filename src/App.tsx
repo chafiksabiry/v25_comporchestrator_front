@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Building2,
   LogOut,
+  Settings,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
@@ -40,6 +41,7 @@ import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
 import Subscription from './components/Subscription';
 import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideModal';
 import WalletTopUpModal from './components/wallet/WalletTopUpModal';
+import AccountSettingsModal from './components/settings/AccountSettingsModal';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import StepGuideModal, { type StepGuideVariant } from './components/onboarding/StepGuideModal';
 import {
@@ -102,6 +104,7 @@ function AppContent() {
   const [escrow, setEscrow] = useState<number>(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [showWalletTopUp, setShowWalletTopUp] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
 
   const navigate = useNavigate();
 
@@ -762,6 +765,16 @@ function AppContent() {
                       <button
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
+                          setShowAccountSettings(true);
+                        }}
+                        className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
+                      >
+                        <Settings size={16} className="text-gray-400" />
+                        <span className="font-bold">Paramètres</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
                           handleLogout();
                         }}
                         className="flex items-center gap-3 w-full p-4 text-left text-sm text-rose-400 hover:bg-white/5 transition-colors"
@@ -813,6 +826,14 @@ function AppContent() {
         onClose={() => setShowWalletTopUp(false)}
         companyId={Cookies.get('companyId')}
         onSuccess={refreshWalletBalance}
+      />
+
+      <AccountSettingsModal
+        open={showAccountSettings}
+        onClose={() => setShowAccountSettings(false)}
+        onProfileUpdated={(next) => {
+          if (next.fullName) setUserFullName(next.fullName);
+        }}
       />
 
     </StripeContainer>
