@@ -760,6 +760,18 @@
         "description": "Votre première ligne téléphonique est offerte pendant {{days}} jours, sans frais. Profitez-en pour tester vos appels de bout en bout avant d'ajouter un moyen de paiement.",
         "noPayment": "Aucun Stripe / PayPal requis pour cette activation"
       },
+      "payment": {
+        "amountLabel": "Montant dû",
+        "note": "Frais d'activation unique, prélevé au moment de l'activation de la ligne.",
+        "stripe": "Payer par carte",
+        "card": "Stripe Checkout",
+        "wallet": "Portefeuille PayPal",
+        "popupOpen": "Finalisez le paiement dans la fenêtre qui vient de s'ouvrir. La ligne sera provisionnée dès la confirmation.",
+        "loadConfigError": "Impossible de charger les moyens de paiement. Rafraîchissez la page et réessayez.",
+        "missingContext": "Contexte company / gig manquant — rechargez la page.",
+        "missingCheckoutUrl": "Le fournisseur de paiement n'a pas renvoyé d'URL de checkout.",
+        "popupBlocked": "La fenêtre de paiement a été bloquée par votre navigateur. Autorisez les popups et réessayez."
+      },
       "purchasing": {
         "title": "Activation du numéro...",
         "subtitle": "Nous provisionnons votre infrastructure Twilio. Cela prend quelques secondes."

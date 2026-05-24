@@ -37,7 +37,7 @@ export interface AvailablePhoneNumber {
   type?: string;
 }
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -199,6 +199,58 @@ export const phoneNumberService = {
     }
   },
 
+  getCheckoutConfig: async (): Promise<{
+    paypal: { enabled: boolean; clientId?: string; mode?: string };
+    stripe: { enabled: boolean };
+    pricing: { amountCents: number; currency: string };
+  }> => {
+    try {
+      const response = await api.get<any>('/phone-numbers/checkout/config');
+      return response.data;
+    } catch (error) {
+      handleApiError(error, 'getCheckoutConfig');
+      throw error;
+    }
+  },
+
+  initLineCheckout: async (data: {
+    phoneNumber: string;
+    gigId: string;
+    companyId: string;
+    provider: 'stripe' | 'paypal';
+    returnUrl?: string;
+    apiBaseUrl?: string;
+  }): Promise<{
+    paymentId: string;
+    amount: number;
+    currency: string;
+    provider: 'stripe' | 'paypal';
+    checkoutUrl?: string;
+    paypalApproveUrl?: string;
+    paypalOrderId?: string;
+  }> => {
+    try {
+      const response = await api.post<any>('/phone-numbers/checkout/init', data);
+      return response.data;
+    } catch (error) {
+      handleApiError(error, 'initLineCheckout');
+      throw error;
+    }
+  },
+
+  confirmLineCheckout: async (data: {
+    paymentId: string;
+    providerRef?: string;
+  }): Promise<{ success: boolean }> => {
+    try {
+      const response = await api.post<any>('/phone-numbers/checkout/confirm', data);
+      return response.data;
+    } catch (error) {
+      handleApiError(error, 'confirmLineCheckout');
+      throw error;
+    }
+  },
+
   getTrialEligibility: async (companyId: string): Promise<{
     eligible: boolean;
     trialDurationDays: number;
@@ -206,10 +258,11 @@ export const phoneNumberService = {
     activeTrial: { phoneNumber: string; expiresAt: string } | null;
   }> => {
     try {
-      const response = await api.get(`/phone-numbers/trial/eligibility/${companyId}`);
+      const response = await api.get<any>(`/phone-numbers/trial/eligibility/${companyId}`);
       return response.data;
     } catch (error) {
-      return handleApiError(error, 'getTrialEligibility');
+      handleApiError(error, 'getTrialEligibility');
+      throw error;
     }
   },
 
@@ -221,8 +274,9 @@ export const phoneNumberService = {
     requirementGroupId?: string;
     bundleSid?: string;
     addressSid?: string;
+    paymentId?: string;
   }): Promise<PhoneNumber> => {
-    const { phoneNumber, provider, gigId, requirementGroupId, bundleSid, addressSid } = data;
+    const { phoneNumber, provider, gigId, requirementGroupId, bundleSid, addressSid, paymentId } = data;
 
     if (!gigId) {
       throw new PhoneNumberServiceError(
@@ -270,6 +324,7 @@ export const phoneNumberService = {
       if (provider === 'twilio') {
         if (bundleSid) payload.bundleSid = bundleSid;
         if (addressSid) payload.addressSid = addressSid;
+        if (paymentId) payload.paymentId = paymentId;
       }
 
       const response = await api.post<PhoneNumber>(endpoint, payload);

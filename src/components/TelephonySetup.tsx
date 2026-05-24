@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
-import { phoneNumberService } from '../services/api';
+import { phoneNumberService, BASE_URL } from '../services/api';
 import { requirementService, RequirementDetail } from '../services/requirementService';
 import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
@@ -817,7 +817,8 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         requirementGroupId: provider === 'telnyx' ? requirementStatus.telnyxId : undefined,
         bundleSid: options?.bundleSid,
         addressSid: options?.addressSid,
-        type: options?.type
+        type: options?.type,
+        paymentId: (options as any)?.paymentId,
       };
 
 
@@ -1028,7 +1029,11 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     }
   };
 
-  const handleConfirmPurchase = async (sids?: { bundleSid?: string; addressSid?: string }, phoneNumberOverride?: string, type?: string) => {
+  const handleConfirmPurchase = async (
+    sids?: { bundleSid?: string; addressSid?: string; paymentId?: string },
+    phoneNumberOverride?: string,
+    type?: string
+  ) => {
     const numberToPurchase = phoneNumberOverride || selectedNumber;
     if (!numberToPurchase) return;
 
@@ -1036,10 +1041,11 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     setPurchaseStatus('purchasing');
     try {
       // Filter out empty strings and merge with default twilioRegulatorySids
-      const purchaseSids = {
+      const purchaseSids: any = {
         ...twilioRegulatorySids,
         ...(sids?.bundleSid ? { bundleSid: sids.bundleSid } : {}),
         ...(sids?.addressSid ? { addressSid: sids.addressSid } : {}),
+        ...(sids?.paymentId ? { paymentId: sids.paymentId } : {}),
         type: type // Include the type
       };
 
@@ -1347,6 +1353,9 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         onSetShowPurchaseModal={setShowPurchaseModal}
         trialEligible={trialInfo?.eligible ?? false}
         trialDurationDays={trialInfo?.trialDurationDays ?? 15}
+        companyId={companyId || ''}
+        gigId={selectedGigId || ''}
+        apiBaseUrl={BASE_URL}
       />
 
       {/* Requirements Modal */}
