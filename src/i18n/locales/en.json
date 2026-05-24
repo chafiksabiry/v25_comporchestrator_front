@@ -1195,6 +1195,7 @@
       "saveField": "Save",
       "cancelField": "Cancel",
       "editField": "Edit",
+      "removeField": "Remove",
       "getDirections": "Get Directions",
       "mapNotAvailable": "Map not available",
       "digitalPresence": "Digital Presence",

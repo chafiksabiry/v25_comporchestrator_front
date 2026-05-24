@@ -1195,6 +1195,7 @@
       "saveField": "Enregistrer",
       "cancelField": "Annuler",
       "editField": "Modifier",
+      "removeField": "Supprimer",
       "getDirections": "Obtenir l'Itinéraire",
       "mapNotAvailable": "Carte non disponible",
       "digitalPresence": "Présence Numérique",

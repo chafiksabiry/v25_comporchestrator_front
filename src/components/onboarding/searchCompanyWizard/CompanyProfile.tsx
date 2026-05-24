@@ -23,6 +23,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Upload,
+  Trash2,
 } from "lucide-react";
 import { saveCompanyData } from "./api/companyApi";
 import { uploadImage } from "./api/uploads";
@@ -380,14 +381,38 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
           )}
           <span className="min-w-0 flex-1 truncate text-sm text-gray-700">{value}</span>
           {editMode && (
-            <button
-              type="button"
-              onClick={() => handleEdit(field, value)}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 opacity-0 transition-all hover:bg-harx-50 hover:text-harx-600 group-hover:opacity-100"
-              aria-label={t("searchCompanyWizard.profile.editField", "Edit")}
-            >
-              <Edit2 size={14} />
-            </button>
+            <div className="flex items-center gap-0.5 opacity-0 transition-all group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => handleEdit(field, value)}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-harx-50 hover:text-harx-600"
+                aria-label={t("searchCompanyWizard.profile.editField", "Edit")}
+              >
+                <Edit2 size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const fieldPath = field.split(".");
+                  setProfile((prev) => {
+                    const newProfile = { ...prev } as any;
+                    let current = newProfile;
+                    for (let i = 0; i < fieldPath.length - 1; i++) {
+                      if (!current[fieldPath[i]]) return prev;
+                      current[fieldPath[i]] = { ...current[fieldPath[i]] };
+                      current = current[fieldPath[i]];
+                    }
+                    current[fieldPath[fieldPath.length - 1]] = "";
+                    return newProfile;
+                  });
+                  if (editingField === field) cancelEdit();
+                }}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                aria-label={t("searchCompanyWizard.profile.removeField", "Remove")}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           )}
         </div>
       );
@@ -566,16 +591,52 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
 
                   if (value) {
                     return (
-                      <a
-                        key={key}
-                        href={value}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title={label}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-gray-600 shadow-sm transition-all hover:border-harx-300 hover:text-harx-600 hover:shadow"
-                      >
-                        <Icon size={19} />
-                      </a>
+                      <div key={key} className="group relative">
+                        <a
+                          href={value}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={label}
+                          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-gray-600 shadow-sm transition-all hover:border-harx-300 hover:text-harx-600 hover:shadow"
+                        >
+                          <Icon size={19} />
+                        </a>
+                        <div className="pointer-events-none absolute -top-2 -right-2 flex items-center gap-0.5 opacity-0 transition-all group-hover:pointer-events-auto group-hover:opacity-100">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (!editMode) setEditMode(true);
+                              setEditingField(socialField);
+                              setTempValue(value);
+                            }}
+                            title={t('searchCompanyWizard.profile.editField', 'Edit')}
+                            className="flex h-5 w-5 items-center justify-center rounded-full bg-harx-600 text-white shadow-md transition-transform hover:scale-110"
+                          >
+                            <Edit2 size={10} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setProfile((prev) => ({
+                                ...prev,
+                                socialMedia: {
+                                  ...(prev.socialMedia || {}),
+                                  [key]: "",
+                                },
+                              }));
+                              if (editingField === socialField) cancelEdit();
+                            }}
+                            title={t('searchCompanyWizard.profile.removeField', 'Remove')}
+                            className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition-transform hover:scale-110"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      </div>
                     );
                   }
 
