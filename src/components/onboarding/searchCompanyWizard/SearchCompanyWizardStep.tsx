@@ -201,7 +201,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
       </div>
 
       <div className="relative z-10">
-        {!loading && results.length === 0 && (
+        {!loading && (
         <div className="manual-cta-sticker absolute right-0 top-0 flex flex-col items-end gap-2 select-none">
           <div className="manual-cta-bubble relative flex items-center gap-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-3.5 py-2 shadow-md shadow-amber-500/10">
             <span className="manual-cta-emoji flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-base shadow-sm shadow-amber-500/40">
