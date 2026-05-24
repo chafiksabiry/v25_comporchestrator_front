@@ -637,6 +637,18 @@
       "quickNotes": "Notes Rapides",
       "notesPlaceholder": "Saisir des notes ici...",
       "saveAndFinish": "Enregistrer & Terminer"
+    },
+    "iframes": {
+      "title": "Iframes du Script",
+      "add": "Ajouter",
+      "remove": "Supprimer cette iframe",
+      "warningTitle": "À propos des iframes intégrées",
+      "warning": "Intégrez vos outils web (CRM, calculateur, formulaire de paiement) dans le script. Le site doit autoriser l'intégration (en-têtes X-Frame-Options / Content-Security-Policy) et utiliser HTTPS — sinon l'iframe restera vide pendant l'appel. Testez chaque URL avant validation.",
+      "empty": "Aucune iframe ajoutée. Cliquez sur \"Ajouter\" pour intégrer un outil web.",
+      "labelPlaceholder": "Nom (ex: Calculateur CRM)",
+      "urlPlaceholder": "https://exemple.com/outil",
+      "itemLabel": "Iframe #{{n}}",
+      "invalidUrl": "URL invalide — utilisez https://"
     }
   },
   "knowledgeBase": {

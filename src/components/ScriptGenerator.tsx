@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2, Briefcase, FileText, CheckCircle, Shield, Compass, BookOpen, Check, ChevronDown, GraduationCap, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Bot, Sparkles, Plus, Trash2, Loader2, Briefcase, FileText, CheckCircle, Shield, Compass, BookOpen, Check, ChevronDown, GraduationCap, ChevronRight, AlertTriangle, Link2 } from 'lucide-react';
 import apiClient from '../api/knowledgeClient';
 import ScriptChatPanel from './script-generator/ScriptChatPanel';
 import { ClaudePromptToolkit } from './script-generator/ClaudePromptToolkit';
@@ -61,6 +61,34 @@ interface SavedScript {
   createdAt?: string;
   isActive?: boolean;
 }
+
+interface ScriptIframe {
+  id: string;
+  label: string;
+  url: string;
+}
+
+// Crypto-strong random id (fallback for environments without crypto.randomUUID).
+const generateIframeId = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `if-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+// Iframes are surfaced to reps during the call, so we require an explicit
+// HTTPS URL (mixed content is blocked by browsers anyway). Bare `https://`
+// is treated as not-yet-filled to avoid flagging the empty input.
+const isValidIframeUrl = (raw: string): boolean => {
+  const value = String(raw || '').trim();
+  if (!value || value === 'https://' || value === 'http://') return true;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
 
 const formatScriptSteps = (steps: ScriptStep[]): string => {
   const lines = steps
@@ -189,8 +217,25 @@ const ScriptGenerator: React.FC = () => {
   const [relatedTrainings, setRelatedTrainings] = useState<any[]>([]);
   const [relatedTrainingTitle, setRelatedTrainingTitle] = useState<string>('');
   const [isLoadingTrainings, setIsLoadingTrainings] = useState(false);
+  // Iframes embedded alongside the script (CRM, calculators, payment forms…).
+  // Persisted in `playbook.iframes` so reps see them at call time.
+  const [scriptIframes, setScriptIframes] = useState<ScriptIframe[]>([]);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const addScriptIframe = () => {
+    setScriptIframes((prev) => [...prev, { id: generateIframeId(), label: '', url: '' }]);
+  };
+
+  const removeScriptIframe = (id: string) => {
+    setScriptIframes((prev) => prev.filter((iframe) => iframe.id !== id));
+  };
+
+  const updateScriptIframe = (id: string, field: 'label' | 'url', value: string) => {
+    setScriptIframes((prev) =>
+      prev.map((iframe) => (iframe.id === id ? { ...iframe, [field]: value } : iframe))
+    );
+  };
 
   const getCompanyId = () => {
     const runMode = import.meta.env.VITE_RUN_MODE || 'in-app';
@@ -492,6 +537,7 @@ const ScriptGenerator: React.FC = () => {
     setActiveScriptMessage(null);
     setError(null);
     setIsAutoGenerateWizardActive(true);
+    setScriptIframes([]);
   };
 
   const handleAutoGenerateInitialScript = () => {
@@ -615,6 +661,15 @@ const ScriptGenerator: React.FC = () => {
     try {
       if (!selectedGig?._id) throw new Error('Sélection de mission requise');
 
+      // Only persist iframes that have at least a URL; drop empty rows.
+      const cleanedIframes = scriptIframes
+        .map((iframe) => ({
+          id: iframe.id,
+          label: iframe.label.trim(),
+          url: iframe.url.trim()
+        }))
+        .filter((iframe) => iframe.url.length > 0);
+
       const payload = {
         gigId: selectedGig._id,
         targetClient: 'general',
@@ -627,7 +682,8 @@ const ScriptGenerator: React.FC = () => {
         })),
         playbook: {
           title: activeInteractiveTitle || selectedGig.title,
-          stages: activeInteractiveStages
+          stages: activeInteractiveStages,
+          iframes: cleanedIframes
         },
         isActive: true,
       };
@@ -804,6 +860,22 @@ const ScriptGenerator: React.FC = () => {
       setActiveInteractiveTitle(item.playbook?.title || selectedGig?.title || "Script Interactif");
     } else {
       setActiveInteractiveStages(null);
+    }
+
+    // Rehydrate saved iframes (legacy scripts without this field stay empty).
+    const savedIframes = (item.playbook as any)?.iframes;
+    if (Array.isArray(savedIframes)) {
+      setScriptIframes(
+        savedIframes
+          .filter((entry: any) => entry && (entry.url || entry.label))
+          .map((entry: any) => ({
+            id: entry.id || generateIframeId(),
+            label: String(entry.label || ''),
+            url: String(entry.url || '')
+          }))
+      );
+    } else {
+      setScriptIframes([]);
     }
   };
 
@@ -1067,6 +1139,99 @@ const ScriptGenerator: React.FC = () => {
                     <div className="text-slate-600 text-[11px] font-semibold leading-relaxed whitespace-pre-line">
                       {selectedGig.description || 'Aucune description disponible.'}
                     </div>
+                  </div>
+
+                  <hr className="border-slate-100" />
+
+                  {/* Script iframes (embedded web tools shown to reps at call time) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <h5 className="text-[9px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Link2 className="w-3 h-3 text-red-600" />
+                        {t('scriptGenerator.iframes.title', 'Iframes du Script')}
+                      </h5>
+                      <button
+                        type="button"
+                        onClick={addScriptIframe}
+                        className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white font-extrabold text-[8.5px] uppercase tracking-wider rounded-md flex items-center gap-1 shadow-sm transition-all active:scale-95"
+                      >
+                        <Plus className="w-3 h-3" />
+                        {t('scriptGenerator.iframes.add', 'Ajouter')}
+                      </button>
+                    </div>
+
+                    {/* Warning banner */}
+                    <div className="p-2 bg-amber-50/70 border border-amber-200/70 rounded-lg flex items-start gap-1.5">
+                      <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] font-black text-amber-800 uppercase tracking-wider">
+                          {t('scriptGenerator.iframes.warningTitle', 'À propos des iframes intégrées')}
+                        </p>
+                        <p className="text-[9.5px] text-amber-900 font-semibold leading-snug">
+                          {t(
+                            'scriptGenerator.iframes.warning',
+                            "Intégrez vos outils web (CRM, calculateur, formulaire de paiement) dans le script. Le site doit autoriser l'intégration (en-têtes X-Frame-Options / Content-Security-Policy) et utiliser HTTPS — sinon l'iframe restera vide pendant l'appel. Testez chaque URL avant validation."
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* List */}
+                    {scriptIframes.length === 0 ? (
+                      <p className="text-[10px] text-slate-400 font-bold italic py-1">
+                        {t('scriptGenerator.iframes.empty', 'Aucune iframe ajoutée. Cliquez sur "Ajouter" pour intégrer un outil web.')}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {scriptIframes.map((iframe, idx) => {
+                          const urlValid = isValidIframeUrl(iframe.url);
+                          return (
+                            <div
+                              key={iframe.id}
+                              className="p-2 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5"
+                            >
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-[8.5px] font-black text-slate-500 uppercase tracking-wider">
+                                  {t('scriptGenerator.iframes.itemLabel', 'Iframe #{{n}}', { n: idx + 1 })}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeScriptIframe(iframe.id)}
+                                  title={t('scriptGenerator.iframes.remove', 'Supprimer cette iframe') as string}
+                                  className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                              <input
+                                type="text"
+                                value={iframe.label}
+                                onChange={(e) => updateScriptIframe(iframe.id, 'label', e.target.value)}
+                                placeholder={t('scriptGenerator.iframes.labelPlaceholder', 'Nom (ex: Calculateur CRM)') as string}
+                                className="w-full px-2 py-1.5 bg-white border border-slate-200 focus:border-red-500 text-[10.5px] font-semibold text-slate-800 placeholder-slate-400 rounded-md outline-none transition-all"
+                              />
+                              <input
+                                type="url"
+                                value={iframe.url}
+                                onChange={(e) => updateScriptIframe(iframe.id, 'url', e.target.value)}
+                                placeholder={t('scriptGenerator.iframes.urlPlaceholder', 'https://exemple.com/outil') as string}
+                                className={`w-full px-2 py-1.5 bg-white border text-[10.5px] font-mono text-slate-800 placeholder-slate-400 rounded-md outline-none transition-all ${
+                                  urlValid
+                                    ? 'border-slate-200 focus:border-red-500'
+                                    : 'border-red-300 focus:border-red-500 bg-red-50/40'
+                                }`}
+                              />
+                              {!urlValid && (
+                                <p className="text-[9px] font-bold text-red-600 flex items-center gap-1">
+                                  <AlertTriangle className="w-2.5 h-2.5" />
+                                  {t('scriptGenerator.iframes.invalidUrl', 'URL invalide — utilisez https://')}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                 </div>
