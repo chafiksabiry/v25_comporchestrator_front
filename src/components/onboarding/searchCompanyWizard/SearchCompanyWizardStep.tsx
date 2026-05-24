@@ -163,7 +163,6 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
         profile={profile}
         onClose={() => {
           setProfile(null);
-          onBack?.();
         }}
         onPublished={(newCompanyId) => {
           setProfile(null);
