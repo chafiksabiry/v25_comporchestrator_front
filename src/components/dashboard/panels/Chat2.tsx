@@ -17,7 +17,7 @@ function ChatPanel() {
 
   // Charger les discussions
   useEffect(() => {
-    axios.get("https://harxv25dashboardfrontend.netlify.app/api/zoho/chats")
+    axios.get("https://harx25comporchestratorfront.netlify.app/api/zoho/chats")
       .then((res) => {
         setChats(res.data.chats || []);
       })
