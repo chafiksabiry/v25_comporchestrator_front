@@ -82,8 +82,15 @@ const SubscriptionPlan = () => {
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(progress));
 
       window.dispatchEvent(
-        new CustomEvent('stepCompleted', { detail: { stepId: 11, phaseId: 4 } })
+        new CustomEvent('stepCompleted', {
+          detail: {
+            stepId: 11,
+            phaseId: 4,
+            completedSteps: progress.completedSteps,
+          },
+        })
       );
+      window.dispatchEvent(new Event('refreshOnboardingProgress'));
     } catch (error) {
       console.error('Error completing onboarding step:', error);
     }
