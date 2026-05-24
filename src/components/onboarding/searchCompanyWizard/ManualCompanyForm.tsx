@@ -539,52 +539,57 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">
                 {t("searchCompanyWizard.manual.social", "Social Media")}
               </h3>
-              {availableNetworks.length > 0 && (
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setSocialPickerOpen((open) => !open)}
-                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-harx-600 to-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:shadow-md hover:scale-[1.02] active:scale-95"
-                  >
-                    <Plus size={14} />
-                    {t("searchCompanyWizard.manual.socialAdd", "Add social link")}
-                  </button>
-                  {socialPickerOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setSocialPickerOpen(false)}
-                      />
-                      <div className="absolute right-0 top-full z-20 mt-2 w-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-                        <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                          {t("searchCompanyWizard.manual.socialChoose", "Choose a network")}
-                        </div>
-                        <div className="max-h-64 overflow-y-auto py-1">
-                          {availableNetworks.map((network) => {
-                            const Icon = network.icon;
-                            return (
-                              <button
-                                key={network.key}
-                                type="button"
-                                onClick={() => addSocialLink(network.key)}
-                                className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
-                              >
-                                <span className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${network.accent} text-white shadow-sm`}>
-                                  <Icon size={16} />
-                                </span>
-                                <span className="flex-1 font-semibold">{network.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+              {availableNetworks.length > 0 && !socialPickerOpen && (
+                <button
+                  type="button"
+                  onClick={() => setSocialPickerOpen(true)}
+                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-harx-600 to-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:shadow-md hover:scale-[1.02] active:scale-95"
+                >
+                  <Plus size={14} />
+                  {t("searchCompanyWizard.manual.socialAdd", "Add social link")}
+                </button>
               )}
             </div>
 
-            {socialLinks.length === 0 ? (
+            {socialPickerOpen && availableNetworks.length > 0 && (
+              <div className="rounded-2xl border-2 border-harx-200 bg-gradient-to-br from-harx-50/50 to-purple-50/30 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-harx-700">
+                    {t("searchCompanyWizard.manual.socialChoose", "Choose a network")}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setSocialPickerOpen(false)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white hover:text-slate-600"
+                    aria-label={t("searchCompanyWizard.manual.socialRemove", "Remove")}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+                  {availableNetworks.map((network) => {
+                    const Icon = network.icon;
+                    return (
+                      <button
+                        key={network.key}
+                        type="button"
+                        onClick={() => addSocialLink(network.key)}
+                        className="group flex flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-harx-300 hover:shadow-md"
+                      >
+                        <span className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${network.accent} text-white shadow-sm transition-transform group-hover:scale-110`}>
+                          <Icon size={18} />
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-700">
+                          {network.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {socialLinks.length === 0 && !socialPickerOpen ? (
               <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-6 text-center">
                 <p className="text-sm text-slate-500">
                   {t(
@@ -593,7 +598,7 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
                   )}
                 </p>
               </div>
-            ) : (
+            ) : socialLinks.length > 0 ? (
               <div className="space-y-3">
                 {socialLinks.map((link, index) => {
                   const meta = getNetworkMeta(link.network);
@@ -630,7 +635,7 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
                   );
                 })}
               </div>
-            )}
+            ) : null}
           </section>
 
           {error && (
