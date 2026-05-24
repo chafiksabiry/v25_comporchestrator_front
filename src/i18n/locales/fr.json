@@ -734,9 +734,11 @@
     "globalGateway": "Passerelle Mondiale",
     "purchase": "Acheter",
     "empty": {
-      "title": "Infrastructure Hors Ligne",
-      "subtitle": "Commencez par prioriser les points d'entrée régionaux pour votre réseau d'intelligence",
-      "scan": "Scanner les Passerelles Régionales"
+      "title": "Aucun numéro pour le moment",
+      "subtitle": "Recherchez les numéros Twilio disponibles dans la zone de destination pour activer ce gig.",
+      "scan": "Rechercher des numéros disponibles",
+      "scanning": "Recherche des numéros disponibles...",
+      "noZone": "Sélectionnez d'abord une zone de destination"
     }
   },
   "companyOnboarding": {

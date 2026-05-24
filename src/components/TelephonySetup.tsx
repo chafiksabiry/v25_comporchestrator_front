@@ -130,6 +130,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
+  const [isSearchingNumbers, setIsSearchingNumbers] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [purchaseType, setPurchaseType] = useState<string | undefined>(undefined);
@@ -213,6 +214,13 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     fetchGigs();
     checkCompletedSteps();
   }, [companyId]);
+
+  // Auto-sélection du premier gig disponible si aucun n'est sélectionné
+  useEffect(() => {
+    if (!selectedGigId && Array.isArray(gigs) && gigs.length > 0) {
+      setSelectedGigId(gigs[0]._id);
+    }
+  }, [gigs, selectedGigId]);
 
   // Effet pour récupérer les numéros existants quand un gig est sélectionné
   useEffect(() => {
@@ -712,16 +720,15 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       return;
     }
 
-
-
-
+    setIsSearchingNumbers(true);
     try {
       const data = await phoneNumberService.searchPhoneNumbers(zone, provider);
-
       setAvailableNumbers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error searching numbers:', error);
       setAvailableNumbers([]);
+    } finally {
+      setIsSearchingNumbers(false);
     }
   };
 
@@ -1101,6 +1108,11 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
             {isDropdownOpen && (
               <div className="absolute z-50 top-full left-0 right-0 mt-3 bg-white border-[0.5px] border-gray-100 rounded-2xl shadow-[0_20px_50px_rgba(37,99,235,0.15)] max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-500 ring-1 ring-black/5">
+                <div className="sticky top-0 z-10 px-7 py-3 bg-gradient-to-r from-blue-50/80 to-white/90 border-b-[0.5px] border-blue-100 backdrop-blur-sm">
+                  <span className="text-[11px] font-black text-blue-600 uppercase tracking-[0.2em]">
+                    {t('telephonySetup.chooseActiveGigProfile')}
+                  </span>
+                </div>
                 {gigs.length > 0 ? (
                   gigs.map((g: Gig) => (
                     <button
@@ -1249,14 +1261,30 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                     <Phone className="h-7 w-7 text-blue-300" />
                   </div>
                   <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-[0.15em] mb-2 leading-none">{t('telephonySetup.empty.title')}</h4>
-                  <p className="text-[14px] text-gray-300 font-medium mb-8 max-w-[280px]">{t('telephonySetup.empty.subtitle')}</p>
+                  <p className="text-[14px] text-gray-300 font-medium mb-8 max-w-[320px]">{t('telephonySetup.empty.subtitle')}</p>
                   <button
                     onClick={() => searchAvailableNumbers()}
-                    className="flex items-center space-x-3 px-8 py-3 rounded-xl bg-white border-[0.5px] border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:shadow-xl text-[12px] font-black uppercase tracking-widest transition-all group"
+                    disabled={!destinationZone || isSearchingNumbers}
+                    title={!destinationZone ? t('telephonySetup.empty.noZone') : undefined}
+                    className="flex items-center space-x-3 px-8 py-3 rounded-xl bg-white border-[0.5px] border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:border-gray-200 disabled:hover:shadow-none text-[12px] font-black uppercase tracking-widest transition-all group"
                   >
-                    <Globe className="h-4 w-4 text-blue-400 transition-transform group-hover:rotate-180 duration-1000" />
-                    <span>{t('telephonySetup.empty.scan')}</span>
+                    {isSearchingNumbers ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                        <span>{t('telephonySetup.empty.scanning')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Globe className="h-4 w-4 text-blue-400 transition-transform group-hover:rotate-180 duration-1000" />
+                        <span>{t('telephonySetup.empty.scan')}</span>
+                      </>
+                    )}
                   </button>
+                  {!destinationZone && (
+                    <p className="mt-3 text-[11px] font-medium text-amber-500 uppercase tracking-widest">
+                      {t('telephonySetup.empty.noZone')}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
