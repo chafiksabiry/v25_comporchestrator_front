@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { Search, Globe, PenLine, Sparkles } from "lucide-react";
+import { Search, Globe, PenLine, Sparkles, HelpCircle } from "lucide-react";
 import { googleApi, type GoogleSearchResult } from "./api/google";
 import {
   generateCompanyProfile,
@@ -201,18 +201,31 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
       </div>
 
       <div className="relative z-10">
-        <button
-          onClick={() => setManualMode(true)}
-          className="manual-cta-btn group absolute right-0 top-0 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-harx-500 to-harx-alt-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-harx-500/40 hover:shadow-xl hover:shadow-harx-500/60 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
-          aria-label={t('searchCompanyWizard.manual.openBtn', 'Create manually')}
-          title={t('searchCompanyWizard.manual.noWebsite', 'No website? Create the company manually.')}
-        >
-          <span className="manual-cta-glow absolute inset-0 rounded-full bg-gradient-to-r from-harx-400 to-harx-alt-400 opacity-70 blur-md -z-10" />
-          <span className="manual-cta-ping absolute inset-0 rounded-full bg-harx-400/40 -z-10" />
-          <PenLine size={16} className="transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
-          <span className="hidden sm:inline">{t('searchCompanyWizard.manual.openBtn', 'Create manually')}</span>
-          <Sparkles size={14} className="opacity-80 transition-transform duration-500 group-hover:translate-x-0.5 group-hover:scale-125" />
-        </button>
+        <div className="manual-cta-sticker absolute right-0 top-0 flex flex-col items-end gap-2 select-none">
+          <div className="manual-cta-bubble relative flex items-center gap-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-3.5 py-2 shadow-md shadow-amber-500/10">
+            <span className="manual-cta-emoji flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-base shadow-sm shadow-amber-500/40">
+              <HelpCircle size={14} className="text-white" strokeWidth={2.5} />
+            </span>
+            <p className="text-[12px] font-extrabold leading-tight text-slate-700">
+              {t('searchCompanyWizard.manual.noWebsiteQuestion', "You don't have a website?")}
+            </p>
+            <span className="absolute -bottom-1.5 right-10 h-3 w-3 rotate-45 border-b border-r border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50" />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setManualMode(true)}
+            className="manual-cta-btn group relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-harx-500 to-harx-alt-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-harx-500/40 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-harx-500/60 active:scale-95"
+            aria-label={t('searchCompanyWizard.manual.openBtn', 'Create manually')}
+            title={t('searchCompanyWizard.manual.noWebsite', 'No website? Create the company manually.')}
+          >
+            <span className="manual-cta-glow absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-harx-400 to-harx-alt-400 opacity-70 blur-md" />
+            <span className="manual-cta-ping absolute inset-0 -z-10 rounded-full bg-harx-400/40" />
+            <PenLine size={16} className="transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+            <span className="hidden sm:inline">{t('searchCompanyWizard.manual.openBtn', 'Create manually')}</span>
+            <Sparkles size={14} className="opacity-80 transition-transform duration-500 group-hover:translate-x-0.5 group-hover:scale-125" />
+          </button>
+        </div>
         <style>{`
           @keyframes manualCtaPulse {
             0%, 100% { opacity: 0.55; transform: scale(1); }
@@ -221,6 +234,14 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
           @keyframes manualCtaPing {
             0% { opacity: 0.55; transform: scale(0.95); }
             100% { opacity: 0; transform: scale(1.45); }
+          }
+          @keyframes manualCtaWobble {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+          }
+          @keyframes manualCtaFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
           }
           .manual-cta-glow {
             animation: manualCtaPulse 2.6s ease-in-out infinite;
@@ -232,9 +253,17 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
             opacity: 1;
             animation-duration: 1.6s;
           }
+          .manual-cta-bubble {
+            transform-origin: bottom right;
+            animation: manualCtaFloat 3.4s ease-in-out infinite;
+          }
+          .manual-cta-emoji {
+            animation: manualCtaWobble 2.2s ease-in-out infinite;
+            transform-origin: center;
+          }
         `}</style>
 
-        <div className="mb-8 text-center lg:text-left pr-44">
+        <div className="mb-8 text-center lg:text-left pr-0 sm:pr-56 md:pr-64">
           <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-harx-700 to-harx-alt-700">
             {t('searchCompanyWizard.title')}
           </h1>

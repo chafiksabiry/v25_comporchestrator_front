@@ -1097,6 +1097,7 @@
     "manual": {
       "openBtn": "Create manually",
       "noWebsite": "No website? Create the company manually.",
+      "noWebsiteQuestion": "You don't have a website?",
       "noWebsiteHint": "Fill the form yourself — no search or scraping required.",
       "title": "Create Company Manually",
       "basics": "Basic Information",

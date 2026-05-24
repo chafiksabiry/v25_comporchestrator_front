@@ -1097,6 +1097,7 @@
     "manual": {
       "openBtn": "Créer manuellement",
       "noWebsite": "Pas de site web ? Créez l'entreprise manuellement.",
+      "noWebsiteQuestion": "Vous n'avez pas de site web ?",
       "noWebsiteHint": "Remplissez le formulaire vous-même — pas de recherche ni de scraping.",
       "title": "Créer une Entreprise Manuellement",
       "basics": "Informations de Base",
