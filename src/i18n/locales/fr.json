@@ -1056,6 +1056,42 @@
     "loading": "Chargement...",
     "loadingProfile": "Chargement du profil de l'entreprise...",
     "generateBtn": "Générer le Profil",
+    "orScrapeUrl": "Ou scraper depuis une URL",
+    "urlPlaceholder": "https://entreprise.com — collez l'URL d'un site",
+    "scrapeBtn": "Scraper & Générer",
+    "urlHint": "À utiliser quand la recherche est incomplète ou que l'entreprise n'a pas de CEO/contact bien identifié.",
+    "manual": {
+      "openBtn": "Créer manuellement",
+      "noWebsite": "Pas de site web ? Créez l'entreprise manuellement.",
+      "noWebsiteHint": "Remplissez le formulaire vous-même — pas de recherche ni de scraping.",
+      "title": "Créer une Entreprise Manuellement",
+      "basics": "Informations de Base",
+      "about": "À Propos",
+      "contact": "Contact",
+      "social": "Réseaux Sociaux",
+      "submit": "Créer l'Entreprise",
+      "fields": {
+        "name": "Nom de l'entreprise",
+        "industry": "Secteur",
+        "founded": "Année de création",
+        "headquarters": "Siège social",
+        "logo": "URL du logo (optionnel)",
+        "overview": "Présentation",
+        "mission": "Mission",
+        "email": "Email",
+        "phone": "Téléphone",
+        "address": "Adresse",
+        "website": "Site web"
+      },
+      "placeholders": {
+        "overview": "Décrivez l'entreprise, son activité et son marché…",
+        "mission": "Notre mission est de…"
+      },
+      "errors": {
+        "nameRequired": "Le nom de l'entreprise est requis",
+        "overviewRequired": "La présentation est requise"
+      }
+    },
     "errors": {
       "searchFailed": "Échec de la recherche d'entreprises",
       "generateFailed": "Échec de la génération du profil",
