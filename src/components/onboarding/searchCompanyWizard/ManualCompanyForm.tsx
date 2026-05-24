@@ -322,8 +322,9 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
                       <img src={form.logo} alt="Company logo" className="w-full h-full object-contain" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-700 truncate" title={form.logo}>
-                        {form.logo}
+                      <p className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-1 text-[11px] font-bold text-emerald-700">
+                        <Check size={12} />
+                        {t("searchCompanyWizard.manual.logo.uploaded", "Logo uploaded")}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <button

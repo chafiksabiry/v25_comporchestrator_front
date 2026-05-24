@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import {
   Building2,
   Calendar,
+  Link as LinkIcon,
+  Loader2,
   MapPin,
   Target,
   X,
@@ -23,6 +25,7 @@ import {
   Upload,
 } from "lucide-react";
 import { saveCompanyData } from "./api/companyApi";
+import { uploadImage } from "./api/uploads";
 import { redirectToCompanyOnboarding } from "./navigation";
 import { LucideProps } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -81,8 +84,52 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState("");
   const [logoUrl, setLogoUrl] = useState(profile.logo || "");
+  const [logoTab, setLogoTab] = useState<"upload" | "url">("upload");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const [logoUrlDraft, setLogoUrlDraft] = useState(profile.logo || "");
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+
+  const applyLogo = (url: string) => {
+    setLogoUrl(url);
+    setProfile((prev) => ({ ...prev, logo: url }));
+  };
+
+  const handleLogoFile = async (file: File) => {
+    setLogoError(null);
+    if (!file.type.startsWith("image/")) {
+      setLogoError(t("searchCompanyWizard.manual.logo.invalidType", "Please choose an image file."));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoError(t("searchCompanyWizard.manual.logo.tooBig", "Image must be smaller than 5 MB."));
+      return;
+    }
+    setLogoUploading(true);
+    try {
+      const { url } = await uploadImage(file);
+      if (!url) throw new Error("No URL returned");
+      applyLogo(url);
+      setLogoUrlDraft(url);
+      setEditingField(null);
+    } catch (err: any) {
+      setLogoError(
+        err?.response?.data?.message ||
+          err?.message ||
+          t("searchCompanyWizard.manual.logo.uploadFailed", "Logo upload failed")
+      );
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const handleLogoFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) void handleLogoFile(file);
+    if (logoFileInputRef.current) logoFileInputRef.current.value = "";
+  };
 
   const hasContactInfo =
     profile.contact?.email ||
@@ -248,12 +295,6 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
     }
 
     setProfile(newProfile);
-  };
-
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    setLogoUrl(url);
-    setProfile({ ...profile, logo: url });
   };
 
   const EditableField = ({
@@ -474,21 +515,162 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
                   )}
                 </div>
                 {editMode && editingField === "logo" && (
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-3 border border-gray-200">
-                    <div className="space-y-2">
-                      <label className="text-sm text-gray-600 block">{t('searchCompanyWizard.profile.logoUrl')}</label>
-                      <input
-                        type="text"
-                        value={logoUrl}
-                        onChange={handleLogoChange}
-                        placeholder={t('searchCompanyWizard.profile.enterLogoUrl')}
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                      />
-                      <div className="flex justify-end gap-2 mt-2">
-                        <button onClick={() => setEditingField(null)} className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800">{t('searchCompanyWizard.profile.cancel')}</button>
-                        <button onClick={() => setEditingField(null)} className="px-3 py-1 text-sm bg-harx-600 text-white rounded-md hover:bg-harx-700 transition-colors">{t('searchCompanyWizard.profile.save')}</button>
+                  <div className="absolute top-full left-0 mt-3 w-[340px] z-30 rounded-2xl border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-harx-50 to-harx-alt-50">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm">
+                          <Upload size={14} />
+                        </div>
+                        <h4 className="text-sm font-black text-slate-900">
+                          {t("searchCompanyWizard.profile.editLogo", "Edit logo")}
+                        </h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingField(null);
+                          setLogoError(null);
+                        }}
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-white hover:text-slate-700 transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    <div className="px-4 pt-3">
+                      <div className="inline-flex rounded-xl bg-slate-100 p-1 w-full">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLogoTab("upload");
+                            setLogoError(null);
+                          }}
+                          className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all ${
+                            logoTab === "upload"
+                              ? "bg-white text-harx-600 shadow-sm"
+                              : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          <Upload size={12} />
+                          {t("searchCompanyWizard.profile.uploadTab", "Upload")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLogoTab("url");
+                            setLogoError(null);
+                          }}
+                          className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all ${
+                            logoTab === "url"
+                              ? "bg-white text-harx-600 shadow-sm"
+                              : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          <LinkIcon size={12} />
+                          {t("searchCompanyWizard.profile.urlTab", "URL")}
+                        </button>
                       </div>
                     </div>
+
+                    <input
+                      ref={logoFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoFileInput}
+                      className="hidden"
+                    />
+
+                    {logoTab === "upload" ? (
+                      <div className="p-4 space-y-3">
+                        <button
+                          type="button"
+                          onClick={() => !logoUploading && logoFileInputRef.current?.click()}
+                          disabled={logoUploading}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const file = e.dataTransfer.files?.[0];
+                            if (file) void handleLogoFile(file);
+                          }}
+                          className="group w-full rounded-xl border-2 border-dashed border-slate-300 hover:border-harx-400 bg-slate-50 hover:bg-harx-50/40 px-4 py-5 flex flex-col items-center gap-2 transition-all disabled:opacity-60"
+                        >
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-slate-200 text-harx-600 shadow-sm group-hover:scale-105 transition-transform">
+                            {logoUploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+                          </div>
+                          <p className="text-xs font-bold text-slate-700">
+                            {logoUploading
+                              ? t("searchCompanyWizard.manual.logo.uploading", "Uploading…")
+                              : t("searchCompanyWizard.manual.logo.dropOrClick", "Drop your logo here or click to upload")}
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            {t("searchCompanyWizard.manual.logo.hint", "PNG, JPG, SVG · max 5 MB")}
+                          </p>
+                        </button>
+                        {logoUrl && (
+                          <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2">
+                            <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden">
+                              <img src={logoUrl} alt="" className="w-full h-full object-contain" />
+                            </div>
+                            <p className="flex-1 text-[11px] font-bold text-emerald-700">
+                              {t("searchCompanyWizard.manual.logo.uploaded", "Logo uploaded")}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => applyLogo("")}
+                              className="text-[10px] font-bold text-slate-500 hover:text-red-600 transition-colors"
+                            >
+                              {t("searchCompanyWizard.manual.logo.remove", "Remove")}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-4 space-y-3">
+                        <label className="block text-[11px] font-black uppercase tracking-widest text-slate-500">
+                          {t("searchCompanyWizard.profile.logoUrl", "Logo URL")}
+                        </label>
+                        <div className="relative">
+                          <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="url"
+                            value={logoUrlDraft}
+                            onChange={(e) => setLogoUrlDraft(e.target.value)}
+                            placeholder={t("searchCompanyWizard.profile.enterLogoUrl", "https://...")}
+                            className="w-full pl-9 pr-3 py-2.5 text-sm border-2 border-slate-200 rounded-xl outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10 bg-white text-slate-900 placeholder-slate-400 transition-all"
+                          />
+                        </div>
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLogoUrlDraft(logoUrl);
+                              setEditingField(null);
+                            }}
+                            className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800"
+                          >
+                            {t("searchCompanyWizard.profile.cancel", "Cancel")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              applyLogo(logoUrlDraft.trim());
+                              setEditingField(null);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl bg-gradient-to-r from-harx-500 to-harx-alt-500 text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all"
+                          >
+                            <Check size={12} />
+                            {t("searchCompanyWizard.profile.save", "Save")}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {logoError && (
+                      <div className="mx-4 mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-medium text-red-700">
+                        <XCircle size={12} className="mt-0.5 flex-shrink-0" />
+                        <span>{logoError}</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 {editMode && (
