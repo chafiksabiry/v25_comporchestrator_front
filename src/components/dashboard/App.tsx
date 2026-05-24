@@ -16,6 +16,7 @@ import OperationsPanel from './panels/OperationsPanel';
 import AnalyticsPanel from './panels/AnalyticsPanel';
 import IntegrationsPanel from './panels/IntegrationsPanel';
 import SettingsPanel from './panels/SettingsPanel';
+import AccountSettingsPanel from './panels/AccountSettingsPanel';
 import TelnyxCallTest from './panels/TelnyxCallTest';
 import KnowledgeBase from './panels/KnowledgeBase';
 import KnowledgeInsights from './panels/KnowledgeInsights';
@@ -63,6 +64,7 @@ function App() {
         <Route path="/dashboard/analytics" element={<CompanyPerformanceDashboard />} />
         <Route path="/dashboard/gig-activation" element={<ApprovalPublishing />} />
         <Route path="/dashboard/settings" element={<SettingsPanel />} />
+        <Route path="/dashboard/account-settings" element={<AccountSettingsPanel />} />
         <Route path="/dashboard/knowledge-base" element={<KnowledgeBase />} />
         <Route path="/dashboard/kb-insight" element={<KnowledgeInsights />} />
         <Route path="*" element={<div className="p-8 text-red-500 font-bold">Le tableau de bord n'a pas trouvé cette route. URL: {window.location.hash}</div>} />
