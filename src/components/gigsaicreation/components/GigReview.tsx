@@ -91,7 +91,9 @@ export function GigReview({
   // State for timezones and companies
   const [timezoneMap, setTimezoneMap] = useState<{ [key: string]: string }>({});
   const [companyMap, setCompanyMap] = useState<{ [key: string]: string }>({});
-  const [countryName, setCountryName] = useState<string>('');
+  const [countryName, setCountryName] = useState<string>(
+    data.destination_zone_meta?.name?.common || ''
+  );
 
   // Load skills and languages from API
   useEffect(() => {
@@ -149,7 +151,7 @@ export function GigReview({
         if (tzRes && Array.isArray(tzRes)) {
           const tzMap: { [key: string]: string } = {};
           tzRes.forEach((tz: any) => {
-            tzMap[tz._id] = tz.name || tz.label || tz.tz || tz._id;
+            tzMap[tz._id] = tz.zoneName || tz.name || tz.label || tz.tz || tz._id;
           });
           setTimezoneMap(tzMap);
         }
@@ -169,23 +171,28 @@ export function GigReview({
         }
       }
 
-      // Fetch country name if we have a destination_zone
-      if (data.destination_zone) {
+      // Fetch country name only when backend did not send _meta
+      if (data.destination_zone && !data.destination_zone_meta?.name?.common) {
         try {
           const countryNameFromApi = await getCountryNameById(data.destination_zone);
           setCountryName(countryNameFromApi);
         } catch (e) {
           console.error('❌ GigReview: Error fetching country name:', e);
-          setCountryName(data.destination_zone); // Fallback to zone ID
+          setCountryName(data.destination_zone);
         }
       }
     };
     fetchMeta();
-  }, []);
+  }, [data.destination_zone, data.destination_zone_meta, data.companyId]);
 
   // Fetch currency details
   useEffect(() => {
     const loadCurrency = async () => {
+      if (data?.commission?.currency_meta) {
+        setSelectedCurrency(data.commission.currency_meta);
+        return;
+      }
+
       const currencyVal = data?.commission?.currency;
       if (!currencyVal) return;
 
@@ -212,7 +219,7 @@ export function GigReview({
       }
     };
     loadCurrency();
-  }, [data?.commission?.currency]);
+  }, [data?.commission?.currency, data?.commission?.currency_meta]);
 
   // Helper to get time zone name
   const getTimeZoneName = (zone: string) => {
@@ -265,6 +272,7 @@ export function GigReview({
   };
 
   const getCurrencySymbol = () => {
+    if (data.commission?.currency_meta?.symbol) return data.commission.currency_meta.symbol;
     if (selectedCurrency?.symbol) return selectedCurrency.symbol;
 
     // Fallback logic
@@ -451,7 +459,10 @@ export function GigReview({
 
   // Before return, define a variable for readable schedule time zones
   // Define a variable for the readable destination zone name
-  const destinationZoneName = countryName || getTimeZoneName(data.destination_zone);
+  const destinationZoneName =
+    data.destination_zone_meta?.name?.common ||
+    countryName ||
+    getTimeZoneName(data.destination_zone);
 
   return (
     <div className="space-y-6 bg-gradient-to-br from-white via-harx-50/30 to-harx-alt-50/30 min-h-screen p-8">
@@ -627,7 +638,23 @@ export function GigReview({
         const totalHoursDisplay = totalHours > 0
           ? `${Math.floor(totalHours / 60)}h${totalHours % 60 ? String(totalHours % 60).padStart(2, '0') : ''}`
           : '—';
-        const timezoneDisplay = (data as any).timezone || (data.schedule as any)?.timezone;
+        const tzMeta = data.availability?.time_zone_meta || data.schedule?.time_zone_meta;
+        const tzId =
+          data.availability?.time_zone ||
+          data.schedule?.time_zone ||
+          (data as any).timezone;
+        const tzIdStr =
+          typeof tzId === 'object' && tzId && '$oid' in tzId
+            ? (tzId as { $oid: string }).$oid
+            : typeof tzId === 'string'
+              ? tzId
+              : '';
+        const timezoneDisplay =
+          tzMeta?.zoneName ||
+          (tzIdStr ? getTimeZoneName(tzIdStr) : '') ||
+          (typeof (data as any).timezone === 'string' ? (data as any).timezone : '') ||
+          (data.schedule as any)?.timezone ||
+          '';
         const hasAnyAvailability = grouped.length > 0 || timezoneDisplay;
 
         return (

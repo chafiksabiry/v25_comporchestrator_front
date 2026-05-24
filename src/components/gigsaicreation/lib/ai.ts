@@ -71,6 +71,7 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       jobDescription: data.jobDescription || '',
       category: data.category || '',
       destination_zone: data.destination_zone || '',
+      destination_zone_meta: data.destination_zone_meta,
       activities: data.activities || [],
       industries: data.industries || [],
       seniority: data.seniority || { level: '', yearsExperience: 0 },
@@ -214,6 +215,7 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
     },
     commission: generatedData.commission || {} as any,
     team: generatedData.team || { size: 1, structure: [], territories: [] },
-    destination_zone: mappedDestinationZone
+    destination_zone: mappedDestinationZone,
+    destination_zone_meta: generatedData.destination_zone_meta,
   };
 }
