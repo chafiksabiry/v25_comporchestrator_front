@@ -252,7 +252,18 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
     setTempValue(value);
   };
 
+  const cancelEdit = () => {
+    setEditingField(null);
+    setTempValue("");
+  };
+
   const handleSave = (field: string) => {
+    const trimmed = tempValue.trim();
+    if (!trimmed) {
+      cancelEdit();
+      return;
+    }
+
     const updateProfile = (path: string[], value: any) => {
       const newProfile = { ...profile };
       let current = newProfile as any;
@@ -265,8 +276,13 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
     };
 
     const fieldPath = field.split(".");
-    setProfile(updateProfile(fieldPath, tempValue));
-    setEditingField(null);
+    setProfile(updateProfile(fieldPath, trimmed));
+    cancelEdit();
+  };
+
+  const commitEdit = (field: string) => {
+    if (tempValue.trim()) handleSave(field);
+    else cancelEdit();
   };
 
   const handleDelete = (path: string) => {
@@ -290,57 +306,157 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
     field,
     icon: Icon,
     type = "text",
+    placeholder = "",
+    variant = "default",
     className = "",
   }: {
     value: string;
     field: string;
     icon?: React.ComponentType<LucideProps>;
     type?: string;
+    placeholder?: string;
+    variant?: "default" | "contact";
     className?: string;
-  }) => (
-    <div className={`group relative ${className}`}>
-      {editingField === field ? (
-        <div className="flex items-center gap-2">
-          <input
-            type={type}
-            value={tempValue}
-            onChange={(e) => setTempValue(e.target.value)}
-            className="flex-1 px-3 py-1 border border-harx-200 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-harx-500 outline-none transition-all"
-            style={{ color: "#111827", backgroundColor: "white" }}
-            onKeyDown={(e) => e.key === "Enter" && handleSave(field)}
-            autoFocus
-            onBlur={() => handleSave(field)}
-          />
-          <button onClick={() => handleSave(field)} className="p-1 text-green-600 hover:text-green-700">
-            <Check size={16} />
-          </button>
+  }) => {
+    const isEditing = editingField === field;
+    const canSave = tempValue.trim().length > 0;
+
+    if (variant === "contact" && isEditing) {
+      return (
+        <div className={`rounded-xl border border-harx-200 bg-white p-2 shadow-sm ring-2 ring-harx-500/15 transition-all ${className}`}>
+          <div className="flex items-center gap-2">
+            {Icon && (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-harx-50 text-harx-600">
+                <Icon size={16} />
+              </div>
+            )}
+            <input
+              type="text"
+              inputMode={type === "tel" ? "tel" : type === "email" ? "email" : "url"}
+              value={tempValue}
+              onChange={(e) => setTempValue(e.target.value)}
+              placeholder={placeholder}
+              className="min-w-0 flex-1 bg-transparent px-1 py-1.5 text-sm text-gray-900 placeholder:text-slate-400 outline-none"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitEdit(field);
+                if (e.key === "Escape") cancelEdit();
+              }}
+              onBlur={() => commitEdit(field)}
+              autoFocus
+            />
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => commitEdit(field)}
+              disabled={!canSave}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-harx-600 text-white transition-colors hover:bg-harx-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+              aria-label={t("searchCompanyWizard.profile.saveField", "Save")}
+            >
+              <Check size={15} />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={cancelEdit}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+              aria-label={t("searchCompanyWizard.profile.cancelField", "Cancel")}
+            >
+              <X size={15} />
+            </button>
+          </div>
         </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          {Icon && <Icon size={18} className="text-gray-600" />}
-          <span className="flex-1">{value}</span>
-          {editMode && (
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-              <button
-                onClick={() => handleEdit(field, value)}
-                className="p-1 text-gray-400 hover:text-harx-600 transition-colors"
-              >
-                <Edit2 size={14} />
-              </button>
-              {(field.includes("culture.values") ||
-                field.includes("culture.benefits") ||
-                field.includes("opportunities.roles") ||
-                field.includes("technology.stack")) && (
-                <button onClick={() => handleDelete(field)} className="p-1 text-gray-400 hover:text-red-500">
-                  <X size={14} />
-                </button>
-              )}
+      );
+    }
+
+    if (variant === "contact" && value) {
+      return (
+        <div
+          className={`group flex items-center gap-2.5 rounded-xl border border-slate-100 bg-white px-2.5 py-2 transition-all hover:border-slate-200 hover:shadow-sm ${className}`}
+        >
+          {Icon && (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500 group-hover:bg-harx-50 group-hover:text-harx-600">
+              <Icon size={15} />
             </div>
           )}
+          <span className="min-w-0 flex-1 truncate text-sm text-gray-700">{value}</span>
+          {editMode && (
+            <button
+              type="button"
+              onClick={() => handleEdit(field, value)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 opacity-0 transition-all hover:bg-harx-50 hover:text-harx-600 group-hover:opacity-100"
+              aria-label={t("searchCompanyWizard.profile.editField", "Edit")}
+            >
+              <Edit2 size={14} />
+            </button>
+          )}
         </div>
-      )}
-    </div>
-  );
+      );
+    }
+
+    return (
+      <div className={`group relative ${className}`}>
+        {isEditing ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode={type === "tel" ? "tel" : type === "email" ? "email" : "text"}
+              value={tempValue}
+              onChange={(e) => setTempValue(e.target.value)}
+              placeholder={placeholder}
+              className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitEdit(field);
+                if (e.key === "Escape") cancelEdit();
+              }}
+              onBlur={() => commitEdit(field)}
+              autoFocus
+            />
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => commitEdit(field)}
+              disabled={!canSave}
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-harx-600 text-white hover:bg-harx-700 disabled:bg-slate-200 disabled:text-slate-400"
+            >
+              <Check size={15} />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={cancelEdit}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            {Icon && <Icon size={18} className="text-gray-600" />}
+            <span className="flex-1">{value}</span>
+            {editMode && (
+              <div className="flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={() => handleEdit(field, value)}
+                  className="p-1 text-gray-400 transition-colors hover:text-harx-600"
+                >
+                  <Edit2 size={14} />
+                </button>
+                {(field.includes("culture.values") ||
+                  field.includes("culture.benefits") ||
+                  field.includes("opportunities.roles") ||
+                  field.includes("technology.stack")) && (
+                  <button type="button" onClick={() => handleDelete(field)} className="p-1 text-gray-400 hover:text-red-500">
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="w-full h-full bg-white rounded-3xl shadow-2xl border border-harx-100 overflow-hidden flex relative min-h-[800px] animate-fade-in">
@@ -355,11 +471,11 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
 
               <div className="space-y-3">
                 {([
-                  { value: profile.contact?.email, field: "contact.email", icon: Mail, label: t('searchCompanyWizard.profile.addEmail', 'Add email'), type: "email" },
-                  { value: profile.contact?.phone, field: "contact.phone", icon: Phone, label: t('searchCompanyWizard.profile.addPhone', 'Add phone'), type: "tel" },
-                  { value: profile.contact?.website, field: "contact.website", icon: Globe, label: t('searchCompanyWizard.profile.addWebsite', 'Add website'), type: "url" },
-                  { value: profile.contact?.address, field: "contact.address", icon: MapPin, label: t('searchCompanyWizard.profile.addAddress', 'Add address'), type: "text" },
-                ] as const).map(({ value, field, icon: Icon, label, type }) => {
+                  { value: profile.contact?.email, field: "contact.email", icon: Mail, label: t('searchCompanyWizard.profile.addEmail', 'Add email'), placeholder: t('searchCompanyWizard.profile.placeholderEmail', 'name@company.com'), type: "email" },
+                  { value: profile.contact?.phone, field: "contact.phone", icon: Phone, label: t('searchCompanyWizard.profile.addPhone', 'Add phone'), placeholder: t('searchCompanyWizard.profile.placeholderPhone', '+33 1 23 45 67 89'), type: "tel" },
+                  { value: profile.contact?.website, field: "contact.website", icon: Globe, label: t('searchCompanyWizard.profile.addWebsite', 'Add website'), placeholder: t('searchCompanyWizard.profile.placeholderWebsite', 'https://example.com'), type: "url" },
+                  { value: profile.contact?.address, field: "contact.address", icon: MapPin, label: t('searchCompanyWizard.profile.addAddress', 'Add address'), placeholder: t('searchCompanyWizard.profile.placeholderAddress', 'Street, city, country'), type: "text" },
+                ] as const).map(({ value, field, icon: Icon, label, placeholder, type }) => {
                   if (value || editingField === field) {
                     return (
                       <EditableField
@@ -368,9 +484,8 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
                         field={field}
                         icon={Icon}
                         type={type}
-                        className={field === "contact.address"
-                          ? "flex items-start gap-3 text-gray-600 text-sm"
-                          : "flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"}
+                        placeholder={placeholder}
+                        variant="contact"
                       />
                     );
                   }
@@ -383,11 +498,13 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
                         setEditingField(field);
                         setTempValue("");
                       }}
-                      className="group w-full flex items-center gap-3 text-left px-3 py-2 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:border-harx-400 hover:text-harx-600 hover:bg-harx-50/40 transition-all text-sm"
+                      className="group flex w-full items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-3 py-2.5 text-left text-sm text-slate-500 transition-all hover:border-harx-300 hover:bg-harx-50/50 hover:text-harx-700"
                     >
-                      <Icon size={16} className="flex-shrink-0" />
-                      <span className="flex-1 truncate">{label}</span>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 group-hover:text-harx-500">+</span>
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 group-hover:text-harx-600 group-hover:ring-harx-200">
+                        <Icon size={15} />
+                      </span>
+                      <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-harx-100 text-[11px] font-bold text-harx-600 group-hover:bg-harx-600 group-hover:text-white">+</span>
                     </button>
                   );
                 })}
@@ -437,42 +554,110 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
                 <Globe className="text-harx-600" size={20} />
                 {t('searchCompanyWizard.profile.digitalPresence')}
               </h3>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2.5">
                 {([
                   { key: "linkedin", value: profile.socialMedia?.linkedin, icon: Linkedin, label: "LinkedIn" },
                   { key: "twitter", value: profile.socialMedia?.twitter, icon: Twitter, label: "Twitter / X" },
                   { key: "facebook", value: profile.socialMedia?.facebook, icon: Facebook, label: "Facebook" },
                   { key: "instagram", value: profile.socialMedia?.instagram, icon: Instagram, label: "Instagram" },
-                ] as const).map(({ key, value, icon: Icon, label }) =>
-                  value ? (
-                    <a
-                      key={key}
-                      href={value}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title={label}
-                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"
-                    >
-                      <Icon size={20} />
-                    </a>
-                  ) : (
+                ] as const).map(({ key, value, icon: Icon, label }) => {
+                  const socialField = `socialMedia.${key}`;
+                  const isEditingSocial = editingField === socialField;
+
+                  if (value) {
+                    return (
+                      <a
+                        key={key}
+                        href={value}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={label}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-gray-600 shadow-sm transition-all hover:border-harx-300 hover:text-harx-600 hover:shadow"
+                      >
+                        <Icon size={19} />
+                      </a>
+                    );
+                  }
+
+                  if (isEditingSocial) return null;
+
+                  return (
                     <button
                       key={key}
                       type="button"
                       onClick={() => {
                         if (!editMode) setEditMode(true);
-                        setEditingField(`socialMedia.${key}`);
+                        setEditingField(socialField);
                         setTempValue("");
                       }}
                       title={t('searchCompanyWizard.profile.addSocial', 'Add {{network}} link', { network: label })}
-                      className="relative w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-dashed border-slate-300 text-slate-400 hover:border-harx-400 hover:text-harx-600 hover:bg-harx-50/40 transition-all"
+                      className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/60 text-slate-400 transition-all hover:border-harx-300 hover:bg-harx-50/60 hover:text-harx-600"
                     >
                       <Icon size={18} />
-                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-harx-500 text-white text-[9px] font-black flex items-center justify-center shadow">+</span>
+                      <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-harx-600 text-[9px] font-bold text-white shadow-sm">+</span>
                     </button>
-                  )
-                )}
+                  );
+                })}
               </div>
+
+              {editingField?.startsWith("socialMedia.") && (() => {
+                const socialKey = editingField.replace("socialMedia.", "");
+                const networks = {
+                  linkedin: { icon: Linkedin, label: "LinkedIn" },
+                  twitter: { icon: Twitter, label: "Twitter / X" },
+                  facebook: { icon: Facebook, label: "Facebook" },
+                  instagram: { icon: Instagram, label: "Instagram" },
+                } as const;
+                const network = networks[socialKey as keyof typeof networks];
+                if (!network) return null;
+                const SocialIcon = network.icon;
+                const socialField = editingField;
+                const canSaveSocial = tempValue.trim().length > 0;
+
+                return (
+                  <div className="mt-3 rounded-xl border border-harx-200 bg-white p-2.5 shadow-sm ring-2 ring-harx-500/15">
+                    <p className="mb-2 px-1 text-xs font-semibold text-slate-500">
+                      {t('searchCompanyWizard.profile.addSocial', 'Add {{network}} link', { network: network.label })}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-harx-50 text-harx-600">
+                        <SocialIcon size={16} />
+                      </div>
+                      <input
+                        type="text"
+                        inputMode="url"
+                        value={tempValue}
+                        onChange={(e) => setTempValue(e.target.value)}
+                        placeholder={t('searchCompanyWizard.profile.placeholderSocial', 'https://...')}
+                        className="min-w-0 flex-1 bg-transparent px-1 py-1.5 text-sm text-gray-900 placeholder:text-slate-400 outline-none"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitEdit(socialField);
+                          if (e.key === "Escape") cancelEdit();
+                        }}
+                        onBlur={() => commitEdit(socialField)}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => commitEdit(socialField)}
+                        disabled={!canSaveSocial}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-harx-600 text-white hover:bg-harx-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                      >
+                        <Check size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={cancelEdit}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
