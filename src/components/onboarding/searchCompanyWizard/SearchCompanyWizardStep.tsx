@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { Search, Globe, Link as LinkIcon, PenLine } from "lucide-react";
+import { Search, Globe, PenLine, Sparkles } from "lucide-react";
 import { googleApi, type GoogleSearchResult } from "./api/google";
 import {
   generateCompanyProfile,
@@ -26,13 +26,15 @@ interface Props {
 export default function SearchCompanyWizardStep({ onBack, companyId, onStepComplete }: Props) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
-  const [urlInput, setUrlInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [urlLoading, setUrlLoading] = useState(false);
   const [results, setResults] = useState<GoogleSearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<CompanyProfileData | null>(null);
   const [manualMode, setManualMode] = useState(false);
+
+  const trimmedQuery = query.trim();
+  const looksLikeUrl = /^(https?:\/\/|www\.)/i.test(trimmedQuery) ||
+    /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/.*)?$/i.test(trimmedQuery);
   const [checkingExisting, setCheckingExisting] = useState(true);
   const [existingCompanyId, setExistingCompanyId] = useState<string | null>(null);
 
@@ -77,13 +79,12 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     return <ExistingCompanyProfile companyId={existingCompanyId} />;
   }
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+  const runSearch = async () => {
     setLoading(true);
     setError(null);
     setResults([]);
     try {
-      const data = await googleApi.search(query.trim());
+      const data = await googleApi.search(trimmedQuery);
       setResults(data);
     } catch (e: any) {
       setError(e?.message || t('searchCompanyWizard.errors.searchFailed'));
@@ -92,18 +93,26 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     }
   };
 
-  const handleGenerateFromUrl = async () => {
-    const raw = urlInput.trim();
-    if (!raw) return;
-    setUrlLoading(true);
+  const runScrape = async () => {
+    setLoading(true);
     setError(null);
+    setResults([]);
     try {
-      const generated = await generateCompanyProfileFromUrl(raw);
+      const generated = await generateCompanyProfileFromUrl(trimmedQuery);
       setProfile(generated);
     } catch (e: any) {
       setError(e?.response?.data?.message || e?.message || t('searchCompanyWizard.errors.generateFailed'));
     } finally {
-      setUrlLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!trimmedQuery) return;
+    if (looksLikeUrl) {
+      await runScrape();
+    } else {
+      await runSearch();
     }
   };
 
@@ -182,7 +191,40 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
       </div>
 
       <div className="relative z-10">
-        <div className="mb-8 text-center lg:text-left">
+        <button
+          onClick={() => setManualMode(true)}
+          className="manual-cta-btn group absolute right-0 top-0 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-harx-500 to-harx-alt-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-harx-500/40 hover:shadow-xl hover:shadow-harx-500/60 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
+          aria-label={t('searchCompanyWizard.manual.openBtn', 'Create manually')}
+          title={t('searchCompanyWizard.manual.noWebsite', 'No website? Create the company manually.')}
+        >
+          <span className="manual-cta-glow absolute inset-0 rounded-full bg-gradient-to-r from-harx-400 to-harx-alt-400 opacity-70 blur-md -z-10" />
+          <span className="manual-cta-ping absolute inset-0 rounded-full bg-harx-400/40 -z-10" />
+          <PenLine size={16} className="transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+          <span className="hidden sm:inline">{t('searchCompanyWizard.manual.openBtn', 'Create manually')}</span>
+          <Sparkles size={14} className="opacity-80 transition-transform duration-500 group-hover:translate-x-0.5 group-hover:scale-125" />
+        </button>
+        <style>{`
+          @keyframes manualCtaPulse {
+            0%, 100% { opacity: 0.55; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.04); }
+          }
+          @keyframes manualCtaPing {
+            0% { opacity: 0.55; transform: scale(0.95); }
+            100% { opacity: 0; transform: scale(1.45); }
+          }
+          .manual-cta-glow {
+            animation: manualCtaPulse 2.6s ease-in-out infinite;
+          }
+          .manual-cta-ping {
+            animation: manualCtaPing 2.6s ease-out infinite;
+          }
+          .manual-cta-btn:hover .manual-cta-glow {
+            opacity: 1;
+            animation-duration: 1.6s;
+          }
+        `}</style>
+
+        <div className="mb-8 text-center lg:text-left pr-44">
           <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-harx-700 to-harx-alt-700">
             {t('searchCompanyWizard.title')}
           </h1>
@@ -196,81 +238,46 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
 
           <div className="relative z-10">
             <div className="relative group">
+              {looksLikeUrl ? (
+                <Globe
+                  size={20}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-harx-500 transition-colors"
+                />
+              ) : (
+                <Search
+                  size={20}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-harx-500 transition-colors"
+                />
+              )}
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder={t('searchCompanyWizard.placeholder')}
-                className="w-full rounded-2xl border-2 border-slate-200 px-6 py-4 pr-14 text-lg outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10 transition-all bg-white text-slate-900 placeholder-slate-400"
+                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                placeholder={t('searchCompanyWizard.unifiedPlaceholder', 'Company name or website URL (e.g. Acme Corp or https://acme.com)')}
+                className="w-full rounded-2xl border-2 border-slate-200 pl-12 pr-44 py-4 text-base outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10 transition-all bg-white text-slate-900 placeholder-slate-400"
               />
               <button
-                onClick={handleSearch}
-                disabled={loading || !query.trim()}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-3 bg-gradient-harx text-white disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all"
-              >
-                <Search size={22} />
-              </button>
-            </div>
-
-            <div className="my-6 flex items-center gap-4">
-              <div className="flex-1 h-px bg-slate-200" />
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                {t('searchCompanyWizard.orScrapeUrl', 'Or scrape from URL')}
-              </span>
-              <div className="flex-1 h-px bg-slate-200" />
-            </div>
-
-            <div className="relative group">
-              <LinkIcon
-                size={20}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-harx-500 transition-colors"
-              />
-              <input
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleGenerateFromUrl()}
-                placeholder={t('searchCompanyWizard.urlPlaceholder', 'https://company.com — paste a website URL')}
-                className="w-full rounded-2xl border-2 border-slate-200 pl-12 pr-40 py-4 text-base outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10 transition-all bg-white text-slate-900 placeholder-slate-400"
-              />
-              <button
-                onClick={handleGenerateFromUrl}
-                disabled={urlLoading || !urlInput.trim()}
+                onClick={handleSubmit}
+                disabled={loading || !trimmedQuery}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl px-4 py-2.5 bg-gradient-harx text-white text-sm font-bold disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
               >
-                {urlLoading ? (
+                {loading ? (
                   <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                ) : looksLikeUrl ? (
+                  <Sparkles size={16} />
                 ) : (
-                  <Globe size={16} />
+                  <Search size={16} />
                 )}
-                {t('searchCompanyWizard.scrapeBtn', 'Scrape & Generate')}
+                {looksLikeUrl
+                  ? t('searchCompanyWizard.scrapeBtn', 'Scrape & Generate')
+                  : t('searchCompanyWizard.searchBtn', 'Search')}
               </button>
             </div>
             <p className="mt-2 text-xs text-slate-500 pl-1">
-              {t(
-                'searchCompanyWizard.urlHint',
-                'Use this when search results are incomplete or the company has no clear CEO/contact info.'
-              )}
+              {looksLikeUrl
+                ? t('searchCompanyWizard.urlDetected', 'URL detected — we will scrape the page and generate the profile.')
+                : t('searchCompanyWizard.unifiedHint', 'Type a company name to search, or paste a URL to scrape it directly.')}
             </p>
-
-            <div className="mt-6 flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-white p-4">
-              <div className="w-10 h-10 rounded-xl bg-harx-50 flex items-center justify-center text-harx-600 flex-shrink-0">
-                <PenLine size={18} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900">
-                  {t('searchCompanyWizard.manual.noWebsite', "No website? Create the company manually.")}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {t('searchCompanyWizard.manual.noWebsiteHint', "Fill the form yourself — no search or scraping required.")}
-                </p>
-              </div>
-              <button
-                onClick={() => setManualMode(true)}
-                className="rounded-xl border-2 border-harx-200 px-4 py-2 text-xs font-bold text-harx-700 hover:bg-harx-50 active:scale-95 transition-all"
-              >
-                {t('searchCompanyWizard.manual.openBtn', 'Create manually')}
-              </button>
-            </div>
 
             {error && (
               <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-center gap-2">
