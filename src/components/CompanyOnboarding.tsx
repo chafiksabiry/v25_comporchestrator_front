@@ -15,6 +15,7 @@ import {
   Calendar,
   Settings,
   Rocket,
+  HelpCircle,
 } from "lucide-react";
 import TelephonySetup from "./TelephonySetup";
 import SearchCompanyWizardStep from "./onboarding/searchCompanyWizard/SearchCompanyWizardStep";
@@ -35,10 +36,13 @@ import ZohoService from "../services/zohoService";
 import PrompAI from "./gigsaicreation/components/PrompAI";
 import { useTranslation } from "react-i18next";
 import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
+import OrchestratorGuideModal from "./onboarding/OrchestratorGuideModal";
 import {
   markStepGuideSeen,
   shouldShowStepGuide,
 } from "../hooks/useStepGuide";
+
+const ORCHESTRATOR_GUIDE_STORAGE_KEY = "orchestratorGuideSeen";
 
 interface BaseStep {
   id: number;
@@ -269,6 +273,7 @@ const CompanyOnboarding = () => {
     mode: 'start' | 'review';
   } | null>(null);
   const [pendingInStepGuide, setPendingInStepGuide] = useState<number | null>(null);
+  const [showOrchestratorGuide, setShowOrchestratorGuide] = useState(false);
 
   const findPhaseIdForStep = (stepId: number) =>
     phases.find((p) => p.steps.some((s) => s.id === stepId))?.id ?? 1;
@@ -375,6 +380,46 @@ const CompanyOnboarding = () => {
       onClose={handleCloseStepGuide}
     />
   ) : null;
+
+  const orchestratorGuideLayer = (
+    <OrchestratorGuideModal
+      isOpen={showOrchestratorGuide}
+      onComplete={() => {
+        try {
+          localStorage.setItem(ORCHESTRATOR_GUIDE_STORAGE_KEY, "true");
+        } catch { /* ignore quota errors */ }
+        setShowOrchestratorGuide(false);
+      }}
+      onSkip={() => {
+        try {
+          localStorage.setItem(ORCHESTRATOR_GUIDE_STORAGE_KEY, "true");
+        } catch { /* ignore quota errors */ }
+        setShowOrchestratorGuide(false);
+      }}
+    />
+  );
+
+  useEffect(() => {
+    if (isInitialLoad) return;
+    if (completedSteps.length > 0) return;
+    try {
+      const seen = localStorage.getItem(ORCHESTRATOR_GUIDE_STORAGE_KEY);
+      if (seen !== "true") setShowOrchestratorGuide(true);
+    } catch {
+      setShowOrchestratorGuide(true);
+    }
+  }, [isInitialLoad, completedSteps.length]);
+
+  useEffect(() => {
+    const handler = () => {
+      try {
+        localStorage.removeItem(ORCHESTRATOR_GUIDE_STORAGE_KEY);
+      } catch { /* ignore */ }
+      setShowOrchestratorGuide(true);
+    };
+    window.addEventListener("openOrchestratorGuide", handler);
+    return () => window.removeEventListener("openOrchestratorGuide", handler);
+  }, []);
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
@@ -1484,6 +1529,7 @@ const CompanyOnboarding = () => {
   if (activeComponent) {
     return (
       <>
+        {orchestratorGuideLayer}
         {stepGuideLayer}
         <div className="animate-fade-in">{activeComponent}</div>
       </>
@@ -1565,6 +1611,7 @@ const CompanyOnboarding = () => {
 
   return (
     <>
+      {orchestratorGuideLayer}
       {stepGuideLayer}
       <div className="space-y-6">
       {/* Progress Overview */}
@@ -1639,14 +1686,25 @@ const CompanyOnboarding = () => {
                   : t('companyOnboarding.ui.lockedDesc')}
               </p>
             </div>
-            <div className={`px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${
-              isPhaseCompleted(displayedPhase)
-                ? "bg-green-100 text-green-600"
-                : isPhaseAccessible(displayedPhaseData.id)
-                  ? "bg-harx-50 text-harx-600"
-                  : "bg-gray-100 text-gray-400"
-              }`}>
-              {isPhaseCompleted(displayedPhase) ? t('companyOnboarding.ui.completed') : isPhaseAccessible(displayedPhaseData.id) ? t('companyOnboarding.ui.progressing') : t('companyOnboarding.ui.locked')}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('openOrchestratorGuide'))}
+                title={t('companyOnboarding.ui.viewGuide', 'View onboarding guide')}
+                className="group inline-flex items-center gap-2 rounded-2xl border-2 border-harx-100 bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-harx-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-harx-300 hover:bg-harx-50"
+              >
+                <HelpCircle className="h-4 w-4 transition-transform group-hover:rotate-12" />
+                <span className="hidden sm:inline">{t('companyOnboarding.ui.viewGuide', 'View Guide')}</span>
+              </button>
+              <div className={`px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${
+                isPhaseCompleted(displayedPhase)
+                  ? "bg-green-100 text-green-600"
+                  : isPhaseAccessible(displayedPhaseData.id)
+                    ? "bg-harx-50 text-harx-600"
+                    : "bg-gray-100 text-gray-400"
+                }`}>
+                {isPhaseCompleted(displayedPhase) ? t('companyOnboarding.ui.completed') : isPhaseAccessible(displayedPhaseData.id) ? t('companyOnboarding.ui.progressing') : t('companyOnboarding.ui.locked')}
+              </div>
             </div>
           </div>
         </div>

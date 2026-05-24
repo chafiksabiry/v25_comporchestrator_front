@@ -413,18 +413,6 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
                 )}
 
                 {!cloudinaryConfigured && (
-                  <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-                    <ImageIcon size={14} className="flex-shrink-0 mt-0.5" />
-                    <span>
-                      {t(
-                        "searchCompanyWizard.manual.logo.fallbackPasteUrl",
-                        "Cloudinary is not configured — paste an image URL below."
-                      )}
-                    </span>
-                  </div>
-                )}
-
-                {!cloudinaryConfigured && (
                   <div className="mt-2">
                     {fieldWithIcon(
                       ImageIcon,

@@ -830,6 +830,7 @@
       "nextPhase": "Next Phase",
       "accessibleDesc": "Follow the sequence to complete your company setup and unlock premium features.",
       "lockedDesc": "This phase is currently locked. Please complete the previous phase to continue.",
+      "viewGuide": "View Guide",
       "allPhasesCompleted": "All steps in this phase are completed. Congratulations, all onboarding phases are now successfully completed! 👏🎺🎊",
       "phaseCompleted": "All steps in this phase are completed. You can proceed to the next phase.",
       "backToOnboarding": "Back to onboarding",

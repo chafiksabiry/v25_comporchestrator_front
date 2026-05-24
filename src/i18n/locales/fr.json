@@ -830,6 +830,7 @@
       "nextPhase": "Phase Suivante",
       "accessibleDesc": "Suivez la séquence pour terminer la configuration de votre entreprise et débloquer les fonctionnalités premium.",
       "lockedDesc": "Cette phase est actuellement verrouillée. Veuillez terminer la phase précédente pour continuer.",
+      "viewGuide": "Voir le guide",
       "allPhasesCompleted": "Toutes les étapes de cette phase sont terminées. Félicitations, toutes les phases d'onboarding sont maintenant complétées ! 👏🎺🎊",
       "phaseCompleted": "Toutes les étapes de cette phase sont terminées. Vous pouvez passer à la phase suivante.",
       "backToOnboarding": "Retour à l'onboarding",
