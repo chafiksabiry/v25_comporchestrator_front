@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { loadStripe, type Stripe } from '@stripe/stripe-js';
 import {
@@ -102,6 +103,21 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
     setInitError(null);
     setCompleted(false);
   }, [confirming]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (!selectedPlan) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeModal();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [selectedPlan, closeModal]);
 
   const openSubscribe = useCallback(
     async (plan: ApiPlan) => {
@@ -261,94 +277,102 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
         })}
       </div>
 
-      {selectedPlan && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0a0b14]/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-white/10 max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 bg-harx-50 rounded-xl flex items-center justify-center text-harx-500 shadow-inner">
-                  <ShieldCheck size={22} />
-                </div>
-                <div>
-                  <h2 className="text-lg font-black text-gray-900 tracking-tight">
-                    Secure payment
-                  </h2>
-                  <p className="text-xs font-bold text-gray-500">
-                    {selectedPlan.name} —{' '}
-                    {formatPrice(selectedPlan.price, selectedPlan.currency)} / month
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={closeModal}
-                disabled={confirming}
-                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 text-gray-500 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="overflow-y-auto flex-1">
-              {initError && (
-                <div className="m-6 p-4 bg-red-50 rounded-2xl border border-red-100 text-red-600">
-                  <p className="text-sm font-bold">{initError}</p>
-                </div>
-              )}
-
-              {!clientSecret && !initError && (
-                <div className="h-64 flex flex-col items-center justify-center gap-4">
-                  <Loader2 className="h-8 w-8 text-harx-500 animate-spin" />
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                    Initializing Stripe…
-                  </p>
-                </div>
-              )}
-
-              {clientSecret && !completed && (
-                <div className="p-2">
-                  <EmbeddedCheckoutProvider
-                    stripe={stripePromise}
-                    options={{ clientSecret, onComplete: handleStripeComplete }}
-                  >
-                    <EmbeddedCheckout />
-                  </EmbeddedCheckoutProvider>
-                </div>
-              )}
-
-              {confirming && (
-                <div className="px-6 pb-6">
-                  <div className="p-3 bg-blue-50/60 border border-blue-100 rounded-xl text-[11px] text-blue-800/80 font-bold text-center">
-                    Finalizing your subscription…
+      {selectedPlan &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[2147483000] flex items-start justify-center overflow-y-auto bg-[#0a0b14]/80 backdrop-blur-md animate-fade-in"
+            style={{ padding: 'clamp(8px, 4vh, 32px) 16px' }}
+            onClick={closeModal}
+          >
+            <div
+              className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-white/10 flex flex-col my-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-3xl z-10">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-11 w-11 bg-harx-50 rounded-xl flex items-center justify-center text-harx-500 shadow-inner shrink-0">
+                    <ShieldCheck size={22} />
                   </div>
-                </div>
-              )}
-
-              {completed && (
-                <div className="p-8 flex flex-col items-center text-center gap-4">
-                  <div className="h-14 w-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
-                    <Check className="h-7 w-7" strokeWidth={3} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-gray-900 tracking-tight">
-                      Subscription active
-                    </h3>
-                    <p className="text-xs font-bold text-gray-500 mt-1">
-                      You are now subscribed to {selectedPlan.name}.
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-black text-gray-900 tracking-tight truncate">
+                      Secure payment
+                    </h2>
+                    <p className="text-xs font-bold text-gray-500 truncate">
+                      {selectedPlan.name} —{' '}
+                      {formatPrice(selectedPlan.price, selectedPlan.currency)} / month
                     </p>
                   </div>
-                  <button
-                    onClick={closeModal}
-                    className="mt-2 px-6 py-2.5 rounded-xl bg-harx-500 hover:bg-harx-600 text-white text-sm font-black tracking-tight shadow transition-all duration-200"
-                  >
-                    Continue
-                  </button>
                 </div>
-              )}
+                <button
+                  onClick={closeModal}
+                  disabled={confirming}
+                  className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 text-gray-500 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 ml-3"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="px-4 py-4">
+                {initError && (
+                  <div className="mb-4 p-4 bg-red-50 rounded-2xl border border-red-100 text-red-600">
+                    <p className="text-sm font-bold">{initError}</p>
+                  </div>
+                )}
+
+                {!clientSecret && !initError && !completed && (
+                  <div className="h-64 flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="h-8 w-8 text-harx-500 animate-spin" />
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                      Initializing Stripe…
+                    </p>
+                  </div>
+                )}
+
+                {clientSecret && !completed && (
+                  <div className="stripe-embedded-wrapper">
+                    <EmbeddedCheckoutProvider
+                      stripe={stripePromise}
+                      options={{ clientSecret, onComplete: handleStripeComplete }}
+                    >
+                      <EmbeddedCheckout />
+                    </EmbeddedCheckoutProvider>
+                  </div>
+                )}
+
+                {confirming && (
+                  <div className="mt-4 p-3 bg-blue-50/60 border border-blue-100 rounded-xl text-[11px] text-blue-800/80 font-bold text-center">
+                    Finalizing your subscription…
+                  </div>
+                )}
+
+                {completed && (
+                  <div className="p-8 flex flex-col items-center text-center gap-4">
+                    <div className="h-14 w-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                      <Check className="h-7 w-7" strokeWidth={3} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-gray-900 tracking-tight">
+                        Subscription active
+                      </h3>
+                      <p className="text-xs font-bold text-gray-500 mt-1">
+                        You are now subscribed to {selectedPlan.name}.
+                      </p>
+                    </div>
+                    <button
+                      onClick={closeModal}
+                      className="mt-2 px-6 py-2.5 rounded-xl bg-harx-500 hover:bg-harx-600 text-white text-sm font-black tracking-tight shadow transition-all duration-200"
+                    >
+                      Continue
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
