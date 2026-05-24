@@ -41,7 +41,6 @@ import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
 import Subscription from './components/Subscription';
 import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideModal';
 import WalletTopUpModal from './components/wallet/WalletTopUpModal';
-import AccountSettingsModal from './components/settings/AccountSettingsModal';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import StepGuideModal, { type StepGuideVariant } from './components/onboarding/StepGuideModal';
 import {
@@ -104,7 +103,6 @@ function AppContent() {
   const [escrow, setEscrow] = useState<number>(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [showWalletTopUp, setShowWalletTopUp] = useState(false);
-  const [showAccountSettings, setShowAccountSettings] = useState(false);
 
   const navigate = useNavigate();
 
@@ -166,8 +164,19 @@ function AppContent() {
     };
 
     window.addEventListener('balanceUpdated', handleBalanceUpdateEvent);
+
+    const handleUserProfileUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const nextName = customEvent.detail?.fullName;
+      if (typeof nextName === 'string' && nextName.length > 0) {
+        setUserFullName(nextName);
+      }
+    };
+    window.addEventListener('userProfileUpdated', handleUserProfileUpdated);
+
     return () => {
       window.removeEventListener('balanceUpdated', handleBalanceUpdateEvent);
+      window.removeEventListener('userProfileUpdated', handleUserProfileUpdated);
     };
   }, []);
 
@@ -765,7 +774,8 @@ function AppContent() {
                       <button
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
-                          setShowAccountSettings(true);
+                          setActiveProject('dashboard');
+                          navigate('/dashboard/account-settings');
                         }}
                         className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
                       >
@@ -826,14 +836,6 @@ function AppContent() {
         onClose={() => setShowWalletTopUp(false)}
         companyId={Cookies.get('companyId')}
         onSuccess={refreshWalletBalance}
-      />
-
-      <AccountSettingsModal
-        open={showAccountSettings}
-        onClose={() => setShowAccountSettings(false)}
-        onProfileUpdated={(next) => {
-          if (next.fullName) setUserFullName(next.fullName);
-        }}
       />
 
     </StripeContainer>
