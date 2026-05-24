@@ -131,6 +131,11 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   const [destinationZone, setDestinationZone] = useState('');
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
   const [isSearchingNumbers, setIsSearchingNumbers] = useState(false);
+  const [trialInfo, setTrialInfo] = useState<{
+    eligible: boolean;
+    trialDurationDays: number;
+    existingNumbers: number;
+  } | null>(null);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [purchaseType, setPurchaseType] = useState<string | undefined>(undefined);
@@ -221,6 +226,27 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       setSelectedGigId(gigs[0]._id);
     }
   }, [gigs, selectedGigId]);
+
+  // Vérifier l'éligibilité au trial gratuit 15 jours pour la company.
+  useEffect(() => {
+    if (!companyId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const info = await phoneNumberService.getTrialEligibility(companyId);
+        if (!cancelled) {
+          setTrialInfo({
+            eligible: info.eligible,
+            trialDurationDays: info.trialDurationDays,
+            existingNumbers: info.existingNumbers,
+          });
+        }
+      } catch (e) {
+        if (!cancelled) setTrialInfo(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [companyId, phoneNumbers.length]);
 
   // Effet pour récupérer les numéros existants quand un gig est sélectionné
   useEffect(() => {
@@ -1319,6 +1345,8 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         onSetPurchaseStatus={setPurchaseStatus}
         onSetSelectedNumber={setSelectedNumber}
         onSetShowPurchaseModal={setShowPurchaseModal}
+        trialEligible={trialInfo?.eligible ?? false}
+        trialDurationDays={trialInfo?.trialDurationDays ?? 15}
       />
 
       {/* Requirements Modal */}

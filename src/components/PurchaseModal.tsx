@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle, AlertCircle, Phone, Shield, X, Loader2, Sparkles } from 'lucide-react';
+import { CheckCircle, AlertCircle, Phone, Shield, X, Loader2, Sparkles, Gift } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { RequirementForm } from './RequirementForm';
 
@@ -32,6 +32,10 @@ interface PurchaseModalProps {
   onSetPurchaseStatus: (status: 'idle' | 'confirming' | 'requirements' | 'purchasing' | 'success' | 'error') => void;
   onSetSelectedNumber: (number: string | null) => void;
   onSetShowPurchaseModal: (show: boolean) => void;
+  /** When true, this company can claim the very first phone line as a free trial. */
+  trialEligible?: boolean;
+  /** Duration of the free trial in days (defaults to 15). */
+  trialDurationDays?: number;
 }
 
 const TITLE_KEYS: Record<string, string> = {
@@ -56,6 +60,8 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   onSetPurchaseStatus,
   onSetSelectedNumber,
   onSetShowPurchaseModal,
+  trialEligible = false,
+  trialDurationDays = 15,
 }) => {
   const { t } = useTranslation();
 
@@ -143,8 +149,35 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
             {purchaseStatus === 'confirming' && (
               <div className="space-y-6">
                 <p className="text-[15px] leading-relaxed text-gray-600">
-                  {t('telephonySetup.purchaseModal.confirm.subtitle')}
+                  {trialEligible
+                    ? t('telephonySetup.purchaseModal.confirm.trialSubtitle', { days: trialDurationDays })
+                    : t('telephonySetup.purchaseModal.confirm.subtitle')}
                 </p>
+
+                {trialEligible && (
+                  <div className="relative overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-emerald-50/60 to-white p-5 shadow-sm">
+                    <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-200/30 blur-2xl" />
+                    <div className="relative flex items-start gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30">
+                        <Gift className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-600">
+                          {t('telephonySetup.purchaseModal.trial.tag')}
+                        </p>
+                        <h4 className="mt-1 text-base font-black text-emerald-900">
+                          {t('telephonySetup.purchaseModal.trial.title', { days: trialDurationDays })}
+                        </h4>
+                        <p className="mt-1.5 text-sm leading-relaxed text-emerald-800/90">
+                          {t('telephonySetup.purchaseModal.trial.description', { days: trialDurationDays })}
+                        </p>
+                        <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-emerald-700/80">
+                          {t('telephonySetup.purchaseModal.trial.noPayment')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="rounded-2xl border border-gray-100 bg-gradient-to-br from-blue-50/50 via-white to-white p-6 shadow-sm">
                   <p className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-500">
@@ -295,10 +328,16 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                   </button>
                   <button
                     onClick={() => onConfirmPurchase()}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/40 active:scale-[0.98]"
+                    className={`inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-black uppercase tracking-wider text-white shadow-lg transition-all hover:shadow-xl active:scale-[0.98] ${
+                      trialEligible
+                        ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-emerald-500/25 hover:shadow-emerald-500/40'
+                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-600/25 hover:shadow-blue-600/40'
+                    }`}
                   >
-                    <CheckCircle className="h-4 w-4" />
-                    {t('telephonySetup.purchaseModal.confirm.confirmCta')}
+                    {trialEligible ? <Gift className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                    {trialEligible
+                      ? t('telephonySetup.purchaseModal.confirm.trialCta')
+                      : t('telephonySetup.purchaseModal.confirm.confirmCta')}
                   </button>
                 </>
               )}
