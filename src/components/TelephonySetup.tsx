@@ -10,8 +10,6 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
-import twilioIcon from '../assets/twilio-icon.svg';
-
 import { phoneNumberService } from '../services/api';
 import { requirementService, RequirementDetail } from '../services/requirementService';
 import { PurchaseModal } from './PurchaseModal';
@@ -79,7 +77,8 @@ interface Gig {
 
 const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | null }): JSX.Element => {
   const { t } = useTranslation();
-  const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
+  // Provider is enforced to Twilio (UI selector intentionally hidden).
+  const [provider] = useState<'telnyx' | 'twilio'>('twilio');
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(propCompanyId || null);
   const [cookieError, setCookieError] = useState<string | null>(null);
@@ -184,11 +183,6 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     isComplete: false,
     error: null
   });
-  const providers = [
-    { id: 'twilio' as const, name: 'Twilio', logo: Phone },
-    { id: 'telnyx' as const, name: 'Telnyx', logo: Globe }
-  ];
-
   // Logic for multi-number support
   const selectedGig = Array.isArray(gigs) ? gigs.find(g => g._id === selectedGigId) : null;
   const teamSize = selectedGig ? parseInt(selectedGig.team?.size?.toString() || '1') : 1;
@@ -1160,64 +1154,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       {/* Main Content (Provider + Numbers) - Only show when gigs are loaded */}
       {!isLoadingGigs && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-150 fill-mode-both">
-          {/* Section: Select Provider */}
-          <div className="relative bg-white rounded-lg border-[0.5px] border-gray-200 p-4 shadow-sm pl-8">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600 rounded-l-lg shadow-[2px_0_8px_rgba(37,99,235,0.2)]"></div>
-
-            <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em] block mb-1.5">{t('telephonySetup.networkProvider')}</span>
-            <p className="text-[14px] text-gray-500 mb-6">{t('telephonySetup.chooseCarrier')}</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {providers.map((p) => {
-                const isSelected = provider === p.id;
-                const isDisabled = p.id === 'telnyx';
-
-                return (
-                  <button
-                    key={p.id}
-                    disabled={isDisabled}
-                    onClick={() => setProvider(p.id)}
-                    className={`relative flex items-center justify-between px-6 py-5 rounded-xl border-[0.5px] transition-all duration-500 h-24 ${isDisabled
-                        ? 'opacity-40 bg-gray-50 border-gray-100 cursor-not-allowed'
-                        : isSelected
-                          ? 'bg-blue-50/40 border-blue-500 shadow-md ring-4 ring-blue-500/5'
-                          : 'bg-white border-gray-200 hover:border-blue-400 hover:shadow-sm'
-                      }`}
-                  >
-                    <div className="flex items-center space-x-6">
-                      {p.id === 'twilio' ? (
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${isSelected ? 'bg-white shadow-md' : 'bg-gray-50'}`}>
-                          <img src={twilioIcon} className={`h-8 w-8 ${isSelected ? '' : 'opacity-40 grayscale'}`} alt="Twilio" />
-                        </div>
-                      ) : (
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${isSelected ? 'bg-blue-600 shadow-lg' : 'bg-gray-50'}`}>
-                          <Globe className={`h-8 w-8 ${isSelected ? 'text-white' : 'text-gray-300'}`} />
-                        </div>
-                      )}
-                      <div className="flex flex-col items-start">
-                        <span className={`text-[16px] font-black uppercase tracking-[0.1em] ${isSelected ? 'text-blue-700' : 'text-gray-500'}`}>
-                          {p.name}
-                        </span>
-                        {isDisabled && (
-                          <span className="bg-gray-200 text-gray-600 text-[10px] font-bold uppercase px-2 py-0.5 rounded-[4px] tracking-widest mt-1">
-                            {t('telephonySetup.pending')}
-                          </span>
-                        )}
-                        {!isDisabled && isSelected && (
-                          <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest mt-1">{t('telephonySetup.activePartner')}</span>
-                        )}
-                      </div>
-                    </div>
-                    {isSelected && !isDisabled && (
-                      <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
-                        <CheckCircle className="h-4 w-4 text-white" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          {/* Section: Select Provider — hidden: Twilio is enforced as the only carrier */}
 
           {/* Section: Phone Nodes */}
           <div className="relative bg-white rounded-lg border-[0.5px] border-gray-200 p-4 shadow-sm pl-8">
