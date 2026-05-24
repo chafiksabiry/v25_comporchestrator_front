@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CheckCircle, AlertCircle, Phone, Shield, X, Loader2, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { RequirementForm } from './RequirementForm';
@@ -57,6 +58,16 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   onSetShowPurchaseModal,
 }) => {
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const closeAll = () => {
@@ -69,18 +80,20 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   const displayNumber = purchaseResponse?.phoneNumber || selectedNumber || '';
   const providerLabel = (purchaseResponse?.provider || provider || 'twilio').toUpperCase();
 
-  return (
-    <>
+  const modalNode = (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-4"
+      role="dialog"
+      aria-modal="true"
+    >
       <div
-        className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
         onClick={() => isClosable && closeAll()}
       />
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      <div className="relative flex min-h-full w-full items-center justify-center py-8">
         <div
-          className="pointer-events-auto w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-[0_30px_80px_-20px_rgba(37,99,235,0.35)] ring-1 ring-black/5 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300"
-          role="dialog"
-          aria-modal="true"
+          className="relative w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-[0_30px_80px_-20px_rgba(37,99,235,0.35)] ring-1 ring-black/5 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300"
         >
           <div className="relative bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-600 px-8 pt-7 pb-8 text-white">
             <div className="absolute inset-0 opacity-20 [background:radial-gradient(circle_at_top_right,white,transparent_60%)]" />
@@ -118,7 +131,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
             </div>
           </div>
 
-          <div className="max-h-[calc(100vh-18rem)] overflow-y-auto px-8 py-7">
+          <div className="max-h-[70vh] overflow-y-auto px-8 py-7">
             {purchaseStatus === 'requirements' && (
               <RequirementForm
                 requirements={countryReq.requirements || []}
@@ -320,6 +333,8 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
           )}
         </div>
       </div>
-    </>
+    </div>
   );
+
+  return createPortal(modalNode, document.body);
 };
