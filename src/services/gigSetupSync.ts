@@ -177,3 +177,32 @@ function fieldToStepId(field: SetupStepField): number | null {
   }
   return null;
 }
+
+/** Mark the same setup step on every gig owned by a company (e.g. subscription
+ *  is company-wide but `repOnboarding` lives on each gig document). */
+export async function markCompanyGigsStepDone(
+  companyId: string,
+  field: SetupStepField,
+  value: boolean = true
+): Promise<void> {
+  if (!companyId) return;
+  try {
+    const res = await fetch(
+      `${GIGS_API()}/gigs/company/${encodeURIComponent(companyId)}`
+    );
+    if (!res.ok) return;
+    const payload = await res.json();
+    const gigs: Array<{ _id?: string }> = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+    await Promise.all(
+      gigs
+        .filter((g) => g?._id)
+        .map((g) => markGigStepDone(String(g._id), field, value))
+    );
+  } catch {
+    // best-effort — checklist probes reconcile later
+  }
+}

@@ -3,6 +3,7 @@ import { CreditCard, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import EmbeddedSubscriptionFlow from '../stripe/EmbeddedSubscriptionFlow';
+import { markCompanyGigsStepDone } from '../../services/gigSetupSync';
 
 const SubscriptionPlan = () => {
   const [isStepCompleted, setIsStepCompleted] = useState(false);
@@ -24,6 +25,7 @@ const SubscriptionPlan = () => {
       const subData = (response.data as any).data;
       if (subData && (subData.status === 'active' || subData.status === 'trialing')) {
         if (subData.planId?.name) setActivePlanName(subData.planId.name);
+        await markCompanyGigsStepDone(companyId, 'repOnboarding', true);
         if (!isStepCompleted) completeOnboardingStep();
       }
     } catch (error) {

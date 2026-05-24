@@ -222,6 +222,51 @@ const ApprovalPublishing = () => {
     };
   }, []);
 
+  // Reflect setupSteps patches from telephony / subscription flows without a full page reload.
+  useEffect(() => {
+    const onGigStepProgress = (event: Event) => {
+      const detail = (event as CustomEvent).detail as {
+        gigId?: string;
+        field?: SetupStepField;
+        value?: boolean;
+        patch?: Partial<Record<SetupStepField, boolean>>;
+      } | undefined;
+
+      if (detail?.patch && detail.gigId) {
+        setGigs((prev) =>
+          prev.map((g) =>
+            g._id === detail.gigId
+              ? { ...g, setupSteps: { ...(g.setupSteps || {}), ...detail.patch } }
+              : g
+          )
+        );
+        return;
+      }
+
+      if (!detail?.gigId || !detail.field || detail.value === false) {
+        fetchGigs();
+        return;
+      }
+
+      setGigs((prev) =>
+        prev.map((g) =>
+          g._id === detail.gigId
+            ? {
+                ...g,
+                setupSteps: {
+                  ...(g.setupSteps || {}),
+                  [detail.field!]: true,
+                },
+              }
+            : g
+        )
+      );
+    };
+
+    window.addEventListener('harx:gig-step-progress', onGigStepProgress);
+    return () => window.removeEventListener('harx:gig-step-progress', onGigStepProgress);
+  }, []);
+
   const fetchCompanyDetails = async () => {
     try {
       const companyId = Cookies.get('companyId');
