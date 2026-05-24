@@ -637,6 +637,18 @@
       "quickNotes": "Quick Notes",
       "notesPlaceholder": "Enter notes here...",
       "saveAndFinish": "Save & Finish"
+    },
+    "iframes": {
+      "title": "Script Iframes",
+      "add": "Add",
+      "remove": "Remove this iframe",
+      "warningTitle": "About embedded iframes",
+      "warning": "Embed your web tools (CRM, calculator, payment form) into the script. The target site must allow embedding (X-Frame-Options / Content-Security-Policy headers) and use HTTPS — otherwise the iframe will stay blank during the call. Test each URL before validating.",
+      "empty": "No iframes added yet. Click \"Add\" to embed a web tool.",
+      "labelPlaceholder": "Name (e.g. CRM Calculator)",
+      "urlPlaceholder": "https://example.com/tool",
+      "itemLabel": "Iframe #{{n}}",
+      "invalidUrl": "Invalid URL — use https://"
     }
   },
   "knowledgeBase": {
