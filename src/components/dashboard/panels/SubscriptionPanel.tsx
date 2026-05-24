@@ -3,6 +3,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import { Sparkles, CreditCard } from 'lucide-react';
 import EmbeddedSubscriptionFlow from '../../stripe/EmbeddedSubscriptionFlow';
+import { markCompanyGigsStepDone } from '../../../services/gigSetupSync';
 
 /**
  * Dashboard panel for subscription / upgrade.
@@ -32,6 +33,7 @@ export function SubscriptionPanel() {
       const subData = (response.data as { data?: { status?: string; planId?: { name?: string } } }).data;
       if (subData && (subData.status === 'active' || subData.status === 'trialing')) {
         if (subData.planId?.name) setActivePlanName(subData.planId.name);
+        await markCompanyGigsStepDone(companyId, 'repOnboarding', true);
       }
     } catch (error) {
       console.error('Error checking subscription:', error);

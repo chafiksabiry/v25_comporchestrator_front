@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
 import { phoneNumberService, BASE_URL } from '../services/api';
+import { markGigStepDone } from '../services/gigSetupSync';
 import { requirementService, RequirementDetail } from '../services/requirementService';
 import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
@@ -725,6 +726,9 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       // Met à jour la liste des numéros (supporte maintenant plusieurs numéros s'ils existent)
       if (result?.hasNumber && result.numbers && Array.isArray(result.numbers)) {
         setPhoneNumbers(result.numbers);
+        if (result.numbers.length > 0) {
+          markGigStepDone(selectedGigId, 'telephony', true);
+        }
       } else {
         setPhoneNumbers([]);
       }
@@ -846,6 +850,10 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         },
         provider
       });
+
+      if (selectedGigId) {
+        markGigStepDone(selectedGigId, 'telephony', true);
+      }
 
       // --- Auto-Complete Onboarding Step 4 Here ---
 
