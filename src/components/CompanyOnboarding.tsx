@@ -522,6 +522,22 @@ const CompanyOnboarding = () => {
   // Define API URL with fallback
   const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
 
+  // Drop stale per-user cookies as soon as a new userId is detected.
+  useEffect(() => {
+    if (!userId) return;
+    const lastUserId = localStorage.getItem("lastUserId");
+    if (lastUserId && lastUserId !== userId) {
+      try {
+        Cookies.remove("companyId");
+        Cookies.remove("companyOnboardingProgress");
+        localStorage.removeItem("companyOnboardingProgress");
+      } catch { /* ignore */ }
+    }
+    try {
+      localStorage.setItem("lastUserId", userId);
+    } catch { /* ignore */ }
+  }, [userId]);
+
   // Fetch company ID using user ID
   useEffect(() => {
     const fetchCompanyId = async () => {
@@ -545,19 +561,41 @@ const CompanyOnboarding = () => {
           `${API_BASE_URL}/companies/user/${userId}`
         );
         if (response.data.success && response.data.data) {
-          setCompanyId(response.data.data._id);
-          // Store company ID in cookie for backward compatibility
-          Cookies.set("companyId", response.data.data._id);
-          
+          const freshCompanyId = response.data.data._id;
+          const staleCompanyId = Cookies.get("companyId");
+          if (staleCompanyId && staleCompanyId !== freshCompanyId) {
+            // Drop legacy progress tied to the previous user's company.
+            try {
+              localStorage.removeItem("companyOnboardingProgress");
+              Cookies.remove("companyOnboardingProgress");
+            } catch { /* ignore */ }
+          }
+          setCompanyId(freshCompanyId);
+          Cookies.set("companyId", freshCompanyId);
         } else {
-          console.error("No company data found for user:", userId);
-          // Ne pas rediriger immédiatement, afficher un message d'erreur à la place
-          // Allow Step 1 (Create Company Profile) to start even without existing companyId
+          // Expected for a brand-new user with no company yet — render Step 1 (Create Company Profile).
+          console.info(`[CompanyOnboarding] No company yet for user ${userId}, starting Step 1.`);
+          Cookies.remove("companyId");
+          try {
+            localStorage.removeItem("companyOnboardingProgress");
+            Cookies.remove("companyOnboardingProgress");
+          } catch { /* ignore */ }
+          setCompanyId(null);
           setIsInitialLoad(false);
         }
-      } catch (error) {
-        console.error("Error fetching company ID:", error);
-        // Ne pas rediriger immédiatement, afficher un message d'erreur à la place
+      } catch (error: any) {
+        // 404 = no company for this user yet (expected for new accounts).
+        if (error?.response?.status === 404) {
+          console.info(`[CompanyOnboarding] No company yet for user ${userId}, starting Step 1.`);
+          Cookies.remove("companyId");
+          try {
+            localStorage.removeItem("companyOnboardingProgress");
+            Cookies.remove("companyOnboardingProgress");
+          } catch { /* ignore */ }
+          setCompanyId(null);
+        } else {
+          console.error("Error fetching company ID:", error);
+        }
         // Allow onboarding UI to render so user can create first company profile (step 1)
         setIsInitialLoad(false);
       }
@@ -784,8 +822,13 @@ const CompanyOnboarding = () => {
       Cookies.set("companyOnboardingProgress", JSON.stringify(progressPayload));
       localStorage.setItem("companyOnboardingProgress", JSON.stringify(progressPayload));
 
-    } catch (error) {
-      console.error("❌ Error loading company progress:", error);
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        // No onboarding doc yet — expected for a freshly created company.
+        console.info("[CompanyOnboarding] No onboarding progress yet, starting from Phase 1.");
+      } else {
+        console.error("❌ Error loading company progress:", error);
+      }
       // Keep the current UI state on transient API errors.
       // Resetting to phase 1 causes false "locked" screens until manual refresh.
     } finally {
