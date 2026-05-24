@@ -6,7 +6,6 @@ import {
   Building2,
   Briefcase,
   BookOpen,
-  LayoutDashboard,
   ChevronRight,
   Rocket,
 } from 'lucide-react';
@@ -26,13 +25,12 @@ interface OrchestratorGuideModalProps {
   userName?: string;
 }
 
-const STEP_ICONS = [Sparkles, Building2, Briefcase, BookOpen, LayoutDashboard] as const;
+const STEP_ICONS = [Sparkles, Building2, Briefcase, BookOpen] as const;
 const STEP_GRADIENTS = [
   'from-[#ff4d4d] via-[#ec4899] to-[#c026d3]',
   'from-blue-600 via-indigo-600 to-violet-700',
   'from-emerald-600 via-teal-600 to-cyan-700',
   'from-amber-500 via-orange-500 to-[#ff4d4d]',
-  'from-zinc-800 via-zinc-900 to-black',
 ];
 
 const OrchestratorGuideModal: React.FC<OrchestratorGuideModalProps> = ({
@@ -44,7 +42,7 @@ const OrchestratorGuideModal: React.FC<OrchestratorGuideModalProps> = ({
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
 
-  const totalSteps = 5;
+  const totalSteps = 4;
   const isIntro = currentStep === 0;
   const isLastStep = currentStep === totalSteps - 1;
 

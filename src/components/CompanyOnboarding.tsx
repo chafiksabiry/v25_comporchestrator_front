@@ -37,6 +37,10 @@ import PrompAI from "./gigsaicreation/components/PrompAI";
 import { useTranslation } from "react-i18next";
 import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
 import OrchestratorGuideModal from "./onboarding/OrchestratorGuideModal";
+import { setNavbarFeatures, resetNavbarFeatures } from "../utils/navbarFeatures";
+
+const SUBSCRIPTION_PLAN_STEP_ID = 11; // Phase 4 — unlocks UPGRADE
+const GIG_ACTIVATION_STEP_ID = 12;    // Phase 4 — unlocks MY WALLET
 import {
   markStepGuideSeen,
   shouldShowStepGuide,
@@ -415,6 +419,23 @@ const CompanyOnboarding = () => {
     };
     window.addEventListener("openOrchestratorGuide", handler);
     return () => window.removeEventListener("openOrchestratorGuide", handler);
+  }, []);
+
+  useEffect(() => {
+    const maxCompleted = completedSteps.length > 0 ? Math.max(...completedSteps) : 0;
+    const reachedStep = Math.max(maxCompleted, activeStep ?? 0);
+
+    setNavbarFeatures({
+      showUpgrade: reachedStep >= SUBSCRIPTION_PLAN_STEP_ID,
+      showWallet: reachedStep >= GIG_ACTIVATION_STEP_ID,
+    });
+  }, [completedSteps, activeStep]);
+
+  useEffect(() => {
+    // When the orchestrator unmounts, restore the navbar so other apps aren't affected.
+    return () => {
+      resetNavbarFeatures();
+    };
   }, []);
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
