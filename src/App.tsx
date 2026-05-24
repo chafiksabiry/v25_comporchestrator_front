@@ -46,7 +46,14 @@ import {
   shouldShowStepGuide,
   isOnboardingFullyCompleted,
   syncOnboardingProgressFromApi,
+  getCompletedStepsFromStorage,
 } from './hooks/useStepGuide';
+
+// First step of the Activation phase (Phase 4). When this is reached (step 10 of
+// Phase 3 done OR any Phase 4 step touched), wallet & upgrade widgets become
+// relevant inside the orchestrator view.
+const ACTIVATION_PHASE_STEP_IDS = [11, 12, 13] as const;
+const LAST_PRE_ACTIVATION_STEP_ID = 10;
 
 const TAB_ONBOARDING_STEPS: Record<string, { stepId: number; phaseId: number }> = {
   'script-generator': { stepId: 6, phaseId: 2 },
@@ -88,6 +95,7 @@ function AppContent() {
     isOnboardingFullyCompleted()
   );
   const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [completedStepIds, setCompletedStepIds] = useState<number[]>(() => getCompletedStepsFromStorage());
   const [balance, setBalance] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
@@ -452,6 +460,34 @@ function AppContent() {
     }
   }, [activeProject, shouldShowGuide, onboardingComplete, onboardingChecked, isZohoCallback, isZohoAuth, showUpgradeModal]);
 
+  // Keep `completedStepIds` in sync with localStorage so navbar widgets (wallet
+  // & upgrade) appear/disappear as the user progresses through onboarding.
+  useEffect(() => {
+    const refresh = () => setCompletedStepIds(getCompletedStepsFromStorage());
+    refresh();
+    window.addEventListener('stepCompleted', refresh as EventListener);
+    window.addEventListener('storage', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      window.removeEventListener('stepCompleted', refresh as EventListener);
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
+
+  const hasReachedActivationPhase = React.useMemo(
+    () =>
+      completedStepIds.includes(LAST_PRE_ACTIVATION_STEP_ID) ||
+      ACTIVATION_PHASE_STEP_IDS.some((id) => completedStepIds.includes(id)),
+    [completedStepIds]
+  );
+
+  // Inside the orchestrator view, the wallet & upgrade buttons only make sense
+  // once the user reaches the Activation phase. Outside the orchestrator they
+  // remain visible at all times.
+  const showActivationNavbarWidgets =
+    activeProject !== 'comporchestrator' || hasReachedActivationPhase;
+
   const handleGuideComplete = () => {
     markGuideComplete();
     setShowGuideModal(false);
@@ -581,23 +617,25 @@ function AppContent() {
 
               {/* Credits, Balance, and Upgrade Widgets */}
               <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-                {/* Balance Widget (My Wallet) */}
-                <div
-                  onClick={handleBalanceClick}
-                  className="relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-br from-emerald-500/20 via-slate-950/90 to-[#064e3b]/30 border border-emerald-500/40 text-xs font-bold text-emerald-50/90 shadow-[0_0_20px_-5px_rgba(16,185,129,0.5)] hover:border-emerald-300/80 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_28px_-2px_rgba(16,185,129,0.7)] transition-all duration-300 cursor-pointer group backdrop-blur-md overflow-hidden shrink-0"
-                >
-                  <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-                    <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-escrow-shine" />
-                  </span>
+                {/* Balance Widget (My Wallet) — hidden in orchestrator until Activation phase */}
+                {showActivationNavbarWidgets && (
+                  <div
+                    onClick={handleBalanceClick}
+                    className="relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-br from-emerald-500/20 via-slate-950/90 to-[#064e3b]/30 border border-emerald-500/40 text-xs font-bold text-emerald-50/90 shadow-[0_0_20px_-5px_rgba(16,185,129,0.5)] hover:border-emerald-300/80 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_28px_-2px_rgba(16,185,129,0.7)] transition-all duration-300 cursor-pointer group backdrop-blur-md overflow-hidden shrink-0"
+                  >
+                    <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+                      <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-escrow-shine" />
+                    </span>
 
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)] group-hover:scale-110 transition-all duration-300 shrink-0">
-                    <Coins size={14} className="text-white drop-shadow-md animate-pulse-subtle" />
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)] group-hover:scale-110 transition-all duration-300 shrink-0">
+                      <Coins size={14} className="text-white drop-shadow-md animate-pulse-subtle" />
+                    </div>
+                    <div className="flex flex-col leading-tight relative z-10">
+                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-emerald-400 group-hover:text-emerald-300 transition-colors">{t('navbar.myWallet')}</span>
+                      <span className="text-sm font-black text-white tabular-nums tracking-tight">{balance.toLocaleString('en-US')} €</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col leading-tight relative z-10">
-                    <span className="text-[8px] font-black uppercase tracking-[0.15em] text-emerald-400 group-hover:text-emerald-300 transition-colors">{t('navbar.myWallet')}</span>
-                    <span className="text-sm font-black text-white tabular-nums tracking-tight">{balance.toLocaleString('en-US')} €</span>
-                  </div>
-                </div>
+                )}
 
                 {activeProject !== 'comporchestrator' && (
                   <>
@@ -634,21 +672,23 @@ function AppContent() {
                   </>
                 )}
 
-                {/* Upgrade Button — navigates to the Subscription panel like wallet/minutes/telephony */}
-                <button
-                  onClick={() => {
-                    setActiveProject('dashboard');
-                    navigate('/dashboard/subscription');
-                  }}
-                  className="relative flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#EC4899] via-[#F43F5E] to-[#8B5CF6] text-white font-black text-[11px] uppercase tracking-[0.12em] shadow-[0_0_25px_rgba(236,72,153,0.55)] hover:shadow-[0_0_40px_rgba(236,72,153,0.8)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 overflow-hidden group/upgrade shrink-0"
-                >
-                  <span className="absolute inset-0 bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#F43F5E] opacity-0 group-hover/upgrade:opacity-100 transition-opacity duration-500" />
-                  <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-                    <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover/upgrade:animate-escrow-shine" />
-                  </span>
-                  <Sparkles size={13} className="animate-pulse text-white shrink-0 relative z-10" />
-                  <span className="whitespace-nowrap relative z-10">{t('navbar.upgrade')}</span>
-                </button>
+                {/* Upgrade Button — hidden in orchestrator before the Subscription Plan step */}
+                {showActivationNavbarWidgets && (
+                  <button
+                    onClick={() => {
+                      setActiveProject('dashboard');
+                      navigate('/dashboard/subscription');
+                    }}
+                    className="relative flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#EC4899] via-[#F43F5E] to-[#8B5CF6] text-white font-black text-[11px] uppercase tracking-[0.12em] shadow-[0_0_25px_rgba(236,72,153,0.55)] hover:shadow-[0_0_40px_rgba(236,72,153,0.8)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 overflow-hidden group/upgrade shrink-0"
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#F43F5E] opacity-0 group-hover/upgrade:opacity-100 transition-opacity duration-500" />
+                    <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+                      <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover/upgrade:animate-escrow-shine" />
+                    </span>
+                    <Sparkles size={13} className="animate-pulse text-white shrink-0 relative z-10" />
+                    <span className="whitespace-nowrap relative z-10">{t('navbar.upgrade')}</span>
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center gap-2 ml-auto">
