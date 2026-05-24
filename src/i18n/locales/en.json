@@ -734,9 +734,11 @@
     "globalGateway": "Global Gateway",
     "purchase": "Purchase",
     "empty": {
-      "title": "Infrastructure Offline",
-      "subtitle": "Begin by prioritizing regional entry points for your intelligence network",
-      "scan": "Scan Regional Gateways"
+      "title": "No phone numbers yet",
+      "subtitle": "Search available Twilio numbers for your destination zone to activate this gig.",
+      "scan": "Search available numbers",
+      "scanning": "Searching available numbers...",
+      "noZone": "Select a destination zone first"
     }
   },
   "companyOnboarding": {
