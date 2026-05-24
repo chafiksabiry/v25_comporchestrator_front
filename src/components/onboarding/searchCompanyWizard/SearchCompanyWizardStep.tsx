@@ -279,14 +279,14 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
                   <Search size={16} />
                 )}
                 {looksLikeUrl
-                  ? t('searchCompanyWizard.scrapeBtn', 'Scrape & Generate')
+                  ? t('searchCompanyWizard.scrapeBtn', 'Generate')
                   : t('searchCompanyWizard.searchBtn', 'Search')}
               </button>
             </div>
             <p className="mt-2 text-xs text-slate-500 pl-1">
               {looksLikeUrl
-                ? t('searchCompanyWizard.urlDetected', 'URL detected — we will scrape the page and generate the profile.')
-                : t('searchCompanyWizard.unifiedHint', 'Type a company name to search, or paste a URL to scrape it directly.')}
+                ? t('searchCompanyWizard.urlDetected', 'URL detected — we will analyze the page and generate the profile.')
+                : t('searchCompanyWizard.unifiedHint', 'Type a company name to search, or paste a URL to generate the profile directly.')}
             </p>
 
             {error && (

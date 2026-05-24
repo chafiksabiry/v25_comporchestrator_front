@@ -131,18 +131,6 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
     if (logoFileInputRef.current) logoFileInputRef.current.value = "";
   };
 
-  const hasContactInfo =
-    profile.contact?.email ||
-    profile.contact?.phone ||
-    profile.contact?.address ||
-    profile.contact?.website;
-
-  const hasSocialMedia =
-    profile.socialMedia?.linkedin ||
-    profile.socialMedia?.twitter ||
-    profile.socialMedia?.facebook ||
-    profile.socialMedia?.instagram;
-
   const hasLocation =
     profile.contact?.coordinates?.lat && profile.contact?.coordinates?.lng;
 
@@ -358,7 +346,7 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
     <div className="w-full h-full bg-white rounded-3xl shadow-2xl border border-harx-100 overflow-hidden flex relative min-h-[800px] animate-fade-in">
       <div className="w-80 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 overflow-y-auto">
         <div className="p-6 space-y-8">
-          {hasContactInfo && (
+          {(
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Mail className="text-harx-600" size={20} />
@@ -366,38 +354,43 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
               </h3>
 
               <div className="space-y-3">
-                {profile.contact?.email && (
-                  <EditableField
-                    value={profile.contact.email}
-                    field="contact.email"
-                    icon={Mail}
-                    className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                  />
-                )}
-                {profile.contact?.phone && (
-                  <EditableField
-                    value={profile.contact.phone}
-                    field="contact.phone"
-                    icon={Phone}
-                    className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                  />
-                )}
-                {profile.contact?.website && (
-                  <EditableField
-                    value={profile.contact.website}
-                    field="contact.website"
-                    icon={Globe}
-                    className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                  />
-                )}
-                {profile.contact?.address && (
-                  <EditableField
-                    value={profile.contact.address}
-                    field="contact.address"
-                    icon={MapPin}
-                    className="flex items-start gap-3 text-gray-600 text-sm"
-                  />
-                )}
+                {([
+                  { value: profile.contact?.email, field: "contact.email", icon: Mail, label: t('searchCompanyWizard.profile.addEmail', 'Add email'), type: "email" },
+                  { value: profile.contact?.phone, field: "contact.phone", icon: Phone, label: t('searchCompanyWizard.profile.addPhone', 'Add phone'), type: "tel" },
+                  { value: profile.contact?.website, field: "contact.website", icon: Globe, label: t('searchCompanyWizard.profile.addWebsite', 'Add website'), type: "url" },
+                  { value: profile.contact?.address, field: "contact.address", icon: MapPin, label: t('searchCompanyWizard.profile.addAddress', 'Add address'), type: "text" },
+                ] as const).map(({ value, field, icon: Icon, label, type }) => {
+                  if (value || editingField === field) {
+                    return (
+                      <EditableField
+                        key={field}
+                        value={(value as string) || ""}
+                        field={field}
+                        icon={Icon}
+                        type={type}
+                        className={field === "contact.address"
+                          ? "flex items-start gap-3 text-gray-600 text-sm"
+                          : "flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"}
+                      />
+                    );
+                  }
+                  return (
+                    <button
+                      key={field}
+                      type="button"
+                      onClick={() => {
+                        if (!editMode) setEditMode(true);
+                        setEditingField(field);
+                        setTempValue("");
+                      }}
+                      className="group w-full flex items-center gap-3 text-left px-3 py-2 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:border-harx-400 hover:text-harx-600 hover:bg-harx-50/40 transition-all text-sm"
+                    >
+                      <Icon size={16} className="flex-shrink-0" />
+                      <span className="flex-1 truncate">{label}</span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 group-hover:text-harx-500">+</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {(profile.contact?.address || hasLocation) && (
@@ -438,24 +431,46 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
             </div>
           )}
 
-          {hasSocialMedia && (
+          {(
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Globe className="text-harx-600" size={20} />
                 {t('searchCompanyWizard.profile.digitalPresence')}
               </h3>
-              <div className="flex gap-3">
-                {profile.socialMedia?.linkedin && (
-                  <a href={profile.socialMedia.linkedin} target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"><Linkedin size={20} /></a>
-                )}
-                {profile.socialMedia?.twitter && (
-                  <a href={profile.socialMedia.twitter} target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"><Twitter size={20} /></a>
-                )}
-                {profile.socialMedia?.facebook && (
-                  <a href={profile.socialMedia.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"><Facebook size={20} /></a>
-                )}
-                {profile.socialMedia?.instagram && (
-                  <a href={profile.socialMedia.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"><Instagram size={20} /></a>
+              <div className="flex flex-wrap gap-3">
+                {([
+                  { key: "linkedin", value: profile.socialMedia?.linkedin, icon: Linkedin, label: "LinkedIn" },
+                  { key: "twitter", value: profile.socialMedia?.twitter, icon: Twitter, label: "Twitter / X" },
+                  { key: "facebook", value: profile.socialMedia?.facebook, icon: Facebook, label: "Facebook" },
+                  { key: "instagram", value: profile.socialMedia?.instagram, icon: Instagram, label: "Instagram" },
+                ] as const).map(({ key, value, icon: Icon, label }) =>
+                  value ? (
+                    <a
+                      key={key}
+                      href={value}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={label}
+                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"
+                    >
+                      <Icon size={20} />
+                    </a>
+                  ) : (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        if (!editMode) setEditMode(true);
+                        setEditingField(`socialMedia.${key}`);
+                        setTempValue("");
+                      }}
+                      title={t('searchCompanyWizard.profile.addSocial', 'Add {{network}} link', { network: label })}
+                      className="relative w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-dashed border-slate-300 text-slate-400 hover:border-harx-400 hover:text-harx-600 hover:bg-harx-50/40 transition-all"
+                    >
+                      <Icon size={18} />
+                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-harx-500 text-white text-[9px] font-black flex items-center justify-center shadow">+</span>
+                    </button>
+                  )
                 )}
               </div>
             </div>
