@@ -1133,16 +1133,6 @@ const ScriptGenerator: React.FC = () => {
 
                   <hr className="border-slate-100" />
 
-                  {/* Long description */}
-                  <div className="space-y-1">
-                    <h5 className="text-[9px] font-black text-slate-800 uppercase tracking-wider">Description & Contexte</h5>
-                    <div className="text-slate-600 text-[11px] font-semibold leading-relaxed whitespace-pre-line">
-                      {selectedGig.description || 'Aucune description disponible.'}
-                    </div>
-                  </div>
-
-                  <hr className="border-slate-100" />
-
                   {/* Script iframes (embedded web tools shown to reps at call time) */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
