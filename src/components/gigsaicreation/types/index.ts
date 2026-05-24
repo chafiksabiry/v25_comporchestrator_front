@@ -39,6 +39,12 @@ export interface GigData {
   description: string;
   category: string;
   destination_zone: string;
+  destination_zone_meta?: {
+    _id: string;
+    name: { common: string; official?: string };
+    cca2?: string;
+    flag?: string;
+  };
   destination_zone_ai_generated?: string;
   destinationZones?: string[];
   callTypes: string[];
@@ -65,6 +71,13 @@ export interface GigData {
     }>;
     timeZones: string[];
     time_zone: string;
+    time_zone_meta?: {
+      _id: string;
+      zoneName: string;
+      countryCode?: string;
+      countryName?: string;
+      gmtOffset?: number;
+    };
     flexibility: string[];
     minimumHours: {
       daily?: number;
@@ -82,6 +95,13 @@ export interface GigData {
     }>;
     timeZones: string[];
     time_zone?: string;
+    time_zone_meta?: {
+      _id: string;
+      zoneName: string;
+      countryCode?: string;
+      countryName?: string;
+      gmtOffset?: number;
+    };
     flexibility: string[];
     minimumHours: {
       daily?: number;
@@ -98,6 +118,12 @@ export interface GigData {
     commission_per_call: number;
     bonusAmount: number | string;
     currency: string;
+    currency_meta?: {
+      _id: string;
+      code: string;
+      name: string;
+      symbol: string;
+    };
     minimumVolume: {
       amount: number | string;
       period: string;
