@@ -6,18 +6,23 @@ import {
   Building2,
   Calendar,
   Check,
-  Globe,
+  Facebook,
+  Instagram,
   Linkedin,
   Loader2,
   Mail,
   MapPin,
   Phone,
+  Plus,
   Target,
   Trash2,
   Twitter,
   Upload,
+  X,
   XCircle,
+  Youtube,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { saveCompanyData } from "./api/companyApi";
 import { uploadImage } from "./api/uploads";
@@ -39,9 +44,6 @@ interface ManualFormState {
   email: string;
   phone: string;
   address: string;
-  website: string;
-  linkedin: string;
-  twitter: string;
 }
 
 const initialState: ManualFormState = {
@@ -55,10 +57,31 @@ const initialState: ManualFormState = {
   email: "",
   phone: "",
   address: "",
-  website: "",
-  linkedin: "",
-  twitter: "",
 };
+
+type SocialNetworkKey = "linkedin" | "twitter" | "facebook" | "instagram" | "youtube";
+
+interface SocialEntry {
+  network: SocialNetworkKey;
+  url: string;
+}
+
+const SOCIAL_NETWORKS: Array<{
+  key: SocialNetworkKey;
+  label: string;
+  icon: LucideIcon;
+  placeholder: string;
+  accent: string;
+}> = [
+  { key: "linkedin", label: "LinkedIn", icon: Linkedin, placeholder: "https://linkedin.com/company/...", accent: "from-sky-500 to-blue-600" },
+  { key: "twitter", label: "Twitter / X", icon: Twitter, placeholder: "https://twitter.com/...", accent: "from-slate-700 to-slate-900" },
+  { key: "facebook", label: "Facebook", icon: Facebook, placeholder: "https://facebook.com/...", accent: "from-blue-500 to-indigo-600" },
+  { key: "instagram", label: "Instagram", icon: Instagram, placeholder: "https://instagram.com/...", accent: "from-pink-500 to-rose-600" },
+  { key: "youtube", label: "YouTube", icon: Youtube, placeholder: "https://youtube.com/@...", accent: "from-red-500 to-red-600" },
+];
+
+const getNetworkMeta = (key: SocialNetworkKey) =>
+  SOCIAL_NETWORKS.find((n) => n.key === key) ?? SOCIAL_NETWORKS[0];
 
 export function ManualCompanyForm({ onClose, onPublished }: Props) {
   const { t } = useTranslation();
@@ -69,6 +92,26 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
   const [logoError, setLogoError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [socialLinks, setSocialLinks] = useState<SocialEntry[]>([]);
+  const [socialPickerOpen, setSocialPickerOpen] = useState(false);
+
+  const availableNetworks = SOCIAL_NETWORKS.filter(
+    (network) => !socialLinks.some((link) => link.network === network.key)
+  );
+
+  const addSocialLink = (network: SocialNetworkKey) => {
+    setSocialLinks((prev) => [...prev, { network, url: "" }]);
+    setSocialPickerOpen(false);
+  };
+
+  const updateSocialLink = (index: number, url: string) => {
+    setSocialLinks((prev) => prev.map((link, i) => (i === index ? { ...link, url } : link)));
+  };
+
+  const removeSocialLink = (index: number) => {
+    setSocialLinks((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const update = (key: keyof ManualFormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -168,16 +211,17 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
       if (form.email.trim()) contact.email = form.email.trim();
       if (form.phone.trim()) contact.phone = form.phone.trim();
       if (form.address.trim()) contact.address = form.address.trim();
-      if (form.website.trim()) contact.website = form.website.trim();
       if (Object.keys(contact).length > 0) payload.contact = contact;
 
       const socialMedia: Record<string, string> = {};
-      if (form.linkedin.trim()) socialMedia.linkedin = form.linkedin.trim();
-      if (form.twitter.trim()) socialMedia.twitter = form.twitter.trim();
+      socialLinks.forEach((link) => {
+        const url = link.url.trim();
+        if (url) socialMedia[link.network] = url;
+      });
       if (Object.keys(socialMedia).length > 0) payload.socialMedia = socialMedia;
 
-      const response = await saveCompanyData(payload);
-      const newCompanyId = response?.data?._id;
+      const response: any = await saveCompanyData(payload);
+      const newCompanyId = response?.data?._id ?? response?._id;
       if (!newCompanyId) {
         throw new Error("Company ID missing from API response");
       }
@@ -487,56 +531,106 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
                   />
                 )}
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">
-                  {t("searchCompanyWizard.manual.fields.website", "Website")}
-                </label>
-                {fieldWithIcon(
-                  Globe,
-                  <input
-                    type="url"
-                    value={form.website}
-                    onChange={update("website")}
-                    placeholder="https://company.com"
-                    className={`${inputBase} pl-10`}
-                  />
-                )}
-              </div>
             </div>
           </section>
 
           <section className="space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">
-              {t("searchCompanyWizard.manual.social", "Social Media")}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">LinkedIn</label>
-                {fieldWithIcon(
-                  Linkedin,
-                  <input
-                    type="url"
-                    value={form.linkedin}
-                    onChange={update("linkedin")}
-                    placeholder="https://linkedin.com/company/..."
-                    className={`${inputBase} pl-10`}
-                  />
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">Twitter / X</label>
-                {fieldWithIcon(
-                  Twitter,
-                  <input
-                    type="url"
-                    value={form.twitter}
-                    onChange={update("twitter")}
-                    placeholder="https://twitter.com/..."
-                    className={`${inputBase} pl-10`}
-                  />
-                )}
-              </div>
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">
+                {t("searchCompanyWizard.manual.social", "Social Media")}
+              </h3>
+              {availableNetworks.length > 0 && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setSocialPickerOpen((open) => !open)}
+                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-harx-600 to-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:shadow-md hover:scale-[1.02] active:scale-95"
+                  >
+                    <Plus size={14} />
+                    {t("searchCompanyWizard.manual.socialAdd", "Add social link")}
+                  </button>
+                  {socialPickerOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setSocialPickerOpen(false)}
+                      />
+                      <div className="absolute right-0 top-full z-20 mt-2 w-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                        <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                          {t("searchCompanyWizard.manual.socialChoose", "Choose a network")}
+                        </div>
+                        <div className="max-h-64 overflow-y-auto py-1">
+                          {availableNetworks.map((network) => {
+                            const Icon = network.icon;
+                            return (
+                              <button
+                                key={network.key}
+                                type="button"
+                                onClick={() => addSocialLink(network.key)}
+                                className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                              >
+                                <span className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${network.accent} text-white shadow-sm`}>
+                                  <Icon size={16} />
+                                </span>
+                                <span className="flex-1 font-semibold">{network.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
+
+            {socialLinks.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-6 text-center">
+                <p className="text-sm text-slate-500">
+                  {t(
+                    "searchCompanyWizard.manual.socialEmpty",
+                    "No social link yet. Click \"Add social link\" to start."
+                  )}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {socialLinks.map((link, index) => {
+                  const meta = getNetworkMeta(link.network);
+                  const Icon = meta.icon;
+                  return (
+                    <div
+                      key={`${link.network}-${index}`}
+                      className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2 shadow-sm transition-all focus-within:border-harx-400 focus-within:ring-2 focus-within:ring-harx-500/15"
+                    >
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${meta.accent} text-white shadow-sm`}>
+                        <Icon size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                          {meta.label}
+                        </div>
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={(e) => updateSocialLink(index, e.target.value)}
+                          placeholder={meta.placeholder}
+                          className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeSocialLink(index)}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                        aria-label={t("searchCompanyWizard.manual.socialRemove", "Remove")}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {error && (
