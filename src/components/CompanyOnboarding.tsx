@@ -443,7 +443,11 @@ const CompanyOnboarding = () => {
       } else if (showUploadContacts) {
         action = () => setShowUploadContacts(false);
       } else if (activeStep !== null) {
-        action = () => setActiveStep(null);
+        action = () => {
+          setActiveStep(null);
+          // Re-sync from API (e.g. subscription step 11 after Stripe checkout).
+          window.dispatchEvent(new Event('refreshOnboardingProgress'));
+        };
       }
 
       window.dispatchEvent(new CustomEvent('setGlobalBack', {
@@ -809,7 +813,7 @@ const CompanyOnboarding = () => {
 
   useEffect(() => {
     const handleStepCompleted = (event: CustomEvent) => {
-      const { stepId, phaseId, completedSteps } = event.detail;
+      const { stepId, phaseId, completedSteps: detailCompleted } = event.detail;
 
       if (stepId === 1) {
         const idFromCookie = Cookies.get("companyId");
@@ -819,23 +823,39 @@ const CompanyOnboarding = () => {
         }
       }
 
-      if (completedSteps && Array.isArray(completedSteps)) {
-        setCompletedSteps(completedSteps);
+      const shouldRefresh =
+        (detailCompleted && Array.isArray(detailCompleted)) ||
+        typeof stepId === 'number';
 
-        const currentProgress = {
-          currentPhase: phaseId,
-          completedSteps: completedSteps,
-          lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+      if (shouldRefresh) {
+        setCompletedSteps((prev) => {
+          let next: number[];
+          if (detailCompleted && Array.isArray(detailCompleted)) {
+            next = detailCompleted;
+          } else if (typeof stepId === 'number') {
+            next = prev.includes(stepId) ? prev : [...prev, stepId];
+          } else {
+            return prev;
+          }
 
-        if (typeof stepId === 'number') {
-          markStepGuideSeen(stepId, 'all');
-        }
+          const currentProgress = {
+            currentPhase: phaseId ?? currentPhase,
+            completedSteps: next,
+            lastUpdated: new Date().toISOString(),
+          };
+          localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+          Cookies.set('companyOnboardingProgress', JSON.stringify(currentProgress));
+
+          if (typeof stepId === 'number') {
+            markStepGuideSeen(stepId, 'all');
+          }
+
+          return next;
+        });
 
         setTimeout(() => {
           loadCompanyProgress();
-        }, 500);
+        }, 400);
       }
     };
 
