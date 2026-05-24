@@ -739,6 +739,41 @@
       "scan": "Rechercher des numéros disponibles",
       "scanning": "Recherche des numéros disponibles...",
       "noZone": "Sélectionnez d'abord une zone de destination"
+    },
+    "purchaseModal": {
+      "confirm": {
+        "title": "Activer ce numéro",
+        "subtitle": "Une fois confirmé, ce numéro Twilio est affecté à votre gig et la facturation démarre sur votre compte.",
+        "phoneLabel": "Numéro de téléphone",
+        "providerLabel": "Opérateur",
+        "approved": "Votre entreprise est autorisée à acheter ce numéro.",
+        "requirementsNeeded": "Des justificatifs de conformité sont requis pour ce numéro.",
+        "completeNow": "Compléter maintenant",
+        "cancel": "Annuler",
+        "confirmCta": "Confirmer l'achat"
+      },
+      "purchasing": {
+        "title": "Activation du numéro...",
+        "subtitle": "Nous provisionnons votre infrastructure Twilio. Cela prend quelques secondes."
+      },
+      "success": {
+        "title": "Numéro activé",
+        "subtitle": "{{number}} est maintenant rattaché à votre gig.",
+        "statusLabel": "Statut",
+        "featuresLabel": "Capacités",
+        "footnote": "Vous pouvez le retrouver dans la liste des Network Entries.",
+        "close": "Terminer"
+      },
+      "error": {
+        "title": "Échec de l'activation",
+        "fallback": "Une erreur est survenue lors de l'achat du numéro.",
+        "subtitle": "Veuillez réessayer. Si le problème persiste, contactez le support.",
+        "retry": "Réessayer",
+        "close": "Fermer"
+      },
+      "requirements": {
+        "title": "Compléter les justificatifs"
+      }
     }
   },
   "companyOnboarding": {

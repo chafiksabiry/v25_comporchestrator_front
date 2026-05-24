@@ -739,6 +739,41 @@
       "scan": "Search available numbers",
       "scanning": "Searching available numbers...",
       "noZone": "Select a destination zone first"
+    },
+    "purchaseModal": {
+      "confirm": {
+        "title": "Activate this number",
+        "subtitle": "Once confirmed, this Twilio number is assigned to your gig and starts billing on your account.",
+        "phoneLabel": "Phone number",
+        "providerLabel": "Carrier",
+        "approved": "Your company is approved to purchase numbers.",
+        "requirementsNeeded": "Compliance requirements are needed for this number.",
+        "completeNow": "Complete now",
+        "cancel": "Cancel",
+        "confirmCta": "Confirm purchase"
+      },
+      "purchasing": {
+        "title": "Activating number...",
+        "subtitle": "We're provisioning your Twilio infrastructure. This usually takes a few seconds."
+      },
+      "success": {
+        "title": "Number activated",
+        "subtitle": "{{number}} is now linked to your gig.",
+        "statusLabel": "Status",
+        "featuresLabel": "Capabilities",
+        "footnote": "You can review and manage it from the Network Entries list.",
+        "close": "Done"
+      },
+      "error": {
+        "title": "Activation failed",
+        "fallback": "An error occurred while purchasing the number.",
+        "subtitle": "Please try again. If the problem persists, contact support.",
+        "retry": "Try again",
+        "close": "Close"
+      },
+      "requirements": {
+        "title": "Complete compliance requirements"
+      }
     }
   },
   "companyOnboarding": {
