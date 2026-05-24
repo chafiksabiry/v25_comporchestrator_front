@@ -8,7 +8,6 @@ import {
   Check,
   Globe,
   HelpCircle,
-  Image as ImageIcon,
   Linkedin,
   Loader2,
   Mail,
@@ -22,13 +21,11 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { saveCompanyData } from "./api/companyApi";
+import { uploadImage } from "./api/uploads";
 import { redirectToCompanyOnboarding } from "./navigation";
 import ManualCompanyGuideModal from "./ManualCompanyGuideModal";
 
 const MANUAL_GUIDE_STORAGE_KEY = "manualCompanyGuideSeen";
-
-const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string | undefined;
-const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string | undefined;
 
 interface Props {
   onClose: () => void;
@@ -96,23 +93,12 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
     setShowGuide(false);
   };
 
-  const cloudinaryConfigured = Boolean(CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET);
-
   const update = (key: keyof ManualFormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
     };
 
-  const uploadLogoToCloudinary = async (file: File) => {
-    if (!cloudinaryConfigured) {
-      setLogoError(
-        t(
-          "searchCompanyWizard.manual.logo.notConfigured",
-          "Cloudinary is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET."
-        )
-      );
-      return;
-    }
+  const uploadLogo = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       setLogoError(t("searchCompanyWizard.manual.logo.invalidType", "Please choose an image file."));
       return;
@@ -125,23 +111,12 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
     setLogoUploading(true);
     setLogoError(null);
     try {
-      const data = new FormData();
-      data.append("file", file);
-      data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET!);
-      data.append("folder", "harx/companies/logos");
-
-      const res = await axios.post(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        data,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-
-      const url: string | undefined = res?.data?.secure_url || res?.data?.url;
-      if (!url) throw new Error("No URL returned by Cloudinary");
+      const { url } = await uploadImage(file);
+      if (!url) throw new Error("No URL returned by upload service");
       setForm((prev) => ({ ...prev, logo: url }));
     } catch (err: any) {
       const message =
-        err?.response?.data?.error?.message ||
+        err?.response?.data?.message ||
         err?.message ||
         t("searchCompanyWizard.manual.logo.uploadFailed", "Logo upload failed");
       setLogoError(message);
@@ -152,7 +127,7 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) uploadLogoToCloudinary(file);
+    if (file) uploadLogo(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -160,7 +135,7 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) uploadLogoToCloudinary(file);
+    if (file) uploadLogo(file);
   };
 
   const removeLogo = () => {
@@ -443,21 +418,6 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
                     <p className="text-[11px] text-slate-500">
                       {t("searchCompanyWizard.manual.logo.hint", "PNG, JPG, SVG · max 5 MB")}
                     </p>
-                  </div>
-                )}
-
-                {!cloudinaryConfigured && (
-                  <div className="mt-2">
-                    {fieldWithIcon(
-                      ImageIcon,
-                      <input
-                        type="url"
-                        value={form.logo}
-                        onChange={update("logo")}
-                        placeholder="https://..."
-                        className={`${inputBase} pl-10`}
-                      />
-                    )}
                   </div>
                 )}
 
