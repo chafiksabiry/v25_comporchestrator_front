@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { KNOWN_LIVE_PRICING_TABLE_IDS } from './pricingTableConfig';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -63,7 +64,6 @@ interface Props {
   className?: string;
 }
 
-const DEFAULT_PRICING_TABLE_ID = 'prctbl_1TDNBOPJXYVCMk8pdPIA3s0k';
 const DEFAULT_PUBLISHABLE_KEY =
   'pk_live_51TCj3DPJXYVCMk8pTo20zxqkRKZSes7sCY6TJjSYdXqNEjCSvrsbtprRhy52KoggYnNpiJi0se31LuahqFLqN9Ex00kbTYXVSK';
 
@@ -78,7 +78,7 @@ function resolvePublishableKey(tableId: string, explicitKey?: string): string {
   if (fromEnv?.startsWith('pk_live_')) return fromEnv;
 
   const isLiveTable =
-    tableId === DEFAULT_PRICING_TABLE_ID || tableId.startsWith('prctbl_1');
+    KNOWN_LIVE_PRICING_TABLE_IDS.includes(tableId) || tableId.startsWith('prctbl_1');
   if (isLiveTable && fromEnv?.startsWith('pk_test_')) {
     console.warn(
       '[StripePricingTable] VITE_STRIPE_PRICING_TABLE_KEY is pk_test_ but the pricing table is LIVE. ' +
@@ -149,7 +149,7 @@ const StripePricingTable: React.FC<Props> = ({
   }
 
   const resolvedTableId =
-    pricingTableId || import.meta.env.VITE_STRIPE_PRICING_TABLE_ID || DEFAULT_PRICING_TABLE_ID;
+    pricingTableId || import.meta.env.VITE_STRIPE_PRICING_TABLE_ID || KNOWN_LIVE_PRICING_TABLE_IDS[0];
   const resolvedKey = resolvePublishableKey(resolvedTableId, publishableKey);
 
   return React.createElement('stripe-pricing-table', {

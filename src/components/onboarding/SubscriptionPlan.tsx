@@ -1,67 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { CreditCard, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import StripePricingTable from '../stripe/StripePricingTable';
+import EmbeddedSubscriptionFlow from '../stripe/EmbeddedSubscriptionFlow';
 
 const SubscriptionPlan = () => {
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [activePlanName, setActivePlanName] = useState<string | null>(null);
-  const [polling, setPolling] = useState(false);
   const companyId = Cookies.get('companyId');
+  const userId = Cookies.get('userId') || Cookies.get('user_id') || '';
 
-  useEffect(() => {
+  const backUrl =
+    import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL ||
+    import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, '') ||
+    'http://localhost:3003';
+
+  const checkExistingSubscription = useCallback(async () => {
     if (!companyId) return;
-    checkStepStatus();
-    checkExistingSubscription();
-  }, [companyId]);
-
-  // Poll up to 60s for the webhook to activate the subscription after Stripe Checkout success.
-  useEffect(() => {
-    if (!companyId || activePlanName) return;
-    setPolling(true);
-    let attempts = 0;
-    const interval = window.setInterval(async () => {
-      attempts += 1;
-      await checkExistingSubscription();
-      if (activePlanName || attempts >= 20) {
-        window.clearInterval(interval);
-        setPolling(false);
-      }
-    }, 3000);
-    return () => {
-      window.clearInterval(interval);
-      setPolling(false);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companyId]);
-
-  // Stripe Pricing Table redirige vers Stripe Checkout (hosted). Au retour, success_url
-  // est défini dans Stripe Dashboard — on détecte un retour positif via le webhook
-  // côté serveur, mais on rafraîchit aussi l'état à l'arrivée sur la page.
-  useEffect(() => {
-    if (!companyId) return;
-    const url = new URL(window.location.href);
-    const flags = [
-      url.searchParams.get('subscription'),
-      new URLSearchParams(url.hash.includes('?') ? url.hash.split('?')[1] : '').get('subscription'),
-    ];
-    if (!flags.includes('success')) return;
-
-    // Nettoyer l'URL et resynchroniser.
-    url.searchParams.delete('subscription');
-    window.history.replaceState({}, '', url.toString());
-    setTimeout(() => {
-      checkExistingSubscription();
-      completeOnboardingStep();
-    }, 800);
-  }, [companyId]);
-
-  const checkExistingSubscription = async () => {
     try {
-      if (!companyId) return;
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/current/${companyId}`
+        `${backUrl}/api/subscriptions/current/${companyId}`
       );
       const subData = (response.data as any).data;
       if (subData && (subData.status === 'active' || subData.status === 'trialing')) {
@@ -71,9 +29,10 @@ const SubscriptionPlan = () => {
     } catch (error) {
       console.error('Error checking existing subscription:', error);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backUrl, companyId, isStepCompleted]);
 
-  const checkStepStatus = async () => {
+  const checkStepStatus = useCallback(async () => {
     try {
       if (!companyId) return;
       const response = await axios.get(
@@ -98,7 +57,13 @@ const SubscriptionPlan = () => {
     } catch (error) {
       console.error('Error checking step status:', error);
     }
-  };
+  }, [companyId]);
+
+  useEffect(() => {
+    if (!companyId) return;
+    checkStepStatus();
+    checkExistingSubscription();
+  }, [companyId, checkStepStatus, checkExistingSubscription]);
 
   const completeOnboardingStep = async () => {
     try {
@@ -123,6 +88,12 @@ const SubscriptionPlan = () => {
       console.error('Error completing onboarding step:', error);
     }
   };
+
+  const handleSubscribed = useCallback(async () => {
+    await checkExistingSubscription();
+    await completeOnboardingStep();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkExistingSubscription]);
 
   return (
     <div className="min-h-full bg-transparent p-2">
@@ -154,15 +125,6 @@ const SubscriptionPlan = () => {
           </div>
         </div>
 
-        {!activePlanName && polling && (
-          <div className="mb-4 p-3 rounded-2xl border border-blue-100 bg-blue-50/60 flex items-center gap-3">
-            <div className="h-4 w-4 border-2 border-blue-500/30 border-t-blue-600 rounded-full animate-spin" />
-            <p className="text-xs font-bold text-blue-700">
-              Vérification du paiement en cours… Le plan apparaîtra dès que Stripe confirme.
-            </p>
-          </div>
-        )}
-
         {activePlanName && (
           <div className="mb-4 p-3 rounded-2xl border border-green-100 bg-green-50/60 text-green-700 text-sm font-bold">
             You are currently subscribed to <span className="uppercase">{activePlanName}</span>. You can manage or change your plan below.
@@ -170,7 +132,12 @@ const SubscriptionPlan = () => {
         )}
 
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 md:p-6">
-          <StripePricingTable clientReferenceId={companyId || undefined} />
+          <EmbeddedSubscriptionFlow
+            apiBaseUrl={backUrl}
+            companyId={companyId}
+            userId={userId}
+            onSubscribed={handleSubscribed}
+          />
         </div>
       </div>
     </div>
