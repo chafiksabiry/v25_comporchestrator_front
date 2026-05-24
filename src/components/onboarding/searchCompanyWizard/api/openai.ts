@@ -81,4 +81,43 @@ export async function generateCompanyProfile(
   return profile as CompanyProfile;
 }
 
+export async function generateCompanyProfileFromUrl(
+  url: string,
+  logoUrl?: string
+): Promise<CompanyProfile> {
+  const userId = Cookies.get("userId");
+  if (!userId) {
+    throw new Error("User ID not found in cookies");
+  }
+
+  const response = await axios.post(`${API_URL}/openai/generate-from-url`, {
+    url,
+    userId,
+    logoUrl,
+  });
+
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to scrape & generate profile");
+  }
+
+  const raw = response.data.data as CompanyProfile & Record<string, unknown>;
+  const draftId =
+    typeof raw._id === "string"
+      ? raw._id
+      : raw._id && typeof raw._id === "object" && "$oid" in raw._id
+        ? String((raw._id as { $oid: string }).$oid)
+        : undefined;
+
+  if (draftId) {
+    try {
+      await discardDraftCompany(draftId);
+    } catch {
+      console.warn("Could not discard draft company created during profile generation");
+    }
+  }
+
+  const { _id, createdAt, updatedAt, __v, subscription, ...profile } = raw;
+  return profile as CompanyProfile;
+}
+
 export type CompanyProfileData = CompanyProfile;

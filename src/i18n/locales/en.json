@@ -1056,6 +1056,42 @@
     "loading": "Loading...",
     "loadingProfile": "Loading company profile...",
     "generateBtn": "Generate Profile",
+    "orScrapeUrl": "Or scrape from URL",
+    "urlPlaceholder": "https://company.com — paste a website URL",
+    "scrapeBtn": "Scrape & Generate",
+    "urlHint": "Use this when search results are incomplete or the company has no clear CEO/contact info.",
+    "manual": {
+      "openBtn": "Create manually",
+      "noWebsite": "No website? Create the company manually.",
+      "noWebsiteHint": "Fill the form yourself — no search or scraping required.",
+      "title": "Create Company Manually",
+      "basics": "Basic Information",
+      "about": "About",
+      "contact": "Contact",
+      "social": "Social Media",
+      "submit": "Create Company",
+      "fields": {
+        "name": "Company name",
+        "industry": "Industry",
+        "founded": "Founded year",
+        "headquarters": "Headquarters",
+        "logo": "Logo URL (optional)",
+        "overview": "Overview",
+        "mission": "Mission",
+        "email": "Email",
+        "phone": "Phone",
+        "address": "Address",
+        "website": "Website"
+      },
+      "placeholders": {
+        "overview": "Describe the company, what it does, and its market…",
+        "mission": "Our mission is to…"
+      },
+      "errors": {
+        "nameRequired": "Company name is required",
+        "overviewRequired": "Overview is required"
+      }
+    },
     "errors": {
       "searchFailed": "Failed to search companies",
       "generateFailed": "Failed to generate profile",
