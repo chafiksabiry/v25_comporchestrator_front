@@ -39,6 +39,7 @@ import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwi
 import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
 import Subscription from './components/Subscription';
 import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideModal';
+import WalletTopUpModal from './components/wallet/WalletTopUpModal';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import StepGuideModal, { type StepGuideVariant } from './components/onboarding/StepGuideModal';
 import {
@@ -100,6 +101,7 @@ function AppContent() {
   const [minutes, setMinutes] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [showWalletTopUp, setShowWalletTopUp] = useState(false);
 
   const navigate = useNavigate();
 
@@ -167,8 +169,35 @@ function AppContent() {
   }, []);
 
   const handleBalanceClick = () => {
+    // From the orchestrator, opening the wallet should top-up directly
+    // (same modal as the dashboard Wallet panel). From anywhere else we
+    // navigate to the full dashboard panel as before.
+    if (activeProject === 'comporchestrator') {
+      setShowWalletTopUp(true);
+      return;
+    }
     setActiveProject('dashboard');
     navigate('/dashboard/wallet');
+  };
+
+  const refreshWalletBalance = async () => {
+    const compId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
+    try {
+      const res = await fetch(`${apiBaseUrl}/escrow/wallet/${compId}`);
+      if (!res.ok) return;
+      const result = await res.json();
+      if (result.success && result.data) {
+        setBalance(result.data.balance);
+        setMinutes(result.data.minutes || 0);
+        setEscrow(result.data.escrow || 0);
+        window.dispatchEvent(
+          new CustomEvent('balanceUpdated', { detail: { balance: result.data.balance } })
+        );
+      }
+    } catch (err) {
+      console.error('Failed to refresh wallet balance after top-up:', err);
+    }
   };
 
   const handleMinutesClick = () => {
@@ -778,6 +807,13 @@ function AppContent() {
           onClose={handleCloseTabStepGuide}
         />
       )}
+
+      <WalletTopUpModal
+        open={showWalletTopUp}
+        onClose={() => setShowWalletTopUp(false)}
+        companyId={Cookies.get('companyId')}
+        onSuccess={refreshWalletBalance}
+      />
 
     </StripeContainer>
   );
