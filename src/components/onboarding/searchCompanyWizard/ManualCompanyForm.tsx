@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import {
@@ -9,16 +9,22 @@ import {
   Globe,
   Image as ImageIcon,
   Linkedin,
+  Loader2,
   Mail,
   MapPin,
   Phone,
   Target,
+  Trash2,
   Twitter,
+  Upload,
   XCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { saveCompanyData } from "./api/companyApi";
 import { redirectToCompanyOnboarding } from "./navigation";
+
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string | undefined;
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string | undefined;
 
 interface Props {
   onClose: () => void;
@@ -62,11 +68,82 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
   const [form, setForm] = useState<ManualFormState>(initialState);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const cloudinaryConfigured = Boolean(CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET);
 
   const update = (key: keyof ManualFormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
     };
+
+  const uploadLogoToCloudinary = async (file: File) => {
+    if (!cloudinaryConfigured) {
+      setLogoError(
+        t(
+          "searchCompanyWizard.manual.logo.notConfigured",
+          "Cloudinary is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET."
+        )
+      );
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setLogoError(t("searchCompanyWizard.manual.logo.invalidType", "Please choose an image file."));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoError(t("searchCompanyWizard.manual.logo.tooBig", "Image must be smaller than 5 MB."));
+      return;
+    }
+
+    setLogoUploading(true);
+    setLogoError(null);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET!);
+      data.append("folder", "harx/companies/logos");
+
+      const res = await axios.post(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        data,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      const url: string | undefined = res?.data?.secure_url || res?.data?.url;
+      if (!url) throw new Error("No URL returned by Cloudinary");
+      setForm((prev) => ({ ...prev, logo: url }));
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.error?.message ||
+        err?.message ||
+        t("searchCompanyWizard.manual.logo.uploadFailed", "Logo upload failed");
+      setLogoError(message);
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadLogoToCloudinary(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) uploadLogoToCloudinary(file);
+  };
+
+  const removeLogo = () => {
+    setForm((prev) => ({ ...prev, logo: "" }));
+    setLogoError(null);
+  };
 
   const markStepCompleted = async (companyId: string) => {
     const apiUrl =
@@ -253,17 +330,119 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
               </div>
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">
-                  {t("searchCompanyWizard.manual.fields.logo", "Logo URL (optional)")}
+                  {t("searchCompanyWizard.manual.fields.logo", "Logo")}
                 </label>
-                {fieldWithIcon(
-                  ImageIcon,
-                  <input
-                    type="url"
-                    value={form.logo}
-                    onChange={update("logo")}
-                    placeholder="https://..."
-                    className={`${inputBase} pl-10`}
-                  />
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+                {form.logo ? (
+                  <div className="flex items-center gap-4 rounded-2xl border-2 border-slate-200 bg-white p-4">
+                    <div className="w-20 h-20 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <img src={form.logo} alt="Company logo" className="w-full h-full object-contain" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-700 truncate" title={form.logo}>
+                        {form.logo}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={logoUploading}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-harx-200 bg-harx-50 px-3 py-1.5 text-[11px] font-bold text-harx-700 hover:bg-harx-100 active:scale-95 transition-all disabled:opacity-60"
+                        >
+                          <Upload size={12} />
+                          {t("searchCompanyWizard.manual.logo.replace", "Replace")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={removeLogo}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-700 hover:bg-red-100 active:scale-95 transition-all"
+                        >
+                          <Trash2 size={12} />
+                          {t("searchCompanyWizard.manual.logo.remove", "Remove")}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => !logoUploading && fileInputRef.current?.click()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (!isDragging) setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    className={`group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-8 text-center cursor-pointer transition-all
+                      ${isDragging
+                        ? "border-harx-500 bg-harx-50/60"
+                        : "border-slate-300 bg-white hover:border-harx-400 hover:bg-harx-50/30"}
+                      ${logoUploading ? "opacity-70 cursor-wait" : ""}`}
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-harx-100 to-harx-alt-100 flex items-center justify-center text-harx-600 group-hover:scale-110 transition-transform">
+                      {logoUploading ? (
+                        <Loader2 size={22} className="animate-spin" />
+                      ) : (
+                        <Upload size={22} />
+                      )}
+                    </div>
+                    <p className="text-sm font-bold text-slate-800">
+                      {logoUploading
+                        ? t("searchCompanyWizard.manual.logo.uploading", "Uploading…")
+                        : t("searchCompanyWizard.manual.logo.dropOrClick", "Drop your logo here or click to upload")}
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      {t("searchCompanyWizard.manual.logo.hint", "PNG, JPG, SVG · max 5 MB")}
+                    </p>
+                  </div>
+                )}
+
+                {!cloudinaryConfigured && (
+                  <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+                    <ImageIcon size={14} className="flex-shrink-0 mt-0.5" />
+                    <span>
+                      {t(
+                        "searchCompanyWizard.manual.logo.fallbackPasteUrl",
+                        "Cloudinary is not configured — paste an image URL below."
+                      )}
+                    </span>
+                  </div>
+                )}
+
+                {!cloudinaryConfigured && (
+                  <div className="mt-2">
+                    {fieldWithIcon(
+                      ImageIcon,
+                      <input
+                        type="url"
+                        value={form.logo}
+                        onChange={update("logo")}
+                        placeholder="https://..."
+                        className={`${inputBase} pl-10`}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {logoError && (
+                  <p className="mt-2 text-xs text-red-600 flex items-center gap-1.5">
+                    <XCircle size={12} /> {logoError}
+                  </p>
                 )}
               </div>
             </div>

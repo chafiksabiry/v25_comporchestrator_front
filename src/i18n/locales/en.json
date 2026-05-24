@@ -842,7 +842,39 @@
       "beforeHeading": "Ready to start: {{title}}?",
       "insideHint": "Complete the fields below, then return to onboarding when you're done.",
       "beforeStart": "Enter this step",
-      "start": "Got it, let's go"
+      "start": "Got it, let's go",
+      "step1": {
+        "beforeDescription": "This is the foundation of your HARX account: a clean, complete company profile that your REPs and leads will see. It takes less than 2 minutes — pick the mode that fits your situation.",
+        "insideDescription": "Type your company name, paste a website URL, or create the profile manually. Everything is editable before publishing.",
+        "modesLabel": "Three ways to create your profile",
+        "tipsLabel": "Pro tips",
+        "modes": {
+          "search": {
+            "title": "Search by name",
+            "desc": "Type the company name — AI finds it on the web and pre-fills everything."
+          },
+          "scrape": {
+            "title": "Paste a website URL",
+            "desc": "We scrape the page to extract phone, social media and contact info."
+          },
+          "manual": {
+            "title": "Create manually",
+            "desc": "No website? Use the form to enter all details yourself, with logo upload."
+          }
+        },
+        "tips": {
+          "before": [
+            "You only need the company name OR its website to start.",
+            "Every field can be edited before publishing.",
+            "Logo, mission and contact info are auto-filled when possible."
+          ],
+          "inside": [
+            "Click \"Edit\" on any field once the profile loads to refine it.",
+            "For better contact extraction, paste the company website rather than just its name.",
+            "You can switch to manual creation any time using the floating button."
+          ]
+        }
+      }
     }
   },
   "gigDetails": {
@@ -1076,13 +1108,25 @@
         "industry": "Industry",
         "founded": "Founded year",
         "headquarters": "Headquarters",
-        "logo": "Logo URL (optional)",
+        "logo": "Logo",
         "overview": "Overview",
         "mission": "Mission",
         "email": "Email",
         "phone": "Phone",
         "address": "Address",
         "website": "Website"
+      },
+      "logo": {
+        "dropOrClick": "Drop your logo here or click to upload",
+        "hint": "PNG, JPG, SVG · max 5 MB",
+        "uploading": "Uploading…",
+        "replace": "Replace",
+        "remove": "Remove",
+        "uploadFailed": "Logo upload failed",
+        "invalidType": "Please choose an image file.",
+        "tooBig": "Image must be smaller than 5 MB.",
+        "notConfigured": "Cloudinary is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.",
+        "fallbackPasteUrl": "Cloudinary is not configured — paste an image URL below."
       },
       "placeholders": {
         "overview": "Describe the company, what it does, and its market…",
