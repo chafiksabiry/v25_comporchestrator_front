@@ -744,13 +744,21 @@
       "confirm": {
         "title": "Activer ce numéro",
         "subtitle": "Une fois confirmé, ce numéro Twilio est affecté à votre gig et la facturation démarre sur votre compte.",
+        "trialSubtitle": "Ce premier numéro Twilio est OFFERT à votre entreprise — inclus dans un essai gratuit de {{days}} jours, aucun paiement requis.",
         "phoneLabel": "Numéro de téléphone",
         "providerLabel": "Opérateur",
         "approved": "Votre entreprise est autorisée à acheter ce numéro.",
         "requirementsNeeded": "Des justificatifs de conformité sont requis pour ce numéro.",
         "completeNow": "Compléter maintenant",
         "cancel": "Annuler",
-        "confirmCta": "Confirmer l'achat"
+        "confirmCta": "Confirmer l'achat",
+        "trialCta": "Activer l'essai gratuit"
+      },
+      "trial": {
+        "tag": "Offre de bienvenue",
+        "title": "Essai gratuit de {{days}} jours",
+        "description": "Votre première ligne téléphonique est offerte pendant {{days}} jours, sans frais. Profitez-en pour tester vos appels de bout en bout avant d'ajouter un moyen de paiement.",
+        "noPayment": "Aucun Stripe / PayPal requis pour cette activation"
       },
       "purchasing": {
         "title": "Activation du numéro...",

@@ -199,6 +199,20 @@ export const phoneNumberService = {
     }
   },
 
+  getTrialEligibility: async (companyId: string): Promise<{
+    eligible: boolean;
+    trialDurationDays: number;
+    existingNumbers: number;
+    activeTrial: { phoneNumber: string; expiresAt: string } | null;
+  }> => {
+    try {
+      const response = await api.get(`/phone-numbers/trial/eligibility/${companyId}`);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error, 'getTrialEligibility');
+    }
+  },
+
   purchasePhoneNumber: async (data: {
     phoneNumber: string;
     provider: 'telnyx' | 'twilio';

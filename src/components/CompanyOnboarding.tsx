@@ -15,7 +15,6 @@ import {
   Calendar,
   Settings,
   Rocket,
-  HelpCircle,
 } from "lucide-react";
 import TelephonySetup from "./TelephonySetup";
 import SearchCompanyWizardStep from "./onboarding/searchCompanyWizard/SearchCompanyWizardStep";
@@ -1683,15 +1682,8 @@ const CompanyOnboarding = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => window.dispatchEvent(new CustomEvent('openOrchestratorGuide'))}
-                title={t('companyOnboarding.ui.viewGuide', 'View onboarding guide')}
-                className="group inline-flex items-center gap-2 rounded-2xl border-2 border-harx-100 bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-harx-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-harx-300 hover:bg-harx-50"
-              >
-                <HelpCircle className="h-4 w-4 transition-transform group-hover:rotate-12" />
-                <span className="hidden sm:inline">{t('companyOnboarding.ui.viewGuide', 'View Guide')}</span>
-              </button>
+              {/* "View Guide" CTA hidden — guide is now opened automatically once
+                  per session via OrchestratorGuideModal on first login. */}
               <div className={`px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${
                 isPhaseCompleted(displayedPhase)
                   ? "bg-green-100 text-green-600"

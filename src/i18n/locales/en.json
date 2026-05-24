@@ -744,13 +744,21 @@
       "confirm": {
         "title": "Activate this number",
         "subtitle": "Once confirmed, this Twilio number is assigned to your gig and starts billing on your account.",
+        "trialSubtitle": "This first Twilio number is FREE for your company — included as a {{days}}-day trial, no payment required.",
         "phoneLabel": "Phone number",
         "providerLabel": "Carrier",
         "approved": "Your company is approved to purchase numbers.",
         "requirementsNeeded": "Compliance requirements are needed for this number.",
         "completeNow": "Complete now",
         "cancel": "Cancel",
-        "confirmCta": "Confirm purchase"
+        "confirmCta": "Confirm purchase",
+        "trialCta": "Activate free trial"
+      },
+      "trial": {
+        "tag": "Welcome offer",
+        "title": "{{days}}-day free trial",
+        "description": "Your first phone line is offered for {{days}} days at no cost. Use it to test calls end-to-end before adding a payment method.",
+        "noPayment": "No Stripe / PayPal required for this activation"
       },
       "purchasing": {
         "title": "Activating number...",
