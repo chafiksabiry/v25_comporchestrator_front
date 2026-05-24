@@ -1136,6 +1136,36 @@
       "errors": {
         "nameRequired": "Company name is required",
         "overviewRequired": "Overview is required"
+      },
+      "guide": {
+        "openBtn": "Guide",
+        "badge": "Manual creation",
+        "title": "Build your company profile manually",
+        "intro": "Use this mode when you don't have a website yet, or when search and scraping miss your company. Fill in what you know — you can polish the rest later.",
+        "cta": "Got it, let's fill the form",
+        "close": "Close",
+        "tipsTitle": "Pro tips",
+        "basics": {
+          "title": "Start with the essentials",
+          "desc": "Company name, industry, founding year and headquarters help us position you correctly when matching reps and gigs."
+        },
+        "logo": {
+          "title": "Upload a clean logo",
+          "desc": "Drop a transparent PNG or SVG (max 5 MB). Your logo appears on the dashboard, scripts, and rep-facing screens."
+        },
+        "story": {
+          "title": "Tell your story",
+          "desc": "A short overview and a clear mission give the AI enough context to draft accurate gigs, scripts and rep onboarding kits."
+        },
+        "contact": {
+          "title": "Add reachable contacts",
+          "desc": "Pro email, phone and social links are reused later for sales pages, lead routing and trust signals."
+        },
+        "tips": {
+          "0": "Only Company name and Overview are required — everything else can be added later.",
+          "1": "You can come back at any time to refine the profile from the company dashboard.",
+          "2": "If you have a website, prefer the URL mode in the previous screen — it auto-fills most fields for you."
+        }
       }
     },
     "errors": {

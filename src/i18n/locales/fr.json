@@ -1136,6 +1136,36 @@
       "errors": {
         "nameRequired": "Le nom de l'entreprise est requis",
         "overviewRequired": "La présentation est requise"
+      },
+      "guide": {
+        "openBtn": "Guide",
+        "badge": "Création manuelle",
+        "title": "Créez votre profil entreprise à la main",
+        "intro": "Utilisez ce mode si vous n'avez pas encore de site web, ou si la recherche et le scraping ne trouvent pas votre entreprise. Saisissez ce que vous connaissez — vous pourrez compléter plus tard.",
+        "cta": "C'est compris, je remplis le formulaire",
+        "close": "Fermer",
+        "tipsTitle": "Conseils pro",
+        "basics": {
+          "title": "Commencez par l'essentiel",
+          "desc": "Nom de l'entreprise, secteur, année de création et siège : ces infos permettent de bien vous positionner pour le matching reps & gigs."
+        },
+        "logo": {
+          "title": "Importez un logo propre",
+          "desc": "Déposez un PNG transparent ou un SVG (max 5 Mo). Votre logo apparaît sur le dashboard, les scripts et les écrans des reps."
+        },
+        "story": {
+          "title": "Racontez votre histoire",
+          "desc": "Une présentation courte et une mission claire donnent à l'IA assez de contexte pour générer des gigs, scripts et kits d'onboarding précis."
+        },
+        "contact": {
+          "title": "Ajoutez des contacts joignables",
+          "desc": "Email pro, téléphone et liens sociaux sont réutilisés pour les pages de vente, le routage des leads et la confiance."
+        },
+        "tips": {
+          "0": "Seuls le nom et la présentation sont obligatoires — le reste peut être ajouté plus tard.",
+          "1": "Vous pouvez revenir affiner le profil à tout moment depuis le dashboard entreprise.",
+          "2": "Si vous avez un site web, préférez le mode URL de l'écran précédent — il pré-remplit la majorité des champs."
+        }
       }
     },
     "errors": {
