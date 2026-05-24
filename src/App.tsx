@@ -255,17 +255,22 @@ function AppContent() {
           // Fetch company details for logo
           const companyApiUrl = import.meta.env.VITE_COMPANY_API_URL;
           if (companyApiUrl) {
+            const noCompanyCacheKey = `noCompanyForUser:${userId}`;
+            const noCompanyKnown = sessionStorage.getItem(noCompanyCacheKey) === 'true';
             const companyId = Cookies.get('companyId');
             let companyResponse;
 
-            if (companyId) {
+            if (!noCompanyKnown && companyId) {
               // Try fetching by companyId first
               companyResponse = await fetch(`${companyApiUrl}/companies/${companyId}/details`);
-              if (!companyResponse.ok) {
+              if (companyResponse.status === 404) {
+                Cookies.remove('companyId');
+                companyResponse = await fetch(`${companyApiUrl}/companies/user/${userId}`);
+              } else if (!companyResponse.ok) {
                 // Fallback to userId if companyId fetch fails
                 companyResponse = await fetch(`${companyApiUrl}/companies/user/${userId}`);
               }
-            } else {
+            } else if (!noCompanyKnown) {
               // Direct fetch by userId
               companyResponse = await fetch(`${companyApiUrl}/companies/user/${userId}`);
             }
@@ -305,12 +310,17 @@ function AppContent() {
               const finalCompanyId =
                 getCompanyId(company) || resolvedCompanyId || Cookies.get('companyId');
               if (finalCompanyId) {
+                sessionStorage.removeItem(noCompanyCacheKey);
                 Cookies.set('companyId', finalCompanyId, { path: '/' });
                 const steps = await syncOnboardingProgressFromApi(finalCompanyId);
                 const complete = isOnboardingFullyCompleted(steps);
                 setOnboardingComplete(complete);
                 if (complete) markGuideComplete();
               }
+            } else if (companyResponse && companyResponse.status === 404) {
+              // Expected for users who have not created a company yet.
+              sessionStorage.setItem(noCompanyCacheKey, 'true');
+              Cookies.remove('companyId');
             }
           }
 

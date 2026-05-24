@@ -82,6 +82,15 @@ export function MasterSidebar({
     const checkOnboardingStatus = async () => {
       const userId = Cookies.get('userId');
       if (!userId) return;
+      const noCompanyCacheKey = `noCompanyForUser:${userId}`;
+      if (sessionStorage.getItem(noCompanyCacheKey) === 'true') {
+        setHasCompany(false);
+        setHasGigs(false);
+        setHasLeads(false);
+        setHasKb(false);
+        setHasRepMatching(false);
+        return;
+      }
 
       try {
         const companyRes = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/companies/user/${userId}`);
@@ -124,6 +133,14 @@ export function MasterSidebar({
               setHasRepMatching(false);
             }
           }
+        } else if (companyRes.status === 404) {
+          sessionStorage.setItem(noCompanyCacheKey, 'true');
+          Cookies.remove('companyId');
+          setHasCompany(false);
+          setHasGigs(false);
+          setHasLeads(false);
+          setHasKb(false);
+          setHasRepMatching(false);
         }
       } catch (error) {
         console.error("Error checking onboarding status:", error);
