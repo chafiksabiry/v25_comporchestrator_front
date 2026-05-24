@@ -39,7 +39,7 @@ export function GuideModalLayout({
       aria-modal="true"
     >
       <motion.div
-        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+        className="absolute inset-0 bg-black/70"
         onClick={onBackdropClick}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -71,7 +71,7 @@ export function GuideModalLayout({
         </motion.div>
 
         {footer && (
-          <motion.div className="relative z-10 shrink-0 border-t border-white/5 bg-black/40 px-6 py-5 backdrop-blur-sm">
+          <motion.div className="relative z-10 shrink-0 border-t border-white/5 bg-black/40 px-6 py-5">
             {footer}
           </motion.div>
         )}
@@ -149,7 +149,7 @@ export function GuideIconOrb({ children }: { children: React.ReactNode }) {
     <motion.div
       animate={{ y: [0, -8, 0] }}
       transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-      className="flex h-20 w-20 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-lg shadow-black/20 backdrop-blur-md ring-2 ring-white/10"
+      className="flex h-20 w-20 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-lg shadow-black/20 ring-2 ring-white/10"
     >
       {children}
     </motion.div>
