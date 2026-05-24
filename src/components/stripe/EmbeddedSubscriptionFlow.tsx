@@ -19,6 +19,13 @@ interface ApiPlan {
   isPopular?: boolean;
 }
 
+interface ActiveSubscription {
+  planId?: string;
+  planName?: string;
+  stripePriceId?: string;
+  status?: string;
+}
+
 interface Props {
   companyId?: string;
   userId?: string;
@@ -41,6 +48,15 @@ const getStripe = () => {
   return stripeSingleton;
 };
 
+function isActivePlan(plan: ApiPlan, active: ActiveSubscription | null): boolean {
+  if (!active) return false;
+  if (active.planId && String(active.planId) === String(plan._id)) return true;
+  if (active.stripePriceId && active.stripePriceId === plan.stripePriceId) return true;
+  const a = (active.planName || '').trim().toLowerCase();
+  const b = (plan.name || '').trim().toLowerCase();
+  return Boolean(a && b && a === b);
+}
+
 function formatPrice(amount: number, currency: string): string {
   try {
     return new Intl.NumberFormat(undefined, {
@@ -62,6 +78,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
   const [plans, setPlans] = useState<ApiPlan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [plansError, setPlansError] = useState<string | null>(null);
+  const [activeSubscription, setActiveSubscription] = useState<ActiveSubscription | null>(null);
 
   const [selectedPlan, setSelectedPlan] = useState<ApiPlan | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -73,6 +90,42 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
 
   const stripePromise = useMemo(() => getStripe(), []);
   const baseUrl = apiBaseUrl.replace(/\/$/, '');
+
+  const fetchActiveSubscription = useCallback(async () => {
+    if (!companyId) {
+      setActiveSubscription(null);
+      return;
+    }
+    try {
+      const { data } = await axios.get<{
+        success?: boolean;
+        data?: {
+          status?: string;
+          planId?: { _id?: string; name?: string; stripePriceId?: string };
+        };
+      }>(`${baseUrl}/api/subscriptions/current/${companyId}`);
+      const sub = data?.data;
+      if (
+        sub &&
+        (sub.status === 'active' || sub.status === 'trialing')
+      ) {
+        setActiveSubscription({
+          planId: sub.planId?._id ? String(sub.planId._id) : undefined,
+          planName: sub.planId?.name,
+          stripePriceId: sub.planId?.stripePriceId,
+          status: sub.status,
+        });
+      } else {
+        setActiveSubscription(null);
+      }
+    } catch {
+      setActiveSubscription(null);
+    }
+  }, [baseUrl, companyId]);
+
+  useEffect(() => {
+    fetchActiveSubscription();
+  }, [fetchActiveSubscription]);
 
   useEffect(() => {
     let cancelled = false;
@@ -174,6 +227,15 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
         paymentId,
       });
       setCompleted(true);
+      if (selectedPlan) {
+        setActiveSubscription({
+          planId: selectedPlan._id,
+          planName: selectedPlan.name,
+          stripePriceId: selectedPlan.stripePriceId,
+          status: 'active',
+        });
+      }
+      await fetchActiveSubscription();
       onSubscribed?.();
     } catch (err: any) {
       const message =
@@ -184,7 +246,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
     } finally {
       setConfirming(false);
     }
-  }, [baseUrl, paymentId, onSubscribed]);
+  }, [baseUrl, paymentId, onSubscribed, selectedPlan, fetchActiveSubscription]);
 
   if (loadingPlans) {
     return (
@@ -218,16 +280,24 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {plans.map((plan) => {
           const popular = Boolean(plan.isPopular);
+          const isCurrent = isActivePlan(plan, activeSubscription);
           return (
             <div
               key={plan._id}
-              className={`relative flex flex-col p-6 rounded-3xl border bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
-                popular
-                  ? 'border-harx-500 ring-2 ring-harx-500/30'
-                  : 'border-gray-100'
+              className={`relative flex flex-col p-6 rounded-3xl border bg-white shadow-sm transition-all duration-300 ${
+                isCurrent
+                  ? 'border-green-500 ring-2 ring-green-500/40 shadow-md scale-[1.02]'
+                  : popular
+                    ? 'border-harx-500 ring-2 ring-harx-500/30 hover:-translate-y-1 hover:shadow-lg'
+                    : 'border-gray-100 hover:-translate-y-1 hover:shadow-lg'
               }`}
             >
-              {popular && (
+              {isCurrent && (
+                <span className="absolute -top-3 left-6 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow">
+                  <Check className="h-3 w-3" strokeWidth={3} /> Your plan
+                </span>
+              )}
+              {!isCurrent && popular && (
                 <span className="absolute -top-3 left-6 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-harx-500 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow">
                   <Sparkles className="h-3 w-3" /> Popular
                 </span>
@@ -260,17 +330,26 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
                 </ul>
               )}
               <button
-                onClick={() => openSubscribe(plan)}
-                disabled={initLoading && selectedPlan?._id === plan._id}
+                onClick={() => !isCurrent && openSubscribe(plan)}
+                disabled={
+                  isCurrent ||
+                  (initLoading && selectedPlan?._id === plan._id)
+                }
                 className={`mt-6 w-full px-4 py-2.5 rounded-xl text-sm font-black tracking-tight transition-all duration-300 ${
-                  popular
-                    ? 'bg-harx-500 text-white hover:bg-harx-600 shadow'
-                    : 'bg-gray-900 text-white hover:bg-black'
-                } disabled:opacity-60 disabled:cursor-wait`}
+                  isCurrent
+                    ? 'bg-green-50 text-green-700 border-2 border-green-200 cursor-default'
+                    : popular
+                      ? 'bg-harx-500 text-white hover:bg-harx-600 shadow'
+                      : 'bg-gray-900 text-white hover:bg-black'
+                } disabled:opacity-100 disabled:cursor-default`}
               >
-                {initLoading && selectedPlan?._id === plan._id
-                  ? 'Opening…'
-                  : 'Subscribe'}
+                {isCurrent
+                  ? 'Current plan'
+                  : initLoading && selectedPlan?._id === plan._id
+                    ? 'Opening…'
+                    : activeSubscription
+                      ? 'Change plan'
+                      : 'Subscribe'}
               </button>
             </div>
           );
