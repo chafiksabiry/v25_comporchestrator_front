@@ -80,13 +80,12 @@ export function isStepCompleted(
 }
 
 export function shouldShowStepGuide(
-  stepId: number,
-  variant: 'before' | 'inside',
-  completedSteps?: number[]
+  _stepId: number,
+  _variant: 'before' | 'inside',
+  _completedSteps?: number[]
 ): boolean {
-  if (isStepCompleted(stepId, completedSteps)) return false;
-  const key = variant === 'before' ? beforeKey(stepId) : insideKey(stepId);
-  return localStorage.getItem(key) !== 'true';
+  // Per-step guides are disabled — only the orchestrator guide is shown on first login.
+  return false;
 }
 
 export function markStepGuideSeen(stepId: number, variant: StepGuidePhase): void {

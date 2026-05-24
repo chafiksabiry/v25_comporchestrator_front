@@ -371,15 +371,11 @@ const CompanyOnboarding = () => {
     setStepGuide(null);
   };
 
-  const stepGuideLayer = stepGuide ? (
-    <StepGuideModal
-      isOpen
-      stepId={stepGuide.stepId}
-      phaseId={stepGuide.phaseId}
-      variant={stepGuide.variant}
-      onClose={handleCloseStepGuide}
-    />
-  ) : null;
+  // Step-specific guide modals are disabled — only the orchestrator guide is shown on first login.
+  const stepGuideLayer = null;
+  void stepGuide;
+  void StepGuideModal;
+  void handleCloseStepGuide;
 
   const orchestratorGuideLayer = (
     <OrchestratorGuideModal
