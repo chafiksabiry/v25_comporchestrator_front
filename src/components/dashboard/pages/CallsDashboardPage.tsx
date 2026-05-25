@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck } from 'lucide-react';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
 import { callsApi } from '../services/api/calls';
@@ -51,7 +51,7 @@ export default function CallsDashboardPage() {
       const callsBase = getCallsApiBase();
       if (!callsBase) return;
 
-      const response = await fetch(`${callsBase}/calls?companyId=${companyId}&populate=lead`);
+      const response = await fetch(`${callsBase}/calls?companyId=${companyId}&populate=lead&populate=agent`);
       if (response.ok) {
         const data = await response.json();
         const callsArray = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
@@ -163,6 +163,30 @@ export default function CallsDashboardPage() {
     if (!raw) return '';
     if (typeof raw === 'object' && (raw as any).$oid) return String((raw as any).$oid);
     return String(raw);
+  };
+
+  const callLeadName = (call: any): string => {
+    const lead = call?.lead;
+    if (lead && typeof lead === 'object') {
+      const n = `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim();
+      if (n) return n;
+    }
+    return 'Lead';
+  };
+
+  const callAgentName = (call: any): string => {
+    const agent = call?.agent;
+    if (agent && typeof agent === 'object') {
+      const n =
+        `${agent.firstName || agent.first_name || ''} ${agent.lastName || agent.last_name || ''}`.trim() ||
+        agent.personalInfo?.name ||
+        agent.name ||
+        agent.email ||
+        '';
+      if (n) return n;
+    }
+    if (typeof agent === 'string' && agent.length < 30) return agent;
+    return 'Agent';
   };
 
   const filteredCalls = calls.filter(call => {
@@ -279,6 +303,11 @@ export default function CallsDashboardPage() {
             <div className="space-y-4">
               {filteredCalls.map((call, idx) => {
                 const callId = call._id || idx;
+                const isInbound = String(call.direction || '').toLowerCase().startsWith('inbound');
+                const agentName = callAgentName(call);
+                const leadName = callLeadName(call);
+                const fromName = isInbound ? leadName : agentName;
+                const toName = isInbound ? agentName : leadName;
                 return (
                   <div
                     key={callId}
@@ -286,13 +315,32 @@ export default function CallsDashboardPage() {
                   >
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform flex-shrink-0">
-                          <Phone className="w-6 h-6" />
+                        <div
+                          title={isInbound ? 'Appel entrant' : 'Appel sortant'}
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform flex-shrink-0 ${
+                            isInbound
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'bg-violet-50 text-violet-600'
+                          }`}
+                        >
+                          {isInbound ? <PhoneIncoming className="w-6 h-6" /> : <PhoneOutgoing className="w-6 h-6" />}
                         </div>
                         <div>
-                          <h3 className="font-black text-slate-900 text-sm tracking-tight">
-                            {call.lead?.First_Name || call.lead?.Last_Name ? `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim() : 'Unknown Lead'}
-                          </h3>
+                          <div className="flex items-center gap-2 flex-wrap text-sm">
+                            <span className="font-black text-slate-900 tracking-tight">{fromName}</span>
+                            <ArrowRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                            <span className="font-black text-slate-900 tracking-tight inline-flex items-center gap-1">
+                              {toName}
+                              {(call.validByAI === true || call.valid === true) && (
+                                <span
+                                  title="Appel validé par l'IA"
+                                  className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                >
+                                  <BadgeCheck className="w-2.5 h-2.5" />
+                                </span>
+                              )}
+                            </span>
+                          </div>
                           <div className="flex flex-wrap items-center gap-3 mt-1.5">
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm border ${call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 'bg-rose-50 text-rose-600 border-rose-100/50'}`}>
                               {call.status}
