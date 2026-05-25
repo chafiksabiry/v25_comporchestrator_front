@@ -62,11 +62,20 @@ ChartJS.register(
   Filler
 );
 
+/** Default calls API when Netlify build omits VITE_API_URL_CALL. */
+const DEFAULT_CALLS_API = 'https://preprod-api-dash-calls.harx.ai';
+
 /** Base URL for call analytics (`v25_dash_calls_backend`). */
 function getCallsApiBase(): string | null {
+  const winEnv =
+    typeof window !== 'undefined'
+      ? (window as unknown as { __HARX_ENV__?: { VITE_API_URL_CALL?: string } })
+          .__HARX_ENV__
+      : undefined;
   const raw =
     (import.meta as any).env?.VITE_API_URL_CALL ||
-    (import.meta as any).env?.VITE_DASHBOARD_API;
+    winEnv?.VITE_API_URL_CALL ||
+    DEFAULT_CALLS_API;
   if (!raw) return null;
   return raw.endsWith('/api') ? raw : `${raw}/api`;
 }
@@ -74,7 +83,9 @@ function getCallsApiBase(): string | null {
 function todayIsoRange(): { from: string; to: string } {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
-  return { from: start.toISOString(), to: new Date().toISOString() };
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  return { from: start.toISOString(), to: end.toISOString() };
 }
 
 function monthIsoRange(): { from: string; to: string } {
@@ -569,7 +580,7 @@ export default function OperationsDashboard() {
   const [callbacksStats, setCallbacksStats] = useState<CallbacksStats | null>(null);
 
   useEffect(() => {
-    const companyId = Cookies.get('companyId');
+    const companyId = Cookies.get('companyId')?.trim();
     const base = getCallsApiBase();
     if (!companyId || !base) return;
 
@@ -587,7 +598,7 @@ export default function OperationsDashboard() {
           fetch(
             `${base}/calls/company/${companyId}/analytics/overview?${gq}from=${encodeURIComponent(month.from)}&to=${encodeURIComponent(month.to)}`
           ),
-          fetch(`${base}/calls/company/${companyId}/analytics/recent?${gq}limit=8`),
+          fetch(`${base}/calls/company/${companyId}/analytics/recent?${gq}limit=2`),
           fetch(
             `${base}/calls/company/${companyId}/analytics/outcomes?${gq}from=${encodeURIComponent(month.from)}&to=${encodeURIComponent(month.to)}`
           ),
@@ -614,6 +625,12 @@ export default function OperationsDashboard() {
               series7d: j.series7d || [],
             });
           }
+        } else {
+          console.warn(
+            '[OperationsDashboard] analytics/overview (today) failed',
+            ovToday.status,
+            await ovToday.text().catch(() => '')
+          );
         }
         if (ovMonth.ok) {
           const j = await ovMonth.json();
@@ -627,7 +644,15 @@ export default function OperationsDashboard() {
         }
         if (recent.ok) {
           const j = await recent.json();
-          if (j.success && Array.isArray(j.calls)) setRecentCallsApi(j.calls);
+          if (j.success && Array.isArray(j.calls)) {
+            setRecentCallsApi(j.calls);
+          }
+        } else {
+          console.warn(
+            '[OperationsDashboard] analytics/recent failed',
+            recent.status,
+            await recent.text().catch(() => '')
+          );
         }
         if (outcomes.ok) {
           const j = await outcomes.json();
@@ -649,8 +674,8 @@ export default function OperationsDashboard() {
             });
           }
         }
-      } catch {
-        // keep mock fallbacks
+      } catch (err) {
+        console.warn('[OperationsDashboard] call analytics fetch error', err);
       }
     })();
 
