@@ -159,20 +159,28 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
 
   if (profile) {
     return (
-      <CompanyProfile
-        profile={profile}
-        onClose={() => {
-          setProfile(null);
-        }}
-        onPublished={(newCompanyId) => {
-          setProfile(null);
-          if (onStepComplete) {
-            onStepComplete(newCompanyId);
-          } else {
-            onBack?.();
-          }
-        }}
-      />
+      <div className="mx-auto max-w-5xl p-6">
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {t(
+            "searchCompanyWizard.publishHint",
+            "Vérifiez les informations ci-dessous puis cliquez sur Publier pour enregistrer la société."
+          )}
+        </div>
+        <CompanyProfile
+          profile={profile}
+          onClose={() => {
+            setProfile(null);
+          }}
+          onPublished={(newCompanyId) => {
+            setProfile(null);
+            if (onStepComplete) {
+              onStepComplete(newCompanyId);
+            } else {
+              onBack?.();
+            }
+          }}
+        />
+      </div>
     );
   }
 
