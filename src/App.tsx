@@ -20,6 +20,7 @@ import { Provider } from 'react-redux';
 import { store } from './components/dashboard/store';
 import { AuthProvider } from './components/dashboard/contexts/AuthContext';
 import Cookies from 'js-cookie';
+import { formatWalletMinutesBalance } from './utils/billingMinutes';
 import ProfileCreation from './components/ProfileCreation';
 import GigGeneration from './components/GigGeneration';
 import Matching from './components/Matching';
@@ -105,27 +106,6 @@ function AppContent() {
   const [showWalletTopUp, setShowWalletTopUp] = useState(false);
 
   const navigate = useNavigate();
-
-  const formatFloatMinutesToMMSSLL = (floatMinutes: number): string => {
-    if (isNaN(floatMinutes) || floatMinutes === null || floatMinutes === undefined) {
-      return "00:00:00";
-    }
-    const isNegative = floatMinutes < 0;
-    const absMinutes = Math.abs(floatMinutes);
-
-    const totalSeconds = absMinutes * 60;
-    const mm = Math.floor(absMinutes);
-    const remainingSeconds = totalSeconds % 60;
-    const ss = Math.floor(remainingSeconds);
-    const remainingFraction = remainingSeconds % 1;
-    const ll = Math.floor(remainingFraction * 100);
-
-    const mmStr = String(mm).padStart(2, '0');
-    const ssStr = String(ss).padStart(2, '0');
-    const llStr = String(ll).padStart(2, '0');
-
-    return `${isNegative ? '-' : ''}${mmStr}:${ssStr}:${llStr}`;
-  };
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -708,22 +688,23 @@ function AppContent() {
                   </div>
                 )}
 
+                {showActivationNavbarWidgets && (
+                  <div
+                    onClick={handleMinutesClick}
+                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-br from-blue-500/15 via-blue-500/5 to-transparent border border-blue-500/25 text-xs font-bold text-blue-100/80 shadow-[0_0_18px_-6px_rgba(59,130,246,0.4)] hover:border-blue-400/50 hover:from-blue-500/25 hover:text-white hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group backdrop-blur-sm shrink-0"
+                  >
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/20 border border-blue-400/30 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
+                      <Clock size={13} className="text-blue-400 group-hover:text-blue-300" />
+                    </div>
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-400/70">{t('navbar.minutes')}</span>
+                      <span className="text-sm font-black text-white tabular-nums">{formatWalletMinutesBalance(minutes)}</span>
+                    </div>
+                  </div>
+                )}
+
                 {activeProject !== 'comporchestrator' && (
                   <>
-                    {/* Minutes Disponibles Widget */}
-                    <div
-                      onClick={handleMinutesClick}
-                      className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-br from-blue-500/15 via-blue-500/5 to-transparent border border-blue-500/25 text-xs font-bold text-blue-100/80 shadow-[0_0_18px_-6px_rgba(59,130,246,0.4)] hover:border-blue-400/50 hover:from-blue-500/25 hover:text-white hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group backdrop-blur-sm shrink-0"
-                    >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/20 border border-blue-400/30 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
-                        <Clock size={13} className="text-blue-400 group-hover:text-blue-300" />
-                      </div>
-                      <div className="flex flex-col leading-tight">
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-400/70">{t('navbar.minutes')}</span>
-                        <span className="text-sm font-black text-white tabular-nums">{formatFloatMinutesToMMSSLL(minutes)}</span>
-                      </div>
-                    </div>
-
                     {/* Escrow/Séquestre Widget (Telephony Lines) */}
                     <div
                       onClick={handleTelephonyClick}

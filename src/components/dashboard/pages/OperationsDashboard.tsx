@@ -47,6 +47,10 @@ import { Chart, Doughnut } from 'react-chartjs-2';
 import Cookies from 'js-cookie';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import {
+  billedMinutesFromSeconds,
+  formatBilledMinutesFromSeconds,
+} from '../../../utils/billingMinutes';
 
 // Idempotent: other dashboards already register the same scales, registering
 // again is a no-op so it's safe to keep it co-located with the chart.
@@ -783,11 +787,10 @@ export default function OperationsDashboard() {
     if (!recentCallsApi?.length) return [];
     return recentCallsApi.map((c) => {
       const dur = c.duration ?? 0;
-      const m = Math.floor(dur / 60);
-      const s = dur % 60;
+      const billedMin = billedMinutesFromSeconds(dur);
       const meta =
-        dur > 0
-          ? `${m}m${s.toString().padStart(2, '0')}s${c.score != null ? ` · ${Math.round(c.score)}%` : ''}`
+        billedMin > 0
+          ? `${billedMin} min${c.score != null ? ` · ${Math.round(c.score)}%` : ''}`
           : '';
       return {
         score: c.score ?? null,
@@ -885,11 +888,7 @@ export default function OperationsDashboard() {
     { id: 'wallet', label: t('opsDashboard.tabs.wallet', 'Wallet'), icon: <Wallet size={14} /> },
   ];
 
-  const fmtDuration = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}m${s.toString().padStart(2, '0')}s`;
-  };
+  const fmtDuration = (sec: number) => formatBilledMinutesFromSeconds(sec);
 
   return (
     <div className="max-w-7xl mx-auto space-y-5 pb-12 animate-in fade-in duration-500">
@@ -2791,13 +2790,10 @@ function repTxAiScore(tx: RepTransactionRow): number | null {
   return typeof s === 'number' ? s : null;
 }
 
-/** Call `duration` is stored in seconds (same as `WalletCompanyPanel`). */
+/** Call `duration` is stored in seconds; display as billed minutes only. */
 function formatDurationFromCallSeconds(seconds?: number): string {
-  const s = Math.max(0, Math.floor(seconds || 0));
-  if (s === 0) return '—';
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${String(r).padStart(2, '0')}`;
+  const label = formatBilledMinutesFromSeconds(seconds);
+  return label === '0 min' ? '—' : label;
 }
 
 function WalletView() {
