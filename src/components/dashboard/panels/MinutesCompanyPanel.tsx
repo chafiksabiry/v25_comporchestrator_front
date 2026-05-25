@@ -429,8 +429,6 @@ export function MinutesCompanyPanel() {
                     ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}`.trim()
                     : call.lead || 'Inconnu';
                   const isInbound = String(call.direction || '').toLowerCase().startsWith('inbound');
-                  const fromLabel = isInbound ? 'Lead' : 'Agent';
-                  const toLabel = isInbound ? 'Agent' : 'Lead';
                   const fromName = isInbound ? leadName : agentName;
                   const toName = isInbound ? agentName : leadName;
                   return (
@@ -447,29 +445,19 @@ export function MinutesCompanyPanel() {
                         >
                           {isInbound ? <PhoneIncoming size={12} /> : <PhoneOutgoing size={12} />}
                         </span>
-                        <div className="flex flex-col leading-tight">
-                          <span className="text-[9px] text-gray-400 uppercase font-bold tracking-wider">
-                            De · {fromLabel}
-                          </span>
-                          <span className="text-slate-800 font-bold">{fromName}</span>
-                        </div>
+                        <span className="text-slate-800 font-bold">{fromName}</span>
                         <ArrowRight size={14} className="text-gray-300 shrink-0" />
-                        <div className="flex flex-col leading-tight">
-                          <span className="text-[9px] text-gray-400 uppercase font-bold tracking-wider">
-                            Vers · {toLabel}
-                          </span>
-                          <span className="text-slate-800 font-bold inline-flex items-center gap-1">
-                            {toName}
-                            {call.validByAI === true && (
-                              <span
-                                title="Appel validé par l'IA"
-                                className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
-                              >
-                                <BadgeCheck size={10} />
-                              </span>
-                            )}
-                          </span>
-                        </div>
+                        <span className="text-slate-800 font-bold inline-flex items-center gap-1">
+                          {toName}
+                          {call.validByAI === true && (
+                            <span
+                              title="Appel validé par l'IA"
+                              className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
+                            >
+                              <BadgeCheck size={10} />
+                            </span>
+                          )}
+                        </span>
                       </div>
                     </td>
                     <td className="py-4 px-4 text-gray-500">
