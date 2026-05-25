@@ -660,21 +660,13 @@ export default function OperationsDashboard() {
   }, [selectedGigId]);
 
   const stats = useMemo(() => {
-    const MOCK = {
-      total: 247,
-      serious: 189,
-      voicemail: 34,
-      unreachable: 17,
-      fraud: 2,
-      avgDurationSec: 4 * 60 + 12,
-    };
     const t = overviewToday?.totals;
-    const total = t?.total ?? MOCK.total;
-    const serious = t?.serious ?? MOCK.serious;
-    const voicemail = t?.voicemail ?? MOCK.voicemail;
-    const unreachable = t?.unreachable ?? MOCK.unreachable;
-    const fraud = t?.fraud ?? MOCK.fraud;
-    const avgDurationSec = t?.avgDuration ?? MOCK.avgDurationSec;
+    const total = t?.total ?? 0;
+    const serious = t?.serious ?? 0;
+    const voicemail = t?.voicemail ?? 0;
+    const unreachable = t?.unreachable ?? 0;
+    const fraud = t?.fraud ?? 0;
+    const avgDurationSec = t?.avgDuration ?? 0;
     const pct = (n: number) => (total > 0 ? Math.round((n / total) * 1000) / 10 : 0);
 
     return {
