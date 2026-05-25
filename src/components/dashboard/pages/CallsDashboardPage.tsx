@@ -3,6 +3,8 @@ import Cookies from 'js-cookie';
 import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase } from 'lucide-react';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
+import { callsApi } from '../services/api/calls';
+import { getCallsApiBase } from '../lib/callsApiBase';
 
 export default function CallsDashboardPage() {
   const { t, i18n } = useTranslation();
@@ -46,8 +48,8 @@ export default function CallsDashboardPage() {
   const fetchCalls = async () => {
     try {
       setLoading(true);
-      const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
-      const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
+      const callsBase = getCallsApiBase();
+      if (!callsBase) return;
 
       const response = await fetch(`${callsBase}/calls?companyId=${companyId}&populate=lead`);
       if (response.ok) {
@@ -70,40 +72,42 @@ export default function CallsDashboardPage() {
   const handleAnalyzeCall = async (callId: string) => {
     try {
       setAnalyzingCallId(callId);
-      const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
-      const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
+      // Same endpoint as dash_rep: POST /api/calls/:id/analyze on v25_dash_calls_backend
+      const result = await callsApi.analyze(callId);
 
-      const response = await fetch(`${callsBase}/calls/${callId}/analyze`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      if (result?.success) {
+        if (selectedCall && selectedCall._id === callId) {
+          setSelectedCall({
+            ...selectedCall,
+            ai_call_score: result.data,
+            transcript: result.transcript || selectedCall.transcript,
+            validByAI: result.validByAI,
+            valid: result.validByAI,
+            ai_call_status: 'scored',
+          });
         }
-      });
-
-      const result = await response.json().catch(() => ({}));
-
-      if (response.ok) {
-        if (result.success) {
-          if (selectedCall && (selectedCall._id === callId)) {
-            setSelectedCall({
-              ...selectedCall,
-              ai_call_score: result.data,
-              transcript: result.transcript || selectedCall.transcript,
-              validByAI: result.validByAI,
-              valid: result.validByAI
-            });
-          }
-          fetchCalls();
-          alert('Analysis completed successfully!');
-        } else {
-          alert(`Analysis failed: ${result.message || 'Unknown error'}`);
-        }
+        await fetchCalls();
+        alert(t('callsDashboard.analyzeSuccess', 'Analyse terminée avec succès.'));
       } else {
-        alert(`Error: ${response.status} - ${result.message || response.statusText || 'Failed to analyze call'}`);
+        alert(
+          t('callsDashboard.analyzeFailed', 'Analyse échouée : {{msg}}', {
+            msg: (result as { message?: string })?.message || 'Unknown error',
+          })
+        );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error analyzing call:', error);
-      alert(`Error analyzing call: ${error.message || 'Network error'}`);
+      const msg =
+        error && typeof error === 'object' && 'response' in error
+          ? String((error as { response?: { data?: { message?: string } } }).response?.data?.message)
+          : error instanceof Error
+            ? error.message
+            : 'Network error';
+      alert(
+        t('callsDashboard.analyzeError', 'Erreur lors de l\'analyse : {{msg}}', {
+          msg: msg || 'Network error',
+        })
+      );
     } finally {
       setAnalyzingCallId(null);
     }
@@ -112,8 +116,8 @@ export default function CallsDashboardPage() {
   const handleUpdateTransactionValidation = async (callId: string, currentStatus: boolean | null, clickedStatus: boolean) => {
     try {
       const status = currentStatus === clickedStatus ? null : clickedStatus;
-      const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
-      const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
+      const callsBase = getCallsApiBase();
+      if (!callsBase) return;
 
       const response = await fetch(`${callsBase}/calls/${callId}`, {
         method: 'PUT',
