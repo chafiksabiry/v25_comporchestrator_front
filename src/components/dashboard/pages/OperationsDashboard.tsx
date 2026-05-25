@@ -3625,28 +3625,53 @@ function Performance7Days({
 }: {
   series: Array<{ date: string; total: number; transactions: number }> | null;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const chartPoints = useMemo(() => {
     const dayKeys: string[] = [];
-    const dayLabels: string[] = [];
-    const weekday = (d: Date) =>
-      [t('opsDashboard.perf.sun', 'Dim'), t('opsDashboard.perf.mon', 'Lun'), t('opsDashboard.perf.tue', 'Mar'), t('opsDashboard.perf.wed', 'Mer'), t('opsDashboard.perf.thu', 'Jeu'), t('opsDashboard.perf.fri', 'Ven'), t('opsDashboard.perf.sat', 'Sam')][d.getDay()];
+    // Multi-line labels: line 1 = weekday short, line 2 = "DD/MM".
+    // Chart.js supports `string | string[]` per label.
+    const dayLabels: string[][] = [];
+    const tooltipTitles: string[] = [];
+
+    const weekdayShort = (d: Date) =>
+      [
+        t('opsDashboard.perf.sun', 'Dim'),
+        t('opsDashboard.perf.mon', 'Lun'),
+        t('opsDashboard.perf.tue', 'Mar'),
+        t('opsDashboard.perf.wed', 'Mer'),
+        t('opsDashboard.perf.thu', 'Jeu'),
+        t('opsDashboard.perf.fri', 'Ven'),
+        t('opsDashboard.perf.sat', 'Sam'),
+      ][d.getDay()];
+
+    const shortDate = (d: Date) =>
+      `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+    const longDate = (d: Date) =>
+      d.toLocaleDateString(i18n.language || 'fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
 
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       dayKeys.push(d.toISOString().slice(0, 10));
-      dayLabels.push(weekday(d));
+      dayLabels.push([weekdayShort(d), shortDate(d)]);
+      tooltipTitles.push(longDate(d));
     }
 
     const byDate = Object.fromEntries((series ?? []).map((s) => [s.date, s]));
     return {
       labels: dayLabels,
+      tooltipTitles,
       calls: dayKeys.map((k) => byDate[k]?.total ?? 0),
       transactions: dayKeys.map((k) => byDate[k]?.transactions ?? 0),
     };
-  }, [series, t]);
+  }, [series, t, i18n.language]);
 
   const data = {
     labels: chartPoints.labels,
@@ -3694,6 +3719,14 @@ function Performance7Days({
         titleFont: { size: 12, weight: 'bold' as const },
         bodyFont: { size: 12 },
         displayColors: true,
+        callbacks: {
+          title: (items: any[]) => {
+            const idx = items?.[0]?.dataIndex;
+            return typeof idx === 'number'
+              ? chartPoints.tooltipTitles[idx] ?? ''
+              : '';
+          },
+        },
       },
     },
     scales: {
