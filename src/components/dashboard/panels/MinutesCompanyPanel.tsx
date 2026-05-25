@@ -15,7 +15,10 @@ import {
   Activity as ActivityIcon,
   Volume2,
   Info,
-  BadgeCheck
+  BadgeCheck,
+  ArrowRight,
+  PhoneIncoming,
+  PhoneOutgoing
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -411,7 +414,7 @@ export function MinutesCompanyPanel() {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
                 <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                  <th className="py-3 px-4 bg-white">Destinataire</th>
+                  <th className="py-3 px-4 bg-white">De → Vers</th>
                   <th className="py-3 px-4 bg-white">Date & Heure</th>
                   <th className="py-3 px-4 bg-white">Durée</th>
                   <th className="py-3 px-4 bg-white">Score AI</th>
@@ -420,21 +423,53 @@ export function MinutesCompanyPanel() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 text-xs">
-                {(calls || []).map((call) => (
+                {(calls || []).map((call) => {
+                  const agentName = call.agent || 'Agent';
+                  const leadName = call.leadObj
+                    ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}`.trim()
+                    : call.lead || 'Inconnu';
+                  const isInbound = String(call.direction || '').toLowerCase().startsWith('inbound');
+                  const fromLabel = isInbound ? 'Lead' : 'Agent';
+                  const toLabel = isInbound ? 'Agent' : 'Lead';
+                  const fromName = isInbound ? leadName : agentName;
+                  const toName = isInbound ? agentName : leadName;
+                  return (
                   <tr key={call.callId} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-4 px-4 font-bold text-slate-800">
-                      <div className="flex items-center gap-2">
-                        <span>
-                          {call.leadObj ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}` : call.lead || 'Inconnu'}
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        <span
+                          title={isInbound ? 'Appel entrant' : 'Appel sortant'}
+                          className={`inline-flex items-center justify-center h-7 w-7 rounded-full border ${
+                            isInbound
+                              ? 'bg-blue-50 text-blue-600 border-blue-100'
+                              : 'bg-violet-50 text-violet-600 border-violet-100'
+                          }`}
+                        >
+                          {isInbound ? <PhoneIncoming size={12} /> : <PhoneOutgoing size={12} />}
                         </span>
-                        {call.validByAI === true && (
-                          <span
-                            title="Appel validé par l'IA"
-                            className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
-                          >
-                            <BadgeCheck size={12} />
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-[9px] text-gray-400 uppercase font-bold tracking-wider">
+                            De · {fromLabel}
                           </span>
-                        )}
+                          <span className="text-slate-800 font-bold">{fromName}</span>
+                        </div>
+                        <ArrowRight size={14} className="text-gray-300 shrink-0" />
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-[9px] text-gray-400 uppercase font-bold tracking-wider">
+                            Vers · {toLabel}
+                          </span>
+                          <span className="text-slate-800 font-bold inline-flex items-center gap-1">
+                            {toName}
+                            {call.validByAI === true && (
+                              <span
+                                title="Appel validé par l'IA"
+                                className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
+                              >
+                                <BadgeCheck size={10} />
+                              </span>
+                            )}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="py-4 px-4 text-gray-500">
@@ -479,7 +514,8 @@ export function MinutesCompanyPanel() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
