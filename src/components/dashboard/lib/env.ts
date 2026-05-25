@@ -6,8 +6,17 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development')
 });
 
+const callsApiOrigin =
+  import.meta.env.VITE_API_URL_CALL ||
+  (typeof window !== 'undefined'
+    ? (window as unknown as { __HARX_ENV__?: { VITE_API_URL_CALL?: string } })
+        .__HARX_ENV__?.VITE_API_URL_CALL
+    : undefined) ||
+  'https://preprod-api-dash-calls.harx.ai';
+
 export const env = envSchema.parse({
   API_URL: import.meta.env.VITE_COMPANY_API_URL,
-  API_URL_CALL: import.meta.env.VITE_API_URL_CALL,
-  NODE_ENV: import.meta.env.MODE
+  // axios paths are `/api/calls/...` — origin must not include trailing `/api`
+  API_URL_CALL: callsApiOrigin.replace(/\/api\/?$/, ''),
+  NODE_ENV: import.meta.env.MODE,
 });
