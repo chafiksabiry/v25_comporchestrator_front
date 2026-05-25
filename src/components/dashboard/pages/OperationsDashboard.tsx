@@ -98,6 +98,26 @@ function monthIsoRange(): { from: string; to: string } {
   return { from: start.toISOString(), to: now.toISOString() };
 }
 
+/** UTC calendar date key — must match Mongo `$dateToString` (UTC) on the backend. */
+function utcDateKey(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Pick the overview series that actually has call counts (today vs month). */
+function pickSeries7d(
+  today: AnalyticsOverview['series7d'] | undefined,
+  month: AnalyticsOverview['series7d'] | undefined
+): AnalyticsOverview['series7d'] {
+  const sum = (rows: AnalyticsOverview['series7d'] | undefined) =>
+    (rows ?? []).reduce((acc, r) => acc + (r.total ?? 0), 0);
+  if (sum(today) > 0) return today ?? [];
+  if (sum(month) > 0) return month ?? [];
+  return today?.length ? today : month ?? [];
+}
+
 function gigQuery(gigId: string): string {
   return gigId && gigId !== 'all' ? `gigId=${encodeURIComponent(gigId)}&` : '';
 }
@@ -735,6 +755,12 @@ export default function OperationsDashboard() {
     };
   }, [selectedGigId]);
 
+  const series7dChart = useMemo(
+    () =>
+      pickSeries7d(overviewToday?.series7d, overviewMonth?.series7d),
+    [overviewToday?.series7d, overviewMonth?.series7d]
+  );
+
   const stats = useMemo(() => {
     const t = overviewToday?.totals;
     const total = t?.total ?? 0;
@@ -882,16 +908,16 @@ export default function OperationsDashboard() {
     // backend 7-day series. The series may omit days with 0 calls (Mongo
     // $group only emits buckets that have data), so we look up by date
     // and default to 0 instead of relying on positional indexing.
-    const series = overviewToday?.series7d ?? [];
-    const isoKey = (d: Date) => d.toISOString().slice(0, 10);
+    const series = series7dChart;
     const today = new Date();
+    today.setUTCHours(12, 0, 0, 0);
     const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
+    yesterday.setUTCDate(today.getUTCDate() - 1);
     const byDate: Record<string, number> = Object.fromEntries(
       series.map((s) => [s.date, s.total ?? 0])
     );
-    const todayCount = byDate[isoKey(today)] ?? stats.total ?? 0;
-    const yestCount = byDate[isoKey(yesterday)] ?? 0;
+    const todayCount = byDate[utcDateKey(today)] ?? stats.total ?? 0;
+    const yestCount = byDate[utcDateKey(yesterday)] ?? 0;
 
     let vsYesterdayPct: number | null = null;
     if (yestCount > 0) {
@@ -911,7 +937,7 @@ export default function OperationsDashboard() {
     }
 
     return { transactionsToday, conversionPct, vsYesterdayPct, qualityScore };
-  }, [countByOutcome, stats.total, overviewToday, repsMonth]);
+  }, [countByOutcome, stats.total, series7dChart, repsMonth]);
 
   // ────────────────────────────────────────────────────────────────────
   //  "Résultats d'appels (aujourd'hui)" — donut chart data.
@@ -1122,7 +1148,7 @@ export default function OperationsDashboard() {
           statuses={statuses}
           recentCalls={recentCalls}
           mtd={mtd}
-          series7d={overviewToday?.series7d ?? null}
+          series7d={series7dChart.length ? series7dChart : null}
           fmtDuration={fmtDuration}
         />
       ) : (
@@ -1136,7 +1162,7 @@ export default function OperationsDashboard() {
           qualityScore={overviewExtras.qualityScore}
           outcomeBuckets={outcomeBuckets}
           donutHasData={donutHasData}
-          series7d={overviewToday?.series7d ?? null}
+          series7d={series7dChart.length ? series7dChart : null}
           walletBalance={walletBalance}
           walletDaysLeft={walletDaysLeft}
           onSeeLeads={() => setTab('leads')}
@@ -3727,25 +3753,26 @@ function Performance7Days({
         t('opsDashboard.perf.thu', 'Jeu'),
         t('opsDashboard.perf.fri', 'Ven'),
         t('opsDashboard.perf.sat', 'Sam'),
-      ][d.getDay()];
-
-    const shortDate = (d: Date) =>
-      `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-
-    const longDate = (d: Date) =>
-      d.toLocaleDateString(i18n.language || 'fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
+      ][d.getUTCDay()];
 
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
-      d.setDate(d.getDate() - i);
-      dayKeys.push(d.toISOString().slice(0, 10));
-      dayLabels.push([weekdayShort(d), shortDate(d)]);
-      tooltipTitles.push(longDate(d));
+      d.setUTCHours(12, 0, 0, 0);
+      d.setUTCDate(d.getUTCDate() - i);
+      dayKeys.push(utcDateKey(d));
+      dayLabels.push([
+        weekdayShort(d),
+        `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`,
+      ]);
+      tooltipTitles.push(
+        d.toLocaleDateString(i18n.language || 'fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'UTC',
+        })
+      );
     }
 
     const byDate = Object.fromEntries((series ?? []).map((s) => [s.date, s]));
