@@ -831,13 +831,28 @@ export default function OperationsDashboard() {
     const conversionPct =
       stats.total > 0 ? (transactionsToday / stats.total) * 100 : 0;
 
+    // We compute the delta over the last two calendar days using the
+    // backend 7-day series. The series may omit days with 0 calls (Mongo
+    // $group only emits buckets that have data), so we look up by date
+    // and default to 0 instead of relying on positional indexing.
     const series = overviewToday?.series7d ?? [];
+    const isoKey = (d: Date) => d.toISOString().slice(0, 10);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const byDate: Record<string, number> = Object.fromEntries(
+      series.map((s) => [s.date, s.total ?? 0])
+    );
+    const todayCount = byDate[isoKey(today)] ?? stats.total ?? 0;
+    const yestCount = byDate[isoKey(yesterday)] ?? 0;
+
     let vsYesterdayPct: number | null = null;
-    if (series.length >= 2) {
-      const today = series[series.length - 1]?.total ?? 0;
-      const yest = series[series.length - 2]?.total ?? 0;
-      if (yest > 0) vsYesterdayPct = ((today - yest) / yest) * 100;
-      else if (today > 0) vsYesterdayPct = 100; // 0 → N transitions
+    if (yestCount > 0) {
+      vsYesterdayPct = ((todayCount - yestCount) / yestCount) * 100;
+    } else if (todayCount > 0) {
+      vsYesterdayPct = 100; // 0 → N transitions
+    } else {
+      vsYesterdayPct = 0; // both zero → show "0% vs hier" instead of "pas de référence"
     }
 
     // Quality score = mean of per-rep validByAIPct (each already a 0–100).
@@ -2266,7 +2281,7 @@ function OverviewView({
 
   const fmtNum = (n: number) => n.toLocaleString('fr-FR');
   const fmtDelta = (n: number | null) => {
-    if (n === null || Number.isNaN(n)) return t('opsDashboard.overview.kpi.noBaseline', 'pas de référence');
+    if (n === null || Number.isNaN(n)) return t('opsDashboard.overview.kpi.noYesterday', 'aucun appel hier');
     const sign = n > 0 ? '+' : '';
     return `${sign}${n.toFixed(0)}% ${t('opsDashboard.overview.kpi.vsYesterday', 'vs hier')}`;
   };
