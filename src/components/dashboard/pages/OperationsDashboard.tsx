@@ -3855,8 +3855,16 @@ function Performance7Days({
           font: { size: 10, weight: 'bold' as const },
         },
         grid: { color: 'rgba(15, 23, 42, 0.05)' },
-        ticks: { color: '#94a3b8', font: { size: 10 } },
+        ticks: {
+          color: '#94a3b8',
+          font: { size: 10 },
+          precision: 0,
+          stepSize: 1,
+          callback: (v: any) =>
+            Number.isInteger(v) ? Number(v).toLocaleString('fr-FR') : '',
+        },
         beginAtZero: true,
+        suggestedMax: Math.max(5, ...chartPoints.calls),
       },
       y1: {
         type: 'linear' as const,
@@ -3868,8 +3876,16 @@ function Performance7Days({
           font: { size: 10, weight: 'bold' as const },
         },
         grid: { display: false },
-        ticks: { color: '#10b981', font: { size: 10, weight: 'bold' as const } },
+        ticks: {
+          color: '#10b981',
+          font: { size: 10, weight: 'bold' as const },
+          precision: 0,
+          stepSize: 1,
+          callback: (v: any) =>
+            Number.isInteger(v) ? Number(v).toLocaleString('fr-FR') : '',
+        },
         beginAtZero: true,
+        suggestedMax: Math.max(5, ...chartPoints.transactions),
       },
     },
   };
