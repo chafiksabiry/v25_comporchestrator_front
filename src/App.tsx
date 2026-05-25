@@ -129,14 +129,27 @@ function AppContent() {
 
   useEffect(() => {
     const fetchBalance = async () => {
-      const compId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
+      const compId = Cookies.get('companyId');
+      if (!compId) return;
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
       try {
-        const res = await fetch(`${apiBaseUrl}/escrow/wallet/${compId}`);
-        if (res.ok) {
-          const result = await res.json();
+        // Company € balance: same source as OperationsDashboard + WalletCompanyPanel
+        const [walletRes, escrowRes] = await Promise.all([
+          fetch(`${apiBaseUrl}/wallet-company/${compId}`),
+          fetch(`${apiBaseUrl}/escrow/wallet/${compId}`).catch(() => null),
+        ]);
+
+        if (walletRes.ok) {
+          const walletJson = await walletRes.json();
+          if (walletJson.success && walletJson.data) {
+            setBalance(Number(walletJson.data.balance) || 0);
+          }
+        }
+
+        // Minutes + telephony lines still live on the escrow wallet record
+        if (escrowRes?.ok) {
+          const result = await escrowRes.json();
           if (result.success && result.data) {
-            setBalance(result.data.balance);
             setMinutes(result.data.minutes || 0);
             setEscrow(result.data.escrow || 0);
           }
@@ -193,18 +206,35 @@ function AppContent() {
   };
 
   const refreshWalletBalance = async () => {
-    const compId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
+    const compId = Cookies.get('companyId');
+    if (!compId) return;
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
     try {
-      const res = await fetch(`${apiBaseUrl}/escrow/wallet/${compId}`);
-      if (!res.ok) return;
-      const result = await res.json();
-      if (result.success && result.data) {
-        setBalance(result.data.balance);
-        setMinutes(result.data.minutes || 0);
-        setEscrow(result.data.escrow || 0);
+      const [walletRes, escrowRes] = await Promise.all([
+        fetch(`${apiBaseUrl}/wallet-company/${compId}`),
+        fetch(`${apiBaseUrl}/escrow/wallet/${compId}`).catch(() => null),
+      ]);
+
+      let nextBalance: number | null = null;
+      if (walletRes.ok) {
+        const walletJson = await walletRes.json();
+        if (walletJson.success && walletJson.data) {
+          nextBalance = Number(walletJson.data.balance) || 0;
+          setBalance(nextBalance);
+        }
+      }
+
+      if (escrowRes?.ok) {
+        const result = await escrowRes.json();
+        if (result.success && result.data) {
+          setMinutes(result.data.minutes || 0);
+          setEscrow(result.data.escrow || 0);
+        }
+      }
+
+      if (nextBalance !== null) {
         window.dispatchEvent(
-          new CustomEvent('balanceUpdated', { detail: { balance: result.data.balance } })
+          new CustomEvent('balanceUpdated', { detail: { balance: nextBalance } })
         );
       }
     } catch (err) {

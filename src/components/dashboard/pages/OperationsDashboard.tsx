@@ -339,6 +339,9 @@ export default function OperationsDashboard() {
           if (!cancelled && walletJson?.success && walletJson?.data) {
             const bal = Number(walletJson.data.balance) || 0;
             setWalletBalance(bal);
+            window.dispatchEvent(
+              new CustomEvent('balanceUpdated', { detail: { balance: bal } })
+            );
 
             let burn = 0;
             if (entriesRes && entriesRes.ok) {
