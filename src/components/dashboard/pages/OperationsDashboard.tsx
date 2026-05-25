@@ -1453,13 +1453,19 @@ function LeadsView({
           value={baseCount.toLocaleString('fr-FR')}
           sub={baseLabel}
         />
-        <KpiCard
-          tone="default"
-          icon={<Sparkles size={14} className="text-harx-500" />}
-          label={t('opsDashboard.leads.kpi.statusNew', 'Nouveaux')}
-          value={status.new.count.toLocaleString('fr-FR')}
-          sub={statusSub(status.new.pct)}
-        />
+        {(() => {
+          const contactedCount = leadStats?.contacted ?? 0;
+          const contactedPct = baseCount > 0 ? (contactedCount / baseCount) * 100 : 0;
+          return (
+            <KpiCard
+              tone="default"
+              icon={<PhoneCall size={14} className="text-harx-500" />}
+              label={t('opsDashboard.leads.kpi.contacted', 'Leads contactés')}
+              value={contactedCount.toLocaleString('fr-FR')}
+              sub={statusSub(contactedPct)}
+            />
+          );
+        })()}
         <KpiCard
           tone="default"
           icon={<Activity size={14} className="text-blue-500" />}
