@@ -582,11 +582,32 @@ export default function OperationsDashboard() {
   } | null>(null);
   const [repsMonth, setRepsMonth] = useState<AnalyticsRep[] | null>(null);
   const [callbacksStats, setCallbacksStats] = useState<CallbacksStats | null>(null);
+  // Diagnostic info shown only when `?debug=1` is appended to the URL —
+  // makes it trivial to confirm which company/gig is being queried and
+  // what the calls backend actually returned (totals + fallback flag).
+  const [debugInfo, setDebugInfo] = useState<{
+    companyId: string | undefined;
+    gigId: string;
+    base: string | null;
+    todayUrl: string;
+    todayStatus: number | null;
+    todayBody: any;
+  } | null>(null);
 
   useEffect(() => {
     const companyId = Cookies.get('companyId')?.trim();
     const base = getCallsApiBase();
-    if (!companyId || !base) return;
+    if (!companyId || !base) {
+      setDebugInfo({
+        companyId,
+        gigId: selectedGigId,
+        base,
+        todayUrl: '(skipped — missing companyId or API base)',
+        todayStatus: null,
+        todayBody: null,
+      });
+      return;
+    }
 
     let cancelled = false;
     const gq = gigQuery(selectedGigId);
@@ -620,6 +641,7 @@ export default function OperationsDashboard() {
 
         if (cancelled) return;
 
+        const todayUrl = `${base}/calls/company/${companyId}/analytics/overview?${gq}from=${encodeURIComponent(today.from)}&to=${encodeURIComponent(today.to)}`;
         if (ovToday.ok) {
           const j = await ovToday.json();
           if (j.success && j.totals) {
@@ -629,12 +651,37 @@ export default function OperationsDashboard() {
               series7d: j.series7d || [],
             });
           }
+          setDebugInfo({
+            companyId,
+            gigId: selectedGigId,
+            base,
+            todayUrl,
+            todayStatus: ovToday.status,
+            todayBody: {
+              success: j?.success,
+              fallback: j?.fallback ?? null,
+              totalsTotal: j?.totals?.total ?? null,
+              seriesLength: Array.isArray(j?.series7d) ? j.series7d.length : 0,
+              series: Array.isArray(j?.series7d)
+                ? j.series7d.map((s: any) => ({ date: s.date, total: s.total }))
+                : [],
+            },
+          });
         } else {
+          const errText = await ovToday.text().catch(() => '');
           console.warn(
             '[OperationsDashboard] analytics/overview (today) failed',
             ovToday.status,
-            await ovToday.text().catch(() => '')
+            errText
           );
+          setDebugInfo({
+            companyId,
+            gigId: selectedGigId,
+            base,
+            todayUrl,
+            todayStatus: ovToday.status,
+            todayBody: errText.slice(0, 400),
+          });
         }
         if (ovMonth.ok) {
           const j = await ovMonth.json();
@@ -992,6 +1039,43 @@ export default function OperationsDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ---------- Debug panel (only when URL has ?debug=1) ---------- */}
+      {typeof window !== 'undefined' &&
+        new URLSearchParams(window.location.search).get('debug') === '1' &&
+        debugInfo && (
+          <details
+            open
+            className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-[11px] font-mono text-amber-900"
+          >
+            <summary className="cursor-pointer font-bold">
+              🐞 Calls analytics — debug
+            </summary>
+            <div className="mt-2 space-y-1 break-all">
+              <div>
+                <b>companyId cookie:</b> {debugInfo.companyId ?? '(none)'}
+              </div>
+              <div>
+                <b>selected gigId:</b> {debugInfo.gigId}
+              </div>
+              <div>
+                <b>API base:</b> {debugInfo.base ?? '(none)'}
+              </div>
+              <div>
+                <b>today URL:</b> {debugInfo.todayUrl}
+              </div>
+              <div>
+                <b>today HTTP status:</b> {String(debugInfo.todayStatus)}
+              </div>
+              <div>
+                <b>today body:</b>
+                <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-white/60 p-2">
+                  {JSON.stringify(debugInfo.todayBody, null, 2)}
+                </pre>
+              </div>
+            </div>
+          </details>
+        )}
 
       {/* ---------- Section tabs ---------- */}
       <div className="flex flex-wrap gap-2">
