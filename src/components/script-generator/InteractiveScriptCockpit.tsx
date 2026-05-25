@@ -1,22 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Clock, 
-  User, 
-  MessageSquare, 
-  ChevronRight, 
-  ChevronLeft, 
-  CheckCircle2, 
   AlertTriangle, 
   Play, 
   Square, 
   Save, 
   Sparkles,
   Check,
-  Shield,
-  Phone,
-  Info,
-  Layers,
-  GraduationCap,
   X,
   RotateCcw,
   Award
@@ -72,7 +62,7 @@ export function InteractiveScriptCockpit({
   isValidating = false,
   isInline = false
 }: InteractiveScriptCockpitProps) {
-  const { t } = useTranslation();
+  useTranslation();
   
   // Timer States
   const [seconds, setSeconds] = useState(0);
