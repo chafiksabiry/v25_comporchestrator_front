@@ -27,6 +27,10 @@ import {
   runPaypalCheckoutFlow,
   runStripeCheckoutFlow
 } from '../../../lib/paypalCheckout';
+import {
+  formatBilledMinutesFromSeconds,
+  formatWalletMinutesBalance
+} from '../../../utils/billingMinutes';
 
 interface MinutesState {
   companyId: string;
@@ -269,20 +273,6 @@ export function MinutesCompanyPanel() {
     }
   };
 
-  const formatFloatMinutesToMMSS = (floatMinutes: number): string => {
-    if (isNaN(floatMinutes) || floatMinutes === null || floatMinutes === undefined) {
-      return "00:00:00";
-    }
-    const isNegative = floatMinutes < 0;
-    const absMinutes = Math.abs(floatMinutes);
-    const totalSeconds = absMinutes * 60;
-    const mm = Math.floor(absMinutes);
-    const ss = Math.floor(totalSeconds % 60);
-    const ll = Math.floor((totalSeconds % 1) * 100);
-
-    return `${isNegative ? '-' : ''}${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}:${String(ll).padStart(2, '0')}`;
-  };
-
   if (loading) {
     return (
       <div className="flex h-[70vh] items-center justify-center">
@@ -347,7 +337,7 @@ export function MinutesCompanyPanel() {
                 Volume d'appels restant
               </span>
               <span className={`text-5xl font-black tracking-tight block ${(minutesWallet?.minutes ?? 0) < 0 ? 'text-rose-400' : ''}`}>
-                {formatFloatMinutesToMMSS(minutesWallet?.minutes ?? 0)}
+                {formatWalletMinutesBalance(minutesWallet?.minutes ?? 0)}
               </span>
               {(minutesWallet?.minutes ?? 0) < 0 && (
                 <span className="text-[10px] text-rose-300 font-bold uppercase tracking-wider mt-1 block">
@@ -384,8 +374,8 @@ export function MinutesCompanyPanel() {
           <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
             <span>Minutes consommées</span>
             <span className="font-bold text-slate-700 tabular-nums">
-              {formatFloatMinutesToMMSS(
-                (minutesWallet?.consumedSeconds ?? calls.reduce((s, c) => s + (c.duration || 0), 0)) / 60
+              {formatBilledMinutesFromSeconds(
+                minutesWallet?.consumedSeconds ?? calls.reduce((s, c) => s + (c.duration || 0), 0)
               )}
             </span>
           </div>
@@ -451,7 +441,7 @@ export function MinutesCompanyPanel() {
                       {new Date(call.startTime).toLocaleString('fr-FR')}
                     </td>
                     <td className="py-4 px-4 text-slate-900 font-bold tabular-nums">
-                      {formatFloatMinutesToMMSS(call.duration / 60)}
+                      {formatBilledMinutesFromSeconds(call.duration)}
                     </td>
                     <td className="py-4 px-4">
                       {(() => {

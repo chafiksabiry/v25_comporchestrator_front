@@ -87,27 +87,14 @@ export default function CallsDashboardPage() {
           });
         }
         await fetchCalls();
-        alert(t('callsDashboard.analyzeSuccess', 'Analyse terminée avec succès.'));
       } else {
-        alert(
-          t('callsDashboard.analyzeFailed', 'Analyse échouée : {{msg}}', {
-            msg: (result as { message?: string })?.message || 'Unknown error',
-          })
+        console.warn(
+          '[CallsDashboard] analyze failed:',
+          (result as { message?: string })?.message || result
         );
       }
     } catch (error: unknown) {
       console.error('Error analyzing call:', error);
-      const msg =
-        error && typeof error === 'object' && 'response' in error
-          ? String((error as { response?: { data?: { message?: string } } }).response?.data?.message)
-          : error instanceof Error
-            ? error.message
-            : 'Network error';
-      alert(
-        t('callsDashboard.analyzeError', 'Erreur lors de l\'analyse : {{msg}}', {
-          msg: msg || 'Network error',
-        })
-      );
     } finally {
       setAnalyzingCallId(null);
     }
