@@ -28,6 +28,7 @@ export interface CompanyProfile {
     innovation: string;
   };
   contact: {
+    coordinates: any;
     email?: string;
     phone?: string;
     address?: string;

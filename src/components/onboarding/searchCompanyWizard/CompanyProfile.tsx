@@ -25,11 +25,21 @@ import {
   Upload,
   Trash2,
 } from "lucide-react";
-import { saveCompanyData } from "./api/companyApi";
+import { extractApiError, publishCompanyData } from "./api/companyApi";
+import type { CompanyProfileData } from "./api/openai";
 import { uploadImage } from "./api/uploads";
 import { redirectToCompanyOnboarding } from "./navigation";
 import { LucideProps } from "lucide-react";
 import { useTranslation } from "react-i18next";
+
+/** Full onboarding profile + optional fields from URL scrape (generate-from-url). */
+type CompanyProfileType = CompanyProfileData & {
+  _id?: string;
+  title?: string;
+  website?: string;
+  metaDescription?: string;
+  description?: string;
+};
 
 interface Props {
   profile: CompanyProfileType;
@@ -163,6 +173,20 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
     }
   }, [profile.contact.website, logoUrl]);
 
+  const buildPublishPayload = (data: CompanyProfileType): CompanyProfileType => {
+    const name =
+      (typeof data.name === "string" && data.name.trim()) ||
+      (typeof data.title === "string" && data.title.trim()) ||
+      (typeof data.website === "string" && data.website.trim()) ||
+      "Société";
+    const overview =
+      (typeof data.overview === "string" && data.overview.trim()) ||
+      (typeof data.description === "string" && data.description.trim()) ||
+      (typeof data.metaDescription === "string" && data.metaDescription.trim()) ||
+      `Profil généré depuis ${data.website || "le site web"}.`;
+    return { ...data, name, overview };
+  };
+
   const markStepCompleted = async (companyId: string) => {
     const apiUrl =
       import.meta.env.VITE_COMPANY_API_URL ||
@@ -193,12 +217,12 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
         return obj === "" || obj === null ? undefined : obj;
       };
 
-      const payload = cleanData(profile) || {};
+      const payload = buildPublishPayload(profile);
       if (profile.userId) payload.userId = profile.userId;
       delete payload._id;
 
-      const response = await saveCompanyData(payload);
-      const newCompanyId = response?.data?._id;
+      const response = await publishCompanyData(payload);
+      const newCompanyId = response._id;
       if (!newCompanyId) {
         throw new Error("Company ID missing from API response");
       }
@@ -222,8 +246,13 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
       } else {
         redirectToCompanyOnboarding();
       }
-    } catch (error: any) {
-      setPublishError(error.response?.data?.message || t('searchCompanyWizard.errors.publishFailed'));
+    } catch (error: unknown) {
+      const extracted = extractApiError(error);
+      setPublishError(
+        extracted === "Request failed"
+          ? t("searchCompanyWizard.errors.publishFailed")
+          : extracted
+      );
     } finally {
       setPublishing(false);
     }
