@@ -15,8 +15,15 @@
  * (e.g. swapping CRUD providers) never breaks the AI/analytics pipeline.
  */
 
-/** Default analytics + analyze backend when no env var is set. */
-export const DEFAULT_DASH_CALLS_API = 'https://preprod-api-dash-calls.harx.ai';
+/**
+ * Default analytics + analyze backend when no env var is set.
+ *
+ * The Railway-hosted instance of `v25_dash_calls_backend`. The vanity
+ * domain `preprod-api-dash-calls.harx.ai` is not registered, so we use
+ * the canonical Railway URL as the safe fallback.
+ */
+export const DEFAULT_DASH_CALLS_API =
+  'https://v25dashcallsbackend-production.up.railway.app/api';
 
 /** Default basic-CRUD backend (Railway dashboard). */
 export const DEFAULT_CALLS_CRUD_API =
@@ -55,7 +62,7 @@ export function getCallsApiBase(): string {
 /**
  * Base URL for AI analyze + analytics (`v25_dash_calls_backend`).
  * Always lives on its own host, never falls back to the CRUD backend.
- * Example return: `https://preprod-api-dash-calls.harx.ai/api`
+ * Example return: `https://v25dashcallsbackend-production.up.railway.app/api`
  */
 export function getDashCallsApiBase(): string {
   return withApiSuffix(
