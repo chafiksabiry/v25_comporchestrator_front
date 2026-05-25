@@ -21,7 +21,6 @@ import {
   Edit2,
   Check,
   ArrowRight,
-  ArrowLeft,
   Upload,
   Trash2,
 } from "lucide-react";
