@@ -1639,14 +1639,7 @@ function ResultsView({
   }, [outcomes]);
 
   const issues: IssueBucket[] = useMemo(() => {
-    const MOCK: IssueBucket[] = [
-      { label: t('opsDashboard.results.issues.transactionDone', 'Transaction aboutie'), count: 23, pct: 12.2, tone: 'emerald' },
-      { label: t('opsDashboard.results.issues.appointment', 'RDV fixé'), count: 15, pct: 7.9, tone: 'violet' },
-      { label: t('opsDashboard.results.issues.callback', 'Rappel demandé'), count: 28, pct: 14.8, tone: 'amber' },
-      { label: t('opsDashboard.results.issues.argued', 'Argumenté (intéressé)'), count: 34, pct: 18.0, tone: 'emerald' },
-      { label: t('opsDashboard.results.issues.refusal', 'Refus catégorique'), count: 42, pct: 22.2, tone: 'rose' },
-    ];
-    if (!outcomes?.outcomes.length) return MOCK;
+    if (!outcomes?.outcomes?.length) return [];
     return RESULT_ISSUE_DEFS.map((def) => {
       const row = byOutcome[def.outcome];
       return {
@@ -1659,10 +1652,7 @@ function ResultsView({
   }, [outcomes, byOutcome, t]);
 
   const repRows: RepIssueRow[] = useMemo(() => {
-    const MOCK: RepIssueRow[] = [
-      { name: 'Karima A.', transaction: 67, rdv: 18, rappel: 32, argumente: 41, refus: 89, convPct: 15.5, nameTone: 'harx', convTone: 'emerald' },
-    ];
-    if (!reps?.length) return MOCK;
+    if (!reps?.length) return [];
     return reps.map((r, idx) => {
       const convPct =
         r.total > 0 ? Math.round((r.transaction / r.total) * 1000) / 10 : 0;
@@ -1765,11 +1755,23 @@ function ResultsView({
             </span>
           </header>
 
-          <div className="grid grid-cols-2 gap-3">
-            {issues.map((i, idx) => (
-              <IssueTile key={idx} {...i} />
-            ))}
-          </div>
+          {issues.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+              <BarChart3 size={20} className="text-slate-300" />
+              <p className="text-xs font-bold text-slate-500">
+                {t(
+                  'opsDashboard.results.issuesEmpty',
+                  "Aucun appel sérieux analysé pour la période sélectionnée."
+                )}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {issues.map((i, idx) => (
+                <IssueTile key={idx} {...i} />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Répartition visuelle */}
@@ -1779,40 +1781,39 @@ function ResultsView({
             {t('opsDashboard.results.distributionTitle', 'Répartition visuelle')}
           </header>
 
-          <div className="mb-5 flex items-center justify-center">
-            <DonutChart segments={issues.map((i) => ({ pct: i.pct, tone: i.tone }))} />
-          </div>
+          {issues.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+              <PieChart size={20} className="text-slate-300" />
+              <p className="text-xs font-bold text-slate-500">
+                {t(
+                  'opsDashboard.results.distributionEmpty',
+                  "Pas encore de répartition — passez quelques appels analysés pour la voir apparaître."
+                )}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="mb-5 flex items-center justify-center">
+                <DonutChart segments={issues.map((i) => ({ pct: i.pct, tone: i.tone }))} />
+              </div>
 
-          <ul className="space-y-2 border-t border-slate-100 pt-3">
-            <li className="flex items-center justify-between py-1.5 text-[12px]">
-              <span className="font-bold text-slate-700">
-                {t('opsDashboard.results.hotPipeline', 'Pipeline chaud (RDV + rappels)')}
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="font-black tabular-nums text-slate-900">
-                  {pipelineHot.toLocaleString('fr-FR')} leads
-                </span>
-                <Tag tone="emerald">{t('opsDashboard.results.toWork', 'à travailler')}</Tag>
-              </span>
-            </li>
-            <li className="flex items-center justify-between py-1.5 text-[12px]">
-              <span className="font-bold text-slate-700">
-                {t('opsDashboard.results.refusalReopen', 'Taux de réouverture refus')}
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="font-black tabular-nums text-slate-900">8.3%</span>
-                <Tag tone="amber">{t('opsDashboard.results.low', 'faible')}</Tag>
-              </span>
-            </li>
-            <li className="flex items-center justify-between py-1.5 text-[12px]">
-              <span className="font-bold text-slate-700">
-                {t('opsDashboard.results.signatureDelay', 'Délai moy. RDV → signature')}
-              </span>
-              <span className="font-black tabular-nums text-slate-900">
-                2.4 {t('opsDashboard.results.days', 'jours')}
-              </span>
-            </li>
-          </ul>
+              <ul className="space-y-2 border-t border-slate-100 pt-3">
+                <li className="flex items-center justify-between py-1.5 text-[12px]">
+                  <span className="font-bold text-slate-700">
+                    {t('opsDashboard.results.hotPipeline', 'Pipeline chaud (RDV + rappels)')}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="font-black tabular-nums text-slate-900">
+                      {pipelineHot.toLocaleString('fr-FR')} leads
+                    </span>
+                    {pipelineHot > 0 && (
+                      <Tag tone="emerald">{t('opsDashboard.results.toWork', 'à travailler')}</Tag>
+                    )}
+                  </span>
+                </li>
+              </ul>
+            </>
+          )}
         </section>
       </div>
 
@@ -1828,6 +1829,17 @@ function ResultsView({
           </span>
         </header>
 
+        {repRows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+            <Users size={20} className="text-slate-300" />
+            <p className="text-xs font-bold text-slate-500">
+              {t(
+                'opsDashboard.results.byRepEmpty',
+                'Aucun reps avec des appels analysés ce mois-ci.'
+              )}
+            </p>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-[12px]">
             <thead>
@@ -1873,6 +1885,7 @@ function ResultsView({
             </tbody>
           </table>
         </div>
+        )}
       </section>
     </>
   );
@@ -1976,10 +1989,7 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
   const { t } = useTranslation();
 
   const reps: RepLeaderboard[] = useMemo(() => {
-    const MOCK: RepLeaderboard[] = [
-      { rank: 1, initials: 'KA', name: 'Karima A.', score: 84, convPct: 15.5, leadsCovered: 1050, transactions: 67, avatar: TEAM_PALETTE[0]! },
-    ];
-    if (!repsApi?.length) return MOCK;
+    if (!repsApi?.length) return [];
     const sorted = [...repsApi].sort((a, b) => b.transaction - a.transaction);
     return sorted.map((r, idx) => {
       const convPct = r.total > 0 ? Math.round((r.transaction / r.total) * 1000) / 10 : 0;
@@ -2058,7 +2068,7 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           tone="default"
           icon={<Mail size={14} className="text-slate-500" />}
           label={t('opsDashboard.team.kpi.invitations', 'Invitations')}
-          value="6"
+          value="—"
           sub={t('opsDashboard.team.kpi.invitationsSub', 'en attente')}
         />
       </div>
@@ -2070,6 +2080,17 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           {t('opsDashboard.team.leaderboardTitle', 'Leaderboard — transactions ce mois')}
         </header>
 
+        {reps.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+            <Trophy size={20} className="text-slate-300" />
+            <p className="text-xs font-bold text-slate-500">
+              {t(
+                'opsDashboard.team.leaderboardEmpty',
+                'Aucun reps avec des transactions ce mois-ci.'
+              )}
+            </p>
+          </div>
+        ) : (
         <ul className="divide-y divide-slate-100">
           {reps.map((r) => (
             <li
@@ -2117,6 +2138,7 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
             </li>
           ))}
         </ul>
+        )}
       </section>
     </>
   );
@@ -2667,34 +2689,20 @@ function CallsView({
           <MtdCard
             label={t('opsDashboard.mtd.voicemail', 'MSG VOCALE MTD')}
             value={mtd.voicemail.toLocaleString('fr-FR')}
-            sub={t('opsDashboard.mtd.voicemailSub', '→ 18% rappelés en J+1')}
+            sub={t('opsDashboard.mtd.voicemailSubReal', 'ce mois')}
             tone="slate"
           />
           <MtdCard
             label={t('opsDashboard.mtd.unreachable', 'INJOIGNABLES MTD')}
             value={mtd.unreachable.toLocaleString('fr-FR')}
-            sub={t('opsDashboard.mtd.unreachableSub', '→ 41% rappelés ≥3x')}
+            sub={t('opsDashboard.mtd.unreachableSubReal', 'ce mois')}
             tone="amber"
           />
           <MtdCard
             label={t('opsDashboard.mtd.wrongNumbers', 'FAUX NUMÉROS MTD')}
             value={mtd.wrongNumber.toLocaleString('fr-FR')}
-            sub={t('opsDashboard.mtd.wrongNumbersSub', '→ retirés de la base')}
+            sub={t('opsDashboard.mtd.wrongNumbersSubReal', 'ce mois')}
             tone="rose"
-          />
-          <MtdCard
-            label={t('opsDashboard.mtd.bestSlot', 'MEILLEURE PLAGE HORAIRE')}
-            value="10h-12h"
-            sub={t('opsDashboard.mtd.bestSlotSub', 'taux contact 61%')}
-            tone="emerald"
-            barPct={61}
-          />
-          <MtdCard
-            label={t('opsDashboard.mtd.worstSlot', 'PIRE PLAGE HORAIRE')}
-            value="18h-20h"
-            sub={t('opsDashboard.mtd.worstSlotSub', 'taux contact 22%')}
-            tone="rose"
-            barPct={22}
           />
           <MtdCard
             label={t('opsDashboard.mtd.autoCallbacks', 'RAPPELS AUTO. PROG.')}
@@ -2801,6 +2809,8 @@ function WalletView() {
 
   const [walletEntries, setWalletEntries] = useState<WalletEntryListItem[]>([]);
   const [repTransactions, setRepTransactions] = useState<RepTransactionRow[]>([]);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [escrowOnHold, setEscrowOnHold] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<
     | { kind: 'rep'; data: RepTransactionRow }
@@ -2842,10 +2852,25 @@ function WalletView() {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [walletRes, repTxRes] = await Promise.all([
+        const [walletRes, repTxRes, balRes, escrowRes] = await Promise.all([
           fetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
           fetch(`${walletApi}/escrow/company/rep-transactions/${companyId}`).catch(() => null),
+          fetch(`${walletApi}/wallet-company/${companyId}`).catch(() => null),
+          fetch(`${walletApi}/escrow/wallet/${companyId}`).catch(() => null),
         ]);
+
+        if (balRes?.ok) {
+          const json = await balRes.json();
+          if (json?.success && json?.data) {
+            setWalletBalance(Number(json.data.balance) || 0);
+          }
+        }
+        if (escrowRes?.ok) {
+          const json = await escrowRes.json();
+          if (json?.success && json?.data) {
+            setEscrowOnHold(Number(json.data.escrow) || 0);
+          }
+        }
 
         if (cancelled) return;
 
@@ -2943,37 +2968,66 @@ function WalletView() {
 
   return (
     <>
-      {/* KPI row */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <KpiCard
-          tone="primary"
-          icon={<Wallet size={14} />}
-          label={t('opsDashboard.wallet.kpi.available', 'Disponible')}
-          value="€3,240"
-          sub={t('opsDashboard.wallet.kpi.availableSub', '2.8 jours')}
-        />
-        <KpiCard
-          tone="default"
-          icon={<Hourglass size={14} className="text-slate-500" />}
-          label={t('opsDashboard.wallet.kpi.onHold', 'On hold')}
-          value="€1,370"
-          sub={t('opsDashboard.wallet.kpi.onHoldSub', 'en validation')}
-        />
-        <KpiCard
-          tone="default"
-          icon={<TrendingUp size={14} className="text-slate-500" />}
-          label={t('opsDashboard.wallet.kpi.spentMtd', 'Dépensé MTD')}
-          value="€7,080"
-          sub={t('opsDashboard.wallet.kpi.spentMtdSub', 'ce mois')}
-        />
-        <KpiCard
-          tone="dark"
-          icon={<Activity size={14} />}
-          label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')}
-          value="€1,156"
-          sub={t('opsDashboard.wallet.kpi.burnRateSub', 'par jour')}
-        />
-      </div>
+      {/* KPI row — fed from /wallet-company/:id, /escrow/wallet/:id and the
+          unified rep-transactions ledger. No hardcoded fallbacks. */}
+      {(() => {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const since30d = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+        const repAmount = (tx: any) =>
+          Math.abs(Number(tx?.amount ?? tx?.totalAmount ?? tx?.repAmount ?? 0)) || 0;
+        const spentMtd = repTransactions.reduce((acc, tx: any) => {
+          const ts = new Date(tx?.createdAt || tx?.call?.startTime || 0).getTime();
+          return ts >= monthStart ? acc + repAmount(tx) : acc;
+        }, 0);
+        const spent30d = repTransactions.reduce((acc, tx: any) => {
+          const ts = new Date(tx?.createdAt || tx?.call?.startTime || 0).getTime();
+          return ts >= since30d ? acc + repAmount(tx) : acc;
+        }, 0);
+        const burnRatePerDay = spent30d / 30;
+        const daysLeft =
+          burnRatePerDay > 0 ? walletBalance / burnRatePerDay : null;
+        const fmtMoney = (n: number) => `€${formatEur(n).replace(/^[+−]?€/, '')}`;
+        const daysLeftLabel =
+          daysLeft == null
+            ? t('opsDashboard.wallet.kpi.availableSubNoData', '—')
+            : t('opsDashboard.wallet.kpi.availableSubDays', {
+                days: daysLeft.toFixed(1),
+                defaultValue: '{{days}} jours',
+              });
+        return (
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <KpiCard
+              tone="primary"
+              icon={<Wallet size={14} />}
+              label={t('opsDashboard.wallet.kpi.available', 'Disponible')}
+              value={fmtMoney(walletBalance)}
+              sub={daysLeftLabel}
+            />
+            <KpiCard
+              tone="default"
+              icon={<Hourglass size={14} className="text-slate-500" />}
+              label={t('opsDashboard.wallet.kpi.onHold', 'On hold')}
+              value={fmtMoney(escrowOnHold)}
+              sub={t('opsDashboard.wallet.kpi.onHoldSub', 'en validation')}
+            />
+            <KpiCard
+              tone="default"
+              icon={<TrendingUp size={14} className="text-slate-500" />}
+              label={t('opsDashboard.wallet.kpi.spentMtd', 'Dépensé MTD')}
+              value={fmtMoney(spentMtd)}
+              sub={t('opsDashboard.wallet.kpi.spentMtdSub', 'ce mois')}
+            />
+            <KpiCard
+              tone="dark"
+              icon={<Activity size={14} />}
+              label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')}
+              value={fmtMoney(burnRatePerDay)}
+              sub={t('opsDashboard.wallet.kpi.burnRateSub', 'par jour')}
+            />
+          </div>
+        );
+      })()}
 
       {/* Mouvements du portefeuille — unified date-sorted ledger */}
       <WalletMovements
@@ -3559,8 +3613,6 @@ function Performance7Days({
   const { t } = useTranslation();
 
   const chartPoints = useMemo(() => {
-    const MOCK_CALLS = [195, 220, 240, 185, 250, 130, 85];
-    const MOCK_TX = [20, 25, 27, 15, 26, 12, 8];
     const dayKeys: string[] = [];
     const dayLabels: string[] = [];
     const weekday = (d: Date) =>
@@ -3573,11 +3625,7 @@ function Performance7Days({
       dayLabels.push(weekday(d));
     }
 
-    if (!series?.length) {
-      return { labels: dayLabels, calls: MOCK_CALLS, transactions: MOCK_TX };
-    }
-
-    const byDate = Object.fromEntries(series.map((s) => [s.date, s]));
+    const byDate = Object.fromEntries((series ?? []).map((s) => [s.date, s]));
     return {
       labels: dayLabels,
       calls: dayKeys.map((k) => byDate[k]?.total ?? 0),
