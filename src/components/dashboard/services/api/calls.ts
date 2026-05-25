@@ -1,6 +1,18 @@
+import axios from 'axios';
 import { apiCall } from './index';
 import { Lead } from './leads';
 import { Agent } from './agents';
+import { getDashCallsApiOrigin } from '../../lib/callsApiBase';
+
+/**
+ * Dedicated axios client for v25_dash_calls_backend (AI analyze + analytics).
+ * Independent from `apiCall` so changing VITE_API_URL_CALL never reroutes
+ * the analyze endpoint to the wrong service.
+ */
+const dashCallsApi = axios.create({
+  baseURL: getDashCallsApiOrigin(),
+  headers: { 'Content-Type': 'application/json' },
+});
 
 
 export interface Call {
@@ -136,11 +148,14 @@ getCallDetails:async (callSid: string, ) => {
   },
 
   analyze: async (id: string) => {
-    const response = await apiCall.post<{
+    // Always hits v25_dash_calls_backend regardless of VITE_API_URL_CALL,
+    // because the analyze controller only exists on that service.
+    const response = await dashCallsApi.post<{
       success: boolean;
       data: any;
       transcript: any[];
       validByAI: boolean;
+      message?: string;
     }>(`/api/calls/${id}/analyze`);
     return response.data;
   },
