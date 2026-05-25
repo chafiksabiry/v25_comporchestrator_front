@@ -762,27 +762,8 @@ export default function OperationsDashboard() {
     ];
   }, [stats, countByOutcome, t]);
 
-  const MOCK_RECENT: RecentCall[] = [
-    {
-      score: 92,
-      agent: 'Karima A.',
-      lead: 'M. Dupont',
-      meta: '5m43s',
-      tag: { label: t('opsDashboard.tags.transaction', 'transaction'), tone: 'emerald' },
-      when: '2m',
-    },
-    {
-      score: 78,
-      agent: 'Younes O.',
-      lead: 'Mme Martin',
-      meta: '3m12s',
-      tag: { label: t('opsDashboard.tags.callbackJ2', 'rappel J+2'), tone: 'amber' },
-      when: '5m',
-    },
-  ];
-
   const recentCalls: RecentCall[] = useMemo(() => {
-    if (!recentCallsApi?.length) return MOCK_RECENT;
+    if (!recentCallsApi?.length) return [];
     return recentCallsApi.map((c) => {
       const dur = c.duration ?? 0;
       const m = Math.floor(dur / 60);
@@ -2615,27 +2596,39 @@ function CallsView({
             </button>
           </header>
 
-          <ul className="divide-y divide-slate-100">
-            {recentCalls.map((c, idx) => (
-              <li key={idx} className="flex items-center gap-3 py-2.5">
-                <ScoreBubble score={c.score} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-slate-900">
-                    {c.agent} <span className="text-slate-400">→</span> {c.lead}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {c.meta && (
-                      <span className="text-[11px] font-medium text-slate-500">{c.meta}</span>
-                    )}
-                    {c.tag && <Tag tone={c.tag.tone}>{c.tag.label}</Tag>}
+          {recentCalls.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+              <PhoneCall size={20} className="text-slate-300" />
+              <p className="text-xs font-bold text-slate-500">
+                {t(
+                  'opsDashboard.recentCallsEmpty',
+                  "Aucun appel récent — la liste se peuplera dès qu'un agent passera un appel."
+                )}
+              </p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {recentCalls.map((c, idx) => (
+                <li key={idx} className="flex items-center gap-3 py-2.5">
+                  <ScoreBubble score={c.score} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-slate-900">
+                      {c.agent} <span className="text-slate-400">→</span> {c.lead}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {c.meta && (
+                        <span className="text-[11px] font-medium text-slate-500">{c.meta}</span>
+                      )}
+                      {c.tag && <Tag tone={c.tag.tone}>{c.tag.label}</Tag>}
+                    </div>
                   </div>
-                </div>
-                <span className="shrink-0 text-[11px] font-bold tabular-nums text-slate-400">
-                  {c.when}
-                </span>
-              </li>
-            ))}
-          </ul>
+                  <span className="shrink-0 text-[11px] font-bold tabular-nums text-slate-400">
+                    {c.when}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
 
