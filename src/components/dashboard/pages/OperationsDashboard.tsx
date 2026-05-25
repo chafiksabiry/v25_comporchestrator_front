@@ -51,6 +51,10 @@ import {
   billedMinutesFromSeconds,
   formatBilledMinutesFromSeconds,
 } from '../../../utils/billingMinutes';
+// Analytics endpoints live on v25_dash_calls_backend. We deliberately
+// ignore VITE_API_URL_CALL (which targets the CRUD dashboard backend)
+// so swapping the CRUD provider never breaks the charts.
+import { getDashCallsApiBase } from '../lib/callsApiBase';
 
 // Idempotent: other dashboards already register the same scales, registering
 // again is a no-op so it's safe to keep it co-located with the chart.
@@ -66,22 +70,9 @@ ChartJS.register(
   Filler
 );
 
-/** Default calls API when Netlify build omits VITE_API_URL_CALL. */
-const DEFAULT_CALLS_API = 'https://preprod-api-dash-calls.harx.ai';
-
-/** Base URL for call analytics (`v25_dash_calls_backend`). */
 function getCallsApiBase(): string | null {
-  const winEnv =
-    typeof window !== 'undefined'
-      ? (window as unknown as { __HARX_ENV__?: { VITE_API_URL_CALL?: string } })
-          .__HARX_ENV__
-      : undefined;
-  const raw =
-    (import.meta as any).env?.VITE_API_URL_CALL ||
-    winEnv?.VITE_API_URL_CALL ||
-    DEFAULT_CALLS_API;
-  if (!raw) return null;
-  return raw.endsWith('/api') ? raw : `${raw}/api`;
+  const base = getDashCallsApiBase();
+  return base || null;
 }
 
 function todayIsoRange(): { from: string; to: string } {
