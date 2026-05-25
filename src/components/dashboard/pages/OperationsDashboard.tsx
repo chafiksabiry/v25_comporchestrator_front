@@ -14,9 +14,7 @@ import {
   ArrowUpRight,
   ChevronRight,
   Database,
-  PhoneIncoming,
   CheckCircle2,
-  BatteryLow,
   Hourglass,
   Repeat,
   ShieldCheck,
@@ -377,6 +375,7 @@ export default function OperationsDashboard() {
   }, []);
 
   // ----- Lead stats (KPIs + quality + attempts breakdown) -----
+  type LeadStatusBucket = { count: number; pct: number };
   type LeadStats = {
     total: number;
     called: number;
@@ -385,6 +384,15 @@ export default function OperationsDashboard() {
     avgAttempts: number;
     coveragePct: number;
     reachablePct: number;
+    statusSummary: {
+      new: LeadStatusBucket;
+      inProgress: LeadStatusBucket;
+      qualified: LeadStatusBucket;
+      appointment: LeadStatusBucket;
+      won: LeadStatusBucket;
+      lost: LeadStatusBucket;
+      other: LeadStatusBucket;
+    };
     quality: {
       valid: { count: number; pct: number };
       unreachable: { count: number; pct: number };
@@ -514,6 +522,17 @@ export default function OperationsDashboard() {
             fivePlus: ad.fivePlus || blank,
           };
 
+          const ss = json.statusSummary || {};
+          const statusSummary = {
+            new: ss.new || blank,
+            inProgress: ss.inProgress || blank,
+            qualified: ss.qualified || blank,
+            appointment: ss.appointment || blank,
+            won: ss.won || blank,
+            lost: ss.lost || blank,
+            other: ss.other || blank,
+          };
+
           setLeadStats({
             total: json.total,
             called: json.called,
@@ -522,6 +541,7 @@ export default function OperationsDashboard() {
             avgAttempts,
             coveragePct,
             reachablePct,
+            statusSummary,
             quality,
             qualityScorePct,
             attemptDistribution,
@@ -1064,6 +1084,8 @@ interface RepCoverage {
   warn?: boolean;
 }
 
+type LeadStatusBucket = { count: number; pct: number };
+
 type LeadStatsProp = {
   total: number;
   called: number;
@@ -1072,6 +1094,15 @@ type LeadStatsProp = {
   avgAttempts: number;
   coveragePct: number;
   reachablePct: number;
+  statusSummary: {
+    new: LeadStatusBucket;
+    inProgress: LeadStatusBucket;
+    qualified: LeadStatusBucket;
+    appointment: LeadStatusBucket;
+    won: LeadStatusBucket;
+    lost: LeadStatusBucket;
+    other: LeadStatusBucket;
+  };
   quality: {
     valid: { count: number; pct: number };
     unreachable: { count: number; pct: number };
@@ -1105,36 +1136,24 @@ function LeadsView({
   // Mock baseline used until the real stats land. Keeps the page presentable
   // for first-paint and for demo accounts that don't have data yet.
   const MOCK_TOTAL = 12450;
-  const MOCK_CALLED = 8466;
-  const MOCK_CONTACTED = 5830;
-  const MOCK_EXHAUSTED = 812;
-  const MOCK_AVG_ATTEMPTS = 2.1;
-  const MOCK_COVERAGE = 68;
-  const MOCK_REACHABLE = 47;
+  const MOCK_STATUS = {
+    new: { count: 3984, pct: 32 },
+    inProgress: { count: 2810, pct: 22.6 },
+    qualified: { count: 1520, pct: 12.2 },
+    appointment: { count: 412, pct: 3.3 },
+    won: { count: 1083, pct: 8.7 },
+    lost: { count: 511, pct: 4.1 },
+    other: { count: 2130, pct: 17.1 },
+  };
 
   const baseCount = leadStats?.total ?? MOCK_TOTAL;
-  const calledCount = leadStats?.called ?? MOCK_CALLED;
-  const contactedCount = leadStats?.contacted ?? MOCK_CONTACTED;
-  const exhaustedCount = leadStats?.exhausted ?? MOCK_EXHAUSTED;
-  const avgAttempts = leadStats?.avgAttempts ?? MOCK_AVG_ATTEMPTS;
-  const coveragePct = leadStats?.coveragePct ?? MOCK_COVERAGE;
-  const reachablePct = leadStats?.reachablePct ?? MOCK_REACHABLE;
-
-  // "2.1x" with one decimal — but show an integer when the value is whole
-  // (e.g. "3x" not "3.0x") to stay readable.
-  const avgAttemptsLabel =
-    Number.isInteger(avgAttempts)
-      ? `${avgAttempts}x`
-      : `${avgAttempts.toFixed(1)}x`;
+  const status = leadStats?.statusSummary ?? MOCK_STATUS;
 
   const baseLabel =
     leadStats === null
       ? t('opsDashboard.leads.kpi.totalBaseSub', 'leads uploadés')
       : t('opsDashboard.leads.kpi.totalBaseSubReal', 'leads en base');
 
-  // Smart-format the percentage so small ratios stay visible:
-  // ≥10 → integer (e.g. "68"), ≥1 → 1 decimal (e.g. "4.2"),
-  // ≥0.01 → 2 decimals (e.g. "0.03"), else 4 decimals (e.g. "0.0008").
   const fmtPct = (p: number): string => {
     if (!Number.isFinite(p) || p === 0) return '0';
     if (p >= 10) return p.toFixed(0);
@@ -1142,14 +1161,15 @@ function LeadsView({
     if (p >= 0.01) return p.toFixed(2);
     return p.toFixed(4);
   };
-  const calledSub = t('opsDashboard.leads.kpi.calledOnceSub', {
-    pct: fmtPct(coveragePct),
-    defaultValue: '{{pct}}% couverture',
-  });
-  const contactedSub = t('opsDashboard.leads.kpi.contactedSub', {
-    pct: fmtPct(reachablePct),
-    defaultValue: '{{pct}}% joignables',
-  });
+  const statusSub = (pct: number) =>
+    t('opsDashboard.leads.kpi.statusSub', {
+      pct: fmtPct(pct),
+      defaultValue: '{{pct}}% de la base',
+    });
+  const inProgressCount = status.inProgress.count + status.other.count;
+  const inProgressPct = status.inProgress.pct + status.other.pct;
+  const convertedCount = status.appointment.count + status.won.count;
+  const convertedPct = status.appointment.pct + status.won.pct;
 
   // Base-quality buckets: pull straight from the backend when available,
   // otherwise show the mock numbers so the layout never breaks.
@@ -1313,38 +1333,38 @@ function LeadsView({
         />
         <KpiCard
           tone="default"
-          icon={<PhoneIncoming size={14} className="text-harx-500" />}
-          label={t('opsDashboard.leads.kpi.calledOnce', 'Appelés ≥1x')}
-          value={calledCount.toLocaleString('fr-FR')}
-          sub={calledSub}
+          icon={<Sparkles size={14} className="text-harx-500" />}
+          label={t('opsDashboard.leads.kpi.statusNew', 'Nouveaux')}
+          value={status.new.count.toLocaleString('fr-FR')}
+          sub={statusSub(status.new.pct)}
         />
         <KpiCard
           tone="default"
-          icon={<CheckCircle2 size={14} className="text-emerald-500" />}
-          label={t('opsDashboard.leads.kpi.contacted', 'Contactés')}
-          value={contactedCount.toLocaleString('fr-FR')}
-          sub={contactedSub}
+          icon={<Activity size={14} className="text-blue-500" />}
+          label={t('opsDashboard.leads.kpi.statusInProgress', 'En cours')}
+          value={inProgressCount.toLocaleString('fr-FR')}
+          sub={statusSub(inProgressPct)}
+        />
+        <KpiCard
+          tone="default"
+          icon={<Star size={14} className="text-amber-500" />}
+          label={t('opsDashboard.leads.kpi.statusQualified', 'Qualifiés')}
+          value={status.qualified.count.toLocaleString('fr-FR')}
+          sub={statusSub(status.qualified.pct)}
+        />
+        <KpiCard
+          tone="default"
+          icon={<CalendarClock size={14} className="text-emerald-500" />}
+          label={t('opsDashboard.leads.kpi.statusConverted', 'RDV & convertis')}
+          value={convertedCount.toLocaleString('fr-FR')}
+          sub={statusSub(convertedPct)}
         />
         <KpiCard
           tone="dark"
-          icon={<BatteryLow size={14} />}
-          label={t('opsDashboard.leads.kpi.exhausted', 'Épuisés')}
-          value={exhaustedCount.toLocaleString('fr-FR')}
-          sub={t('opsDashboard.leads.kpi.exhaustedSub', '>5 tentatives')}
-        />
-        <KpiCard
-          tone="default"
-          icon={<Hourglass size={14} className="text-slate-500" />}
-          label={t('opsDashboard.leads.kpi.remaining', 'Reste à appeler')}
-          value="3,984"
-          sub={t('opsDashboard.leads.kpi.remainingSub', '~8 jours restants')}
-        />
-        <KpiCard
-          tone="default"
-          icon={<Repeat size={14} className="text-blue-500" />}
-          label={t('opsDashboard.leads.kpi.avgAttempts', 'Moy. tentatives')}
-          value={avgAttemptsLabel}
-          sub={t('opsDashboard.leads.kpi.avgAttemptsSub', 'par lead appelé')}
+          icon={<XCircle size={14} />}
+          label={t('opsDashboard.leads.kpi.statusLost', 'Perdus')}
+          value={status.lost.count.toLocaleString('fr-FR')}
+          sub={statusSub(status.lost.pct)}
         />
       </div>
 
