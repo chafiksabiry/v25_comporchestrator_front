@@ -388,22 +388,25 @@ export function InteractiveScriptCockpit({
             Étape {currentStageIdx + 1} sur {stages.length}
           </span>
 
-          {currentStageIdx === stages.length - 1 ? (
+          <div className="flex items-center gap-2">
+            {currentStageIdx < stages.length - 1 && (
+              <button
+                onClick={handleNext}
+                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-lg transition-all text-[9px] uppercase tracking-wider flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer"
+              >
+                Suivant →
+              </button>
+            )}
             <button
               onClick={onValidate}
               disabled={isValidating}
-              className="px-4 py-2 bg-[#f4f4f5] border border-slate-200 hover:bg-slate-100 text-slate-800 font-extrabold rounded-lg transition-all text-[9px] uppercase tracking-widest flex items-center gap-1 shadow-sm active:scale-95 disabled:opacity-40 cursor-pointer"
+              title="Enregistrer le script à tout moment"
+              className="px-4 py-2 bg-[#f4f4f5] border border-slate-200 hover:bg-slate-100 text-slate-800 font-extrabold rounded-lg transition-all text-[9px] uppercase tracking-widest flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-40 cursor-pointer"
             >
-              Save Script ✓
+              <Save className="w-3 h-3" />
+              {isValidating ? 'Enregistrement…' : 'Save Script ✓'}
             </button>
-          ) : (
-            <button
-              onClick={handleNext}
-              className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-lg transition-all text-[9px] uppercase tracking-wider flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer"
-            >
-              Suivant →
-            </button>
-          )}
+          </div>
         </div>
 
         {/* EXPLANATORY TEXT BELOW FOOTER */}
