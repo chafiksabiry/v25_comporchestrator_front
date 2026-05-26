@@ -74,17 +74,23 @@ export function SectionContent({
 
   // Ensure seniority object is properly initialized
   const initializedData = React.useMemo(() => {
-    const schedulesToClean = data.schedule?.schedules || data.availability?.schedule || [];
-    
-    
-    
-    
-
-    const cleanedSchedules = cleanSchedules(schedulesToClean);
-    
+    // Merge both source arrays before cleaning so we don't drop entries that
+    // only live in one of them (e.g. Sat/Sun groups added after the AI
+    // initially populated only schedule.schedules).
+    const mergedSources = [
+      ...(Array.isArray(data.schedule?.schedules) ? data.schedule.schedules : []),
+      ...(Array.isArray((data as any).availability?.schedule) ? (data as any).availability.schedule : []),
+    ];
+    const cleanedSchedules = cleanSchedules(mergedSources);
 
     return {
       ...data,
+      // Keep availability.schedule mirrored to the cleaned, merged list so the
+      // save path can never read a stale partial copy.
+      availability: {
+        ...(data as any).availability,
+        schedule: cleanedSchedules,
+      },
       schedule: {
         schedules: cleanedSchedules,
         time_zone: (() => {

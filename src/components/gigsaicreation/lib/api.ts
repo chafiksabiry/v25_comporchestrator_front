@@ -332,6 +332,40 @@ function fixScheduleData(data: GigData): GigData {
   return data;
 }
 
+// Merge availability.schedule and schedule.schedules into a single, deduplicated
+// list. We do this because the UI keeps both fields in parallel and the two
+// can drift out of sync (e.g. after AI generation followed by manual edits),
+// which previously caused only one of the two arrays to be persisted and lost
+// any newly added Schedule Groups (Sat/Sun, etc.).
+function mergeAndDedupeSchedule(data: GigData): Array<{ day: string; hours: { start: string; end: string } }> {
+  const fromAvailability: any[] = Array.isArray((data as any)?.availability?.schedule)
+    ? (data as any).availability.schedule
+    : [];
+  const fromSchedule: any[] = Array.isArray((data as any)?.schedule?.schedules)
+    ? (data as any).schedule.schedules
+    : [];
+
+  // schedule.schedules is the source of truth in the UI (ScheduleSection
+  // writes to it directly), so we prefer it but fall back to availability for
+  // any entries that may only live there.
+  const ordered = [...fromSchedule, ...fromAvailability];
+
+  const seen = new Set<string>();
+  const merged: Array<{ day: string; hours: { start: string; end: string } }> = [];
+  for (const entry of ordered) {
+    if (!entry || !entry.day || !entry.hours) continue;
+    const day = String(entry.day).trim();
+    const start = String(entry.hours.start || '').trim();
+    const end = String(entry.hours.end || '').trim();
+    if (!day || !start || !end) continue;
+    const key = `${day}|${start}|${end}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push({ day, hours: { start, end } });
+  }
+  return merged;
+}
+
 export async function updateGigData(gigId: string, gigData: GigData): Promise<{ data: any; error?: Error }> {
   try {
     const userId = Cookies.get('userId') ?? "";
@@ -370,6 +404,11 @@ export async function updateGigData(gigId: string, gigData: GigData): Promise<{ 
       }))
     };
 
+    // Merge schedule + availability schedules so every Schedule Group ends up
+    // in the payload — even when the two parallel arrays drifted apart.
+    const mergedSchedule = mergeAndDedupeSchedule(fixedGigData);
+    console.log('🗓️ UPDATE GIG - merged schedule entries:', mergedSchedule.length, mergedSchedule);
+
     // Format availability data with proper schedule nesting
     const formattedAvailability = {
       ...fixedGigData.availability,
@@ -380,14 +419,7 @@ export async function updateGigData(gigId: string, gigData: GigData): Promise<{ 
         }
         return fixedGigData.availability.time_zone || 'UTC';
       })(),
-      schedule: (() => {
-        // Use schedule from availability if available, otherwise use top-level schedule
-        const scheduleData = fixedGigData.availability?.schedule || fixedGigData.schedule?.schedules || [];
-        return scheduleData.map(schedule => ({
-          day: schedule.day, // Use 'day' (singular) instead of converting to array
-          hours: schedule.hours
-        }));
-      })()
+      schedule: mergedSchedule
     };
 
     // Keep destination zone as MongoDB ObjectId if it's valid, otherwise omit it
@@ -527,6 +559,11 @@ export async function saveGigData(gigData: GigData): Promise<{ data: any; error?
 
 
 
+    // Merge schedule + availability schedules so every Schedule Group ends up
+    // in the payload — even when the two parallel arrays drifted apart.
+    const mergedSchedule = mergeAndDedupeSchedule(fixedGigData);
+    console.log('🗓️ SAVE GIG - merged schedule entries:', mergedSchedule.length, mergedSchedule);
+
     // Format availability data with proper schedule nesting
     const formattedAvailability = {
       ...fixedGigData.availability,
@@ -537,14 +574,7 @@ export async function saveGigData(gigData: GigData): Promise<{ data: any; error?
         }
         return fixedGigData.availability.time_zone || 'UTC';
       })(),
-      schedule: (() => {
-        // Use schedule from availability if available, otherwise use top-level schedule
-        const scheduleData = fixedGigData.availability?.schedule || fixedGigData.schedule?.schedules || [];
-        return scheduleData.map(schedule => ({
-          day: schedule.day, // Use 'day' (singular) instead of converting to array
-          hours: schedule.hours
-        }));
-      })()
+      schedule: mergedSchedule
     };
 
     // Keep destination zone as MongoDB ObjectId if it's valid, otherwise omit it
