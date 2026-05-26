@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, FileText, Target, Award, DollarSign, Users, MapPin, ClockIcon, Globe, Settings, Phone, Repeat, Star, X, ChevronRight, Briefcase, Sparkles } from 'lucide-react';
+import { ArrowLeft, FileText, Target, Award, DollarSign, Users, MapPin, ClockIcon, Globe, Settings, Phone, Repeat, Star, X, ChevronRight, Briefcase, Sparkles, Calendar, Zap } from 'lucide-react';
 import RepProfileView from '../RepProfileView';
+import { groupSchedules } from '../gigsaicreation/lib/scheduleUtils';
 
 interface Gig {
   _id: string;
@@ -473,6 +474,156 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
           </div>
         </div>
       </div>
+
+      {/* Availability */}
+      {(() => {
+        const rawSchedule = Array.isArray(gig.availability?.schedule) ? gig.availability.schedule : [];
+        const grouped = rawSchedule.length > 0
+          ? groupSchedules(rawSchedule.map((s) => ({ day: s.day, hours: { start: s.hours?.start, end: s.hours?.end } })))
+          : [];
+
+        const totalMinutes = rawSchedule.reduce((acc, s) => {
+          const start = s?.hours?.start;
+          const end = s?.hours?.end;
+          if (!start || !end) return acc;
+          const [sh, sm] = start.split(':').map(Number);
+          const [eh, em] = end.split(':').map(Number);
+          if ([sh, sm, eh, em].some((n) => Number.isNaN(n))) return acc;
+          const diff = (eh * 60 + em) - (sh * 60 + sm);
+          return acc + Math.max(0, diff);
+        }, 0);
+        const totalHoursDisplay = totalMinutes > 0
+          ? `${Math.floor(totalMinutes / 60)}h${totalMinutes % 60 ? String(totalMinutes % 60).padStart(2, '0') : ''}`
+          : '—';
+
+        const tz: any = gig.availability?.time_zone;
+        const timezoneDisplay =
+          (tz && typeof tz === 'object' && (tz.zoneName || tz.countryName)) ||
+          (typeof tz === 'string' ? tz : '') ||
+          '';
+
+        const flexibility = Array.isArray(gig.availability?.flexibility) ? gig.availability.flexibility : [];
+        const minimumHours = gig.availability?.minimumHours || ({} as any);
+
+        const hasAnything =
+          grouped.length > 0 || !!timezoneDisplay || flexibility.length > 0 ||
+          !!minimumHours?.daily || !!minimumHours?.weekly || !!minimumHours?.monthly;
+
+        if (!hasAnything) return null;
+
+        return (
+          <div className="rounded-[2rem] bg-white border border-slate-100 p-8 shadow-xl shadow-slate-100/50 z-10 animate-slide-up [animation-delay:200ms] hover-lift">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-50 rounded-xl">
+                  <Calendar className="h-5 w-5 text-indigo-600 animate-pulse animate-glow-pulse" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wider">Availability</h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                    Plages horaires actives du gig
+                  </p>
+                </div>
+              </div>
+
+              {/* Summary pills */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 border border-indigo-100">
+                  <ClockIcon className="w-3 h-3" />
+                  {totalHoursDisplay} / semaine
+                </div>
+                {timezoneDisplay && (
+                  <div className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 border border-emerald-100">
+                    <Globe className="w-3 h-3" />
+                    {String(timezoneDisplay)}
+                  </div>
+                )}
+                <div className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-full text-[11px] font-black uppercase tracking-wider border border-slate-200">
+                  {rawSchedule.length} jours
+                </div>
+              </div>
+            </div>
+
+            {/* Schedule groups */}
+            {grouped.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {grouped.map((slot, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white flex items-center gap-4 hover:shadow-md hover:border-indigo-200 transition-all duration-300 hover:-translate-y-0.5"
+                  >
+                    <div className="p-2.5 bg-white border border-slate-100 rounded-xl shadow-sm">
+                      <ClockIcon className="w-5 h-5 text-indigo-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">
+                        {slot.days.join(' · ')}
+                      </div>
+                      <div className="text-lg font-black text-slate-900 tabular-nums">
+                        {slot.hours.start}
+                        <span className="text-slate-300 font-bold mx-1.5">→</span>
+                        {slot.hours.end}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 text-sm text-slate-500 font-medium italic">
+                Aucune plage horaire renseignée.
+              </div>
+            )}
+
+            {/* Minimum hours + Flexibility */}
+            {(minimumHours?.daily || minimumHours?.weekly || minimumHours?.monthly || flexibility.length > 0) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                {/* Minimum hours */}
+                {(minimumHours?.daily || minimumHours?.weekly || minimumHours?.monthly) && (
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-5">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                      Minimum Hours
+                    </h3>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(['daily', 'weekly', 'monthly'] as const).map((key) => (
+                        <div key={key} className="text-center p-3 bg-white border border-slate-100 rounded-xl hover:border-purple-200 transition-colors">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{key}</p>
+                          <p className="text-xl font-black text-slate-900 tabular-nums">
+                            {minimumHours?.[key] ?? '—'}
+                            {minimumHours?.[key] != null && <span className="text-xs text-slate-400 ml-0.5">h</span>}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Flexibility */}
+                {flexibility.length > 0 && (
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-5">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                      Flexibility
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {flexibility.map((opt, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-100 hover:border-rose-200 rounded-xl text-[11px] font-extrabold text-slate-700 transition-all duration-300 hover:scale-105"
+                        >
+                          <Zap className="w-3 h-3 text-rose-500" />
+                          {opt}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Skills & Requirements */}
       {gig.skills && (
