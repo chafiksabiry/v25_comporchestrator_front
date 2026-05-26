@@ -903,6 +903,8 @@
       "allPhasesCompleted": "Toutes les étapes de cette phase sont terminées. Félicitations, toutes les phases d'onboarding sont maintenant complétées ! 👏🎺🎊",
       "phaseCompleted": "Toutes les étapes de cette phase sont terminées. Vous pouvez passer à la phase suivante.",
       "backToOnboarding": "Retour à l'onboarding",
+      "nextStep": "Étape suivante",
+      "nextStepHint": "Étape suivante · Retour à l'onboarding",
       "unableToStart": "Impossible de démarrer cette étape car les phases précédentes ne sont pas complètement terminées. \n\nVeuillez essayer le bouton 'Réinitialiser l'Onboarding' en bas de la page pour corriger les éventuelles incohérences de données."
     },
     "stepGuide": {
