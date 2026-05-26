@@ -42,6 +42,7 @@ import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
 import Subscription from './components/Subscription';
 import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideModal';
 import WalletTopUpModal from './components/wallet/WalletTopUpModal';
+import { refreshAndBroadcastWalletBalance } from './lib/walletBalanceSync';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import StepGuideModal, { type StepGuideVariant } from './components/onboarding/StepGuideModal';
 import {
@@ -186,36 +187,12 @@ function AppContent() {
   };
 
   const refreshWalletBalance = async () => {
-    const compId = Cookies.get('companyId');
-    if (!compId) return;
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
     try {
-      const [walletRes, escrowRes] = await Promise.all([
-        fetch(`${apiBaseUrl}/wallet-company/${compId}`),
-        fetch(`${apiBaseUrl}/escrow/wallet/${compId}`).catch(() => null),
-      ]);
-
-      let nextBalance: number | null = null;
-      if (walletRes.ok) {
-        const walletJson = await walletRes.json();
-        if (walletJson.success && walletJson.data) {
-          nextBalance = Number(walletJson.data.balance) || 0;
-          setBalance(nextBalance);
-        }
-      }
-
-      if (escrowRes?.ok) {
-        const result = await escrowRes.json();
-        if (result.success && result.data) {
-          setMinutes(result.data.minutes || 0);
-          setEscrow(result.data.escrow || 0);
-        }
-      }
-
-      if (nextBalance !== null) {
-        window.dispatchEvent(
-          new CustomEvent('balanceUpdated', { detail: { balance: nextBalance } })
-        );
+      const snapshot = await refreshAndBroadcastWalletBalance();
+      if (snapshot) {
+        setBalance(snapshot.balance);
+        if (snapshot.minutes !== undefined) setMinutes(snapshot.minutes);
+        if (snapshot.escrow !== undefined) setEscrow(snapshot.escrow);
       }
     } catch (err) {
       console.error('Failed to refresh wallet balance after top-up:', err);

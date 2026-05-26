@@ -172,24 +172,25 @@ const ApprovalPublishing = () => {
   const [showBalanceWarning, setShowBalanceWarning] = useState(true);
   const [showDepositModal, setShowDepositModal] = useState(false);
 
-  const handleWalletTopUpSuccess = () => {
-    fetchBalance();
-    window.dispatchEvent(new CustomEvent('refreshBalance'));
+  const handleWalletTopUpSuccess = async () => {
+    const { refreshAndBroadcastWalletBalance } = await import('../lib/walletBalanceSync');
+    const snapshot = await refreshAndBroadcastWalletBalance();
+    if (snapshot) {
+      setBalance(snapshot.balance);
+      if (snapshot.balance > 0) {
+        setShowBalanceWarning(false);
+      }
+    } else {
+      await fetchBalance();
+    }
   };
 
   const fetchBalance = async () => {
     try {
-      const companyId = Cookies.get('companyId');
-      if (!companyId) return;
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL || 'http://localhost:3003/api';
-      console.log('🔍 FRONTEND - Checking balance on page load:', companyId);
-      const res = await fetch(`${apiBaseUrl}/escrow/wallet/${companyId}`);
-      if (res.ok) {
-        const result = await res.json();
-        if (result.success && result.data) {
-          const fetchedBalance = result.data.balance ?? 0;
-          setBalance(fetchedBalance);
-        }
+      const { fetchCompanyWalletSnapshot } = await import('../lib/walletBalanceSync');
+      const snapshot = await fetchCompanyWalletSnapshot();
+      if (snapshot) {
+        setBalance(snapshot.balance);
       }
     } catch (err) {
       console.error('Error fetching balance:', err);
@@ -537,18 +538,10 @@ const ApprovalPublishing = () => {
 
   const checkCompanyBalance = async (): Promise<boolean> => {
     try {
-      const companyId = Cookies.get('companyId');
-      if (!companyId) return false;
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL || 'http://localhost:3003/api';
-      console.log('🔍 FRONTEND - Checking balance for company:', companyId);
-      const res = await fetch(`${apiBaseUrl}/escrow/wallet/${companyId}`);
-      if (res.ok) {
-        const result = await res.json();
-        console.log('🔍 FRONTEND - Balance check result:', result);
-        if (result.success && result.data) {
-          const balance = result.data.balance ?? 0;
-          return balance > 0;
-        }
+      const { fetchCompanyWalletSnapshot } = await import('../lib/walletBalanceSync');
+      const snapshot = await fetchCompanyWalletSnapshot();
+      if (snapshot) {
+        return snapshot.balance > 0;
       }
       return true; // Fallback in case of server failure
     } catch (err) {
@@ -2699,9 +2692,11 @@ const ApprovalPublishing = () => {
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <h4 className="text-base font-black text-amber-900 uppercase tracking-tight">Attention : Solde insuffisant (0 €)</h4>
+              <h4 className="text-base font-black text-amber-900 uppercase tracking-tight">
+                Attention : Solde insuffisant ({balance.toLocaleString('fr-FR')} €)
+              </h4>
               <p className="text-sm font-medium text-amber-700 mt-1 leading-relaxed max-w-3xl">
-                Votre solde actuel est de <strong>0 €</strong>. Vous devez alimenter votre compte afin de pouvoir activer ou approuver des gigs. Sans cela, vos reps ne pourront pas commencer à travailler.
+                Votre solde actuel est de <strong>{balance.toLocaleString('fr-FR')} €</strong>. Vous devez alimenter votre compte afin de pouvoir activer ou approuver des gigs. Sans cela, vos reps ne pourront pas commencer à travailler.
               </p>
               <div className="mt-4">
                 <button

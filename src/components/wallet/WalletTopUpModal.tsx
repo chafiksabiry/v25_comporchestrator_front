@@ -9,6 +9,7 @@ import {
   runPaypalCheckoutFlow,
   runStripeCheckoutFlow,
 } from '../../lib/paypalCheckout';
+import { refreshAndBroadcastWalletBalance } from '../../lib/walletBalanceSync';
 
 interface WalletTopUpModalProps {
   open: boolean;
@@ -103,6 +104,11 @@ const WalletTopUpModal: React.FC<WalletTopUpModalProps> = ({
       } else {
         await runStripeCheckoutFlow(resolvedApiBase, initBody);
       }
+
+      // Always refresh the navbar + any open panels (Approval & Publishing,
+      // Operations wallet, etc.) — parent onSuccess alone is not enough when
+      // it only updates local state.
+      await refreshAndBroadcastWalletBalance(companyId);
 
       toast.success(`Dépôt de ${parsed.toLocaleString('fr-FR')} € validé !`);
       onSuccess?.(parsed);
