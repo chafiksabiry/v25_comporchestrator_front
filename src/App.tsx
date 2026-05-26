@@ -623,24 +623,12 @@ function AppContent() {
           <header className={`bg-black h-16 flex items-center shrink-0 px-5 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-6">
-                {/* "Back to onboarding" shortcut.
-                    Hidden while the user is inside the dashboard shell —
-                    they already have the full sidebar to navigate between
-                    Script Generator, Knowledge Base, etc. The button only
-                    makes sense from the orchestrator's standalone step
-                    pages where the rep is otherwise stranded with no
-                    return path. */}
-                {globalBackConfig && activeProject !== 'dashboard' && (
-                  <button
-                    onClick={globalBackConfig.action}
-                    className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-gradient-harx/10 border border-harx-500/20 text-harx-600 hover:bg-gradient-harx/20 transition-all duration-300 group shadow-sm shadow-harx-500/5 animate-in slide-in-from-left-4 fade-in"
-                  >
-                    <div className="p-1.5 rounded-lg bg-white shadow-sm transition-transform duration-300 group-hover:-translate-x-1">
-                      <ChevronRight className="h-4 w-4 rotate-180" />
-                    </div>
-                    <span className="text-sm font-black uppercase tracking-widest">{globalBackConfig.label}</span>
-                  </button>
-                )}
+                {/* The legacy "Back to onboarding" pill that used to live here
+                    has been moved out of the navbar. We now show a floating
+                    "Next step · Back to onboarding" button at the bottom-right
+                    of every orchestrator step page — see the
+                    <NextStepFloatingButton /> right above the closing tags of
+                    this component. */}
               </div>
 
               {/* Credits, Balance, and Upgrade Widgets */}
@@ -825,6 +813,41 @@ function AppContent() {
         companyId={Cookies.get('companyId')}
         onSuccess={refreshWalletBalance}
       />
+
+      {/* Floating "Next step · Back to onboarding" CTA.
+          Shown only when:
+            • the user is inside the orchestrator (not the dashboard shell),
+            • a step has registered its back action via setGlobalBack,
+            • the active tab is not the onboarding list itself.
+          Every orchestrator step (Telephony, KB, Script, Upload, Approval,
+          Match HARX REPS, …) already dispatches setGlobalBack with the
+          proper action, so this single button replaces the per-page
+          navbar pill we used to render. */}
+      {globalBackConfig &&
+        activeProject !== 'dashboard' &&
+        activeTab !== 'company-onboarding' &&
+        !isZohoCallback &&
+        !isZohoAuth && (
+          <button
+            type="button"
+            onClick={globalBackConfig.action}
+            className="fixed bottom-6 right-6 z-[9999] group flex items-center gap-3 rounded-2xl bg-gradient-harx px-5 py-3 text-white shadow-2xl shadow-harx-500/30 ring-1 ring-white/20 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-harx-500/50 active:scale-95 animate-in slide-in-from-bottom-4 fade-in"
+            aria-label={t('companyOnboarding.ui.nextStepHint')}
+            title={t('companyOnboarding.ui.nextStepHint')}
+          >
+            <div className="flex flex-col items-start leading-tight">
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/70">
+                {t('companyOnboarding.ui.nextStep')}
+              </span>
+              <span className="text-sm font-black uppercase tracking-wider">
+                {globalBackConfig.label}
+              </span>
+            </div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 shadow-inner transition-transform duration-300 group-hover:translate-x-1">
+              <ChevronRight className="h-5 w-5" />
+            </div>
+          </button>
+        )}
 
     </StripeContainer>
   );
