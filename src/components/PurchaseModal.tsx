@@ -226,8 +226,17 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   };
 
   const isClosable = purchaseStatus !== 'purchasing';
-  const displayNumber = purchaseResponse?.phoneNumber || selectedNumber || '';
-  const providerLabel = (purchaseResponse?.provider || provider || 'twilio').toUpperCase();
+  // `purchaseResponse` is only meaningful once a purchase has actually
+  // succeeded. During the `confirming` / `requirements` / `purchasing`
+  // stages we must always show the freshly-selected number — otherwise a
+  // leftover response from a previous activation (e.g. the trial number)
+  // would shadow the new selection until the next refresh.
+  const isPostPurchase = purchaseStatus === 'success' || purchaseStatus === 'error';
+  const displayNumber =
+    (isPostPurchase && purchaseResponse?.phoneNumber) || selectedNumber || '';
+  const providerLabel = (
+    (isPostPurchase && purchaseResponse?.provider) || provider || 'twilio'
+  ).toUpperCase();
 
   const modalNode = (
     <div

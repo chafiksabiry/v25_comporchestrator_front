@@ -1276,6 +1276,15 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                         <button
                           disabled={isDisabled}
                           onClick={() => {
+                            // Always start a fresh purchase flow: previous
+                            // successful trial/activation may have left a
+                            // stale `purchaseResponse` that would otherwise
+                            // be displayed inside the modal (see PurchaseModal
+                            // `displayNumber` fallback). Clearing both the
+                            // response and any prior error ensures the modal
+                            // shows the freshly clicked number.
+                            setPurchaseResponse(null);
+                            setPurchaseError(null);
                             setSelectedNumber(phoneNumber);
                             setPurchaseStatus('confirming');
                             setPurchaseType(number.type);
