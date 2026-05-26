@@ -1131,7 +1131,7 @@ export default function OperationsDashboard() {
       ) : tab === 'team' ? (
         <TeamView reps={repsMonth} />
       ) : tab === 'wallet' ? (
-        <WalletView />
+        <WalletView selectedGigId={selectedGigId} />
       ) : tab === 'calls' ? (
         // ── "Appels" tab keeps the legacy call-centric layout. ────────────
         <CallsView
@@ -2926,7 +2926,7 @@ function formatDurationFromCallSeconds(seconds?: number): string {
   return label === '0 min' ? '—' : label;
 }
 
-function WalletView() {
+function WalletView({ selectedGigId }: { selectedGigId: string }) {
   const { t, i18n } = useTranslation();
 
   const [walletEntries, setWalletEntries] = useState<WalletEntryListItem[]>([]);
@@ -2971,12 +2971,17 @@ function WalletView() {
 
     let cancelled = false;
 
+    const gigQs =
+      selectedGigId && selectedGigId !== 'all'
+        ? `?gigId=${encodeURIComponent(selectedGigId)}`
+        : '';
+
     const fetchAll = async () => {
       setLoading(true);
       try {
         const [walletRes, repTxRes, balRes, escrowRes] = await Promise.all([
           fetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
-          fetch(`${walletApi}/escrow/company/rep-transactions/${companyId}`).catch(() => null),
+          fetch(`${walletApi}/escrow/company/rep-transactions/${companyId}${gigQs}`).catch(() => null),
           fetch(`${walletApi}/wallet-company/${companyId}`).catch(() => null),
           fetch(`${walletApi}/escrow/wallet/${companyId}`).catch(() => null),
         ]);
@@ -3038,7 +3043,7 @@ function WalletView() {
       cancelled = true;
       window.removeEventListener('balanceUpdated', handleBalanceUpdated);
     };
-  }, []);
+  }, [selectedGigId]);
 
   const formatEur = (n: number) => {
     const sign = n > 0 ? '+' : n < 0 ? '−' : '';
