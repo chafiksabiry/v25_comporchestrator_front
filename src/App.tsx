@@ -653,7 +653,11 @@ function AppContent() {
                   </div>
                 )}
 
-                {showActivationNavbarWidgets && (
+                {/* Minutes widget — hidden inside the orchestrator: minutes
+                    only become relevant once gigs are activated, and the
+                    onboarding flow already exposes the wallet for any
+                    pre-flight top-up. */}
+                {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
                   <div
                     onClick={handleMinutesClick}
                     className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-br from-blue-500/15 via-blue-500/5 to-transparent border border-blue-500/25 text-xs font-bold text-blue-100/80 shadow-[0_0_18px_-6px_rgba(59,130,246,0.4)] hover:border-blue-400/50 hover:from-blue-500/25 hover:text-white hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group backdrop-blur-sm shrink-0"
@@ -689,8 +693,11 @@ function AppContent() {
                   </>
                 )}
 
-                {/* Upgrade Button — hidden in orchestrator before the Subscription Plan step */}
-                {showActivationNavbarWidgets && (
+                {/* Upgrade Button — only shown outside the orchestrator. The
+                    Subscription Plan is itself one of the orchestrator steps,
+                    so surfacing the Upgrade CTA while the user is still
+                    inside that flow would be redundant. */}
+                {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
                   <button
                     onClick={() => {
                       setActiveProject('dashboard');
