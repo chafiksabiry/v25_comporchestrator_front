@@ -830,7 +830,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       
       
 
-      const leadsForAPI = parsedLeads.map((lead: any) => ({
+      const mappedLeads = parsedLeads.map((lead: any) => ({
         userId: lead.userId?.$oid || currentUserId,
         companyId: lead.companyId?.$oid || currentCompanyId,
         gigId: lead.gigId?.$oid || currentGigId,
@@ -856,6 +856,26 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         Date_of_Birth: lead.Date_of_Birth || ''
       }));
 
+      // Dédoublonnage côté client avant l'envoi : on ne renvoie pas deux fois
+      // le même email/téléphone (le backend filtre aussi mais on évite la
+      // bande passante inutile et on évite que le toast annonce un nombre
+      // de doublons gonflé par notre propre payload).
+      const seenEmails = new Set<string>();
+      const seenPhones = new Set<string>();
+      const leadsForAPI = mappedLeads.filter((lead) => {
+        const email = (lead.Email_1 || '').trim().toLowerCase();
+        const phone = (lead.Phone || '').trim().toLowerCase();
+        const emailKey = email && email !== 'no-email@placeholder.com' ? `e:${email}` : null;
+        const phoneKey = phone && phone !== 'no-phone@placeholder.com' ? `p:${phone}` : null;
+        if ((emailKey && seenEmails.has(emailKey)) || (phoneKey && seenPhones.has(phoneKey))) {
+          return false;
+        }
+        if (emailKey) seenEmails.add(emailKey);
+        if (phoneKey) seenPhones.add(phoneKey);
+        return true;
+      });
+      const clientSkipped = mappedLeads.length - leadsForAPI.length;
+
       // Sauvegarde en masse via le nouvel endpoint
       if (!processingRef.current) {
         throw new Error('Processing cancelled by user');
@@ -878,14 +898,23 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       setUploadProgress(90);
 
-      if (response.status === 201 || response.status === 207) {
-        const responseData = response.data as { count?: number; data?: any[] };
+      if (response.status === 200 || response.status === 201 || response.status === 207) {
+        const responseData = response.data as { count?: number; data?: any[]; skipped?: number };
         const savedCount = responseData.count || (responseData.data ? responseData.data.length : 0);
+        const serverSkipped = responseData.skipped || 0;
+        const totalSkipped = clientSkipped + serverSkipped;
 
-        // Tous les leads ont été sauvegardés (ou tentative faite)
         setUploadSuccess(true);
         setUploadProgress(100);
-        toast.success(t('uploadContacts.success.savedContacts', { count: savedCount }));
+        if (savedCount > 0) {
+          toast.success(
+            totalSkipped > 0
+              ? `${savedCount} contact(s) enregistré(s), ${totalSkipped} doublon(s) ignoré(s)`
+              : t('uploadContacts.success.savedContacts', { count: savedCount })
+          );
+        } else if (totalSkipped > 0) {
+          toast(`Aucun nouveau contact : ${totalSkipped} doublon(s) ignoré(s)`, { icon: 'ℹ️' });
+        }
 
         // Persist the per-gig setupSteps.uploadContacts flag so the
         // dashboard checklist reflects progress immediately.
