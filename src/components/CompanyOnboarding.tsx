@@ -124,13 +124,6 @@ const phases: Phase[] = [
         component: UploadContacts,
       },
       {
-        id: 6,
-        title: "Call Script",
-        description: "Define script and conversation flows",
-        status: "pending",
-        component: CallScript,
-      },
-      {
         id: 7,
         title: "Reporting Setup",
         description: "Configure KPIs and reporting preferences",
@@ -159,6 +152,13 @@ const phases: Phase[] = [
         description: "Training, validation, and contract acceptance",
         status: "pending",
         component: RepOnboarding,
+      },
+      {
+        id: 6,
+        title: "Call Script",
+        description: "Define script and conversation flows",
+        status: "pending",
+        component: CallScript,
       },
       {
         id: 10,
