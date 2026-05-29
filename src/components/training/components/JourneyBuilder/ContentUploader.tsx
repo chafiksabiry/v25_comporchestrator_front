@@ -715,6 +715,35 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
   const [chatWorkflowStatus, setChatWorkflowStatus] = useState<ChatWorkflowStatus | null>(null);
+  /** Mirrors `chatSessionModulePlanRef` in React state so the status sidebar re-renders without waiting for getChatSession. */
+  const [chatSessionModulePlan, setChatSessionModulePlan] = useState<Array<Record<string, unknown>>>([]);
+  const syncChatSessionModulePlan = useCallback((plan: Array<Record<string, unknown>>) => {
+    chatSessionModulePlanRef.current = plan;
+    setChatSessionModulePlan(plan);
+  }, []);
+  /** Plan visible in the last completed assistant bubble (instant sidebar; no extra API round-trip). */
+  const hasAssistantPlanInChat = useMemo(() => {
+    for (let i = chatMessages.length - 1; i >= 0; i--) {
+      const msg = chatMessages[i];
+      if (msg.role !== 'assistant' || msg.isStreaming) continue;
+      const text = String(msg.text || '')
+        .replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '')
+        .replace(/<harx-training-status>[\s\S]*?<\/harx-training-status>/gi, '')
+        .trim();
+      if (!text) continue;
+      const moduleHits = (text.match(/\bmodule\s*\d+/gi) || []).length;
+      if (moduleHits >= 2) return true;
+      if (
+        moduleHits >= 1 &&
+        /(plan\s+de\s+formation|training\s+plan|🎯\s*objectifs|\bobjectifs\b|sujets?\s*cl[eé]s|key\s*topics)/i.test(
+          text
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }, [chatMessages]);
   const activeChatAbortRef = useRef<AbortController | null>(null);
   /** REP empty-chat: after first auto-open, do not force the 4-step card again on hide (Skip / dismiss). Reset on new conversation or leaving REP. */
   const repPersonalizationBootstrapRef = useRef(false);
@@ -2669,7 +2698,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
     // plan was already saved. Hide it until then so an empty "Validate plan"
     // button never appears before the user has generated anything.
     const hasGeneratedPlanModules =
-      (Array.isArray(chatSessionModulePlanRef.current) && chatSessionModulePlanRef.current.length >= 1) ||
+      chatSessionModulePlan.length >= 1 ||
+      hasAssistantPlanInChat ||
       (Array.isArray((journey as any)?.modulePlan) && (journey as any).modulePlan.length >= 1) ||
       (Array.isArray(chatWorkflowStatus?.modules) && (chatWorkflowStatus?.modules?.length ?? 0) >= 1) ||
       (Array.isArray(chatWorkflowStatusRef.current?.modules) &&
@@ -2822,7 +2852,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         chatConfirmedJourneyIdRef.current = null;
       }
       // Hard reset chat + generated artifacts so next generations are based only on the new chat.
-      chatSessionModulePlanRef.current = [];
+      syncChatSessionModulePlan([]);
       chatWorkflowStatusRef.current = null;
       setChatWorkflowStatus(null);
       setIsPlanSavedForChat(false);
@@ -2898,8 +2928,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (hasSavedPlanAck) setIsPlanSavedForChat(true);
         setActiveChatSessionId(session._id || sessionId);
         const sidPlan = (session as { modulePlan?: unknown[] })?.modulePlan;
-        chatSessionModulePlanRef.current =
-          Array.isArray(sidPlan) && sidPlan.length > 0 ? (sidPlan as Array<Record<string, unknown>>) : [];
+        syncChatSessionModulePlan(
+          Array.isArray(sidPlan) && sidPlan.length > 0 ? (sidPlan as Array<Record<string, unknown>>) : []
+        );
         const sessionWorkflow = (session as { workflowStatus?: ChatWorkflowStatus })?.workflowStatus || null;
         chatWorkflowStatusRef.current = sessionWorkflow;
         setChatWorkflowStatus(sessionWorkflow);
@@ -3879,13 +3910,43 @@ export default function ContentUploader(props: ContentUploaderProps) {
           }
           return next;
         });
+        // Sync plan + sidebar immediately from streamed text (do not wait for getChatSession).
+        const planTextForSync = String(finalDisplayText || rawAssistant).trim();
+        if (planTextForSync) {
+          const parsedFromStream = parseTrainingPlan(planTextForSync);
+          if (parsedFromStream.modules.length >= 1) {
+            const asPlan = parsedFromStream.modules.map((m, idx) => {
+              const durMatch = String(m.duration || '').match(/(\d+)/);
+              return {
+                title: m.title || `Module ${idx + 1}`,
+                objectifs: Array.isArray(m.sections?.objectives) ? m.sections.objectives : [],
+                keyTopics: Array.isArray(m.sections?.keyTopics) ? m.sections.keyTopics : [],
+                ...(durMatch ? { durationMinutes: Number(durMatch[1]) } : {}),
+              };
+            });
+            syncChatSessionModulePlan(asPlan);
+            const currentWf = chatWorkflowStatusRef.current;
+            if (!currentWf || currentWf.plan === 'pending' || !Array.isArray(currentWf.modules) || currentWf.modules.length === 0) {
+              const optimisticWorkflow: ChatWorkflowStatus = {
+                plan: isPlanSavedForChat ? 'completed' : 'in_progress',
+                modules: asPlan.map((m, idx) => ({
+                  index: idx,
+                  title: String((m as { title?: string }).title || `Module ${idx + 1}`),
+                  status: 'pending' as const,
+                })),
+              };
+              chatWorkflowStatusRef.current = optimisticWorkflow;
+              setChatWorkflowStatus(optimisticWorkflow);
+            }
+          }
+        }
         const sessionIdForRefresh = streamResult.sessionId || activeChatSessionId;
         if (sessionIdForRefresh) {
           try {
             const refreshed = await AIService.getChatSession(sessionIdForRefresh);
             const mp = (refreshed as { modulePlan?: unknown[] })?.modulePlan;
-            if (Array.isArray(mp) && mp.length >= 2) {
-              chatSessionModulePlanRef.current = mp as Array<Record<string, unknown>>;
+            if (Array.isArray(mp) && mp.length >= 1) {
+              syncChatSessionModulePlan(mp as Array<Record<string, unknown>>);
             }
             const refreshedWorkflow = (refreshed as { workflowStatus?: ChatWorkflowStatus })?.workflowStatus || null;
             chatWorkflowStatusRef.current = refreshedWorkflow;
@@ -4998,11 +5059,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const renderChatWorkflowSidebar = (): React.ReactNode | null => {
       const status = chatWorkflowStatus || chatWorkflowStatusRef.current;
       const fallbackPlanRaw =
-        chatSessionModulePlanRef.current.length > 0
-          ? chatSessionModulePlanRef.current
-          : Array.isArray((journey as any)?.modulePlan)
-            ? ((journey as any).modulePlan as Array<Record<string, any>>)
-            : [];
+        chatSessionModulePlan.length > 0
+          ? chatSessionModulePlan
+          : chatSessionModulePlanRef.current.length > 0
+            ? chatSessionModulePlanRef.current
+            : Array.isArray((journey as any)?.modulePlan)
+              ? ((journey as any).modulePlan as Array<Record<string, any>>)
+              : [];
       const fallbackModules = fallbackPlanRaw
         .map((m, idx) => ({
           index: idx,
@@ -5017,7 +5080,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       // actually exists, in any layout (REP or full Journey Builder).
       const planAlreadyValidated =
         isPlanSavedForChat || status?.plan === 'completed';
-      if (!planAlreadyValidated && resolvedModules.length === 0) return null;
+      if (!planAlreadyValidated && resolvedModules.length === 0 && !hasAssistantPlanInChat) return null;
       const planStatus = String(
         isPlanSavedForChat || status?.plan === 'completed'
           ? 'completed'
