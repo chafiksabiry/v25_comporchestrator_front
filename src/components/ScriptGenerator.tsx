@@ -9,6 +9,10 @@ import { markGigStepDone } from '../services/gigSetupSync';
 import { useTranslation } from 'react-i18next';
 import { InteractiveScriptCockpit, InteractiveStage } from './script-generator/InteractiveScriptCockpit';
 import { JourneyService } from './training/infrastructure/services/JourneyService';
+import {
+  goToCompanyOnboardingTab,
+  useOnboardingGlobalBack,
+} from '../hooks/useOnboardingGlobalBack';
 
 interface Gig {
   _id: string;
@@ -193,6 +197,7 @@ const ScriptGenerator: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isInDashboard = location.pathname.startsWith('/dashboard');
+  useOnboardingGlobalBack(isInDashboard ? undefined : goToCompanyOnboardingTab);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState('');

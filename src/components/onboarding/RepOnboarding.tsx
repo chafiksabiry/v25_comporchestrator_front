@@ -33,11 +33,16 @@ import { OnboardingService } from '../training/infrastructure/services/Onboardin
 import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../training/infrastructure/services/AIService';
 import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
+import {
+  goToCompanyOnboardingTab,
+  useOnboardingGlobalBack,
+} from '../../hooks/useOnboardingGlobalBack';
 
 interface RepOnboardingProps { }
 
 const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const { t } = useTranslation();
+  useOnboardingGlobalBack(goToCompanyOnboardingTab);
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
