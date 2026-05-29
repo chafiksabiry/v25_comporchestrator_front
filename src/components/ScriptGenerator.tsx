@@ -402,7 +402,9 @@ const ScriptGenerator: React.FC = () => {
     try {
       const probeRes = await fetch(onboardingUrl);
       if (probeRes.ok) {
-        const probe = (await probeRes.json()) as { phases?: Array<{ id: number; steps?: Array<{ id: number }> }> } };
+        const probe = (await probeRes.json()) as {
+          phases?: Array<{ id: number; steps?: Array<{ id: number }> }>;
+        };
         const hostingPhase = (probe.phases || []).find(
           (p) => Array.isArray(p.steps) && p.steps.some((s) => s.id === stepId)
         );
