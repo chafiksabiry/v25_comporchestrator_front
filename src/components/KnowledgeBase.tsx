@@ -107,7 +107,7 @@ const KnowledgeBase: React.FC = () => {
   const { t } = useTranslation();
   useOnboardingGlobalBack(goToCompanyOnboardingTab);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadGigId, setUploadGigId] = useState<string>('all');
+  const [uploadGigId, setUploadGigId] = useState<string>('');
   const [isUploadGigDropdownOpen, setIsUploadGigDropdownOpen] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadTags, setUploadTags] = useState<string>('');
@@ -131,7 +131,7 @@ const KnowledgeBase: React.FC = () => {
   const [translatedAnalysis, setTranslatedAnalysis] = useState<{ [key: string]: DocumentAnalysis }>({});
   const [translatingDocument, setTranslatingDocument] = useState<string | null>(null);
   const [gigs, setGigs] = useState<any[]>([]);
-  const [selectedGigId, setSelectedGigId] = useState<string>('all');
+  const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isGigDropdownOpen, setIsGigDropdownOpen] = useState(false);
   const [transcriptionShowCount, setTranscriptionShowCount] = useState<{ [key: string]: number }>({});
   const TRANSCRIPTION_PAGE_SIZE = 5;
@@ -379,13 +379,32 @@ const KnowledgeBase: React.FC = () => {
     fetchCallRecords();
   }, [selectedGigId]); // Refetch when gig filter changes
 
-  // Fetch gigs on mount
+  // Fetch gigs on mount. Default selection = most recently created gig.
   useEffect(() => {
     const fetchGigs = async () => {
       try {
         const response = await OnboardingService.fetchGigsByCompany();
         if (response && response.data) {
-          setGigs(response.data);
+          const list: any[] = response.data;
+          // Trier par date de création décroissante (dernier créé d'abord).
+          // On utilise createdAt si présent, sinon updatedAt, sinon l'ObjectId
+          // (qui est strictement croissant dans le temps pour Mongo).
+          const sorted = [...list].sort((a, b) => {
+            const ta = new Date(a.createdAt || a.updatedAt || 0).getTime();
+            const tb = new Date(b.createdAt || b.updatedAt || 0).getTime();
+            if (ta !== tb) return tb - ta;
+            const ia = String(a._id || a.id || '');
+            const ib = String(b._id || b.id || '');
+            return ib.localeCompare(ia);
+          });
+          setGigs(sorted);
+
+          const latest = sorted[0];
+          if (latest) {
+            const latestId = latest._id || latest.id;
+            setSelectedGigId((prev) => prev || latestId);
+            setUploadGigId((prev) => prev || latestId);
+          }
         }
       } catch (error) {
         console.error('Error fetching gigs:', error);
@@ -469,7 +488,11 @@ const KnowledgeBase: React.FC = () => {
 
       setUploadFiles([]);
       setUploadTags('');
-      setUploadGigId('all');
+      {
+        const latestGig = gigs[0];
+        const latestId = latestGig?._id || latestGig?.id || '';
+        setUploadGigId(latestId);
+      }
       setShowUploadModal(false);
     } catch (error: any) {
       console.error('Error in handleSubmit:', error);
@@ -666,7 +689,9 @@ const KnowledgeBase: React.FC = () => {
       setShowUploadModal(false);
       setUploadFiles([]);
       setUploadTags('');
-      setUploadGigId('all');
+      const latestGig = gigs[0];
+      const latestId = latestGig?._id || latestGig?.id || '';
+      setUploadGigId(latestId);
     }
   };
 
@@ -830,8 +855,8 @@ const KnowledgeBase: React.FC = () => {
     const allItems = [...filteredDocumentItems, ...callItems, ...videoItems];
     
     // Filter by selected Gig if not 'all'
-    const filteredByGig = selectedGigId === 'all' 
-      ? allItems 
+    const filteredByGig = !selectedGigId
+      ? allItems
       : allItems.filter(item => item.gigId === selectedGigId);
 
     return filteredByGig.sort((a, b) =>
@@ -1374,9 +1399,9 @@ const KnowledgeBase: React.FC = () => {
                     <div className="text-left">
                       <p className="text-[9px] font-black text-harx-400 uppercase tracking-widest leading-none mb-1">{t('knowledgeBase.uploadModal.targetGig')}</p>
                       <p className="text-xs font-black text-gray-900 uppercase tracking-tight">
-                        {uploadGigId === 'all' 
-                          ? t('knowledgeBase.uploadModal.generalResource') 
-                          : gigs.find(g => (g._id || g.id) === uploadGigId)?.title || 'Selected Gig'}
+                        {uploadGigId
+                          ? gigs.find(g => (g._id || g.id) === uploadGigId)?.title || 'Selected Gig'
+                          : t('knowledgeBase.uploadModal.targetGig')}
                       </p>
                     </div>
                   </div>
@@ -1388,24 +1413,6 @@ const KnowledgeBase: React.FC = () => {
                     <div className="fixed inset-0 z-10" onClick={() => setIsUploadGigDropdownOpen(false)} />
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-white/20 rounded-3xl shadow-[0_25px_70px_-15px_rgba(0,0,0,0.2)] p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
                       <div className="max-h-60 overflow-y-auto custom-scrollbar px-1 space-y-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setUploadGigId('all');
-                            setIsUploadGigDropdownOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between p-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                            uploadGigId === 'all' 
-                              ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' 
-                              : 'text-gray-600 hover:bg-harx-50 hover:text-harx-600'
-                          }`}
-                        >
-                          <span>{t('knowledgeBase.uploadModal.generalResource')}</span>
-                          {uploadGigId === 'all' && <CheckCircle size={14} className="text-white" />}
-                        </button>
-                        
-                        <div className="h-px bg-harx-100/30 mx-2 my-1" />
-
                         {gigs.map(gig => {
                           const id = gig._id || gig.id;
                           const isSelected = uploadGigId === id;
@@ -1512,9 +1519,9 @@ const KnowledgeBase: React.FC = () => {
                     <Sparkles size={18} className="text-harx-500" />
                   </div>
                   <span className="text-xs font-black text-gray-900 uppercase tracking-widest pl-1 pr-2 max-w-[150px] md:max-w-[250px] truncate">
-                    {selectedGigId === 'all' 
-                      ? t('knowledgeBase.selectGig') 
-                      : `${t('knowledgeBase.gigPrefix')} ${gigs.find(g => (g._id || g.id) === selectedGigId)?.title || 'Selected Gig'}`}
+                    {selectedGigId
+                      ? `${t('knowledgeBase.gigPrefix')} ${gigs.find(g => (g._id || g.id) === selectedGigId)?.title || 'Selected Gig'}`
+                      : t('knowledgeBase.selectGig')}
                   </span>
                   <ChevronRight size={16} className={`text-gray-400 mr-2 transition-transform duration-300 ${isGigDropdownOpen ? 'rotate-90' : ''}`} />
                 </button>
@@ -1527,30 +1534,6 @@ const KnowledgeBase: React.FC = () => {
                     />
                     <div className="absolute top-full left-0 mt-2 w-max min-w-[280px] max-w-[400px] bg-white/90 backdrop-blur-2xl border border-white/40 rounded-[2rem] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.15)] p-2 z-50 animate-in fade-in slide-in-from-top-2 zoom-in duration-300 origin-top-left">
                       <div className="max-h-80 overflow-y-auto custom-scrollbar px-1">
-                        <button
-                          onClick={() => {
-                            setSelectedGigId('all');
-                            setIsGigDropdownOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] transition-all mb-1 ${
-                            selectedGigId === 'all' 
-                              ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' 
-                              : 'text-gray-600 hover:bg-harx-50 hover:text-harx-600'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`p-1.5 rounded-lg transition-colors ${selectedGigId === 'all' ? 'bg-white/20' : 'bg-harx-50 group-hover:bg-harx-100'}`}>
-                              <Sparkles size={14} className={selectedGigId === 'all' ? 'text-white' : 'text-harx-500'} />
-                            </div>
-                            <span>{t('knowledgeBase.allGigs')}</span>
-                          </div>
-                          {selectedGigId === 'all' && <CheckCircle size={14} className="text-white animate-in zoom-in" />}
-                        </button>
-
-                        <div className="px-3 py-1.5">
-                          <div className="h-px bg-harx-100/30 w-full" />
-                        </div>
-
                         {gigs.map(gig => {
                           const id = gig._id || gig.id;
                           const isSelected = selectedGigId === id;
