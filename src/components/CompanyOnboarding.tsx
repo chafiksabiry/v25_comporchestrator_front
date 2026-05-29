@@ -33,6 +33,7 @@ import KnowledgeBase from "./onboarding/KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
 import PrompAI from "./gigsaicreation/components/PrompAI";
+import { OnboardingBackButton } from "./onboarding/searchCompanyWizard/OnboardingBackButton";
 import { useTranslation } from "react-i18next";
 import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
 import OrchestratorGuideModal from "./onboarding/OrchestratorGuideModal";
@@ -1545,12 +1546,28 @@ const CompanyOnboarding = () => {
     }
   }
 
+  /** In-content back CTA for every focused step except Create Gigs AI (has its own) and step 1 profile hero. */
+  const showInContentBackCta =
+    !showGigCreation &&
+    (showGigDetails ||
+      showTelephonySetup ||
+      showKnowledgeBase ||
+      showUploadContacts ||
+      (activeStep !== null && activeStep !== 1));
+
   if (activeComponent) {
     return (
       <>
         {orchestratorGuideLayer}
         {stepGuideLayer}
-        <div className="animate-fade-in">{activeComponent}</div>
+        <div className="animate-fade-in">
+          {showInContentBackCta && (
+            <div className="px-4 pt-4 pb-2 sm:px-6 sm:pt-6">
+              <OnboardingBackButton variant="cta" onClick={handleBackToOnboarding} />
+            </div>
+          )}
+          {activeComponent}
+        </div>
       </>
     );
   }

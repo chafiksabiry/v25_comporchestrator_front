@@ -162,7 +162,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     return (
       <div className="w-full p-6">
         {onBack && (
-          <OnboardingBackButton onClick={onBack} className="mb-4" />
+          <OnboardingBackButton variant="cta" onClick={onBack} className="mb-4" />
         )}
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           {t(
@@ -192,7 +192,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     return (
       <div className="w-full p-6">
         {onBack && (
-          <OnboardingBackButton onClick={onBack} className="mb-4" />
+          <OnboardingBackButton variant="cta" onClick={onBack} className="mb-4" />
         )}
       <ManualCompanyForm
         onClose={() => setManualMode(false)}
@@ -212,7 +212,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   return (
     <div className="mx-auto max-w-5xl p-6 animate-fade-in relative overflow-hidden min-h-[600px] flex flex-col justify-center">
       {onBack && (
-        <OnboardingBackButton onClick={onBack} className="relative z-10 mb-6" />
+        <OnboardingBackButton variant="cta" onClick={onBack} className="relative z-10 mb-6" />
       )}
       {/* Background Animated Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">

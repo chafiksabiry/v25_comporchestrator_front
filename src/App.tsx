@@ -43,6 +43,7 @@ import Subscription from './components/Subscription';
 import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideModal';
 import WalletTopUpModal from './components/wallet/WalletTopUpModal';
 import { refreshAndBroadcastWalletBalance } from './lib/walletBalanceSync';
+import { OnboardingBackButton } from './components/onboarding/searchCompanyWizard/OnboardingBackButton';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import StepGuideModal, { type StepGuideVariant } from './components/onboarding/StepGuideModal';
 import {
@@ -789,6 +790,14 @@ function AppContent() {
               dashboard={<DashboardApp />}
               comporchestrator={
                 <div className="px-4 py-3 h-full pb-32">
+                  {activeTab !== 'company-onboarding' && globalBackConfig && (
+                    <div className="mb-4">
+                      <OnboardingBackButton
+                        variant="cta"
+                        onClick={globalBackConfig.action}
+                      />
+                    </div>
+                  )}
                   {renderContent()}
                 </div>
               }

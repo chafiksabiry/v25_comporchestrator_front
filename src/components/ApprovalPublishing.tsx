@@ -40,6 +40,10 @@ import {
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import WalletTopUpModal from './wallet/WalletTopUpModal';
+import {
+  goToCompanyOnboardingTab,
+  useOnboardingGlobalBack,
+} from '../hooks/useOnboardingGlobalBack';
 
 interface Gig {
   _id: string;
@@ -149,6 +153,7 @@ interface LanguagesResponse {
 }
 const ApprovalPublishing = () => {
   const { t } = useTranslation();
+  useOnboardingGlobalBack(goToCompanyOnboardingTab);
   const [expandedGig, setExpandedGig] = useState<string | null>(null);
   const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
   const [filter, setFilter] = useState('all');
@@ -204,23 +209,6 @@ const ApprovalPublishing = () => {
     fetchActivities();
     fetchIndustries();
     fetchLanguages();
-
-    // Global Navigation Integration
-    window.dispatchEvent(new CustomEvent('setGlobalBack', {
-      detail: {
-        label: 'Back to Onboarding',
-        action: () => {
-          localStorage.setItem('activeTab', 'company-onboarding');
-          window.dispatchEvent(
-            new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
-          );
-        }
-      }
-    }));
-
-    return () => {
-      window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
-    };
   }, []);
 
   // Reflect setupSteps patches from telephony / subscription flows without a full page reload.
