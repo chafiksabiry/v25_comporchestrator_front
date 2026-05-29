@@ -2665,11 +2665,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
   function renderSourcesUploadUI() {
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.length > 0;
+    // Workflow/modules status sidebar is a power-user view; it's noisy in the
+    // REP onboarding layout, so we keep it for the full journey-builder only.
     const showChatModuleSidebar =
-      hasStartedChat ||
-      Boolean(chatWorkflowStatus || chatWorkflowStatusRef.current) ||
-      (Array.isArray(chatSessionModulePlanRef.current) && chatSessionModulePlanRef.current.length >= 2) ||
-      (Array.isArray((journey as any)?.modulePlan) && (journey as any).modulePlan.length >= 2);
+      !rep && (
+        hasStartedChat ||
+        Boolean(chatWorkflowStatus || chatWorkflowStatusRef.current) ||
+        (Array.isArray(chatSessionModulePlanRef.current) && chatSessionModulePlanRef.current.length >= 2) ||
+        (Array.isArray((journey as any)?.modulePlan) && (journey as any).modulePlan.length >= 2)
+      );
     const repSplitLayout = rep && hasStartedChat;
     const shouldShowKbQuestionInChat = false;
     const shouldShowChatThread = !showRepSourcePopup;
@@ -5393,10 +5397,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
               }
             >
               <div
-                className={`relative mb-2 flex w-full shrink-0 ${rep ? 'flex-col gap-2 px-0.5 pt-0.5' : 'justify-end px-3 pt-3'}`}
+                className={`mb-2 flex w-full shrink-0 ${rep ? 'flex-col gap-2 px-0.5 pt-0.5' : 'relative justify-end px-3 pt-3'}`}
               >
-                <div className={`flex w-full max-w-full items-center justify-end gap-2 overflow-x-auto whitespace-nowrap transition-all duration-300 sm:inline-flex sm:w-auto sm:flex-nowrap sm:gap-1.5 ${
-                  rep ? 'rounded-none border-0 bg-transparent p-0 shadow-none' : 'rounded-2xl border border-harx-100/90 bg-white p-1.5 shadow-sm'
+                <div className="relative w-full sm:w-auto sm:self-end">
+                <div className={`flex w-full max-w-full items-center justify-end gap-2 whitespace-nowrap transition-all duration-300 sm:inline-flex sm:w-auto sm:flex-nowrap sm:gap-1.5 ${
+                  rep ? 'rounded-none border-0 bg-transparent p-0 shadow-none' : 'overflow-x-auto rounded-2xl border border-harx-100/90 bg-white p-1.5 shadow-sm'
                 }`}>
                   <select
                     value={activeChatGigId}
@@ -5440,6 +5445,60 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     <Plus className="h-3.5 w-3.5 shrink-0" />
                     {t('training.chat.newConversation', 'New')}
                   </button>
+                </div>
+                {isHistoryOpen && (
+                  <div className="absolute right-0 top-full z-30 mt-1.5 w-[min(320px,calc(100vw-1.5rem))] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                  <div className="mb-2 flex items-center justify-between px-1">
+                    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                      {t('training.chat.history.title', { title: activeChatGigTitle, defaultValue: `History — ${activeChatGigTitle}` })}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void refreshChatHistory()}
+                      className="rounded p-1 text-slate-500 hover:bg-slate-100"
+                      title={t('training.chat.history.refresh', 'Refresh')}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="max-h-[320px] space-y-1 overflow-y-auto">
+                    {isHistoryLoading ? (
+                      <div className="flex items-center gap-2 rounded-md px-2 py-2 text-xs text-slate-600">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        {t('training.chat.history.loading', 'Loading...')}
+                      </div>
+                    ) : !activeChatGigId ? (
+                      <div className="rounded-md px-2 py-2 text-xs text-slate-500">
+                        {t('training.chat.history.selectGig', 'Select a gig to see its conversations.')}
+                      </div>
+                    ) : chatHistorySessions.length === 0 ? (
+                      <div className="rounded-md px-2 py-2 text-xs text-slate-500">
+                        {t('training.chat.history.empty', 'No history found for this gig.')}
+                      </div>
+                    ) : (
+                      chatHistorySessions.map((session) => (
+                        <button
+                          key={session._id}
+                          type="button"
+                          onClick={() => void openHistorySession(session._id)}
+                          className={`w-full rounded-md border px-2 py-2 text-left transition ${
+                            activeChatSessionId === session._id
+                              ? 'border-harx-300 bg-harx-50/70'
+                              : 'border-transparent hover:border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="truncate text-[12px] font-semibold text-slate-900">
+                            {session.title || t('training.chat.history.newConversationTitle', 'New conversation')}
+                          </div>
+                          {session.preview ? (
+                            <div className="mt-0.5 line-clamp-2 text-[11px] text-slate-600">{session.preview}</div>
+                          ) : null}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+                )}
                 </div>
                 {gigSwitchHint ? (
                   <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
@@ -5490,55 +5549,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       {t('training.chat.start', 'Start')}
                     </button>
                   </div>
-                )}
-                {isHistoryOpen && (
-                  <div className="absolute right-0 top-full z-30 mt-1.5 w-full max-w-[320px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                  <div className="mb-2 flex items-center justify-between px-1">
-                    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                      {t('training.chat.history.title', { title: activeChatGigTitle, defaultValue: `History — ${activeChatGigTitle}` })}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => void refreshChatHistory()}
-                      className="rounded p-1 text-slate-500 hover:bg-slate-100"
-                      title={t('training.chat.history.refresh', 'Refresh')}
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  <div className="max-h-[320px] space-y-1 overflow-y-auto">
-                    {isHistoryLoading ? (
-                      <div className="flex items-center gap-2 rounded-md px-2 py-2 text-xs text-slate-600">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        {t('training.chat.history.loading', 'Loading...')}
-                      </div>
-                    ) : chatHistorySessions.length === 0 ? (
-                      <div className="rounded-md px-2 py-2 text-xs text-slate-500">
-                        {t('training.chat.history.empty', 'No history found for this gig.')}
-                      </div>
-                    ) : (
-                      chatHistorySessions.map((session) => (
-                        <button
-                          key={session._id}
-                          type="button"
-                          onClick={() => void openHistorySession(session._id)}
-                          className={`w-full rounded-md border px-2 py-2 text-left transition ${
-                            activeChatSessionId === session._id
-                              ? 'border-harx-300 bg-harx-50/70'
-                              : 'border-transparent hover:border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          <div className="truncate text-[12px] font-semibold text-slate-900">
-                            {session.title || t('training.chat.history.newConversationTitle', 'New conversation')}
-                          </div>
-                          {session.preview ? (
-                            <div className="mt-0.5 line-clamp-2 text-[11px] text-slate-600">{session.preview}</div>
-                          ) : null}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
                 )}
               </div>
               {rep &&

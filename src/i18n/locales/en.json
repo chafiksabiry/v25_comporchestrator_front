@@ -749,6 +749,7 @@
         "refresh": "Refresh",
         "loading": "Loading...",
         "empty": "No history found for this gig.",
+        "selectGig": "Select a gig to see its conversations.",
         "newConversationTitle": "New conversation"
       },
       "newConversation": "New",

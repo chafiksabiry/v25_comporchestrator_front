@@ -749,6 +749,7 @@
         "refresh": "Rafraîchir",
         "loading": "Chargement...",
         "empty": "Aucun historique trouvé pour ce gig.",
+        "selectGig": "Sélectionnez un gig pour voir ses conversations.",
         "newConversationTitle": "Nouvelle conversation"
       },
       "newConversation": "Nouvelle",
