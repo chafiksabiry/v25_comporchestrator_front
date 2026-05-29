@@ -712,6 +712,95 @@
       "clearAll": "Tout Effacer",
       "cancel": "Annuler",
       "synchronize": "Synchroniser"
+    },
+    "pagination": {
+      "range": "{{from}}-{{to}} sur {{total}}"
+    },
+    "filters": {
+      "all": "Tous",
+      "docs": "Documents",
+      "videos": "Vidéos",
+      "audio": "Audio",
+      "noResults": "Aucune ressource ne correspond à ce filtre."
+    }
+  },
+  "training": {
+    "chat": {
+      "greeting": {
+        "morning": "Bonjour, {{name}}.",
+        "afternoon": "Bon après-midi, {{name}}.",
+        "evening": "Bonsoir, {{name}}.",
+        "night": "Bonne nuit, {{name}}."
+      },
+      "subtitle": "Comment puis-je vous aider ?",
+      "placeholder": "Comment puis-je vous aider ?",
+      "replyPlaceholder": "Répondre...",
+      "replyWaitPlaceholder": "Répondre… (Envoi possible après la génération)",
+      "analyzingPlaceholder": "Analyse des documents en cours…",
+      "send": "Envoyer",
+      "stop": "Arrêter",
+      "stopTooltip": "Arrêter la génération",
+      "skip": "Passer",
+      "uploadFiles": "Téléverser des fichiers",
+      "history": {
+        "label": "Historique",
+        "open": "Ouvrir l'historique",
+        "title": "Historique — {{title}}",
+        "refresh": "Rafraîchir",
+        "loading": "Chargement...",
+        "empty": "Aucun historique trouvé pour ce gig.",
+        "newConversationTitle": "Nouvelle conversation"
+      },
+      "newConversation": "Nouvelle",
+      "newConversationTooltip": "Nouvelle conversation",
+      "audio": {
+        "generate": "Générer l'aperçu audio",
+        "regenerate": "Régénérer l'aperçu audio",
+        "generating": "Génération de l'aperçu audio...",
+        "view": "Voir l'aperçu audio",
+        "validateFirst": "Validez la formation pour générer l'audio"
+      },
+      "start": "Démarrer",
+      "startTooltip": "Ouvrir Démarrer en plein écran",
+      "stepCounter": "{{current}} sur {{total}}",
+      "personalization": {
+        "source": {
+          "question": "Quelle source utiliser pour cette formation ?",
+          "options": {
+            "kbOnly": "Base de connaissances seule",
+            "kbAndUploads": "Base + fichiers téléversés",
+            "uploadsOnly": "Fichiers téléversés seuls",
+            "none": "Aucun document"
+          }
+        },
+        "level": {
+          "question": "Quel est votre niveau actuel ?",
+          "options": {
+            "beginner": "Débutant complet",
+            "basics": "Notions de base",
+            "intermediate": "Intermédiaire",
+            "advanced": "Avancé"
+          }
+        },
+        "objective": {
+          "question": "Quel est votre objectif principal ?",
+          "options": {
+            "fundamentals": "Comprendre les fondamentaux",
+            "sell": "Mieux vendre le produit",
+            "useCases": "Maîtriser les cas pratiques",
+            "certification": "Préparer une certification"
+          }
+        },
+        "format": {
+          "question": "Quel format préférez-vous ?",
+          "options": {
+            "structured": "Plan de formation structuré",
+            "practical": "Cas pratiques + exercices",
+            "workshop": "Format atelier interactif",
+            "reference": "Fiche de référence rapide"
+          }
+        }
+      }
     }
   },
   "telephonySetup": {

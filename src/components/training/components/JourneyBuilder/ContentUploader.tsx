@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import { createPortal } from 'react-dom';
 
 import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, RefreshCw, LayoutGrid, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play, Target, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -606,6 +608,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
     repOnboardingLayout = false,
     onForkNewJourneyTraining,
   } = props;
+  const { t } = useTranslation();
+  const greetingKey = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'morning';
+    if (hour < 18) return 'afternoon';
+    if (hour < 22) return 'evening';
+    return 'night';
+  }, []);
   const rep = Boolean(repOnboardingLayout);
   /** Après validation du plan dans le chat, le backend renvoie l’id — on le réinjecte dans le contexte des appels suivants. */
   const chatConfirmedJourneyIdRef = useRef<string | null>(null);
@@ -2674,41 +2684,46 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const personalizationQuestions: Array<{
       key: 'source' | 'level' | 'objective' | 'format';
       question: string;
-      options: string[];
+      options: Array<{ value: string; label: string }>;
     }> = [
       {
         key: 'source',
-        question: 'What source should we use for this training?',
+        question: t('training.chat.personalization.source.question', 'What source should we use for this training?'),
         options: [
-          'KB only',
-          'KB + uploaded files',
-          'Uploaded files only',
-          'No KB, no documents',
+          { value: 'KB only', label: t('training.chat.personalization.source.options.kbOnly', 'KB only') },
+          { value: 'KB + uploaded files', label: t('training.chat.personalization.source.options.kbAndUploads', 'KB + uploaded files') },
+          { value: 'Uploaded files only', label: t('training.chat.personalization.source.options.uploadsOnly', 'Uploaded files only') },
+          { value: 'No KB, no documents', label: t('training.chat.personalization.source.options.none', 'No KB, no documents') },
         ],
       },
       {
         key: 'level',
-        question: 'What is your current level?',
-        options: ['Complete beginner', 'Some basics', 'Intermediate', 'Advanced'],
+        question: t('training.chat.personalization.level.question', 'What is your current level?'),
+        options: [
+          { value: 'Complete beginner', label: t('training.chat.personalization.level.options.beginner', 'Complete beginner') },
+          { value: 'Some basics', label: t('training.chat.personalization.level.options.basics', 'Some basics') },
+          { value: 'Intermediate', label: t('training.chat.personalization.level.options.intermediate', 'Intermediate') },
+          { value: 'Advanced', label: t('training.chat.personalization.level.options.advanced', 'Advanced') },
+        ],
       },
       {
         key: 'objective',
-        question: 'What is your main objective?',
+        question: t('training.chat.personalization.objective.question', 'What is your main objective?'),
         options: [
-          'Understand the fundamentals',
-          'Sell the product better',
-          'Handle practical use cases',
-          'Prepare for certification',
+          { value: 'Understand the fundamentals', label: t('training.chat.personalization.objective.options.fundamentals', 'Understand the fundamentals') },
+          { value: 'Sell the product better', label: t('training.chat.personalization.objective.options.sell', 'Sell the product better') },
+          { value: 'Handle practical use cases', label: t('training.chat.personalization.objective.options.useCases', 'Handle practical use cases') },
+          { value: 'Prepare for certification', label: t('training.chat.personalization.objective.options.certification', 'Prepare for certification') },
         ],
       },
       {
         key: 'format',
-        question: 'Which format do you prefer?',
+        question: t('training.chat.personalization.format.question', 'Which format do you prefer?'),
         options: [
-          'Structured training plan',
-          'Practical cases + exercises',
-          'Interactive workshop format',
-          'Quick reference sheet format',
+          { value: 'Structured training plan', label: t('training.chat.personalization.format.options.structured', 'Structured training plan') },
+          { value: 'Practical cases + exercises', label: t('training.chat.personalization.format.options.practical', 'Practical cases + exercises') },
+          { value: 'Interactive workshop format', label: t('training.chat.personalization.format.options.workshop', 'Interactive workshop format') },
+          { value: 'Quick reference sheet format', label: t('training.chat.personalization.format.options.reference', 'Quick reference sheet format') },
         ],
       },
     ];
@@ -5055,12 +5070,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
     /** Pendant la génération : saisie autorisée, envoi désactivé (bouton Stop + Enter ignoré). */
     const composerSendDisabled = isChatLoading || hasPendingUpload;
     const composerPlaceholder = hasPendingUpload
-      ? 'Analyse des documents en cours…'
+      ? t('training.chat.analyzingPlaceholder', 'Analyse des documents en cours…')
       : isChatLoading && hasStartedChat
-        ? 'Reply… (Send after generation ends)'
+        ? t('training.chat.replyWaitPlaceholder', 'Reply… (Send after generation ends)')
         : hasStartedChat
-          ? 'Reply...'
-          : 'How can I help you?';
+          ? t('training.chat.replyPlaceholder', 'Reply...')
+          : t('training.chat.placeholder', 'How can I help you?');
 
     const renderComposerBody = () => (
       <>
@@ -5154,7 +5169,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             type="button"
             onClick={() => chatFileInputRef.current?.click()}
             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-            title="Upload files"
+            title={t('training.chat.uploadFiles', 'Upload files')}
           >
             +
           </button>
@@ -5164,10 +5179,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 type="button"
                 onClick={handleStopChatGeneration}
                 className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
-                title="Stop generation"
+                title={t('training.chat.stopTooltip', 'Stop generation')}
               >
                 <Square className="h-3.5 w-3.5" />
-                Stop
+                {t('training.chat.stop', 'Stop')}
               </button>
             ) : (
               <button
@@ -5175,14 +5190,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 onClick={() => void handleChatSubmit()}
                 disabled={!chatInput.trim() || composerSendDisabled}
                 className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
-                title={hasPendingUpload ? 'Analyse des documents en cours…' : 'Send'}
+                title={hasPendingUpload ? t('training.chat.analyzingPlaceholder', 'Analyse des documents en cours…') : t('training.chat.send', 'Send')}
               >
                 {hasPendingUpload ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Send className="h-3.5 w-3.5" />
                 )}
-                Send
+                {t('training.chat.send', 'Send')}
               </button>
             )}
           </div>
@@ -5411,19 +5426,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         ? 'bg-white text-harx-700 ring-1 ring-harx-300/80'
                         : 'text-slate-600 hover:bg-slate-50 hover:text-harx-700'
                     }`}
-                    title="Open history"
+                    title={t('training.chat.history.open', 'Open history')}
                   >
                     <History className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                    History
+                    {t('training.chat.history.label', 'History')}
                   </button>
                   <button
                     type="button"
                     onClick={() => void startNewConversation()}
                     className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-bold text-white shadow-sm shadow-harx-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 active:brightness-95"
-                    title="New conversation"
+                    title={t('training.chat.newConversationTooltip', 'New conversation')}
                   >
                     <Plus className="h-3.5 w-3.5 shrink-0" />
-                    New
+                    {t('training.chat.newConversation', 'New')}
                   </button>
                 </div>
                 {gigSwitchHint ? (
@@ -5437,11 +5452,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       type="button"
                       onClick={() => void handleGeneratePodcastScript()}
                       disabled={isPodcastGenerating || isChatLoading || (!isPlanSavedForChat && chatWorkflowStatus?.plan !== 'completed')}
-                      title={(!isPlanSavedForChat && chatWorkflowStatus?.plan !== 'completed') ? 'Validez la formation pour générer l\'audio' : 'Generate audio overview'}
+                      title={(!isPlanSavedForChat && chatWorkflowStatus?.plan !== 'completed') ? t('training.chat.audio.validateFirst', "Validez la formation pour générer l'audio") : t('training.chat.audio.generate', 'Generate audio overview')}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                     >
                       {isPodcastGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mic className="h-3.5 w-3.5" />}
-                      {podcastScript.trim() ? 'Regenerate audio overview' : 'Generate audio overview'}
+                      {podcastScript.trim() ? t('training.chat.audio.regenerate', 'Regenerate audio overview') : t('training.chat.audio.generate', 'Generate audio overview')}
                     </button>
                     {podcastScript.trim() ? (
                       <button
@@ -5457,7 +5472,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                       >
                         <Music className="h-3.5 w-3.5" />
-                        View audio overview
+                        {t('training.chat.audio.view', 'View audio overview')}
                       </button>
                     ) : null}
                     <button
@@ -5469,10 +5484,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         void hydrateSavedJourneyFromApi();
                       }}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-harx-200 bg-harx-50/80 px-3 py-1.5 text-xs font-semibold text-harx-900 hover:bg-harx-100/90"
-                      title="Ouvrir Start en plein écran"
+                      title={t('training.chat.startTooltip', 'Open Start in fullscreen')}
                     >
                       <Play className="h-3.5 w-3.5 shrink-0" />
-                      Start
+                      {t('training.chat.start', 'Start')}
                     </button>
                   </div>
                 )}
@@ -5480,13 +5495,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   <div className="absolute right-0 top-full z-30 mt-1.5 w-full max-w-[320px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
                   <div className="mb-2 flex items-center justify-between px-1">
                     <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                      {`History — ${activeChatGigTitle}`}
+                      {t('training.chat.history.title', { title: activeChatGigTitle, defaultValue: `History — ${activeChatGigTitle}` })}
                     </div>
                     <button
                       type="button"
                       onClick={() => void refreshChatHistory()}
                       className="rounded p-1 text-slate-500 hover:bg-slate-100"
-                      title="Refresh"
+                      title={t('training.chat.history.refresh', 'Refresh')}
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                     </button>
@@ -5495,11 +5510,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     {isHistoryLoading ? (
                       <div className="flex items-center gap-2 rounded-md px-2 py-2 text-xs text-slate-600">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Loading...
+                        {t('training.chat.history.loading', 'Loading...')}
                       </div>
                     ) : chatHistorySessions.length === 0 ? (
                       <div className="rounded-md px-2 py-2 text-xs text-slate-500">
-                        No history found for this gig.
+                        {t('training.chat.history.empty', 'No history found for this gig.')}
                       </div>
                     ) : (
                       chatHistorySessions.map((session) => (
@@ -5514,7 +5529,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           }`}
                         >
                           <div className="truncate text-[12px] font-semibold text-slate-900">
-                            {session.title || 'New conversation'}
+                            {session.title || t('training.chat.history.newConversationTitle', 'New conversation')}
                           </div>
                           {session.preview ? (
                             <div className="mt-0.5 line-clamp-2 text-[11px] text-slate-600">{session.preview}</div>
@@ -6274,10 +6289,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             : 'mb-2 text-4xl font-serif font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl'
                         }
                       >
-                        {`Good evening, ${displayName}.`}
+                        {t(`training.chat.greeting.${greetingKey}`, { name: displayName, defaultValue: `Good evening, ${displayName}.` })}
                       </h2>
                       <p className="mx-auto max-w-3xl text-sm font-medium text-slate-500">
-                        How can I help you?
+                        {t('training.chat.subtitle', 'How can I help you?')}
                       </p>
                     </div>
                   )}
@@ -6618,7 +6633,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             </div>
                           </div>
                           <span className="shrink-0 text-[11px] font-semibold text-slate-400">
-                            {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
+                            {t('training.chat.stepCounter', {
+                              current: Math.min(personalizationStep + 1, personalizationQuestions.length),
+                              total: personalizationQuestions.length,
+                              defaultValue: `${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`,
+                            })}
                           </span>
                         </div>
                         <p className="mb-2 text-sm font-semibold leading-snug text-slate-900 sm:text-base">
@@ -6627,16 +6646,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         <div className="overflow-hidden rounded-lg border border-harx-100 bg-white">
                           {currentPersonalizationQuestion.options.map((option, idx) => (
                             <button
-                              key={`chat-question-${personalizationStep}-${option}`}
+                              key={`chat-question-${personalizationStep}-${option.value}`}
                               type="button"
-                              onClick={() => handleSelectPersonalizationOption(option)}
+                              onClick={() => handleSelectPersonalizationOption(option.value)}
                               className="flex w-full items-center gap-2 border-b border-harx-100/90 px-2.5 py-2 text-left transition-all duration-200 hover:bg-slate-50 last:border-b-0 sm:px-3"
                             >
                               <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F43F5E] text-xs font-bold text-white shadow-sm">
                                 {idx + 1}
                               </span>
                               <span className="min-w-0 flex-1">
-                                <span className="block text-sm font-semibold leading-tight text-slate-900">{option}</span>
+                                <span className="block text-sm font-semibold leading-tight text-slate-900">{option.label}</span>
                               </span>
                               <span className="shrink-0 text-base leading-none text-slate-400">→</span>
                             </button>
@@ -6652,7 +6671,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             }}
                             className="rounded-md border border-harx-100 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                           >
-                            Skip
+                            {t('training.chat.skip', 'Skip')}
                           </button>
                         </div>
                       </div>
