@@ -838,10 +838,6 @@
             "title": "Importer des Contacts",
             "description": "Importer des contacts pour un engagement multicanal"
           },
-          "6": {
-            "title": "Script d'Appel",
-            "description": "Définir le script et les flux de conversation"
-          },
           "7": {
             "title": "Configuration des Rapports",
             "description": "Configurer les KPI et les préférences de reporting"
@@ -858,6 +854,10 @@
           "9": {
             "title": "E-learning",
             "description": "Formation, validation et acceptation du contrat"
+          },
+          "6": {
+            "title": "Script d'Appel",
+            "description": "Définir le script et les flux de conversation"
           },
           "10": {
             "title": "Planification des Sessions",

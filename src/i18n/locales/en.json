@@ -838,10 +838,6 @@
             "title": "Upload Contacts",
             "description": "Import contacts for multi-channel engagement"
           },
-          "6": {
-            "title": "Call Script",
-            "description": "Define script and conversation flows"
-          },
           "7": {
             "title": "Reporting Setup",
             "description": "Configure KPIs and reporting preferences"
@@ -858,6 +854,10 @@
           "9": {
             "title": "E-learning",
             "description": "Training, validation, and contract acceptance"
+          },
+          "6": {
+            "title": "Call Script",
+            "description": "Define script and conversation flows"
           },
           "10": {
             "title": "Session Planning",
