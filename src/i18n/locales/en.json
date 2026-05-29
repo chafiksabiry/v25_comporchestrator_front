@@ -712,6 +712,95 @@
       "clearAll": "Clear All",
       "cancel": "Cancel",
       "synchronize": "Synchronize"
+    },
+    "pagination": {
+      "range": "{{from}}-{{to}} of {{total}}"
+    },
+    "filters": {
+      "all": "All",
+      "docs": "Docs",
+      "videos": "Videos",
+      "audio": "Audio",
+      "noResults": "No resources match this filter."
+    }
+  },
+  "training": {
+    "chat": {
+      "greeting": {
+        "morning": "Good morning, {{name}}.",
+        "afternoon": "Good afternoon, {{name}}.",
+        "evening": "Good evening, {{name}}.",
+        "night": "Good night, {{name}}."
+      },
+      "subtitle": "How can I help you?",
+      "placeholder": "How can I help you?",
+      "replyPlaceholder": "Reply...",
+      "replyWaitPlaceholder": "Reply… (Send after generation ends)",
+      "analyzingPlaceholder": "Analyzing documents…",
+      "send": "Send",
+      "stop": "Stop",
+      "stopTooltip": "Stop generation",
+      "skip": "Skip",
+      "uploadFiles": "Upload files",
+      "history": {
+        "label": "History",
+        "open": "Open history",
+        "title": "History — {{title}}",
+        "refresh": "Refresh",
+        "loading": "Loading...",
+        "empty": "No history found for this gig.",
+        "newConversationTitle": "New conversation"
+      },
+      "newConversation": "New",
+      "newConversationTooltip": "New conversation",
+      "audio": {
+        "generate": "Generate audio overview",
+        "regenerate": "Regenerate audio overview",
+        "generating": "Generating audio overview...",
+        "view": "View audio overview",
+        "validateFirst": "Validate the training to generate audio"
+      },
+      "start": "Start",
+      "startTooltip": "Open Start in fullscreen",
+      "stepCounter": "{{current}} of {{total}}",
+      "personalization": {
+        "source": {
+          "question": "What source should we use for this training?",
+          "options": {
+            "kbOnly": "KB only",
+            "kbAndUploads": "KB + uploaded files",
+            "uploadsOnly": "Uploaded files only",
+            "none": "No KB, no documents"
+          }
+        },
+        "level": {
+          "question": "What is your current level?",
+          "options": {
+            "beginner": "Complete beginner",
+            "basics": "Some basics",
+            "intermediate": "Intermediate",
+            "advanced": "Advanced"
+          }
+        },
+        "objective": {
+          "question": "What is your main objective?",
+          "options": {
+            "fundamentals": "Understand the fundamentals",
+            "sell": "Sell the product better",
+            "useCases": "Handle practical use cases",
+            "certification": "Prepare for certification"
+          }
+        },
+        "format": {
+          "question": "Which format do you prefer?",
+          "options": {
+            "structured": "Structured training plan",
+            "practical": "Practical cases + exercises",
+            "workshop": "Interactive workshop format",
+            "reference": "Quick reference sheet format"
+          }
+        }
+      }
     }
   },
   "telephonySetup": {
