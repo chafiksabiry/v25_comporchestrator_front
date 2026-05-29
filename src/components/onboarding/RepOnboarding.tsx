@@ -1277,6 +1277,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 )}
               </div>
             </section>
+            {/* Saved Podcasts section hidden per product decision — kept for future re-enable. */}
+            {false && (
             <section className="relative overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-2xl shadow-gray-200/50">
               <div className="h-1 w-full bg-gradient-harx" aria-hidden />
               <div className="relative z-10 p-6">
@@ -1349,6 +1351,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 )}
               </div>
             </section>
+            )}
           </div>
         </div>
           </>
