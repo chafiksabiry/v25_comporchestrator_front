@@ -764,6 +764,22 @@
       "start": "Start",
       "startTooltip": "Open Start in fullscreen",
       "stepCounter": "{{current}} of {{total}}",
+      "status": {
+        "title": "Chat status",
+        "planLabel": "Plan",
+        "modulesLabel": "Modules",
+        "modulePrefix": "Module",
+        "noModules": "No module status yet.",
+        "validatePlan": "Validate plan",
+        "planValidated": "Plan validated",
+        "validateHint": "Discuss and adjust the plan in chat, then validate it here.",
+        "validateFailed": "Plan validation failed.",
+        "planStates": {
+          "pending": "pending",
+          "in_progress": "in progress",
+          "completed": "validated"
+        }
+      },
       "personalization": {
         "source": {
           "question": "What source should we use for this training?",

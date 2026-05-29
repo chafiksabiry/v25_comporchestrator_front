@@ -2665,15 +2665,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
   function renderSourcesUploadUI() {
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.length > 0;
-    // Workflow/modules status sidebar is a power-user view; it's noisy in the
-    // REP onboarding layout, so we keep it for the full journey-builder only.
+    // Status sidebar: always visible in REP onboarding (validate plan + modules).
     const showChatModuleSidebar =
-      !rep && (
-        hasStartedChat ||
-        Boolean(chatWorkflowStatus || chatWorkflowStatusRef.current) ||
-        (Array.isArray(chatSessionModulePlanRef.current) && chatSessionModulePlanRef.current.length >= 2) ||
-        (Array.isArray((journey as any)?.modulePlan) && (journey as any).modulePlan.length >= 2)
-      );
+      rep
+        ? true
+        : hasStartedChat ||
+          Boolean(chatWorkflowStatus || chatWorkflowStatusRef.current) ||
+          (Array.isArray(chatSessionModulePlanRef.current) && chatSessionModulePlanRef.current.length >= 2) ||
+          (Array.isArray((journey as any)?.modulePlan) && (journey as any).modulePlan.length >= 2);
     const repSplitLayout = rep && hasStartedChat;
     const shouldShowKbQuestionInChat = false;
     const shouldShowChatThread = !showRepSourcePopup;
@@ -3665,22 +3664,33 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const isPlanEditIntent =
           /(modifi|modifier|change|changer|ajuste|ajouter|supprim|retir|update|edit|corrig|restructur|reorganis|adapt)/i.test(cleanMessage) &&
           (/\bmodule\s*\d+\b/i.test(cleanMessage) || /\bmodule\b/i.test(cleanMessage));
+        // Explicit "plan" mentions (FR/EN) — must win over the generic
+        // "donne … formation" full-training regex below, so that
+        // "donne moi un plan de formation" stays a plan request, not full content.
+        const isExplicitPlanIntent =
+          /\b(plan\s+de\s+formation|training\s+plan|plan\s+d[ée]taill[ée])\b/i.test(cleanMessage) ||
+          /\b(g[ée]n[ée]r\w*|cr[ée]e\w*|fais|donne|propose|construi\w*|b[âa]ti\w*|[ée]labor\w*|[ée]cri\w*)\b[\s\S]{0,40}\bplan\b/i.test(cleanMessage) ||
+          /\b(refais|recommen[ce\w]+|red[ée]marre)\b[\s\S]{0,30}\bplan\b/i.test(cleanMessage);
         const isFullTrainingIntentByText =
           /(contenu\s+de\s+formation|formation\s+compl[eè]te|g[ée]n[ée]rer\s+une\s+formation|creer\s+une\s+formation)/i.test(cleanMessage) ||
           /(je\s+veux|donne|g[ée]n[ée]r\w*|cr[ée]e\w*|produi\w*|pr[ée]par\w*|lance\w*)[\s\S]{0,40}(la\s+)?formation/i.test(cleanMessage) ||
           /(tout\s+le\s+contenu|tous\s+les\s+modules|formation\s+enti[eè]re)/i.test(cleanMessage);
+        const isModuleContentIntent =
+          /(contenu\s+d[’']?un\s+module|contenu\s+du\s+module|module\s+\d+|d[ée]taille\s+le\s+module|detaille\s+le\s+module)/i.test(
+            cleanMessage
+          );
         const requestedOutput: 'training_plan' | 'full_training_content' | 'module_content' | 'general_chat' =
           isPostPersonalizationSummary
             ? 'training_plan'
             : isPlanEditIntent
-            ? 'training_plan'
-            : /(contenu\s+d[’']?un\s+module|contenu\s+du\s+module|module\s+\d+|d[ée]taille\s+le\s+module|detaille\s+le\s+module)/i.test(cleanMessage)
-            ? 'module_content'
-            : isFullTrainingIntentByText
-              ? 'full_training_content'
-              : /(plan\s+de\s+formation|g[ée]n[ée]rer\s+un\s+plan|cr[ée]er\s+un\s+plan)/i.test(cleanMessage)
+              ? 'training_plan'
+              : isExplicitPlanIntent
                 ? 'training_plan'
-                : 'general_chat';
+                : isModuleContentIntent
+                  ? 'module_content'
+                  : isFullTrainingIntentByText
+                    ? 'full_training_content'
+                    : 'general_chat';
         const requestedModuleReference =
           requestedOutput === 'module_content'
             ? (cleanMessage.match(/module\s+\d+/i)?.[0] || cleanMessage.match(/module\s*[:\-]\s*([^\n]+)/i)?.[1] || '').trim()
@@ -4998,10 +5008,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const resolvedModules = Array.isArray(status?.modules) && status.modules.length > 0
         ? status.modules
         : fallbackModules;
-      if (!status && resolvedModules.length === 0) return null;
+      if (!rep && !status && resolvedModules.length === 0) return null;
       const planStatus = String(
-        status?.plan || (resolvedModules.length >= 2 ? 'in_progress' : 'pending')
+        isPlanSavedForChat || status?.plan === 'completed'
+          ? 'completed'
+          : status?.plan || (resolvedModules.length >= 2 ? 'in_progress' : 'pending')
       ) as 'pending' | 'in_progress' | 'completed';
+      const planIsValidated = planStatus === 'completed';
       const modules = resolvedModules;
       const chipClass = (s: 'pending' | 'in_progress' | 'completed'): string =>
         s === 'completed'
@@ -5010,24 +5023,88 @@ export default function ContentUploader(props: ContentUploaderProps) {
             ? 'border-amber-300 bg-amber-50 text-amber-700'
             : 'border-slate-300 bg-slate-50 text-slate-600';
       const formatStatus = (s: 'pending' | 'in_progress' | 'completed') =>
-        s === 'in_progress' ? 'in_progress' : s;
+        t(`training.chat.status.planStates.${s}`, s === 'in_progress' ? 'in_progress' : s);
+
+      const handleValidatePlanFromSidebar = async () => {
+        if (planIsValidated || isPlanValidationSubmitting || isChatLoading) return;
+        setIsPlanValidationSubmitting(true);
+        setPlanValidationHint(null);
+        const result = await sendChatMessage('__VALIDATE_PLAN__', { appendUser: false });
+        if (result.ok && result.planSaved) {
+          setIsPlanSavedForChat(true);
+          setPlanValidationHint(null);
+        } else {
+          setPlanValidationHint({
+            type: 'error',
+            text: result.error || t('training.chat.status.validateFailed', 'La validation du plan a échoué.'),
+          });
+        }
+        setIsPlanValidationSubmitting(false);
+      };
 
       return (
-        <aside className="mt-2 hidden w-full shrink-0 flex-col gap-3 lg:mt-0 lg:flex lg:w-[260px] lg:pl-3">
+        <aside
+          className={
+            rep
+              ? 'order-last mt-3 flex w-full shrink-0 flex-col gap-3 lg:order-none lg:mt-0 lg:w-[240px] lg:shrink-0'
+              : 'mt-2 hidden w-full shrink-0 flex-col gap-3 lg:mt-0 lg:flex lg:w-[260px] lg:pl-3'
+          }
+        >
           <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Chat status</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              {t('training.chat.status.title', 'Chat status')}
+            </p>
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-700">Plan</span>
+              <span className="text-xs font-semibold text-slate-700">
+                {t('training.chat.status.planLabel', 'Plan')}
+              </span>
               <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${chipClass(planStatus)}`}>
                 {formatStatus(planStatus)}
               </span>
             </div>
+            <div className="mt-3">
+              {planIsValidated ? (
+                <div className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">
+                  <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                  {t('training.chat.status.planValidated', 'Plan validé')}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void handleValidatePlanFromSidebar()}
+                  disabled={isPlanValidationSubmitting || isChatLoading}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isPlanValidationSubmitting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                  )}
+                  {t('training.chat.status.validatePlan', 'Valider le plan')}
+                </button>
+              )}
+              {!planIsValidated ? (
+                <p className="mt-2 text-[10px] leading-snug text-slate-500">
+                  {t(
+                    'training.chat.status.validateHint',
+                    'Discutez et ajustez le plan dans le chat, puis validez-le ici.'
+                  )}
+                </p>
+              ) : null}
+              {planValidationHint?.type === 'error' && planValidationHint.text ? (
+                <p className="mt-2 text-[10px] font-medium text-rose-600">{planValidationHint.text}</p>
+              ) : null}
+            </div>
           </div>
           <div className="max-h-[56vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Modules</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              {t('training.chat.status.modulesLabel', 'Modules')}
+            </p>
             <div className="mt-2 space-y-2">
               {modules.length === 0 ? (
-                <p className="text-xs text-slate-500">No module status yet.</p>
+                <p className="text-xs text-slate-500">
+                  {t('training.chat.status.noModules', 'No module status yet.')}
+                </p>
               ) : (
                 modules.map((m, idx) => {
                   const statusValue = String(m?.status || 'pending') as 'pending' | 'in_progress' | 'completed';
@@ -5042,7 +5119,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-left"
                     >
                       <div className="mb-1 text-xs font-semibold text-slate-800">
-                        {`Module ${resolvedIndex + 1}`}
+                        {`${t('training.chat.status.modulePrefix', 'Module')} ${resolvedIndex + 1}`}
                       </div>
                       <div className="line-clamp-2 text-[11px] text-slate-600">{title}</div>
                       <div className="mt-1.5">
@@ -5381,7 +5458,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
               repSplitLayout
                 ? 'mx-auto mb-2 flex min-h-0 w-full min-w-0 max-w-none flex-1 flex-col lg:flex-row lg:items-stretch'
                 : rep
-                  ? 'mx-auto mb-0 flex h-full min-h-0 w-full min-w-0 max-w-5xl flex-1 flex-col overflow-hidden'
+                  ? `mx-auto mb-0 flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden${
+                      showChatModuleSidebar ? ' lg:flex-row lg:items-stretch lg:gap-3' : ''
+                    }`
                   : `mx-auto flex min-h-0 w-full min-w-0 max-w-5xl flex-1 flex-col pb-2${
                       showChatModuleSidebar ? ' lg:flex-row lg:items-stretch lg:gap-4' : ''
                     }`

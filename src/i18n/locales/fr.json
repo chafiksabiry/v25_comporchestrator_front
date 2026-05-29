@@ -764,6 +764,22 @@
       "start": "Démarrer",
       "startTooltip": "Ouvrir Démarrer en plein écran",
       "stepCounter": "{{current}} sur {{total}}",
+      "status": {
+        "title": "Statut du chat",
+        "planLabel": "Plan",
+        "modulesLabel": "Modules",
+        "modulePrefix": "Module",
+        "noModules": "Aucun statut de module pour l'instant.",
+        "validatePlan": "Valider le plan",
+        "planValidated": "Plan validé",
+        "validateHint": "Discutez et ajustez le plan dans le chat, puis validez-le ici.",
+        "validateFailed": "La validation du plan a échoué.",
+        "planStates": {
+          "pending": "en attente",
+          "in_progress": "en cours",
+          "completed": "validé"
+        }
+      },
       "personalization": {
         "source": {
           "question": "Quelle source utiliser pour cette formation ?",
