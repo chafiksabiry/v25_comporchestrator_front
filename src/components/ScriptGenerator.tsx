@@ -414,6 +414,42 @@ const ScriptGenerator: React.FC = () => {
 
     const stepUrl = `${apiUrl}/onboarding/phases/${phaseId}/steps/${stepId}/complete?companyId=${companyId}`;
 
+    // Optimistic update so the user sees the step completed even if they
+    // navigate back to the onboarding before the PUT response arrives.
+    try {
+      const persistedRaw =
+        (typeof window !== 'undefined' && window.localStorage?.getItem('companyOnboardingProgress')) ||
+        Cookies.get('companyOnboardingProgress') ||
+        '';
+      const persisted = persistedRaw ? JSON.parse(persistedRaw) : {};
+      const persistedSteps = Array.isArray(persisted?.completedSteps)
+        ? [...(persisted.completedSteps as number[])]
+        : [];
+      if (!persistedSteps.includes(stepId)) persistedSteps.push(stepId);
+      const optimisticPhase =
+        typeof persisted?.currentPhase === 'number' ? persisted.currentPhase : phaseId;
+      const optimisticPayload = {
+        ...persisted,
+        completedSteps: persistedSteps,
+        currentPhase: optimisticPhase,
+        lastUpdated: new Date().toISOString(),
+      };
+      Cookies.set('companyOnboardingProgress', JSON.stringify(optimisticPayload), { expires: 7 });
+      localStorage.setItem('companyOnboardingProgress', JSON.stringify(optimisticPayload));
+      window.dispatchEvent(
+        new CustomEvent('stepCompleted', {
+          detail: {
+            stepId,
+            phaseId: optimisticPhase,
+            status: 'completed',
+            completedSteps: persistedSteps,
+          },
+        })
+      );
+    } catch (cacheErr) {
+      console.warn('[ScriptGenerator] Optimistic onboarding cache update failed:', cacheErr);
+    }
+
     try {
       const completeRes = await fetch(stepUrl, {
         method: 'PUT',

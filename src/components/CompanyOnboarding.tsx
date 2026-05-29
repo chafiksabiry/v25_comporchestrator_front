@@ -251,9 +251,36 @@ const CompanyOnboarding = () => {
   const { t } = useTranslation();
   // Remove early return - we need to render the component to show onboarding interface
 
-  const [currentPhase, setCurrentPhase] = useState(1);
-  const [displayedPhase, setDisplayedPhase] = useState(1);
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  // Read the last known progress from cookie/localStorage so navigation back
+  // from a sub-step (e.g. "Save script" → onboarding) shows the new completed
+  // state instantly, without waiting for the backend GET to finish.
+  const readPersistedOnboardingSnapshot = (): {
+    completedSteps: number[];
+    currentPhase: number;
+  } => {
+    try {
+      const raw =
+        (typeof window !== 'undefined' && window.localStorage?.getItem('companyOnboardingProgress')) ||
+        Cookies.get('companyOnboardingProgress') ||
+        '';
+      if (!raw) return { completedSteps: [], currentPhase: 1 };
+      const parsed = JSON.parse(raw);
+      const stepsArr = Array.isArray(parsed?.completedSteps)
+        ? (parsed.completedSteps as unknown[]).map((n) => Number(n)).filter((n) => Number.isFinite(n))
+        : [];
+      const phase = Number(parsed?.currentPhase);
+      return {
+        completedSteps: stepsArr,
+        currentPhase: Number.isFinite(phase) && phase >= 1 ? phase : 1,
+      };
+    } catch {
+      return { completedSteps: [], currentPhase: 1 };
+    }
+  };
+  const initialSnapshot = readPersistedOnboardingSnapshot();
+  const [currentPhase, setCurrentPhase] = useState(initialSnapshot.currentPhase);
+  const [displayedPhase, setDisplayedPhase] = useState(initialSnapshot.currentPhase);
+  const [completedSteps, setCompletedSteps] = useState<number[]>(initialSnapshot.completedSteps);
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
