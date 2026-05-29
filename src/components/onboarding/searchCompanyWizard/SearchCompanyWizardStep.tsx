@@ -77,14 +77,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   }
 
   if (existingCompanyId) {
-    return (
-      <div className="w-full p-6">
-        {onBack && (
-          <OnboardingBackButton onClick={onBack} className="mb-4" />
-        )}
-        <ExistingCompanyProfile companyId={existingCompanyId} />
-      </div>
-    );
+    return <ExistingCompanyProfile companyId={existingCompanyId} onBack={onBack} />;
   }
 
   const runSearch = async () => {

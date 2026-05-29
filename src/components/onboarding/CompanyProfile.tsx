@@ -30,7 +30,9 @@ import {
   Facebook,
   Instagram,
   ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import Cookies from 'js-cookie';
 
@@ -188,7 +190,8 @@ const EditableField = ({
   );
 };
 
-function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | null }) {
+function CompanyProfile({ companyId: propCompanyId, onBack }: { companyId?: string | null; onBack?: () => void }) {
+  const { t } = useTranslation();
   const [company, setCompany] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -889,6 +892,49 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
                   </div>
                 </div>
               </div>
+              {/* Back to onboarding */}
+              {onBack && (
+                <div className="absolute top-6 left-6 z-20">
+                  <style>{`
+                    @keyframes backCtaPulse {
+                      0%, 100% { opacity: 0.55; transform: scale(1); }
+                      50% { opacity: 1; transform: scale(1.06); }
+                    }
+                    @keyframes backCtaPing {
+                      0% { opacity: 0.55; transform: scale(0.95); }
+                      100% { opacity: 0; transform: scale(1.5); }
+                    }
+                    @keyframes backCtaArrow {
+                      0%, 100% { transform: translateX(0); }
+                      50% { transform: translateX(-4px); }
+                    }
+                    .back-cta-glow { animation: backCtaPulse 2.6s ease-in-out infinite; }
+                    .back-cta-ping { animation: backCtaPing 2.6s ease-out infinite; }
+                    .back-cta-arrow { animation: backCtaArrow 1.8s ease-in-out infinite; }
+                    .back-cta-btn:hover .back-cta-glow {
+                      opacity: 1;
+                      animation-duration: 1.4s;
+                    }
+                    .back-cta-btn:hover .back-cta-arrow {
+                      animation-duration: 0.9s;
+                    }
+                  `}</style>
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    aria-label={t("companyOnboarding.ui.backToOnboarding")}
+                    title={t("companyOnboarding.ui.backToOnboarding")}
+                    className="back-cta-btn group relative inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-harx-500 to-harx-alt-500 pl-3 pr-5 py-2.5 text-sm font-extrabold uppercase tracking-wider text-white shadow-2xl shadow-harx-500/40 ring-2 ring-white/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-harx-500/60 active:scale-95"
+                  >
+                    <span className="back-cta-glow absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-harx-400 to-harx-alt-400 opacity-70 blur-md" />
+                    <span className="back-cta-ping absolute inset-0 -z-10 rounded-full bg-harx-400/40" />
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/25 shadow-inner">
+                      <ArrowLeft size={14} strokeWidth={3} className="back-cta-arrow text-white" />
+                    </span>
+                    {t("companyOnboarding.ui.backToOnboarding")}
+                  </button>
+                </div>
+              )}
               {/* Edit Mode Toggle */}
               <div className="absolute top-6 right-6 z-10">
                 <button
