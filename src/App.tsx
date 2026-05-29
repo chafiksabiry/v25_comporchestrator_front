@@ -58,7 +58,6 @@ import {
 // Phase 3 done OR any Phase 4 step touched), wallet & upgrade widgets become
 // relevant inside the orchestrator view.
 const ACTIVATION_PHASE_STEP_IDS = [11, 12, 13] as const;
-const LAST_PRE_ACTIVATION_STEP_ID = 10;
 
 const TAB_ONBOARDING_STEPS: Record<string, { stepId: number; phaseId: number }> = {
   'script-generator': { stepId: 6, phaseId: 2 },
@@ -504,10 +503,13 @@ function AppContent() {
     };
   }, []);
 
+  // The user "enters" the Activation phase only once they have actually
+  // completed at least one activation step (subscription, gig activation,
+  // or REP matching). Reaching the Subscription Plan page alone is NOT
+  // enough — the wallet & upgrade widgets must stay hidden while the user
+  // is still choosing/comparing plans.
   const hasReachedActivationPhase = React.useMemo(
-    () =>
-      completedStepIds.includes(LAST_PRE_ACTIVATION_STEP_ID) ||
-      ACTIVATION_PHASE_STEP_IDS.some((id) => completedStepIds.includes(id)),
+    () => ACTIVATION_PHASE_STEP_IDS.some((id) => completedStepIds.includes(id)),
     [completedStepIds]
   );
 
