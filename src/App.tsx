@@ -830,40 +830,11 @@ function AppContent() {
         onSuccess={refreshWalletBalance}
       />
 
-      {/* Floating "Next step · Back to onboarding" CTA.
-          Shown only when:
-            • the user is inside the orchestrator (not the dashboard shell),
-            • a step has registered its back action via setGlobalBack,
-            • the active tab is not the onboarding list itself.
-          Every orchestrator step (Telephony, KB, Script, Upload, Approval,
-          Match HARX REPS, …) already dispatches setGlobalBack with the
-          proper action, so this single button replaces the per-page
-          navbar pill we used to render. */}
-      {globalBackConfig &&
-        activeProject !== 'dashboard' &&
-        activeTab !== 'company-onboarding' &&
-        !isZohoCallback &&
-        !isZohoAuth && (
-          <button
-            type="button"
-            onClick={globalBackConfig.action}
-            className="fixed bottom-6 right-6 z-[9999] group flex items-center gap-3 rounded-2xl bg-gradient-harx px-5 py-3 text-white shadow-2xl shadow-harx-500/30 ring-1 ring-white/20 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-harx-500/50 active:scale-95 animate-in slide-in-from-bottom-4 fade-in"
-            aria-label={t('companyOnboarding.ui.nextStepHint')}
-            title={t('companyOnboarding.ui.nextStepHint')}
-          >
-            <div className="flex flex-col items-start leading-tight">
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/70">
-                {t('companyOnboarding.ui.nextStep')}
-              </span>
-              <span className="text-sm font-black uppercase tracking-wider">
-                {globalBackConfig.label}
-              </span>
-            </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 shadow-inner transition-transform duration-300 group-hover:translate-x-1">
-              <ChevronRight className="h-5 w-5" />
-            </div>
-          </button>
-        )}
+      {/* The floating bottom-right "Back to onboarding" CTA has been
+          removed in favour of the in-content `OnboardingBackButton`
+          rendered at the top of each focused step. Keeping
+          `globalBackConfig` state so the in-content CTA can still
+          look up the registered back action. */}
 
     </StripeContainer>
   );
