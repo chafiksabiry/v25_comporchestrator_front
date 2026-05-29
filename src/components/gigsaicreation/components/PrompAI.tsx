@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, HelpCircle, PlusCircle, ArrowUp } from 'lucide-react';
+import { Brain, HelpCircle, PlusCircle, ArrowUp, ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Suggestions } from './Suggestions';
 import { SectionContent } from './SectionContent';
 import { GigData, GigSuggestion } from '../types';
@@ -31,6 +32,7 @@ interface PrompAIProps {
 }
 
 const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboarding }) => {
+  const { t } = useTranslation();
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState("");
   const [showAIDialog, setShowAIDialog] = useState(false);
@@ -655,8 +657,48 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     <div className="h-[calc(100vh-80px)] overflow-hidden flex flex-col bg-[#F8FAFC]">
       <div className="w-full max-w-5xl mx-auto px-4 pt-6 shrink-0">
         {/* Navigation Buttons */}
+        <style>{`
+          @keyframes backOnbPulse {
+            0%, 100% { opacity: 0.55; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.06); }
+          }
+          @keyframes backOnbPing {
+            0% { opacity: 0.55; transform: scale(0.95); }
+            100% { opacity: 0; transform: scale(1.5); }
+          }
+          @keyframes backOnbArrow {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(-4px); }
+          }
+          .back-onb-glow { animation: backOnbPulse 2.6s ease-in-out infinite; }
+          .back-onb-ping { animation: backOnbPing 2.6s ease-out infinite; }
+          .back-onb-arrow { animation: backOnbArrow 1.8s ease-in-out infinite; }
+          .back-onb-btn:hover .back-onb-glow {
+            opacity: 1;
+            animation-duration: 1.4s;
+          }
+          .back-onb-btn:hover .back-onb-arrow {
+            animation-duration: 0.9s;
+          }
+        `}</style>
         <div className="flex justify-between items-center">
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
+            {onBackToOnboarding && (
+              <button
+                type="button"
+                onClick={onBackToOnboarding}
+                aria-label={t('companyOnboarding.ui.backToOnboarding')}
+                title={t('companyOnboarding.ui.backToOnboarding')}
+                className="back-onb-btn group relative inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-harx-500 to-harx-alt-500 pl-3 pr-5 py-2.5 text-sm font-extrabold uppercase tracking-wider text-white shadow-2xl shadow-harx-500/40 ring-2 ring-white/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-harx-500/60 active:scale-95"
+              >
+                <span className="back-onb-glow absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-harx-400 to-harx-alt-400 opacity-70 blur-md" />
+                <span className="back-onb-ping absolute inset-0 -z-10 rounded-full bg-harx-400/40" />
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/25 shadow-inner">
+                  <ArrowLeft size={14} strokeWidth={3} className="back-onb-arrow text-white" />
+                </span>
+                {t('companyOnboarding.ui.backToOnboarding')}
+              </button>
+            )}
             {onBackToGigs && (
               <button
                 onClick={onBackToGigs}

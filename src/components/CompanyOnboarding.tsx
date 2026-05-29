@@ -1499,10 +1499,14 @@ const CompanyOnboarding = () => {
     activeComponent = (
       <PrompAI
         onBack={handleBackToOnboarding}
-        onBackToGigs={() => {
-          setShowGigCreation(false);
-          setShowGigDetails(true);
-        }}
+        onBackToGigs={
+          hasGigs
+            ? () => {
+                setShowGigCreation(false);
+                setShowGigDetails(true);
+              }
+            : undefined
+        }
         onBackToOnboarding={handleBackToOnboarding}
       />
     );
