@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, Sparkles, Trash2 } from 'lucide-react';
+import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Trash2, Video, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
@@ -132,6 +132,13 @@ const KnowledgeBase: React.FC = () => {
   const [translatingDocument, setTranslatingDocument] = useState<string | null>(null);
   const [gigs, setGigs] = useState<any[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'document' | 'video' | 'audio'>('all');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 8;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedGigId]);
   const [isGigDropdownOpen, setIsGigDropdownOpen] = useState(false);
   const [transcriptionShowCount, setTranscriptionShowCount] = useState<{ [key: string]: number }>({});
   const TRANSCRIPTION_PAGE_SIZE = 5;
@@ -1124,6 +1131,77 @@ const KnowledgeBase: React.FC = () => {
 
   const renderContent = () => {
     const unifiedItems: any[] = getUnifiedItems();
+
+    const isVideoItem = (item: any) =>
+      item.type === 'video' ||
+      item.itemType === 'video' ||
+      (item.fileType && String(item.fileType).startsWith('video/'));
+    const isAudioItem = (item: any) =>
+      item.type === 'audio' ||
+      (item.fileType && String(item.fileType).startsWith('audio/'));
+    const isDocumentItem = (item: any) =>
+      !isVideoItem(item) && !isAudioItem(item);
+
+    const filteredByType =
+      typeFilter === 'video'
+        ? unifiedItems.filter(isVideoItem)
+        : typeFilter === 'audio'
+          ? unifiedItems.filter(isAudioItem)
+          : typeFilter === 'document'
+            ? unifiedItems.filter(isDocumentItem)
+            : unifiedItems;
+
+    const docsCount = unifiedItems.filter(isDocumentItem).length;
+    const videosCount = unifiedItems.filter(isVideoItem).length;
+    const audiosCount = unifiedItems.filter(isAudioItem).length;
+
+    const totalPages = Math.max(1, Math.ceil(filteredByType.length / ITEMS_PER_PAGE));
+    const safePage = Math.min(currentPage, totalPages);
+    const pageItems = filteredByType.slice(
+      (safePage - 1) * ITEMS_PER_PAGE,
+      safePage * ITEMS_PER_PAGE
+    );
+
+    const filterChip = (
+      key: typeof typeFilter,
+      label: string,
+      icon: React.ReactNode,
+      count: number
+    ) => {
+      const active = typeFilter === key;
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            setTypeFilter(key);
+            setCurrentPage(1);
+          }}
+          className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${
+            active
+              ? 'bg-gradient-harx text-white border-transparent shadow-md shadow-harx-500/30'
+              : 'bg-white text-gray-600 border-gray-200 hover:border-harx-300 hover:text-harx-600'
+          }`}
+        >
+          {icon}
+          {label}
+          <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[9px] ${
+            active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+          }`}>
+            {count}
+          </span>
+        </button>
+      );
+    };
+
+    const filterBar = (
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        {filterChip('all', t('knowledgeBase.filters.all', 'All'), <LayoutGrid size={12} />, unifiedItems.length)}
+        {filterChip('document', t('knowledgeBase.filters.docs', 'Docs'), <FileText size={12} />, docsCount)}
+        {filterChip('video', t('knowledgeBase.filters.videos', 'Videos'), <Video size={12} />, videosCount)}
+        {audiosCount > 0 && filterChip('audio', t('knowledgeBase.filters.audio', 'Audio'), <Mic size={12} />, audiosCount)}
+      </div>
+    );
+
     if (unifiedItems.length === 0) {
       return (
         <div className="bg-white/50 backdrop-blur-sm p-16 rounded-[3rem] border border-gray-100 text-center shadow-sm">
@@ -1143,9 +1221,23 @@ const KnowledgeBase: React.FC = () => {
       );
     }
 
+    if (filteredByType.length === 0) {
+      return (
+        <>
+          {filterBar}
+          <div className="bg-white/50 backdrop-blur-sm p-10 rounded-[2rem] border border-gray-100 text-center shadow-sm">
+            <p className="text-sm font-bold text-gray-500 italic">
+              {t('knowledgeBase.filters.noResults', 'No resources match this filter.')}
+            </p>
+          </div>
+        </>
+      );
+    }
+
     return (
       <div className="space-y-4">
-        {unifiedItems.map((item) => {
+        {filterBar}
+        {pageItems.map((item) => {
           const isMedia = item.type === 'video' || item.type === 'audio';
           const isCallRecording = item.isCallRecording;
           const call = isCallRecording ? item.callData : null;
@@ -1365,6 +1457,56 @@ const KnowledgeBase: React.FC = () => {
             </React.Fragment>
           );
         })}
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between gap-4 pt-4">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              {t('knowledgeBase.pagination.range', {
+                from: (safePage - 1) * ITEMS_PER_PAGE + 1,
+                to: Math.min(safePage * ITEMS_PER_PAGE, filteredByType.length),
+                total: filteredByType.length,
+                defaultValue: `${(safePage - 1) * ITEMS_PER_PAGE + 1}-${Math.min(safePage * ITEMS_PER_PAGE, filteredByType.length)} / ${filteredByType.length}`,
+              })}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 bg-white text-gray-500 hover:border-harx-300 hover:text-harx-600 transition-all disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-500"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                const active = p === safePage;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setCurrentPage(p)}
+                    className={`inline-flex items-center justify-center min-w-9 h-9 px-3 rounded-xl text-[11px] font-black transition-all ${
+                      active
+                        ? 'bg-gradient-harx text-white shadow-md shadow-harx-500/30'
+                        : 'border border-gray-200 bg-white text-gray-500 hover:border-harx-300 hover:text-harx-600'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 bg-white text-gray-500 hover:border-harx-300 hover:text-harx-600 transition-all disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-500"
+                aria-label="Next page"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
