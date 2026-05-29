@@ -578,21 +578,59 @@ const CompanyOnboarding = () => {
     }
   }, [companyId]);
 
-  const checkCompanyGigs = useCallback(async () => {
+  const gigsApiBase =
+    import.meta.env.VITE_GIGS_API || import.meta.env.VITE_API_URL_GIGS;
+
+  /** True when the company already has at least one gig (list API, then has-gigs fallback). */
+  const resolveCompanyHasGigs = useCallback(async (): Promise<boolean> => {
+    if (!companyId) return false;
+
     try {
-      if (!companyId) {
-        console.error("❌ Company ID not available for checking gigs");
-        return;
-      }
-      const response = await axios.get<HasGigsResponse>(
-        `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/has-gigs`
+      const response = await axios.get<GigResponse>(
+        `${gigsApiBase}/gigs/company/${companyId}?populate=companyId`
       );
-      const hasGigs = response.data.data.hasGigs;
-      setHasGigs(hasGigs);
+      if (response.data?.data) {
+        const exists = response.data.data.length > 0;
+        setHasGigs(exists);
+        return exists;
+      }
+    } catch (error) {
+      console.error("Error fetching company gigs list:", error);
+    }
+
+    try {
+      const response = await axios.get<HasGigsResponse>(
+        `${gigsApiBase}/gigs/company/${companyId}/has-gigs`
+      );
+      const exists = response.data.data.hasGigs;
+      setHasGigs(exists);
+      return exists;
     } catch (error) {
       console.error("Error checking company gigs:", error);
+      return false;
     }
-  }, [companyId]);
+  }, [companyId, gigsApiBase]);
+
+  const openGigsStepView = useCallback(async () => {
+    const gigsExist = await resolveCompanyHasGigs();
+
+    setShowTelephonySetup(false);
+    setShowKnowledgeBase(false);
+    setShowUploadContacts(false);
+    setActiveStep(null);
+
+    if (gigsExist) {
+      setShowGigCreation(false);
+      setShowGigDetails(true);
+    } else {
+      setShowGigDetails(false);
+      setShowGigCreation(true);
+    }
+  }, [resolveCompanyHasGigs]);
+
+  const checkCompanyGigs = useCallback(async () => {
+    await resolveCompanyHasGigs();
+  }, [resolveCompanyHasGigs]);
 
   const checkCompanyLeads = useCallback(async () => {
     try {
@@ -622,6 +660,7 @@ const CompanyOnboarding = () => {
         const gigs = response.data.data;
         const hasActiveGig = gigs.some((gig: any) => ["active", "approved", "published"].includes(gig.status));
         const hasAnyGig = gigs.length > 0;
+        setHasGigs(hasAnyGig);
         if (hasAnyGig && !completedSteps.includes(3)) {
           try {
             await axios.put(
@@ -1060,7 +1099,7 @@ const CompanyOnboarding = () => {
       }
 
       if (stepId === 3) {
-        setShowGigCreation(true);
+        await openGigsStepView();
         return;
       }
 
@@ -1127,7 +1166,7 @@ const CompanyOnboarding = () => {
       }
 
       if (stepId === 3) {
-        setShowGigDetails(true);
+        await openGigsStepView();
         return;
       }
 
@@ -1402,7 +1441,7 @@ const CompanyOnboarding = () => {
 
     // Redirection spéciale pour Create Gigs
     if (stepId === 3) {
-      setShowGigCreation(true);
+      void openGigsStepView();
       return;
     }
 
