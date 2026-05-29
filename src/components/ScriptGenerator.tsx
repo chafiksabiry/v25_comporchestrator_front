@@ -390,37 +390,57 @@ const ScriptGenerator: React.FC = () => {
     const companyId = getCompanyId();
     if (!companyId) return;
 
-    const phaseId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_PHASE_ID || 2);
     const stepId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_STEP_ID || 6);
     const apiUrl =
       import.meta.env.VITE_COMPANY_API_URL ||
       'https://v25searchcompanywizardbackend-production.up.railway.app/api';
     const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/`;
+
+    // Call Script (step 6) lives in phase 3 after REP onboarding — not phase 2 anymore.
+    let phaseId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_PHASE_ID || 3);
+
+    try {
+      const probeRes = await fetch(onboardingUrl);
+      if (probeRes.ok) {
+        const probe = (await probeRes.json()) as { phases?: Array<{ id: number; steps?: Array<{ id: number }> }> } };
+        const hostingPhase = (probe.phases || []).find(
+          (p) => Array.isArray(p.steps) && p.steps.some((s) => s.id === stepId)
+        );
+        if (hostingPhase?.id) phaseId = hostingPhase.id;
+      }
+    } catch (error) {
+      console.warn('[ScriptGenerator] Could not resolve onboarding phase for call script:', error);
+    }
+
     const stepUrl = `${apiUrl}/onboarding/phases/${phaseId}/steps/${stepId}/complete?companyId=${companyId}`;
 
     try {
-      await fetch(stepUrl, {
+      const completeRes = await fetch(stepUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'completed' }),
       });
-    } catch (error) {
-      console.error('[ScriptGenerator] Failed to mark onboarding step completed:', error);
-      window.dispatchEvent(new Event('refreshOnboardingProgress'));
-      return;
-    }
+      if (!completeRes.ok) {
+        const errBody = await completeRes.json().catch(() => ({}));
+        console.error(
+          '[ScriptGenerator] Failed to mark onboarding step completed:',
+          completeRes.status,
+          errBody
+        );
+        window.dispatchEvent(new Event('refreshOnboardingProgress'));
+        return;
+      }
 
-    try {
-      const response = await fetch(onboardingUrl);
-      const progress = await response.json();
-      const raw = (progress || {}) as Record<string, unknown>;
-      const completedSteps = Array.isArray(raw?.completedSteps)
-        ? [...(raw.completedSteps as number[])]
+      const progress = (await completeRes.json()) as Record<string, unknown>;
+      const completedSteps = Array.isArray(progress?.completedSteps)
+        ? [...(progress.completedSteps as number[])]
         : [];
       if (!completedSteps.includes(stepId)) completedSteps.push(stepId);
-      const currentPhase = typeof raw?.currentPhase === 'number' ? (raw.currentPhase as number) : phaseId;
-      const cookiePayload = { ...raw, completedSteps };
+      const currentPhase =
+        typeof progress?.currentPhase === 'number' ? (progress.currentPhase as number) : phaseId;
+      const cookiePayload = { ...progress, completedSteps, currentPhase };
       Cookies.set('companyOnboardingProgress', JSON.stringify(cookiePayload), { expires: 7 });
+      localStorage.setItem('companyOnboardingProgress', JSON.stringify(cookiePayload));
       window.dispatchEvent(
         new CustomEvent('stepCompleted', {
           detail: {
@@ -432,7 +452,7 @@ const ScriptGenerator: React.FC = () => {
         })
       );
     } catch (error) {
-      console.error('[ScriptGenerator] Failed to refresh onboarding progress:', error);
+      console.error('[ScriptGenerator] Failed to mark onboarding step completed:', error);
       window.dispatchEvent(new Event('refreshOnboardingProgress'));
     }
   };
