@@ -2665,14 +2665,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
   function renderSourcesUploadUI() {
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.length > 0;
-    // Status sidebar: always visible in REP onboarding (validate plan + modules).
+    // Status sidebar is shown only once a plan exists (modules detected) or the
+    // plan was already saved. Hide it until then so an empty "Validate plan"
+    // button never appears before the user has generated anything.
+    const hasGeneratedPlanModules =
+      (Array.isArray(chatSessionModulePlanRef.current) && chatSessionModulePlanRef.current.length >= 1) ||
+      (Array.isArray((journey as any)?.modulePlan) && (journey as any).modulePlan.length >= 1) ||
+      (Array.isArray(chatWorkflowStatus?.modules) && (chatWorkflowStatus?.modules?.length ?? 0) >= 1) ||
+      (Array.isArray(chatWorkflowStatusRef.current?.modules) &&
+        (chatWorkflowStatusRef.current?.modules?.length ?? 0) >= 1);
     const showChatModuleSidebar =
-      rep
-        ? true
-        : hasStartedChat ||
-          Boolean(chatWorkflowStatus || chatWorkflowStatusRef.current) ||
-          (Array.isArray(chatSessionModulePlanRef.current) && chatSessionModulePlanRef.current.length >= 2) ||
-          (Array.isArray((journey as any)?.modulePlan) && (journey as any).modulePlan.length >= 2);
+      isPlanSavedForChat ||
+      hasGeneratedPlanModules ||
+      Boolean(chatWorkflowStatus?.plan === 'completed' || chatWorkflowStatusRef.current?.plan === 'completed');
     const repSplitLayout = rep && hasStartedChat;
     const shouldShowKbQuestionInChat = false;
     const shouldShowChatThread = !showRepSourcePopup;
@@ -5008,7 +5013,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const resolvedModules = Array.isArray(status?.modules) && status.modules.length > 0
         ? status.modules
         : fallbackModules;
-      if (!rep && !status && resolvedModules.length === 0) return null;
+      // Don't render the sidebar (and its "Validate plan" CTA) until a plan
+      // actually exists, in any layout (REP or full Journey Builder).
+      const planAlreadyValidated =
+        isPlanSavedForChat || status?.plan === 'completed';
+      if (!planAlreadyValidated && resolvedModules.length === 0) return null;
       const planStatus = String(
         isPlanSavedForChat || status?.plan === 'completed'
           ? 'completed'
