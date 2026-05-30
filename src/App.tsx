@@ -98,7 +98,10 @@ function AppContent() {
   const [onboardingComplete, setOnboardingComplete] = useState(() =>
     isOnboardingFullyCompleted()
   );
-  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  // `onboardingChecked` was used to gate the welcome modal until the API
+  // onboarding sync had completed. The welcome modal no longer depends on
+  // onboarding state (it is purely first-visit driven), so the flag was
+  // dropped. Keep silent no-op setters here only if other code still calls them.
   const [completedStepIds, setCompletedStepIds] = useState<number[]>(() => getCompletedStepsFromStorage());
   const [balance, setBalance] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
@@ -359,11 +362,7 @@ function AppContent() {
           }
         } catch (error) {
           console.error('Error fetching details:', error);
-        } finally {
-          setOnboardingChecked(true);
         }
-      } else {
-        setOnboardingChecked(true);
       }
     };
 
@@ -467,13 +466,11 @@ function AppContent() {
   }, [onboardingComplete, location.pathname, navigate, isZohoCallback, isZohoAuth]);
 
   useEffect(() => {
-    if (activeProject !== 'comporchestrator' || onboardingComplete) {
-      setShowGuideModal(false);
-      return;
-    }
-    // Wait for the API onboarding check to settle before showing the welcome modal.
-    // This prevents a brief flash for returning users with all phases completed.
-    if (!onboardingChecked) {
+    // Welcome modal rule: shown ONCE on first orchestrator visit, never again.
+    // Onboarding progress (started / in-progress / completed) has NO effect on
+    // this decision — the only source of truth is `shouldShowGuide`, which is
+    // driven by the localStorage "seen" flag in `useOrchestratorGuide`.
+    if (activeProject !== 'comporchestrator') {
       setShowGuideModal(false);
       return;
     }
@@ -486,7 +483,8 @@ function AppContent() {
       const timer = setTimeout(() => setShowGuideModal(true), 600);
       return () => clearTimeout(timer);
     }
-  }, [activeProject, shouldShowGuide, onboardingComplete, onboardingChecked, isZohoCallback, isZohoAuth, showUpgradeModal]);
+    setShowGuideModal(false);
+  }, [activeProject, shouldShowGuide, isZohoCallback, isZohoAuth, showUpgradeModal]);
 
   // Keep `completedStepIds` in sync with localStorage so navbar widgets (wallet
   // & upgrade) appear/disappear as the user progresses through onboarding.
