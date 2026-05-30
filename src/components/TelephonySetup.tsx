@@ -1082,7 +1082,7 @@ const TelephonySetup = ({
             <p className="text-[14px] font-medium text-white/90">{t('telephonySetup.subtitle')}</p>
           </div>
           <div className="flex items-center gap-3 self-start">
-            {completedSteps.includes(5) && (
+            {completedSteps.includes(4) && (
               <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-xl">
                 <CheckCircle className="h-6 w-6 text-white" />
               </div>
@@ -1116,144 +1116,252 @@ const TelephonySetup = ({
       </div>
 
       {cookieError && (
-        <div className="rounded-lg bg-red-50 border-[0.5px] border-red-100 p-4 mx-1">
+        <div className="rounded-xl bg-red-50/70 border border-red-100 p-4 mx-1 shadow-sm">
           <div className="flex text-[14px]">
-            <AlertCircle className="h-4 w-4 text-red-400" />
+            <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
             <div className="ml-3">
-              <h3 className="font-bold text-red-800 uppercase tracking-widest">{t('telephonySetup.errors.configurationTitle')}</h3>
+              <h3 className="font-bold text-red-800 uppercase tracking-widest text-[12px]">{t('telephonySetup.errors.configurationTitle')}</h3>
               <p className="mt-1 text-red-700 font-medium">{t('telephonySetup.errors.companyIdMissing')}</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Section: Select Gig */}
-      <div className="relative bg-white rounded-lg border-[0.5px] border-gray-200 p-4 shadow-sm pl-8">
-        {/* Huawei-style Blue Side Acceleration Bar */}
-        <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600 rounded-l-lg shadow-[2px_0_8px_rgba(37,99,235,0.2)]"></div>
+      {/* Section: Select Gig — premium card with gradient accent */}
+      <div className="group/card relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-6 pl-9 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.08)] hover:shadow-[0_1px_3px_rgba(15,23,42,0.05),0_20px_40px_-12px_rgba(37,99,235,0.18)] transition-shadow duration-500">
+        {/* Vertical gradient accent bar */}
+        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500 via-indigo-500 to-blue-600 rounded-l-2xl" />
+        {/* Soft decorative glow */}
+        <div className="pointer-events-none absolute -top-12 -right-12 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
 
-        <div className="flex items-center justify-between mb-1.5">
-          <div className="flex items-center space-x-2">
-            <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em]">{t('telephonySetup.selectGigProfile')}</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] bg-blue-50 text-blue-700 text-[10px] font-bold uppercase tracking-wider border border-blue-100">
-              {t('telephonySetup.required')}
-            </span>
+        <div className="relative">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.14em]">{t('telephonySetup.selectGigProfile')}</span>
+              <span className="inline-flex items-center px-2 py-[3px] rounded-md bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-[10px] font-extrabold uppercase tracking-[0.12em] border border-blue-100 shadow-sm">
+                {t('telephonySetup.required')}
+              </span>
+            </div>
           </div>
-        </div>
-        <p className="text-[14px] text-gray-500 mb-5">{t('telephonySetup.associateGig')}</p>
+          <p className="text-[13.5px] text-gray-500 mb-5 leading-relaxed">{t('telephonySetup.associateGig')}</p>
 
-        {isLoadingGigs ? (
-          <div className="w-full h-12 bg-gray-50 rounded-lg flex items-center justify-center border-[0.5px] border-gray-100">
-            <div className="animate-spin h-4 w-4 border-2 border-blue-200 border-t-blue-600 rounded-full mr-3" />
-            <span className="text-[13px] font-medium text-gray-500 uppercase tracking-widest">{t('telephonySetup.hydratingProfiles')}</span>
-          </div>
-        ) : (
-          <div className="relative">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`flex items-center justify-between w-full px-5 py-3.5 bg-gray-50/50 rounded-lg border-[0.5px] transition-all duration-300 ${isDropdownOpen ? 'border-blue-400 ring-4 ring-blue-900/5 bg-white' : 'border-gray-200 hover:border-blue-200 hover:bg-white'
+          {isLoadingGigs ? (
+            <div className="w-full h-14 bg-gradient-to-r from-gray-50 to-gray-50/50 rounded-xl flex items-center justify-center border border-gray-100">
+              <div className="animate-spin h-4 w-4 border-2 border-blue-200 border-t-blue-600 rounded-full mr-3" />
+              <span className="text-[12px] font-bold text-gray-500 uppercase tracking-[0.15em]">{t('telephonySetup.hydratingProfiles')}</span>
+            </div>
+          ) : (
+            <div className="relative">
+              {/* Trigger button — refined input-style with flag preview */}
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`relative flex items-center justify-between w-full px-4 py-3.5 rounded-xl border transition-all duration-300 ${
+                  isDropdownOpen
+                    ? 'border-blue-400 ring-4 ring-blue-500/10 bg-white shadow-md'
+                    : 'border-gray-200 bg-gradient-to-br from-white to-gray-50/60 hover:border-blue-300 hover:bg-white hover:shadow-sm'
                 }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Briefcase className={`h-5 w-5 ${selectedGigId ? 'text-blue-600' : 'text-gray-400'}`} />
-                {selectedGigId ? (
-                  (() => {
-                    const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
-                    return selectedGig ? (
-                      <div className="flex items-center space-x-3">
-                        <span className="text-[16px] font-black text-gray-900 leading-none tracking-tight">{selectedGig.title}</span>
-                        <span className="text-gray-300 font-light">|</span>
-                        <span className="text-[12px] font-black text-blue-600 uppercase tracking-[0.15em] leading-none">
-                          {selectedGig.destination_zone?.name?.common || t('telephonySetup.globalZone')}
-                        </span>
-                      </div>
-                    ) : <span className="text-[15px] text-gray-400 font-black uppercase tracking-widest">{t('telephonySetup.selectIntelligenceProfile')}</span>;
-                  })()
-                ) : (
-                  <span className="text-[15px] text-gray-400 font-bold italic">{t('telephonySetup.chooseActiveGigProfile')}</span>
-                )}
-              </div>
-              <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
-            </button>
-
-            {isDropdownOpen && (
-              <div className="absolute z-50 top-full left-0 right-0 mt-3 bg-white border-[0.5px] border-gray-100 rounded-2xl shadow-[0_20px_50px_rgba(37,99,235,0.15)] max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-500 ring-1 ring-black/5">
-                <div className="sticky top-0 z-10 px-7 py-3 bg-gradient-to-r from-blue-50/80 to-white/90 border-b-[0.5px] border-blue-100 backdrop-blur-sm">
-                  <span className="text-[11px] font-black text-blue-600 uppercase tracking-[0.2em]">
-                    {t('telephonySetup.chooseActiveGigProfile')}
-                  </span>
-                </div>
-                {gigs.length > 0 ? (
-                  gigs.map((g: Gig) => (
-                    <button
-                      key={g._id}
-                      onClick={() => {
-                        setSelectedGigId(g._id);
-                        setIsDropdownOpen(false);
-                      }}
-                      className={`relative flex items-center justify-between w-full px-7 py-5.5 text-left transition-all duration-300 group border-b-[0.5px] border-gray-50 last:border-0 ${selectedGigId === g._id ? 'bg-blue-50/70 shadow-inner' : 'hover:bg-blue-50/40'
-                        }`}
-                    >
-                      <div className={`absolute left-0 w-2 transition-all duration-500 ${selectedGigId === g._id ? 'h-full bg-blue-600 opacity-100' : 'h-0 bg-blue-400 opacity-0 group-hover:h-12 group-hover:opacity-60'
-                        }`} />
-
-                      <div className="flex flex-col items-start pl-4">
-                        <span className={`text-[17px] font-black tracking-tighter transition-all duration-300 ${selectedGigId === g._id ? 'text-blue-700 translate-x-1' : 'text-gray-900 group-hover:text-blue-600'
-                          }`}>
-                          {g.title}
-                        </span>
-                        <div className="flex items-center space-x-2 mt-1.5">
-                          <span className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] bg-blue-50 px-2 py-0.5 rounded">
-                            {g.destination_zone?.name?.common || t('telephonySetup.unknownRegion')}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-5">
-                        {g.destination_zone?.name?.common && getFlagEmoji(g.destination_zone.name.common) && (
-                          <span className="text-2xl drop-shadow-sm transition-all group-hover:scale-125 duration-500">
-                            {getFlagEmoji(g.destination_zone.name.common)}
-                          </span>
-                        )}
-                        {selectedGigId === g._id && (
-                          <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.4)] animate-in zoom-in spin-in-90 duration-700">
-                            <CheckCircle className="h-4 w-4 text-white" />
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  {selectedGigId ? (
+                    (() => {
+                      const sel = gigs.find((g: Gig) => g._id === selectedGigId);
+                      if (!sel) {
+                        return (
+                          <>
+                            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-100 text-gray-400">
+                              <Briefcase className="h-4.5 w-4.5" />
+                            </div>
+                            <span className="text-[14px] text-gray-400 font-semibold">
+                              {t('telephonySetup.selectIntelligenceProfile')}
+                            </span>
+                          </>
+                        );
+                      }
+                      const flag = sel.destination_zone?.name?.common
+                        ? getFlagEmoji(sel.destination_zone.name.common)
+                        : '';
+                      return (
+                        <>
+                          {/* Flag avatar — prominent */}
+                          <div className="relative shrink-0">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-inner">
+                              {flag ? (
+                                <span className="text-xl leading-none">{flag}</span>
+                              ) : (
+                                <Briefcase className="h-4.5 w-4.5 text-blue-600" />
+                              )}
+                            </div>
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white shadow" />
                           </div>
-                        )}
+                          <div className="flex flex-col items-start min-w-0">
+                            <span className="text-[15px] font-extrabold text-gray-900 leading-tight tracking-tight truncate max-w-[280px]">
+                              {sel.title}
+                            </span>
+                            <span className="text-[10.5px] font-bold text-blue-600 uppercase tracking-[0.18em] leading-none mt-1">
+                              {sel.destination_zone?.name?.common || t('telephonySetup.globalZone')}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 text-gray-400">
+                        <Briefcase className="h-4.5 w-4.5" />
                       </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-8 py-16 text-center">
-                    <Globe className="h-10 w-10 text-gray-200 mx-auto mb-4 animate-pulse" />
-                    <p className="text-[15px] text-gray-400 font-black uppercase tracking-widest italic">{t('telephonySetup.noGlobalProfilesFound')}</p>
+                      <span className="text-[14px] text-gray-400 font-semibold">
+                        {t('telephonySetup.chooseActiveGigProfile')}
+                      </span>
+                    </>
+                  )}
+                </div>
+                <div
+                  className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${
+                    isDropdownOpen ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400 group-hover/card:bg-blue-50 group-hover/card:text-blue-500'
+                  }`}
+                >
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+
+              {/* Dropdown menu — premium card list */}
+              {isDropdownOpen && (
+                <>
+                  {/* Click-away overlay */}
+                  <button
+                    type="button"
+                    aria-label="close"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="fixed inset-0 z-40 cursor-default"
+                  />
+                  <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-[0_20px_60px_-12px_rgba(15,23,42,0.18)] max-h-96 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ring-1 ring-black/5">
+                    {/* Header */}
+                    <div className="sticky top-0 z-10 px-5 py-3 bg-gradient-to-r from-blue-50/60 via-white to-white border-b border-gray-100 backdrop-blur-sm flex items-center justify-between">
+                      <span className="text-[10.5px] font-extrabold text-blue-700 uppercase tracking-[0.18em]">
+                        {t('telephonySetup.chooseActiveGigProfile')}
+                      </span>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest tabular-nums">
+                        {gigs.length} {gigs.length > 1 ? 'profils' : 'profil'}
+                      </span>
+                    </div>
+
+                    {/* Scrollable list */}
+                    <div className="overflow-y-auto max-h-[20rem] py-1.5">
+                      {gigs.length > 0 ? (
+                        gigs.map((g: Gig) => {
+                          const isActive = selectedGigId === g._id;
+                          const flag = g.destination_zone?.name?.common
+                            ? getFlagEmoji(g.destination_zone.name.common)
+                            : '';
+                          return (
+                            <button
+                              key={g._id}
+                              onClick={() => {
+                                setSelectedGigId(g._id);
+                                setIsDropdownOpen(false);
+                              }}
+                              className={`relative flex items-center justify-between w-full pl-5 pr-4 py-3 text-left transition-colors duration-200 group ${
+                                isActive ? 'bg-blue-50/70' : 'hover:bg-gray-50'
+                              }`}
+                            >
+                              {/* Active indicator bar */}
+                              <span
+                                className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full transition-all duration-300 ${
+                                  isActive ? 'bg-gradient-to-b from-blue-500 to-indigo-600 opacity-100' : 'bg-blue-400 opacity-0 group-hover:opacity-40'
+                                }`}
+                              />
+
+                              <div className="flex items-center gap-3.5 min-w-0">
+                                {/* Flag tile */}
+                                <div
+                                  className={`shrink-0 flex items-center justify-center w-11 h-11 rounded-xl border transition-all duration-300 ${
+                                    isActive
+                                      ? 'bg-gradient-to-br from-blue-100 to-indigo-100 border-blue-200 shadow-sm'
+                                      : 'bg-gray-50 border-gray-100 group-hover:bg-blue-50 group-hover:border-blue-100'
+                                  }`}
+                                >
+                                  {flag ? (
+                                    <span className="text-[22px] leading-none">{flag}</span>
+                                  ) : (
+                                    <Globe className="h-5 w-5 text-gray-400" />
+                                  )}
+                                </div>
+
+                                <div className="flex flex-col min-w-0">
+                                  <span
+                                    className={`text-[14px] font-bold tracking-tight truncate transition-colors duration-200 ${
+                                      isActive ? 'text-blue-700' : 'text-gray-900 group-hover:text-gray-900'
+                                    }`}
+                                  >
+                                    {g.title}
+                                  </span>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span
+                                      className={`text-[9.5px] font-extrabold uppercase tracking-[0.18em] px-1.5 py-0.5 rounded transition-colors ${
+                                        isActive
+                                          ? 'bg-blue-100 text-blue-700'
+                                          : 'bg-gray-100 text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-600'
+                                      }`}
+                                    >
+                                      {g.destination_zone?.name?.common || t('telephonySetup.unknownRegion')}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center pl-3 shrink-0">
+                                {isActive ? (
+                                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_4px_12px_rgba(37,99,235,0.35)] animate-in zoom-in duration-300">
+                                    <CheckCircle className="h-3.5 w-3.5 text-white" />
+                                  </div>
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="px-8 py-14 text-center">
+                          <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-4 border border-gray-100">
+                            <Globe className="h-6 w-6 text-gray-300" />
+                          </div>
+                          <p className="text-[12px] text-gray-400 font-bold uppercase tracking-[0.15em]">
+                            {t('telephonySetup.noGlobalProfilesFound')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       {/* Main Content (Provider + Numbers) - Only show when gigs are loaded */}
       {!isLoadingGigs && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-150 fill-mode-both">
           {/* Section: Select Provider — hidden: Twilio is enforced as the only carrier */}
 
-          {/* Section: Phone Nodes */}
-          <div className="relative bg-white rounded-lg border-[0.5px] border-gray-200 p-4 shadow-sm pl-8">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600 rounded-l-lg shadow-[2px_0_8px_rgba(37,99,235,0.2)]"></div>
+          {/* Section: Phone Nodes — same premium card treatment as the gig selector */}
+          <div className="relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-6 pl-9 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.08)]">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500 via-indigo-500 to-blue-600 rounded-l-2xl" />
+            <div className="pointer-events-none absolute -bottom-12 -right-12 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl" />
 
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em]">{t('telephonySetup.networkEntries')}</span>
-              {destinationZone && selectedGigId && (
-                <div className="flex items-center space-x-2 px-3 py-1 rounded-[4px] bg-blue-50 border-[0.5px] border-blue-200 shadow-sm transition-all duration-300 hover:bg-blue-100">
-                  <div className={`w-2.5 h-2.5 rounded-full ${isQuotaReached ? 'bg-emerald-500' : 'bg-blue-600 pulse'}`} />
-                  <span className="text-[12px] font-black text-blue-700 uppercase tracking-widest">
-                    {purchasedNumbersCount} / {teamSize} {t('telephonySetup.active')}
-                  </span>
-                </div>
-              )}
-            </div>
-            <p className="text-[14px] text-gray-500 mb-6">{t('telephonySetup.provisionNodes')}</p>
+            <div className="relative">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.14em]">{t('telephonySetup.networkEntries')}</span>
+                {destinationZone && selectedGigId && (
+                  <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 shadow-sm">
+                    <div className={`w-2 h-2 rounded-full ${isQuotaReached ? 'bg-emerald-500' : 'bg-blue-600 animate-pulse'}`} />
+                    <span className="text-[11px] font-extrabold text-blue-700 uppercase tracking-[0.14em] tabular-nums">
+                      {purchasedNumbersCount} / {teamSize} {t('telephonySetup.active')}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="text-[13.5px] text-gray-500 mb-6 leading-relaxed">{t('telephonySetup.provisionNodes')}</p>
 
             {/* Combined Active & Available List */}
             <div className="space-y-4">
@@ -1366,6 +1474,7 @@ const TelephonySetup = ({
                   )}
                 </div>
               )}
+            </div>
             </div>
           </div>
         </div>
