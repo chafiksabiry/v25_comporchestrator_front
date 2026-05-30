@@ -14,7 +14,10 @@ import { CompanyProfile } from "./CompanyProfile";
 import ManualCompanyForm from "./ManualCompanyForm";
 import ExistingCompanyProfile from "../CompanyProfile";
 import { useTranslation } from "react-i18next";
-import { useOnboardingGlobalBack } from "../../../hooks/useOnboardingGlobalBack";
+import {
+  useOnboardingGlobalBack,
+  goToCompanyOnboardingTab,
+} from "../../../hooks/useOnboardingGlobalBack";
 import { div } from "@tensorflow/tfjs";
 
 interface Props {
@@ -27,11 +30,12 @@ interface Props {
 export default function SearchCompanyWizardStep({ onBack, companyId, onStepComplete }: Props) {
   const { t } = useTranslation();
 
-  // Register the back action with App.tsx so a single compact "Back to
-  // onboarding" CTA is rendered above the content area (instead of the big
-  // pink bar we used to render inside this component). The user keeps a way
-  // to return at all times without the heavy in-page banner.
-  useOnboardingGlobalBack(onBack);
+  // Use the stable top-level `goToCompanyOnboardingTab` (same as in
+  // KnowledgeBase / RepOnboarding / ScriptGenerator) rather than the `onBack`
+  // prop. `onBack` comes from the parent and changes reference on every
+  // render, which would re-fire the hook's effect and cause
+  // "Maximum update depth exceeded".
+  useOnboardingGlobalBack(goToCompanyOnboardingTab);
 
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
