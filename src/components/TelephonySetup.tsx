@@ -6,7 +6,8 @@ import {
   CheckCircle,
   AlertCircle,
   Briefcase,
-  ChevronDown
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
@@ -76,7 +77,13 @@ interface Gig {
   updatedAt: string;
 }
 
-const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | null }): JSX.Element => {
+const TelephonySetup = ({
+  companyId: propCompanyId,
+  onNextStep,
+}: {
+  companyId?: string | null;
+  onNextStep?: () => void;
+}): JSX.Element => {
   const { t } = useTranslation();
   // Provider is enforced to Twilio (UI selector intentionally hidden).
   const [provider] = useState<'telnyx' | 'twilio'>('twilio');
@@ -1074,11 +1081,34 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
             <h1 className="text-3xl font-black text-white uppercase tracking-tighter">{t('telephonySetup.title')}</h1>
             <p className="text-[14px] font-medium text-white/90">{t('telephonySetup.subtitle')}</p>
           </div>
-          {completedSteps.includes(5) && (
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-xl self-start">
-              <CheckCircle className="h-6 w-6 text-white" />
-            </div>
-          )}
+          <div className="flex items-center gap-3 self-start">
+            {completedSteps.includes(5) && (
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-xl">
+                <CheckCircle className="h-6 w-6 text-white" />
+              </div>
+            )}
+
+            {/* Eye-catching "Next Step" CTA, only visible once at least one
+                phone number has been purchased. Hidden otherwise to nudge the
+                user to complete the prerequisite first. */}
+            {purchasedNumbersCount > 0 && onNextStep && (
+              <button
+                type="button"
+                onClick={onNextStep}
+                aria-label={t('telephonySetup.nextStep', 'Next step')}
+                className="group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-full
+                           bg-white text-harx-600 font-bold tracking-wide uppercase text-sm
+                           shadow-[0_8px_30px_rgba(255,255,255,0.35)] hover:shadow-[0_10px_40px_rgba(255,255,255,0.5)]
+                           hover:scale-[1.04] active:scale-[0.98] transition-all duration-300
+                           ring-2 ring-white/40 hover:ring-white/70 focus:outline-none focus:ring-4 focus:ring-white/60"
+              >
+                <span className="absolute inset-0 rounded-full bg-white/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
+                <span className="absolute -inset-1 rounded-full bg-gradient-to-r from-pink-300 via-white to-pink-300 opacity-40 blur-lg animate-pulse -z-10" />
+                <span>{t('telephonySetup.nextStep', 'Next step')}</span>
+                <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+              </button>
+            )}
+          </div>
         </div>
         {/* Abstract background pattern */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />

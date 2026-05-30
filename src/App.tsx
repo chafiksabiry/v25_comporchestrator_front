@@ -810,14 +810,15 @@ function AppContent() {
               activeView={activeProject}
               dashboard={<DashboardApp />}
               comporchestrator={
-                <div className="px-4 py-3 h-full pb-32">
+                <div className="px-4 py-3 h-full pb-32 relative">
                   {globalBackConfig && (
-                    <div className="mb-4">
-                      {/* Icon-only attractive variant: small round gradient
-                          button with animated glow and arrow. No text, so it
-                          stays discreet while remaining eye-catching and
-                          obvious. Tooltip + aria-label still expose the
-                          "Back to onboarding" label for a11y / hover. */}
+                    /* Sticky so the icon-only back CTA remains visible while
+                       the user scrolls long onboarding screens. `top-3` keeps
+                       a small breathing room from the top of the scroll
+                       container; `z-40` keeps it above content but below
+                       modals. `w-fit` ensures clicks don't get swallowed by
+                       an invisible full-width wrapper. */
+                    <div className="sticky top-3 z-40 mb-4 w-fit">
                       <OnboardingBackButton
                         variant="icon"
                         onClick={globalBackConfig.action}
