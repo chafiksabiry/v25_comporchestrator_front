@@ -22,7 +22,13 @@ export function useOnboardingGlobalBack(action: (() => void) | undefined) {
   const enabled = Boolean(action);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      // When the component explicitly says "no back action" (e.g. it renders
+      // its own in-content back button), proactively clear any stale global
+      // CTA that a previously mounted focus view may have left behind.
+      window.dispatchEvent(new CustomEvent("setGlobalBack", { detail: null }));
+      return;
+    }
 
     const stableAction = () => {
       actionRef.current?.();
