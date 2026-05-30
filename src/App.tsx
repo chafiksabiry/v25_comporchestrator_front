@@ -813,8 +813,12 @@ function AppContent() {
                 <div className="px-4 py-3 h-full pb-32">
                   {activeTab !== 'company-onboarding' && globalBackConfig && (
                     <div className="mb-4">
+                      {/* Compact variant on purpose: the previous big pink CTA
+                          was too intrusive on focused step views (see Search
+                          Company wizard). Users still have a clear way back
+                          without the marketing-style banner. */}
                       <OnboardingBackButton
-                        variant="cta"
+                        variant="default"
                         onClick={globalBackConfig.action}
                       />
                     </div>
