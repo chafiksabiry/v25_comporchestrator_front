@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, HelpCircle, PlusCircle, ArrowUp } from 'lucide-react';
-import { OnboardingBackButton } from '../../onboarding/searchCompanyWizard/OnboardingBackButton';
+import { useOnboardingGlobalBack } from '../../../hooks/useOnboardingGlobalBack';
 import { Suggestions } from './Suggestions';
 import { SectionContent } from './SectionContent';
 import { GigData, GigSuggestion } from '../types';
@@ -32,6 +32,9 @@ interface PrompAIProps {
 }
 
 const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboarding }) => {
+  const backToOnboarding = onBackToOnboarding ?? onBack;
+  useOnboardingGlobalBack(backToOnboarding);
+
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState("");
   const [showAIDialog, setShowAIDialog] = useState(false);
@@ -658,9 +661,6 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center">
           <div className="flex gap-4 items-center">
-            {onBackToOnboarding && (
-              <OnboardingBackButton variant="cta" onClick={onBackToOnboarding} />
-            )}
             {onBackToGigs && (
               <button
                 onClick={onBackToGigs}
