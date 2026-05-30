@@ -203,18 +203,39 @@ const TelephonySetup = ({
   const purchasedNumbersCount = Array.isArray(phoneNumbers) ? phoneNumbers.length : 0;
   const isQuotaReached = purchasedNumbersCount >= teamSize;
 
-  // Helper to convert country names to flag emojis
-  const getFlagEmoji = (countryName: string) => {
-    if (!countryName) return '';
-    try {
-      const codePoints = countryName
-        .toUpperCase()
-        .split('')
-        .map(char => 127397 + char.charCodeAt(0));
-      return String.fromCodePoint(...codePoints);
-    } catch (e) {
-      return '';
+  // Tiny presentational helper: shows the real country flag image when the gig
+  // exposes one, otherwise falls back to the ISO code letters in a neutral
+  // tile. This is the only flag renderer used by the gig dropdown.
+  const FlagBadge: React.FC<{
+    flags?: { svg?: string; png?: string; alt?: string } | null;
+    iso?: string | null;
+    name?: string | null;
+    size?: 'sm' | 'md';
+    className?: string;
+  }> = ({ flags, iso, name, size = 'md', className = '' }) => {
+    const src = flags?.svg || flags?.png;
+    const dim = size === 'sm' ? 'w-10 h-10' : 'w-11 h-11';
+    const label = (iso || '').toUpperCase() || (name || '').slice(0, 2).toUpperCase();
+
+    if (src) {
+      return (
+        <div
+          className={`relative shrink-0 ${dim} rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm ${className}`}
+          aria-label={flags?.alt || name || 'flag'}
+        >
+          <img src={src} alt={flags?.alt || name || 'flag'} className="absolute inset-0 w-full h-full object-cover" />
+        </div>
+      );
     }
+
+    return (
+      <div
+        className={`shrink-0 flex items-center justify-center ${dim} rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-inner ${className}`}
+        aria-label={name || iso || 'flag'}
+      >
+        <span className="text-[11px] font-extrabold tracking-[0.12em] text-blue-700">{label || '—'}</span>
+      </div>
+    );
   };
 
   useEffect(() => {
@@ -1177,20 +1198,16 @@ const TelephonySetup = ({
                           </>
                         );
                       }
-                      const flag = sel.destination_zone?.name?.common
-                        ? getFlagEmoji(sel.destination_zone.name.common)
-                        : '';
                       return (
                         <>
                           {/* Flag avatar — prominent */}
                           <div className="relative shrink-0">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-inner">
-                              {flag ? (
-                                <span className="text-xl leading-none">{flag}</span>
-                              ) : (
-                                <Briefcase className="h-4.5 w-4.5 text-blue-600" />
-                              )}
-                            </div>
+                            <FlagBadge
+                              flags={sel.destination_zone?.flags}
+                              iso={sel.destination_zone?.cca2}
+                              name={sel.destination_zone?.name?.common}
+                              size="sm"
+                            />
                             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white shadow" />
                           </div>
                           <div className="flex flex-col items-start min-w-0">
@@ -1250,9 +1267,6 @@ const TelephonySetup = ({
                       {gigs.length > 0 ? (
                         gigs.map((g: Gig) => {
                           const isActive = selectedGigId === g._id;
-                          const flag = g.destination_zone?.name?.common
-                            ? getFlagEmoji(g.destination_zone.name.common)
-                            : '';
                           return (
                             <button
                               key={g._id}
@@ -1272,20 +1286,13 @@ const TelephonySetup = ({
                               />
 
                               <div className="flex items-center gap-3.5 min-w-0">
-                                {/* Flag tile */}
-                                <div
-                                  className={`shrink-0 flex items-center justify-center w-11 h-11 rounded-xl border transition-all duration-300 ${
-                                    isActive
-                                      ? 'bg-gradient-to-br from-blue-100 to-indigo-100 border-blue-200 shadow-sm'
-                                      : 'bg-gray-50 border-gray-100 group-hover:bg-blue-50 group-hover:border-blue-100'
-                                  }`}
-                                >
-                                  {flag ? (
-                                    <span className="text-[22px] leading-none">{flag}</span>
-                                  ) : (
-                                    <Globe className="h-5 w-5 text-gray-400" />
-                                  )}
-                                </div>
+                                {/* Flag tile (real SVG when available) */}
+                                <FlagBadge
+                                  flags={g.destination_zone?.flags}
+                                  iso={g.destination_zone?.cca2}
+                                  name={g.destination_zone?.name?.common}
+                                  className={isActive ? 'ring-2 ring-blue-200' : ''}
+                                />
 
                                 <div className="flex flex-col min-w-0">
                                   <span
