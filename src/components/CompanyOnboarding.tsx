@@ -33,7 +33,6 @@ import KnowledgeBase from "./onboarding/KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
 import PrompAI from "./gigsaicreation/components/PrompAI";
-import { OnboardingBackButton } from "./onboarding/searchCompanyWizard/OnboardingBackButton";
 import { useTranslation } from "react-i18next";
 import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
 import {
@@ -1556,7 +1555,17 @@ const CompanyOnboarding = () => {
     );
   } else if (showTelephonySetup) {
     activeComponent = (
-      <TelephonySetup companyId={companyId} />
+      <TelephonySetup
+        companyId={companyId}
+        onNextStep={() => {
+          // Mark Telephony Setup (step 4) as completed and return to overview
+          setCompletedSteps((prev) => (prev.includes(4) ? prev : [...prev, 4]));
+          window.dispatchEvent(
+            new CustomEvent('stepCompleted', { detail: { stepId: 4, phaseId: 2 } })
+          );
+          handleBackToOnboarding();
+        }}
+      />
     );
   } else if (showKnowledgeBase) {
     activeComponent = <KnowledgeBase />;
@@ -1589,14 +1598,9 @@ const CompanyOnboarding = () => {
     }
   }
 
-  /** In-content back CTA for every focused step except Create Gigs AI (has its own) and step 1 profile hero. */
-  const showInContentBackCta =
-    !showGigCreation &&
-    (showGigDetails ||
-      showTelephonySetup ||
-      showKnowledgeBase ||
-      showUploadContacts ||
-      (activeStep !== null && activeStep !== 1));
+  // NOTE: the in-content "RETOUR À L'ONBOARDING" CTA was removed because
+  // the sticky icon-only back button rendered at the App.tsx level (top-left)
+  // already provides this navigation. Keeping both caused visual duplication.
 
   if (activeComponent) {
     return (
@@ -1604,11 +1608,6 @@ const CompanyOnboarding = () => {
         {orchestratorGuideLayer}
         {stepGuideLayer}
         <div className="animate-fade-in">
-          {showInContentBackCta && (
-            <div className="px-4 pt-4 pb-2 sm:px-6 sm:pt-6">
-              <OnboardingBackButton variant="cta" onClick={handleBackToOnboarding} />
-            </div>
-          )}
           {activeComponent}
         </div>
       </>
