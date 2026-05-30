@@ -554,8 +554,29 @@ function AppContent() {
       Cookies.remove(cookieName);
     });
 
+    // Preserve "one-time UX" flags across logout so the orchestrator welcome
+    // modal (and similar onboarding hints) never re-appear once the user has
+    // dismissed them — even after sign-out / sign-in cycles on the same
+    // browser. Wiping localStorage indiscriminately was the reason the modal
+    // kept showing on every reconnect.
+    const preservedKeys = [
+      'orchestratorGuideCompleted',
+      'orchestratorGuideSeen',
+      'hasSeenImportChoiceModal',
+    ];
+    const preserved: Record<string, string> = {};
+    preservedKeys.forEach((k) => {
+      const v = localStorage.getItem(k);
+      if (v !== null) preserved[k] = v;
+    });
+
     localStorage.clear();
     sessionStorage.clear();
+
+    Object.entries(preserved).forEach(([k, v]) => {
+      try { localStorage.setItem(k, v); } catch { /* ignore quota */ }
+    });
+
     window.location.replace('/app1');
   };
 
