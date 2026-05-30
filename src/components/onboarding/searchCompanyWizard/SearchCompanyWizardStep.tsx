@@ -14,10 +14,7 @@ import { CompanyProfile } from "./CompanyProfile";
 import ManualCompanyForm from "./ManualCompanyForm";
 import ExistingCompanyProfile from "../CompanyProfile";
 import { useTranslation } from "react-i18next";
-import {
-  useOnboardingGlobalBack,
-  goToCompanyOnboardingTab,
-} from "../../../hooks/useOnboardingGlobalBack";
+import { useOnboardingGlobalBack } from "../../../hooks/useOnboardingGlobalBack";
 import { div } from "@tensorflow/tfjs";
 
 interface Props {
@@ -30,12 +27,11 @@ interface Props {
 export default function SearchCompanyWizardStep({ onBack, companyId, onStepComplete }: Props) {
   const { t } = useTranslation();
 
-  // Use the stable top-level `goToCompanyOnboardingTab` (same as in
-  // KnowledgeBase / RepOnboarding / ScriptGenerator) rather than the `onBack`
-  // prop. `onBack` comes from the parent and changes reference on every
-  // render, which would re-fire the hook's effect and cause
-  // "Maximum update depth exceeded".
-  useOnboardingGlobalBack(goToCompanyOnboardingTab);
+  // Use the parent's `onBack` — it clears `activeStep` in CompanyOnboarding,
+  // which is what actually returns the user to the phases overview. The hook
+  // stores the action in a ref internally, so passing a fresh reference on
+  // every render is safe (no "Maximum update depth exceeded").
+  useOnboardingGlobalBack(onBack);
 
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
