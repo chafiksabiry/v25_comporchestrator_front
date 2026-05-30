@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 interface Props {
   onClick: () => void;
   className?: string;
-  variant?: "default" | "cta";
+  variant?: "default" | "cta" | "icon";
 }
 
 export function OnboardingBackButton({
@@ -15,6 +15,42 @@ export function OnboardingBackButton({
 }: Props) {
   const { t } = useTranslation();
   const label = t("companyOnboarding.ui.backToOnboarding");
+
+  if (variant === "icon") {
+    return (
+      <>
+        <style>{`
+          @keyframes onbIconGlowPulse {
+            0%, 100% { opacity: 0.55; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.15); }
+          }
+          @keyframes onbIconArrowSlide {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(-3px); }
+          }
+          .onb-icon-glow { animation: onbIconGlowPulse 2.4s ease-in-out infinite; }
+          .onb-icon-arrow { animation: onbIconArrowSlide 1.6s ease-in-out infinite; }
+          .onb-icon-btn:hover .onb-icon-glow {
+            opacity: 1;
+            animation-duration: 1.1s;
+          }
+          .onb-icon-btn:hover .onb-icon-arrow {
+            animation-duration: 0.7s;
+          }
+        `}</style>
+        <button
+          type="button"
+          onClick={onClick}
+          aria-label={label}
+          title={label}
+          className={`onb-icon-btn group relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 via-harx-500 to-harx-alt-500 text-white shadow-lg shadow-harx-500/40 ring-2 ring-white/40 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-harx-500/60 active:scale-90 ${className}`}
+        >
+          <span className="onb-icon-glow absolute inset-0 -z-10 rounded-full bg-gradient-to-br from-harx-400 to-harx-alt-400 opacity-70 blur-md" />
+          <ArrowLeft size={18} strokeWidth={2.8} className="onb-icon-arrow drop-shadow-sm" />
+        </button>
+      </>
+    );
+  }
 
   if (variant === "cta") {
     return (

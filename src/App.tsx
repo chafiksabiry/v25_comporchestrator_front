@@ -813,19 +813,13 @@ function AppContent() {
                 <div className="px-4 py-3 h-full pb-32">
                   {globalBackConfig && (
                     <div className="mb-4">
-                      {/* Compact variant on purpose: the previous big pink CTA
-                          was too intrusive on focused step views (see Search
-                          Company wizard). Users still have a clear way back
-                          without the marketing-style banner.
-                          We intentionally do NOT gate this on `activeTab`:
-                          focused step views inside the company-onboarding tab
-                          (Search wizard, Knowledge Base, etc.) also need the
-                          back CTA. `globalBackConfig` is only populated when
-                          a focused step actually registers via
-                          `useOnboardingGlobalBack`, so the phase-overview
-                          screen will not show it. */}
+                      {/* Icon-only attractive variant: small round gradient
+                          button with animated glow and arrow. No text, so it
+                          stays discreet while remaining eye-catching and
+                          obvious. Tooltip + aria-label still expose the
+                          "Back to onboarding" label for a11y / hover. */}
                       <OnboardingBackButton
-                        variant="default"
+                        variant="icon"
                         onClick={globalBackConfig.action}
                       />
                     </div>
