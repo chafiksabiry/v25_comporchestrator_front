@@ -14,10 +14,8 @@ import { CompanyProfile } from "./CompanyProfile";
 import ManualCompanyForm from "./ManualCompanyForm";
 import ExistingCompanyProfile from "../CompanyProfile";
 import { useTranslation } from "react-i18next";
-import {
-  useOnboardingGlobalBack,
-  goToCompanyOnboardingTab,
-} from "../../../hooks/useOnboardingGlobalBack";
+import { OnboardingBackButton } from "./OnboardingBackButton";
+import { goToCompanyOnboardingTab } from "../../../hooks/useOnboardingGlobalBack";
 import { div } from "@tensorflow/tfjs";
 
 interface Props {
@@ -30,12 +28,11 @@ interface Props {
 export default function SearchCompanyWizardStep({ onBack, companyId, onStepComplete }: Props) {
   const { t } = useTranslation();
 
-  // Use the stable top-level `goToCompanyOnboardingTab` (same as in
-  // KnowledgeBase / RepOnboarding / ScriptGenerator) rather than the `onBack`
-  // prop. `onBack` comes from the parent and changes reference on every
-  // render, which would re-fire the hook's effect and cause
-  // "Maximum update depth exceeded".
-  useOnboardingGlobalBack(goToCompanyOnboardingTab);
+  // The back action is rendered as an icon button INSIDE each view of this
+  // wizard (top-left of the white card) instead of being registered as a
+  // global App-level CTA. Caller may override via `onBack`; fallback brings
+  // the user back to the onboarding tab.
+  const handleBack = onBack ?? goToCompanyOnboardingTab;
 
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -172,6 +169,9 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   if (profile) {
     return (
       <div className="w-full p-6">
+        <div className="mb-4 flex items-center justify-start">
+          <OnboardingBackButton variant="icon" onClick={handleBack} />
+        </div>
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           {t(
             "searchCompanyWizard.publishHint",
@@ -199,6 +199,9 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   if (manualMode) {
     return (
       <div className="w-full p-6">
+        <div className="mb-4 flex items-center justify-start">
+          <OnboardingBackButton variant="icon" onClick={handleBack} />
+        </div>
       <ManualCompanyForm
         onClose={() => setManualMode(false)}
         onPublished={(newCompanyId) => {
@@ -223,6 +226,9 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
       </div>
 
       <div className="relative z-10">
+        <div className="mb-4 flex items-center justify-start">
+          <OnboardingBackButton variant="icon" onClick={handleBack} />
+        </div>
         {!loading && (
         <div className="manual-cta-sticker absolute right-0 top-0 flex flex-col items-end gap-2 select-none">
           <div className="manual-cta-bubble relative flex items-center gap-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-3.5 py-2 shadow-md shadow-amber-500/10">
