@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Building2,
   Shield,
@@ -40,6 +40,7 @@ import {
   markStepGuideSeen,
   shouldShowStepGuide,
 } from "../hooks/useStepGuide";
+import { EXIT_ONBOARDING_FOCUS_EVENT } from "../hooks/useOnboardingGlobalBack";
 
 // NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
 // (see useOrchestratorGuide). Do not re-mount it here, otherwise it would
@@ -1414,6 +1415,19 @@ const CompanyOnboarding = () => {
       await refreshProgressWithRetry();
     }
   };
+
+  const handleBackToOnboardingRef = useRef(handleBackToOnboarding);
+  handleBackToOnboardingRef.current = handleBackToOnboarding;
+
+  useEffect(() => {
+    const onExitFocus = () => {
+      void handleBackToOnboardingRef.current();
+    };
+    window.addEventListener(EXIT_ONBOARDING_FOCUS_EVENT, onExitFocus);
+    return () => {
+      window.removeEventListener(EXIT_ONBOARDING_FOCUS_EVENT, onExitFocus);
+    };
+  }, []);
 
   const handleStepClick = (stepId: number) => {
     const allSteps = phases.flatMap((phase) => phase.steps);
