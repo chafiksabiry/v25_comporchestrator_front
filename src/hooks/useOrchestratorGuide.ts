@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { isOnboardingFullyCompleted } from './useStepGuide';
 
 const STORAGE_KEY = 'orchestratorGuideCompleted';
 // Legacy key set by an old duplicate of the guide in CompanyOnboarding.tsx.
@@ -7,11 +6,14 @@ const STORAGE_KEY = 'orchestratorGuideCompleted';
 // implementation do not see it again after upgrade.
 const LEGACY_STORAGE_KEY = 'orchestratorGuideSeen';
 
+// Single, unambiguous rule for the orchestrator welcome modal:
+//   - Shown ONCE on the user's first visit to the orchestrator.
+//   - Never shown again afterwards, regardless of onboarding progress,
+//     refreshes, navigation, or any other state.
 function hasSeenGuide(): boolean {
   try {
     if (localStorage.getItem(STORAGE_KEY) === 'true') return true;
     if (localStorage.getItem(LEGACY_STORAGE_KEY) === 'true') {
-      // Migrate to the new key so we stop reading the legacy one.
       localStorage.setItem(STORAGE_KEY, 'true');
       return true;
     }
@@ -22,11 +24,7 @@ function hasSeenGuide(): boolean {
 }
 
 export function useOrchestratorGuide() {
-  const [shouldShowGuide, setShouldShowGuide] = useState(() => {
-    // Never show the welcome guide once the user has finished every onboarding phase.
-    if (isOnboardingFullyCompleted()) return false;
-    return !hasSeenGuide();
-  });
+  const [shouldShowGuide, setShouldShowGuide] = useState(() => !hasSeenGuide());
 
   const markGuideComplete = useCallback(() => {
     try {
