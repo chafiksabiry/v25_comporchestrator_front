@@ -36,13 +36,14 @@ import PrompAI from "./gigsaicreation/components/PrompAI";
 import { OnboardingBackButton } from "./onboarding/searchCompanyWizard/OnboardingBackButton";
 import { useTranslation } from "react-i18next";
 import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
-import OrchestratorGuideModal from "./onboarding/OrchestratorGuideModal";
 import {
   markStepGuideSeen,
   shouldShowStepGuide,
 } from "../hooks/useStepGuide";
 
-const ORCHESTRATOR_GUIDE_STORAGE_KEY = "orchestratorGuideSeen";
+// NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
+// (see useOrchestratorGuide). Do not re-mount it here, otherwise it would
+// reappear on every refresh through a duplicated storage key.
 
 interface BaseStep {
   id: number;
@@ -300,7 +301,6 @@ const CompanyOnboarding = () => {
     mode: 'start' | 'review';
   } | null>(null);
   const [pendingInStepGuide, setPendingInStepGuide] = useState<number | null>(null);
-  const [showOrchestratorGuide, setShowOrchestratorGuide] = useState(false);
 
   const findPhaseIdForStep = (stepId: number) =>
     phases.find((p) => p.steps.some((s) => s.id === stepId))?.id ?? 1;
@@ -404,45 +404,8 @@ const CompanyOnboarding = () => {
   void StepGuideModal;
   void handleCloseStepGuide;
 
-  const orchestratorGuideLayer = (
-    <OrchestratorGuideModal
-      isOpen={showOrchestratorGuide}
-      onComplete={() => {
-        try {
-          localStorage.setItem(ORCHESTRATOR_GUIDE_STORAGE_KEY, "true");
-        } catch { /* ignore quota errors */ }
-        setShowOrchestratorGuide(false);
-      }}
-      onSkip={() => {
-        try {
-          localStorage.setItem(ORCHESTRATOR_GUIDE_STORAGE_KEY, "true");
-        } catch { /* ignore quota errors */ }
-        setShowOrchestratorGuide(false);
-      }}
-    />
-  );
-
-  useEffect(() => {
-    if (isInitialLoad) return;
-    if (completedSteps.length > 0) return;
-    try {
-      const seen = localStorage.getItem(ORCHESTRATOR_GUIDE_STORAGE_KEY);
-      if (seen !== "true") setShowOrchestratorGuide(true);
-    } catch {
-      setShowOrchestratorGuide(true);
-    }
-  }, [isInitialLoad, completedSteps.length]);
-
-  useEffect(() => {
-    const handler = () => {
-      try {
-        localStorage.removeItem(ORCHESTRATOR_GUIDE_STORAGE_KEY);
-      } catch { /* ignore */ }
-      setShowOrchestratorGuide(true);
-    };
-    window.addEventListener("openOrchestratorGuide", handler);
-    return () => window.removeEventListener("openOrchestratorGuide", handler);
-  }, []);
+  // The orchestrator welcome guide is mounted once at App.tsx — no local copy here.
+  const orchestratorGuideLayer = null;
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
