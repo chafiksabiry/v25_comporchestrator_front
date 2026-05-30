@@ -27,12 +27,6 @@ interface Props {
 export default function SearchCompanyWizardStep({ onBack, companyId, onStepComplete }: Props) {
   const { t } = useTranslation();
 
-  // Use the parent's `onBack` — it clears `activeStep` in CompanyOnboarding,
-  // which is what actually returns the user to the phases overview. The hook
-  // stores the action in a ref internally, so passing a fresh reference on
-  // every render is safe (no "Maximum update depth exceeded").
-  useOnboardingGlobalBack(onBack);
-
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<GoogleSearchResult[]>([]);
@@ -45,6 +39,13 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/.*)?$/i.test(trimmedQuery);
   const [checkingExisting, setCheckingExisting] = useState(true);
   const [existingCompanyId, setExistingCompanyId] = useState<string | null>(null);
+
+  // Register the global back CTA only for views that DO NOT render their own
+  // in-content back button. ExistingCompanyProfile already shows its own
+  // icon-only back button inside its hero, so we keep it disabled in that
+  // branch to avoid showing two buttons.
+  const shouldRegisterGlobalBack = !checkingExisting && !existingCompanyId;
+  useOnboardingGlobalBack(shouldRegisterGlobalBack ? onBack : undefined);
 
   useEffect(() => {
     const checkExistingCompany = async () => {

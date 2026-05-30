@@ -890,10 +890,10 @@ function CompanyProfile({ companyId: propCompanyId, onBack }: { companyId?: stri
                   </div>
                 </div>
               </div>
-              {/* Back to onboarding */}
+              {/* Back to onboarding — icon-only, placed inside the hero */}
               {onBack && (
                 <div className="absolute top-6 left-6 z-20">
-                  <OnboardingBackButton variant="cta" onClick={onBack} />
+                  <OnboardingBackButton variant="icon" onClick={onBack} />
                 </div>
               )}
               {/* Edit Mode Toggle */}
