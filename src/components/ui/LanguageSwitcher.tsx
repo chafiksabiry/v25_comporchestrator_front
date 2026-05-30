@@ -25,6 +25,7 @@ export function LanguageSwitcher() {
   }, []);
 
   const selectLanguage = (code: string) => {
+    console.log('[HARX i18n] user selected language:', code, '| previous:', i18n.language);
     i18n.changeLanguage(code);
     setIsOpen(false);
   };
