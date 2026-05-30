@@ -811,12 +811,19 @@ function AppContent() {
               dashboard={<DashboardApp />}
               comporchestrator={
                 <div className="px-4 py-3 h-full pb-32">
-                  {activeTab !== 'company-onboarding' && globalBackConfig && (
+                  {globalBackConfig && (
                     <div className="mb-4">
                       {/* Compact variant on purpose: the previous big pink CTA
                           was too intrusive on focused step views (see Search
                           Company wizard). Users still have a clear way back
-                          without the marketing-style banner. */}
+                          without the marketing-style banner.
+                          We intentionally do NOT gate this on `activeTab`:
+                          focused step views inside the company-onboarding tab
+                          (Search wizard, Knowledge Base, etc.) also need the
+                          back CTA. `globalBackConfig` is only populated when
+                          a focused step actually registers via
+                          `useOnboardingGlobalBack`, so the phase-overview
+                          screen will not show it. */}
                       <OnboardingBackButton
                         variant="default"
                         onClick={globalBackConfig.action}
