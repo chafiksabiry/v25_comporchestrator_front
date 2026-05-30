@@ -13,7 +13,6 @@ import { CompanyLogo } from "./CompanyLogo";
 import { CompanyProfile } from "./CompanyProfile";
 import ManualCompanyForm from "./ManualCompanyForm";
 import ExistingCompanyProfile from "../CompanyProfile";
-import { OnboardingBackButton } from "./OnboardingBackButton";
 import { useTranslation } from "react-i18next";
 import { div } from "@tensorflow/tfjs";
 
@@ -161,9 +160,6 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   if (profile) {
     return (
       <div className="w-full p-6">
-        {onBack && (
-          <OnboardingBackButton variant="cta" onClick={onBack} className="mb-4" />
-        )}
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           {t(
             "searchCompanyWizard.publishHint",
@@ -191,9 +187,6 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   if (manualMode) {
     return (
       <div className="w-full p-6">
-        {onBack && (
-          <OnboardingBackButton variant="cta" onClick={onBack} className="mb-4" />
-        )}
       <ManualCompanyForm
         onClose={() => setManualMode(false)}
         onPublished={(newCompanyId) => {
@@ -211,9 +204,6 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
 
   return (
     <div className="mx-auto max-w-5xl p-6 animate-fade-in relative overflow-hidden min-h-[600px] flex flex-col justify-center">
-      {onBack && (
-        <OnboardingBackButton variant="cta" onClick={onBack} className="relative z-10 mb-6" />
-      )}
       {/* Background Animated Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[5%] left-[10%] w-[30%] h-[30%] bg-gradient-to-br from-harx-200/40 to-harx-alt-200/40 blur-[80px] rounded-full animate-float" />

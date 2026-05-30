@@ -5,6 +5,28 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import enTranslation from './locales/en.json';
 import frTranslation from './locales/fr.json';
 
+const I18N_LOG = '[HARX i18n]';
+
+function logLanguageState(phase: string) {
+  const stored = (() => {
+    try {
+      return localStorage.getItem('i18nextLng');
+    } catch {
+      return null;
+    }
+  })();
+
+  console.group(`${I18N_LOG} ${phase}`);
+  console.log('active language:', i18n.language);
+  console.log('resolved language:', i18n.resolvedLanguage);
+  console.log('localStorage (i18nextLng):', stored ?? '(empty)');
+  console.log('navigator.language:', typeof navigator !== 'undefined' ? navigator.language : 'n/a');
+  console.log('navigator.languages:', typeof navigator !== 'undefined' ? navigator.languages : 'n/a');
+  console.log('detection order:', ['localStorage', 'navigator', 'htmlTag']);
+  console.log('supported:', ['en', 'fr'], '| fallback: en');
+  console.groupEnd();
+}
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -37,5 +59,13 @@ i18n
       escapeValue: false,
     },
   });
+
+i18n.on('initialized', () => {
+  logLanguageState('initialized');
+});
+
+i18n.on('languageChanged', (lng) => {
+  console.log(`${I18N_LOG} languageChanged →`, lng, '| resolved:', i18n.resolvedLanguage);
+});
 
 export default i18n;
