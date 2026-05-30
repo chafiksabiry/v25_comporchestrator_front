@@ -1246,21 +1246,21 @@ function LeadsView({
   callbacksStats: CallbacksStats | null;
 }) {
   const { t } = useTranslation();
-  // Mock baseline used until the real stats land. Keeps the page presentable
-  // for first-paint and for demo accounts that don't have data yet.
-  const MOCK_TOTAL = 12450;
-  const MOCK_STATUS = {
-    new: { count: 3984, pct: 32 },
-    inProgress: { count: 2810, pct: 22.6 },
-    qualified: { count: 1520, pct: 12.2 },
-    appointment: { count: 412, pct: 3.3 },
-    won: { count: 1083, pct: 8.7 },
-    lost: { count: 511, pct: 4.1 },
-    other: { count: 2130, pct: 17.1 },
+  // Strict company scope: when the company has no leads yet, show zeros
+  // — never another company's mock numbers.
+  const EMPTY_BUCKET = { count: 0, pct: 0 };
+  const EMPTY_STATUS = {
+    new: EMPTY_BUCKET,
+    inProgress: EMPTY_BUCKET,
+    qualified: EMPTY_BUCKET,
+    appointment: EMPTY_BUCKET,
+    won: EMPTY_BUCKET,
+    lost: EMPTY_BUCKET,
+    other: EMPTY_BUCKET,
   };
 
-  const baseCount = leadStats?.total ?? MOCK_TOTAL;
-  const status = leadStats?.statusSummary ?? MOCK_STATUS;
+  const baseCount = leadStats?.total ?? 0;
+  const status = leadStats?.statusSummary ?? EMPTY_STATUS;
 
   const baseLabel =
     leadStats === null
@@ -1284,18 +1284,17 @@ function LeadsView({
   const convertedCount = status.appointment.count + status.won.count;
   const convertedPct = status.appointment.pct + status.won.pct;
 
-  // Base-quality buckets: pull straight from the backend when available,
-  // otherwise show the mock numbers so the layout never breaks.
-  const MOCK_QUALITY = {
-    valid: { count: 8516, pct: 68.4 },
-    unreachable: { count: 1531, pct: 12.3 },
-    wrong: { count: 511, pct: 4.1 },
-    notInterested: { count: 1083, pct: 8.7 },
-    notAware: { count: 398, pct: 3.2 },
-    alreadyEquipped: { count: 411, pct: 3.3 },
+  // Base-quality buckets — strictly real company data, zeros if empty.
+  const EMPTY_QUALITY = {
+    valid: EMPTY_BUCKET,
+    unreachable: EMPTY_BUCKET,
+    wrong: EMPTY_BUCKET,
+    notInterested: EMPTY_BUCKET,
+    notAware: EMPTY_BUCKET,
+    alreadyEquipped: EMPTY_BUCKET,
   };
-  const q = leadStats?.quality ?? MOCK_QUALITY;
-  const qualityScorePct = leadStats?.qualityScorePct ?? MOCK_QUALITY.valid.pct;
+  const q = leadStats?.quality ?? EMPTY_QUALITY;
+  const qualityScorePct = leadStats?.qualityScorePct ?? 0;
 
   const qualities: LeadQuality[] = [
     {
@@ -1342,16 +1341,15 @@ function LeadsView({
     },
   ];
 
-  // Attempt distribution — real data from the backend; mock fallback keeps
-  // the layout populated while waiting for data or on demo accounts.
-  const MOCK_AD = {
-    one:      { count: 3124, pct: 37 },
-    two:      { count: 2810, pct: 33 },
-    three:    { count: 1520, pct: 18 },
-    four:     { count: 1000, pct: 12 },
-    fivePlus: { count: 812,  pct: 6.5 },
+  // Attempt distribution — real backend data only, zeros if absent.
+  const EMPTY_AD = {
+    one: EMPTY_BUCKET,
+    two: EMPTY_BUCKET,
+    three: EMPTY_BUCKET,
+    four: EMPTY_BUCKET,
+    fivePlus: EMPTY_BUCKET,
   };
-  const ad = leadStats?.attemptDistribution ?? MOCK_AD;
+  const ad = leadStats?.attemptDistribution ?? EMPTY_AD;
 
   const attempts: AttemptBucket[] = [
     {
@@ -1408,14 +1406,7 @@ function LeadsView({
     return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
   };
 
-  const MOCK_REPS: RepCoverage[] = [
-    { initials: 'KA', name: 'Karima A.', current: 1050, target: 1250, bar: 'bg-harx-500', avatar: 'bg-harx-500/15 text-harx-700' },
-    { initials: 'YO', name: 'Younes O.', current: 887, target: 1250, bar: 'bg-blue-500', avatar: 'bg-blue-500/15 text-blue-700' },
-    { initials: 'SB', name: 'Sara B.', current: 788, target: 1250, bar: 'bg-emerald-500', avatar: 'bg-emerald-500/15 text-emerald-700' },
-    { initials: 'AM', name: 'Amine M.', current: 675, target: 1250, bar: 'bg-amber-500', avatar: 'bg-amber-500/15 text-amber-700' },
-    { initials: 'HB', name: 'Hassan B.', current: 388, target: 1250, bar: 'bg-rose-500', avatar: 'bg-rose-500/15 text-rose-700', warn: true },
-  ];
-
+  // Strict company scope: never show mock reps belonging to other companies.
   const reps: RepCoverage[] =
     repCoverage && repCoverage.length > 0
       ? repCoverage.map((r, idx) => {
@@ -1431,7 +1422,7 @@ function LeadsView({
             warn: r.target > 0 && r.current / r.target < 0.35,
           };
         })
-      : MOCK_REPS;
+      : [];
 
   return (
     <>
@@ -2429,13 +2420,13 @@ function OverviewView({
           sub={walletSub}
         />
 
-        {/* 2) Leads base */}
+        {/* 2) Leads base — real company count (no hardcoded fallback). */}
         <KpiCard
           tone="default"
           icon={<Users size={14} className="text-slate-500" />}
           label={t('opsDashboard.overview.kpi.leadsBase', 'Leads base')}
-          value={fmtNum(leadsBase || 12450)}
-          sub={`${(coveragePct || 68).toFixed(0)}% ${t('opsDashboard.overview.kpi.covered', 'couverts')}`}
+          value={fmtNum(leadsBase)}
+          sub={`${coveragePct.toFixed(0)}% ${t('opsDashboard.overview.kpi.covered', 'couverts')}`}
         />
 
         {/* 3) Appels aujourd'hui — with delta vs yesterday from series7d */}
