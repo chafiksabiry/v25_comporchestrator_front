@@ -41,6 +41,7 @@ import {
 } from "../hooks/useStepGuide";
 import { EXIT_ONBOARDING_FOCUS_EVENT } from "../hooks/useOnboardingGlobalBack";
 import { OnboardingFocusedStepLayout } from "./onboarding/OnboardingFocusedStepLayout";
+import { REP_ONBOARDING_STATE_EVENT } from "./onboarding/RepOnboarding";
 
 // NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
 // (see useOrchestratorGuide). Do not re-mount it here, otherwise it would
@@ -291,6 +292,10 @@ const CompanyOnboarding = () => {
   const [showGigDetails, setShowGigDetails] = useState(false);
   const [showGigCreation, setShowGigCreation] = useState(false);
   const [telephonyNextReady, setTelephonyNextReady] = useState(false);
+  const [repOnboardingMeta, setRepOnboardingMeta] = useState({
+    realTrainingsCount: 0,
+    inBuilder: false,
+  });
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [stepGuide, setStepGuide] = useState<{
@@ -1420,6 +1425,19 @@ const CompanyOnboarding = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const onRepState = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (!detail) return;
+      setRepOnboardingMeta({
+        realTrainingsCount: Number(detail.realTrainingsCount) || 0,
+        inBuilder: Boolean(detail.inBuilder),
+      });
+    };
+    window.addEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
+    return () => window.removeEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
+  }, []);
+
   const handleStepClick = (stepId: number) => {
     const allSteps = phases.flatMap((phase) => phase.steps);
     const step = allSteps.find((s) => s.id === stepId);
@@ -1589,16 +1607,27 @@ const CompanyOnboarding = () => {
 
   if (activeComponent) {
     const focusedStepId = getFocusedStepId();
-    const nextStepDisabled = focusedStepId === 4 && !telephonyNextReady;
+    const isRepOnboardingStep = focusedStepId === 9;
+    const hideNextStep = isRepOnboardingStep && repOnboardingMeta.inBuilder;
+    const nextStepDisabled =
+      (focusedStepId === 4 && !telephonyNextReady) ||
+      (isRepOnboardingStep &&
+        !repOnboardingMeta.inBuilder &&
+        repOnboardingMeta.realTrainingsCount === 0);
 
     return (
       <>
         {orchestratorGuideLayer}
         {stepGuideLayer}
         <OnboardingFocusedStepLayout
-          showNextStep
+          showNextStep={!hideNextStep}
           onNextStep={() => void handleFocusedNextStep()}
           nextStepDisabled={nextStepDisabled}
+          nextStepDisabledHint={
+            isRepOnboardingStep && nextStepDisabled
+              ? t("companyOnboarding.ui.nextStepDisabledNoTraining")
+              : undefined
+          }
         >
           <div className="animate-fade-in">{activeComponent}</div>
         </OnboardingFocusedStepLayout>

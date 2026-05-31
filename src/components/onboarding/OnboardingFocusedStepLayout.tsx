@@ -7,6 +7,7 @@ interface Props {
   showNextStep?: boolean;
   onNextStep?: () => void;
   nextStepDisabled?: boolean;
+  nextStepDisabledHint?: string;
 }
 
 /**
@@ -18,6 +19,7 @@ export function OnboardingFocusedStepLayout({
   showNextStep = true,
   onNextStep,
   nextStepDisabled = false,
+  nextStepDisabledHint,
 }: Props) {
   if (!showNextStep || !onNextStep) {
     return <>{children}</>;
@@ -34,6 +36,7 @@ export function OnboardingFocusedStepLayout({
           <OnboardingNextStepButton
             onClick={onNextStep}
             disabled={nextStepDisabled}
+            disabledHint={nextStepDisabledHint}
           />
         </div>
       </div>

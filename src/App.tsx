@@ -54,6 +54,7 @@ import {
 } from './hooks/useStepGuide';
 import { OnboardingFocusedStepLayout } from './components/onboarding/OnboardingFocusedStepLayout';
 import { goToCompanyOnboardingTab } from './hooks/useOnboardingGlobalBack';
+import { REP_ONBOARDING_STATE_EVENT } from './components/onboarding/RepOnboarding';
 
 // First step of the Activation phase (Phase 4). When this is reached (step 10 of
 // Phase 3 done OR any Phase 4 step touched), wallet & upgrade widgets become
@@ -111,6 +112,10 @@ function AppContent() {
   const [escrow, setEscrow] = useState<number>(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [showWalletTopUp, setShowWalletTopUp] = useState(false);
+  const [repOnboardingMeta, setRepOnboardingMeta] = useState({
+    realTrainingsCount: 0,
+    inBuilder: false,
+  });
 
   const navigate = useNavigate();
 
@@ -425,6 +430,19 @@ function AppContent() {
       window.removeEventListener('openCompanyDashboard', openCompanyDashboard);
     };
   }, [location.pathname, isZohoCallback, isZohoAuth, navigate, markGuideComplete]);
+
+  useEffect(() => {
+    const onRepState = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (!detail) return;
+      setRepOnboardingMeta({
+        realTrainingsCount: Number(detail.realTrainingsCount) || 0,
+        inBuilder: Boolean(detail.inBuilder),
+      });
+    };
+    window.addEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
+    return () => window.removeEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
+  }, []);
 
   // Returning users with all phases done: never stay on #/orchestrator — go to dashboard.
   useEffect(() => {
@@ -813,8 +831,22 @@ function AppContent() {
                 <div className="px-4 py-3 h-full pb-32 relative">
                   {ORCHESTRATOR_STEP_TABS_WITH_NEXT.has(activeTab) ? (
                     <OnboardingFocusedStepLayout
-                      showNextStep
+                      showNextStep={
+                        activeTab !== 'training' || !repOnboardingMeta.inBuilder
+                      }
                       onNextStep={handleOrchestratorTabNextStep}
+                      nextStepDisabled={
+                        activeTab === 'training' &&
+                        !repOnboardingMeta.inBuilder &&
+                        repOnboardingMeta.realTrainingsCount === 0
+                      }
+                      nextStepDisabledHint={
+                        activeTab === 'training' &&
+                        !repOnboardingMeta.inBuilder &&
+                        repOnboardingMeta.realTrainingsCount === 0
+                          ? t('companyOnboarding.ui.nextStepDisabledNoTraining')
+                          : undefined
+                      }
                     >
                       {renderContent()}
                     </OnboardingFocusedStepLayout>
