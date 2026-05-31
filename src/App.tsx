@@ -832,21 +832,11 @@ function AppContent() {
                   {ORCHESTRATOR_STEP_TABS_WITH_NEXT.has(activeTab) ? (
                     <OnboardingFocusedStepLayout
                       showNextStep={
-                        activeTab !== 'training' || !repOnboardingMeta.inBuilder
+                        activeTab !== 'training' ||
+                        (repOnboardingMeta.realTrainingsCount > 0 &&
+                          !repOnboardingMeta.inBuilder)
                       }
                       onNextStep={handleOrchestratorTabNextStep}
-                      nextStepDisabled={
-                        activeTab === 'training' &&
-                        !repOnboardingMeta.inBuilder &&
-                        repOnboardingMeta.realTrainingsCount === 0
-                      }
-                      nextStepDisabledHint={
-                        activeTab === 'training' &&
-                        !repOnboardingMeta.inBuilder &&
-                        repOnboardingMeta.realTrainingsCount === 0
-                          ? t('companyOnboarding.ui.nextStepDisabledNoTraining')
-                          : undefined
-                      }
                     >
                       {renderContent()}
                     </OnboardingFocusedStepLayout>
