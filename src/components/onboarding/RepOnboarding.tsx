@@ -41,6 +41,70 @@ import {
 
 export { REP_ONBOARDING_STATE_EVENT };
 
+const PLACEHOLDER_TRAINING_TITLES = new Set(
+  ['draft gig', 'training draft', 'new training journey', 'untitled training'].map((s) =>
+    s
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+  )
+);
+
+function normalizeTrainingTitle(value: unknown): string {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function isPlaceholderTrainingTitle(value: unknown): boolean {
+  const t = normalizeTrainingTitle(value);
+  return !t || PLACEHOLDER_TRAINING_TITLES.has(t);
+}
+
+/** Draft journeys with a validated plan / modules are real work-in-progress trainings. */
+export function hasSubstantiveTrainingContent(journey: any): boolean {
+  if (!journey) return false;
+  if (journey.planIsValid === true) return true;
+
+  const methodology = journey.methodologyData;
+  if (methodology?.planFrozenFromChat === true) return true;
+  if (methodology?.planValidatedAt) return true;
+  if (String(methodology?.validatedPlanMarkdown || '').trim().length > 80) return true;
+
+  const workflow = methodology?.workflow;
+  if (workflow?.phase === 'plan_validated') return true;
+  if (workflow?.plan === 'completed') return true;
+  if (Array.isArray(workflow?.modules) && workflow.modules.length >= 1) return true;
+
+  const modulePlan = Array.isArray(journey.modulePlan) ? journey.modulePlan : [];
+  if (
+    modulePlan.some((m: any) => String(m?.title || '').trim().length > 3)
+  ) {
+    return true;
+  }
+
+  const modules = Array.isArray(journey.modules) ? journey.modules : [];
+  if (modules.length >= 1) {
+    const hasRealModule = modules.some(
+      (m: any) => String(m?.title || '').trim().length > 3
+    );
+    if (hasRealModule) return true;
+  }
+
+  return false;
+}
+
+export function isDisplayableTrainingJourney(journey: any): boolean {
+  if (!journey) return false;
+  const title = journey?.title || journey?.name || '';
+  if (isPlaceholderTrainingTitle(title)) return false;
+  const status = String(journey?.status || '').toLowerCase();
+  if (status === 'draft') return hasSubstantiveTrainingContent(journey);
+  return true;
+}
+
 interface RepOnboardingProps { }
 
 const RepOnboarding: React.FC<RepOnboardingProps> = () => {
@@ -125,7 +189,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     let status = 'not_started';
     if (journey.status === 'completed' || journey.journeyStatus === 'completed') {
       status = 'completed';
-    } else if (journey.status === 'in_progress' || journey.journeyStatus === 'in_progress' || journey.status === 'active') {
+    } else if (
+      journey.status === 'in_progress' ||
+      journey.journeyStatus === 'in_progress' ||
+      journey.status === 'active' ||
+      (journey.status === 'draft' && hasSubstantiveTrainingContent(journey))
+    ) {
       status = 'in_progress';
     }
 
@@ -466,18 +535,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       }
 
       
-      const publishedTrainings = journeysArray.filter((journey: any) => {
-        const status = String(journey?.status || '').toLowerCase();
-        if (status === 'draft') return false;
-        const title = journey?.title || journey?.name || '';
-        const norm = title
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .trim();
-        if (!norm || placeholderTrainingTitles.has(norm)) return false;
-        return true;
-      });
+      const publishedTrainings = journeysArray.filter(isDisplayableTrainingJourney);
 
       setTrainings(journeysArray);
 
@@ -622,48 +680,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     void fetchSavedImageSets();
   }, [fetchSavedImageSets]);
 
-  const normalizeText = (value: unknown): string =>
-    String(value || '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .trim();
-
-  const placeholderTrainingTitles = React.useMemo(
-    () =>
-      new Set(
-        ['draft gig', 'training draft', 'new training journey', 'untitled training'].map((s) =>
-          s
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase()
-        )
-      ),
-    []
-  );
-
-  const isPlaceholderTrainingTitle = useCallback(
-    (value: unknown) => {
-      const t = normalizeText(value);
-      return !t || placeholderTrainingTitles.has(t);
-    },
-    [placeholderTrainingTitles]
-  );
-
-  const isRealTrainingJourney = useCallback(
-    (journey: any) => {
-      if (!journey) return false;
-      const status = String(journey?.status || '').toLowerCase();
-      if (status === 'draft') return false;
-      const title = journey?.title || journey?.name || '';
-      return !isPlaceholderTrainingTitle(title);
-    },
-    [isPlaceholderTrainingTitle]
-  );
-
   const realTrainings = useMemo(
-    () => trainings.filter(isRealTrainingJourney),
-    [trainings, isRealTrainingJourney]
+    () => trainings.filter(isDisplayableTrainingJourney),
+    [trainings]
   );
 
   const trainingBuilderWasOpenRef = useRef(false);
@@ -710,7 +729,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
       return formatted.title;
     },
-    [companyGigs, isPlaceholderTrainingTitle, resolveJourneyGigId]
+    [companyGigs, resolveJourneyGigId]
   );
 
   const findImageSetForJourney = useCallback(
