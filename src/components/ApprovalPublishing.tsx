@@ -40,10 +40,6 @@ import {
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import WalletTopUpModal from './wallet/WalletTopUpModal';
-import {
-  goToCompanyOnboardingTab,
-  useOnboardingGlobalBack,
-} from '../hooks/useOnboardingGlobalBack';
 
 interface Gig {
   _id: string;
@@ -153,7 +149,6 @@ interface LanguagesResponse {
 }
 const ApprovalPublishing = () => {
   const { t } = useTranslation();
-  useOnboardingGlobalBack(goToCompanyOnboardingTab);
   const [expandedGig, setExpandedGig] = useState<string | null>(null);
   const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
   const [filter, setFilter] = useState('all');
