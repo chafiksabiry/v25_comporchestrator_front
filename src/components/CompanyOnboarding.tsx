@@ -1608,26 +1608,19 @@ const CompanyOnboarding = () => {
   if (activeComponent) {
     const focusedStepId = getFocusedStepId();
     const isRepOnboardingStep = focusedStepId === 9;
-    const hideNextStep = isRepOnboardingStep && repOnboardingMeta.inBuilder;
-    const nextStepDisabled =
-      (focusedStepId === 4 && !telephonyNextReady) ||
-      (isRepOnboardingStep &&
-        !repOnboardingMeta.inBuilder &&
-        repOnboardingMeta.realTrainingsCount === 0);
+    const isTelephonyStep = focusedStepId === 4;
+    const showNextStep =
+      !(isRepOnboardingStep && repOnboardingMeta.inBuilder) &&
+      !(isRepOnboardingStep && repOnboardingMeta.realTrainingsCount === 0) &&
+      !(isTelephonyStep && !telephonyNextReady);
 
     return (
       <>
         {orchestratorGuideLayer}
         {stepGuideLayer}
         <OnboardingFocusedStepLayout
-          showNextStep={!hideNextStep}
+          showNextStep={showNextStep}
           onNextStep={() => void handleFocusedNextStep()}
-          nextStepDisabled={nextStepDisabled}
-          nextStepDisabledHint={
-            isRepOnboardingStep && nextStepDisabled
-              ? t("companyOnboarding.ui.nextStepDisabledNoTraining")
-              : undefined
-          }
         >
           <div className="animate-fade-in">{activeComponent}</div>
         </OnboardingFocusedStepLayout>
