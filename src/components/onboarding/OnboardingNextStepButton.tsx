@@ -5,16 +5,21 @@ import { useTranslation } from "react-i18next";
 export interface OnboardingNextStepButtonProps {
   onClick: () => void;
   disabled?: boolean;
+  disabledHint?: string;
   className?: string;
 }
 
 export function OnboardingNextStepButton({
   onClick,
   disabled = false,
+  disabledHint,
   className = "",
 }: OnboardingNextStepButtonProps) {
   const { t } = useTranslation();
   const label = t("companyOnboarding.ui.nextStep");
+  const hint =
+    disabledHint ||
+    (disabled ? t("companyOnboarding.ui.nextStepDisabledHint") : label);
 
   return (
     <button
@@ -22,7 +27,7 @@ export function OnboardingNextStepButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      title={disabled ? t("companyOnboarding.ui.nextStepDisabledHint") : label}
+      title={disabled ? hint : label}
       className={`onb-next-step group relative inline-flex items-center gap-2.5 overflow-hidden rounded-full
         bg-gradient-to-r from-[#EC4899] via-[#F43F5E] to-[#8B5CF6] px-6 py-3.5
         text-sm font-black uppercase tracking-[0.14em] text-white

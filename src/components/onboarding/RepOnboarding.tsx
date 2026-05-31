@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import {
@@ -33,6 +33,9 @@ import { OnboardingService } from '../training/infrastructure/services/Onboardin
 import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../training/infrastructure/services/AIService';
 import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
+
+/** Sync REP onboarding UI state with CompanyOnboarding / App (next-step visibility). */
+export const REP_ONBOARDING_STATE_EVENT = 'repOnboardingState';
 
 interface RepOnboardingProps { }
 
@@ -459,10 +462,23 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       }
 
       
+      const publishedTrainings = journeysArray.filter((journey: any) => {
+        const status = String(journey?.status || '').toLowerCase();
+        if (status === 'draft') return false;
+        const title = journey?.title || journey?.name || '';
+        const norm = title
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .trim();
+        if (!norm || placeholderTrainingTitles.has(norm)) return false;
+        return true;
+      });
+
       setTrainings(journeysArray);
 
-      // Auto-complete step 9 if trainings already exist (e.g. returning user)
-      if (journeysArray.length > 0) {
+      // Auto-complete step 9 only when at least one real (non-draft) training exists
+      if (publishedTrainings.length > 0) {
         void updateOnboardingProgress();
         
         // --- DIAGNOSTIC: Log first journey structure ---
@@ -629,6 +645,40 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     },
     [placeholderTrainingTitles]
   );
+
+  const isRealTrainingJourney = useCallback(
+    (journey: any) => {
+      if (!journey) return false;
+      const status = String(journey?.status || '').toLowerCase();
+      if (status === 'draft') return false;
+      const title = journey?.title || journey?.name || '';
+      return !isPlaceholderTrainingTitle(title);
+    },
+    [isPlaceholderTrainingTitle]
+  );
+
+  const realTrainings = useMemo(
+    () => trainings.filter(isRealTrainingJourney),
+    [trainings, isRealTrainingJourney]
+  );
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent(REP_ONBOARDING_STATE_EVENT, {
+        detail: {
+          realTrainingsCount: realTrainings.length,
+          inBuilder: showTraining.isOpen,
+        },
+      })
+    );
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent(REP_ONBOARDING_STATE_EVENT, {
+          detail: { realTrainingsCount: 0, inBuilder: false },
+        })
+      );
+    };
+  }, [realTrainings.length, showTraining.isOpen]);
 
   /** Prefer real training name over gig placeholder titles (e.g. "Draft gig"). */
   const resolveCardTrainingTitle = useCallback(
@@ -822,7 +872,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 onClick={closeTrainingViewer}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-600 transition-all hover:border-harx-200 hover:text-harx-600"
               >
-                {t('repOnboarding.viewer.backBtn')}
+                {realTrainings.length === 0
+                  ? t('repOnboarding.viewer.backCancelCreate', 'Cancel creation')
+                  : t('repOnboarding.viewer.backBtn')}
               </button>
             </div>
           </header>
@@ -1117,7 +1169,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
                     <p className="mt-4 text-sm font-medium text-gray-600">{t('repOnboarding.trainingSection.loading')}</p>
                   </div>
-                ) : trainings.length === 0 ? (
+                ) : realTrainings.length === 0 ? (
                   <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-harx-200 py-12 p-8 text-center">
                     <div className="mb-4 rounded-2xl border border-harx-100 bg-white p-3">
                       <Plus className="h-6 w-6 text-harx-500" />
@@ -1138,7 +1190,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 ) : (
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {trainings.filter(Boolean).map((journey) => {
+                      {realTrainings.filter(Boolean).map((journey) => {
                         const formatted = formatTrainingJourney(journey);
                         const imageSet = findImageSetForJourney(journey);
                         const displayTitle = resolveCardTrainingTitle(journey, formatted, imageSet);
