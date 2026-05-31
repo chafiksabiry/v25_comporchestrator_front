@@ -52,6 +52,8 @@ import {
   syncOnboardingProgressFromApi,
   getCompletedStepsFromStorage,
 } from './hooks/useStepGuide';
+import { OnboardingFocusedStepLayout } from './components/onboarding/OnboardingFocusedStepLayout';
+import { goToCompanyOnboardingTab } from './hooks/useOnboardingGlobalBack';
 
 // First step of the Activation phase (Phase 4). When this is reached (step 10 of
 // Phase 3 done OR any Phase 4 step touched), wallet & upgrade widgets become
@@ -62,7 +64,10 @@ const TAB_ONBOARDING_STEPS: Record<string, { stepId: number; phaseId: number }> 
   'script-generator': { stepId: 6, phaseId: 2 },
   'knowledge-base': { stepId: 8, phaseId: 3 },
   'approval-publishing': { stepId: 12, phaseId: 4 },
+  'training': { stepId: 9, phaseId: 3 },
 };
+
+const ORCHESTRATOR_STEP_TABS_WITH_NEXT = new Set(Object.keys(TAB_ONBOARDING_STEPS));
 
 function AppContent() {
   const { t } = useTranslation();
@@ -565,6 +570,16 @@ function AppContent() {
     window.location.replace('/app1');
   };
 
+  const handleOrchestratorTabNextStep = () => {
+    const mapping = TAB_ONBOARDING_STEPS[activeTab];
+    if (mapping) {
+      window.dispatchEvent(
+        new CustomEvent('stepCompleted', { detail: mapping })
+      );
+    }
+    goToCompanyOnboardingTab();
+  };
+
   const renderContent = () => {
     if (isZohoCallback) return <ZohoCallback />;
     if (isZohoAuth) return <ZohoAuth />;
@@ -796,7 +811,16 @@ function AppContent() {
               dashboard={<DashboardApp />}
               comporchestrator={
                 <div className="px-4 py-3 h-full pb-32 relative">
-                  {renderContent()}
+                  {ORCHESTRATOR_STEP_TABS_WITH_NEXT.has(activeTab) ? (
+                    <OnboardingFocusedStepLayout
+                      showNextStep
+                      onNextStep={handleOrchestratorTabNextStep}
+                    >
+                      {renderContent()}
+                    </OnboardingFocusedStepLayout>
+                  ) : (
+                    renderContent()
+                  )}
                 </div>
               }
             />
