@@ -14,8 +14,6 @@ import { CompanyProfile } from "./CompanyProfile";
 import ManualCompanyForm from "./ManualCompanyForm";
 import ExistingCompanyProfile from "../CompanyProfile";
 import { useTranslation } from "react-i18next";
-import { useOnboardingGlobalBack } from "../../../hooks/useOnboardingGlobalBack";
-import { div } from "@tensorflow/tfjs";
 
 interface Props {
   onBack?: () => void;
@@ -39,13 +37,6 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/.*)?$/i.test(trimmedQuery);
   const [checkingExisting, setCheckingExisting] = useState(true);
   const [existingCompanyId, setExistingCompanyId] = useState<string | null>(null);
-
-  // Register the global back CTA only for views that DO NOT render their own
-  // in-content back button. ExistingCompanyProfile already shows its own
-  // icon-only back button inside its hero, so we keep it disabled in that
-  // branch to avoid showing two buttons.
-  const shouldRegisterGlobalBack = !checkingExisting && !existingCompanyId;
-  useOnboardingGlobalBack(shouldRegisterGlobalBack ? onBack : undefined);
 
   useEffect(() => {
     const checkExistingCompany = async () => {
@@ -177,9 +168,6 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
         </div>
         <CompanyProfile
           profile={profile}
-          onClose={() => {
-            setProfile(null);
-          }}
           onPublished={(newCompanyId) => {
             setProfile(null);
             if (onStepComplete) {

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, HelpCircle, PlusCircle, ArrowUp } from 'lucide-react';
-import { useOnboardingGlobalBack } from '../../../hooks/useOnboardingGlobalBack';
 import { Suggestions } from './Suggestions';
 import { SectionContent } from './SectionContent';
 import { GigData, GigSuggestion } from '../types';
@@ -33,7 +32,6 @@ interface PrompAIProps {
 
 const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboarding }) => {
   const backToOnboarding = onBackToOnboarding ?? onBack;
-  useOnboardingGlobalBack(backToOnboarding);
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState("");

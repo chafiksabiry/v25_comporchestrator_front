@@ -17,25 +17,6 @@ const GigGeneration = () => {
     { id: 5, title: 'UI/UX Design for Website', client: 'E-commerce Store', budget: '$1,200', status: 'Published', matches: 5 },
   ]);
 
-  React.useEffect(() => {
-    // Dispatch global back navigation
-    window.dispatchEvent(new CustomEvent('setGlobalBack', {
-      detail: {
-        label: 'Back to Onboarding',
-        action: () => {
-          localStorage.setItem('activeTab', 'company-onboarding');
-          window.dispatchEvent(
-            new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
-          );
-        }
-      }
-    }));
-
-    return () => {
-      window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
-    };
-  }, []);
-
   return (
     <div className="space-y-4 p-4 animate-fade-in">
       <div className="flex items-center justify-between bg-gradient-harx p-4 rounded-xl shadow-lg border border-harx-600 mb-6">

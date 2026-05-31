@@ -8,10 +8,6 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import { OnboardingService } from './training/infrastructure/services/OnboardingService';
 import { markGigStepDone } from '../services/gigSetupSync';
-import {
-  goToCompanyOnboardingTab,
-  useOnboardingGlobalBack,
-} from '../hooks/useOnboardingGlobalBack';
 
 interface DocumentAnalysis {
   summary: string;
@@ -105,7 +101,6 @@ const dropdownStyles = `
 
 const KnowledgeBase: React.FC = () => {
   const { t } = useTranslation();
-  useOnboardingGlobalBack(goToCompanyOnboardingTab);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadGigId, setUploadGigId] = useState<string>('');
   const [isUploadGigDropdownOpen, setIsUploadGigDropdownOpen] = useState(false);

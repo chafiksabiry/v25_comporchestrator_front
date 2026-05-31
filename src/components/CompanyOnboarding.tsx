@@ -415,49 +415,6 @@ const CompanyOnboarding = () => {
     }
   }, [showUploadContacts]);
 
-  // Sync global back button with App.tsx header
-  useEffect(() => {
-    const isAnyFocusedViewActive = showGigDetails || showGigCreation || showTelephonySetup || showKnowledgeBase || showUploadContacts || activeStep !== null;
-
-    if (isAnyFocusedViewActive) {
-      let label = t('companyOnboarding.ui.backToOnboarding');
-      let action = () => { };
-
-      if (showGigDetails) {
-        action = () => setShowGigDetails(false);
-      } else if (showGigCreation) {
-        action = () => setShowGigCreation(false);
-      } else if (showTelephonySetup) {
-        action = () => setShowTelephonySetup(false);
-      } else if (showKnowledgeBase) {
-        action = () => setShowKnowledgeBase(false);
-      } else if (showUploadContacts) {
-        action = () => setShowUploadContacts(false);
-      } else if (activeStep !== null) {
-        action = () => {
-          setActiveStep(null);
-          // Re-sync from API (e.g. subscription step 11 after Stripe checkout).
-          window.dispatchEvent(new Event('refreshOnboardingProgress'));
-        };
-      }
-
-      window.dispatchEvent(new CustomEvent('setGlobalBack', {
-        detail: { label, action }
-      }));
-    } else {
-      window.dispatchEvent(new CustomEvent('setGlobalBack', {
-        detail: { action: null }
-      }));
-    }
-
-    // Cleanup on unmount
-    return () => {
-      window.dispatchEvent(new CustomEvent('setGlobalBack', {
-        detail: { action: null }
-      }));
-    };
-  }, [showGigDetails, showGigCreation, showTelephonySetup, showKnowledgeBase, showUploadContacts, activeStep]);
-
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
     const hasParsedLeads = localStorage.getItem("parsedLeads");

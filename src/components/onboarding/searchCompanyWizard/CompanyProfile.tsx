@@ -8,7 +8,6 @@ import {
   Loader2,
   MapPin,
   Target,
-  X,
   XCircle,
   Globe,
   Mail,
@@ -42,14 +41,13 @@ type CompanyProfileType = CompanyProfileData & {
 
 interface Props {
   profile: CompanyProfileType;
-  onClose: () => void;
   /** When set (embedded in Company Onboarding), called instead of a full-page redirect */
   onPublished?: (companyId: string) => void;
 }
 
 const userId = Cookies.get("userId");
 
-export function CompanyProfile({ profile: initialProfile, onClose, onPublished }: Props) {
+export function CompanyProfile({ profile: initialProfile, onPublished }: Props) {
   const { t } = useTranslation();
   const defaultProfile = {
     userId: userId || "",
@@ -1023,18 +1021,6 @@ export function CompanyProfile({ profile: initialProfile, onClose, onPublished }
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="absolute right-6 top-6 flex items-center gap-3 z-10">
-        <button
-          onClick={() => setEditMode(!editMode)}
-          className={`p-2 rounded-full transition-all duration-300 ${editMode ? "bg-green-500 text-white hover:bg-green-600" : "bg-white text-gray-600 hover:bg-gray-100"}`}
-        >
-          <Edit2 size={20} />
-        </button>
-        <button onClick={onClose} className="p-2 rounded-full bg-white text-gray-600 hover:bg-gray-100 transition-all duration-300">
-          <X size={20} />
-        </button>
       </div>
 
       {publishError && (
