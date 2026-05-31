@@ -35,6 +35,7 @@ import type { TrainingMethodology } from '../../types/methodology';
 import { buildGigSnapshotForAi } from '../../utils/gigSnapshotForAi';
 import type { TrainingViewerTheme } from '../../utils/trainingViewerTheme';
 import {getModuleColorStyles, getViewerThemeTokens, resolveRepViewerTheme} from '../../utils/trainingViewerTheme';
+import { REP_ONBOARDING_STATE_EVENT } from '../../../onboarding/repOnboardingEvents';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[], fileTrainingUrl?: string) => void;
@@ -1050,6 +1051,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }
     void hydrateSavedJourneyFromApi();
   }, [repOnboardingLayout, journey, isPlanSavedForChat, hydrateSavedJourneyFromApi]);
+
+  useEffect(() => {
+    if (!repOnboardingLayout) return;
+    const workflow = chatWorkflowStatus || chatWorkflowStatusRef.current;
+    const planValidated =
+      isPlanSavedForChat || workflow?.plan === 'completed';
+    window.dispatchEvent(
+      new CustomEvent(REP_ONBOARDING_STATE_EVENT, {
+        detail: { planValidated },
+      })
+    );
+  }, [repOnboardingLayout, isPlanSavedForChat, chatWorkflowStatus?.plan]);
 
   useEffect(() => {
     window.requestAnimationFrame(() => {

@@ -41,7 +41,10 @@ import {
 } from "../hooks/useStepGuide";
 import { EXIT_ONBOARDING_FOCUS_EVENT } from "../hooks/useOnboardingGlobalBack";
 import { OnboardingFocusedStepLayout } from "./onboarding/OnboardingFocusedStepLayout";
-import { REP_ONBOARDING_STATE_EVENT } from "./onboarding/RepOnboarding";
+import {
+  REP_ONBOARDING_STATE_EVENT,
+  mergeRepOnboardingState,
+} from "./onboarding/repOnboardingEvents";
 
 // NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
 // (see useOrchestratorGuide). Do not re-mount it here, otherwise it would
@@ -295,6 +298,7 @@ const CompanyOnboarding = () => {
   const [repOnboardingMeta, setRepOnboardingMeta] = useState({
     realTrainingsCount: 0,
     inBuilder: false,
+    planValidated: false,
   });
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -1429,10 +1433,7 @@ const CompanyOnboarding = () => {
     const onRepState = (event: Event) => {
       const detail = (event as CustomEvent).detail;
       if (!detail) return;
-      setRepOnboardingMeta({
-        realTrainingsCount: Number(detail.realTrainingsCount) || 0,
-        inBuilder: Boolean(detail.inBuilder),
-      });
+      setRepOnboardingMeta((prev) => mergeRepOnboardingState(prev, detail));
     };
     window.addEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
     return () => window.removeEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
@@ -1610,8 +1611,16 @@ const CompanyOnboarding = () => {
     const isRepOnboardingStep = focusedStepId === 9;
     const isTelephonyStep = focusedStepId === 4;
     const showNextStep =
-      !(isRepOnboardingStep && repOnboardingMeta.inBuilder) &&
-      !(isRepOnboardingStep && repOnboardingMeta.realTrainingsCount === 0) &&
+      !(
+        isRepOnboardingStep &&
+        repOnboardingMeta.inBuilder &&
+        !repOnboardingMeta.planValidated
+      ) &&
+      !(
+        isRepOnboardingStep &&
+        !repOnboardingMeta.inBuilder &&
+        repOnboardingMeta.realTrainingsCount === 0
+      ) &&
       !(isTelephonyStep && !telephonyNextReady);
 
     return (
