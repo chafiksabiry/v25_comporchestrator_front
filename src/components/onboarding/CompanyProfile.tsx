@@ -33,8 +33,6 @@ import {
 } from "lucide-react";
 
 import Cookies from 'js-cookie';
-import { OnboardingBackButton } from "./searchCompanyWizard/OnboardingBackButton";
-import { useOnboardingGlobalBack } from "../../hooks/useOnboardingGlobalBack";
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
@@ -190,13 +188,7 @@ const EditableField = ({
   );
 };
 
-function CompanyProfile({ companyId: propCompanyId, onBack }: { companyId?: string | null; onBack?: () => void }) {
-  // This view renders its own icon-only "back to onboarding" button inside
-  // the hero. Pass `undefined` to clear any global back CTA that may have
-  // been registered by a previously mounted focus view, so the user never
-  // sees two back buttons stacked above the hero.
-  useOnboardingGlobalBack(undefined);
-
+function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | null; onBack?: () => void }) {
   const [company, setCompany] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -896,30 +888,6 @@ function CompanyProfile({ companyId: propCompanyId, onBack }: { companyId?: stri
                     </div>
                   </div>
                 </div>
-              </div>
-              {/* Back to onboarding — icon-only, placed inside the hero */}
-              {onBack && (
-                <div className="absolute top-6 left-6 z-20">
-                  <OnboardingBackButton variant="icon" onClick={onBack} />
-                </div>
-              )}
-              {/* Edit Mode Toggle */}
-              <div className="absolute top-6 right-6 z-10">
-                <button
-                  onClick={() => {
-                    const newMode = !editMode;
-                    setEditMode(newMode);
-                    if (!newMode && hasChanges) {
-                      handleSaveAll();
-                    }
-                  }}
-                  className={`p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 ${editMode
-                    ? "bg-indigo-600 text-white"
-                    : "bg-white/90 backdrop-blur-sm text-indigo-600 hover:bg-white"
-                    }`}
-                >
-                  {editMode ? <Save size={20} /> : <Pencil size={20} />}
-                </button>
               </div>
             </div>
           </div>

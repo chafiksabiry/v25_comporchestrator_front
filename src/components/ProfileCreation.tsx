@@ -16,25 +16,6 @@ const ProfileCreation = () => {
     { id: 5, name: 'David Wilson', skills: ['Mobile Development', 'React Native'], status: 'Incomplete', successRate: '78%' },
   ]);
 
-  React.useEffect(() => {
-    // Dispatch global back navigation
-    window.dispatchEvent(new CustomEvent('setGlobalBack', {
-      detail: {
-        label: 'Back to Onboarding',
-        action: () => {
-          localStorage.setItem('activeTab', 'company-onboarding');
-          window.dispatchEvent(
-            new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
-          );
-        }
-      }
-    }));
-
-    return () => {
-      window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
-    };
-  }, []);
-
   return (
     <div className="space-y-4 p-4 animate-fade-in">
       <div className="flex items-center justify-between bg-gradient-harx p-4 rounded-xl shadow-lg border border-harx-600 mb-6">

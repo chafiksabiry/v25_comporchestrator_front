@@ -19,25 +19,6 @@ const Optimization = () => {
   const [expandedGig, setExpandedGig] = useState<number | null>(1);
   const [timeRange, setTimeRange] = useState('30d');
 
-  React.useEffect(() => {
-    // Dispatch global back navigation
-    window.dispatchEvent(new CustomEvent('setGlobalBack', {
-      detail: {
-        label: 'Back to Onboarding',
-        action: () => {
-          localStorage.setItem('activeTab', 'company-onboarding');
-          window.dispatchEvent(
-            new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
-          );
-        }
-      }
-    }));
-
-    return () => {
-      window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
-    };
-  }, []);
-
   const gigs = [
     { 
       id: 1, 

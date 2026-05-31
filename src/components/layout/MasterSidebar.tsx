@@ -34,6 +34,7 @@ import { useAuth } from '../dashboard/contexts/AuthContext';
 import type { ProjectView } from '../../App';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
+import { goToCompanyOnboardingTab } from '../../hooks/useOnboardingGlobalBack';
 
 interface MasterSidebarProps {
   isCollapsed: boolean;
@@ -224,7 +225,10 @@ export function MasterSidebar({
                 return (
                   <button
                     key={item.key}
-                    onClick={() => handleLinkClick(item.key)}
+                    onClick={() => {
+                      setActiveTab(item.key);
+                      goToCompanyOnboardingTab();
+                    }}
                     className={`flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isActive
                       ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
                       : "text-slate-400 hover:text-white hover:bg-white/5"

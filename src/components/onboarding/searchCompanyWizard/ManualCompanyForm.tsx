@@ -2,7 +2,6 @@ import React, { useRef, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import {
-  ArrowLeft,
   Building2,
   Calendar,
   Check,
@@ -270,17 +269,9 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
     <div className="mx-auto max-w-5xl p-6 animate-fade-in">
       <div className="relative rounded-3xl border border-slate-200 bg-white shadow-xl overflow-hidden">
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-harx-50 to-harx-alt-50">
-          <button
-            onClick={onClose}
-            className="inline-flex items-center gap-2 rounded-xl border border-harx-100 bg-white/90 px-3 py-2 text-xs font-black uppercase tracking-wider text-harx-600 shadow-sm hover:bg-white"
-          >
-            <ArrowLeft size={14} />
-            {t("searchCompanyWizard.profile.backBtn")}
-          </button>
           <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-harx-700 to-harx-alt-700">
             {t("searchCompanyWizard.manual.title", "Create Company Manually")}
           </h2>
-          <div className="w-[90px]" />
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-8">

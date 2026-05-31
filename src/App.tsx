@@ -43,7 +43,6 @@ import Subscription from './components/Subscription';
 import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideModal';
 import WalletTopUpModal from './components/wallet/WalletTopUpModal';
 import { refreshAndBroadcastWalletBalance } from './lib/walletBalanceSync';
-import { OnboardingBackButton } from './components/onboarding/searchCompanyWizard/OnboardingBackButton';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import StepGuideModal, { type StepGuideVariant } from './components/onboarding/StepGuideModal';
 import {
@@ -84,7 +83,6 @@ function AppContent() {
   const [userFullName, setUserFullName] = useState(() => localStorage.getItem('userFullName') || '');
   const [companyName, setCompanyName] = useState<string | null>(() => localStorage.getItem('companyName'));
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string } | null>(null);
-  const [globalBackConfig, setGlobalBackConfig] = useState<{ label: string; action: () => void } | null>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => localStorage.getItem('companyLogo'));
   const [logoError, setLogoError] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -400,17 +398,6 @@ function AppContent() {
       }
     };
 
-    const handleGlobalBackUpdate = (event: CustomEvent) => {
-      if (event.detail && event.detail.action) {
-        setGlobalBackConfig({
-          label: event.detail.label || 'Back',
-          action: event.detail.action
-        });
-      } else {
-        setGlobalBackConfig(null);
-      }
-    };
-
     const openComporchestrator = () => {
       setActiveProject('comporchestrator');
       window.location.hash = '#/orchestrator';
@@ -423,14 +410,12 @@ function AppContent() {
 
     window.addEventListener('tabChange', handleTabChange as EventListener);
     window.addEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
-    window.addEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
     window.addEventListener('openComporchestrator', openComporchestrator);
     window.addEventListener('openCompanyDashboard', openCompanyDashboard);
 
     return () => {
       window.removeEventListener('tabChange', handleTabChange as EventListener);
       window.removeEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
-      window.removeEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
       window.removeEventListener('openComporchestrator', openComporchestrator);
       window.removeEventListener('openCompanyDashboard', openCompanyDashboard);
     };
@@ -811,20 +796,6 @@ function AppContent() {
               dashboard={<DashboardApp />}
               comporchestrator={
                 <div className="px-4 py-3 h-full pb-32 relative">
-                  {globalBackConfig && (
-                    /* Sticky so the icon-only back CTA remains visible while
-                       the user scrolls long onboarding screens. `top-3` keeps
-                       a small breathing room from the top of the scroll
-                       container; `z-40` keeps it above content but below
-                       modals. `w-fit` ensures clicks don't get swallowed by
-                       an invisible full-width wrapper. */
-                    <div className="sticky top-3 z-40 mb-4 w-fit">
-                      <OnboardingBackButton
-                        variant="icon"
-                        onClick={globalBackConfig.action}
-                      />
-                    </div>
-                  )}
                   {renderContent()}
                 </div>
               }
@@ -856,12 +827,6 @@ function AppContent() {
         companyId={Cookies.get('companyId')}
         onSuccess={refreshWalletBalance}
       />
-
-      {/* The floating bottom-right "Back to onboarding" CTA has been
-          removed in favour of the in-content `OnboardingBackButton`
-          rendered at the top of each focused step. Keeping
-          `globalBackConfig` state so the in-content CTA can still
-          look up the registered back action. */}
 
     </StripeContainer>
   );
