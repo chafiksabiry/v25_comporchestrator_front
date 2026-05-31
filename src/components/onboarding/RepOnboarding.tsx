@@ -34,8 +34,12 @@ import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../trai
 import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
 
-/** Sync REP onboarding UI state with CompanyOnboarding / App (next-step visibility). */
-export const REP_ONBOARDING_STATE_EVENT = 'repOnboardingState';
+import {
+  REP_ONBOARDING_STATE_EVENT,
+  type RepOnboardingStateDetail,
+} from './repOnboardingEvents';
+
+export { REP_ONBOARDING_STATE_EVENT };
 
 interface RepOnboardingProps { }
 
@@ -662,19 +666,22 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     [trainings, isRealTrainingJourney]
   );
 
+  const trainingBuilderWasOpenRef = useRef(false);
+
   useEffect(() => {
-    window.dispatchEvent(
-      new CustomEvent(REP_ONBOARDING_STATE_EVENT, {
-        detail: {
-          realTrainingsCount: realTrainings.length,
-          inBuilder: showTraining.isOpen,
-        },
-      })
-    );
+    const justOpenedBuilder = showTraining.isOpen && !trainingBuilderWasOpenRef.current;
+    trainingBuilderWasOpenRef.current = showTraining.isOpen;
+
+    const detail: RepOnboardingStateDetail = {
+      realTrainingsCount: realTrainings.length,
+      inBuilder: showTraining.isOpen,
+      ...(!showTraining.isOpen || justOpenedBuilder ? { planValidated: false } : {}),
+    };
+    window.dispatchEvent(new CustomEvent(REP_ONBOARDING_STATE_EVENT, { detail }));
     return () => {
       window.dispatchEvent(
         new CustomEvent(REP_ONBOARDING_STATE_EVENT, {
-          detail: { realTrainingsCount: 0, inBuilder: false },
+          detail: { realTrainingsCount: 0, inBuilder: false, planValidated: false },
         })
       );
     };

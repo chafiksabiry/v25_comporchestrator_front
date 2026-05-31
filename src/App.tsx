@@ -54,7 +54,10 @@ import {
 } from './hooks/useStepGuide';
 import { OnboardingFocusedStepLayout } from './components/onboarding/OnboardingFocusedStepLayout';
 import { goToCompanyOnboardingTab } from './hooks/useOnboardingGlobalBack';
-import { REP_ONBOARDING_STATE_EVENT } from './components/onboarding/RepOnboarding';
+import {
+  REP_ONBOARDING_STATE_EVENT,
+  mergeRepOnboardingState,
+} from './components/onboarding/repOnboardingEvents';
 
 // First step of the Activation phase (Phase 4). When this is reached (step 10 of
 // Phase 3 done OR any Phase 4 step touched), wallet & upgrade widgets become
@@ -115,6 +118,7 @@ function AppContent() {
   const [repOnboardingMeta, setRepOnboardingMeta] = useState({
     realTrainingsCount: 0,
     inBuilder: false,
+    planValidated: false,
   });
 
   const navigate = useNavigate();
@@ -435,10 +439,7 @@ function AppContent() {
     const onRepState = (event: Event) => {
       const detail = (event as CustomEvent).detail;
       if (!detail) return;
-      setRepOnboardingMeta({
-        realTrainingsCount: Number(detail.realTrainingsCount) || 0,
-        inBuilder: Boolean(detail.inBuilder),
-      });
+      setRepOnboardingMeta((prev) => mergeRepOnboardingState(prev, detail));
     };
     window.addEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
     return () => window.removeEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
@@ -833,6 +834,8 @@ function AppContent() {
                     <OnboardingFocusedStepLayout
                       showNextStep={
                         activeTab !== 'training' ||
+                        (repOnboardingMeta.inBuilder &&
+                          repOnboardingMeta.planValidated) ||
                         (repOnboardingMeta.realTrainingsCount > 0 &&
                           !repOnboardingMeta.inBuilder)
                       }
