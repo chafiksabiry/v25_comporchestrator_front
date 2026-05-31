@@ -230,10 +230,10 @@ const TelephonySetup = ({
 
     return (
       <div
-        className={`shrink-0 flex items-center justify-center ${dim} rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-inner ${className}`}
+        className={`shrink-0 flex items-center justify-center ${dim} rounded-xl bg-gradient-to-br from-harx-50 to-harx-alt-50 border border-harx-100 shadow-inner ${className}`}
         aria-label={name || iso || 'flag'}
       >
-        <span className="text-[11px] font-extrabold tracking-[0.12em] text-blue-700">{label || '—'}</span>
+        <span className="text-[11px] font-extrabold tracking-[0.12em] bg-gradient-harx bg-clip-text text-transparent">{label || '—'}</span>
       </div>
     );
   };
@@ -1148,18 +1148,18 @@ const TelephonySetup = ({
         </div>
       )}
 
-      {/* Section: Select Gig — premium card with gradient accent */}
-      <div className="group/card relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-6 pl-9 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.08)] hover:shadow-[0_1px_3px_rgba(15,23,42,0.05),0_20px_40px_-12px_rgba(37,99,235,0.18)] transition-shadow duration-500">
-        {/* Vertical gradient accent bar */}
-        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500 via-indigo-500 to-blue-600 rounded-l-2xl" />
-        {/* Soft decorative glow */}
-        <div className="pointer-events-none absolute -top-12 -right-12 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
+      {/* Section: Select Gig — HARX premium card */}
+      <div className="group/card relative overflow-hidden bg-white rounded-2xl border border-harx-100/70 p-6 pl-9 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(255,77,77,0.12)] hover:shadow-[0_1px_3px_rgba(15,23,42,0.05),0_22px_44px_-14px_rgba(255,77,77,0.28)] transition-shadow duration-500">
+        {/* Vertical HARX accent bar */}
+        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-harx-500 via-harx-alt-500 to-harx-600 rounded-l-2xl" />
+        {/* Soft decorative HARX glow */}
+        <div className="pointer-events-none absolute -top-12 -right-12 w-48 h-48 bg-harx-500/10 rounded-full blur-3xl" />
 
         <div className="relative">
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.14em]">{t('telephonySetup.selectGigProfile')}</span>
-              <span className="inline-flex items-center px-2 py-[3px] rounded-md bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-[10px] font-extrabold uppercase tracking-[0.12em] border border-blue-100 shadow-sm">
+              <span className="inline-flex items-center px-2 py-[3px] rounded-md bg-gradient-to-r from-harx-50 to-harx-alt-50 text-harx-700 text-[10px] font-extrabold uppercase tracking-[0.12em] border border-harx-100 shadow-sm">
                 {t('telephonySetup.required')}
               </span>
             </div>
@@ -1362,18 +1362,18 @@ const TelephonySetup = ({
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-150 fill-mode-both">
           {/* Section: Select Provider — hidden: Twilio is enforced as the only carrier */}
 
-          {/* Section: Phone Nodes — same premium card treatment as the gig selector */}
-          <div className="relative overflow-hidden bg-white rounded-2xl border border-gray-100 p-6 pl-9 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.08)]">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500 via-indigo-500 to-blue-600 rounded-l-2xl" />
-            <div className="pointer-events-none absolute -bottom-12 -right-12 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl" />
+          {/* Section: Phone Nodes — matching HARX premium card */}
+          <div className="relative overflow-hidden bg-white rounded-2xl border border-harx-100/70 p-6 pl-9 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(255,77,77,0.12)]">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-harx-500 via-harx-alt-500 to-harx-600 rounded-l-2xl" />
+            <div className="pointer-events-none absolute -bottom-12 -right-12 w-48 h-48 bg-harx-alt-500/10 rounded-full blur-3xl" />
 
             <div className="relative">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.14em]">{t('telephonySetup.networkEntries')}</span>
                 {destinationZone && selectedGigId && (
-                  <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 shadow-sm">
-                    <div className={`w-2 h-2 rounded-full ${isQuotaReached ? 'bg-emerald-500' : 'bg-blue-600 animate-pulse'}`} />
-                    <span className="text-[11px] font-extrabold text-blue-700 uppercase tracking-[0.14em] tabular-nums">
+                  <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-gradient-to-r from-harx-50 to-harx-alt-50 border border-harx-100 shadow-sm">
+                    <div className={`w-2 h-2 rounded-full ${isQuotaReached ? 'bg-emerald-500' : 'bg-harx-500 animate-pulse'}`} />
+                    <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] tabular-nums bg-gradient-harx bg-clip-text text-transparent">
                       {purchasedNumbersCount} / {teamSize} {t('telephonySetup.active')}
                     </span>
                   </div>
@@ -1385,18 +1385,18 @@ const TelephonySetup = ({
             <div className="space-y-4">
               {/* Active Numbers */}
               {Array.isArray(phoneNumbers) && phoneNumbers.filter(n => n.provider === provider).map((number: any) => (
-                <div key={number.phoneNumber} className="flex items-center justify-between p-5 rounded-xl border-[0.5px] border-gray-100 bg-gray-50/20 hover:bg-white hover:border-blue-300 hover:shadow-xl transition-all duration-500 group">
+                <div key={number.phoneNumber} className="flex items-center justify-between p-5 rounded-xl border border-harx-100/60 bg-gradient-to-br from-white to-harx-50/30 hover:from-white hover:to-harx-50/60 hover:border-harx-300/60 hover:shadow-[0_18px_40px_-18px_rgba(255,77,77,0.35)] transition-all duration-500 group">
                   <div className="flex items-center space-x-5">
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center group-hover:bg-blue-600 transition-all duration-500 shadow-sm">
-                      <Phone className="h-6 w-6 text-blue-600 group-hover:text-white" />
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-harx-50 to-harx-alt-50 border border-harx-100 flex items-center justify-center group-hover:bg-gradient-harx group-hover:border-transparent transition-all duration-500 shadow-sm">
+                      <Phone className="h-6 w-6 text-harx-500 group-hover:text-white transition-colors" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[18px] font-black text-gray-900 group-hover:text-blue-700 transition-colors tracking-tight">{number.phoneNumber}</span>
+                      <span className="text-[18px] font-black text-gray-900 group-hover:text-harx-700 transition-colors tracking-tight">{number.phoneNumber}</span>
                       <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] italic">{number.metadata?.type || t('telephonySetup.static')} {t('telephonySetup.infrastructure')}</span>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
-                    <span className={`px-4 py-1.5 text-[11px] font-black uppercase rounded-lg border-[0.5px] shadow-sm transition-all ${number.status === 'active'
+                    <span className={`px-4 py-1.5 text-[11px] font-black uppercase rounded-lg border shadow-sm transition-all ${number.status === 'active'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-100 group-hover:bg-emerald-500 group-hover:text-white'
                         : 'bg-amber-50 text-amber-700 border-amber-100 animate-pulse'
                       }`}>
@@ -1410,35 +1410,28 @@ const TelephonySetup = ({
               {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
                 <div className="space-y-3 mt-6">
                   <div className="flex items-center space-x-3 text-[11px] uppercase font-black tracking-widest text-gray-300">
-                    <div className="h-[1px] flex-1 bg-gray-100" />
-                    <span className="flex items-center space-x-2">
-                      <Globe className="h-3 w-3 text-blue-400" />
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-harx-200/60 to-transparent" />
+                    <span className="flex items-center space-x-2 bg-gradient-harx bg-clip-text text-transparent">
+                      <Globe className="h-3 w-3 text-harx-400" />
                       <span>{t('telephonySetup.regionalNodesAvailable')}</span>
                     </span>
-                    <div className="h-[1px] flex-1 bg-gray-100" />
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-harx-200/60 to-transparent" />
                   </div>
                   {availableNumbers.map((number) => {
                     const phoneNumber = getPhoneNumber(number);
                     const isDisabled = isQuotaReached;
                     return (
-                      <div key={phoneNumber} className="flex items-center justify-between p-4 rounded-xl border-[0.5px] border-gray-100 bg-white hover:border-blue-500 hover:shadow-xl transition-all group animate-in slide-in-from-right-4 duration-300">
+                      <div key={phoneNumber} className="flex items-center justify-between p-4 rounded-xl border border-harx-100/50 bg-white hover:border-harx-400 hover:shadow-[0_18px_40px_-18px_rgba(255,77,77,0.35)] transition-all group animate-in slide-in-from-right-4 duration-300">
                         <div className="flex flex-col">
                           <div className="flex items-center space-x-3">
-                            <span className="text-[18px] font-black text-gray-900 group-hover:text-blue-600 transition-colors tracking-tight">{phoneNumber}</span>
-                            <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest">{number.type}</span>
+                            <span className="text-[18px] font-black text-gray-900 group-hover:text-harx-600 transition-colors tracking-tight">{phoneNumber}</span>
+                            <span className="text-[10px] font-black text-harx-600 bg-harx-50 border border-harx-100 px-2 py-0.5 rounded uppercase tracking-widest">{number.type}</span>
                           </div>
                           <span className="text-[12px] font-bold text-gray-400 uppercase italic mt-1 leading-none">{number.locality || t('telephonySetup.regional')} {t('telephonySetup.globalGateway')}</span>
                         </div>
                         <button
                           disabled={isDisabled}
                           onClick={() => {
-                            // Always start a fresh purchase flow: previous
-                            // successful trial/activation may have left a
-                            // stale `purchaseResponse` that would otherwise
-                            // be displayed inside the modal (see PurchaseModal
-                            // `displayNumber` fallback). Clearing both the
-                            // response and any prior error ensures the modal
-                            // shows the freshly clicked number.
                             setPurchaseResponse(null);
                             setPurchaseError(null);
                             setSelectedNumber(phoneNumber);
@@ -1447,8 +1440,8 @@ const TelephonySetup = ({
                             setShowPurchaseModal(true);
                           }}
                           className={`px-6 py-2.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${isDisabled
-                              ? 'bg-gray-50 text-gray-300 cursor-not-allowed border-[0.5px] border-gray-200'
-                              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95'
+                              ? 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-200'
+                              : 'bg-gradient-harx text-white hover:shadow-[0_12px_30px_-8px_rgba(255,77,77,0.6)] active:scale-95'
                             }`}
                         >
                           {t('telephonySetup.purchase')}
@@ -1462,25 +1455,29 @@ const TelephonySetup = ({
               {/* Centered Empty State */}
               {(!phoneNumbers || phoneNumbers.filter(n => n.provider === provider).length === 0) && (!availableNumbers || availableNumbers.length === 0) && (
                 <div className="py-16 flex flex-col items-center text-center animate-in fade-in duration-700">
-                  <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-6 shadow-sm border-[0.5px] border-blue-100">
-                    <Phone className="h-7 w-7 text-blue-300" />
+                  <div className="relative w-16 h-16 mb-6">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-harx-50 to-harx-alt-50 border border-harx-100 shadow-sm" />
+                    <div className="absolute -inset-1 rounded-full bg-gradient-harx opacity-15 blur-md animate-pulse" />
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <Phone className="h-7 w-7 text-harx-400" />
+                    </div>
                   </div>
                   <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-[0.15em] mb-2 leading-none">{t('telephonySetup.empty.title')}</h4>
-                  <p className="text-[14px] text-gray-300 font-medium mb-8 max-w-[320px]">{t('telephonySetup.empty.subtitle')}</p>
+                  <p className="text-[14px] text-gray-400 font-medium mb-8 max-w-[320px]">{t('telephonySetup.empty.subtitle')}</p>
                   <button
                     onClick={() => searchAvailableNumbers()}
                     disabled={!destinationZone || isSearchingNumbers}
                     title={!destinationZone ? t('telephonySetup.empty.noZone') : undefined}
-                    className="flex items-center space-x-3 px-8 py-3 rounded-xl bg-white border-[0.5px] border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:border-gray-200 disabled:hover:shadow-none text-[12px] font-black uppercase tracking-widest transition-all group"
+                    className="group relative inline-flex items-center gap-3 px-8 py-3 rounded-xl bg-gradient-harx text-white text-[12px] font-black uppercase tracking-widest shadow-[0_12px_30px_-8px_rgba(255,77,77,0.45)] hover:shadow-[0_18px_44px_-8px_rgba(255,77,77,0.65)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none transition-all duration-300"
                   >
                     {isSearchingNumbers ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin" />
                         <span>{t('telephonySetup.empty.scanning')}</span>
                       </>
                     ) : (
                       <>
-                        <Globe className="h-4 w-4 text-blue-400 transition-transform group-hover:rotate-180 duration-1000" />
+                        <Globe className="h-4 w-4 text-white transition-transform group-hover:rotate-180 duration-1000" />
                         <span>{t('telephonySetup.empty.scan')}</span>
                       </>
                     )}
