@@ -1167,19 +1167,19 @@ const TelephonySetup = ({
           <p className="text-[13.5px] text-gray-500 mb-5 leading-relaxed">{t('telephonySetup.associateGig')}</p>
 
           {isLoadingGigs ? (
-            <div className="w-full h-14 bg-gradient-to-r from-gray-50 to-gray-50/50 rounded-xl flex items-center justify-center border border-gray-100">
-              <div className="animate-spin h-4 w-4 border-2 border-blue-200 border-t-blue-600 rounded-full mr-3" />
-              <span className="text-[12px] font-bold text-gray-500 uppercase tracking-[0.15em]">{t('telephonySetup.hydratingProfiles')}</span>
+            <div className="w-full h-14 bg-slate-900/95 rounded-2xl flex items-center justify-center border border-white/5">
+              <div className="animate-spin h-4 w-4 border-2 border-harx-300/40 border-t-harx-500 rounded-full mr-3" />
+              <span className="text-[12px] font-bold text-white/70 uppercase tracking-[0.15em]">{t('telephonySetup.hydratingProfiles')}</span>
             </div>
           ) : (
             <div className="relative">
-              {/* Trigger button — refined input-style with flag preview */}
+              {/* Trigger button — dark "Select" pill matching the reference */}
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`relative flex items-center justify-between w-full px-4 py-3.5 rounded-xl border transition-all duration-300 ${
+                className={`relative flex items-center justify-between w-full px-4 py-3.5 rounded-2xl border transition-all duration-300 ${
                   isDropdownOpen
-                    ? 'border-blue-400 ring-4 ring-blue-500/10 bg-white shadow-md'
-                    : 'border-gray-200 bg-gradient-to-br from-white to-gray-50/60 hover:border-blue-300 hover:bg-white hover:shadow-sm'
+                    ? 'border-harx-500/60 bg-slate-900 shadow-[0_20px_50px_-20px_rgba(255,77,77,0.55)] ring-4 ring-harx-500/15'
+                    : 'border-white/10 bg-slate-900/95 hover:border-harx-500/40 hover:shadow-[0_18px_40px_-20px_rgba(236,72,153,0.45)]'
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -1189,10 +1189,10 @@ const TelephonySetup = ({
                       if (!sel) {
                         return (
                           <>
-                            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-100 text-gray-400">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 text-white/40 border border-white/10">
                               <Briefcase className="h-4.5 w-4.5" />
                             </div>
-                            <span className="text-[14px] text-gray-400 font-semibold">
+                            <span className="text-[14px] text-white/50 font-semibold">
                               {t('telephonySetup.selectIntelligenceProfile')}
                             </span>
                           </>
@@ -1200,7 +1200,7 @@ const TelephonySetup = ({
                       }
                       return (
                         <>
-                          {/* Flag avatar — prominent */}
+                          {/* Flag avatar */}
                           <div className="relative shrink-0">
                             <FlagBadge
                               flags={sel.destination_zone?.flags}
@@ -1208,13 +1208,13 @@ const TelephonySetup = ({
                               name={sel.destination_zone?.name?.common}
                               size="sm"
                             />
-                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white shadow" />
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-900 shadow" />
                           </div>
                           <div className="flex flex-col items-start min-w-0">
-                            <span className="text-[15px] font-extrabold text-gray-900 leading-tight tracking-tight truncate max-w-[280px]">
+                            <span className="text-[15px] font-extrabold text-white leading-tight tracking-tight truncate max-w-[280px]">
                               {sel.title}
                             </span>
-                            <span className="text-[10.5px] font-bold text-blue-600 uppercase tracking-[0.18em] leading-none mt-1">
+                            <span className="text-[10.5px] font-bold uppercase tracking-[0.18em] leading-none mt-1 bg-gradient-harx bg-clip-text text-transparent">
                               {sel.destination_zone?.name?.common || t('telephonySetup.globalZone')}
                             </span>
                           </div>
@@ -1223,10 +1223,10 @@ const TelephonySetup = ({
                     })()
                   ) : (
                     <>
-                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 text-gray-400">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 text-white/40 border border-white/10">
                         <Briefcase className="h-4.5 w-4.5" />
                       </div>
-                      <span className="text-[14px] text-gray-400 font-semibold">
+                      <span className="text-[14px] text-white/50 font-semibold">
                         {t('telephonySetup.chooseActiveGigProfile')}
                       </span>
                     </>
@@ -1234,14 +1234,14 @@ const TelephonySetup = ({
                 </div>
                 <div
                   className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${
-                    isDropdownOpen ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400 group-hover/card:bg-blue-50 group-hover/card:text-blue-500'
+                    isDropdownOpen ? 'bg-harx-500/20 text-harx-300' : 'bg-white/5 text-white/50 hover:bg-harx-500/15 hover:text-harx-300'
                   }`}
                 >
                   <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
               </button>
 
-              {/* Dropdown menu — premium card list */}
+              {/* Dropdown menu — dark panel with HARX-accented selected/hover state */}
               {isDropdownOpen && (
                 <>
                   {/* Click-away overlay */}
@@ -1251,19 +1251,23 @@ const TelephonySetup = ({
                     onClick={() => setIsDropdownOpen(false)}
                     className="fixed inset-0 z-40 cursor-default"
                   />
-                  <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-[0_20px_60px_-12px_rgba(15,23,42,0.18)] max-h-96 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ring-1 ring-black/5">
+                  <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-slate-900/98 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_30px_80px_-20px_rgba(15,23,42,0.55),0_0_0_1px_rgba(255,77,77,0.08)] max-h-96 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    {/* Soft HARX glow on top */}
+                    <div className="pointer-events-none absolute -top-20 right-0 w-72 h-40 bg-harx-500/20 rounded-full blur-3xl" />
+                    <div className="pointer-events-none absolute -top-20 left-0 w-72 h-40 bg-harx-alt-500/15 rounded-full blur-3xl" />
+
                     {/* Header */}
-                    <div className="sticky top-0 z-10 px-5 py-3 bg-gradient-to-r from-blue-50/60 via-white to-white border-b border-gray-100 backdrop-blur-sm flex items-center justify-between">
-                      <span className="text-[10.5px] font-extrabold text-blue-700 uppercase tracking-[0.18em]">
+                    <div className="relative px-4 py-2.5 border-b border-white/5 flex items-center justify-between">
+                      <span className="text-[10.5px] font-extrabold uppercase tracking-[0.18em] bg-gradient-harx bg-clip-text text-transparent">
                         {t('telephonySetup.chooseActiveGigProfile')}
                       </span>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest tabular-nums">
+                      <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest tabular-nums">
                         {gigs.length} {gigs.length > 1 ? 'profils' : 'profil'}
                       </span>
                     </div>
 
-                    {/* Scrollable list */}
-                    <div className="overflow-y-auto max-h-[20rem] py-1.5">
+                    {/* Scrollable list — each item is a discrete rounded cell */}
+                    <div className="relative overflow-y-auto max-h-[20rem] p-2 space-y-1">
                       {gigs.length > 0 ? (
                         gigs.map((g: Gig) => {
                           const isActive = selectedGigId === g._id;
@@ -1274,40 +1278,35 @@ const TelephonySetup = ({
                                 setSelectedGigId(g._id);
                                 setIsDropdownOpen(false);
                               }}
-                              className={`relative flex items-center justify-between w-full pl-5 pr-4 py-3 text-left transition-colors duration-200 group ${
-                                isActive ? 'bg-blue-50/70' : 'hover:bg-gray-50'
+                              className={`relative flex items-center justify-between w-full px-3 py-2.5 text-left rounded-xl transition-all duration-200 group overflow-hidden ${
+                                isActive
+                                  ? 'bg-gradient-harx shadow-[0_10px_30px_-10px_rgba(255,77,77,0.6)]'
+                                  : 'hover:bg-white/[0.06]'
                               }`}
                             >
-                              {/* Active indicator bar */}
-                              <span
-                                className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full transition-all duration-300 ${
-                                  isActive ? 'bg-gradient-to-b from-blue-500 to-indigo-600 opacity-100' : 'bg-blue-400 opacity-0 group-hover:opacity-40'
-                                }`}
-                              />
-
-                              <div className="flex items-center gap-3.5 min-w-0">
-                                {/* Flag tile (real SVG when available) */}
+                              <div className="relative flex items-center gap-3 min-w-0">
+                                {/* Flag tile */}
                                 <FlagBadge
                                   flags={g.destination_zone?.flags}
                                   iso={g.destination_zone?.cca2}
                                   name={g.destination_zone?.name?.common}
-                                  className={isActive ? 'ring-2 ring-blue-200' : ''}
+                                  className={isActive ? 'ring-2 ring-white/40 shadow-lg' : ''}
                                 />
 
                                 <div className="flex flex-col min-w-0">
                                   <span
                                     className={`text-[14px] font-bold tracking-tight truncate transition-colors duration-200 ${
-                                      isActive ? 'text-blue-700' : 'text-gray-900 group-hover:text-gray-900'
+                                      isActive ? 'text-white' : 'text-white/90 group-hover:text-white'
                                     }`}
                                   >
                                     {g.title}
                                   </span>
-                                  <div className="flex items-center gap-2 mt-1">
+                                  <div className="flex items-center gap-2 mt-0.5">
                                     <span
                                       className={`text-[9.5px] font-extrabold uppercase tracking-[0.18em] px-1.5 py-0.5 rounded transition-colors ${
                                         isActive
-                                          ? 'bg-blue-100 text-blue-700'
-                                          : 'bg-gray-100 text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-600'
+                                          ? 'bg-white/20 text-white'
+                                          : 'bg-white/5 text-white/50 group-hover:bg-white/10 group-hover:text-white/80'
                                       }`}
                                     >
                                       {g.destination_zone?.name?.common || t('telephonySetup.unknownRegion')}
@@ -1316,13 +1315,13 @@ const TelephonySetup = ({
                                 </div>
                               </div>
 
-                              <div className="flex items-center pl-3 shrink-0">
+                              <div className="relative flex items-center pl-3 shrink-0">
                                 {isActive ? (
-                                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_4px_12px_rgba(37,99,235,0.35)] animate-in zoom-in duration-300">
-                                    <CheckCircle className="h-3.5 w-3.5 text-white" />
+                                  <div className="w-6 h-6 rounded-full bg-white/95 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.25)] animate-in zoom-in duration-300">
+                                    <CheckCircle className="h-3.5 w-3.5 text-harx-500" />
                                   </div>
                                 ) : (
-                                  <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                                  <ChevronRight className="h-4 w-4 text-white/30 group-hover:text-harx-300 group-hover:translate-x-0.5 transition-all" />
                                 )}
                               </div>
                             </button>
@@ -1330,10 +1329,10 @@ const TelephonySetup = ({
                         })
                       ) : (
                         <div className="px-8 py-14 text-center">
-                          <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                            <Globe className="h-6 w-6 text-gray-300" />
+                          <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 border border-white/10">
+                            <Globe className="h-6 w-6 text-white/30" />
                           </div>
-                          <p className="text-[12px] text-gray-400 font-bold uppercase tracking-[0.15em]">
+                          <p className="text-[12px] text-white/40 font-bold uppercase tracking-[0.15em]">
                             {t('telephonySetup.noGlobalProfilesFound')}
                           </p>
                         </div>
