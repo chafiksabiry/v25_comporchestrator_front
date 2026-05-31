@@ -1167,22 +1167,30 @@ const TelephonySetup = ({
           <p className="text-[13.5px] text-gray-500 mb-5 leading-relaxed">{t('telephonySetup.associateGig')}</p>
 
           {isLoadingGigs ? (
-            <div className="w-full h-14 bg-slate-900/95 rounded-2xl flex items-center justify-center border border-white/5">
-              <div className="animate-spin h-4 w-4 border-2 border-harx-300/40 border-t-harx-500 rounded-full mr-3" />
+            <div
+              className="w-full h-14 rounded-2xl flex items-center justify-center border border-harx-900/40"
+              style={{ background: 'linear-gradient(135deg, #1a0c10 0%, #2b0f17 50%, #3a0f1f 100%)' }}
+            >
+              <div className="animate-spin h-4 w-4 border-2 border-harx-300/40 border-t-harx-400 rounded-full mr-3" />
               <span className="text-[12px] font-bold text-white/70 uppercase tracking-[0.15em]">{t('telephonySetup.hydratingProfiles')}</span>
             </div>
           ) : (
             <div className="relative">
-              {/* Trigger button — dark "Select" pill matching the reference */}
+              {/* Trigger — HARX-tinted dark pill with gradient border accent */}
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`relative flex items-center justify-between w-full px-4 py-3.5 rounded-2xl border transition-all duration-300 ${
+                style={{ background: 'linear-gradient(135deg, #1a0c10 0%, #2b0f17 55%, #3a0f1f 100%)' }}
+                className={`group/trigger relative flex items-center justify-between w-full px-4 py-3.5 rounded-2xl border transition-all duration-300 overflow-hidden ${
                   isDropdownOpen
-                    ? 'border-harx-500/60 bg-slate-900 shadow-[0_20px_50px_-20px_rgba(255,77,77,0.55)] ring-4 ring-harx-500/15'
-                    : 'border-white/10 bg-slate-900/95 hover:border-harx-500/40 hover:shadow-[0_18px_40px_-20px_rgba(236,72,153,0.45)]'
+                    ? 'border-harx-500/70 shadow-[0_20px_50px_-20px_rgba(255,77,77,0.6)] ring-4 ring-harx-500/15'
+                    : 'border-harx-900/60 hover:border-harx-500/50 hover:shadow-[0_18px_40px_-20px_rgba(236,72,153,0.5)]'
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0">
+                {/* Subtle HARX glow trailing the right side */}
+                <span className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 bg-harx-500/20 rounded-full blur-3xl" />
+                <span className="pointer-events-none absolute -bottom-10 -left-10 w-32 h-32 bg-harx-alt-500/15 rounded-full blur-3xl" />
+
+                <div className="relative flex items-center gap-3 min-w-0">
                   {selectedGigId ? (
                     (() => {
                       const sel = gigs.find((g: Gig) => g._id === selectedGigId);
@@ -1200,21 +1208,21 @@ const TelephonySetup = ({
                       }
                       return (
                         <>
-                          {/* Flag avatar */}
                           <div className="relative shrink-0">
                             <FlagBadge
                               flags={sel.destination_zone?.flags}
                               iso={sel.destination_zone?.cca2}
                               name={sel.destination_zone?.name?.common}
                               size="sm"
+                              className="ring-1 ring-white/20"
                             />
-                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-900 shadow" />
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#2b0f17] shadow" />
                           </div>
                           <div className="flex flex-col items-start min-w-0">
                             <span className="text-[15px] font-extrabold text-white leading-tight tracking-tight truncate max-w-[280px]">
                               {sel.title}
                             </span>
-                            <span className="text-[10.5px] font-bold uppercase tracking-[0.18em] leading-none mt-1 bg-gradient-harx bg-clip-text text-transparent">
+                            <span className="text-[10.5px] font-extrabold uppercase tracking-[0.18em] leading-none mt-1 bg-gradient-harx bg-clip-text text-transparent">
                               {sel.destination_zone?.name?.common || t('telephonySetup.globalZone')}
                             </span>
                           </div>
@@ -1232,41 +1240,46 @@ const TelephonySetup = ({
                     </>
                   )}
                 </div>
+
                 <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${
-                    isDropdownOpen ? 'bg-harx-500/20 text-harx-300' : 'bg-white/5 text-white/50 hover:bg-harx-500/15 hover:text-harx-300'
+                  className={`relative flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${
+                    isDropdownOpen
+                      ? 'bg-gradient-harx text-white shadow-[0_8px_20px_-6px_rgba(255,77,77,0.6)]'
+                      : 'bg-white/5 text-white/60 group-hover/trigger:bg-harx-500/20 group-hover/trigger:text-harx-200'
                   }`}
                 >
                   <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
               </button>
 
-              {/* Dropdown menu — dark panel with HARX-accented selected/hover state */}
+              {/* Dropdown menu — matching HARX-tinted dark panel, items as rounded cells */}
               {isDropdownOpen && (
                 <>
-                  {/* Click-away overlay */}
                   <button
                     type="button"
                     aria-label="close"
                     onClick={() => setIsDropdownOpen(false)}
                     className="fixed inset-0 z-40 cursor-default"
                   />
-                  <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-slate-900/98 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_30px_80px_-20px_rgba(15,23,42,0.55),0_0_0_1px_rgba(255,77,77,0.08)] max-h-96 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                    {/* Soft HARX glow on top */}
-                    <div className="pointer-events-none absolute -top-20 right-0 w-72 h-40 bg-harx-500/20 rounded-full blur-3xl" />
-                    <div className="pointer-events-none absolute -top-20 left-0 w-72 h-40 bg-harx-alt-500/15 rounded-full blur-3xl" />
+                  <div
+                    style={{ background: 'linear-gradient(180deg, #1a0c10 0%, #220d14 50%, #2b0f17 100%)' }}
+                    className="absolute z-50 top-full left-0 right-0 mt-2 border border-harx-900/60 rounded-2xl shadow-[0_30px_80px_-20px_rgba(255,77,77,0.35),0_0_0_1px_rgba(255,77,77,0.08)] max-h-96 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                  >
+                    {/* Soft HARX glows */}
+                    <div className="pointer-events-none absolute -top-20 right-0 w-72 h-40 bg-harx-500/25 rounded-full blur-3xl" />
+                    <div className="pointer-events-none absolute -top-20 left-0 w-72 h-40 bg-harx-alt-500/20 rounded-full blur-3xl" />
 
-                    {/* Header */}
-                    <div className="relative px-4 py-2.5 border-b border-white/5 flex items-center justify-between">
+                    {/* Header with HARX gradient underline */}
+                    <div className="relative px-4 py-2.5 border-b border-harx-900/60 flex items-center justify-between">
                       <span className="text-[10.5px] font-extrabold uppercase tracking-[0.18em] bg-gradient-harx bg-clip-text text-transparent">
                         {t('telephonySetup.chooseActiveGigProfile')}
                       </span>
                       <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest tabular-nums">
                         {gigs.length} {gigs.length > 1 ? 'profils' : 'profil'}
                       </span>
+                      <span className="pointer-events-none absolute left-4 right-4 -bottom-px h-px bg-gradient-to-r from-transparent via-harx-500/60 to-transparent" />
                     </div>
 
-                    {/* Scrollable list — each item is a discrete rounded cell */}
                     <div className="relative overflow-y-auto max-h-[20rem] p-2 space-y-1">
                       {gigs.length > 0 ? (
                         gigs.map((g: Gig) => {
@@ -1280,17 +1293,16 @@ const TelephonySetup = ({
                               }}
                               className={`relative flex items-center justify-between w-full px-3 py-2.5 text-left rounded-xl transition-all duration-200 group overflow-hidden ${
                                 isActive
-                                  ? 'bg-gradient-harx shadow-[0_10px_30px_-10px_rgba(255,77,77,0.6)]'
-                                  : 'hover:bg-white/[0.06]'
+                                  ? 'bg-gradient-harx shadow-[0_10px_30px_-10px_rgba(255,77,77,0.7)]'
+                                  : 'hover:bg-white/[0.05]'
                               }`}
                             >
                               <div className="relative flex items-center gap-3 min-w-0">
-                                {/* Flag tile */}
                                 <FlagBadge
                                   flags={g.destination_zone?.flags}
                                   iso={g.destination_zone?.cca2}
                                   name={g.destination_zone?.name?.common}
-                                  className={isActive ? 'ring-2 ring-white/40 shadow-lg' : ''}
+                                  className={isActive ? 'ring-2 ring-white/60 shadow-md' : 'ring-1 ring-white/10'}
                                 />
 
                                 <div className="flex flex-col min-w-0">
@@ -1305,8 +1317,8 @@ const TelephonySetup = ({
                                     <span
                                       className={`text-[9.5px] font-extrabold uppercase tracking-[0.18em] px-1.5 py-0.5 rounded transition-colors ${
                                         isActive
-                                          ? 'bg-white/20 text-white'
-                                          : 'bg-white/5 text-white/50 group-hover:bg-white/10 group-hover:text-white/80'
+                                          ? 'bg-white/25 text-white'
+                                          : 'bg-white/5 text-white/55 group-hover:bg-harx-500/20 group-hover:text-harx-200'
                                       }`}
                                     >
                                       {g.destination_zone?.name?.common || t('telephonySetup.unknownRegion')}
@@ -1317,7 +1329,7 @@ const TelephonySetup = ({
 
                               <div className="relative flex items-center pl-3 shrink-0">
                                 {isActive ? (
-                                  <div className="w-6 h-6 rounded-full bg-white/95 flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.25)] animate-in zoom-in duration-300">
+                                  <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.25)] animate-in zoom-in duration-300">
                                     <CheckCircle className="h-3.5 w-3.5 text-harx-500" />
                                   </div>
                                 ) : (
