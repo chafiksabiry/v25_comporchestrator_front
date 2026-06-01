@@ -917,20 +917,24 @@ const CompanyOnboarding = () => {
       }, 1000);
     };
 
-    const handleKbContentStatus = (e: CustomEvent) => {
-      setKbHasContent(!!e.detail?.hasContent);
-    };
-
     window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
     window.addEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
-    window.addEventListener('kbContentStatus', handleKbContentStatus as EventListener);
 
     return () => {
       window.removeEventListener('stepCompleted', handleStepCompleted as EventListener);
       window.removeEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
-      window.removeEventListener('kbContentStatus', handleKbContentStatus as EventListener);
     };
   }, [loadCompanyProgress, checkCompanyLeads]);
+
+  // Stable listener for kbContentStatus — mounted once so it never misses events
+  // even when loadCompanyProgress/checkCompanyLeads functions are recreated.
+  useEffect(() => {
+    const handleKbContentStatus = (e: CustomEvent) => {
+      setKbHasContent(!!e.detail?.hasContent);
+    };
+    window.addEventListener('kbContentStatus', handleKbContentStatus as EventListener);
+    return () => window.removeEventListener('kbContentStatus', handleKbContentStatus as EventListener);
+  }, []);
 
   // When the Knowledge Base view becomes visible, re-read localStorage so
   // kbHasContent is always accurate even if the initial mount event was missed.
@@ -1663,11 +1667,14 @@ const CompanyOnboarding = () => {
         {stepGuideLayer}
         <div className="animate-fade-in relative min-h-[50vh] pb-24">
           {activeComponent}
-          {/* For the Knowledge Base step the button appears as soon as the user
-              has uploaded at least one document or video (kbHasContent).
-              For every other step it requires the step to be marked completed. */}
+          {/* For the Knowledge Base step the button appears when:
+              - at least one doc/video was uploaded (kbHasContent from live event), OR
+              - the step is already marked completed on the server (stepStatuses[7]).
+              This ensures the button is visible immediately after a page load if the
+              step was previously completed, without waiting for the content event.
+              For every other step the server-side "completed" status is required. */}
           {(showKnowledgeBase
-            ? kbHasContent
+            ? (kbHasContent || stepStatuses[7] === 'completed')
             : stepStatuses[getFocusedStepId() ?? -1] === 'completed') && (
             <OnboardingNextStepButton
               onClick={() => {
