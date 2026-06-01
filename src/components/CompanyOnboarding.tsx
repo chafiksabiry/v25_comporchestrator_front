@@ -458,17 +458,21 @@ const CompanyOnboarding = () => {
   // Dispatch step-by-step guide for the Upload Contacts screen
   useEffect(() => {
     if (showUploadContacts) {
-      window.dispatchEvent(
-        new CustomEvent('stepGuideUpdate', {
-          detail: {
-            title: t('sidebar.uploadContactsGuide.title'),
-            description: t('sidebar.uploadContactsGuide.description'),
-            steps: (t('sidebar.uploadContactsGuide.steps', { returnObjects: true }) as string[]),
-          },
-        })
-      );
+      if (completedSteps.includes(5)) {
+        window.dispatchEvent(
+          new CustomEvent('stepGuideUpdate', {
+            detail: {
+              title: t('sidebar.uploadContactsGuide.title'),
+              description: t('sidebar.uploadContactsGuide.description'),
+              steps: (t('sidebar.uploadContactsGuide.steps', { returnObjects: true }) as string[]),
+            },
+          })
+        );
+      } else {
+        window.dispatchEvent(new CustomEvent('stepGuideUpdate', { detail: null }));
+      }
     }
-  }, [showUploadContacts, t]);
+  }, [showUploadContacts, completedSteps, t]);
 
   const userId = Cookies.get("userId");
 
@@ -949,12 +953,8 @@ const CompanyOnboarding = () => {
     );
 
     if (currentStep) {
-      window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
-        detail: {
-          title: t(`companyOnboarding.phases.${displayedPhase}.steps.${currentStep.id}.title`, currentStep.title),
-          description: t(`companyOnboarding.phases.${displayedPhase}.steps.${currentStep.id}.description`, currentStep.description)
-        }
-      }));
+      // Hide the guide while a step is still in progress
+      window.dispatchEvent(new CustomEvent('stepGuideUpdate', { detail: null }));
     } else {
       // If all steps in phase are completed, show phase summary or next instruction
       const isLastPhase = displayedPhase === 4;
