@@ -60,12 +60,44 @@ export function persistOnboardingProgress(completedSteps: number[], currentPhase
 /**
  * Load onboarding progress from the company API and mirror it to cookie + localStorage.
  */
+/** Create onboarding progress when GET returns 404 (new companies). */
+export async function ensureOnboardingProgress(companyId: string): Promise<boolean> {
+  const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
+  if (!apiUrl || !companyId) return false;
+
+  try {
+    const getRes = await fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`);
+    if (getRes.ok) return true;
+    if (getRes.status !== 404) return false;
+
+    const postRes = await fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    // 400 = already exists (race with another tab)
+    return postRes.ok || postRes.status === 400;
+  } catch {
+    return false;
+  }
+}
+
 export async function syncOnboardingProgressFromApi(companyId: string): Promise<number[]> {
   const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
   if (!apiUrl || !companyId) return getCompletedStepsFromStorage();
 
   try {
     const res = await fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`);
+    if (res.status === 404) {
+      await ensureOnboardingProgress(companyId);
+      const retry = await fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`);
+      if (!retry.ok) return getCompletedStepsFromStorage();
+      const progress = await retry.json();
+      const completedSteps = normalizeOnboardingStepIds(
+        Array.isArray(progress.completedSteps) ? progress.completedSteps : []
+      );
+      persistOnboardingProgress(completedSteps, progress.currentPhase);
+      return completedSteps;
+    }
     if (!res.ok) return getCompletedStepsFromStorage();
     const progress = await res.json();
     const completedSteps = normalizeOnboardingStepIds(
