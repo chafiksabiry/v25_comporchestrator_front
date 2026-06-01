@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import {
   Phone,
@@ -94,14 +94,24 @@ const TelephonySetup = ({
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const gigsFetchSeqRef = useRef(0);
+  const gigsApiBase =
+    import.meta.env.VITE_GIGS_API || import.meta.env.VITE_API_URL_GIGS;
 
-  // Effet pour lire le companyId depuis les cookies
+  // Sync companyId from parent when it becomes available
   useEffect(() => {
+    if (propCompanyId) {
+      setCompanyId(propCompanyId);
+      setCookieError(null);
+    }
+  }, [propCompanyId]);
+
+  // Fallback: read companyId from cookies when parent did not pass one
+  useEffect(() => {
+    if (propCompanyId) return;
+
     const readCookies = () => {
       const newCompanyId = Cookies.get('companyId');
-
-
-
       if (newCompanyId) {
         setCompanyId(newCompanyId);
         setCookieError(null);
@@ -110,32 +120,17 @@ const TelephonySetup = ({
       return false;
     };
 
-    // Sync with prop if provided
-    if (propCompanyId) {
-      setCompanyId(propCompanyId);
-      setCookieError(null);
-      return;
-    }
-
-    // Première lecture
     if (!readCookies()) {
-
-
-      // Si le cookie n'est pas trouvé, réessayer toutes les 2 secondes
       const interval = setInterval(() => {
         if (readCookies()) {
-
           clearInterval(interval);
         } else {
-
           setCookieError('Required company ID not found. Please refresh the page if this persists.');
         }
       }, 2000);
-
-      // Nettoyer l'intervalle si le composant est démonté
       return () => clearInterval(interval);
     }
-  }, []);
+  }, [propCompanyId]);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
@@ -243,16 +238,45 @@ const TelephonySetup = ({
     );
   };
 
-  useEffect(() => {
+  const fetchGigs = useCallback(async () => {
     if (!companyId) {
-
+      setGigs([]);
+      setIsLoadingGigs(false);
+      return;
+    }
+    if (!gigsApiBase) {
+      console.error('VITE_GIGS_API / VITE_API_URL_GIGS is not configured');
+      setGigs([]);
+      setIsLoadingGigs(false);
       return;
     }
 
+    const seq = ++gigsFetchSeqRef.current;
+    setIsLoadingGigs(true);
 
-    fetchGigs();
-    checkCompletedSteps();
-  }, [companyId]);
+    try {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 20000);
+      const response = await axios.get(
+        `${gigsApiBase}/gigs/company/${companyId}?populate=companyId`,
+        { signal: controller.signal }
+      );
+      window.clearTimeout(timeoutId);
+
+      if (seq !== gigsFetchSeqRef.current) return;
+
+      const responseData = response.data as { data?: Gig[] };
+      setGigs(Array.isArray(responseData?.data) ? responseData.data : []);
+    } catch (error) {
+      if (seq !== gigsFetchSeqRef.current) return;
+      console.error('Error fetching gigs:', error);
+      setGigs([]);
+    } finally {
+      if (seq === gigsFetchSeqRef.current) {
+        setIsLoadingGigs(false);
+      }
+    }
+  }, [companyId, gigsApiBase]);
 
   // Auto-sélection du premier gig disponible si aucun n'est sélectionné
   useEffect(() => {
@@ -718,31 +742,11 @@ const TelephonySetup = ({
     }
   };
 
-  const fetchGigs = async () => {
+  useEffect(() => {
     if (!companyId) return;
-
-    try {
-      setIsLoadingGigs(true);
-
-
-      const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
-
-
-      const responseData = response.data as { data: Gig[] };
-      if (responseData && Array.isArray(responseData.data)) {
-        setGigs(responseData.data);
-
-      } else {
-        setGigs([]);
-
-      }
-    } catch (error) {
-      console.error('❌ Error fetching gigs:', error);
-      setGigs([]);
-    } finally {
-      setIsLoadingGigs(false);
-    }
-  };
+    fetchGigs();
+    checkCompletedSteps();
+  }, [companyId, fetchGigs]);
 
   const fetchExistingNumbers = async () => {
     try {
