@@ -291,7 +291,18 @@ const CompanyOnboarding = () => {
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
-  const [kbHasContent, setKbHasContent] = useState(false);
+  const [kbHasContent, setKbHasContent] = useState(() => {
+    // Seed from localStorage immediately so the button is visible on first render
+    // when the user already has documents (avoids missing the first kbContentStatus event).
+    try {
+      const saved = localStorage.getItem('knowledgeItems');
+      if (saved) {
+        const items = JSON.parse(saved);
+        return Array.isArray(items) && items.length > 0;
+      }
+    } catch {}
+    return false;
+  });
   const [stepStatuses, setStepStatuses] = useState<Record<number, string>>({});
   const [showGigDetails, setShowGigDetails] = useState(false);
   const [showGigCreation, setShowGigCreation] = useState(false);
@@ -920,6 +931,19 @@ const CompanyOnboarding = () => {
       window.removeEventListener('kbContentStatus', handleKbContentStatus as EventListener);
     };
   }, [loadCompanyProgress, checkCompanyLeads]);
+
+  // When the Knowledge Base view becomes visible, re-read localStorage so
+  // kbHasContent is always accurate even if the initial mount event was missed.
+  useEffect(() => {
+    if (!showKnowledgeBase) return;
+    try {
+      const saved = localStorage.getItem('knowledgeItems');
+      if (saved) {
+        const items = JSON.parse(saved);
+        setKbHasContent(Array.isArray(items) && items.length > 0);
+      }
+    } catch {}
+  }, [showKnowledgeBase]);
 
   // After Stripe redirect, subscription row may appear slightly after the first GET; re-sync progress.
   useEffect(() => {
@@ -1639,8 +1663,12 @@ const CompanyOnboarding = () => {
         {stepGuideLayer}
         <div className="animate-fade-in relative min-h-[50vh] pb-24">
           {activeComponent}
-          {stepStatuses[getFocusedStepId() ?? -1] === 'completed' &&
-            (!showKnowledgeBase || kbHasContent) && (
+          {/* For the Knowledge Base step the button appears as soon as the user
+              has uploaded at least one document or video (kbHasContent).
+              For every other step it requires the step to be marked completed. */}
+          {(showKnowledgeBase
+            ? kbHasContent
+            : stepStatuses[getFocusedStepId() ?? -1] === 'completed') && (
             <OnboardingNextStepButton
               onClick={() => {
                 void handleOnboardingNextStep();

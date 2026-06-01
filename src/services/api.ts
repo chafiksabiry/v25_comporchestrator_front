@@ -175,27 +175,40 @@ export const phoneNumberService = {
         params: { countryCode }
       });
 
-      // Handle empty or invalid response
-      if (!response.data || typeof response.data === 'string') {
-        console.warn('⚠️ Invalid response format:', response.data);
+      // Handle empty or invalid response.
+      // The Twilio endpoint may return { numbers: [], regulatoryBlocked: true }
+      // when no numbers can be provisioned (regulatory gate). Extract the
+      // actual array in that case instead of trying to call .map() on the object.
+      let rawNumbers: any[];
+      if (Array.isArray(response.data)) {
+        rawNumbers = response.data;
+      } else if (
+        response.data &&
+        typeof response.data === 'object' &&
+        Array.isArray((response.data as any).numbers)
+      ) {
+        rawNumbers = (response.data as any).numbers;
+      } else {
+        console.warn('⚠️ Invalid or empty response format:', response.data);
         return [];
       }
 
-      // Add provider info to each number
-      const numbers = response.data.map((number: any) => ({
-        ...number,
-        provider
-      }));
+      // Filter out entries that have no valid phone number (guard against mock data)
+      const numbers = rawNumbers
+        .filter((n: any) => {
+          const num = n?.phoneNumber || n?.phone_number;
+          return typeof num === 'string' && num.startsWith('+') && num.length >= 7;
+        })
+        .map((number: any) => ({
+          ...number,
+          provider
+        }));
 
-      
       return numbers;
     } catch (error) {
-      // Special case: return empty array for 500 errors
-      if (isAxiosError(error) && error.response?.status === 500) {
-        console.warn(`⚠️ ${provider} API error, returning empty array`);
-        return [];
-      }
-      return handleApiError(error, 'searchPhoneNumbers');
+      // Always return empty array on any search failure — never show mock/stale data
+      console.warn(`⚠️ ${provider} number search failed, returning empty:`, error);
+      return [];
     }
   },
 
