@@ -35,6 +35,10 @@ import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
 
 import {
+  getCompletedStepsFromStorage,
+  persistOnboardingProgress,
+} from '../../hooks/useStepGuide';
+import {
   REP_ONBOARDING_STATE_EVENT,
   type RepOnboardingStateDetail,
 } from './repOnboardingEvents';
@@ -396,9 +400,18 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     });
   };
 
-  /** Mark Phase 3 Step 9 (REP Onboarding) complete and notify CompanyOnboarding like other steps. */
+  const step9AutoCompleteRef = useRef(false);
+  const trainingsFetchSeqRef = useRef(0);
+
+  /** Mark Phase 3 Step 9 (REP Onboarding) complete — runs at most once per mount. */
   const updateOnboardingProgress = useCallback(async () => {
-    if (!companyId) return;
+    if (!companyId || step9AutoCompleteRef.current) return;
+    if (getCompletedStepsFromStorage().includes(9)) {
+      step9AutoCompleteRef.current = true;
+      return;
+    }
+
+    step9AutoCompleteRef.current = true;
 
     const apiUrl =
       import.meta.env.VITE_COMPANY_API_URL ||
@@ -406,24 +419,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding`;
     const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/9`;
 
-    try {
-      await axios.put(stepUrl, { status: "completed" });
-    } catch (error) {
-      console.error("[RepOnboarding] Failed to mark step 9 completed:", error);
-      window.dispatchEvent(new Event("refreshOnboardingProgress"));
-      return;
-    }
-
-    try {
-      const { data: progress } = await axios.get(onboardingUrl);
-      const raw = progress as Record<string, unknown>;
-      const completedSteps = Array.isArray(raw?.completedSteps)
-        ? [...(raw.completedSteps as number[])]
-        : [];
-      if (!completedSteps.includes(9)) completedSteps.push(9);
-      const phaseId = typeof raw?.currentPhase === "number" ? (raw.currentPhase as number) : 3;
-      const cookiePayload = { ...raw, completedSteps };
-      Cookies.set("companyOnboardingProgress", JSON.stringify(cookiePayload), { expires: 7 });
+    const notifyStepCompleted = (completedSteps: number[], phaseId = 3) => {
+      persistOnboardingProgress(completedSteps, phaseId);
       window.dispatchEvent(
         new CustomEvent("stepCompleted", {
           detail: {
@@ -434,20 +431,40 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           },
         })
       );
-      
+    };
+
+    try {
+      await axios.put(stepUrl, { status: "completed" });
     } catch (error) {
-      console.error("[RepOnboarding] Failed to reload onboarding after step 9:", error);
-      window.dispatchEvent(new Event("refreshOnboardingProgress"));
+      console.error("[RepOnboarding] Failed to mark step 9 completed:", error);
+      step9AutoCompleteRef.current = false;
+      return;
+    }
+
+    try {
+      const { data: progress } = await axios.get(onboardingUrl);
+      const raw = progress as Record<string, unknown>;
+      const completedSteps = Array.isArray(raw?.completedSteps)
+        ? [...(raw.completedSteps as number[])]
+        : getCompletedStepsFromStorage();
+      if (!completedSteps.includes(9)) completedSteps.push(9);
+      const phaseId = typeof raw?.currentPhase === "number" ? (raw.currentPhase as number) : 3;
+      notifyStepCompleted(completedSteps, phaseId);
+    } catch (error) {
+      console.warn("[RepOnboarding] Onboarding GET failed after step 9 PUT; using local progress.", error);
+      const completedSteps = getCompletedStepsFromStorage();
+      const next = completedSteps.includes(9) ? completedSteps : [...completedSteps, 9];
+      notifyStepCompleted(next, 3);
     }
   }, [companyId]);
 
   // Function to fetch trainings for the company
   const fetchCompanyTrainings = useCallback(async () => {
     if (!companyId) {
-      
       return;
     }
 
+    const fetchSeq = ++trainingsFetchSeqRef.current;
     setLoadingTrainings(true);
     try {
       const trainingBackendUrl = getTrainingBackendUrl();
@@ -535,29 +552,18 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       }
 
       
-      const publishedTrainings = journeysArray.filter(isDisplayableTrainingJourney);
-
       setTrainings(journeysArray);
-
-      // Auto-complete step 9 only when at least one real (non-draft) training exists
-      if (publishedTrainings.length > 0) {
-        void updateOnboardingProgress();
-        
-        // --- DIAGNOSTIC: Log first journey structure ---
-        
-      }
-
-      // --- DIAGNOSTIC: Check for local drafts ---
-      if (DraftService.hasDraft()) {
-        const draft = DraftService.getDraft();
-        
-      }
     } catch (error) {
       console.error('[RepOnboarding] Error fetching trainings:', error);
+      if (fetchSeq === trainingsFetchSeqRef.current) {
+        setTrainings([]);
+      }
     } finally {
-      setLoadingTrainings(false);
+      if (fetchSeq === trainingsFetchSeqRef.current) {
+        setLoadingTrainings(false);
+      }
     }
-  }, [companyId, legacyCompanyId, filterGigId, updateOnboardingProgress]);
+  }, [companyId, legacyCompanyId, filterGigId]);
 
   /** Après publish / launch du parcours : même flux que les autres étapes (step 9 + refresh UI parent). */
   const handleEmbeddedJourneyComplete = useCallback(() => {
@@ -684,6 +690,11 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     () => trainings.filter(isDisplayableTrainingJourney),
     [trainings]
   );
+
+  useEffect(() => {
+    if (realTrainings.length === 0) return;
+    void updateOnboardingProgress();
+  }, [realTrainings.length, updateOnboardingProgress]);
 
   const trainingBuilderWasOpenRef = useRef(false);
 
