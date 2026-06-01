@@ -145,21 +145,6 @@ const KnowledgeBase: React.FC = () => {
       setKnowledgeItems(JSON.parse(savedItems));
     }
 
-    // Dispatch global back navigation
-    window.dispatchEvent(new CustomEvent('setGlobalBack', {
-      detail: {
-        label: 'Back to Onboarding',
-        action: () => {
-          window.dispatchEvent(new CustomEvent('tabChange', {
-            detail: { tab: 'company-onboarding' }
-          }));
-        }
-      }
-    }));
-
-    return () => {
-      window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
-    };
   }, []);
 
   // Save items to localStorage when they change

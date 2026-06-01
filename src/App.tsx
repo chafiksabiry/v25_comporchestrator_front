@@ -44,6 +44,8 @@ import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideMod
 import WalletTopUpModal from './components/wallet/WalletTopUpModal';
 import { refreshAndBroadcastWalletBalance } from './lib/walletBalanceSync';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
+import { OnboardingNextStepButton } from './components/onboarding/OnboardingNextStepButton';
+import { goToCompanyOnboardingTab } from './hooks/useOnboardingGlobalBack';
 import StepGuideModal, { type StepGuideVariant } from './components/onboarding/StepGuideModal';
 import {
   markStepGuideSeen,
@@ -63,6 +65,17 @@ const TAB_ONBOARDING_STEPS: Record<string, { stepId: number; phaseId: number }> 
   'knowledge-base': { stepId: 8, phaseId: 3 },
   'approval-publishing': { stepId: 12, phaseId: 4 },
 };
+
+const ORCHESTRATOR_STEP_TABS = new Set([
+  'knowledge-base',
+  'script-generator',
+  'approval-publishing',
+  'training',
+  'profile-creation',
+  'gig-generation',
+  'matching',
+  'optimization',
+]);
 
 function AppContent() {
   const { t } = useTranslation();
@@ -795,8 +808,12 @@ function AppContent() {
               activeView={activeProject}
               dashboard={<DashboardApp />}
               comporchestrator={
-                <div className="px-4 py-3 h-full pb-32 relative">
+                <div className="relative h-full px-4 py-3 pb-32">
                   {renderContent()}
+                  {activeTab !== 'company-onboarding' &&
+                    ORCHESTRATOR_STEP_TABS.has(activeTab) && (
+                      <OnboardingNextStepButton onClick={goToCompanyOnboardingTab} />
+                    )}
                 </div>
               }
             />
