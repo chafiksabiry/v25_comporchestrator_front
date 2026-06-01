@@ -328,12 +328,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       import.meta.env.VITE_COMPANY_API_URL ||
       "https://v25searchcompanywizardbackend-production.up.railway.app/api";
     const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding`;
-    const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/9`;
+    const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/8`;
 
     try {
       await axios.put(stepUrl, { status: "completed" });
     } catch (error) {
-      console.error("[RepOnboarding] Failed to mark step 9 completed:", error);
+      console.error("[RepOnboarding] Failed to mark step 8 completed:", error);
       window.dispatchEvent(new Event("refreshOnboardingProgress"));
       return;
     }
@@ -344,14 +344,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       const completedSteps = Array.isArray(raw?.completedSteps)
         ? [...(raw.completedSteps as number[])]
         : [];
-      if (!completedSteps.includes(9)) completedSteps.push(9);
+      if (!completedSteps.includes(8)) completedSteps.push(8);
       const phaseId = typeof raw?.currentPhase === "number" ? (raw.currentPhase as number) : 3;
       const cookiePayload = { ...raw, completedSteps };
       Cookies.set("companyOnboardingProgress", JSON.stringify(cookiePayload), { expires: 7 });
       window.dispatchEvent(
         new CustomEvent("stepCompleted", {
           detail: {
-            stepId: 9,
+            stepId: 8,
             phaseId,
             status: "completed",
             completedSteps,
@@ -360,7 +360,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       );
       
     } catch (error) {
-      console.error("[RepOnboarding] Failed to reload onboarding after step 9:", error);
+      console.error("[RepOnboarding] Failed to reload onboarding after step 8:", error);
       window.dispatchEvent(new Event("refreshOnboardingProgress"));
     }
   }, [companyId]);
