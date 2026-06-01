@@ -1057,7 +1057,7 @@ const CompanyOnboarding = () => {
       const step = allSteps.find((s) => s.id === stepId);
 
       // Special handling for Knowledge Base step
-      if (stepId === 8) {
+      if (stepId === 7) {
         dispatchInsideStepGuide(stepId);
         localStorage.setItem("activeTab", "knowledge-base");
         window.dispatchEvent(
