@@ -403,10 +403,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const step9AutoCompleteRef = useRef(false);
   const trainingsFetchSeqRef = useRef(0);
 
-  /** Mark Phase 3 Step 8 (REP Onboarding / Formation) complete — runs at most once per mount. */
+  /** Mark Phase 3 Step 9 (REP Onboarding) complete — runs at most once per mount. */
   const updateOnboardingProgress = useCallback(async () => {
     if (!companyId || step9AutoCompleteRef.current) return;
-    if (getCompletedStepsFromStorage().includes(8)) {
+    if (getCompletedStepsFromStorage().includes(9)) {
       step9AutoCompleteRef.current = true;
       return;
     }
@@ -417,14 +417,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       import.meta.env.VITE_COMPANY_API_URL ||
       "https://v25searchcompanywizardbackend-production.up.railway.app/api";
     const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding`;
-    const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/8`;
+    const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/9`;
 
     const notifyStepCompleted = (completedSteps: number[], phaseId = 3) => {
       persistOnboardingProgress(completedSteps, phaseId);
       window.dispatchEvent(
         new CustomEvent("stepCompleted", {
           detail: {
-            stepId: 8,
+            stepId: 9,
             phaseId,
             status: "completed",
             completedSteps,
@@ -436,7 +436,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     try {
       await axios.put(stepUrl, { status: "completed" });
     } catch (error) {
-      console.error("[RepOnboarding] Failed to mark step 8 completed:", error);
+      console.error("[RepOnboarding] Failed to mark step 9 completed:", error);
       step9AutoCompleteRef.current = false;
       return;
     }
@@ -447,13 +447,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       const completedSteps = Array.isArray(raw?.completedSteps)
         ? [...(raw.completedSteps as number[])]
         : getCompletedStepsFromStorage();
-      if (!completedSteps.includes(8)) completedSteps.push(8);
+      if (!completedSteps.includes(9)) completedSteps.push(9);
       const phaseId = typeof raw?.currentPhase === "number" ? (raw.currentPhase as number) : 3;
       notifyStepCompleted(completedSteps, phaseId);
     } catch (error) {
-      console.warn("[RepOnboarding] Onboarding GET failed after step 8 PUT; using local progress.", error);
+      console.warn("[RepOnboarding] Onboarding GET failed after step 9 PUT; using local progress.", error);
       const completedSteps = getCompletedStepsFromStorage();
-      const next = completedSteps.includes(8) ? completedSteps : [...completedSteps, 8];
+      const next = completedSteps.includes(9) ? completedSteps : [...completedSteps, 9];
       notifyStepCompleted(next, 3);
     }
   }, [companyId]);
@@ -565,7 +565,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     }
   }, [companyId, legacyCompanyId, filterGigId]);
 
-  /** Après publish / launch du parcours : même flux que les autres étapes (step 8 + refresh UI parent). */
+  /** Après publish / launch du parcours : même flux que les autres étapes (step 9 + refresh UI parent). */
   const handleEmbeddedJourneyComplete = useCallback(() => {
     setShowTraining({ isOpen: false });
     void (async () => {

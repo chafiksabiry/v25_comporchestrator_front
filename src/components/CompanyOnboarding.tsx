@@ -38,12 +38,7 @@ import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideMod
 import {
   markStepGuideSeen,
   shouldShowStepGuide,
-  ensureOnboardingProgress,
 } from "../hooks/useStepGuide";
-import {
-  normalizeOnboardingStepIds,
-  ONBOARDING_STEP,
-} from "../hooks/onboardingSteps";
 import { EXIT_ONBOARDING_FOCUS_EVENT } from "../hooks/useOnboardingGlobalBack";
 import { OnboardingFocusedStepLayout } from "./onboarding/OnboardingFocusedStepLayout";
 import {
@@ -135,11 +130,12 @@ const phases: Phase[] = [
         component: UploadContacts,
       },
       {
-        id: 6,
+        id: 7,
         title: "Reporting Setup",
         description: "Configure KPIs and reporting preferences",
         status: "pending",
         component: ReportingSetup,
+        disabled: true,
       },
     ],
   },
@@ -150,21 +146,21 @@ const phases: Phase[] = [
     color: "harx-alt",
     steps: [
       {
-        id: 7,
+        id: 8,
         title: "Knowledge Base",
         description: "Create training materials and FAQs",
         status: "pending",
         component: KnowledgeBase,
       },
       {
-        id: 8,
+        id: 9,
         title: "REP Onboarding",
         description: "Training, validation, and contract acceptance",
         status: "pending",
         component: RepOnboarding,
       },
       {
-        id: 9,
+        id: 6,
         title: "Call Script",
         description: "Define script and conversation flows",
         status: "pending",
@@ -681,30 +677,13 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
-      let response: { data: OnboardingProgressResponse };
-      try {
-        response = await axios.get<OnboardingProgressResponse>(
-          `${apiUrl}/onboarding/companies/${effectiveCompanyId}/onboarding`
-        );
-      } catch (err: unknown) {
-        const status =
-          err && typeof err === "object" && "response" in err
-            ? (err as { response?: { status?: number } }).response?.status
-            : undefined;
-        if (status === 404) {
-          await ensureOnboardingProgress(effectiveCompanyId);
-          response = await axios.get<OnboardingProgressResponse>(
-            `${apiUrl}/onboarding/companies/${effectiveCompanyId}/onboarding`
-          );
-        } else {
-          throw err;
-        }
-      }
+      const response = await axios.get<OnboardingProgressResponse>(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${effectiveCompanyId}/onboarding`
+      );
       
       const progress = response.data;
 
-      let completedStepsState = normalizeOnboardingStepIds([...progress.completedSteps]);
+      let completedStepsState = [...progress.completedSteps];
 
       // Stripe checkout success can land before onboarding GET reflects step 11; merge after subscription truth.
       try {
@@ -850,12 +829,9 @@ const CompanyOnboarding = () => {
         setCompletedSteps((prev) => {
           let next: number[];
           if (detailCompleted && Array.isArray(detailCompleted)) {
-            next = normalizeOnboardingStepIds(detailCompleted);
+            next = detailCompleted;
           } else if (typeof stepId === 'number') {
-            const normalizedId = normalizeOnboardingStepIds([stepId])[0] ?? stepId;
-            next = prev.includes(normalizedId)
-              ? prev
-              : [...prev, normalizedId];
+            next = prev.includes(stepId) ? prev : [...prev, stepId];
           } else {
             return prev;
           }
@@ -1045,7 +1021,7 @@ const CompanyOnboarding = () => {
       const step = allSteps.find((s) => s.id === stepId);
 
       // Special handling for Knowledge Base step
-      if (stepId === 7) {
+      if (stepId === 8) {
         dispatchInsideStepGuide(stepId);
         localStorage.setItem("activeTab", "knowledge-base");
         window.dispatchEvent(
@@ -1056,19 +1032,8 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      if (stepId === 8) {
-        dispatchInsideStepGuide(stepId);
-        localStorage.setItem("activeTab", "training");
-        window.dispatchEvent(
-          new CustomEvent("tabChange", {
-            detail: { tab: "training" },
-          })
-        );
-        return;
-      }
-
       // Special handling for Call Script step
-      if (stepId === 9) {
+      if (stepId === 6) {
         dispatchInsideStepGuide(stepId);
         localStorage.setItem("activeTab", "script-generator");
         window.dispatchEvent(
@@ -1099,7 +1064,7 @@ const CompanyOnboarding = () => {
       if (step?.component) {
         if (stepId === 4) {
           setShowTelephonySetup(true);
-        } else if (stepId === 7) {
+        } else if (stepId === 8) {
           setShowKnowledgeBase(true);
         } else if (stepId === 5) {
           setShowUploadContacts(true);
@@ -1125,7 +1090,7 @@ const CompanyOnboarding = () => {
       const allSteps = phases.flatMap((phase) => phase.steps);
       const step = allSteps.find((s) => s.id === stepId);
 
-      if (stepId === 7) {
+      if (stepId === 8) {
         dispatchInsideStepGuide(stepId);
         localStorage.setItem("activeTab", "knowledge-base");
         window.dispatchEvent(
@@ -1136,18 +1101,7 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      if (stepId === 8) {
-        dispatchInsideStepGuide(stepId);
-        localStorage.setItem("activeTab", "training");
-        window.dispatchEvent(
-          new CustomEvent("tabChange", {
-            detail: { tab: "training" },
-          })
-        );
-        return;
-      }
-
-      if (stepId === 9) {
+      if (stepId === 6) {
         dispatchInsideStepGuide(stepId);
         localStorage.setItem("activeTab", "script-generator");
         window.dispatchEvent(
@@ -1311,13 +1265,13 @@ const CompanyOnboarding = () => {
       case 5:
         return Upload;
       case 6:
-        return BarChart2;
-      case 7:
-        return BookOpen;
-      case 8:
-        return Users;
-      case 9:
         return FileText;
+      case 7:
+        return BarChart2;
+      case 8:
+        return BookOpen;
+      case 9:
+        return Users;
       case 10:
         return Calendar;
       case 11:
@@ -1506,7 +1460,7 @@ const CompanyOnboarding = () => {
     }
 
     // Pour Knowledge Base
-    if (stepId === 7) {
+    if (stepId === 8) {
       if (allPreviousCompleted) {
         localStorage.setItem("activeTab", "knowledge-base");
         window.dispatchEvent(
@@ -1518,21 +1472,8 @@ const CompanyOnboarding = () => {
       return;
     }
 
-    // Pour Formation (REP Onboarding)
-    if (stepId === 8) {
-      if (allPreviousCompleted) {
-        localStorage.setItem("activeTab", "training");
-        window.dispatchEvent(
-          new CustomEvent("tabChange", {
-            detail: { tab: "training" },
-          })
-        );
-      }
-      return;
-    }
-
     // Pour Call Script
-    if (stepId === 9) {
+    if (stepId === 6) {
       if (allPreviousCompleted) {
         localStorage.setItem("activeTab", "script-generator");
         window.dispatchEvent(
@@ -1667,15 +1608,9 @@ const CompanyOnboarding = () => {
 
   if (activeComponent) {
     const focusedStepId = getFocusedStepId();
-    const isCompanyProfileStep = focusedStepId === ONBOARDING_STEP.COMPANY_PROFILE;
-    const isGigsStep = focusedStepId === ONBOARDING_STEP.GIGS;
-    const isRepOnboardingStep = focusedStepId === ONBOARDING_STEP.TRAINING;
-    const isTelephonyStep = focusedStepId === ONBOARDING_STEP.TELEPHONY;
-    const companyProfileReady = completedSteps.includes(ONBOARDING_STEP.COMPANY_PROFILE);
-    const gigsStepReady = completedSteps.includes(ONBOARDING_STEP.GIGS);
+    const isRepOnboardingStep = focusedStepId === 9;
+    const isTelephonyStep = focusedStepId === 4;
     const showNextStep =
-      !(isCompanyProfileStep && !companyProfileReady) &&
-      !(isGigsStep && (showGigCreation || !gigsStepReady)) &&
       !(
         isRepOnboardingStep &&
         repOnboardingMeta.inBuilder &&

@@ -944,7 +944,7 @@
             "title": "Upload Contacts",
             "description": "Import contacts for multi-channel engagement"
           },
-          "6": {
+          "7": {
             "title": "Reporting Setup",
             "description": "Configure KPIs and reporting preferences"
           }
@@ -953,15 +953,15 @@
       "3": {
         "title": "REPS Engagement",
         "steps": {
-          "7": {
+          "8": {
             "title": "Knowledge Base",
             "description": "Create training materials and FAQs"
           },
-          "8": {
+          "9": {
             "title": "E-learning",
             "description": "Training, validation, and contract acceptance"
           },
-          "9": {
+          "6": {
             "title": "Call Script",
             "description": "Define script and conversation flows"
           },
