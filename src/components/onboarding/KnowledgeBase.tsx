@@ -129,11 +129,9 @@ const KnowledgeBase = () => {
   };
 
   const hasBasicInfo = () => {
-    // Check if we have at least 3 published articles across different sections
-    const publishedArticles = sections.flatMap(section =>
-      section.articles.filter(article => article.status === 'published')
-    );
-    const hasInfo = publishedArticles.length >= 3;
+    // Only count real user-uploaded articles (articles state), not hardcoded demo sections
+    const publishedArticles = articles.filter(article => article.status === 'published');
+    const hasInfo = publishedArticles.length >= 1;
 
     
     return hasInfo;
