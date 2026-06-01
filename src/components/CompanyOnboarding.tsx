@@ -1436,8 +1436,6 @@ const CompanyOnboarding = () => {
 
   const handleFocusedNextStep = async () => {
     const stepId = getFocusedStepId();
-    if (stepId === 1 && !completedSteps.includes(1)) return;
-    if (stepId === 3 && !completedSteps.includes(3) && (!hasGigs || showGigCreation)) return;
     if (stepId === 4 && !telephonyNextReady) return;
     if (stepId !== null) {
       await completeFocusedStep(stepId);
@@ -1648,15 +1646,9 @@ const CompanyOnboarding = () => {
 
   if (activeComponent) {
     const focusedStepId = getFocusedStepId();
-    const isCompanyProfileStep = focusedStepId === 1;
-    const isGigsStep = focusedStepId === 3;
     const isRepOnboardingStep = focusedStepId === 8;
     const isTelephonyStep = focusedStepId === 4;
-    const gigsStepReady =
-      completedSteps.includes(3) || (hasGigs && !showGigCreation);
     const showNextStep =
-      !(isCompanyProfileStep && !completedSteps.includes(1)) &&
-      !(isGigsStep && !gigsStepReady) &&
       !(
         isRepOnboardingStep &&
         repOnboardingMeta.inBuilder &&
