@@ -40,6 +40,10 @@ import {
   shouldShowStepGuide,
 } from "../hooks/useStepGuide";
 import { EXIT_ONBOARDING_FOCUS_EVENT } from "../hooks/useOnboardingGlobalBack";
+import {
+  OnboardingNextStepButton,
+  ONBOARDING_NEXT_STEP_GATE_EVENT,
+} from "./onboarding/OnboardingNextStepButton";
 
 // NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
 // (see useOrchestratorGuide). Do not re-mount it here, otherwise it would
@@ -289,6 +293,9 @@ const CompanyOnboarding = () => {
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
   const [showGigDetails, setShowGigDetails] = useState(false);
   const [showGigCreation, setShowGigCreation] = useState(false);
+  const [nextStepGate, setNextStepGate] = useState<{ disabled: boolean; hint?: string }>({
+    disabled: false,
+  });
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [stepGuide, setStepGuide] = useState<{
@@ -1375,6 +1382,41 @@ const CompanyOnboarding = () => {
   const handleBackToOnboardingRef = useRef(handleBackToOnboarding);
   handleBackToOnboardingRef.current = handleBackToOnboarding;
 
+  const handleOnboardingNextStep = async () => {
+    if (showTelephonySetup) {
+      setCompletedSteps((prev) => (prev.includes(4) ? prev : [...prev, 4]));
+      window.dispatchEvent(
+        new CustomEvent("stepCompleted", { detail: { stepId: 4, phaseId: 2 } })
+      );
+    }
+    await handleBackToOnboarding();
+  };
+
+  useEffect(() => {
+    if (!showTelephonySetup) {
+      setNextStepGate({ disabled: false });
+    }
+  }, [showTelephonySetup]);
+
+  useEffect(() => {
+    const onNextStepGate = (event: Event) => {
+      const detail = (event as CustomEvent<{ disabled?: boolean; hint?: string }>).detail;
+      if (!detail) {
+        setNextStepGate({ disabled: false });
+        return;
+      }
+      setNextStepGate({
+        disabled: Boolean(detail.disabled),
+        hint: detail.hint,
+      });
+    };
+    window.addEventListener(ONBOARDING_NEXT_STEP_GATE_EVENT, onNextStepGate);
+    return () => {
+      window.removeEventListener(ONBOARDING_NEXT_STEP_GATE_EVENT, onNextStepGate);
+      setNextStepGate({ disabled: false });
+    };
+  }, []);
+
   useEffect(() => {
     const onExitFocus = () => {
       void handleBackToOnboardingRef.current();
@@ -1511,19 +1553,7 @@ const CompanyOnboarding = () => {
       />
     );
   } else if (showTelephonySetup) {
-    activeComponent = (
-      <TelephonySetup
-        companyId={companyId}
-        onNextStep={() => {
-          // Mark Telephony Setup (step 4) as completed and return to overview
-          setCompletedSteps((prev) => (prev.includes(4) ? prev : [...prev, 4]));
-          window.dispatchEvent(
-            new CustomEvent('stepCompleted', { detail: { stepId: 4, phaseId: 2 } })
-          );
-          handleBackToOnboarding();
-        }}
-      />
-    );
+    activeComponent = <TelephonySetup companyId={companyId} />;
   } else if (showKnowledgeBase) {
     activeComponent = <KnowledgeBase />;
   } else if (showUploadContacts) {
@@ -1564,8 +1594,15 @@ const CompanyOnboarding = () => {
       <>
         {orchestratorGuideLayer}
         {stepGuideLayer}
-        <div className="animate-fade-in">
+        <div className="animate-fade-in relative min-h-[50vh] pb-24">
           {activeComponent}
+          <OnboardingNextStepButton
+            onClick={() => {
+              void handleOnboardingNextStep();
+            }}
+            disabled={nextStepGate.disabled}
+            disabledHint={nextStepGate.hint}
+          />
         </div>
       </>
     );

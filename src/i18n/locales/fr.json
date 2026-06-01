@@ -823,6 +823,8 @@
   "telephonySetup": {
     "title": "Configuration Téléphonique",
     "subtitle": "Gérez et configurez vos points d'entrée réseau mondiaux",
+    "nextStep": "Étape suivante",
+    "nextStepRequiresNumber": "Achetez au moins un numéro pour passer à l'étape suivante",
     "errors": {
       "configurationTitle": "Erreur de Configuration",
       "companyIdMissing": "ID d'entreprise requis introuvable. Veuillez rafraîchir la page si le problème persiste."
