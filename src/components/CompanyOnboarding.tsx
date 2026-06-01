@@ -38,6 +38,7 @@ import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideMod
 import {
   markStepGuideSeen,
   shouldShowStepGuide,
+  ensureOnboardingProgress,
 } from "../hooks/useStepGuide";
 import {
   normalizeOnboardingStepIds,
@@ -680,9 +681,26 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      const response = await axios.get<OnboardingProgressResponse>(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${effectiveCompanyId}/onboarding`
-      );
+      const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
+      let response: { data: OnboardingProgressResponse };
+      try {
+        response = await axios.get<OnboardingProgressResponse>(
+          `${apiUrl}/onboarding/companies/${effectiveCompanyId}/onboarding`
+        );
+      } catch (err: unknown) {
+        const status =
+          err && typeof err === "object" && "response" in err
+            ? (err as { response?: { status?: number } }).response?.status
+            : undefined;
+        if (status === 404) {
+          await ensureOnboardingProgress(effectiveCompanyId);
+          response = await axios.get<OnboardingProgressResponse>(
+            `${apiUrl}/onboarding/companies/${effectiveCompanyId}/onboarding`
+          );
+        } else {
+          throw err;
+        }
+      }
       
       const progress = response.data;
 
