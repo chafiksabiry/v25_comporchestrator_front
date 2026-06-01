@@ -458,11 +458,22 @@ function AppContent() {
     const handleKbContentStatus = (e: CustomEvent) => {
       setKbHasContent(!!e.detail?.hasContent);
     };
+    // When CompanyOnboarding is not mounted (user is on a standalone tab like
+    // script-generator), stepStatusesUpdate is never dispatched. Listen directly
+    // to stepCompleted so we can update orchestratorStepStatuses immediately.
+    const handleStepCompleted = (e: CustomEvent) => {
+      const stepId = e.detail?.stepId;
+      if (typeof stepId === 'number') {
+        setOrchestratorStepStatuses((prev) => ({ ...prev, [stepId]: 'completed' }));
+      }
+    };
     window.addEventListener('stepStatusesUpdate', handleStepStatusesUpdate as EventListener);
     window.addEventListener('kbContentStatus', handleKbContentStatus as EventListener);
+    window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
     return () => {
       window.removeEventListener('stepStatusesUpdate', handleStepStatusesUpdate as EventListener);
       window.removeEventListener('kbContentStatus', handleKbContentStatus as EventListener);
+      window.removeEventListener('stepCompleted', handleStepCompleted as EventListener);
     };
   }, []);
 
