@@ -1152,7 +1152,7 @@ const TelephonySetup = ({
       )}
 
       {/* Section: Select Gig — HARX premium card */}
-      <div className="group/card relative overflow-hidden bg-white rounded-2xl border border-harx-100/70 p-6 pl-9 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(255,77,77,0.12)] hover:shadow-[0_1px_3px_rgba(15,23,42,0.05),0_22px_44px_-14px_rgba(255,77,77,0.28)] transition-shadow duration-500">
+      <div className="group/card relative overflow-visible bg-white rounded-2xl border border-harx-100/70 p-6 pl-9 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(255,77,77,0.12)] hover:shadow-[0_1px_3px_rgba(15,23,42,0.05),0_22px_44px_-14px_rgba(255,77,77,0.28)] transition-shadow duration-500">
         {/* Vertical HARX accent bar */}
         <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-harx-500 via-harx-alt-500 to-harx-600 rounded-l-2xl" />
         {/* Soft decorative HARX glow */}
