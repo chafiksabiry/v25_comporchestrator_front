@@ -1650,11 +1650,14 @@ const CompanyOnboarding = () => {
   if (activeComponent) {
     const focusedStepId = getFocusedStepId();
     const isCompanyProfileStep = focusedStepId === ONBOARDING_STEP.COMPANY_PROFILE;
+    const isGigsStep = focusedStepId === ONBOARDING_STEP.GIGS;
     const isRepOnboardingStep = focusedStepId === ONBOARDING_STEP.TRAINING;
     const isTelephonyStep = focusedStepId === ONBOARDING_STEP.TELEPHONY;
     const companyProfileReady = completedSteps.includes(ONBOARDING_STEP.COMPANY_PROFILE);
+    const gigsStepReady = completedSteps.includes(ONBOARDING_STEP.GIGS);
     const showNextStep =
       !(isCompanyProfileStep && !companyProfileReady) &&
+      !(isGigsStep && (showGigCreation || !gigsStepReady)) &&
       !(
         isRepOnboardingStep &&
         repOnboardingMeta.inBuilder &&
