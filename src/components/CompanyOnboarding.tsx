@@ -454,6 +454,22 @@ const CompanyOnboarding = () => {
       
     }
   }, [showUploadContacts]);
+
+  // Dispatch step-by-step guide for the Upload Contacts screen
+  useEffect(() => {
+    if (showUploadContacts) {
+      window.dispatchEvent(
+        new CustomEvent('stepGuideUpdate', {
+          detail: {
+            title: t('sidebar.uploadContactsGuide.title'),
+            description: t('sidebar.uploadContactsGuide.description'),
+            steps: (t('sidebar.uploadContactsGuide.steps', { returnObjects: true }) as string[]),
+          },
+        })
+      );
+    }
+  }, [showUploadContacts, t]);
+
   const userId = Cookies.get("userId");
 
   // Define API URL with fallback

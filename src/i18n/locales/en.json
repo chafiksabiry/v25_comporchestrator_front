@@ -20,7 +20,17 @@
     "knowledgeBase": "Knowledge Base",
     "activeGuide": "Active Guide",
     "interactiveStep": "Interactive Step",
-    "logout": "Logout"
+    "logout": "Logout",
+    "uploadContactsGuide": {
+      "title": "Upload Contacts",
+      "description": "Import your leads via Zoho CRM or a CSV/Excel file.",
+      "steps": [
+        "Select a target gig",
+        "Choose your import method",
+        "Upload your CSV/Excel file",
+        "AI analyzes and imports your contacts"
+      ]
+    }
   },
   "navbar": {
     "credits": "Escrow (mins)",
