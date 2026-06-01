@@ -20,7 +20,17 @@
     "knowledgeBase": "Base de Connaissances",
     "activeGuide": "Guide Actif",
     "interactiveStep": "Étape Interactive",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "uploadContactsGuide": {
+      "title": "Importer des Contacts",
+      "description": "Importez vos leads via Zoho CRM ou un fichier CSV/Excel.",
+      "steps": [
+        "Sélectionnez un gig cible",
+        "Choisissez votre méthode d'import",
+        "Uploadez votre fichier CSV/Excel",
+        "L'IA analyse et importe vos contacts"
+      ]
+    }
   },
   "navbar": {
     "credits": "Séquestre (mins)",

@@ -95,7 +95,7 @@ function AppContent() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [userFullName, setUserFullName] = useState(() => localStorage.getItem('userFullName') || '');
   const [companyName, setCompanyName] = useState<string | null>(() => localStorage.getItem('companyName'));
-  const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string } | null>(null);
+  const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string; steps?: string[] } | null>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => localStorage.getItem('companyLogo'));
   const [logoError, setLogoError] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -406,7 +406,8 @@ function AppContent() {
       if (event.detail) {
         setCurrentStepGuide({
           title: event.detail.title,
-          description: event.detail.description
+          description: event.detail.description,
+          ...(event.detail.steps ? { steps: event.detail.steps } : {}),
         });
       }
     };

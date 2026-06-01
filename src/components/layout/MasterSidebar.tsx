@@ -44,7 +44,7 @@ interface MasterSidebarProps {
   activeTab: string;
   setActiveTab: (t: string) => void;
   onLogout: () => void;
-  currentStepGuide?: { title: string; description: string } | null;
+  currentStepGuide?: { title: string; description: string; steps?: string[] } | null;
 }
 
 export function MasterSidebar({
@@ -326,9 +326,22 @@ export function MasterSidebar({
                       <span className="text-[10px] font-black uppercase tracking-widest">{t('sidebar.activeGuide')}</span>
                     </div>
                     <h4 className="text-xs font-bold text-white mb-1">{currentStepGuide.title}</h4>
-                    <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-3">
-                      {currentStepGuide.description}
-                    </p>
+                    {currentStepGuide.steps && currentStepGuide.steps.length > 0 ? (
+                      <ol className="mt-2 space-y-1.5">
+                        {currentStepGuide.steps.map((step, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="shrink-0 w-4 h-4 rounded-full bg-rose-500/30 text-rose-300 text-[9px] font-bold flex items-center justify-center mt-px">
+                              {idx + 1}
+                            </span>
+                            <span className="text-[10px] text-gray-300 leading-relaxed">{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-3">
+                        {currentStepGuide.description}
+                      </p>
+                    )}
                     <div className="mt-2 flex items-center gap-1.5 text-[9px] text-rose-500/80 font-bold uppercase tracking-tighter">
                       <Info className="h-3 w-3" />
                       <span>{t('sidebar.interactiveStep')}</span>
