@@ -5,12 +5,25 @@ export type StepGuidePhase = 'before' | 'inside' | 'all';
 const beforeKey = (stepId: number) => `stepGuideBefore_${stepId}`;
 const insideKey = (stepId: number) => `stepGuideInside_${stepId}`;
 
+import { normalizeOnboardingStepIds, ONBOARDING_STEP } from './onboardingSteps';
+
 /**
  * Required onboarding steps (non-disabled only — matches CompanyOnboarding.tsx).
- * Steps 2 (KYC) and 7 (Reporting) are disabled and must not block completion.
+ * Step 2 (KYC) is disabled and must not block completion.
  */
 export const REQUIRED_ONBOARDING_STEP_IDS: number[] = [
-  1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13,
+  ONBOARDING_STEP.COMPANY_PROFILE,
+  ONBOARDING_STEP.GIGS,
+  ONBOARDING_STEP.TELEPHONY,
+  ONBOARDING_STEP.CONTACTS,
+  ONBOARDING_STEP.REPORTING,
+  ONBOARDING_STEP.KNOWLEDGE_BASE,
+  ONBOARDING_STEP.TRAINING,
+  ONBOARDING_STEP.CALL_SCRIPT,
+  ONBOARDING_STEP.SESSION_PLANNING,
+  ONBOARDING_STEP.SUBSCRIPTION,
+  ONBOARDING_STEP.GIG_ACTIVATION,
+  ONBOARDING_STEP.MATCH_REPS,
 ];
 
 /** @deprecated use REQUIRED_ONBOARDING_STEP_IDS */
@@ -20,7 +33,8 @@ function parseCompletedSteps(raw: string | undefined | null): number[] {
   if (!raw) return [];
   try {
     const progress = JSON.parse(raw);
-    return Array.isArray(progress.completedSteps) ? progress.completedSteps : [];
+    const steps = Array.isArray(progress.completedSteps) ? progress.completedSteps : [];
+    return normalizeOnboardingStepIds(steps);
   } catch {
     return [];
   }
@@ -36,7 +50,7 @@ export function getCompletedStepsFromStorage(): number[] {
 export function persistOnboardingProgress(completedSteps: number[], currentPhase?: number): void {
   const payload = {
     currentPhase: currentPhase ?? 4,
-    completedSteps,
+    completedSteps: normalizeOnboardingStepIds(completedSteps),
     lastUpdated: new Date().toISOString(),
   };
   localStorage.setItem('companyOnboardingProgress', JSON.stringify(payload));
@@ -54,7 +68,9 @@ export async function syncOnboardingProgressFromApi(companyId: string): Promise<
     const res = await fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`);
     if (!res.ok) return getCompletedStepsFromStorage();
     const progress = await res.json();
-    const completedSteps = Array.isArray(progress.completedSteps) ? progress.completedSteps : [];
+    const completedSteps = normalizeOnboardingStepIds(
+      Array.isArray(progress.completedSteps) ? progress.completedSteps : []
+    );
     persistOnboardingProgress(completedSteps, progress.currentPhase);
     return completedSteps;
   } catch {
