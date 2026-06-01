@@ -45,6 +45,12 @@ import {
   REP_ONBOARDING_STATE_EVENT,
   mergeRepOnboardingState,
 } from "./onboarding/repOnboardingEvents";
+import {
+  canStartOnboardingLoad,
+  beginOnboardingLoad,
+  finishOnboardingLoad,
+  debouncedOnboardingLoad,
+} from "../utils/onboardingLoadGuard";
 
 // NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
 // (see useOrchestratorGuide). Do not re-mount it here, otherwise it would
@@ -302,6 +308,7 @@ const CompanyOnboarding = () => {
   });
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [stepsKey, setStepsKey] = useState<string | null>(null);
   const [stepGuide, setStepGuide] = useState<{
     stepId: number;
     phaseId: number;
@@ -670,8 +677,18 @@ const CompanyOnboarding = () => {
   }, [companyId]);
 
   const loadCompanyProgress = useCallback(async (overrideCompanyId?: string) => {
+    const effectiveCompanyId = overrideCompanyId ?? companyId;
+    if (!effectiveCompanyId) {
+      console.error("❌ Company ID not available for loading progress");
+      return;
+    }
+
+    if (!canStartOnboardingLoad()) {
+      return;
+    }
+
+    beginOnboardingLoad();
     try {
-      const effectiveCompanyId = overrideCompanyId ?? companyId;
       if (!effectiveCompanyId) {
         console.error("❌ Company ID not available for loading progress");
         return;
@@ -684,6 +701,7 @@ const CompanyOnboarding = () => {
       const progress = response.data;
 
       let completedStepsState = [...progress.completedSteps];
+      const stepsKey = JSON.stringify([...completedStepsState].sort((a, b) => a - b));
 
       // Stripe checkout success can land before onboarding GET reflects step 11; merge after subscription truth.
       try {
@@ -751,9 +769,21 @@ const CompanyOnboarding = () => {
       if (completedStepsState.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
       if (completedStepsState.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
 
+      const payloadKey = buildOnboardingPayloadKey(
+        completedStepsState,
+        validPhase,
+        progress.phases?.length ?? 0
+      );
+      if (payloadKey === getLastOnboardingPayloadKey() && payloadKey === stepsKey) {
+        finishOnboardingLoad();
+        return;
+      }
+      setLastOnboardingPayloadKey(payloadKey);
+
       setCurrentPhase(validPhase);
       setDisplayedPhase(validPhase);
       setCompletedSteps(completedStepsState);
+      setStepsKey(payloadKey);
 
       const progressPayload = {
         ...progress,
@@ -769,6 +799,7 @@ const CompanyOnboarding = () => {
       // Keep the current UI state on transient API errors.
       // Resetting to phase 1 causes false "locked" screens until manual refresh.
     } finally {
+      finishOnboardingLoad();
       setIsInitialLoad(false);
     }
   }, [companyId]);
@@ -798,8 +829,6 @@ const CompanyOnboarding = () => {
           return prev;
         });
 
-        loadCompanyProgress();
-        
       }
     };
 
@@ -851,9 +880,7 @@ const CompanyOnboarding = () => {
           return next;
         });
 
-        setTimeout(() => {
-          loadCompanyProgress();
-        }, 400);
+        debouncedOnboardingLoad(() => loadCompanyProgress());
       }
     };
 
@@ -862,9 +889,7 @@ const CompanyOnboarding = () => {
       setShowUploadContacts(false);
       sessionStorage.removeItem("uploadContactsManuallyClosed");
       checkCompanyLeads();
-      setTimeout(() => {
-        loadCompanyProgress();
-      }, 1000);
+      debouncedOnboardingLoad(() => loadCompanyProgress(), 1000);
     };
 
     window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
@@ -892,10 +917,10 @@ const CompanyOnboarding = () => {
     if (!stripeReturned) return;
 
     const t1 = window.setTimeout(() => {
-      loadCompanyProgress();
+      debouncedOnboardingLoad(() => loadCompanyProgress());
     }, 1500);
     const t2 = window.setTimeout(() => {
-      loadCompanyProgress();
+      debouncedOnboardingLoad(() => loadCompanyProgress());
     }, 4000);
 
     return () => {
@@ -907,10 +932,10 @@ const CompanyOnboarding = () => {
   // Allow children (e.g. Gig publish flow) to request a safe progress refresh
   // without reloading the full app.
   useEffect(() => {
-    const handleRefreshOnboardingProgress = async () => {
-      if (!companyId) return;
-      
-      await loadCompanyProgress();
+    if (!companyId) return;
+
+    const handleRefreshOnboardingProgress = () => {
+      debouncedOnboardingLoad(() => loadCompanyProgress());
     };
 
     window.addEventListener(
@@ -1304,7 +1329,7 @@ const CompanyOnboarding = () => {
         console.error("Failed to set onboarding phase 2:", err);
       }
 
-      await loadCompanyProgress(newCompanyId);
+      debouncedOnboardingLoad(() => loadCompanyProgress(newCompanyId));
     },
     [loadCompanyProgress]
   );

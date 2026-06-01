@@ -497,8 +497,15 @@ function AppContent() {
 
   // Keep `completedStepIds` in sync with localStorage so navbar widgets (wallet
   // & upgrade) appear/disappear as the user progresses through onboarding.
+  const refreshThrottleRef = useRef(0);
+
   useEffect(() => {
-    const refresh = () => setCompletedStepIds(getCompletedStepsFromStorage());
+    const refresh = () => {
+      const now = Date.now();
+      if (now - refreshThrottleRef.current < 2000) return;
+      refreshThrottleRef.current = now;
+      setCompletedStepIds(getCompletedStepsFromStorage());
+    };
     refresh();
     window.addEventListener('stepCompleted', refresh as EventListener);
     window.addEventListener('storage', refresh);
@@ -508,6 +515,16 @@ function AppContent() {
       window.removeEventListener('storage', refresh);
       window.removeEventListener('focus', refresh);
     };
+  }, []);
+
+  useEffect(() => {
+    const onRepState = (event: Event) => {
+      const detail = (event as CustomEvent<RepOnboardingStateDetail>).detail;
+      if (!detail) return;
+      setRepOnboardingMeta((prev) => mergeRepOnboardingState(prev, detail));
+    };
+    window.addEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
+    return () => window.removeEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
   }, []);
 
   // The user "enters" the Activation phase only once they have actually
