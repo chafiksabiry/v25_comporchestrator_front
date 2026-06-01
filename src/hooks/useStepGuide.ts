@@ -1,4 +1,8 @@
 import Cookies from 'js-cookie';
+import {
+  fetchOnboardingProgress,
+  getOnboardingProgressFromStorage,
+} from '../services/onboardingProgressApi';
 
 export type StepGuidePhase = 'before' | 'inside' | 'all';
 
@@ -16,21 +20,8 @@ export const REQUIRED_ONBOARDING_STEP_IDS: number[] = [
 /** @deprecated use REQUIRED_ONBOARDING_STEP_IDS */
 export const ALL_ONBOARDING_STEP_IDS = REQUIRED_ONBOARDING_STEP_IDS;
 
-function parseCompletedSteps(raw: string | undefined | null): number[] {
-  if (!raw) return [];
-  try {
-    const progress = JSON.parse(raw);
-    return Array.isArray(progress.completedSteps) ? progress.completedSteps : [];
-  } catch {
-    return [];
-  }
-}
-
 export function getCompletedStepsFromStorage(): number[] {
-  // CompanyOnboarding persists progress in cookies; step events also use localStorage.
-  const fromCookie = parseCompletedSteps(Cookies.get('companyOnboardingProgress'));
-  if (fromCookie.length > 0) return fromCookie;
-  return parseCompletedSteps(localStorage.getItem('companyOnboardingProgress'));
+  return getOnboardingProgressFromStorage().completedSteps;
 }
 
 export function persistOnboardingProgress(completedSteps: number[], currentPhase?: number): void {
@@ -47,19 +38,9 @@ export function persistOnboardingProgress(completedSteps: number[], currentPhase
  * Load onboarding progress from the company API and mirror it to cookie + localStorage.
  */
 export async function syncOnboardingProgressFromApi(companyId: string): Promise<number[]> {
-  const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
-  if (!apiUrl || !companyId) return getCompletedStepsFromStorage();
-
-  try {
-    const res = await fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`);
-    if (!res.ok) return getCompletedStepsFromStorage();
-    const progress = await res.json();
-    const completedSteps = Array.isArray(progress.completedSteps) ? progress.completedSteps : [];
-    persistOnboardingProgress(completedSteps, progress.currentPhase);
-    return completedSteps;
-  } catch {
-    return getCompletedStepsFromStorage();
-  }
+  if (!companyId) return getCompletedStepsFromStorage();
+  const progress = await fetchOnboardingProgress(companyId);
+  return progress?.completedSteps ?? getCompletedStepsFromStorage();
 }
 
 /**

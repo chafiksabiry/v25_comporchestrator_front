@@ -33,6 +33,10 @@ import {
 } from "lucide-react";
 
 import Cookies from 'js-cookie';
+import {
+  fetchOnboardingProgress,
+  isOnboardingProgressApiUnavailable,
+} from '../../services/onboardingProgressApi';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
@@ -245,27 +249,28 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
   const checkStepStatus = async () => {
     try {
       if (!companyId) {
-        
         return;
       }
 
-      
-
-      // Vérifier l'état de l'étape 1 via l'API d'onboarding principale
-      const response = await axios.get(
-        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`
-      );
-
-      
-
-      if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
-        if ((response.data as any).completedSteps.includes(1)) {
-          
-          setIsStepCompleted(true);
-          return;
-        } else {
-          
+      if (isOnboardingProgressApiUnavailable(companyId)) {
+        const storedProgress = localStorage.getItem('companyOnboardingProgress');
+        if (storedProgress) {
+          try {
+            const progress = JSON.parse(storedProgress);
+            if (progress.completedSteps?.includes(1)) {
+              setIsStepCompleted(true);
+            }
+          } catch {
+            /* ignore */
+          }
         }
+        return;
+      }
+
+      const progress = await fetchOnboardingProgress(companyId);
+      if (progress?.completedSteps?.includes(1)) {
+        setIsStepCompleted(true);
+        return;
       }
 
       // Vérifier aussi le localStorage pour la cohérence
@@ -295,7 +300,7 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
         setIsStepCompleted(true);
 
         // Mettre à jour le localStorage avec l'étape 1 marquée comme complétée
-        const currentCompletedSteps = (response.data as any)?.completedSteps || [];
+        const currentCompletedSteps = progress?.completedSteps || [];
         const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
 
         const currentProgress = {

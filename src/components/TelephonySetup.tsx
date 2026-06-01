@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
 import { phoneNumberService, BASE_URL } from '../services/api';
 import { markGigStepDone } from '../services/gigSetupSync';
+import { fetchOnboardingProgress } from '../services/onboardingProgressApi';
 import { requirementService, RequirementDetail } from '../services/requirementService';
 import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
@@ -681,25 +682,10 @@ const TelephonySetup = ({
       if (checkCompletedStepsForRef.current === companyId) return;
       checkCompletedStepsForRef.current = companyId;
 
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
-        );
-
-
-
-        if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
-          const completedSteps = (response.data as any).completedSteps;
-          if (completedSteps.includes(4)) {
-
-            setCompletedSteps(completedSteps);
-            return;
-          } else {
-
-          }
-        }
-      } catch (apiError) {
-
+      const progress = await fetchOnboardingProgress(companyId);
+      if (progress?.completedSteps?.includes(4)) {
+        setCompletedSteps(progress.completedSteps);
+        return;
       }
 
       const storedProgress = localStorage.getItem('companyOnboardingProgress');

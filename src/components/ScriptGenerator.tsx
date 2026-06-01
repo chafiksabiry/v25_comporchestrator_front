@@ -460,7 +460,6 @@ const ScriptGenerator: React.FC = () => {
           completeRes.status,
           errBody
         );
-        window.dispatchEvent(new Event('refreshOnboardingProgress'));
         return;
       }
 
@@ -486,7 +485,6 @@ const ScriptGenerator: React.FC = () => {
       );
     } catch (error) {
       console.error('[ScriptGenerator] Failed to mark onboarding step completed:', error);
-      window.dispatchEvent(new Event('refreshOnboardingProgress'));
     }
   };
 
