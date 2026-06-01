@@ -147,9 +147,12 @@ const KnowledgeBase: React.FC = () => {
 
   }, []);
 
-  // Save items to localStorage when they change
+  // Save items to localStorage and notify orchestrator of content state
   useEffect(() => {
     localStorage.setItem('knowledgeItems', JSON.stringify(knowledgeItems));
+    window.dispatchEvent(
+      new CustomEvent('kbContentStatus', { detail: { hasContent: knowledgeItems.length > 0 } })
+    );
   }, [knowledgeItems]);
 
   const getItemIcon = (type: string) => {
