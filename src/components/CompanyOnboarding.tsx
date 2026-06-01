@@ -782,6 +782,7 @@ const CompanyOnboarding = () => {
           }
         }
         setStepStatuses(statuses);
+        window.dispatchEvent(new CustomEvent('stepStatusesUpdate', { detail: statuses }));
       }
 
       const progressPayload = {
@@ -844,7 +845,11 @@ const CompanyOnboarding = () => {
 
       // Mark step as completed in stepStatuses map immediately
       if (typeof stepId === 'number') {
-        setStepStatuses((prev) => ({ ...prev, [stepId]: 'completed' }));
+        setStepStatuses((prev) => {
+          const next = { ...prev, [stepId]: 'completed' };
+          window.dispatchEvent(new CustomEvent('stepStatusesUpdate', { detail: next }));
+          return next;
+        });
       }
 
       if (stepId === 1) {

@@ -96,6 +96,7 @@ function AppContent() {
   const [userFullName, setUserFullName] = useState(() => localStorage.getItem('userFullName') || '');
   const [companyName, setCompanyName] = useState<string | null>(() => localStorage.getItem('companyName'));
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string; steps?: string[] } | null>(null);
+  const [orchestratorStepStatuses, setOrchestratorStepStatuses] = useState<Record<number, string>>({});
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => localStorage.getItem('companyLogo'));
   const [logoError, setLogoError] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -424,14 +425,22 @@ function AppContent() {
       navigate('/dashboard/main');
     };
 
+    const handleStepStatusesUpdate = (e: CustomEvent) => {
+      if (e.detail && typeof e.detail === 'object') {
+        setOrchestratorStepStatuses(e.detail);
+      }
+    };
+
     window.addEventListener('tabChange', handleTabChange as EventListener);
     window.addEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
+    window.addEventListener('stepStatusesUpdate', handleStepStatusesUpdate as EventListener);
     window.addEventListener('openComporchestrator', openComporchestrator);
     window.addEventListener('openCompanyDashboard', openCompanyDashboard);
 
     return () => {
       window.removeEventListener('tabChange', handleTabChange as EventListener);
       window.removeEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
+      window.removeEventListener('stepStatusesUpdate', handleStepStatusesUpdate as EventListener);
       window.removeEventListener('openComporchestrator', openComporchestrator);
       window.removeEventListener('openCompanyDashboard', openCompanyDashboard);
     };
@@ -814,7 +823,8 @@ function AppContent() {
                 <div className="relative h-full px-4 py-3 pb-32">
                   {renderContent()}
                   {activeTab !== 'company-onboarding' &&
-                    ORCHESTRATOR_STEP_TABS.has(activeTab) && (
+                    ORCHESTRATOR_STEP_TABS.has(activeTab) &&
+                    orchestratorStepStatuses[TAB_ONBOARDING_STEPS[activeTab]?.stepId] === 'completed' && (
                       <OnboardingNextStepButton onClick={goToCompanyOnboardingTab} />
                     )}
                 </div>
