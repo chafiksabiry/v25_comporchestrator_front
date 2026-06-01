@@ -4,6 +4,8 @@
 
 const DEBOUNCE_MS = 800;
 
+const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 let lastLoadStartedAt = 0;
 let inFlight = false;
 let lastPayloadKey: string | null = null;
