@@ -292,6 +292,7 @@ const CompanyOnboarding = () => {
   const [showUploadContacts, setShowUploadContacts] = useState(false);
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
   const [kbHasContent, setKbHasContent] = useState(false);
+  const [stepStatuses, setStepStatuses] = useState<Record<number, string>>({});
   const [showGigDetails, setShowGigDetails] = useState(false);
   const [showGigCreation, setShowGigCreation] = useState(false);
   const [nextStepGate, setNextStepGate] = useState<{ disabled: boolean; hint?: string }>({
@@ -772,6 +773,17 @@ const CompanyOnboarding = () => {
       setDisplayedPhase(validPhase);
       setCompletedSteps(completedStepsState);
 
+      // Build stepStatuses map from API phases — used for button gating
+      if (progress.phases) {
+        const statuses: Record<number, string> = {};
+        for (const phase of progress.phases) {
+          for (const step of phase.steps) {
+            statuses[step.id] = step.status;
+          }
+        }
+        setStepStatuses(statuses);
+      }
+
       const progressPayload = {
         ...progress,
         completedSteps: completedStepsState,
@@ -829,6 +841,11 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     const handleStepCompleted = (event: CustomEvent) => {
       const { stepId, phaseId, completedSteps: detailCompleted } = event.detail;
+
+      // Mark step as completed in stepStatuses map immediately
+      if (typeof stepId === 'number') {
+        setStepStatuses((prev) => ({ ...prev, [stepId]: 'completed' }));
+      }
 
       if (stepId === 1) {
         const idFromCookie = Cookies.get("companyId");
@@ -1617,7 +1634,7 @@ const CompanyOnboarding = () => {
         {stepGuideLayer}
         <div className="animate-fade-in relative min-h-[50vh] pb-24">
           {activeComponent}
-          {completedSteps.includes(getFocusedStepId() ?? -1) &&
+          {stepStatuses[getFocusedStepId() ?? -1] === 'completed' &&
             (!showKnowledgeBase || kbHasContent) && (
             <OnboardingNextStepButton
               onClick={() => {
