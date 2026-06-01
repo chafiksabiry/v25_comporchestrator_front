@@ -400,7 +400,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         `${onboardingApiUrl}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
                         { status: 'completed' }
                     );
-                    
+                    window.dispatchEvent(new CustomEvent('stepCompleted', {
+                        detail: { stepId: 13, phaseId: 4, status: 'completed' }
+                    }));
                 } catch (onboardingError) {
                     console.error('Error updating onboarding progress:', onboardingError);
                 }
