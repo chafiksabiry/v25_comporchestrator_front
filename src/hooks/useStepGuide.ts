@@ -10,7 +10,7 @@ const insideKey = (stepId: number) => `stepGuideInside_${stepId}`;
  * Steps 2 (KYC) and 7 (Reporting) are disabled and must not block completion.
  */
 export const REQUIRED_ONBOARDING_STEP_IDS: number[] = [
-  1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13,
+  1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13,
 ];
 
 /** @deprecated use REQUIRED_ONBOARDING_STEP_IDS */

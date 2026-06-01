@@ -956,7 +956,7 @@
             "title": "Importer des Contacts",
             "description": "Importer des contacts pour un engagement multicanal"
           },
-          "7": {
+          "6": {
             "title": "Configuration des Rapports",
             "description": "Configurer les KPI et les préférences de reporting"
           }
@@ -965,15 +965,15 @@
       "3": {
         "title": "Engagement des REPS",
         "steps": {
-          "8": {
+          "7": {
             "title": "Base de Connaissances",
             "description": "Créer des supports de formation et une FAQ"
           },
-          "9": {
+          "8": {
             "title": "E-learning",
             "description": "Formation, validation et acceptation du contrat"
           },
-          "6": {
+          "9": {
             "title": "Script d'Appel",
             "description": "Définir le script et les flux de conversation"
           },
