@@ -317,9 +317,6 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                         <p className="mt-1.5 text-sm leading-relaxed text-emerald-800/90">
                           {t('telephonySetup.purchaseModal.trial.description', { days: trialDurationDays })}
                         </p>
-                        <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-emerald-700/80">
-                          {t('telephonySetup.purchaseModal.trial.noPayment')}
-                        </p>
                       </div>
                     </div>
                   </div>

@@ -875,8 +875,7 @@
       "trial": {
         "tag": "Welcome offer",
         "title": "{{days}}-day free trial",
-        "description": "Your first phone line is offered for {{days}} days at no cost. Use it to test calls end-to-end before adding a payment method.",
-        "noPayment": "No Stripe / PayPal required for this activation"
+        "description": "Your first phone line is offered for {{days}} days at no cost. Use it to test calls end-to-end before adding a payment method."
       },
       "payment": {
         "amountLabel": "Amount due",

@@ -875,8 +875,7 @@
       "trial": {
         "tag": "Offre de bienvenue",
         "title": "Essai gratuit de {{days}} jours",
-        "description": "Votre première ligne téléphonique est offerte pendant {{days}} jours, sans frais. Profitez-en pour tester vos appels de bout en bout avant d'ajouter un moyen de paiement.",
-        "noPayment": "Aucun Stripe / PayPal requis pour cette activation"
+        "description": "Votre première ligne téléphonique est offerte pendant {{days}} jours, sans frais. Profitez-en pour tester vos appels de bout en bout avant d'ajouter un moyen de paiement."
       },
       "payment": {
         "amountLabel": "Montant dû",
