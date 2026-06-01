@@ -291,6 +291,7 @@ const CompanyOnboarding = () => {
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
+  const [kbHasContent, setKbHasContent] = useState(false);
   const [showGigDetails, setShowGigDetails] = useState(false);
   const [showGigCreation, setShowGigCreation] = useState(false);
   const [nextStepGate, setNextStepGate] = useState<{ disabled: boolean; hint?: string }>({
@@ -883,12 +884,18 @@ const CompanyOnboarding = () => {
       }, 1000);
     };
 
+    const handleKbContentStatus = (e: CustomEvent) => {
+      setKbHasContent(!!e.detail?.hasContent);
+    };
+
     window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
     window.addEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
+    window.addEventListener('kbContentStatus', handleKbContentStatus as EventListener);
 
     return () => {
       window.removeEventListener('stepCompleted', handleStepCompleted as EventListener);
       window.removeEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
+      window.removeEventListener('kbContentStatus', handleKbContentStatus as EventListener);
     };
   }, [loadCompanyProgress, checkCompanyLeads]);
 
@@ -1612,7 +1619,8 @@ const CompanyOnboarding = () => {
         {stepGuideLayer}
         <div className="animate-fade-in relative min-h-[50vh] pb-24">
           {activeComponent}
-          {completedSteps.includes(getFocusedStepId() ?? -1) && (
+          {completedSteps.includes(getFocusedStepId() ?? -1) &&
+            (!showKnowledgeBase || kbHasContent) && (
             <OnboardingNextStepButton
               onClick={() => {
                 void handleOnboardingNextStep();
