@@ -1612,13 +1612,15 @@ const CompanyOnboarding = () => {
         {stepGuideLayer}
         <div className="animate-fade-in relative min-h-[50vh] pb-24">
           {activeComponent}
-          <OnboardingNextStepButton
-            onClick={() => {
-              void handleOnboardingNextStep();
-            }}
-            disabled={nextStepGate.disabled}
-            disabledHint={nextStepGate.hint}
-          />
+          {completedSteps.includes(getFocusedStepId() ?? -1) && (
+            <OnboardingNextStepButton
+              onClick={() => {
+                void handleOnboardingNextStep();
+              }}
+              disabled={nextStepGate.disabled}
+              disabledHint={nextStepGate.hint}
+            />
+          )}
         </div>
       </>
     );
