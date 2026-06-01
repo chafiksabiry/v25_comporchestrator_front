@@ -325,6 +325,17 @@ const CompanyOnboarding = () => {
     return null;
   };
 
+  /** Close every focused sub-view so only one onboarding step is active. */
+  const closeAllFocusedSteps = useCallback(() => {
+    setShowTelephonySetup(false);
+    setShowUploadContacts(false);
+    setShowKnowledgeBase(false);
+    setShowGigDetails(false);
+    setShowGigCreation(false);
+    setActiveStep(null);
+    setTelephonyNextReady(false);
+  }, []);
+
   const dispatchInsideStepGuide = (stepId: number) => {
     if (!shouldShowStepGuide(stepId, 'inside', completedSteps)) return;
     window.dispatchEvent(
@@ -1062,6 +1073,7 @@ const CompanyOnboarding = () => {
       }
 
       if (step?.component) {
+        closeAllFocusedSteps();
         if (stepId === 4) {
           setShowTelephonySetup(true);
         } else if (stepId === 8) {
@@ -1129,8 +1141,13 @@ const CompanyOnboarding = () => {
       }
 
       if (step?.component) {
+        closeAllFocusedSteps();
         if (stepId === 4) {
           setShowTelephonySetup(true);
+        } else if (stepId === 5) {
+          setShowUploadContacts(true);
+        } else if (stepId === 8) {
+          setShowKnowledgeBase(true);
         } else {
           setActiveStep(stepId);
         }
@@ -1430,6 +1447,12 @@ const CompanyOnboarding = () => {
   }, []);
 
   useEffect(() => {
+    if (!showTelephonySetup) {
+      setTelephonyNextReady(false);
+    }
+  }, [showTelephonySetup]);
+
+  useEffect(() => {
     const onRepState = (event: Event) => {
       const detail = (event as CustomEvent).detail;
       if (!detail) return;
@@ -1488,6 +1511,7 @@ const CompanyOnboarding = () => {
     // Pour Telephony Setup
     if (stepId === 4) {
       if (allPreviousCompleted) {
+        closeAllFocusedSteps();
         setShowTelephonySetup(true);
       }
       return;
@@ -1496,13 +1520,10 @@ const CompanyOnboarding = () => {
     // Pour Upload Contacts
     if (stepId === 5) {
       if (allPreviousCompleted) {
-        // Check if UploadContacts was manually closed
         const wasManuallyClosed = sessionStorage.getItem("uploadContactsManuallyClosed");
         if (!wasManuallyClosed) {
+          closeAllFocusedSteps();
           setShowUploadContacts(true);
-          
-        } else {
-          
         }
       }
       return;
@@ -1611,6 +1632,7 @@ const CompanyOnboarding = () => {
     const isRepOnboardingStep = focusedStepId === 9;
     const isTelephonyStep = focusedStepId === 4;
     const showNextStep =
+      focusedStepId !== null &&
       !(
         isRepOnboardingStep &&
         repOnboardingMeta.inBuilder &&
