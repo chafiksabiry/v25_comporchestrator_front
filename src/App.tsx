@@ -97,6 +97,16 @@ function AppContent() {
   const [companyName, setCompanyName] = useState<string | null>(() => localStorage.getItem('companyName'));
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string; steps?: string[] } | null>(null);
   const [orchestratorStepStatuses, setOrchestratorStepStatuses] = useState<Record<number, string>>({});
+  const [kbHasContent, setKbHasContent] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('knowledgeItems');
+      if (saved) {
+        const items = JSON.parse(saved);
+        return Array.isArray(items) && items.length > 0;
+      }
+    } catch {}
+    return false;
+  });
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => localStorage.getItem('companyLogo'));
   const [logoError, setLogoError] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -425,26 +435,36 @@ function AppContent() {
       navigate('/dashboard/main');
     };
 
-    const handleStepStatusesUpdate = (e: CustomEvent) => {
-      if (e.detail && typeof e.detail === 'object') {
-        setOrchestratorStepStatuses(e.detail);
-      }
-    };
-
     window.addEventListener('tabChange', handleTabChange as EventListener);
     window.addEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
-    window.addEventListener('stepStatusesUpdate', handleStepStatusesUpdate as EventListener);
     window.addEventListener('openComporchestrator', openComporchestrator);
     window.addEventListener('openCompanyDashboard', openCompanyDashboard);
 
     return () => {
       window.removeEventListener('tabChange', handleTabChange as EventListener);
       window.removeEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
-      window.removeEventListener('stepStatusesUpdate', handleStepStatusesUpdate as EventListener);
       window.removeEventListener('openComporchestrator', openComporchestrator);
       window.removeEventListener('openCompanyDashboard', openCompanyDashboard);
     };
   }, [location.pathname, isZohoCallback, isZohoAuth, navigate, markGuideComplete]);
+
+  // Stable listeners — never torn down on navigation changes.
+  useEffect(() => {
+    const handleStepStatusesUpdate = (e: CustomEvent) => {
+      if (e.detail && typeof e.detail === 'object') {
+        setOrchestratorStepStatuses(e.detail);
+      }
+    };
+    const handleKbContentStatus = (e: CustomEvent) => {
+      setKbHasContent(!!e.detail?.hasContent);
+    };
+    window.addEventListener('stepStatusesUpdate', handleStepStatusesUpdate as EventListener);
+    window.addEventListener('kbContentStatus', handleKbContentStatus as EventListener);
+    return () => {
+      window.removeEventListener('stepStatusesUpdate', handleStepStatusesUpdate as EventListener);
+      window.removeEventListener('kbContentStatus', handleKbContentStatus as EventListener);
+    };
+  }, []);
 
   // Returning users with all phases done: never stay on #/orchestrator — go to dashboard.
   useEffect(() => {
@@ -824,7 +844,8 @@ function AppContent() {
                   {renderContent()}
                   {activeTab !== 'company-onboarding' &&
                     ORCHESTRATOR_STEP_TABS.has(activeTab) &&
-                    orchestratorStepStatuses[TAB_ONBOARDING_STEPS[activeTab]?.stepId] === 'completed' && (
+                    (orchestratorStepStatuses[TAB_ONBOARDING_STEPS[activeTab]?.stepId] === 'completed' ||
+                      (activeTab === 'knowledge-base' && kbHasContent)) && (
                       <OnboardingNextStepButton onClick={goToCompanyOnboardingTab} />
                     )}
                 </div>
