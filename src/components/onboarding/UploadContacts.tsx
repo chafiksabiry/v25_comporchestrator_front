@@ -29,6 +29,10 @@ import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
 import { markGigStepDone } from '../../services/gigSetupSync';
 import { useTranslation } from 'react-i18next';
+import {
+  getOnboardingProgressFromStorage,
+  isOnboardingProgressApiUnavailable,
+} from '../../services/onboardingProgressApi';
 
 interface Lead {
   _id: string;
@@ -780,14 +784,16 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const notifyUploadContactsStepSynced = async () => {
     const companyId = propCompanyId || Cookies.get("companyId");
     if (!companyId) return;
-    try {
-      const onboardingResponse = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
-      );
-      const d = onboardingResponse.data as { completedSteps?: number[]; currentPhase?: number };
-      const completedSteps = Array.isArray(d?.completedSteps) ? [...d.completedSteps] : [];
+
+    const dispatchStepCompleted = (completedSteps: number[], phaseId: number) => {
       if (!completedSteps.includes(5)) completedSteps.push(5);
-      const phaseId = typeof d?.currentPhase === "number" ? d.currentPhase : 2;
+      const payload = {
+        currentPhase: phaseId,
+        completedSteps,
+        lastUpdated: new Date().toISOString(),
+      };
+      localStorage.setItem("companyOnboardingProgress", JSON.stringify(payload));
+      Cookies.set("companyOnboardingProgress", JSON.stringify(payload));
       window.dispatchEvent(
         new CustomEvent("stepCompleted", {
           detail: {
@@ -798,9 +804,26 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           },
         })
       );
+    };
+
+    if (isOnboardingProgressApiUnavailable(companyId)) {
+      const stored = getOnboardingProgressFromStorage();
+      dispatchStepCompleted([...stored.completedSteps], stored.currentPhase);
+      return;
+    }
+
+    try {
+      const onboardingResponse = await axios.get(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+      );
+      const d = onboardingResponse.data as { completedSteps?: number[]; currentPhase?: number };
+      const completedSteps = Array.isArray(d?.completedSteps) ? [...d.completedSteps] : [];
+      const phaseId = typeof d?.currentPhase === "number" ? d.currentPhase : 2;
+      dispatchStepCompleted(completedSteps, phaseId);
     } catch (e) {
       console.error("Failed to sync onboarding UI after Upload Contacts:", e);
-      window.dispatchEvent(new Event("refreshOnboardingProgress"));
+      const stored = getOnboardingProgressFromStorage();
+      dispatchStepCompleted([...stored.completedSteps], stored.currentPhase);
     }
   };
 

@@ -341,7 +341,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       await axios.put(stepUrl, { status: "completed" });
     } catch (error) {
       console.error("[RepOnboarding] Failed to mark step 9 completed:", error);
-      window.dispatchEvent(new Event("refreshOnboardingProgress"));
       return;
     }
 
@@ -368,7 +367,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       
     } catch (error) {
       console.error("[RepOnboarding] Failed to reload onboarding after step 9:", error);
-      window.dispatchEvent(new Event("refreshOnboardingProgress"));
     }
   }, [companyId]);
 

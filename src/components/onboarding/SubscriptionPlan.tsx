@@ -92,7 +92,6 @@ const SubscriptionPlan = () => {
           },
         })
       );
-      window.dispatchEvent(new Event('refreshOnboardingProgress'));
     } catch (error) {
       console.error('Error completing onboarding step:', error);
     }

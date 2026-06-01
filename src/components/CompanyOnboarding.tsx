@@ -45,6 +45,11 @@ import {
   REP_ONBOARDING_STATE_EVENT,
   mergeRepOnboardingState,
 } from "./onboarding/repOnboardingEvents";
+import {
+  fetchOnboardingProgress,
+  getOnboardingProgressFromStorage,
+  isOnboardingProgressApiUnavailable,
+} from "../services/onboardingProgressApi";
 
 // NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
 // (see useOrchestratorGuide). Do not re-mount it here, otherwise it would
@@ -302,6 +307,8 @@ const CompanyOnboarding = () => {
   });
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const initOnboardingRanForRef = useRef<string | null>(null);
+  const loadProgressInFlightRef = useRef<string | null>(null);
   const [stepGuide, setStepGuide] = useState<{
     stepId: number;
     phaseId: number;
@@ -663,38 +670,57 @@ const CompanyOnboarding = () => {
   // Initial check: run auto-completions first, then load progress so state is consistent
   useEffect(() => {
     if (!companyId) return;
-    
+    if (initOnboardingRanForRef.current === companyId) return;
+    initOnboardingRanForRef.current = companyId;
+
     const initOnboarding = async () => {
-      
-      // Run auto-completion + non-blocking checks in parallel
       await Promise.all([
         checkCompanyLeads(),
         checkActiveGigs(),
         checkCompanyGigs(),
         checkZohoConnection(),
       ]);
-      // Then load final state from backend (which now has the updated steps)
-      
       await loadCompanyProgress();
     };
-    initOnboarding();
+    void initOnboarding();
   }, [companyId]);
 
+  const applyProgressToUi = useCallback(
+    (completedStepsState: number[], validPhase: number, progressExtras?: Record<string, unknown>) => {
+      setCurrentPhase(validPhase);
+      setDisplayedPhase(validPhase);
+      setCompletedSteps(completedStepsState);
+      const progressPayload = {
+        ...(progressExtras || {}),
+        completedSteps: completedStepsState,
+        currentPhase: validPhase,
+        lastUpdated: new Date().toISOString(),
+      };
+      Cookies.set("companyOnboardingProgress", JSON.stringify(progressPayload));
+      localStorage.setItem("companyOnboardingProgress", JSON.stringify(progressPayload));
+    },
+    []
+  );
+
   const loadCompanyProgress = useCallback(async (overrideCompanyId?: string) => {
+    const effectiveCompanyId = overrideCompanyId ?? companyId;
+    if (!effectiveCompanyId) {
+      console.error("❌ Company ID not available for loading progress");
+      return;
+    }
+
+    if (loadProgressInFlightRef.current === effectiveCompanyId) return;
+    loadProgressInFlightRef.current = effectiveCompanyId;
+
     try {
-      const effectiveCompanyId = overrideCompanyId ?? companyId;
-      if (!effectiveCompanyId) {
-        console.error("❌ Company ID not available for loading progress");
-        return;
-      }
-
-      const response = await axios.get<OnboardingProgressResponse>(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${effectiveCompanyId}/onboarding`
-      );
-      
-      const progress = response.data;
-
-      let completedStepsState = [...progress.completedSteps];
+      const fetched = await fetchOnboardingProgress(effectiveCompanyId);
+      const stored = fetched ?? getOnboardingProgressFromStorage();
+      let completedStepsState = [...stored.completedSteps];
+      const progress = {
+        ...stored,
+        completedSteps: completedStepsState,
+        phases: (stored.phases as OnboardingProgressResponse['phases']) || undefined,
+      } as OnboardingProgressResponse;
 
       // Stripe checkout success can land before onboarding GET reflects step 11; merge after subscription truth.
       try {
@@ -762,38 +788,19 @@ const CompanyOnboarding = () => {
       if (completedStepsState.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
       if (completedStepsState.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
 
-      setCurrentPhase(validPhase);
-      setDisplayedPhase(validPhase);
-      setCompletedSteps(completedStepsState);
-
-      const progressPayload = {
-        ...progress,
-        completedSteps: completedStepsState,
-        currentPhase: validPhase,
-        lastUpdated: new Date().toISOString(),
-      };
-      Cookies.set("companyOnboardingProgress", JSON.stringify(progressPayload));
-      localStorage.setItem("companyOnboardingProgress", JSON.stringify(progressPayload));
-
+      applyProgressToUi(completedStepsState, validPhase, progress as Record<string, unknown>);
     } catch (error) {
       console.error("❌ Error loading company progress:", error);
-      // Keep the current UI state on transient API errors.
-      // Resetting to phase 1 causes false "locked" screens until manual refresh.
     } finally {
+      loadProgressInFlightRef.current = null;
       setIsInitialLoad(false);
     }
-  }, [companyId]);
+  }, [companyId, applyProgressToUi]);
 
   const refreshProgressWithRetry = useCallback(async () => {
-    try {
-      await loadCompanyProgress();
-    } catch (e) {
-      console.error("First progress refresh failed, retrying...", e);
-      // Short retry helps after returning from embedded steps where backend state settles a bit later
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      await loadCompanyProgress();
-    }
-  }, [loadCompanyProgress]);
+    if (companyId && isOnboardingProgressApiUnavailable(companyId)) return;
+    await loadCompanyProgress();
+  }, [companyId, loadCompanyProgress]);
 
   // postMessage + CustomEvent listeners (deps reference loadCompanyProgress; must appear after its useCallback)
   useEffect(() => {
@@ -809,8 +816,9 @@ const CompanyOnboarding = () => {
           return prev;
         });
 
-        loadCompanyProgress();
-        
+        if (!isOnboardingProgressApiUnavailable(companyId)) {
+          loadCompanyProgress();
+        }
       }
     };
 
@@ -862,9 +870,11 @@ const CompanyOnboarding = () => {
           return next;
         });
 
-        setTimeout(() => {
-          loadCompanyProgress();
-        }, 400);
+        if (!isOnboardingProgressApiUnavailable(companyId)) {
+          setTimeout(() => {
+            loadCompanyProgress();
+          }, 400);
+        }
       }
     };
 
@@ -872,10 +882,12 @@ const CompanyOnboarding = () => {
       
       setShowUploadContacts(false);
       sessionStorage.removeItem("uploadContactsManuallyClosed");
-      checkCompanyLeads();
-      setTimeout(() => {
-        loadCompanyProgress();
-      }, 1000);
+      if (!isOnboardingProgressApiUnavailable(companyId)) {
+        checkCompanyLeads();
+        setTimeout(() => {
+          loadCompanyProgress();
+        }, 1000);
+      }
     };
 
     window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
@@ -920,7 +932,7 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     const handleRefreshOnboardingProgress = async () => {
       if (!companyId) return;
-      
+      if (isOnboardingProgressApiUnavailable(companyId)) return;
       await loadCompanyProgress();
     };
 
