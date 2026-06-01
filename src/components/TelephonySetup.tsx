@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { getGigsByCompanyId } from '../api/matching';
-import { ensureOnboardingProgress } from '../hooks/useStepGuide';
 import {
   Phone,
   Globe,
@@ -97,20 +95,13 @@ const TelephonySetup = ({
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const gigsFetchForRef = useRef<string | null>(null);
-  const gigsFetchInFlightRef = useRef(false);
-  const gigsCountRef = useRef(0);
-
-  // Sync companyId from parent prop or cookie (prop wins when present).
+  // Effet pour lire le companyId depuis les cookies
   useEffect(() => {
-    if (propCompanyId) {
-      setCompanyId(propCompanyId);
-      setCookieError(null);
-      return;
-    }
-
     const readCookies = () => {
       const newCompanyId = Cookies.get('companyId');
+
+
+
       if (newCompanyId) {
         setCompanyId(newCompanyId);
         setCookieError(null);
@@ -119,17 +110,32 @@ const TelephonySetup = ({
       return false;
     };
 
+    // Sync with prop if provided
+    if (propCompanyId) {
+      setCompanyId(propCompanyId);
+      setCookieError(null);
+      return;
+    }
+
+    // Première lecture
     if (!readCookies()) {
+
+
+      // Si le cookie n'est pas trouvé, réessayer toutes les 2 secondes
       const interval = setInterval(() => {
         if (readCookies()) {
+
           clearInterval(interval);
         } else {
+
           setCookieError('Required company ID not found. Please refresh the page if this persists.');
         }
       }, 2000);
+
+      // Nettoyer l'intervalle si le composant est démonté
       return () => clearInterval(interval);
     }
-  }, [propCompanyId]);
+  }, []);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
@@ -237,40 +243,16 @@ const TelephonySetup = ({
     );
   };
 
-  const fetchGigs = useCallback(async (targetCompanyId: string) => {
-    if (!targetCompanyId) return;
-    if (gigsFetchInFlightRef.current) return;
-
-    const alreadyLoaded =
-      gigsFetchForRef.current === targetCompanyId && gigsCountRef.current > 0;
-    if (alreadyLoaded) return;
-
-    gigsFetchInFlightRef.current = true;
-    setIsLoadingGigs(true);
-
-    try {
-      const data = await getGigsByCompanyId(targetCompanyId);
-      const list = Array.isArray(data) ? data : [];
-      setGigs(list);
-      gigsCountRef.current = list.length;
-      gigsFetchForRef.current = targetCompanyId;
-    } catch (error) {
-      console.error('❌ Error fetching gigs:', error);
-      if (gigsFetchForRef.current !== targetCompanyId) {
-        setGigs([]);
-        gigsCountRef.current = 0;
-      }
-    } finally {
-      gigsFetchInFlightRef.current = false;
-      setIsLoadingGigs(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (!companyId) return;
-    void fetchGigs(companyId);
-    void checkCompletedSteps();
-  }, [companyId, fetchGigs]);
+    if (!companyId) {
+
+      return;
+    }
+
+
+    fetchGigs();
+    checkCompletedSteps();
+  }, [companyId]);
 
   // Auto-sélection du premier gig disponible si aucun n'est sélectionné
   useEffect(() => {
@@ -548,10 +530,7 @@ const TelephonySetup = ({
       } catch (error) {
         console.error('Failed to load requirement group:', error);
         Cookies.remove(`telnyxRequirementGroup_${companyId}_${destZone}`);
-        // One retry without the stale cookie — avoid infinite recursion.
-        if (!zoneOverride) {
-          await handleTelnyxProvider(destZone);
-        }
+        handleTelnyxProvider(); // Retry without saved group
       }
     } else {
       // Case 1.2.2: Check for existing group first, even without cookie
@@ -739,6 +718,32 @@ const TelephonySetup = ({
     }
   };
 
+  const fetchGigs = async () => {
+    if (!companyId) return;
+
+    try {
+      setIsLoadingGigs(true);
+
+
+      const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
+
+
+      const responseData = response.data as { data: Gig[] };
+      if (responseData && Array.isArray(responseData.data)) {
+        setGigs(responseData.data);
+
+      } else {
+        setGigs([]);
+
+      }
+    } catch (error) {
+      console.error('❌ Error fetching gigs:', error);
+      setGigs([]);
+    } finally {
+      setIsLoadingGigs(false);
+    }
+  };
+
   const fetchExistingNumbers = async () => {
     try {
       if (!selectedGigId) {
@@ -883,15 +888,35 @@ const TelephonySetup = ({
         markGigStepDone(selectedGigId, 'telephony', true);
       }
 
-      // --- Auto-Complete Onboarding Step 4 ---
-      await ensureOnboardingProgress(companyId);
+      // --- Auto-Complete Onboarding Step 4 Here ---
+
       try {
-        await axios.put(
-          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
-          { status: 'completed' }
+        const onboardingResponse = await axios.get(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
         );
-      } catch (stepError) {
-        console.warn('Could not mark telephony step completed on API:', stepError);
+
+        const currentCompletedSteps = (onboardingResponse.data as any)?.completedSteps || [];
+        const newCompletedSteps = currentCompletedSteps.includes(4) ? currentCompletedSteps : [...currentCompletedSteps, 4];
+
+        const updateResponse = await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
+          {
+            completedSteps: newCompletedSteps,
+            currentPhase: 2
+          }
+        );
+
+      } catch (apiError) {
+
+        try {
+          const response = await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
+            { status: 'completed' }
+          );
+
+        } catch (stepError) {
+
+        }
       }
 
       const newCompletedSteps = completedSteps.includes(4) ? completedSteps : [...completedSteps, 4];

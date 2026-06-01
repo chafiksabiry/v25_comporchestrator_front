@@ -237,14 +237,14 @@ const KnowledgeBase: React.FC = () => {
       }
 
       const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING;
-      const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/7`;
+      const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/8`;
       const response = await axios.put(endpoint, { status: "completed" });
 
       if (response.data) {
         Cookies.set('companyOnboardingProgress', JSON.stringify(response.data), { expires: 7 });
         window.dispatchEvent(new CustomEvent('stepCompleted', {
           detail: {
-            stepId: 7,
+            stepId: 8,
             phaseId: 3,
             status: 'completed',
             completedSteps: (response.data as any).completedSteps || []

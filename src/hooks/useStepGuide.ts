@@ -5,25 +5,12 @@ export type StepGuidePhase = 'before' | 'inside' | 'all';
 const beforeKey = (stepId: number) => `stepGuideBefore_${stepId}`;
 const insideKey = (stepId: number) => `stepGuideInside_${stepId}`;
 
-import { normalizeOnboardingStepIds, ONBOARDING_STEP } from './onboardingSteps';
-
 /**
  * Required onboarding steps (non-disabled only — matches CompanyOnboarding.tsx).
- * Step 2 (KYC) is disabled and must not block completion.
+ * Steps 2 (KYC) and 7 (Reporting) are disabled and must not block completion.
  */
 export const REQUIRED_ONBOARDING_STEP_IDS: number[] = [
-  ONBOARDING_STEP.COMPANY_PROFILE,
-  ONBOARDING_STEP.GIGS,
-  ONBOARDING_STEP.TELEPHONY,
-  ONBOARDING_STEP.CONTACTS,
-  ONBOARDING_STEP.REPORTING,
-  ONBOARDING_STEP.KNOWLEDGE_BASE,
-  ONBOARDING_STEP.TRAINING,
-  ONBOARDING_STEP.CALL_SCRIPT,
-  ONBOARDING_STEP.SESSION_PLANNING,
-  ONBOARDING_STEP.SUBSCRIPTION,
-  ONBOARDING_STEP.GIG_ACTIVATION,
-  ONBOARDING_STEP.MATCH_REPS,
+  1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13,
 ];
 
 /** @deprecated use REQUIRED_ONBOARDING_STEP_IDS */
@@ -33,8 +20,7 @@ function parseCompletedSteps(raw: string | undefined | null): number[] {
   if (!raw) return [];
   try {
     const progress = JSON.parse(raw);
-    const steps = Array.isArray(progress.completedSteps) ? progress.completedSteps : [];
-    return normalizeOnboardingStepIds(steps);
+    return Array.isArray(progress.completedSteps) ? progress.completedSteps : [];
   } catch {
     return [];
   }
@@ -50,7 +36,7 @@ export function getCompletedStepsFromStorage(): number[] {
 export function persistOnboardingProgress(completedSteps: number[], currentPhase?: number): void {
   const payload = {
     currentPhase: currentPhase ?? 4,
-    completedSteps: normalizeOnboardingStepIds(completedSteps),
+    completedSteps,
     lastUpdated: new Date().toISOString(),
   };
   localStorage.setItem('companyOnboardingProgress', JSON.stringify(payload));
@@ -60,49 +46,15 @@ export function persistOnboardingProgress(completedSteps: number[], currentPhase
 /**
  * Load onboarding progress from the company API and mirror it to cookie + localStorage.
  */
-/** Create onboarding progress when GET returns 404 (new companies). */
-export async function ensureOnboardingProgress(companyId: string): Promise<boolean> {
-  const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
-  if (!apiUrl || !companyId) return false;
-
-  try {
-    const getRes = await fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`);
-    if (getRes.ok) return true;
-    if (getRes.status !== 404) return false;
-
-    const postRes = await fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    // 400 = already exists (race with another tab)
-    return postRes.ok || postRes.status === 400;
-  } catch {
-    return false;
-  }
-}
-
 export async function syncOnboardingProgressFromApi(companyId: string): Promise<number[]> {
   const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
   if (!apiUrl || !companyId) return getCompletedStepsFromStorage();
 
   try {
     const res = await fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`);
-    if (res.status === 404) {
-      await ensureOnboardingProgress(companyId);
-      const retry = await fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`);
-      if (!retry.ok) return getCompletedStepsFromStorage();
-      const progress = await retry.json();
-      const completedSteps = normalizeOnboardingStepIds(
-        Array.isArray(progress.completedSteps) ? progress.completedSteps : []
-      );
-      persistOnboardingProgress(completedSteps, progress.currentPhase);
-      return completedSteps;
-    }
     if (!res.ok) return getCompletedStepsFromStorage();
     const progress = await res.json();
-    const completedSteps = normalizeOnboardingStepIds(
-      Array.isArray(progress.completedSteps) ? progress.completedSteps : []
-    );
+    const completedSteps = Array.isArray(progress.completedSteps) ? progress.completedSteps : [];
     persistOnboardingProgress(completedSteps, progress.currentPhase);
     return completedSteps;
   } catch {
