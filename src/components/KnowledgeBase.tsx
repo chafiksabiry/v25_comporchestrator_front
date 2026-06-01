@@ -1615,8 +1615,8 @@ const KnowledgeBase: React.FC = () => {
     <div className="relative min-h-screen font-inter overflow-hidden">
       {/* Premium Background Elements */}
       <div className="fixed inset-0 bg-slate-50/50 -z-10" />
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-harx-500/10 blur-[120px] rounded-full -z-10 animate-float" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-harx-alt-500/10 blur-[120px] rounded-full -z-10 animate-float" style={{ animationDelay: '-3s' }} />
+      <div className="fixed top-0 left-0 w-[40%] h-[40%] bg-harx-500/10 blur-[120px] rounded-full -z-10 animate-float pointer-events-none" />
+      <div className="fixed bottom-0 right-0 w-[40%] h-[40%] bg-harx-alt-500/10 blur-[120px] rounded-full -z-10 animate-float pointer-events-none" style={{ animationDelay: '-3s' }} />
       
       <div className="relative z-10 p-4">
 
