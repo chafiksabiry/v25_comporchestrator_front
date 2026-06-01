@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Trash2, Video, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
@@ -1496,8 +1497,8 @@ const KnowledgeBase: React.FC = () => {
 
   const renderUploadModal = () => {
     if (!showUploadModal) return null;
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    return createPortal(
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
         <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-xl overflow-hidden animate-fade-in">
           <div className="p-8 border-b border-gray-100 flex justify-between items-center">
             <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">{t('knowledgeBase.uploadModal.title')}</h3>
@@ -1607,7 +1608,8 @@ const KnowledgeBase: React.FC = () => {
             </div>
           </form>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   };
 
