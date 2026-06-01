@@ -35,79 +35,11 @@ import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
 
 import {
-  getCompletedStepsFromStorage,
-  persistOnboardingProgress,
-} from '../../hooks/useStepGuide';
-import {
   REP_ONBOARDING_STATE_EVENT,
   type RepOnboardingStateDetail,
 } from './repOnboardingEvents';
 
 export { REP_ONBOARDING_STATE_EVENT };
-
-const PLACEHOLDER_TRAINING_TITLES = new Set(
-  ['draft gig', 'training draft', 'new training journey', 'untitled training'].map((s) =>
-    s
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-  )
-);
-
-function normalizeTrainingTitle(value: unknown): string {
-  return String(value || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim();
-}
-
-function isPlaceholderTrainingTitle(value: unknown): boolean {
-  const t = normalizeTrainingTitle(value);
-  return !t || PLACEHOLDER_TRAINING_TITLES.has(t);
-}
-
-/** Draft journeys with a validated plan / modules are real work-in-progress trainings. */
-export function hasSubstantiveTrainingContent(journey: any): boolean {
-  if (!journey) return false;
-  if (journey.planIsValid === true) return true;
-
-  const methodology = journey.methodologyData;
-  if (methodology?.planFrozenFromChat === true) return true;
-  if (methodology?.planValidatedAt) return true;
-  if (String(methodology?.validatedPlanMarkdown || '').trim().length > 80) return true;
-
-  const workflow = methodology?.workflow;
-  if (workflow?.phase === 'plan_validated') return true;
-  if (workflow?.plan === 'completed') return true;
-  if (Array.isArray(workflow?.modules) && workflow.modules.length >= 1) return true;
-
-  const modulePlan = Array.isArray(journey.modulePlan) ? journey.modulePlan : [];
-  if (
-    modulePlan.some((m: any) => String(m?.title || '').trim().length > 3)
-  ) {
-    return true;
-  }
-
-  const modules = Array.isArray(journey.modules) ? journey.modules : [];
-  if (modules.length >= 1) {
-    const hasRealModule = modules.some(
-      (m: any) => String(m?.title || '').trim().length > 3
-    );
-    if (hasRealModule) return true;
-  }
-
-  return false;
-}
-
-export function isDisplayableTrainingJourney(journey: any): boolean {
-  if (!journey) return false;
-  const title = journey?.title || journey?.name || '';
-  if (isPlaceholderTrainingTitle(title)) return false;
-  const status = String(journey?.status || '').toLowerCase();
-  if (status === 'draft') return hasSubstantiveTrainingContent(journey);
-  return true;
-}
 
 interface RepOnboardingProps { }
 
@@ -193,12 +125,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     let status = 'not_started';
     if (journey.status === 'completed' || journey.journeyStatus === 'completed') {
       status = 'completed';
-    } else if (
-      journey.status === 'in_progress' ||
-      journey.journeyStatus === 'in_progress' ||
-      journey.status === 'active' ||
-      (journey.status === 'draft' && hasSubstantiveTrainingContent(journey))
-    ) {
+    } else if (journey.status === 'in_progress' || journey.journeyStatus === 'in_progress' || journey.status === 'active') {
       status = 'in_progress';
     }
 
@@ -400,18 +327,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     });
   };
 
-  const step9AutoCompleteRef = useRef(false);
-  const trainingsFetchSeqRef = useRef(0);
-
-  /** Mark Phase 3 Step 9 (REP Onboarding) complete — runs at most once per mount. */
+  /** Mark Phase 3 Step 9 (REP Onboarding) complete and notify CompanyOnboarding like other steps. */
   const updateOnboardingProgress = useCallback(async () => {
-    if (!companyId || step9AutoCompleteRef.current) return;
-    if (getCompletedStepsFromStorage().includes(9)) {
-      step9AutoCompleteRef.current = true;
-      return;
-    }
-
-    step9AutoCompleteRef.current = true;
+    if (!companyId) return;
 
     const apiUrl =
       import.meta.env.VITE_COMPANY_API_URL ||
@@ -419,8 +337,24 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding`;
     const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/9`;
 
-    const notifyStepCompleted = (completedSteps: number[], phaseId = 3) => {
-      persistOnboardingProgress(completedSteps, phaseId);
+    try {
+      await axios.put(stepUrl, { status: "completed" });
+    } catch (error) {
+      console.error("[RepOnboarding] Failed to mark step 9 completed:", error);
+      window.dispatchEvent(new Event("refreshOnboardingProgress"));
+      return;
+    }
+
+    try {
+      const { data: progress } = await axios.get(onboardingUrl);
+      const raw = progress as Record<string, unknown>;
+      const completedSteps = Array.isArray(raw?.completedSteps)
+        ? [...(raw.completedSteps as number[])]
+        : [];
+      if (!completedSteps.includes(9)) completedSteps.push(9);
+      const phaseId = typeof raw?.currentPhase === "number" ? (raw.currentPhase as number) : 3;
+      const cookiePayload = { ...raw, completedSteps };
+      Cookies.set("companyOnboardingProgress", JSON.stringify(cookiePayload), { expires: 7 });
       window.dispatchEvent(
         new CustomEvent("stepCompleted", {
           detail: {
@@ -431,40 +365,20 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           },
         })
       );
-    };
-
-    try {
-      await axios.put(stepUrl, { status: "completed" });
+      
     } catch (error) {
-      console.error("[RepOnboarding] Failed to mark step 9 completed:", error);
-      step9AutoCompleteRef.current = false;
-      return;
-    }
-
-    try {
-      const { data: progress } = await axios.get(onboardingUrl);
-      const raw = progress as Record<string, unknown>;
-      const completedSteps = Array.isArray(raw?.completedSteps)
-        ? [...(raw.completedSteps as number[])]
-        : getCompletedStepsFromStorage();
-      if (!completedSteps.includes(9)) completedSteps.push(9);
-      const phaseId = typeof raw?.currentPhase === "number" ? (raw.currentPhase as number) : 3;
-      notifyStepCompleted(completedSteps, phaseId);
-    } catch (error) {
-      console.warn("[RepOnboarding] Onboarding GET failed after step 9 PUT; using local progress.", error);
-      const completedSteps = getCompletedStepsFromStorage();
-      const next = completedSteps.includes(9) ? completedSteps : [...completedSteps, 9];
-      notifyStepCompleted(next, 3);
+      console.error("[RepOnboarding] Failed to reload onboarding after step 9:", error);
+      window.dispatchEvent(new Event("refreshOnboardingProgress"));
     }
   }, [companyId]);
 
   // Function to fetch trainings for the company
   const fetchCompanyTrainings = useCallback(async () => {
     if (!companyId) {
+      
       return;
     }
 
-    const fetchSeq = ++trainingsFetchSeqRef.current;
     setLoadingTrainings(true);
     try {
       const trainingBackendUrl = getTrainingBackendUrl();
@@ -552,18 +466,40 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       }
 
       
+      const publishedTrainings = journeysArray.filter((journey: any) => {
+        const status = String(journey?.status || '').toLowerCase();
+        if (status === 'draft') return false;
+        const title = journey?.title || journey?.name || '';
+        const norm = title
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .trim();
+        if (!norm || placeholderTrainingTitles.has(norm)) return false;
+        return true;
+      });
+
       setTrainings(journeysArray);
+
+      // Auto-complete step 9 only when at least one real (non-draft) training exists
+      if (publishedTrainings.length > 0) {
+        void updateOnboardingProgress();
+        
+        // --- DIAGNOSTIC: Log first journey structure ---
+        
+      }
+
+      // --- DIAGNOSTIC: Check for local drafts ---
+      if (DraftService.hasDraft()) {
+        const draft = DraftService.getDraft();
+        
+      }
     } catch (error) {
       console.error('[RepOnboarding] Error fetching trainings:', error);
-      if (fetchSeq === trainingsFetchSeqRef.current) {
-        setTrainings([]);
-      }
     } finally {
-      if (fetchSeq === trainingsFetchSeqRef.current) {
-        setLoadingTrainings(false);
-      }
+      setLoadingTrainings(false);
     }
-  }, [companyId, legacyCompanyId, filterGigId]);
+  }, [companyId, legacyCompanyId, filterGigId, updateOnboardingProgress]);
 
   /** Après publish / launch du parcours : même flux que les autres étapes (step 9 + refresh UI parent). */
   const handleEmbeddedJourneyComplete = useCallback(() => {
@@ -686,15 +622,49 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     void fetchSavedImageSets();
   }, [fetchSavedImageSets]);
 
-  const realTrainings = useMemo(
-    () => trainings.filter(isDisplayableTrainingJourney),
-    [trainings]
+  const normalizeText = (value: unknown): string =>
+    String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+
+  const placeholderTrainingTitles = React.useMemo(
+    () =>
+      new Set(
+        ['draft gig', 'training draft', 'new training journey', 'untitled training'].map((s) =>
+          s
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+        )
+      ),
+    []
   );
 
-  useEffect(() => {
-    if (realTrainings.length === 0) return;
-    void updateOnboardingProgress();
-  }, [realTrainings.length, updateOnboardingProgress]);
+  const isPlaceholderTrainingTitle = useCallback(
+    (value: unknown) => {
+      const t = normalizeText(value);
+      return !t || placeholderTrainingTitles.has(t);
+    },
+    [placeholderTrainingTitles]
+  );
+
+  const isRealTrainingJourney = useCallback(
+    (journey: any) => {
+      if (!journey) return false;
+      const status = String(journey?.status || '').toLowerCase();
+      if (status === 'draft') return false;
+      const title = journey?.title || journey?.name || '';
+      return !isPlaceholderTrainingTitle(title);
+    },
+    [isPlaceholderTrainingTitle]
+  );
+
+  const realTrainings = useMemo(
+    () => trainings.filter(isRealTrainingJourney),
+    [trainings, isRealTrainingJourney]
+  );
 
   const trainingBuilderWasOpenRef = useRef(false);
 
@@ -740,7 +710,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
       return formatted.title;
     },
-    [companyGigs, resolveJourneyGigId]
+    [companyGigs, isPlaceholderTrainingTitle, resolveJourneyGigId]
   );
 
   const findImageSetForJourney = useCallback(
@@ -757,14 +727,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         journey?.trainingTitle,
         journey?.metadata?.title,
       ]
-        .map(normalizeTrainingTitle)
+        .map(normalizeText)
         .filter(Boolean);
 
       if (titleCandidates.length === 0) return undefined;
       return savedImageSets.find((set) => {
-        const setCandidates = [set.title, set.trainingTitle]
-          .map(normalizeTrainingTitle)
-          .filter(Boolean);
+        const setCandidates = [set.title, set.trainingTitle].map(normalizeText).filter(Boolean);
         return setCandidates.some((candidate) =>
           titleCandidates.some((journeyTitle) =>
             candidate === journeyTitle ||
