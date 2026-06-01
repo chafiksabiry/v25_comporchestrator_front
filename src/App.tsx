@@ -409,6 +409,8 @@ function AppContent() {
           description: event.detail.description,
           ...(event.detail.steps ? { steps: event.detail.steps } : {}),
         });
+      } else {
+        setCurrentStepGuide(null);
       }
     };
 
