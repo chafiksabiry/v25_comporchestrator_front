@@ -89,48 +89,26 @@ const TelephonySetup = ({
   // Provider is enforced to Twilio (UI selector intentionally hidden).
   const [provider] = useState<'telnyx' | 'twilio'>('twilio');
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
-  const [companyId, setCompanyId] = useState<string | null>(propCompanyId || null);
+  const companyId = propCompanyId ?? null;
   const [cookieError, setCookieError] = useState<string | null>(null);
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const gigsFetchSeqRef = useRef(0);
+  const onboardingLoadedForRef = useRef<string | null>(null);
   const gigsApiBase =
     import.meta.env.VITE_GIGS_API || import.meta.env.VITE_API_URL_GIGS;
 
-  // Sync companyId from parent when it becomes available
   useEffect(() => {
-    if (propCompanyId) {
-      setCompanyId(propCompanyId);
+    if (companyId) {
       setCookieError(null);
+      return;
     }
-  }, [propCompanyId]);
-
-  // Fallback: read companyId from cookies when parent did not pass one
-  useEffect(() => {
-    if (propCompanyId) return;
-
-    const readCookies = () => {
-      const newCompanyId = Cookies.get('companyId');
-      if (newCompanyId) {
-        setCompanyId(newCompanyId);
-        setCookieError(null);
-        return true;
-      }
-      return false;
-    };
-
-    if (!readCookies()) {
-      const interval = setInterval(() => {
-        if (readCookies()) {
-          clearInterval(interval);
-        } else {
-          setCookieError('Required company ID not found. Please refresh the page if this persists.');
-        }
-      }, 2000);
-      return () => clearInterval(interval);
+    const fromCookie = Cookies.get('companyId');
+    if (!fromCookie) {
+      setCookieError('Required company ID not found. Please refresh the page if this persists.');
     }
-  }, [propCompanyId]);
+  }, [companyId]);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
@@ -697,56 +675,58 @@ const TelephonySetup = ({
   }, [selectedGigId]);
 
 
-  const checkCompletedSteps = async () => {
+  const checkCompletedSteps = useCallback(async () => {
+    if (!companyId) return;
+
     try {
-      if (!companyId) return;
+      const response = await axios.get(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+      );
 
-
-
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+      const apiSteps = (response.data as { completedSteps?: number[] })?.completedSteps;
+      if (Array.isArray(apiSteps)) {
+        setCompletedSteps((prev) =>
+          prev.length === apiSteps.length && prev.every((s, i) => s === apiSteps[i])
+            ? prev
+            : apiSteps
         );
-
-
-
-        if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
-          const completedSteps = (response.data as any).completedSteps;
-          if (completedSteps.includes(4)) {
-
-            setCompletedSteps(completedSteps);
-            return;
-          } else {
-
-          }
-        }
-      } catch (apiError) {
-
+        return;
       }
-
-      const storedProgress = localStorage.getItem('companyOnboardingProgress');
-      if (storedProgress) {
-        try {
-          const progress = JSON.parse(storedProgress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps)) {
-
-            setCompletedSteps(progress.completedSteps);
-          }
-        } catch (e) {
-          console.error('Error parsing stored progress:', e);
-        }
-      }
-
-    } catch (error) {
-      console.error('Error checking completed steps:', error);
+    } catch {
+      // Fall back to local cache when API is unavailable
     }
-  };
+
+    const storedProgress = localStorage.getItem('companyOnboardingProgress');
+    if (!storedProgress) return;
+
+    try {
+      const progress = JSON.parse(storedProgress) as { completedSteps?: number[] };
+      if (!Array.isArray(progress.completedSteps)) return;
+      setCompletedSteps((prev) =>
+        prev.length === progress.completedSteps!.length &&
+        prev.every((s, i) => s === progress.completedSteps![i])
+          ? prev
+          : progress.completedSteps!
+      );
+    } catch (e) {
+      console.error('Error parsing stored progress:', e);
+    }
+  }, [companyId]);
 
   useEffect(() => {
     if (!companyId) return;
-    fetchGigs();
-    checkCompletedSteps();
+    void fetchGigs();
   }, [companyId, fetchGigs]);
+
+  useEffect(() => {
+    if (!companyId) {
+      onboardingLoadedForRef.current = null;
+      return;
+    }
+    if (onboardingLoadedForRef.current === companyId) return;
+    onboardingLoadedForRef.current = companyId;
+    void checkCompletedSteps();
+  }, [companyId, checkCompletedSteps]);
 
   const fetchExistingNumbers = async () => {
     try {
