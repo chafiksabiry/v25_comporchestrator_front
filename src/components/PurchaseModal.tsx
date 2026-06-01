@@ -234,6 +234,9 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   const isPostPurchase = purchaseStatus === 'success' || purchaseStatus === 'error';
   const displayNumber =
     (isPostPurchase && purchaseResponse?.phoneNumber) || selectedNumber || '';
+  const providerLabel = (
+    (isPostPurchase && purchaseResponse?.provider) || provider || 'twilio'
+  ).toUpperCase();
 
   const modalNode = (
     <div
@@ -267,7 +270,10 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-black tracking-tight">
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-100/80">
+                  {providerLabel}
+                </p>
+                <h3 className="mt-1 text-xl font-black tracking-tight">
                   {t(TITLE_KEYS[purchaseStatus] || TITLE_KEYS.confirming)}
                 </h3>
               </div>
@@ -316,6 +322,9 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                         </h4>
                         <p className="mt-1.5 text-sm leading-relaxed text-emerald-800/90">
                           {t('telephonySetup.purchaseModal.trial.description', { days: trialDurationDays })}
+                        </p>
+                        <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-emerald-700/80">
+                          {t('telephonySetup.purchaseModal.trial.noPayment')}
                         </p>
                       </div>
                     </div>
