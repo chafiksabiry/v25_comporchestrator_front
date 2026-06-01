@@ -41,15 +41,7 @@ import {
 } from "../hooks/useStepGuide";
 import { EXIT_ONBOARDING_FOCUS_EVENT } from "../hooks/useOnboardingGlobalBack";
 import { OnboardingFocusedStepLayout } from "./onboarding/OnboardingFocusedStepLayout";
-import {
-  REP_ONBOARDING_STATE_EVENT,
-  mergeRepOnboardingState,
-} from "./onboarding/repOnboardingEvents";
-import {
-  fetchOnboardingProgress,
-  getOnboardingProgressFromStorage,
-  isOnboardingProgressApiUnavailable,
-} from "../services/onboardingProgressApi";
+import { REP_ONBOARDING_STATE_EVENT } from "./onboarding/RepOnboarding";
 
 // NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
 // (see useOrchestratorGuide). Do not re-mount it here, otherwise it would
@@ -303,12 +295,9 @@ const CompanyOnboarding = () => {
   const [repOnboardingMeta, setRepOnboardingMeta] = useState({
     realTrainingsCount: 0,
     inBuilder: false,
-    planValidated: false,
   });
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
-  const initOnboardingRanForRef = useRef<string | null>(null);
-  const loadProgressInFlightRef = useRef<string | null>(null);
   const [stepGuide, setStepGuide] = useState<{
     stepId: number;
     phaseId: number;
@@ -331,17 +320,6 @@ const CompanyOnboarding = () => {
     if (activeStep !== null) return activeStep;
     return null;
   };
-
-  /** Close every focused sub-view so only one onboarding step is active. */
-  const closeAllFocusedSteps = useCallback(() => {
-    setShowTelephonySetup(false);
-    setShowUploadContacts(false);
-    setShowKnowledgeBase(false);
-    setShowGigDetails(false);
-    setShowGigCreation(false);
-    setActiveStep(null);
-    setTelephonyNextReady(false);
-  }, []);
 
   const dispatchInsideStepGuide = (stepId: number) => {
     if (!shouldShowStepGuide(stepId, 'inside', completedSteps)) return;
@@ -670,57 +648,38 @@ const CompanyOnboarding = () => {
   // Initial check: run auto-completions first, then load progress so state is consistent
   useEffect(() => {
     if (!companyId) return;
-    if (initOnboardingRanForRef.current === companyId) return;
-    initOnboardingRanForRef.current = companyId;
-
+    
     const initOnboarding = async () => {
+      
+      // Run auto-completion + non-blocking checks in parallel
       await Promise.all([
         checkCompanyLeads(),
         checkActiveGigs(),
         checkCompanyGigs(),
         checkZohoConnection(),
       ]);
+      // Then load final state from backend (which now has the updated steps)
+      
       await loadCompanyProgress();
     };
-    void initOnboarding();
+    initOnboarding();
   }, [companyId]);
 
-  const applyProgressToUi = useCallback(
-    (completedStepsState: number[], validPhase: number, progressExtras?: Record<string, unknown>) => {
-      setCurrentPhase(validPhase);
-      setDisplayedPhase(validPhase);
-      setCompletedSteps(completedStepsState);
-      const progressPayload = {
-        ...(progressExtras || {}),
-        completedSteps: completedStepsState,
-        currentPhase: validPhase,
-        lastUpdated: new Date().toISOString(),
-      };
-      Cookies.set("companyOnboardingProgress", JSON.stringify(progressPayload));
-      localStorage.setItem("companyOnboardingProgress", JSON.stringify(progressPayload));
-    },
-    []
-  );
-
   const loadCompanyProgress = useCallback(async (overrideCompanyId?: string) => {
-    const effectiveCompanyId = overrideCompanyId ?? companyId;
-    if (!effectiveCompanyId) {
-      console.error("❌ Company ID not available for loading progress");
-      return;
-    }
-
-    if (loadProgressInFlightRef.current === effectiveCompanyId) return;
-    loadProgressInFlightRef.current = effectiveCompanyId;
-
     try {
-      const fetched = await fetchOnboardingProgress(effectiveCompanyId);
-      const stored = fetched ?? getOnboardingProgressFromStorage();
-      let completedStepsState = [...stored.completedSteps];
-      const progress = {
-        ...stored,
-        completedSteps: completedStepsState,
-        phases: (stored.phases as OnboardingProgressResponse['phases']) || undefined,
-      } as OnboardingProgressResponse;
+      const effectiveCompanyId = overrideCompanyId ?? companyId;
+      if (!effectiveCompanyId) {
+        console.error("❌ Company ID not available for loading progress");
+        return;
+      }
+
+      const response = await axios.get<OnboardingProgressResponse>(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${effectiveCompanyId}/onboarding`
+      );
+      
+      const progress = response.data;
+
+      let completedStepsState = [...progress.completedSteps];
 
       // Stripe checkout success can land before onboarding GET reflects step 11; merge after subscription truth.
       try {
@@ -788,19 +747,38 @@ const CompanyOnboarding = () => {
       if (completedStepsState.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
       if (completedStepsState.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
 
-      applyProgressToUi(completedStepsState, validPhase, progress as Record<string, unknown>);
+      setCurrentPhase(validPhase);
+      setDisplayedPhase(validPhase);
+      setCompletedSteps(completedStepsState);
+
+      const progressPayload = {
+        ...progress,
+        completedSteps: completedStepsState,
+        currentPhase: validPhase,
+        lastUpdated: new Date().toISOString(),
+      };
+      Cookies.set("companyOnboardingProgress", JSON.stringify(progressPayload));
+      localStorage.setItem("companyOnboardingProgress", JSON.stringify(progressPayload));
+
     } catch (error) {
       console.error("❌ Error loading company progress:", error);
+      // Keep the current UI state on transient API errors.
+      // Resetting to phase 1 causes false "locked" screens until manual refresh.
     } finally {
-      loadProgressInFlightRef.current = null;
       setIsInitialLoad(false);
     }
-  }, [companyId, applyProgressToUi]);
+  }, [companyId]);
 
   const refreshProgressWithRetry = useCallback(async () => {
-    if (companyId && isOnboardingProgressApiUnavailable(companyId)) return;
-    await loadCompanyProgress();
-  }, [companyId, loadCompanyProgress]);
+    try {
+      await loadCompanyProgress();
+    } catch (e) {
+      console.error("First progress refresh failed, retrying...", e);
+      // Short retry helps after returning from embedded steps where backend state settles a bit later
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await loadCompanyProgress();
+    }
+  }, [loadCompanyProgress]);
 
   // postMessage + CustomEvent listeners (deps reference loadCompanyProgress; must appear after its useCallback)
   useEffect(() => {
@@ -816,9 +794,8 @@ const CompanyOnboarding = () => {
           return prev;
         });
 
-        if (!isOnboardingProgressApiUnavailable(companyId)) {
-          loadCompanyProgress();
-        }
+        loadCompanyProgress();
+        
       }
     };
 
@@ -870,11 +847,9 @@ const CompanyOnboarding = () => {
           return next;
         });
 
-        if (!isOnboardingProgressApiUnavailable(companyId)) {
-          setTimeout(() => {
-            loadCompanyProgress();
-          }, 400);
-        }
+        setTimeout(() => {
+          loadCompanyProgress();
+        }, 400);
       }
     };
 
@@ -882,12 +857,10 @@ const CompanyOnboarding = () => {
       
       setShowUploadContacts(false);
       sessionStorage.removeItem("uploadContactsManuallyClosed");
-      if (!isOnboardingProgressApiUnavailable(companyId)) {
-        checkCompanyLeads();
-        setTimeout(() => {
-          loadCompanyProgress();
-        }, 1000);
-      }
+      checkCompanyLeads();
+      setTimeout(() => {
+        loadCompanyProgress();
+      }, 1000);
     };
 
     window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
@@ -932,7 +905,7 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     const handleRefreshOnboardingProgress = async () => {
       if (!companyId) return;
-      if (isOnboardingProgressApiUnavailable(companyId)) return;
+      
       await loadCompanyProgress();
     };
 
@@ -1085,7 +1058,6 @@ const CompanyOnboarding = () => {
       }
 
       if (step?.component) {
-        closeAllFocusedSteps();
         if (stepId === 4) {
           setShowTelephonySetup(true);
         } else if (stepId === 8) {
@@ -1153,13 +1125,8 @@ const CompanyOnboarding = () => {
       }
 
       if (step?.component) {
-        closeAllFocusedSteps();
         if (stepId === 4) {
           setShowTelephonySetup(true);
-        } else if (stepId === 5) {
-          setShowUploadContacts(true);
-        } else if (stepId === 8) {
-          setShowKnowledgeBase(true);
         } else {
           setActiveStep(stepId);
         }
@@ -1459,16 +1426,13 @@ const CompanyOnboarding = () => {
   }, []);
 
   useEffect(() => {
-    if (!showTelephonySetup) {
-      setTelephonyNextReady(false);
-    }
-  }, [showTelephonySetup]);
-
-  useEffect(() => {
     const onRepState = (event: Event) => {
       const detail = (event as CustomEvent).detail;
       if (!detail) return;
-      setRepOnboardingMeta((prev) => mergeRepOnboardingState(prev, detail));
+      setRepOnboardingMeta({
+        realTrainingsCount: Number(detail.realTrainingsCount) || 0,
+        inBuilder: Boolean(detail.inBuilder),
+      });
     };
     window.addEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
     return () => window.removeEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
@@ -1523,7 +1487,6 @@ const CompanyOnboarding = () => {
     // Pour Telephony Setup
     if (stepId === 4) {
       if (allPreviousCompleted) {
-        closeAllFocusedSteps();
         setShowTelephonySetup(true);
       }
       return;
@@ -1532,10 +1495,13 @@ const CompanyOnboarding = () => {
     // Pour Upload Contacts
     if (stepId === 5) {
       if (allPreviousCompleted) {
+        // Check if UploadContacts was manually closed
         const wasManuallyClosed = sessionStorage.getItem("uploadContactsManuallyClosed");
         if (!wasManuallyClosed) {
-          closeAllFocusedSteps();
           setShowUploadContacts(true);
+          
+        } else {
+          
         }
       }
       return;
@@ -1642,27 +1608,17 @@ const CompanyOnboarding = () => {
   if (activeComponent) {
     const focusedStepId = getFocusedStepId();
     const isRepOnboardingStep = focusedStepId === 9;
-    const isTelephonyStep = focusedStepId === 4;
-    const showNextStep =
-      focusedStepId !== null &&
-      !(
-        isRepOnboardingStep &&
-        repOnboardingMeta.inBuilder &&
-        !repOnboardingMeta.planValidated
-      ) &&
-      !(
-        isRepOnboardingStep &&
-        !repOnboardingMeta.inBuilder &&
-        repOnboardingMeta.realTrainingsCount === 0
-      ) &&
-      !(isTelephonyStep && !telephonyNextReady);
+    const hideNextStep =
+      (isRepOnboardingStep &&
+        (repOnboardingMeta.inBuilder || repOnboardingMeta.realTrainingsCount === 0)) ||
+      (focusedStepId === 4 && !telephonyNextReady);
 
     return (
       <>
         {orchestratorGuideLayer}
         {stepGuideLayer}
         <OnboardingFocusedStepLayout
-          showNextStep={showNextStep}
+          showNextStep={!hideNextStep}
           onNextStep={() => void handleFocusedNextStep()}
         >
           <div className="animate-fade-in">{activeComponent}</div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Phone,
@@ -13,7 +13,6 @@ import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
 import { phoneNumberService, BASE_URL } from '../services/api';
 import { markGigStepDone } from '../services/gigSetupSync';
-import { fetchOnboardingProgress } from '../services/onboardingProgressApi';
 import { requirementService, RequirementDetail } from '../services/requirementService';
 import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
@@ -78,18 +77,6 @@ interface Gig {
   updatedAt: string;
 }
 
-/** Normalize Mongo ObjectId shapes from API/cookies to a plain hex string. */
-function normalizeGigId(id: unknown): string {
-  if (id == null) return '';
-  if (typeof id === 'string') return id.trim();
-  if (typeof id === 'object') {
-    const o = id as Record<string, unknown>;
-    if (typeof o.$oid === 'string') return o.$oid;
-    if (o._id != null) return normalizeGigId(o._id);
-  }
-  return String(id).trim();
-}
-
 const TelephonySetup = ({
   companyId: propCompanyId,
   onNextStepReadyChange,
@@ -107,37 +94,48 @@ const TelephonySetup = ({
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const fetchingGigsRef = useRef(false);
-  const providerRunForGigRef = useRef<string | null>(null);
-  const companyPhoneCheckUnavailableRef = useRef(false);
-  const companyPhoneSyncForRef = useRef<string | null>(null);
-  const gigsAutoSelectedRef = useRef(false);
-  const fetchingExistingRef = useRef(false);
-  const checkCompletedStepsForRef = useRef<string | null>(null);
 
-  // Resolve companyId from prop or cookie (no overlapping intervals).
+  // Effet pour lire le companyId depuis les cookies
   useEffect(() => {
-    const resolved = (propCompanyId || Cookies.get('companyId') || '').trim();
-    if (resolved) {
-      setCompanyId(resolved);
+    const readCookies = () => {
+      const newCompanyId = Cookies.get('companyId');
+
+
+
+      if (newCompanyId) {
+        setCompanyId(newCompanyId);
+        setCookieError(null);
+        return true;
+      }
+      return false;
+    };
+
+    // Sync with prop if provided
+    if (propCompanyId) {
+      setCompanyId(propCompanyId);
       setCookieError(null);
       return;
     }
 
-    setCookieError(
-      'Required company ID not found. Please refresh the page if this persists.'
-    );
-    const interval = setInterval(() => {
-      const fromCookie = (Cookies.get('companyId') || '').trim();
-      if (fromCookie) {
-        setCompanyId(fromCookie);
-        setCookieError(null);
-        clearInterval(interval);
-      }
-    }, 2000);
+    // Première lecture
+    if (!readCookies()) {
 
-    return () => clearInterval(interval);
-  }, [propCompanyId]);
+
+      // Si le cookie n'est pas trouvé, réessayer toutes les 2 secondes
+      const interval = setInterval(() => {
+        if (readCookies()) {
+
+          clearInterval(interval);
+        } else {
+
+          setCookieError('Required company ID not found. Please refresh the page if this persists.');
+        }
+      }, 2000);
+
+      // Nettoyer l'intervalle si le composant est démonté
+      return () => clearInterval(interval);
+    }
+  }, []);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
@@ -201,9 +199,7 @@ const TelephonySetup = ({
     error: null
   });
   // Logic for multi-number support
-  const selectedGig = Array.isArray(gigs)
-    ? gigs.find((g) => normalizeGigId(g._id) === normalizeGigId(selectedGigId))
-    : null;
+  const selectedGig = Array.isArray(gigs) ? gigs.find(g => g._id === selectedGigId) : null;
   const teamSize = selectedGig ? parseInt(selectedGig.team?.size?.toString() || '1') : 1;
   const purchasedNumbersCount = Array.isArray(phoneNumbers) ? phoneNumbers.length : 0;
   const isQuotaReached = purchasedNumbersCount >= teamSize;
@@ -248,21 +244,21 @@ const TelephonySetup = ({
   };
 
   useEffect(() => {
-    if (!companyId) return;
-    providerRunForGigRef.current = null;
-    companyPhoneSyncForRef.current = null;
-    gigsAutoSelectedRef.current = false;
+    if (!companyId) {
+
+      return;
+    }
+
+
     fetchGigs();
     checkCompletedSteps();
   }, [companyId]);
 
-  // Auto-select first gig once after gigs load (ids normalized).
+  // Auto-sélection du premier gig disponible si aucun n'est sélectionné
   useEffect(() => {
-    if (selectedGigId || !Array.isArray(gigs) || gigs.length === 0) return;
-    if (gigsAutoSelectedRef.current) return;
-    gigsAutoSelectedRef.current = true;
-    const firstId = normalizeGigId(gigs[0]?._id);
-    if (firstId) setSelectedGigId(firstId);
+    if (!selectedGigId && Array.isArray(gigs) && gigs.length > 0) {
+      setSelectedGigId(gigs[0]._id);
+    }
   }, [gigs, selectedGigId]);
 
   // Vérifier l'éligibilité au trial gratuit 15 jours pour la company.
@@ -288,9 +284,11 @@ const TelephonySetup = ({
 
   // Effet pour récupérer les numéros existants quand un gig est sélectionné
   useEffect(() => {
-    if (!selectedGigId) return;
-    void fetchExistingNumbers();
-  }, [selectedGigId, companyId]);
+    if (selectedGigId) {
+
+      fetchExistingNumbers();
+    }
+  }, [selectedGigId]);
 
   // Mettre à jour la destination zone quand un gig est sélectionné
   useEffect(() => {
@@ -645,14 +643,11 @@ const TelephonySetup = ({
     }
   }, [provider]);
 
-  // Provider setup when gig + gig list are ready (avoid running before gigs hydrate).
+  // Effect for gig changes
   useEffect(() => {
-    if (!selectedGigId || !companyId || gigs.length === 0) return;
+    if (!selectedGigId || !companyId) return;
 
-    const runKey = `${selectedGigId}:${gigs.length}`;
-    if (providerRunForGigRef.current === runKey) return;
-    providerRunForGigRef.current = runKey;
-
+    // Reset states when gig changes
     setAvailableNumbers([]);
     setPurchaseError(null);
     setPurchaseStatus('idle');
@@ -660,32 +655,49 @@ const TelephonySetup = ({
     setShowPurchaseModal(false);
     setShowRequirementModal(false);
 
-    const selectedGig = gigs.find(
-      (gig: Gig) => normalizeGigId(gig._id) === selectedGigId
-    );
+    // Get destination zone from selected gig to avoid race condition
+    const selectedGig = gigs.find((gig: Gig) => gig._id === selectedGigId);
     const zone = selectedGig?.destination_zone?.cca2;
 
     if (provider === 'telnyx') {
-      void handleTelnyxProvider(zone);
+      handleTelnyxProvider(zone);
     } else if (provider === 'twilio') {
-      void handleTwilioProvider(zone);
+      handleTwilioProvider(zone);
     } else {
-      void checkGigPhoneNumber();
-      if (zone) void searchAvailableNumbers(zone);
+      // For other providers, just check for existing numbers and search available ones
+      checkGigPhoneNumber();
+      if (zone) {
+        searchAvailableNumbers(zone);
+      }
     }
-  }, [selectedGigId, companyId, gigs.length]);
+  }, [selectedGigId]);
 
 
   const checkCompletedSteps = async () => {
     try {
       if (!companyId) return;
-      if (checkCompletedStepsForRef.current === companyId) return;
-      checkCompletedStepsForRef.current = companyId;
 
-      const progress = await fetchOnboardingProgress(companyId);
-      if (progress?.completedSteps?.includes(4)) {
-        setCompletedSteps(progress.completedSteps);
-        return;
+
+
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+        );
+
+
+
+        if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
+          const completedSteps = (response.data as any).completedSteps;
+          if (completedSteps.includes(4)) {
+
+            setCompletedSteps(completedSteps);
+            return;
+          } else {
+
+          }
+        }
+      } catch (apiError) {
+
       }
 
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
@@ -706,132 +718,56 @@ const TelephonySetup = ({
     }
   };
 
-  const applyPhoneNumbersForGig = useCallback(
-    (gigId: string, numbers: PhoneNumber[]) => {
-      const normalizedGigId = normalizeGigId(gigId);
-      if (!normalizedGigId || numbers.length === 0) return;
-      setSelectedGigId(normalizedGigId);
-      setPhoneNumbers(numbers);
-      markGigStepDone(normalizedGigId, 'telephony', true);
-      onNextStepReadyChange?.(true);
-    },
-    [onNextStepReadyChange]
-  );
-
-  const findFirstGigWithPhone = useCallback(
-    async (gigList: Gig[]): Promise<{ gigId: string; numbers: PhoneNumber[] } | null> => {
-      for (const gig of gigList) {
-        const gigId = normalizeGigId(gig._id);
-        if (!gigId) continue;
-        try {
-          const result = await phoneNumberService.listPhoneNumbers(gigId);
-          if (result?.hasNumber && Array.isArray(result.numbers) && result.numbers.length > 0) {
-            return { gigId, numbers: result.numbers as PhoneNumber[] };
-          }
-        } catch {
-          // Try next gig
-        }
-      }
-      return null;
-    },
-    []
-  );
-
-  const syncCompanyPhoneNumbers = useCallback(async () => {
-    if (!companyId || companyPhoneCheckUnavailableRef.current) return;
-    if (companyPhoneSyncForRef.current === companyId) return;
-    companyPhoneSyncForRef.current = companyId;
-    try {
-      const result = await phoneNumberService.listPhoneNumbersByCompany(companyId);
-      if (result.routeMissing) {
-        companyPhoneCheckUnavailableRef.current = true;
-        return;
-      }
-      if (!result?.hasNumber || !Array.isArray(result.numbers) || result.numbers.length === 0) {
-        return;
-      }
-      const first = result.numbers[0] as PhoneNumber & { gigId?: string };
-      const gigId = normalizeGigId(result.gigId) || normalizeGigId(first?.gigId);
-      if (gigId) {
-        applyPhoneNumbersForGig(gigId, result.numbers as PhoneNumber[]);
-      }
-    } catch (error) {
-      companyPhoneCheckUnavailableRef.current = true;
-      console.warn('Company phone sync skipped:', error);
-    }
-  }, [companyId, applyPhoneNumbersForGig]);
-
   const fetchGigs = async () => {
-    if (!companyId || fetchingGigsRef.current) return;
+    if (!companyId) return;
 
-    fetchingGigsRef.current = true;
     try {
       setIsLoadingGigs(true);
 
+
       const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
+
 
       const responseData = response.data as { data: Gig[] };
       if (responseData && Array.isArray(responseData.data)) {
-        const normalizedGigs = responseData.data.map((gig) => ({
-          ...gig,
-          _id: normalizeGigId(gig._id),
-        }));
-        setGigs(normalizedGigs);
+        setGigs(responseData.data);
 
-        const withPhone = await findFirstGigWithPhone(normalizedGigs);
-        if (withPhone) {
-          gigsAutoSelectedRef.current = true;
-          applyPhoneNumbersForGig(withPhone.gigId, withPhone.numbers);
-        } else if (!companyPhoneCheckUnavailableRef.current) {
-          await syncCompanyPhoneNumbers();
-        }
       } else {
         setGigs([]);
+
       }
     } catch (error) {
       console.error('❌ Error fetching gigs:', error);
       setGigs([]);
     } finally {
       setIsLoadingGigs(false);
-      fetchingGigsRef.current = false;
     }
   };
 
   const fetchExistingNumbers = async () => {
-    const gigId = normalizeGigId(selectedGigId);
-    if (!gigId) {
-      setPhoneNumbers([]);
-      onNextStepReadyChange?.(false);
-      return;
-    }
-    if (fetchingExistingRef.current) return;
-    fetchingExistingRef.current = true;
     try {
-      const result = await phoneNumberService.listPhoneNumbers(gigId);
-
-      if (result?.hasNumber && result.numbers && Array.isArray(result.numbers) && result.numbers.length > 0) {
-        setPhoneNumbers(result.numbers);
-        markGigStepDone(gigId, 'telephony', true);
-        onNextStepReadyChange?.(true);
+      if (!selectedGigId) {
+        console.error('❌ No selectedGigId available');
+        setPhoneNumbers([]);
         return;
       }
 
-      if (gigs.length > 0) {
-        const withPhone = await findFirstGigWithPhone(gigs);
-        if (withPhone) {
-          applyPhoneNumbersForGig(withPhone.gigId, withPhone.numbers);
-          return;
-        }
-      }
 
-      setPhoneNumbers([]);
-      onNextStepReadyChange?.(false);
+      const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
+
+
+      // Met à jour la liste des numéros (supporte maintenant plusieurs numéros s'ils existent)
+      if (result?.hasNumber && result.numbers && Array.isArray(result.numbers)) {
+        setPhoneNumbers(result.numbers);
+        if (result.numbers.length > 0) {
+          markGigStepDone(selectedGigId, 'telephony', true);
+        }
+      } else {
+        setPhoneNumbers([]);
+      }
     } catch (error) {
       console.error('❌ Error checking gig numbers:', error);
       setPhoneNumbers([]);
-      onNextStepReadyChange?.(false);
-    } finally {
-      fetchingExistingRef.current = false;
     }
   };
 

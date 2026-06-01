@@ -34,12 +34,8 @@ import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../trai
 import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
 
-import {
-  REP_ONBOARDING_STATE_EVENT,
-  type RepOnboardingStateDetail,
-} from './repOnboardingEvents';
-
-export { REP_ONBOARDING_STATE_EVENT };
+/** Sync REP onboarding UI state with CompanyOnboarding / App (next-step visibility). */
+export const REP_ONBOARDING_STATE_EVENT = 'repOnboardingState';
 
 interface RepOnboardingProps { }
 
@@ -341,6 +337,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       await axios.put(stepUrl, { status: "completed" });
     } catch (error) {
       console.error("[RepOnboarding] Failed to mark step 9 completed:", error);
+      window.dispatchEvent(new Event("refreshOnboardingProgress"));
       return;
     }
 
@@ -367,6 +364,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       
     } catch (error) {
       console.error("[RepOnboarding] Failed to reload onboarding after step 9:", error);
+      window.dispatchEvent(new Event("refreshOnboardingProgress"));
     }
   }, [companyId]);
 
@@ -664,22 +662,19 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     [trainings, isRealTrainingJourney]
   );
 
-  const trainingBuilderWasOpenRef = useRef(false);
-
   useEffect(() => {
-    const justOpenedBuilder = showTraining.isOpen && !trainingBuilderWasOpenRef.current;
-    trainingBuilderWasOpenRef.current = showTraining.isOpen;
-
-    const detail: RepOnboardingStateDetail = {
-      realTrainingsCount: realTrainings.length,
-      inBuilder: showTraining.isOpen,
-      ...(!showTraining.isOpen || justOpenedBuilder ? { planValidated: false } : {}),
-    };
-    window.dispatchEvent(new CustomEvent(REP_ONBOARDING_STATE_EVENT, { detail }));
+    window.dispatchEvent(
+      new CustomEvent(REP_ONBOARDING_STATE_EVENT, {
+        detail: {
+          realTrainingsCount: realTrainings.length,
+          inBuilder: showTraining.isOpen,
+        },
+      })
+    );
     return () => {
       window.dispatchEvent(
         new CustomEvent(REP_ONBOARDING_STATE_EVENT, {
-          detail: { realTrainingsCount: 0, inBuilder: false, planValidated: false },
+          detail: { realTrainingsCount: 0, inBuilder: false },
         })
       );
     };
