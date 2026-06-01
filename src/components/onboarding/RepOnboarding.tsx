@@ -746,12 +746,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         journey?.trainingTitle,
         journey?.metadata?.title,
       ]
-        .map(normalizeText)
+        .map(normalizeTrainingTitle)
         .filter(Boolean);
 
       if (titleCandidates.length === 0) return undefined;
       return savedImageSets.find((set) => {
-        const setCandidates = [set.title, set.trainingTitle].map(normalizeText).filter(Boolean);
+        const setCandidates = [set.title, set.trainingTitle]
+          .map(normalizeTrainingTitle)
+          .filter(Boolean);
         return setCandidates.some((candidate) =>
           titleCandidates.some((journeyTitle) =>
             candidate === journeyTitle ||
