@@ -52,9 +52,6 @@ import {
   syncOnboardingProgressFromApi,
   getCompletedStepsFromStorage,
 } from './hooks/useStepGuide';
-import { OnboardingFocusedStepLayout } from './components/onboarding/OnboardingFocusedStepLayout';
-import { goToCompanyOnboardingTab } from './hooks/useOnboardingGlobalBack';
-import { REP_ONBOARDING_STATE_EVENT } from './components/onboarding/RepOnboarding';
 
 // First step of the Activation phase (Phase 4). When this is reached (step 10 of
 // Phase 3 done OR any Phase 4 step touched), wallet & upgrade widgets become
@@ -65,10 +62,7 @@ const TAB_ONBOARDING_STEPS: Record<string, { stepId: number; phaseId: number }> 
   'script-generator': { stepId: 6, phaseId: 2 },
   'knowledge-base': { stepId: 8, phaseId: 3 },
   'approval-publishing': { stepId: 12, phaseId: 4 },
-  'training': { stepId: 9, phaseId: 3 },
 };
-
-const ORCHESTRATOR_STEP_TABS_WITH_NEXT = new Set(Object.keys(TAB_ONBOARDING_STEPS));
 
 function AppContent() {
   const { t } = useTranslation();
@@ -112,10 +106,6 @@ function AppContent() {
   const [escrow, setEscrow] = useState<number>(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [showWalletTopUp, setShowWalletTopUp] = useState(false);
-  const [repOnboardingMeta, setRepOnboardingMeta] = useState({
-    realTrainingsCount: 0,
-    inBuilder: false,
-  });
 
   const navigate = useNavigate();
 
@@ -431,19 +421,6 @@ function AppContent() {
     };
   }, [location.pathname, isZohoCallback, isZohoAuth, navigate, markGuideComplete]);
 
-  useEffect(() => {
-    const onRepState = (event: Event) => {
-      const detail = (event as CustomEvent).detail;
-      if (!detail) return;
-      setRepOnboardingMeta({
-        realTrainingsCount: Number(detail.realTrainingsCount) || 0,
-        inBuilder: Boolean(detail.inBuilder),
-      });
-    };
-    window.addEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
-    return () => window.removeEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
-  }, []);
-
   // Returning users with all phases done: never stay on #/orchestrator — go to dashboard.
   useEffect(() => {
     if (!onboardingComplete || isZohoCallback || isZohoAuth) return;
@@ -586,16 +563,6 @@ function AppContent() {
     });
 
     window.location.replace('/app1');
-  };
-
-  const handleOrchestratorTabNextStep = () => {
-    const mapping = TAB_ONBOARDING_STEPS[activeTab];
-    if (mapping) {
-      window.dispatchEvent(
-        new CustomEvent('stepCompleted', { detail: mapping })
-      );
-    }
-    goToCompanyOnboardingTab();
   };
 
   const renderContent = () => {
@@ -829,20 +796,7 @@ function AppContent() {
               dashboard={<DashboardApp />}
               comporchestrator={
                 <div className="px-4 py-3 h-full pb-32 relative">
-                  {ORCHESTRATOR_STEP_TABS_WITH_NEXT.has(activeTab) ? (
-                    <OnboardingFocusedStepLayout
-                      showNextStep={
-                        activeTab !== 'training' ||
-                        (!repOnboardingMeta.inBuilder &&
-                          repOnboardingMeta.realTrainingsCount > 0)
-                      }
-                      onNextStep={handleOrchestratorTabNextStep}
-                    >
-                      {renderContent()}
-                    </OnboardingFocusedStepLayout>
-                  ) : (
-                    renderContent()
-                  )}
+                  {renderContent()}
                 </div>
               }
             />

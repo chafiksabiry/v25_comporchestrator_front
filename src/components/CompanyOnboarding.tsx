@@ -40,8 +40,6 @@ import {
   shouldShowStepGuide,
 } from "../hooks/useStepGuide";
 import { EXIT_ONBOARDING_FOCUS_EVENT } from "../hooks/useOnboardingGlobalBack";
-import { OnboardingFocusedStepLayout } from "./onboarding/OnboardingFocusedStepLayout";
-import { REP_ONBOARDING_STATE_EVENT } from "./onboarding/RepOnboarding";
 
 // NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
 // (see useOrchestratorGuide). Do not re-mount it here, otherwise it would
@@ -291,11 +289,6 @@ const CompanyOnboarding = () => {
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
   const [showGigDetails, setShowGigDetails] = useState(false);
   const [showGigCreation, setShowGigCreation] = useState(false);
-  const [telephonyNextReady, setTelephonyNextReady] = useState(false);
-  const [repOnboardingMeta, setRepOnboardingMeta] = useState({
-    realTrainingsCount: 0,
-    inBuilder: false,
-  });
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [stepGuide, setStepGuide] = useState<{
@@ -1372,7 +1365,6 @@ const CompanyOnboarding = () => {
     setShowGigDetails(false);
     setShowKnowledgeBase(false);
     setActiveStep(null);
-    setTelephonyNextReady(false);
 
     // Refresh progress
     if (companyId) {
@@ -1383,38 +1375,6 @@ const CompanyOnboarding = () => {
   const handleBackToOnboardingRef = useRef(handleBackToOnboarding);
   handleBackToOnboardingRef.current = handleBackToOnboarding;
 
-  const completeFocusedStep = async (stepId: number) => {
-    if (companyId && !completedSteps.includes(stepId)) {
-      const phaseId =
-        phases.findIndex((phase) => phase.steps.some((step) => step.id === stepId)) + 1;
-      if (phaseId > 0) {
-        try {
-          await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
-            { status: "completed" }
-          );
-        } catch (err) {
-          console.warn(`Could not mark step ${stepId} completed:`, err);
-        }
-        setCompletedSteps((prev) => (prev.includes(stepId) ? prev : [...prev, stepId]));
-        window.dispatchEvent(
-          new CustomEvent("stepCompleted", { detail: { stepId, phaseId } })
-        );
-      }
-    }
-    await handleBackToOnboarding();
-  };
-
-  const handleFocusedNextStep = async () => {
-    const stepId = getFocusedStepId();
-    if (stepId === 4 && !telephonyNextReady) return;
-    if (stepId !== null) {
-      await completeFocusedStep(stepId);
-      return;
-    }
-    await handleBackToOnboarding();
-  };
-
   useEffect(() => {
     const onExitFocus = () => {
       void handleBackToOnboardingRef.current();
@@ -1423,19 +1383,6 @@ const CompanyOnboarding = () => {
     return () => {
       window.removeEventListener(EXIT_ONBOARDING_FOCUS_EVENT, onExitFocus);
     };
-  }, []);
-
-  useEffect(() => {
-    const onRepState = (event: Event) => {
-      const detail = (event as CustomEvent).detail;
-      if (!detail) return;
-      setRepOnboardingMeta({
-        realTrainingsCount: Number(detail.realTrainingsCount) || 0,
-        inBuilder: Boolean(detail.inBuilder),
-      });
-    };
-    window.addEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
-    return () => window.removeEventListener(REP_ONBOARDING_STATE_EVENT, onRepState);
   }, []);
 
   const handleStepClick = (stepId: number) => {
@@ -1567,7 +1514,14 @@ const CompanyOnboarding = () => {
     activeComponent = (
       <TelephonySetup
         companyId={companyId}
-        onNextStepReadyChange={setTelephonyNextReady}
+        onNextStep={() => {
+          // Mark Telephony Setup (step 4) as completed and return to overview
+          setCompletedSteps((prev) => (prev.includes(4) ? prev : [...prev, 4]));
+          window.dispatchEvent(
+            new CustomEvent('stepCompleted', { detail: { stepId: 4, phaseId: 2 } })
+          );
+          handleBackToOnboarding();
+        }}
       />
     );
   } else if (showKnowledgeBase) {
@@ -1606,23 +1560,13 @@ const CompanyOnboarding = () => {
   // already provides this navigation. Keeping both caused visual duplication.
 
   if (activeComponent) {
-    const focusedStepId = getFocusedStepId();
-    const isRepOnboardingStep = focusedStepId === 9;
-    const hideNextStep =
-      (isRepOnboardingStep &&
-        (repOnboardingMeta.inBuilder || repOnboardingMeta.realTrainingsCount === 0)) ||
-      (focusedStepId === 4 && !telephonyNextReady);
-
     return (
       <>
         {orchestratorGuideLayer}
         {stepGuideLayer}
-        <OnboardingFocusedStepLayout
-          showNextStep={!hideNextStep}
-          onNextStep={() => void handleFocusedNextStep()}
-        >
-          <div className="animate-fade-in">{activeComponent}</div>
-        </OnboardingFocusedStepLayout>
+        <div className="animate-fade-in">
+          {activeComponent}
+        </div>
       </>
     );
   }
