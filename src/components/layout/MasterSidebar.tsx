@@ -30,7 +30,6 @@ import {
 } from 'lucide-react';
 import { getHiddenSections } from '../dashboard/config/sections';
 import Cookies from 'js-cookie';
-import { isOnboardingProgressApiUnavailable } from '../../services/onboardingProgressApi';
 import { useAuth } from '../dashboard/contexts/AuthContext';
 import type { ProjectView } from '../../App';
 import { useTranslation } from 'react-i18next';
@@ -94,9 +93,6 @@ export function MasterSidebar({
 
           if (companyExists && companyData.data._id) {
             try {
-              if (isOnboardingProgressApiUnavailable(companyData.data._id)) {
-                return;
-              }
               const progressRes = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyData.data._id}/onboarding`);
 
               let stepGigs = false;

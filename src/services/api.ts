@@ -150,46 +150,14 @@ const handleApiError = (error: unknown, context: string): never => {
   );
 };
 
-export type CompanyPhoneCheckResponse = CheckNumberResponse & {
-  gigId?: string | null;
-  /** True when the company check route is not deployed (HTTP 404). */
-  routeMissing?: boolean;
-};
-
 export const phoneNumberService = {
   listPhoneNumbers: async (gigId: string): Promise<CheckNumberResponse> => {
     try {
-      const response = await api.get<CheckNumberResponse>(
-        `/phone-numbers/gig/${gigId}/check`
-      );
-      if (response.status === 404) {
-        return { hasNumber: false };
-      }
-      return response.data ?? { hasNumber: false };
+      const response = await api.get<CheckNumberResponse>(`/phone-numbers/gig/${gigId}/check`);
+      
+      return response.data;
     } catch (error) {
-      if (isAxiosError(error) && error.response?.status === 404) {
-        return { hasNumber: false };
-      }
       throw handleApiError(error, 'listPhoneNumbers');
-    }
-  },
-
-  listPhoneNumbersByCompany: async (
-    companyId: string
-  ): Promise<CompanyPhoneCheckResponse> => {
-    try {
-      const response = await api.get<CompanyPhoneCheckResponse>(
-        `/phone-numbers/company/${companyId}/check`
-      );
-      if (response.status === 404) {
-        return { hasNumber: false, numbers: [], gigId: null, routeMissing: true };
-      }
-      return response.data ?? { hasNumber: false, numbers: [], gigId: null };
-    } catch (error) {
-      if (isAxiosError(error) && error.response?.status === 404) {
-        return { hasNumber: false, numbers: [], gigId: null, routeMissing: true };
-      }
-      throw handleApiError(error, 'listPhoneNumbersByCompany');
     }
   },
 
