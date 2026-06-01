@@ -47,7 +47,7 @@
       "unavailable": "Unable to reach the telephony service.",
       "selectGigDestination": "Please select a Gig with a destination country.",
       "noNumbersFound": "No available numbers were found.",
-      "regulatoryBlocked": "These numbers require an approved Twilio regulatory bundle. Submit your documents in the Twilio Console or choose a different region.",
+      "regulatoryBlocked": "These numbers require an approved regulatory bundle. Complete your compliance documents or choose a different region.",
       "numbersFound": "{{count}} available numbers found!",
       "unknownFormat": "Unknown data format received from the search.",
       "searchError": "Technical error during search.",
@@ -853,7 +853,7 @@
     "purchase": "Purchase",
     "empty": {
       "title": "No phone numbers yet",
-      "subtitle": "Search available Twilio numbers for your destination zone to activate this gig.",
+      "subtitle": "Search available numbers for your destination zone to activate this gig.",
       "scan": "Search available numbers",
       "scanning": "Searching available numbers...",
       "noZone": "Select a destination zone first"
@@ -861,8 +861,8 @@
     "purchaseModal": {
       "confirm": {
         "title": "Activate this number",
-        "subtitle": "Once confirmed, this Twilio number is assigned to your gig and starts billing on your account.",
-        "trialSubtitle": "This first Twilio number is FREE for your company — included as a {{days}}-day trial, no payment required.",
+        "subtitle": "Once confirmed, this number is assigned to your gig and starts billing on your account.",
+        "trialSubtitle": "This first number is FREE for your company — included as a {{days}}-day trial, no payment required.",
         "phoneLabel": "Phone number",
         "providerLabel": "Carrier",
         "approved": "Your company is approved to purchase numbers.",
@@ -892,7 +892,7 @@
       },
       "purchasing": {
         "title": "Activating number...",
-        "subtitle": "We're provisioning your Twilio infrastructure. This usually takes a few seconds."
+        "subtitle": "We're activating your phone line. This usually takes a few seconds."
       },
       "success": {
         "title": "Number activated",
