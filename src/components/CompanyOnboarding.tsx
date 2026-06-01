@@ -39,7 +39,10 @@ import {
   markStepGuideSeen,
   shouldShowStepGuide,
 } from "../hooks/useStepGuide";
-import { normalizeOnboardingStepIds } from "../hooks/onboardingSteps";
+import {
+  normalizeOnboardingStepIds,
+  ONBOARDING_STEP,
+} from "../hooks/onboardingSteps";
 import { EXIT_ONBOARDING_FOCUS_EVENT } from "../hooks/useOnboardingGlobalBack";
 import { OnboardingFocusedStepLayout } from "./onboarding/OnboardingFocusedStepLayout";
 import {
@@ -1646,9 +1649,12 @@ const CompanyOnboarding = () => {
 
   if (activeComponent) {
     const focusedStepId = getFocusedStepId();
-    const isRepOnboardingStep = focusedStepId === 8;
-    const isTelephonyStep = focusedStepId === 4;
+    const isCompanyProfileStep = focusedStepId === ONBOARDING_STEP.COMPANY_PROFILE;
+    const isRepOnboardingStep = focusedStepId === ONBOARDING_STEP.TRAINING;
+    const isTelephonyStep = focusedStepId === ONBOARDING_STEP.TELEPHONY;
+    const companyProfileReady = completedSteps.includes(ONBOARDING_STEP.COMPANY_PROFILE);
     const showNextStep =
+      !(isCompanyProfileStep && !companyProfileReady) &&
       !(
         isRepOnboardingStep &&
         repOnboardingMeta.inBuilder &&
