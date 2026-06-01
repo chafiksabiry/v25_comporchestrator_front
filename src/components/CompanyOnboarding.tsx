@@ -29,7 +29,7 @@ import SessionPlanning from "./onboarding/SessionPlanning";
 import Cookies from "js-cookie";
 import axios from "axios";
 import GigDetails from "./onboarding/GigDetails";
-import KnowledgeBase from "./onboarding/KnowledgeBase";
+import KnowledgeBase from "./KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
 import PrompAI from "./gigsaicreation/components/PrompAI";
