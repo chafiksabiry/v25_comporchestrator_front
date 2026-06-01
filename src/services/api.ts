@@ -150,6 +150,10 @@ const handleApiError = (error: unknown, context: string): never => {
   );
 };
 
+export type CompanyPhoneCheckResponse = CheckNumberResponse & {
+  gigId?: string | null;
+};
+
 export const phoneNumberService = {
   listPhoneNumbers: async (gigId: string): Promise<CheckNumberResponse> => {
     try {
@@ -158,6 +162,19 @@ export const phoneNumberService = {
       return response.data;
     } catch (error) {
       throw handleApiError(error, 'listPhoneNumbers');
+    }
+  },
+
+  listPhoneNumbersByCompany: async (
+    companyId: string
+  ): Promise<CompanyPhoneCheckResponse> => {
+    try {
+      const response = await api.get<CompanyPhoneCheckResponse>(
+        `/phone-numbers/company/${companyId}/check`
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, 'listPhoneNumbersByCompany');
     }
   },
 
