@@ -50,6 +50,9 @@ import {
   beginOnboardingLoad,
   finishOnboardingLoad,
   debouncedOnboardingLoad,
+  buildOnboardingPayloadKey,
+  getLastOnboardingPayloadKey,
+  setLastOnboardingPayloadKey,
 } from "../utils/onboardingLoadGuard";
 
 // NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
@@ -683,7 +686,12 @@ const CompanyOnboarding = () => {
       return;
     }
 
-    if (!canStartOnboardingLoad()) {
+    if (!canStartOnboardingLoad(effectiveCompanyId)) {
+      debouncedOnboardingLoad(effectiveCompanyId, () =>
+        loadCompanyProgress(overrideCompanyId)
+      );
+      // Avoid infinite skeleton when a concurrent load holds the guard.
+      setIsInitialLoad(false);
       return;
     }
 
@@ -774,7 +782,7 @@ const CompanyOnboarding = () => {
         validPhase,
         progress.phases?.length ?? 0
       );
-      if (payloadKey === getLastOnboardingPayloadKey() && payloadKey === stepsKey) {
+      if (payloadKey === getLastOnboardingPayloadKey()) {
         finishOnboardingLoad();
         return;
       }
@@ -880,7 +888,9 @@ const CompanyOnboarding = () => {
           return next;
         });
 
-        debouncedOnboardingLoad(() => loadCompanyProgress());
+        if (companyId) {
+          debouncedOnboardingLoad(companyId, () => loadCompanyProgress());
+        }
       }
     };
 
@@ -889,7 +899,9 @@ const CompanyOnboarding = () => {
       setShowUploadContacts(false);
       sessionStorage.removeItem("uploadContactsManuallyClosed");
       checkCompanyLeads();
-      debouncedOnboardingLoad(() => loadCompanyProgress(), 1000);
+      if (companyId) {
+        debouncedOnboardingLoad(companyId, () => loadCompanyProgress(), 1000);
+      }
     };
 
     window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
@@ -917,10 +929,10 @@ const CompanyOnboarding = () => {
     if (!stripeReturned) return;
 
     const t1 = window.setTimeout(() => {
-      debouncedOnboardingLoad(() => loadCompanyProgress());
+      debouncedOnboardingLoad(companyId, () => loadCompanyProgress());
     }, 1500);
     const t2 = window.setTimeout(() => {
-      debouncedOnboardingLoad(() => loadCompanyProgress());
+      debouncedOnboardingLoad(companyId, () => loadCompanyProgress());
     }, 4000);
 
     return () => {
@@ -935,7 +947,7 @@ const CompanyOnboarding = () => {
     if (!companyId) return;
 
     const handleRefreshOnboardingProgress = () => {
-      debouncedOnboardingLoad(() => loadCompanyProgress());
+      debouncedOnboardingLoad(companyId, () => loadCompanyProgress());
     };
 
     window.addEventListener(
@@ -1329,7 +1341,7 @@ const CompanyOnboarding = () => {
         console.error("Failed to set onboarding phase 2:", err);
       }
 
-      debouncedOnboardingLoad(() => loadCompanyProgress(newCompanyId));
+      debouncedOnboardingLoad(newCompanyId, () => loadCompanyProgress(newCompanyId));
     },
     [loadCompanyProgress]
   );
