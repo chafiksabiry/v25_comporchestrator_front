@@ -108,7 +108,7 @@ export function MasterSidebar({
                 if (payload && Array.isArray(payload.completedSteps)) {
                   if (payload.completedSteps.includes(3)) stepGigs = true;
                   if (payload.completedSteps.includes(5)) stepLeads = true;
-                  if (payload.completedSteps.includes(8) || payload.completedSteps.includes(9)) stepKb = true;
+                  if (payload.completedSteps.includes(7) || payload.completedSteps.includes(8)) stepKb = true;
                   if (payload.completedSteps.includes(13)) stepRepMatching = true;
                 }
               }

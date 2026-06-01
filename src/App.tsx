@@ -65,10 +65,10 @@ import {
 const ACTIVATION_PHASE_STEP_IDS = [11, 12, 13] as const;
 
 const TAB_ONBOARDING_STEPS: Record<string, { stepId: number; phaseId: number }> = {
-  'script-generator': { stepId: 6, phaseId: 2 },
-  'knowledge-base': { stepId: 8, phaseId: 3 },
+  'script-generator': { stepId: 9, phaseId: 3 },
+  'knowledge-base': { stepId: 7, phaseId: 3 },
   'approval-publishing': { stepId: 12, phaseId: 4 },
-  'training': { stepId: 9, phaseId: 3 },
+  'training': { stepId: 8, phaseId: 3 },
 };
 
 const ORCHESTRATOR_STEP_TABS_WITH_NEXT = new Set(Object.keys(TAB_ONBOARDING_STEPS));
