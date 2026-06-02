@@ -95,7 +95,10 @@ const OnboardingProductTour: React.FC<Props> = ({ tourKey, steps, onDone }) => {
     const spBottom = spotlight.top + spotlight.height;
     const spMidX = spotlight.left + spotlight.width / 2;
     const fitsBelow = spBottom + ARROW_H + EDGE_MARGIN + 220 < vh;
-    const useBelow = prefer === 'bottom' ? fitsBelow : !fitsBelow;
+    const fitsAbove = spotlight.top - ARROW_H - EDGE_MARGIN - 220 > 0;
+    // prefer='bottom' → go below if it fits, else above
+    // prefer='top'    → go above if it fits, else below
+    const useBelow = prefer === 'bottom' ? (fitsBelow || !fitsAbove) : !fitsAbove;
     const left = clamp(spMidX - POPOVER_W / 2, EDGE_MARGIN, vw - POPOVER_W - EDGE_MARGIN);
     arrowLeft = clamp(spMidX - left - 12, 12, POPOVER_W - 36);
 

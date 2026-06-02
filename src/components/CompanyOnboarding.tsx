@@ -429,128 +429,128 @@ const CompanyOnboarding = () => {
   const ALL_PHASE_TOURS: Record<number, TourStep[]> = {
     1: [
       {
-        target: 'tour-phase-tabs',
+        target: 'tour-phase-tabs',       // → whole phase-tab grid
         badge: 'Phase 1 — Étape 1/5',
         title: 'Les 4 phases de l\'onboarding',
         description: 'Votre parcours est divisé en 4 phases à compléter dans l\'ordre pour débloquer toutes les fonctionnalités HARX.',
         prefer: 'bottom',
       },
       {
-        target: 'tour-phase-header',
+        target: 'tour-phase-title',      // → h2 phase title
         badge: 'Phase 1 — Étape 2/5',
         title: 'Configuration du Compte & Identité',
         description: 'Commencez par configurer votre profil d\'entreprise et valider votre identité légale. Ces étapes débloquent l\'accès aux phases suivantes.',
         prefer: 'bottom',
       },
       {
-        target: 'tour-step-first',
+        target: 'tour-step-first-btn',   // → "Démarrer l'Étape" button
         badge: 'Phase 1 — Étape 3/5',
         title: 'Créer le Profil de l\'Entreprise',
-        description: 'Remplissez vos informations juridiques, contacts clés et acceptez les conditions. Environ 5 minutes.',
+        description: 'Cliquez ici pour remplir vos informations juridiques, contacts clés et accepter les conditions. Environ 5 minutes.',
         prefer: 'bottom',
       },
       {
-        target: 'tour-step-second',
+        target: 'tour-step-second-title', // → KYC step title
         badge: 'Phase 1 — Étape 4/5',
         title: 'Vérification KYC / KYB',
         description: 'Cette étape se déverrouille automatiquement après le profil. Il s\'agit d\'une vérification d\'identité légale obligatoire.',
         prefer: 'top',
       },
       {
-        target: 'tour-phase-nav',
+        target: 'tour-phase-nav-next',   // → "Phase Suivante" button
         badge: 'Phase 1 — Étape 5/5',
-        title: 'Passer à la phase suivante',
-        description: 'Une fois les étapes complétées, utilisez ce bouton pour accéder à la Phase 2 : Configuration Opérationnelle.',
+        title: 'Passer à la Phase 2',
+        description: 'Une fois les étapes complétées, cliquez ici pour accéder à la Phase 2 : Configuration Opérationnelle.',
         prefer: 'top',
       },
     ],
     2: [
       {
-        target: 'tour-phase-header',
+        target: 'tour-phase-title',
         badge: 'Phase 2 — Étape 1/4',
         title: 'Configuration Opérationnelle',
         description: 'Configurez vos gigs, lignes téléphoniques et importez vos contacts. Cette phase prépare votre équipe à passer des appels.',
         prefer: 'bottom',
       },
       {
-        target: 'tour-step-first',
+        target: 'tour-step-first-btn',
         badge: 'Phase 2 — Étape 2/4',
         title: 'Créer vos Gigs',
-        description: 'Un gig définit une mission avec ses prérequis, son équipe et ses objectifs. Commencez par créer au moins un gig multicanal.',
+        description: 'Cliquez ici pour définir votre premier gig : équipe, objectifs et prérequis. C\'est la pierre angulaire de vos opérations.',
         prefer: 'bottom',
       },
       {
-        target: 'tour-step-second',
+        target: 'tour-step-second-title',
         badge: 'Phase 2 — Étape 3/4',
         title: 'Configuration Téléphonique',
         description: 'Achetez des numéros de téléphone et affectez-les à vos gigs. Chaque représentant aura besoin d\'une ligne dédiée.',
         prefer: 'top',
       },
       {
-        target: 'tour-phase-nav',
+        target: 'tour-phase-nav-next',
         badge: 'Phase 2 — Étape 4/4',
         title: 'Vers la Phase 3',
-        description: 'Après avoir configuré vos opérations, passez à la Phase 3 pour préparer vos représentants avec les outils nécessaires.',
+        description: 'Après avoir configuré vos opérations, cliquez ici pour passer à la Phase 3 : Engagement des REPS.',
         prefer: 'top',
       },
     ],
     3: [
       {
-        target: 'tour-phase-header',
+        target: 'tour-phase-title',
         badge: 'Phase 3 — Étape 1/4',
         title: 'Engagement des REPS',
         description: 'Équipez vos représentants avec une base de connaissances, une formation e-learning et des scripts d\'appel optimisés.',
         prefer: 'bottom',
       },
       {
-        target: 'tour-step-first',
+        target: 'tour-step-first-btn',
         badge: 'Phase 3 — Étape 2/4',
         title: 'Base de Connaissances',
-        description: 'Alimentez votre base de connaissances avec des documents, FAQ et ressources que vos représentants consulteront pendant les appels.',
+        description: 'Cliquez ici pour alimenter la base de connaissances avec des documents et ressources consultables pendant les appels.',
         prefer: 'bottom',
       },
       {
-        target: 'tour-step-second',
+        target: 'tour-step-second-title',
         badge: 'Phase 3 — Étape 3/4',
         title: 'Formation & E-learning',
-        description: 'Créez des parcours de formation pour vos agents. Ils devront compléter ces modules avant de passer leurs premiers appels.',
+        description: 'Créez des parcours de formation. Les agents devront compléter ces modules avant de passer leurs premiers appels.',
         prefer: 'top',
       },
       {
-        target: 'tour-phase-nav',
+        target: 'tour-phase-nav-next',
         badge: 'Phase 3 — Étape 4/4',
         title: 'Vers l\'Activation',
-        description: 'Vos représentants sont équipés. Passez à la Phase 4 pour activer vos gigs et lancer les opérations.',
+        description: 'Vos représentants sont équipés. Cliquez ici pour passer à la Phase 4 et lancer vos opérations.',
         prefer: 'top',
       },
     ],
     4: [
       {
-        target: 'tour-phase-header',
+        target: 'tour-phase-title',
         badge: 'Phase 4 — Étape 1/4',
         title: 'Activation Finale',
-        description: 'Dernière étape ! Choisissez votre plan d\'abonnement, activez vos gigs et invitez vos représentants à rejoindre la plateforme.',
+        description: 'Dernière étape ! Choisissez votre plan, activez vos gigs et invitez vos représentants à rejoindre la plateforme.',
         prefer: 'bottom',
       },
       {
-        target: 'tour-step-first',
+        target: 'tour-step-first-btn',
         badge: 'Phase 4 — Étape 2/4',
         title: 'Plan d\'Abonnement',
-        description: 'Sélectionnez le plan adapté à la taille de votre équipe. Le plan détermine le nombre de représentants et de gigs actifs.',
+        description: 'Cliquez ici pour sélectionner le plan adapté à votre équipe. Il détermine le nombre de représentants et de gigs actifs.',
         prefer: 'bottom',
       },
       {
-        target: 'tour-step-second',
+        target: 'tour-step-second-title',
         badge: 'Phase 4 — Étape 3/4',
         title: 'Activation du Gig',
-        description: 'Une fois toutes les étapes précédentes complétées, activez votre gig pour que vos représentants commencent à travailler.',
+        description: 'Une fois votre abonnement actif, cette étape vous permettra d\'activer vos gigs et de lancer les appels.',
         prefer: 'top',
       },
       {
-        target: 'tour-phase-nav',
+        target: 'tour-phase-nav-next',
         badge: 'Phase 4 — Étape 4/4',
         title: 'Tableau de Bord',
-        description: 'Félicitations ! Après l\'activation, accédez au tableau de bord pour suivre les performances en temps réel.',
+        description: 'Félicitations ! Après l\'activation, cliquez ici pour accéder au tableau de bord et suivre les performances en temps réel.',
         prefer: 'top',
       },
     ],
@@ -1984,7 +1984,7 @@ const CompanyOnboarding = () => {
         <div className="mb-8 relative z-10" data-tour="tour-phase-header">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+              <h2 data-tour="tour-phase-title" className="text-3xl font-black text-gray-900 tracking-tight">
                 {t('companyOnboarding.ui.phaseLabel')} {displayedPhase}: <span className={`text-transparent bg-clip-text ${isPhaseCompleted(displayedPhase) ? "bg-green-600" : "bg-gradient-harx"}`}>{t(`companyOnboarding.phases.${displayedPhase}.title`, phases[displayedPhase - 1]?.title)}</span>
               </h2>
               <p className="text-gray-500 mt-2 font-medium max-w-2xl">
@@ -2070,7 +2070,10 @@ const CompanyOnboarding = () => {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-gray-900">
+                      <h3
+                        {...(stepIndex === 1 ? { 'data-tour': 'tour-step-second-title' } : {})}
+                        className="text-sm font-medium text-gray-900"
+                      >
                         {t(`companyOnboarding.phases.${displayedPhase}.steps.${step.id}.title`, step.title)}
                       </h3>
                       {!canAccessPhase ? (
@@ -2102,6 +2105,7 @@ const CompanyOnboarding = () => {
                     </p>
                     {isClickable && !step.disabled && canAccessStep && (
                       <button
+                        {...(stepIndex === 0 ? { 'data-tour': 'tour-step-first-btn' } : {})}
                         className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-gradient-harx text-white rounded-xl font-black text-sm shadow-lg shadow-harx-500/20 hover:shadow-harx-500/40 transition-all hover:-translate-y-0.5"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -2128,6 +2132,7 @@ const CompanyOnboarding = () => {
             {t('companyOnboarding.ui.previousPhase')}
           </button>
           <button
+            data-tour="tour-phase-nav-next"
             className="px-10 py-4 rounded-2xl bg-gray-900 text-sm font-black text-white shadow-xl hover:bg-black transition-all group flex items-center gap-3"
             disabled={false}
             onClick={handleNextPhase}
