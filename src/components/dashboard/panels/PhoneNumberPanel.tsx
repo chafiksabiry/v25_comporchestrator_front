@@ -281,18 +281,13 @@ export function PhoneNumberPanel() {
     toast.success(t('phoneNumberPanel.toasts.refreshed'), { id: 'refresh-tel-toast' });
   };
 
-  const handleSearchNumbers = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSearch = async (gigId: string) => {
     setSearching(true);
     setSearchResults([]);
 
     try {
-      console.log('[handleSearchNumbers] Current selectedGigIdForNumber:', selectedGigIdForNumber);
-      console.log('[handleSearchNumbers] Available gigsAndReps in state:', gigsAndReps);
-      const selectedGig = gigsAndReps.find(g => g.gigId === selectedGigIdForNumber);
-      console.log('[handleSearchNumbers] Found selectedGig:', selectedGig);
+      const selectedGig = gigsAndReps.find(g => g.gigId === gigId);
       const targetCountry = selectedGig?.destinationCountry;
-      console.log('[handleSearchNumbers] targetCountry resolved to:', targetCountry);
       if (!targetCountry) {
         toast.error(t('phoneNumberPanel.toasts.selectGigDestination'));
         return;
@@ -345,6 +340,11 @@ export function PhoneNumberPanel() {
     } finally {
       setSearching(false);
     }
+  };
+
+  const handleSearchNumbers = (e: React.FormEvent) => {
+    e.preventDefault();
+    void doSearch(selectedGigIdForNumber);
   };
 
   // Step 1 — open the payment modal (does NOT debit the wallet).
@@ -673,6 +673,7 @@ export function PhoneNumberPanel() {
                   onClick={() => {
                     setSelectedGigIdForNumber(w.gigId);
                     setTelephonyTab('buy');
+                    void doSearch(w.gigId);
                   }}
                   className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-sm transition-all"
                 >
