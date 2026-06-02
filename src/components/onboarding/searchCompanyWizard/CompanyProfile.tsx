@@ -9,6 +9,7 @@ import {
   MapPin,
   Target,
   XCircle,
+  X,
   Globe,
   Mail,
   Phone,
