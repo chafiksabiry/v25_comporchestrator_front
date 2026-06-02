@@ -921,7 +921,7 @@ function AppContent() {
       />
 
       {/* ── Planning edge tab + slide-over panel (portal, always on top) ── */}
-      {createPortal(
+      {!location.pathname.includes('/orchestrator') && createPortal(
         <>
           {/* Edge tab handle — hidden while panel is open */}
           <button
