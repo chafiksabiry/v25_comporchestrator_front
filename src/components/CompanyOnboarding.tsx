@@ -26,6 +26,7 @@ import UploadContacts from "./onboarding/UploadContacts";
 import MatchHarxReps from "./onboarding/MatchHarxReps";
 import RepOnboarding from "./onboarding/RepOnboarding";
 import SessionPlanning from "./onboarding/SessionPlanning";
+import OnboardingProductTour, { hasSeenProductTour, type TourStep } from "./onboarding/OnboardingProductTour";
 import Cookies from "js-cookie";
 import axios from "axios";
 import GigDetails from "./onboarding/GigDetails";
@@ -424,8 +425,47 @@ const CompanyOnboarding = () => {
   void StepGuideModal;
   void handleCloseStepGuide;
 
-  // The orchestrator welcome guide is mounted once at App.tsx — no local copy here.
-  const orchestratorGuideLayer = null;
+  // Product tour — shown only on the very first visit (localStorage flag).
+  const PRODUCT_TOUR_STEPS: TourStep[] = [
+    {
+      target: 'tour-phase-tabs',
+      badge: 'Étape 1 sur 5',
+      title: 'Les 4 phases de l\'onboarding',
+      description: 'Votre parcours est divisé en 4 phases. Vous devez les compléter dans l\'ordre pour débloquer toutes les fonctionnalités HARX.',
+      prefer: 'bottom',
+    },
+    {
+      target: 'tour-phase-header',
+      badge: 'Étape 2 sur 5',
+      title: 'Votre parcours de configuration',
+      description: 'Chaque phase contient des étapes séquentielles. Suivez la séquence pour terminer la configuration et débloquer les fonctionnalités premium.',
+      prefer: 'bottom',
+    },
+    {
+      target: 'tour-step-first',
+      badge: 'Étape 3 sur 5',
+      title: 'Votre première étape',
+      description: 'Remplissez vos informations juridiques, ajoutez vos contacts clés et acceptez les conditions. Environ 5 minutes.',
+      prefer: 'bottom',
+    },
+    {
+      target: 'tour-step-second',
+      badge: 'Étape 4 sur 5',
+      title: 'Vérification KYC / KYB',
+      description: 'Cette étape se déverrouille automatiquement après avoir complété le profil. Il s\'agit d\'une vérification d\'identité légale.',
+      prefer: 'top',
+    },
+    {
+      target: 'tour-phase-nav',
+      badge: 'Étape 5 sur 5',
+      title: 'Naviguer entre les phases',
+      description: 'Utilisez ces boutons pour passer à la phase suivante une fois toutes les étapes complétées.',
+      prefer: 'top',
+    },
+  ];
+  const orchestratorGuideLayer = !hasSeenProductTour() ? (
+    <OnboardingProductTour steps={PRODUCT_TOUR_STEPS} />
+  ) : null;
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
@@ -1772,7 +1812,7 @@ const CompanyOnboarding = () => {
       {stepGuideLayer}
       <div className="space-y-6">
       {/* Progress Overview */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-5 gap-4" data-tour="tour-phase-tabs">
         {phases.map((phase) => {
           const PhaseIcon = phase.icon;
           const isActive = displayedPhase === phase.id;
@@ -1831,7 +1871,7 @@ const CompanyOnboarding = () => {
       <div className="rounded-[2.5rem] bg-white p-6 shadow-2xl shadow-gray-200/50 border border-gray-100 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-harx-50/50 blur-[100px] rounded-full -mr-32 -mt-32" />
 
-        <div className="mb-8 relative z-10">
+        <div className="mb-8 relative z-10" data-tour="tour-phase-header">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-3xl font-black text-gray-900 tracking-tight">
@@ -1860,7 +1900,7 @@ const CompanyOnboarding = () => {
         </div>
 
         <div className="space-y-2">
-          {displayedPhaseData.steps.map((step) => {
+          {displayedPhaseData.steps.map((step, stepIndex) => {
             const StepIcon = getStepIcon(step);
             const isClickable = !!step.component || step.id === 3;
             const isCompleted = completedSteps.includes(step.id);
@@ -1877,10 +1917,12 @@ const CompanyOnboarding = () => {
 
             // A step is accessible if phase is accessible AND (it's completed OR it's the current step)
             const canAccessStep = canAccessPhase && (isCompleted || isCurrentStep);
+            const tourAttr = stepIndex === 0 ? 'tour-step-first' : stepIndex === 1 ? 'tour-step-second' : undefined;
 
             return (
               <div
                 key={step.id}
+                {...(tourAttr ? { 'data-tour': tourAttr } : {})}
                 className={`rounded-3xl border-2 p-4 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
                   ? "opacity-50 grayscale border-gray-100 bg-gray-50/50"
                   : step.disabled
@@ -1967,7 +2009,7 @@ const CompanyOnboarding = () => {
           })}
         </div>
 
-        <div className="mt-10 flex justify-between items-center relative z-10">
+        <div className="mt-10 flex justify-between items-center relative z-10" data-tour="tour-phase-nav">
           <button
             className="px-8 py-4 rounded-2xl border-2 border-gray-100 bg-white text-sm font-black text-gray-600 hover:bg-gray-50 hover:border-gray-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             disabled={displayedPhase === 1}
