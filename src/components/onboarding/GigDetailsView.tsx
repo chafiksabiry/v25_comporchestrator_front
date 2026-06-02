@@ -776,11 +776,6 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                           >
                             {getAgentName(agent)}
                           </p>
-                          {getAgentEmail(agent) && (
-                            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1 font-medium">
-                              <span className="opacity-70">Email:</span> {getAgentEmail(agent)}
-                            </p>
-                          )}
                           <div className="flex items-center gap-2 mt-2 animate-slide-up" style={{ animationDelay: `${(index * 80) + 100}ms` }}>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusColors.bg} ${statusColors.text} ${statusColors.border} hover:scale-105 transition-transform duration-200 cursor-default`}>
                               {agent.status || 'accepted'}
