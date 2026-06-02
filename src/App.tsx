@@ -929,7 +929,7 @@ function AppContent() {
             onClick={() => setShowPlanningPanel(v => !v)}
             aria-label={t('navbar.planning')}
             style={{ top: '50%', transform: 'translateY(-50%)' }}
-            className={`fixed right-0 z-[9990] group relative overflow-hidden rounded-l-2xl bg-gradient-to-b from-violet-600 to-indigo-700 text-white shadow-[0_4px_24px_rgba(139,92,246,0.5)] hover:shadow-[0_8px_40px_rgba(139,92,246,0.7)] transition-all duration-500 ease-in-out w-10 hover:w-32 h-32 ${showPlanningPanel ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+            className={`fixed right-0 z-[9990] group overflow-hidden rounded-l-2xl bg-gradient-to-b from-violet-600 to-indigo-700 text-white shadow-[0_4px_24px_rgba(139,92,246,0.5)] hover:shadow-[0_8px_40px_rgba(139,92,246,0.7)] transition-all duration-500 ease-in-out w-10 hover:w-32 h-32 ${showPlanningPanel ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
             {/* Collapsed content: icon + vertical text — fades out on hover */}
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 transition-opacity duration-300 group-hover:opacity-0">
