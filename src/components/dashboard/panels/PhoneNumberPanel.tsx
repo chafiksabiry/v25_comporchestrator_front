@@ -304,7 +304,7 @@ export function PhoneNumberPanel() {
             data.message
               || t('phoneNumberPanel.toasts.regulatoryBlocked', {
                 defaultValue:
-                  'Ces numéros nécessitent un bundle réglementaire Twilio approuvé. Soumettez vos documents ou choisissez une autre région.'
+                  'Ces numéros nécessitent une validation réglementaire approuvée. Soumettez vos documents ou choisissez une autre région.'
               }),
             { duration: 8000 }
           );

@@ -234,9 +234,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   const isPostPurchase = purchaseStatus === 'success' || purchaseStatus === 'error';
   const displayNumber =
     (isPostPurchase && purchaseResponse?.phoneNumber) || selectedNumber || '';
-  const providerLabel = (
-    (isPostPurchase && purchaseResponse?.provider) || provider || 'twilio'
-  ).toUpperCase();
+  const providerLabel = 'LIGNE TÉLÉPHONIQUE';
 
   const modalNode = (
     <div
