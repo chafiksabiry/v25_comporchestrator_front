@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  ChevronRight,
+  ChevronLeft,
   Coins,
   DollarSign,
   Sparkles,
@@ -929,19 +929,29 @@ function AppContent() {
             onClick={() => setShowPlanningPanel(v => !v)}
             aria-label={t('navbar.planning')}
             style={{ top: '50%', transform: 'translateY(-50%)' }}
-            className={`fixed right-0 z-[9990] flex flex-col items-center gap-1.5 py-4 px-2 bg-gradient-to-b from-violet-600 to-indigo-700 text-white rounded-l-2xl shadow-[0_4px_24px_rgba(139,92,246,0.5)] hover:from-violet-500 hover:to-indigo-600 hover:shadow-[0_4px_32px_rgba(139,92,246,0.7)] hover:-translate-x-0.5 transition-all duration-300 group ${showPlanningPanel ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+            className={`fixed right-0 z-[9990] group overflow-hidden rounded-l-2xl bg-gradient-to-b from-violet-600 to-indigo-700 hover:bg-gradient-to-r text-white shadow-[0_4px_24px_rgba(139,92,246,0.5)] hover:shadow-[0_4px_32px_rgba(139,92,246,0.7)] transition-all duration-300 ${showPlanningPanel ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
-            <CalendarDays size={18} className="shrink-0" />
-            <span
-              className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap"
-              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)' }}
-            >
-              {t('navbar.planning')}
-            </span>
-            <ChevronRight
-              size={14}
-              className={`shrink-0 transition-transform duration-300 ${showPlanningPanel ? 'rotate-0' : 'rotate-180'}`}
-            />
+            {/* Collapsed: vertical pill */}
+            <div className="flex flex-col items-center gap-1.5 py-4 px-2.5 group-hover:hidden">
+              <CalendarDays size={18} className="shrink-0" />
+              <span
+                className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap"
+                style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)' }}
+              >
+                {t('navbar.planning')}
+              </span>
+              <ChevronLeft size={13} className="shrink-0" />
+            </div>
+            {/* Expanded on hover: horizontal card */}
+            <div className="hidden group-hover:flex items-center gap-3 py-4 px-5 whitespace-nowrap">
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/20 shrink-0">
+                <CalendarDays size={16} className="shrink-0" />
+              </div>
+              <span className="text-sm font-black uppercase tracking-widest">
+                {t('navbar.planning')}
+              </span>
+              <ChevronLeft size={15} className="shrink-0 opacity-70" />
+            </div>
           </button>
 
           {/* Backdrop — only when not maximized */}
