@@ -11,6 +11,8 @@ import {
   Lock,
   Phone,
   CalendarDays,
+  Maximize2,
+  Minimize2,
   ChevronDown,
   Building2,
   LogOut,
@@ -115,6 +117,7 @@ function AppContent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showPlanningPanel, setShowPlanningPanel] = useState(false);
+  const [maximizedPlanning, setMaximizedPlanning] = useState(false);
   const [tabStepGuide, setTabStepGuide] = useState<{
     stepId: number;
     phaseId: number;
@@ -941,8 +944,8 @@ function AppContent() {
             />
           </button>
 
-          {/* Backdrop */}
-          {showPlanningPanel && (
+          {/* Backdrop — only when not maximized */}
+          {showPlanningPanel && !maximizedPlanning && (
             <div
               className="fixed inset-0 z-[9991] bg-black/40 backdrop-blur-sm"
               onClick={() => setShowPlanningPanel(false)}
@@ -951,9 +954,9 @@ function AppContent() {
 
           {/* Slide-over panel */}
           <div
-            className={`fixed top-0 right-0 z-[9992] h-full w-full max-w-4xl bg-white shadow-2xl flex flex-col transition-transform duration-400 ease-in-out ${
+            className={`fixed top-0 right-0 z-[9992] h-full bg-white shadow-2xl flex flex-col transition-all duration-300 ease-in-out ${
               showPlanningPanel ? 'translate-x-0' : 'translate-x-full'
-            }`}
+            } ${maximizedPlanning ? 'w-full' : 'w-full max-w-4xl'}`}
           >
             {/* Panel header */}
             <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-violet-600 to-indigo-700 shrink-0">
@@ -961,18 +964,29 @@ function AppContent() {
                 <CalendarDays size={20} />
                 <span className="text-base font-black uppercase tracking-wide">{t('navbar.planning')}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowPlanningPanel(false)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-              >
-                <X size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Maximize / Minimize */}
+                <button
+                  type="button"
+                  onClick={() => setMaximizedPlanning(v => !v)}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                  title={maximizedPlanning ? 'Réduire' : 'Plein écran'}
+                >
+                  {maximizedPlanning ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowPlanningPanel(false); setMaximizedPlanning(false); }}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Panel body — scrollable */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
-              {showPlanningPanel && <SessionPlanning />}
+              {showPlanningPanel && <SessionPlanning hideHeader />}
             </div>
           </div>
         </>,
