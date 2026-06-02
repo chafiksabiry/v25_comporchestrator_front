@@ -1389,6 +1389,8 @@
       "mapNotAvailable": "Map not available",
       "digitalPresence": "Digital Presence",
       "editLogo": "Edit Logo",
+      "editProfile": "Edit",
+      "doneEditing": "Done",
       "uploadTab": "Upload",
       "urlTab": "URL",
       "logoUrl": "Logo URL",

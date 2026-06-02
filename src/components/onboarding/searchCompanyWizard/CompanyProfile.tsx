@@ -22,6 +22,8 @@ import {
   ArrowRight,
   Upload,
   Trash2,
+  Pencil,
+  Lock,
 } from "lucide-react";
 import { extractApiError, publishCompanyData } from "./api/companyApi";
 import type { CompanyProfileData } from "./api/openai";
@@ -88,7 +90,7 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
   };
 
   const [profile, setProfile] = useState(defaultProfile);
-  const [editMode, setEditMode] = useState(false);
+  const [editMode, setEditMode] = useState(true);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState("");
   const [logoUrl, setLogoUrl] = useState(profile.logo || "");
@@ -757,6 +759,31 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
             <div className="absolute inset-0 opacity-20" style={{ background: "linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.3) 25%, transparent 30%)", animation: "shine 8s infinite linear" }} />
             <div className="absolute inset-0 opacity-10" style={{ background: "linear-gradient(90deg, transparent 45%, rgba(255,255,255,0.4) 50%, transparent 55%)", animation: "shine 6s infinite linear" }} />
             <style>{`@keyframes shine {0% { transform: translateX(-200%);}100% { transform: translateX(200%);}}`}</style>
+          </div>
+
+          {/* Edit / Done toggle — always visible in the hero */}
+          <div className="absolute top-4 right-4 z-20">
+            <button
+              type="button"
+              onClick={() => setEditMode((v) => !v)}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 ${
+                editMode
+                  ? "bg-white/90 text-emerald-700 ring-1 ring-emerald-300 hover:bg-white"
+                  : "bg-white/90 text-harx-700 ring-1 ring-harx-300 hover:bg-white"
+              }`}
+            >
+              {editMode ? (
+                <>
+                  <Lock size={14} />
+                  {t("searchCompanyWizard.profile.doneEditing", "Terminé")}
+                </>
+              ) : (
+                <>
+                  <Pencil size={14} />
+                  {t("searchCompanyWizard.profile.editProfile", "Modifier")}
+                </>
+              )}
+            </button>
           </div>
 
           <div className="relative h-full flex flex-col justify-end p-12 space-y-6">
