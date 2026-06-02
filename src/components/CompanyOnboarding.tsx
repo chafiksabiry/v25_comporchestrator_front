@@ -326,7 +326,7 @@ const CompanyOnboarding = () => {
     phases.find((p) => p.steps.some((s) => s.id === stepId))?.id ?? 1;
 
   const getFocusedStepId = (): number | null => {
-    if (showGigCreation || showGigDetails) return 3;
+    if (showGigCreation || showGigDetails) return 11;
     if (showTelephonySetup) return 4;
     if (showUploadContacts) return 5;
     if (showKnowledgeBase) return 7;
