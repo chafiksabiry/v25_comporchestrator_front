@@ -195,11 +195,11 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    // Try immediately — may be a no-op if cookie not yet set
-    fetchNavbarBalances();
+    // Delay so the page's own data fetches get priority on first render
+    const initTimer = setTimeout(() => fetchNavbarBalances(), 1200);
 
-    // Also retry when the company-ready event fires (cookie just set by auth flow)
-    const handleCompanyReady = () => fetchNavbarBalances();
+    // Also fetch when the company-ready event fires (cookie just set by auth flow)
+    const handleCompanyReady = () => setTimeout(() => fetchNavbarBalances(), 300);
     window.addEventListener('harx:company-ready', handleCompanyReady);
 
     const handleBalanceUpdateEvent = (e: Event) => {
@@ -228,6 +228,7 @@ function AppContent() {
     window.addEventListener('userProfileUpdated', handleUserProfileUpdated);
 
     return () => {
+      clearTimeout(initTimer);
       window.removeEventListener('harx:company-ready', handleCompanyReady);
       window.removeEventListener('balanceUpdated', handleBalanceUpdateEvent);
       window.removeEventListener('userProfileUpdated', handleUserProfileUpdated);
