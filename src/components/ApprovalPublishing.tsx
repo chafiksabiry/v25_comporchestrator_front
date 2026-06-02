@@ -652,8 +652,11 @@ const ApprovalPublishing = () => {
       );
 
       if (response.ok) {
-        const responseData = await response.json();
-        
+        window.dispatchEvent(
+          new CustomEvent('stepCompleted', {
+            detail: { stepId: 12, phaseId: 4, status: 'completed' },
+          })
+        );
       } else {
         console.warn('⚠️ Failed to complete step 12:', response.status);
       }
