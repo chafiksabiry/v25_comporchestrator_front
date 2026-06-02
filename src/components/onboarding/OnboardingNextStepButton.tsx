@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronRight, Sparkles, CheckCircle2 } from "lucide-react";
+import { ChevronRight, Sparkles, CheckCircle2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export const ONBOARDING_NEXT_STEP_GATE_EVENT = "onboardingNextStepGate";
@@ -18,6 +18,7 @@ export function OnboardingNextStepButton({
 }: Props) {
   const { t } = useTranslation();
   const label = t("companyOnboarding.ui.nextStep");
+  const [alertDismissed, setAlertDismissed] = useState(false);
 
   const content = (
     <div
@@ -28,6 +29,7 @@ export function OnboardingNextStepButton({
       <div className="onboarding-next-step-card pointer-events-auto flex flex-col items-end gap-2">
 
         {/* Success alert banner */}
+        {!alertDismissed && (
         <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 px-4 py-2.5 shadow-lg shadow-emerald-500/15 backdrop-blur-md">
           <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-green-500 shadow-md shadow-emerald-500/30">
             <CheckCircle2 size={14} strokeWidth={2.5} className="text-white" />
@@ -40,7 +42,16 @@ export function OnboardingNextStepButton({
               {t("companyOnboarding.ui.nextStepHint")}
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => setAlertDismissed(true)}
+            aria-label="Fermer"
+            className="ml-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-emerald-400 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
+          >
+            <X size={12} strokeWidth={2.5} />
+          </button>
         </div>
+        )}
 
         {/* Next Step button */}
         <button
