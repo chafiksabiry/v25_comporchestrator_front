@@ -163,28 +163,29 @@ function AppContent() {
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
       try {
         // Company € balance: same source as OperationsDashboard + WalletCompanyPanel
-        const [walletRes, escrowRes, phoneRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/wallet-company/${compId}`),
-          fetch(`${apiBaseUrl}/escrow/wallet/${compId}`).catch(() => null),
+        const [walletRes, minutesRes, phoneRes] = await Promise.all([
+          fetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
+          fetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
           fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
         ]);
 
-        if (walletRes.ok) {
+        // Company € wallet balance
+        if (walletRes?.ok) {
           const walletJson = await walletRes.json();
           if (walletJson.success && walletJson.data) {
             setBalance(Number(walletJson.data.balance) || 0);
           }
         }
 
-        // Minutes still come from the escrow record
-        if (escrowRes?.ok) {
-          const result = await escrowRes.json();
-          if (result.success && result.data) {
-            setMinutes(result.data.minutes || 0);
+        // Minutes — same source as MinutesCompanyPanel
+        if (minutesRes?.ok) {
+          const minutesJson = await minutesRes.json();
+          if (typeof minutesJson?.minutes === 'number') {
+            setMinutes(minutesJson.minutes);
           }
         }
 
-        // Phone line count: use the real /phone-numbers list filtered by company
+        // Phone line count — same source as PhoneNumberPanel
         if (phoneRes?.ok) {
           const phoneData = await phoneRes.json();
           if (Array.isArray(phoneData)) {
