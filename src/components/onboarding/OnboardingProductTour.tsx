@@ -129,7 +129,7 @@ const OnboardingProductTour: React.FC<Props> = ({ tourKey, steps, onDone }) => {
       {/* ── Dim overlay (blocked by spotlight hole) ── */}
       <div
         className="fixed inset-0 z-[9990] pointer-events-none"
-        style={{ background: 'rgba(6,6,20,0.70)', backdropFilter: 'blur(1px)' }}
+        style={{ background: 'rgba(6,6,20,0.28)' }}
       />
       {spotlight && (
         <div
@@ -138,8 +138,8 @@ const OnboardingProductTour: React.FC<Props> = ({ tourKey, steps, onDone }) => {
             top: spotlight.top, left: spotlight.left,
             width: spotlight.width, height: spotlight.height,
             borderRadius: 14,
-            boxShadow: '0 0 0 9999px rgba(6,6,20,0.70)',
-            outline: '2px solid rgba(255,255,255,0.25)',
+            boxShadow: '0 0 0 9999px rgba(6,6,20,0.28)',
+            outline: '2px solid rgba(255,255,255,0.40)',
           }}
         />
       )}
