@@ -477,6 +477,29 @@ function AppContent() {
     };
   }, []);
 
+  // Seed orchestratorStepStatuses from the API on mount so that tabs like
+  // approval-publishing show the "Next Step" button immediately after a refresh.
+  useEffect(() => {
+    const companyId = Cookies.get('companyId');
+    if (!companyId) return;
+    const apiUrl =
+      (import.meta as any).env?.VITE_COMPANY_API_URL ||
+      'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+    fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data?.phases) return;
+        const statuses: Record<number, string> = {};
+        for (const phase of data.phases as Array<{ steps: Array<{ id: number; status: string }> }>) {
+          for (const step of phase.steps) {
+            statuses[step.id] = step.status;
+          }
+        }
+        setOrchestratorStepStatuses(statuses);
+      })
+      .catch(() => {});
+  }, []);
+
   // Returning users with all phases done: never stay on #/orchestrator — go to dashboard.
   useEffect(() => {
     if (!onboardingComplete || isZohoCallback || isZohoAuth) return;
