@@ -143,6 +143,8 @@ export function PhoneNumberPanel() {
   const location = useLocation();
   const [phoneNumbers, setPhoneNumbers] = useState<PurchasedNumber[]>([]);
   const [gigsAndReps, setGigsAndReps] = useState<GigAndReps[]>([]);
+  /** gigId → required team size (from gig.team.size) */
+  const [gigTeamSizes, setGigTeamSizes] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -229,6 +231,31 @@ export function PhoneNumberPanel() {
             );
           }
         }
+      }
+
+      // 3. Fetch raw gigs to get team.size for the coverage warning
+      try {
+        const gigsApiBase =
+          (import.meta as any).env?.VITE_GIGS_API ||
+          'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+        const rawGigsRes = await fetch(`${gigsApiBase}/gigs/company/${companyId}?populate=companyId`);
+        if (rawGigsRes.ok) {
+          const rawGigsJson = await rawGigsRes.json();
+          const rawGigsList: any[] = Array.isArray(rawGigsJson.data)
+            ? rawGigsJson.data
+            : Array.isArray(rawGigsJson)
+            ? rawGigsJson
+            : [];
+          const sizes: Record<string, number> = {};
+          rawGigsList.forEach((g: any) => {
+            const id = g._id || g.id;
+            const size = Number(g.team?.size || 0);
+            if (id && size > 0) sizes[String(id)] = size;
+          });
+          setGigTeamSizes(sizes);
+        }
+      } catch {
+        // non-critical — warning banner simply won't appear
       }
 
     } catch (err) {
@@ -603,6 +630,56 @@ export function PhoneNumberPanel() {
       <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-400/15 blur-3xl animate-blob -z-10" />
       <div className="pointer-events-none absolute top-1/3 -right-24 h-72 w-72 rounded-full bg-cyan-400/15 blur-3xl animate-blob animation-delay-2000 -z-10" />
       <div className="pointer-events-none absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-fuchsia-400/10 blur-3xl animate-blob animation-delay-4000 -z-10" />
+
+      {/* Team-size coverage warnings — one row per gig that lacks enough lines */}
+      {!loading && (() => {
+        const warnings = gigsAndReps
+          .map(g => {
+            const required = gigTeamSizes[g.gigId] ?? 0;
+            const assigned = phoneNumbers.filter(n => n.gigId === g.gigId).length;
+            const missing = required - assigned;
+            return missing > 0 ? { ...g, required, assigned, missing } : null;
+          })
+          .filter(Boolean) as Array<GigAndReps & { required: number; assigned: number; missing: number }>;
+
+        if (warnings.length === 0) return null;
+
+        return (
+          <div className="space-y-2">
+            {warnings.map(w => (
+              <div
+                key={w.gigId}
+                className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3.5 shadow-sm"
+              >
+                <AlertTriangle size={18} className="shrink-0 text-amber-500 mt-0.5 sm:mt-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-amber-900 leading-snug">
+                    <span className="font-black">{w.title}</span>
+                    {' — '}
+                    {w.assigned === 0
+                      ? `Aucun numéro de téléphone assigné. Ce gig nécessite ${w.required} ligne${w.required > 1 ? 's' : ''} (taille d'équipe : ${w.required}).`
+                      : `${w.assigned} ligne${w.assigned > 1 ? 's' : ''} assignée${w.assigned > 1 ? 's' : ''} sur ${w.required} requise${w.required > 1 ? 's' : ''} — il manque ${w.missing} numéro${w.missing > 1 ? 's' : ''}.`}
+                  </p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Chaque gig doit disposer d'autant de lignes que la taille de son équipe ({w.required} REP{w.required > 1 ? 's' : ''}).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedGigIdForNumber(w.gigId);
+                    setTelephonyTab('buy');
+                  }}
+                  className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-sm transition-all"
+                >
+                  <Sparkles size={12} />
+                  Acheter {w.missing} ligne{w.missing > 1 ? 's' : ''}
+                </button>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Header section */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 min-w-0">
