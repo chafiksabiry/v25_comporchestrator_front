@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -8,6 +8,10 @@ import {
   STEP_FIELD_ORDER,
   STEP_FIELD_TO_ROUTE,
 } from '../../../services/gigSetupSync';
+
+/** Routes where the step-completion toast should NOT appear
+ *  (e.g. the subscription page already provides its own confirmation UI). */
+const SUPPRESSED_PATHS = new Set(['/dashboard/subscription', '/orchestrator']);
 
 interface StepCompleteDetail {
   gigId?: string;
@@ -22,11 +26,15 @@ interface StepCompleteDetail {
 const StepCompletionToaster: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handler = (evt: Event) => {
       const detail = (evt as CustomEvent<StepCompleteDetail>).detail;
       if (!detail || !detail.field) return;
+
+      // Don't show the toast on pages that have their own completion UI.
+      if (SUPPRESSED_PATHS.has(location.pathname)) return;
 
       const idx = STEP_FIELD_ORDER.indexOf(detail.field);
       const isLast = idx === STEP_FIELD_ORDER.length - 1;
@@ -99,7 +107,7 @@ const StepCompletionToaster: React.FC = () => {
 
     window.addEventListener('harx:gig-step-complete', handler);
     return () => window.removeEventListener('harx:gig-step-complete', handler);
-  }, [t, navigate]);
+  }, [t, navigate, location.pathname]);
 
   return null;
 };
