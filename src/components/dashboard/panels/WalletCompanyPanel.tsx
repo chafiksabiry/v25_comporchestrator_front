@@ -668,14 +668,18 @@ export function WalletCompanyPanel() {
                     return (
                       <tr key={movement.id} className="hover:bg-gray-50 transition-colors">
                         <td className="py-4 px-4">
-                          <span className="inline-flex items-center gap-2 font-bold text-slate-800 text-[11px] uppercase tracking-wider">
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/15 text-indigo-600">
+                          <span className="inline-flex items-center gap-1.5 text-[11px]">
+                            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/15 text-indigo-600">
                               <Phone size={10} />
                             </span>
-                            <span className="block max-w-[180px] truncate" title={call.leadObj ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}` : call.lead}>
+                            <span className="font-bold text-slate-800 uppercase tracking-wider truncate max-w-[90px]" title={agentName || ''}>
+                              {agentName || '—'}
+                            </span>
+                            <span className="text-gray-400 shrink-0">→</span>
+                            <span className="text-gray-500 truncate max-w-[90px]" title={call.leadObj ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}` : call.lead || ''}>
                               {call.leadObj
                                 ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}`
-                                : call.lead || 'Inconnu'}
+                                : call.lead || '—'}
                             </span>
                           </span>
                         </td>
