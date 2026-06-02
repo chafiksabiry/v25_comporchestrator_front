@@ -16,9 +16,9 @@
 export const SETUP_STEP_FIELDS = [
   'telephony',
   'uploadContacts',
-  'callScript',
   'knowledgeBase',
   'repOnboarding',
+  'callScript',
   'sessionPlanning',
   'gigActivation',
 ] as const;
@@ -32,9 +32,9 @@ export type SetupSteps = Record<SetupStepField, boolean>;
 export const STEP_ID_TO_FIELD: Record<number, SetupStepField> = {
   4: 'telephony',
   5: 'uploadContacts',
-  6: 'callScript',
-  8: 'knowledgeBase',
-  9: 'repOnboarding',
+  7: 'knowledgeBase',
+  8: 'repOnboarding',
+  9: 'callScript',
   10: 'sessionPlanning',
   12: 'gigActivation',
 };
@@ -45,9 +45,9 @@ export const STEP_ID_TO_FIELD: Record<number, SetupStepField> = {
 export const STEP_FIELD_ORDER: SetupStepField[] = [
   'telephony',
   'uploadContacts',
-  'callScript',
   'knowledgeBase',
   'repOnboarding',
+  'callScript',
   'sessionPlanning',
   'gigActivation',
 ];
