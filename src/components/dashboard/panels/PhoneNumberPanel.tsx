@@ -192,7 +192,11 @@ export function PhoneNumberPanel() {
   // number must be paid via card / PayPal.
   const selectedGig = gigsAndReps.find(g => g.gigId === selectedGigIdForNumber);
   const selectedGigRepsCount = selectedGig?.enrolledReps?.length ?? 0;
-  const minRequiredForSelectedGig = Math.max(selectedGigRepsCount, 1);
+  // Prefer team.size (the actual number of lines a gig needs) over enrolled reps.
+  const minRequiredForSelectedGig = Math.max(
+    gigTeamSizes[selectedGigIdForNumber] || selectedGigRepsCount,
+    1
+  );
   const numbersForSelectedGig = selectedGigIdForNumber
     ? phoneNumbers.filter(n => n.gigId === selectedGigIdForNumber)
     : [];
