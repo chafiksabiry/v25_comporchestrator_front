@@ -57,7 +57,7 @@
       "unavailable": "Impossible d'accéder au service de téléphonie.",
       "selectGigDestination": "Veuillez sélectionner un Gig avec un pays de destination.",
       "noNumbersFound": "Aucun numéro disponible n'a été trouvé.",
-      "regulatoryBlocked": "Ces numéros nécessitent un bundle réglementaire Twilio approuvé. Soumettez vos documents dans la console Twilio ou choisissez une autre région.",
+      "regulatoryBlocked": "Ces numéros nécessitent une validation réglementaire approuvée. Soumettez vos documents ou choisissez une autre région.",
       "numbersFound": "{{count}} numéros disponibles trouvés !",
       "unknownFormat": "Format de données inconnu reçu de la recherche.",
       "searchError": "Erreur technique lors de la recherche.",
@@ -865,7 +865,7 @@
     "purchase": "Acheter",
     "empty": {
       "title": "Aucun numéro pour le moment",
-      "subtitle": "Recherchez les numéros Twilio disponibles dans la zone de destination pour activer ce gig.",
+      "subtitle": "Recherchez les numéros disponibles dans la zone de destination pour activer ce gig.",
       "scan": "Rechercher des numéros disponibles",
       "scanning": "Recherche des numéros disponibles...",
       "noZone": "Sélectionnez d'abord une zone de destination"
@@ -873,8 +873,8 @@
     "purchaseModal": {
       "confirm": {
         "title": "Activer ce numéro",
-        "subtitle": "Une fois confirmé, ce numéro Twilio est affecté à votre gig et la facturation démarre sur votre compte.",
-        "trialSubtitle": "Ce premier numéro Twilio est OFFERT à votre entreprise — inclus dans un essai gratuit de {{days}} jours, aucun paiement requis.",
+        "subtitle": "Une fois confirmé, ce numéro est affecté à votre gig et la facturation démarre sur votre compte.",
+        "trialSubtitle": "Ce premier numéro est OFFERT à votre entreprise — inclus dans un essai gratuit de {{days}} jours, aucun paiement requis.",
         "phoneLabel": "Numéro de téléphone",
         "providerLabel": "Opérateur",
         "approved": "Votre entreprise est autorisée à acheter ce numéro.",
@@ -888,13 +888,13 @@
         "tag": "Offre de bienvenue",
         "title": "Essai gratuit de {{days}} jours",
         "description": "Votre première ligne téléphonique est offerte pendant {{days}} jours, sans frais. Profitez-en pour tester vos appels de bout en bout avant d'ajouter un moyen de paiement.",
-        "noPayment": "Aucun Stripe / PayPal requis pour cette activation"
+        "noPayment": "Aucun paiement requis pour cette activation"
       },
       "payment": {
         "amountLabel": "Montant dû",
         "note": "Frais d'activation unique, prélevé au moment de l'activation de la ligne.",
         "stripe": "Payer par carte",
-        "card": "Stripe Checkout",
+        "card": "Paiement par carte",
         "wallet": "Portefeuille PayPal",
         "popupOpen": "Finalisez le paiement dans la fenêtre qui vient de s'ouvrir. La ligne sera provisionnée dès la confirmation.",
         "loadConfigError": "Impossible de charger les moyens de paiement. Rafraîchissez la page et réessayez.",
@@ -904,7 +904,7 @@
       },
       "purchasing": {
         "title": "Activation du numéro...",
-        "subtitle": "Nous provisionnons votre infrastructure Twilio. Cela prend quelques secondes."
+        "subtitle": "Nous configurons votre ligne téléphonique. Cela prend quelques secondes."
       },
       "success": {
         "title": "Numéro activé",
@@ -937,7 +937,7 @@
           },
           "2": {
             "title": "Vérification KYC / KYB",
-            "description": "Vérification d'identité via Stripe Identity ou Sumsub"
+            "description": "Vérification d'identité sécurisée"
           }
         }
       },

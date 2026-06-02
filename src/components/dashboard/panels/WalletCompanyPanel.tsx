@@ -634,7 +634,13 @@ export function WalletCompanyPanel() {
                           </span>
                         </td>
                         <td className="py-4 px-4 text-slate-700 max-w-md truncate" title={entry.description}>
-                          {entry.description || '—'}
+                          {entry.description
+                            ? entry.description
+                                .replace(/\bvia stripe\b/gi, 'par carte bancaire')
+                                .replace(/\bstripe\b/gi, 'carte bancaire')
+                                .replace(/\btwilio\b/gi, '')
+                                .trim()
+                            : '—'}
                         </td>
                         <td className="py-4 px-4 text-gray-500">
                           {new Date(entry.createdAt).toLocaleString('fr-FR')}

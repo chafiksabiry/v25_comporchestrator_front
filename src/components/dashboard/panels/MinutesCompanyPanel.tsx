@@ -510,9 +510,9 @@ export function MinutesCompanyPanel() {
         )}
       </div>
 
-      {/* Buy Minutes Modal */}
-      {showBuyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      {/* Buy Minutes Modal — rendered via portal so the overlay covers the full viewport */}
+      {showBuyModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md bg-white rounded-[2rem] border border-gray-100 p-6 shadow-2xl space-y-6 relative animate-fade-in-up">
             <button
               onClick={() => setShowBuyModal(false)}
@@ -612,7 +612,8 @@ export function MinutesCompanyPanel() {
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Call Details Modal (using createPortal for perfect overlay rendering) */}
