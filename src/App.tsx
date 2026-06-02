@@ -117,6 +117,12 @@ function AppContent() {
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showPlanningPanel, setShowPlanningPanel] = useState(false);
   const [maximizedPlanning, setMaximizedPlanning] = useState(false);
+  useEffect(() => {
+    if (location.pathname.includes('/orchestrator') || window.location.hash.includes('orchestrator')) {
+      setShowPlanningPanel(false);
+      setMaximizedPlanning(false);
+    }
+  }, [location.pathname]);
   const [tabStepGuide, setTabStepGuide] = useState<{
     stepId: number;
     phaseId: number;
@@ -931,7 +937,7 @@ function AppContent() {
       />
 
       {/* ── Planning edge tab + slide-over panel (portal, always on top) ── */}
-      {!location.pathname.includes('/orchestrator') && createPortal(
+      {!location.pathname.includes('/orchestrator') && !window.location.hash.includes('orchestrator') && createPortal(
         <>
           {/* Edge tab handle — hidden while panel is open */}
           <button

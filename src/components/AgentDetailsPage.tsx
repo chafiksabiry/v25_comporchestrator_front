@@ -551,24 +551,6 @@ export default function AgentDetailsPage({ agentId: propAgentId, onBack, gigId: 
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6">Contact Information</h3>
                             <div className="space-y-5">
-                                <div className="flex items-start">
-                                    <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 mr-4 shrink-0">
-                                        <Mail className="w-5 h-5" />
-                                    </div>
-                                    <div className="overflow-hidden">
-                                        <div className="text-xs text-slate-500 mb-0.5">Email Address</div>
-                                        <div className="text-sm font-semibold text-slate-900 truncate" title={info.email}>{info.email}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-start">
-                                    <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 mr-4 shrink-0">
-                                        <Phone className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-slate-500 mb-0.5">Phone Number</div>
-                                        <div className="text-sm font-semibold text-slate-900">{info.phone}</div>
-                                    </div>
-                                </div>
                             </div>
 
                             <div className="mt-6 pt-6 border-t border-gray-100 flex gap-3">
