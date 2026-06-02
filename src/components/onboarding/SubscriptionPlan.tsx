@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { CreditCard, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import EmbeddedSubscriptionFlow from '../stripe/EmbeddedSubscriptionFlow';
@@ -107,7 +107,7 @@ const SubscriptionPlan = () => {
   return (
     <div className="min-h-full bg-transparent p-2">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6 sm:pr-52">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
           <div>
             <div className="flex items-center gap-2 mb-2 text-harx-500">
               <Sparkles className="h-4 w-4" />
@@ -119,19 +119,6 @@ const SubscriptionPlan = () => {
             </p>
           </div>
 
-          <div className="bg-white/50 backdrop-blur-sm p-3 rounded-2xl border border-gray-100 flex items-center gap-4 shadow-sm">
-            <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-              <CreditCard size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">
-                Status
-              </p>
-              <p className="text-sm font-black text-gray-800 tracking-tight">
-                {isStepCompleted ? `Plan Active${activePlanName ? ` — ${activePlanName}` : ''}` : 'Action Required'}
-              </p>
-            </div>
-          </div>
         </div>
 
         {activePlanName && (
