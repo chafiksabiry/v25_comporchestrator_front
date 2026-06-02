@@ -1993,9 +1993,17 @@ const CompanyOnboarding = () => {
                   : t('companyOnboarding.ui.lockedDesc')}
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              {/* "View Guide" CTA hidden — guide is now opened automatically once
-                  per session via OrchestratorGuideModal on first login. */}
+            <div className="flex items-center gap-3">
+              {/* Re-launch the guided tour for this phase */}
+              <button
+                type="button"
+                onClick={() => setTourPhase(displayedPhase)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-dashed border-harx-300 text-harx-500 hover:bg-harx-50 hover:border-harx-400 transition-all text-xs font-bold"
+                title="Revoir le guide de cette phase"
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                Guide
+              </button>
               <div className={`px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${
                 isPhaseCompleted(displayedPhase)
                   ? "bg-green-100 text-green-600"
