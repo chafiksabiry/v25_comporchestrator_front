@@ -2591,15 +2591,20 @@ const ApprovalPublishing = () => {
       return g && !isGigSetupComplete(g);
     });
 
+  const hasInsufficientBalance = balance !== null && balance <= 0;
+
   const renderActivateButton = (gig: Gig) => {
-    const ready = isGigSetupComplete(gig);
+    const setupComplete = isGigSetupComplete(gig);
+    const ready = setupComplete && !hasInsufficientBalance;
     const missingCount = getMissingSetupSteps(gig).length;
     return (
       <button
         type="button"
         disabled={!ready}
         title={
-          !ready
+          hasInsufficientBalance
+            ? 'Solde insuffisant — alimentez votre portefeuille pour activer ce gig'
+            : !setupComplete
             ? t('gigActivation.activateDisabledHint', { count: missingCount })
             : undefined
         }
@@ -2638,13 +2643,15 @@ const ApprovalPublishing = () => {
           <div className="flex items-center gap-3">
             <button
               className={`px-6 py-2.5 font-black rounded-2xl shadow-xl transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2 ${
-                selectedGigs.length > 0 && !selectedHasIncompleteSetup
+                selectedGigs.length > 0 && !selectedHasIncompleteSetup && !hasInsufficientBalance
                   ? 'bg-white text-emerald-600 hover:bg-emerald-50 border border-white'
                   : 'bg-white/10 text-white/50 cursor-not-allowed border border-white/10 backdrop-blur-sm'
               }`}
-              disabled={selectedGigs.length === 0 || selectedHasIncompleteSetup}
+              disabled={selectedGigs.length === 0 || selectedHasIncompleteSetup || hasInsufficientBalance}
               title={
-                selectedHasIncompleteSetup
+                hasInsufficientBalance
+                  ? 'Solde insuffisant — alimentez votre portefeuille pour activer vos gigs'
+                  : selectedHasIncompleteSetup
                   ? t('gigActivation.bulkActivateDisabled')
                   : undefined
               }
