@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -135,6 +135,17 @@ function AppContent() {
   const [minutes, setMinutes] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isProfileDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target as Node)) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isProfileDropdownOpen]);
   const [showWalletTopUp, setShowWalletTopUp] = useState(false);
 
   const navigate = useNavigate();
@@ -809,7 +820,7 @@ function AppContent() {
 
               <div className="flex items-center gap-2 ml-auto">
                 <LanguageSwitcher />
-                <div className="relative">
+                <div className="relative" ref={profileDropdownRef}>
                   <div
                     onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                     className="flex items-center gap-2 bg-white/5 p-1 pr-3 rounded-xl border border-white/10 shadow-sm cursor-pointer hover:bg-white/10 transition-colors"
