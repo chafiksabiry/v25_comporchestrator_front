@@ -1020,7 +1020,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                             {matchScore}% {t('matchingDashboard.matching.match')}
                                                                         </div>
                                                                     </div>
-                                                                    <p className="text-sm text-gray-500 truncate">{match.agentInfo?.email}</p>
                                                                     <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
                                                                         {(match.agentInfo?.timezone?.countryName || match.agentInfo?.location) && (
                                                                             <span>📍 {match.agentInfo?.timezone?.countryName || match.agentInfo?.location}</span>
@@ -1390,7 +1389,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex-1">
                                                                 <h3 className="text-lg font-bold text-gray-900">{agent.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
-                                                                <p className="text-slate-500">{agent.personalInfo?.email || t('matchingDashboard.invited.noEmail')}</p>
                                                                 <div className="mt-2 space-y-1">
                                                                     <p className="text-sm text-yellow-600 font-medium bg-yellow-100/50 inline-block px-2 py-0.5 rounded">
                                                                         {t('matchingDashboard.invited.waitingResponse')}
@@ -1467,7 +1465,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
                                                             <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
-                                                            <p className="text-slate-500">{agent.agentId?.personalInfo?.email || t('matchingDashboard.invited.noEmail')}</p>
                                                             <div className="mt-2 space-y-1">
                                                                 <p className="text-sm text-blue-600 font-medium">
                                                                     <span className="font-medium">{t('matchingDashboard.enrollment.status')}</span> {agent.enrollmentStatus || 'Pending'}
@@ -1596,8 +1593,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     ✅ {t('matchingDashboard.active.active')}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-slate-500 mb-2">{agent.agentId?.personalInfo?.email || t('matchingDashboard.invited.noEmail')}</p>
-
                                                             <div className="mt-3 space-y-2">
                                                                 {(agent.gigId?.title || agent.gig?.title) && (
                                                                     <div className="mb-2">

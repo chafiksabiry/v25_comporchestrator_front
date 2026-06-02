@@ -189,23 +189,6 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                                         </div>
                                     </div>
 
-                                    {/* Email */}
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</label>
-                                        <div className="flex items-center gap-2 py-1.5 px-3 bg-slate-50 rounded-xl border border-gray-100">
-                                            <Mail className="w-3.5 h-3.5 text-slate-400" />
-                                            <span className="text-sm font-bold text-slate-900 truncate">{profile.personalInfo?.email || 'N/A'}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Phone */}
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone</label>
-                                        <div className="flex items-center gap-2 py-1.5 px-3 bg-slate-50 rounded-xl border border-gray-100">
-                                            <Phone className="w-3.5 h-3.5 text-slate-400" />
-                                            <span className="text-sm font-bold text-slate-900">{profile.personalInfo?.phone || 'N/A'}</span>
-                                        </div>
-                                    </div>
                                 </div>
 
                                 {/* Stats */}
