@@ -352,7 +352,8 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
 
       {/* Header Area - Glassmorphic Branded Card */}
       <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-100 p-6 sm:p-8 shadow-md shadow-slate-100/50 hover-lift z-10">
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 font-black">
+        {/* pr-52 reserves space so the button doesn't overlap the fixed portal button at top-right */}
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 font-black sm:pr-52">
           <div className="space-y-1.5">
             <h1 className="text-3xl font-black text-slate-900 leading-tight uppercase tracking-tight bg-clip-text bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950">
               {t('gigDetails.title')}
