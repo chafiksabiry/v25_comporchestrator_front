@@ -1121,9 +1121,6 @@ export function PhoneNumberPanel() {
                 </span>
               </div>
               <h2 className="relative z-10 text-xl font-black tracking-tight">{t('phoneNumberPanel.checkout.heading')}</h2>
-              <p className="relative z-10 text-xs text-white/80 mt-1">
-                {t('phoneNumberPanel.checkout.intro')}
-              </p>
             </div>
 
             {/* Body */}
