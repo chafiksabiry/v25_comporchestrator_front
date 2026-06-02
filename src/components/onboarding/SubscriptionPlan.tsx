@@ -107,7 +107,7 @@ const SubscriptionPlan = () => {
   return (
     <div className="min-h-full bg-transparent p-2">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6 sm:pr-52">
           <div>
             <div className="flex items-center gap-2 mb-2 text-harx-500">
               <Sparkles className="h-4 w-4" />
