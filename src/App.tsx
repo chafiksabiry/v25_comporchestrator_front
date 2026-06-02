@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronRight,
@@ -29,6 +30,7 @@ import ApprovalPublishing from './components/ApprovalPublishing';
 import Optimization from './components/Optimization';
 import CompanyOnboarding from './components/CompanyOnboarding';
 import ZohoCallback from './components/onboarding/ZohoCallback';
+import SessionPlanning from './components/onboarding/SessionPlanning';
 import ZohoAuth from './components/onboarding/ZohoAuth';
 import KnowledgeBase from './components/KnowledgeBase';
 import ScriptGenerator from './components/ScriptGenerator';
@@ -112,6 +114,7 @@ function AppContent() {
   const [logoError, setLogoError] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
+  const [showPlanningPanel, setShowPlanningPanel] = useState(false);
   const [tabStepGuide, setTabStepGuide] = useState<{
     stepId: number;
     phaseId: number;
@@ -759,21 +762,6 @@ function AppContent() {
                   </div>
                 )}
 
-                {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
-                  <div
-                    onClick={() => { setActiveProject('dashboard'); navigate('/dashboard/scheduler'); }}
-                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-br from-violet-500/15 via-violet-500/5 to-transparent border border-violet-500/25 text-xs font-bold text-violet-100/80 shadow-[0_0_18px_-6px_rgba(139,92,246,0.4)] hover:border-violet-400/50 hover:from-violet-500/25 hover:text-white hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group backdrop-blur-sm shrink-0"
-                  >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/20 border border-violet-400/30 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
-                      <CalendarDays size={13} className="text-violet-400 group-hover:text-violet-300" />
-                    </div>
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-violet-400/70">{t('navbar.planning')}</span>
-                      <span className="text-sm font-black text-white tabular-nums">{t('navbar.planningLabel')}</span>
-                    </div>
-                  </div>
-                )}
-
                 {activeProject !== 'comporchestrator' && (
                   <>
                     {/* Escrow/Séquestre Widget (Telephony Lines) */}
@@ -928,6 +916,68 @@ function AppContent() {
         companyId={Cookies.get('companyId')}
         onSuccess={refreshWalletBalance}
       />
+
+      {/* ── Planning edge tab + slide-over panel (portal, always on top) ── */}
+      {createPortal(
+        <>
+          {/* Edge tab handle — always visible on right side */}
+          <button
+            type="button"
+            onClick={() => setShowPlanningPanel(v => !v)}
+            aria-label={t('navbar.planning')}
+            style={{ top: '50%', transform: 'translateY(-50%)' }}
+            className="fixed right-0 z-[9990] flex flex-col items-center gap-1.5 py-4 px-2 bg-gradient-to-b from-violet-600 to-indigo-700 text-white rounded-l-2xl shadow-[0_4px_24px_rgba(139,92,246,0.5)] hover:from-violet-500 hover:to-indigo-600 hover:shadow-[0_4px_32px_rgba(139,92,246,0.7)] hover:-translate-x-0.5 transition-all duration-300 group"
+          >
+            <CalendarDays size={18} className="shrink-0" />
+            <span
+              className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap"
+              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)' }}
+            >
+              {t('navbar.planning')}
+            </span>
+            <ChevronRight
+              size={14}
+              className={`shrink-0 transition-transform duration-300 ${showPlanningPanel ? 'rotate-0' : 'rotate-180'}`}
+            />
+          </button>
+
+          {/* Backdrop */}
+          {showPlanningPanel && (
+            <div
+              className="fixed inset-0 z-[9991] bg-black/40 backdrop-blur-sm"
+              onClick={() => setShowPlanningPanel(false)}
+            />
+          )}
+
+          {/* Slide-over panel */}
+          <div
+            className={`fixed top-0 right-0 z-[9992] h-full w-full max-w-4xl bg-white shadow-2xl flex flex-col transition-transform duration-400 ease-in-out ${
+              showPlanningPanel ? 'translate-x-0' : 'translate-x-full'
+            }`}
+          >
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-violet-600 to-indigo-700 shrink-0">
+              <div className="flex items-center gap-3 text-white">
+                <CalendarDays size={20} />
+                <span className="text-base font-black uppercase tracking-wide">{t('navbar.planning')}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPlanningPanel(false)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Panel body — scrollable */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              {showPlanningPanel && <SessionPlanning />}
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
 
     </StripeContainer>
   );
