@@ -1022,7 +1022,7 @@
       "phaseCompleted": "All steps in this phase are completed. You can proceed to the next phase.",
       "backToOnboarding": "Back to onboarding",
       "nextStep": "Next step",
-      "nextStepHint": "Next step · Back to onboarding",
+      "nextStepHint": "Step complete! Move to the next one.",
       "unableToStart": "Unable to start this step because previous phases are not fully completed. \n\nPlease try the 'Reset Onboarding' button at the bottom of the page to fix potential data inconsistencies."
     },
     "stepGuide": {
