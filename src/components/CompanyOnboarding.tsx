@@ -425,46 +425,156 @@ const CompanyOnboarding = () => {
   void StepGuideModal;
   void handleCloseStepGuide;
 
-  // Product tour — shown only on the very first visit (localStorage flag).
-  const PRODUCT_TOUR_STEPS: TourStep[] = [
-    {
-      target: 'tour-phase-tabs',
-      badge: 'Étape 1 sur 5',
-      title: 'Les 4 phases de l\'onboarding',
-      description: 'Votre parcours est divisé en 4 phases. Vous devez les compléter dans l\'ordre pour débloquer toutes les fonctionnalités HARX.',
-      prefer: 'bottom',
-    },
-    {
-      target: 'tour-phase-header',
-      badge: 'Étape 2 sur 5',
-      title: 'Votre parcours de configuration',
-      description: 'Chaque phase contient des étapes séquentielles. Suivez la séquence pour terminer la configuration et débloquer les fonctionnalités premium.',
-      prefer: 'bottom',
-    },
-    {
-      target: 'tour-step-first',
-      badge: 'Étape 3 sur 5',
-      title: 'Votre première étape',
-      description: 'Remplissez vos informations juridiques, ajoutez vos contacts clés et acceptez les conditions. Environ 5 minutes.',
-      prefer: 'bottom',
-    },
-    {
-      target: 'tour-step-second',
-      badge: 'Étape 4 sur 5',
-      title: 'Vérification KYC / KYB',
-      description: 'Cette étape se déverrouille automatiquement après avoir complété le profil. Il s\'agit d\'une vérification d\'identité légale.',
-      prefer: 'top',
-    },
-    {
-      target: 'tour-phase-nav',
-      badge: 'Étape 5 sur 5',
-      title: 'Naviguer entre les phases',
-      description: 'Utilisez ces boutons pour passer à la phase suivante une fois toutes les étapes complétées.',
-      prefer: 'top',
-    },
-  ];
-  const orchestratorGuideLayer = !hasSeenProductTour() ? (
-    <OnboardingProductTour steps={PRODUCT_TOUR_STEPS} />
+  // Per-phase product tour — shown only on the first visit to each phase.
+  const ALL_PHASE_TOURS: Record<number, TourStep[]> = {
+    1: [
+      {
+        target: 'tour-phase-tabs',
+        badge: 'Phase 1 — Étape 1/5',
+        title: 'Les 4 phases de l\'onboarding',
+        description: 'Votre parcours est divisé en 4 phases à compléter dans l\'ordre pour débloquer toutes les fonctionnalités HARX.',
+        prefer: 'bottom',
+      },
+      {
+        target: 'tour-phase-header',
+        badge: 'Phase 1 — Étape 2/5',
+        title: 'Configuration du Compte & Identité',
+        description: 'Commencez par configurer votre profil d\'entreprise et valider votre identité légale. Ces étapes débloquent l\'accès aux phases suivantes.',
+        prefer: 'bottom',
+      },
+      {
+        target: 'tour-step-first',
+        badge: 'Phase 1 — Étape 3/5',
+        title: 'Créer le Profil de l\'Entreprise',
+        description: 'Remplissez vos informations juridiques, contacts clés et acceptez les conditions. Environ 5 minutes.',
+        prefer: 'bottom',
+      },
+      {
+        target: 'tour-step-second',
+        badge: 'Phase 1 — Étape 4/5',
+        title: 'Vérification KYC / KYB',
+        description: 'Cette étape se déverrouille automatiquement après le profil. Il s\'agit d\'une vérification d\'identité légale obligatoire.',
+        prefer: 'top',
+      },
+      {
+        target: 'tour-phase-nav',
+        badge: 'Phase 1 — Étape 5/5',
+        title: 'Passer à la phase suivante',
+        description: 'Une fois les étapes complétées, utilisez ce bouton pour accéder à la Phase 2 : Configuration Opérationnelle.',
+        prefer: 'top',
+      },
+    ],
+    2: [
+      {
+        target: 'tour-phase-header',
+        badge: 'Phase 2 — Étape 1/4',
+        title: 'Configuration Opérationnelle',
+        description: 'Configurez vos gigs, lignes téléphoniques et importez vos contacts. Cette phase prépare votre équipe à passer des appels.',
+        prefer: 'bottom',
+      },
+      {
+        target: 'tour-step-first',
+        badge: 'Phase 2 — Étape 2/4',
+        title: 'Créer vos Gigs',
+        description: 'Un gig définit une mission avec ses prérequis, son équipe et ses objectifs. Commencez par créer au moins un gig multicanal.',
+        prefer: 'bottom',
+      },
+      {
+        target: 'tour-step-second',
+        badge: 'Phase 2 — Étape 3/4',
+        title: 'Configuration Téléphonique',
+        description: 'Achetez des numéros de téléphone et affectez-les à vos gigs. Chaque représentant aura besoin d\'une ligne dédiée.',
+        prefer: 'top',
+      },
+      {
+        target: 'tour-phase-nav',
+        badge: 'Phase 2 — Étape 4/4',
+        title: 'Vers la Phase 3',
+        description: 'Après avoir configuré vos opérations, passez à la Phase 3 pour préparer vos représentants avec les outils nécessaires.',
+        prefer: 'top',
+      },
+    ],
+    3: [
+      {
+        target: 'tour-phase-header',
+        badge: 'Phase 3 — Étape 1/4',
+        title: 'Engagement des REPS',
+        description: 'Équipez vos représentants avec une base de connaissances, une formation e-learning et des scripts d\'appel optimisés.',
+        prefer: 'bottom',
+      },
+      {
+        target: 'tour-step-first',
+        badge: 'Phase 3 — Étape 2/4',
+        title: 'Base de Connaissances',
+        description: 'Alimentez votre base de connaissances avec des documents, FAQ et ressources que vos représentants consulteront pendant les appels.',
+        prefer: 'bottom',
+      },
+      {
+        target: 'tour-step-second',
+        badge: 'Phase 3 — Étape 3/4',
+        title: 'Formation & E-learning',
+        description: 'Créez des parcours de formation pour vos agents. Ils devront compléter ces modules avant de passer leurs premiers appels.',
+        prefer: 'top',
+      },
+      {
+        target: 'tour-phase-nav',
+        badge: 'Phase 3 — Étape 4/4',
+        title: 'Vers l\'Activation',
+        description: 'Vos représentants sont équipés. Passez à la Phase 4 pour activer vos gigs et lancer les opérations.',
+        prefer: 'top',
+      },
+    ],
+    4: [
+      {
+        target: 'tour-phase-header',
+        badge: 'Phase 4 — Étape 1/4',
+        title: 'Activation Finale',
+        description: 'Dernière étape ! Choisissez votre plan d\'abonnement, activez vos gigs et invitez vos représentants à rejoindre la plateforme.',
+        prefer: 'bottom',
+      },
+      {
+        target: 'tour-step-first',
+        badge: 'Phase 4 — Étape 2/4',
+        title: 'Plan d\'Abonnement',
+        description: 'Sélectionnez le plan adapté à la taille de votre équipe. Le plan détermine le nombre de représentants et de gigs actifs.',
+        prefer: 'bottom',
+      },
+      {
+        target: 'tour-step-second',
+        badge: 'Phase 4 — Étape 3/4',
+        title: 'Activation du Gig',
+        description: 'Une fois toutes les étapes précédentes complétées, activez votre gig pour que vos représentants commencent à travailler.',
+        prefer: 'top',
+      },
+      {
+        target: 'tour-phase-nav',
+        badge: 'Phase 4 — Étape 4/4',
+        title: 'Tableau de Bord',
+        description: 'Félicitations ! Après l\'activation, accédez au tableau de bord pour suivre les performances en temps réel.',
+        prefer: 'top',
+      },
+    ],
+  };
+
+  const [tourPhase, setTourPhase] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!hasSeenProductTour(displayedPhase)) {
+      // Small delay so the phase content has rendered before we measure elements
+      const timer = setTimeout(() => setTourPhase(displayedPhase), 400);
+      return () => clearTimeout(timer);
+    } else {
+      setTourPhase(null);
+    }
+  }, [displayedPhase]);
+
+  const orchestratorGuideLayer = tourPhase !== null && ALL_PHASE_TOURS[tourPhase] ? (
+    <OnboardingProductTour
+      key={tourPhase}
+      tourKey={tourPhase}
+      steps={ALL_PHASE_TOURS[tourPhase]}
+      onDone={() => setTourPhase(null)}
+    />
   ) : null;
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup

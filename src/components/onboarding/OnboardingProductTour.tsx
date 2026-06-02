@@ -2,40 +2,42 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, X } from 'lucide-react';
 
-const TOUR_STORAGE_KEY = 'harx_product_tour_v1';
+/* ─── Storage helpers ─────────────────────────────────────────────────────── */
+const BASE_KEY = 'harx_tour_phase_';
 
-export function hasSeenProductTour(): boolean {
-  try { return localStorage.getItem(TOUR_STORAGE_KEY) === 'true'; } catch { return false; }
+export function hasSeenProductTour(phase: number | string = 'v1'): boolean {
+  try { return localStorage.getItem(`${BASE_KEY}${phase}`) === 'true'; } catch { return false; }
 }
-export function markProductTourSeen(): void {
-  try { localStorage.setItem(TOUR_STORAGE_KEY, 'true'); } catch { /* noop */ }
+export function markProductTourSeen(phase: number | string = 'v1'): void {
+  try { localStorage.setItem(`${BASE_KEY}${phase}`, 'true'); } catch { /* noop */ }
 }
 
+/* ─── Types ───────────────────────────────────────────────────────────────── */
 export interface TourStep {
   /** Must match a `data-tour="..."` attribute in the DOM */
   target: string;
   badge: string;
   title: string;
   description: string;
-  /** Preferred side for the popover — auto-corrected when near viewport edges */
-  prefer?: 'top' | 'bottom' | 'left' | 'right';
+  prefer?: 'top' | 'bottom';
 }
 
 interface Props {
+  /** Used as the localStorage key suffix — pass the phase number */
+  tourKey: number | string;
   steps: TourStep[];
   onDone?: () => void;
 }
 
+/* ─── Layout constants ────────────────────────────────────────────────────── */
 const SPOTLIGHT_PAD = 10;
 const POPOVER_W = 340;
 const ARROW_H = 10;
 const EDGE_MARGIN = 16;
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-function clamp(v: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, v));
-}
-
-const OnboardingProductTour: React.FC<Props> = ({ steps, onDone }) => {
+/* ─── Component ───────────────────────────────────────────────────────────── */
+const OnboardingProductTour: React.FC<Props> = ({ tourKey, steps, onDone }) => {
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [visible, setVisible] = useState(true);
@@ -46,54 +48,44 @@ const OnboardingProductTour: React.FC<Props> = ({ steps, onDone }) => {
   const measureTarget = useCallback(() => {
     if (!current) return;
     const el = document.querySelector<HTMLElement>(`[data-tour="${current.target}"]`);
-    if (el) {
-      setRect(el.getBoundingClientRect());
-    } else {
-      setRect(null);
-    }
+    if (el) setRect(el.getBoundingClientRect());
+    else setRect(null);
   }, [current]);
 
   useEffect(() => {
     if (!visible) return;
-    measureTarget();
+    // Small delay so the DOM has settled after phase transition
+    const t = setTimeout(measureTarget, 80);
     window.addEventListener('resize', measureTarget);
     window.addEventListener('scroll', measureTarget, true);
     return () => {
+      clearTimeout(t);
       window.removeEventListener('resize', measureTarget);
       window.removeEventListener('scroll', measureTarget, true);
     };
   }, [visible, measureTarget]);
 
   const close = useCallback(() => {
-    markProductTourSeen();
+    markProductTourSeen(tourKey);
     setVisible(false);
     onDone?.();
-  }, [onDone]);
+  }, [tourKey, onDone]);
 
   const next = useCallback(() => {
-    if (step >= total - 1) {
-      close();
-    } else {
-      setStep(s => s + 1);
-    }
+    if (step >= total - 1) close();
+    else setStep(s => s + 1);
   }, [step, total, close]);
 
   if (!visible || !current) return null;
 
-  /* ── Spotlight geometry ── */
+  /* ── Spotlight ── */
   const spotlight = rect
-    ? {
-        top: rect.top - SPOTLIGHT_PAD,
-        left: rect.left - SPOTLIGHT_PAD,
-        width: rect.width + SPOTLIGHT_PAD * 2,
-        height: rect.height + SPOTLIGHT_PAD * 2,
-      }
+    ? { top: rect.top - SPOTLIGHT_PAD, left: rect.left - SPOTLIGHT_PAD, width: rect.width + SPOTLIGHT_PAD * 2, height: rect.height + SPOTLIGHT_PAD * 2 }
     : null;
 
   /* ── Popover position ── */
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-
   let popoverStyle: React.CSSProperties = {};
   let arrowSide: 'top' | 'bottom' | 'none' = 'none';
   let arrowLeft = 0;
@@ -102,12 +94,8 @@ const OnboardingProductTour: React.FC<Props> = ({ steps, onDone }) => {
     const prefer = current.prefer ?? 'bottom';
     const spBottom = spotlight.top + spotlight.height;
     const spMidX = spotlight.left + spotlight.width / 2;
-
-    const fitsBelow = spBottom + ARROW_H + EDGE_MARGIN < vh - 200;
-    const fitsAbove = spotlight.top - ARROW_H - EDGE_MARGIN > 200;
-
-    let useBelow = prefer === 'bottom' ? fitsBelow || !fitsAbove : !fitsAbove;
-
+    const fitsBelow = spBottom + ARROW_H + EDGE_MARGIN + 220 < vh;
+    const useBelow = prefer === 'bottom' ? fitsBelow : !fitsBelow;
     const left = clamp(spMidX - POPOVER_W / 2, EDGE_MARGIN, vw - POPOVER_W - EDGE_MARGIN);
     arrowLeft = clamp(spMidX - left - 12, 12, POPOVER_W - 36);
 
@@ -119,39 +107,41 @@ const OnboardingProductTour: React.FC<Props> = ({ steps, onDone }) => {
       arrowSide = 'bottom';
     }
   } else {
-    /* No target found — center the card */
-    popoverStyle = {
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: POPOVER_W,
-    };
+    popoverStyle = { top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: POPOVER_W };
   }
 
   const isLast = step === total - 1;
 
+  /* ── Phase-based accent gradient ── */
+  const phaseGradients: Record<string, string> = {
+    '1': 'from-[#ff4d4d] via-[#ec4899] to-[#c026d3]',
+    '2': 'from-blue-600 via-indigo-600 to-violet-700',
+    '3': 'from-emerald-600 via-teal-600 to-cyan-600',
+    '4': 'from-amber-500 via-orange-500 to-[#ff4d4d]',
+  };
+  const gradient = phaseGradients[String(tourKey)] ?? phaseGradients['1'];
+
   return createPortal(
     <>
-      {/* ── Overlay + spotlight cutout ── */}
+      {/* ── Dim overlay (blocked by spotlight hole) ── */}
       <div
         className="fixed inset-0 z-[9990] pointer-events-none"
-        style={{ background: 'rgba(6,6,20,0.72)', backdropFilter: 'blur(1px)' }}
+        style={{ background: 'rgba(6,6,20,0.70)', backdropFilter: 'blur(1px)' }}
       />
       {spotlight && (
         <div
-          className="fixed z-[9991] pointer-events-none rounded-[14px] ring-2 ring-white/30"
+          className="fixed z-[9991] pointer-events-none"
           style={{
-            top: spotlight.top,
-            left: spotlight.left,
-            width: spotlight.width,
-            height: spotlight.height,
-            boxShadow: '0 0 0 9999px rgba(6,6,20,0.72)',
+            top: spotlight.top, left: spotlight.left,
+            width: spotlight.width, height: spotlight.height,
             borderRadius: 14,
+            boxShadow: '0 0 0 9999px rgba(6,6,20,0.70)',
+            outline: '2px solid rgba(255,255,255,0.25)',
           }}
         />
       )}
 
-      {/* ── Skip button (top-right) ── */}
+      {/* ── Global skip button ── */}
       <button
         type="button"
         onClick={close}
@@ -161,37 +151,27 @@ const OnboardingProductTour: React.FC<Props> = ({ steps, onDone }) => {
         Passer le tour
       </button>
 
-      {/* ── Popover card ── */}
-      <div
-        className="fixed z-[9992] select-none"
-        style={popoverStyle}
-      >
-        {/* Arrow — points toward target */}
+      {/* ── Popover ── */}
+      <div className="fixed z-[9992]" style={popoverStyle}>
+        {/* Arrow pointing toward the spotlight */}
         {arrowSide === 'top' && (
-          <div
-            className="absolute -top-[9px]"
-            style={{ left: arrowLeft }}
-          >
+          <div className="absolute -top-[9px]" style={{ left: arrowLeft }}>
             <div className="w-0 h-0 border-x-[9px] border-x-transparent border-b-[9px] border-b-white" />
           </div>
         )}
         {arrowSide === 'bottom' && (
-          <div
-            className="absolute -bottom-[9px]"
-            style={{ left: arrowLeft }}
-          >
+          <div className="absolute -bottom-[9px]" style={{ left: arrowLeft }}>
             <div className="w-0 h-0 border-x-[9px] border-x-transparent border-t-[9px] border-t-white" />
           </div>
         )}
 
-        {/* Card body */}
         <div className="rounded-2xl bg-white shadow-[0_24px_64px_-12px_rgba(0,0,0,0.55)] overflow-hidden">
-          {/* Top accent bar */}
-          <div className="h-1 w-full bg-gradient-to-r from-[#ff4d4d] via-[#ec4899] to-[#c026d3]" />
+          {/* Phase-coloured accent bar */}
+          <div className={`h-1 w-full bg-gradient-to-r ${gradient}`} />
 
           <div className="px-5 pt-4 pb-5">
             {/* Badge */}
-            <span className="inline-block rounded-full bg-gradient-to-r from-[#ff4d4d] to-[#c026d3] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-white mb-3">
+            <span className={`inline-block rounded-full bg-gradient-to-r ${gradient} px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-white mb-3`}>
               {current.badge}
             </span>
 
@@ -214,7 +194,7 @@ const OnboardingProductTour: React.FC<Props> = ({ steps, onDone }) => {
                     key={i}
                     className={`rounded-full transition-all duration-300 ${
                       i === step
-                        ? 'w-5 h-2 bg-gradient-to-r from-[#ff4d4d] to-[#c026d3]'
+                        ? `w-5 h-2 bg-gradient-to-r ${gradient}`
                         : i < step
                         ? 'w-2 h-2 bg-gray-300'
                         : 'w-2 h-2 bg-gray-200'
@@ -223,7 +203,6 @@ const OnboardingProductTour: React.FC<Props> = ({ steps, onDone }) => {
                 ))}
               </div>
 
-              {/* Buttons */}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -235,7 +214,7 @@ const OnboardingProductTour: React.FC<Props> = ({ steps, onDone }) => {
                 <button
                   type="button"
                   onClick={next}
-                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#ff4d4d] to-[#c026d3] px-4 py-1.5 text-xs font-black text-white shadow-md shadow-pink-500/30 hover:shadow-pink-500/50 hover:-translate-y-px transition-all"
+                  className={`flex items-center gap-1.5 rounded-xl bg-gradient-to-r ${gradient} px-4 py-1.5 text-xs font-black text-white shadow-md hover:-translate-y-px transition-all`}
                 >
                   {isLast ? 'Terminer' : 'Suivant'}
                   {!isLast && <ArrowRight size={12} />}
