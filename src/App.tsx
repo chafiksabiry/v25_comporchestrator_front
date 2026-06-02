@@ -923,13 +923,13 @@ function AppContent() {
       {/* ── Planning edge tab + slide-over panel (portal, always on top) ── */}
       {createPortal(
         <>
-          {/* Edge tab handle — always visible on right side */}
+          {/* Edge tab handle — hidden while panel is open */}
           <button
             type="button"
             onClick={() => setShowPlanningPanel(v => !v)}
             aria-label={t('navbar.planning')}
             style={{ top: '50%', transform: 'translateY(-50%)' }}
-            className="fixed right-0 z-[9990] flex flex-col items-center gap-1.5 py-4 px-2 bg-gradient-to-b from-violet-600 to-indigo-700 text-white rounded-l-2xl shadow-[0_4px_24px_rgba(139,92,246,0.5)] hover:from-violet-500 hover:to-indigo-600 hover:shadow-[0_4px_32px_rgba(139,92,246,0.7)] hover:-translate-x-0.5 transition-all duration-300 group"
+            className={`fixed right-0 z-[9990] flex flex-col items-center gap-1.5 py-4 px-2 bg-gradient-to-b from-violet-600 to-indigo-700 text-white rounded-l-2xl shadow-[0_4px_24px_rgba(139,92,246,0.5)] hover:from-violet-500 hover:to-indigo-600 hover:shadow-[0_4px_32px_rgba(139,92,246,0.7)] hover:-translate-x-0.5 transition-all duration-300 group ${showPlanningPanel ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
             <CalendarDays size={18} className="shrink-0" />
             <span
@@ -954,9 +954,13 @@ function AppContent() {
 
           {/* Slide-over panel */}
           <div
-            className={`fixed top-0 right-0 z-[9992] h-full bg-white shadow-2xl flex flex-col transition-all duration-300 ease-in-out ${
+            className={`fixed right-0 z-[9992] bg-white shadow-2xl flex flex-col transition-all duration-300 ease-in-out ${
               showPlanningPanel ? 'translate-x-0' : 'translate-x-full'
-            } ${maximizedPlanning ? 'w-full' : 'w-full max-w-4xl'}`}
+            } ${
+              maximizedPlanning
+                ? `top-16 bottom-0 ${isCollapsed ? 'left-20' : 'left-64'} w-auto`
+                : 'top-0 bottom-0 w-full max-w-4xl'
+            }`}
           >
             {/* Panel header */}
             <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-violet-600 to-indigo-700 shrink-0">
