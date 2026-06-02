@@ -326,7 +326,7 @@ const CompanyOnboarding = () => {
     phases.find((p) => p.steps.some((s) => s.id === stepId))?.id ?? 1;
 
   const getFocusedStepId = (): number | null => {
-    if (showGigCreation || showGigDetails) return 11;
+    if (showGigCreation || showGigDetails) return 3;
     if (showTelephonySetup) return 4;
     if (showUploadContacts) return 5;
     if (showKnowledgeBase) return 7;
@@ -731,6 +731,10 @@ const CompanyOnboarding = () => {
               { status: "completed" }
             );
             completedStepsState = [...completedStepsState, 11];
+            // Patch the in-memory progress so stepStatuses reflects the PUT immediately
+            const phase4 = progress.phases?.find((p: any) => p.id === 4);
+            const step11 = phase4?.steps?.find((s: any) => s.id === 11);
+            if (step11) step11.status = 'completed';
           }
         }
       } catch (subErr) {
@@ -1667,15 +1671,15 @@ const CompanyOnboarding = () => {
         {stepGuideLayer}
         <div className="animate-fade-in relative min-h-[50vh] pb-24">
           {activeComponent}
-          {/* For the Knowledge Base step the button appears when:
-              - at least one doc/video was uploaded (kbHasContent from live event), OR
-              - the step is already marked completed on the server (stepStatuses[7]).
-              This ensures the button is visible immediately after a page load if the
-              step was previously completed, without waiting for the content event.
-              For every other step the server-side "completed" status is required. */}
+          {/* Button visibility rules:
+              - KB: show if kbHasContent (live event) OR step 7 completed on server
+              - GigDetails/GigCreation: show if hasGigs (live state) OR step 3 completed on server
+              - All other steps: show only when server-side status is 'completed' */}
           {(showKnowledgeBase
             ? (kbHasContent || stepStatuses[7] === 'completed')
-            : stepStatuses[getFocusedStepId() ?? -1] === 'completed') && (
+            : (showGigDetails || showGigCreation)
+              ? (hasGigs || stepStatuses[3] === 'completed')
+              : stepStatuses[getFocusedStepId() ?? -1] === 'completed') && (
             <OnboardingNextStepButton
               onClick={() => {
                 void handleOnboardingNextStep();
