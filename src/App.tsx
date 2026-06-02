@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -156,48 +156,49 @@ function AppContent() {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchBalance = async () => {
-      const compId = Cookies.get('companyId');
-      if (!compId) return;
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
-      try {
-        // Company € balance: same source as OperationsDashboard + WalletCompanyPanel
-        const [walletRes, minutesRes, phoneRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
-          fetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
-          fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
-        ]);
+  const fetchNavbarBalances = useCallback(async () => {
+    const compId = Cookies.get('companyId');
+    if (!compId) return;
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
+    try {
+      const [walletRes, minutesRes, phoneRes] = await Promise.all([
+        fetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
+        fetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
+        fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
+      ]);
 
-        // Company € wallet balance
-        if (walletRes?.ok) {
-          const walletJson = await walletRes.json();
-          if (walletJson.success && walletJson.data) {
-            setBalance(Number(walletJson.data.balance) || 0);
-          }
+      if (walletRes?.ok) {
+        const walletJson = await walletRes.json();
+        if (walletJson.success && walletJson.data) {
+          setBalance(Number(walletJson.data.balance) || 0);
         }
-
-        // Minutes — same source as MinutesCompanyPanel
-        if (minutesRes?.ok) {
-          const minutesJson = await minutesRes.json();
-          if (typeof minutesJson?.minutes === 'number') {
-            setMinutes(minutesJson.minutes);
-          }
-        }
-
-        // Phone line count — same source as PhoneNumberPanel
-        if (phoneRes?.ok) {
-          const phoneData = await phoneRes.json();
-          if (Array.isArray(phoneData)) {
-            setEscrow(phoneData.filter((n: any) => n.companyId === compId).length);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch balance in header:', err);
       }
-    };
 
-    fetchBalance();
+      if (minutesRes?.ok) {
+        const minutesJson = await minutesRes.json();
+        if (typeof minutesJson?.minutes === 'number') {
+          setMinutes(minutesJson.minutes);
+        }
+      }
+
+      if (phoneRes?.ok) {
+        const phoneData = await phoneRes.json();
+        if (Array.isArray(phoneData)) {
+          setEscrow(phoneData.filter((n: any) => n.companyId === compId).length);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch navbar balances:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Try immediately — may be a no-op if cookie not yet set
+    fetchNavbarBalances();
+
+    // Also retry when the company-ready event fires (cookie just set by auth flow)
+    const handleCompanyReady = () => fetchNavbarBalances();
+    window.addEventListener('harx:company-ready', handleCompanyReady);
 
     const handleBalanceUpdateEvent = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -213,7 +214,6 @@ function AppContent() {
         }
       }
     };
-
     window.addEventListener('balanceUpdated', handleBalanceUpdateEvent);
 
     const handleUserProfileUpdated = (e: Event) => {
@@ -226,10 +226,11 @@ function AppContent() {
     window.addEventListener('userProfileUpdated', handleUserProfileUpdated);
 
     return () => {
+      window.removeEventListener('harx:company-ready', handleCompanyReady);
       window.removeEventListener('balanceUpdated', handleBalanceUpdateEvent);
       window.removeEventListener('userProfileUpdated', handleUserProfileUpdated);
     };
-  }, []);
+  }, [fetchNavbarBalances]);
 
   const handleBalanceClick = () => {
     // From the orchestrator, opening the wallet should top-up directly
@@ -399,6 +400,8 @@ function AppContent() {
                 getCompanyId(company) || resolvedCompanyId || Cookies.get('companyId');
               if (finalCompanyId) {
                 Cookies.set('companyId', finalCompanyId, { path: '/' });
+                // Signal that companyId is now available so navbar balances can load
+                window.dispatchEvent(new CustomEvent('harx:company-ready'));
                 const steps = await syncOnboardingProgressFromApi(finalCompanyId);
                 const complete = isOnboardingFullyCompleted(steps);
                 setOnboardingComplete(complete);
