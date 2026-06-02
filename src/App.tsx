@@ -929,28 +929,27 @@ function AppContent() {
             onClick={() => setShowPlanningPanel(v => !v)}
             aria-label={t('navbar.planning')}
             style={{ top: '50%', transform: 'translateY(-50%)' }}
-            className={`fixed right-0 z-[9990] group overflow-hidden rounded-l-2xl bg-gradient-to-b from-violet-600 to-indigo-700 hover:bg-gradient-to-r text-white shadow-[0_4px_24px_rgba(139,92,246,0.5)] hover:shadow-[0_4px_32px_rgba(139,92,246,0.7)] transition-all duration-300 ${showPlanningPanel ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+            className={`fixed right-0 z-[9990] group relative overflow-hidden rounded-l-2xl bg-gradient-to-b from-violet-600 to-indigo-700 text-white shadow-[0_4px_24px_rgba(139,92,246,0.5)] hover:shadow-[0_8px_40px_rgba(139,92,246,0.7)] transition-all duration-500 ease-in-out w-10 hover:w-32 h-32 ${showPlanningPanel ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
-            {/* Collapsed: vertical pill */}
-            <div className="flex flex-col items-center gap-1.5 py-4 px-2.5 group-hover:hidden">
-              <CalendarDays size={18} className="shrink-0" />
+            {/* Collapsed content: icon + vertical text — fades out on hover */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 transition-opacity duration-300 group-hover:opacity-0">
+              <CalendarDays size={18} />
               <span
-                className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap"
+                className="text-[9px] font-black uppercase tracking-widest"
                 style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)' }}
               >
                 {t('navbar.planning')}
               </span>
-              <ChevronLeft size={13} className="shrink-0" />
+              <ChevronLeft size={12} className="opacity-70" />
             </div>
-            {/* Expanded on hover: horizontal card */}
-            <div className="hidden group-hover:flex items-center gap-3 py-4 px-5 whitespace-nowrap">
-              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/20 shrink-0">
-                <CalendarDays size={16} className="shrink-0" />
+            {/* Expanded square content: icon box + horizontal text — fades in on hover */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200 px-2">
+              <div className="w-10 h-10 rounded-xl bg-white/25 flex items-center justify-center shadow-inner">
+                <CalendarDays size={20} />
               </div>
-              <span className="text-sm font-black uppercase tracking-widest">
+              <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">
                 {t('navbar.planning')}
               </span>
-              <ChevronLeft size={15} className="shrink-0 opacity-70" />
             </div>
           </button>
 
