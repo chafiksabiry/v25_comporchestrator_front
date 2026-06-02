@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import {
@@ -1097,8 +1098,8 @@ export function PhoneNumberPanel() {
           NOT linked to WalletCompany. Charges the company's external
           card or PayPal account for the phone line setup fee.
          =========================================================== */}
-      {checkoutNumber && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-fade-in">
+      {checkoutNumber && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden border border-slate-200">
             {/* Header — indigo / violet / fuchsia gradient */}
             <div className="relative px-6 py-5 bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 text-white overflow-hidden">
@@ -1284,7 +1285,8 @@ export function PhoneNumberPanel() {
               </p>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
