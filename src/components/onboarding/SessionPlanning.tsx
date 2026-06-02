@@ -217,7 +217,7 @@ const updateOnboardingProgress = async () => {
   }
 };
 
-export default function SessionPlanning() {
+export default function SessionPlanning({ hideHeader = false }: { hideHeader?: boolean } = {}) {
   const { t } = useTranslation();
   const location = useLocation();
   /** Read `?gigId=` from the URL once. Used to pre-select the gig
@@ -701,23 +701,25 @@ export default function SessionPlanning() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <header className="bg-white rounded-2xl p-4 border border-harx-100 shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-harx-50/50 rounded-full blur-[100px] group-hover:bg-harx-100/60 transition-colors duration-1000"></div>
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-            <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-harx flex items-center justify-center shadow-xl shadow-harx-500/30 transform group-hover:rotate-6 transition-transform">
-              <LucideCalendar className="w-8 h-8 text-white" />
+        {!hideHeader && (
+          <header className="bg-white rounded-2xl p-4 border border-harx-100 shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-harx-50/50 rounded-full blur-[100px] group-hover:bg-harx-100/60 transition-colors duration-1000"></div>
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+              <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-harx flex items-center justify-center shadow-xl shadow-harx-500/30 transform group-hover:rotate-6 transition-transform">
+                <LucideCalendar className="w-8 h-8 text-white" />
+              </div>
+              <div className="flex-1">
+                <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4 italic uppercase">
+                  {t('sessionPlanning.header.title')}
+                  <span className="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-2xl text-[10px] uppercase font-black tracking-[0.2em] border border-emerald-100 not-italic">
+                    {t('sessionPlanning.header.realTimeSync')}
+                  </span>
+                </h1>
+                <p className="text-base text-gray-400 font-medium">{t('sessionPlanning.header.description')}</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4 italic uppercase">
-                {t('sessionPlanning.header.title')}
-                <span className="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-2xl text-[10px] uppercase font-black tracking-[0.2em] border border-emerald-100 not-italic">
-                  {t('sessionPlanning.header.realTimeSync')}
-                </span>
-              </h1>
-              <p className="text-base text-gray-400 font-medium">{t('sessionPlanning.header.description')}</p>
-            </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         <div className="flex justify-start">
           <div className="bg-white p-1.5 rounded-2xl border border-harx-100 shadow-xl">
