@@ -385,13 +385,13 @@ const ScriptGenerator: React.FC = () => {
     const companyId = getCompanyId();
     if (!companyId) return;
 
-    const stepId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_STEP_ID || 6);
+    const stepId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_STEP_ID || 9);
     const apiUrl =
       import.meta.env.VITE_COMPANY_API_URL ||
       'https://v25searchcompanywizardbackend-production.up.railway.app/api';
     const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/`;
 
-    // Call Script (step 6) lives in phase 3 after REP onboarding — not phase 2 anymore.
+    // Call Script is step 9 in phase 3 (after KB=7, E-learning=8).
     let phaseId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_PHASE_ID || 3);
 
     try {
