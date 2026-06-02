@@ -1,4 +1,9 @@
 {
+  "userMenu": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Sign out"
+  },
   "sidebar": {
     "dashboard": "Dashboard",
     "overview": "Overview",
@@ -41,7 +46,9 @@
     "phoneLines": "Phone Lines",
     "lineSingular": "Line",
     "linePlural": "Lines",
-    "company": "Company"
+    "company": "Company",
+    "planning": "Planning",
+    "planningLabel": "Sessions"
   },
   "language": {
     "title": "Change language",

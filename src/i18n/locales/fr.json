@@ -1,4 +1,9 @@
 {
+  "userMenu": {
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "logout": "Déconnexion"
+  },
   "sidebar": {
     "dashboard": "Tableau de Bord",
     "overview": "Vue d'ensemble",
@@ -41,7 +46,9 @@
     "phoneLines": "Lignes Tél.",
     "lineSingular": "Ligne",
     "linePlural": "Lignes",
-    "company": "Entreprise"
+    "company": "Entreprise",
+    "planning": "Planification",
+    "planningLabel": "Sessions"
   },
   "language": {
     "title": "Changer de langue",
