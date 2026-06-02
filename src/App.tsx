@@ -163,9 +163,10 @@ function AppContent() {
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
       try {
         // Company € balance: same source as OperationsDashboard + WalletCompanyPanel
-        const [walletRes, escrowRes] = await Promise.all([
+        const [walletRes, escrowRes, phoneRes] = await Promise.all([
           fetch(`${apiBaseUrl}/wallet-company/${compId}`),
           fetch(`${apiBaseUrl}/escrow/wallet/${compId}`).catch(() => null),
+          fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
         ]);
 
         if (walletRes.ok) {
@@ -175,12 +176,19 @@ function AppContent() {
           }
         }
 
-        // Minutes + telephony lines still live on the escrow wallet record
+        // Minutes still come from the escrow record
         if (escrowRes?.ok) {
           const result = await escrowRes.json();
           if (result.success && result.data) {
             setMinutes(result.data.minutes || 0);
-            setEscrow(result.data.escrow || 0);
+          }
+        }
+
+        // Phone line count: use the real /phone-numbers list filtered by company
+        if (phoneRes?.ok) {
+          const phoneData = await phoneRes.json();
+          if (Array.isArray(phoneData)) {
+            setEscrow(phoneData.filter((n: any) => n.companyId === compId).length);
           }
         }
       } catch (err) {
