@@ -176,8 +176,10 @@ function AppContent() {
 
       if (minutesRes?.ok) {
         const minutesJson = await minutesRes.json();
-        if (typeof minutesJson?.minutes === 'number') {
-          setMinutes(minutesJson.minutes);
+        // API returns { success, data: { minutes } } — same as MinutesCompanyPanel
+        const mins = minutesJson?.data?.minutes ?? minutesJson?.minutes;
+        if (typeof mins === 'number') {
+          setMinutes(mins);
         }
       }
 
