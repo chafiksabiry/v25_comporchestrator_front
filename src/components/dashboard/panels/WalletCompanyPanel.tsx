@@ -676,9 +676,9 @@ export function WalletCompanyPanel() {
                               {agentName || '—'}
                             </span>
                             <span className="text-gray-400 shrink-0">→</span>
-                            <span className="text-gray-500 truncate max-w-[90px]" title={call.leadObj ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}` : call.lead || ''}>
+                            <span className="text-gray-500 truncate max-w-[90px]" title={call.leadObj ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}`.trim() : call.lead || ''}>
                               {call.leadObj
-                                ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}`
+                                ? `${call.leadObj.First_Name} ${call.leadObj.Last_Name}`.trim()
                                 : call.lead || '—'}
                             </span>
                           </span>
