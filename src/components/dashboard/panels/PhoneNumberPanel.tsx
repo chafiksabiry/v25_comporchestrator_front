@@ -212,7 +212,10 @@ export function PhoneNumberPanel() {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
-          setPhoneNumbers(data.filter((n: any) => n.companyId === companyId));
+          const myLines = data.filter((n: any) => n.companyId === companyId);
+          setPhoneNumbers(myLines);
+          // Keep the navbar "LIGNES TÉL." badge in sync
+          window.dispatchEvent(new CustomEvent('balanceUpdated', { detail: { escrow: myLines.length } }));
         }
       }
 
