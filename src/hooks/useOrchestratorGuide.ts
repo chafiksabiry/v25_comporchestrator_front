@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
 const STORAGE_KEY = 'orchestratorGuideCompleted';
 // Legacy key set by an old duplicate of the guide in CompanyOnboarding.tsx.
@@ -24,7 +24,9 @@ function hasSeenGuide(): boolean {
 }
 
 export function useOrchestratorGuide() {
-  const [shouldShowGuide, setShouldShowGuide] = useState(() => !hasSeenGuide());
+  // Old orchestrator welcome modal is permanently disabled — the per-phase
+  // OnboardingProductTour (CompanyOnboarding.tsx) replaces it.
+  const shouldShowGuide = false;
 
   const markGuideComplete = useCallback(() => {
     try {
@@ -33,7 +35,6 @@ export function useOrchestratorGuide() {
     } catch {
       /* ignore */
     }
-    setShouldShowGuide(false);
   }, []);
 
   return { shouldShowGuide, markGuideComplete };
