@@ -317,7 +317,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                                     const isAvailable = isHourAvailable(dayName, hour);
                                     return (
                                         <td key={dayName} 
-                                            className={`p-0.5 border-b text-center select-none ${
+                                            className={`p-0 border-b text-center select-none h-9 ${
                                                 !isAvailable
                                                     ? 'bg-gray-100/80 border-gray-200'
                                                     : isSelectedCol && onSelectDay
@@ -345,12 +345,12 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                                                 placeholder=""
                                                 disabled={!isAvailable}
                                                 onChange={(e) => handleCellChange(dayName, hour, e.target.value)}
-                                                className={`w-11 h-8 text-center rounded-lg font-black text-sm transition-all border-2 
+                                                className={`w-full h-9 text-center font-black text-sm transition-all border-0
                                                     ${!isAvailable
-                                                        ? 'bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed'
+                                                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                                                         : value > 0
-                                                        ? 'bg-harx-50 border-harx-200 text-harx-700 focus:ring-2 focus:ring-harx-100'
-                                                        : 'bg-gray-50/50 border-transparent text-gray-400 hover:border-gray-200 focus:bg-white focus:border-harx-400'
+                                                        ? 'bg-harx-50 text-harx-700 focus:bg-harx-100'
+                                                        : 'bg-transparent text-gray-400 hover:bg-gray-50 focus:bg-white'
                                                     }
                                                     outline-none appearance-none ${isAvailable ? 'cursor-crosshair' : 'cursor-not-allowed'}`}
                                             />
