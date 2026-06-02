@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
-import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
+import CallDetailModal, { type NormalizedCall } from '../components/CallDetailModal';
 import {
   fetchPaymentConfig,
   getOrchestratorApiBase,
@@ -883,8 +883,34 @@ export function WalletCompanyPanel() {
         document.body
       )}
 
-      {/* Call Details Modal — same look & feel as the Calls panel */}
-      {selectedCall && createPortal(
+      {/* Call Details Modal — replaced by shared CallDetailModal */}
+      {selectedCall && (() => {
+        const normalized: NormalizedCall = {
+          id: selectedCall.callId || selectedCall._id,
+          leadName: selectedCall.leadObj
+            ? `${selectedCall.leadObj.First_Name} ${selectedCall.leadObj.Last_Name}`.trim()
+            : selectedCall.lead || 'Lead',
+          agentName: selectedCall.agent,
+          createdAt: selectedCall.startTime || selectedCall.createdAt || '',
+          recording_url: selectedCall.recording_url,
+          recording_url_cloudinary: selectedCall.recording_url_cloudinary,
+          transcript: selectedCall.transcript,
+          ai_call_score: selectedCall.ai_call_score,
+          validByAI: selectedCall.validByAI,
+          transaction: selectedCall.repTx ? {
+            validByCompany: selectedCall.repTx.status === 'earned' ? null : selectedCall.repTx.status === 'paid' ? true : false,
+            validByAI: selectedCall.validByAI,
+          } : undefined,
+        };
+        return (
+          <CallDetailModal
+            call={normalized}
+            onClose={() => setSelectedCall(null)}
+          />
+        );
+      })()}
+
+      {(false as boolean) && createPortal(
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
           <div className="relative w-full max-w-5xl h-[92vh] md:h-[88vh] max-h-[92vh] md:max-h-[88vh] bg-[#F8FAFC] rounded-[24px] md:rounded-[36px] shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck } from 'lucide-react';
-import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
+import CallDetailModal, { type NormalizedCall } from '../components/CallDetailModal';
 import { callsApi } from '../services/api/calls';
 import { getCallsApiBase } from '../lib/callsApiBase';
 
@@ -449,8 +449,35 @@ export default function CallsDashboardPage() {
         </div>
       </div>
 
-      {/* Modal Overlay */}
-      {selectedCall && (
+      {/* Call Detail Modal */}
+      {selectedCall && (() => {
+        const normalized: NormalizedCall = {
+          id: typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id,
+          leadName: selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name
+            ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim()
+            : 'Call Details',
+          createdAt: selectedCall.createdAt || selectedCall.date || '',
+          recording_url: selectedCall.recording_url,
+          recording_url_cloudinary: selectedCall.recording_url_cloudinary,
+          transcript: selectedCall.transcript,
+          ai_call_score: selectedCall.ai_call_score,
+          ai_summary_en: selectedCall.ai_summary_en,
+          ai_summary_fr: selectedCall.ai_summary_fr,
+          validByAI: selectedCall.validByAI,
+          transaction: selectedCall.transaction,
+        };
+        return (
+          <CallDetailModal
+            call={normalized}
+            onClose={() => setSelectedCall(null)}
+            onAnalyze={handleAnalyzeCall}
+            analyzingCallId={analyzingCallId}
+            onValidateTransaction={(callId, current, next) => handleUpdateTransactionValidation(callId, current, next)}
+          />
+        );
+      })()}
+
+      {(false as boolean) && selectedCall && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-300 bg-slate-905/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}>
           <div className="relative bg-white w-full md:max-w-5xl h-[92vh] md:h-[88vh] max-h-[92vh] md:max-h-[88vh] rounded-[24px] md:rounded-[36px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-slate-100/80" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
