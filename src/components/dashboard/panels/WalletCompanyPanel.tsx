@@ -739,9 +739,9 @@ export function WalletCompanyPanel() {
         )}
       </div>
 
-      {/* Deposit Modal */}
-      {showDepositModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      {/* Deposit Modal — portal so overlay covers full viewport */}
+      {showDepositModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md bg-white rounded-[2rem] border border-gray-100 p-6 shadow-2xl space-y-6 relative animate-fade-in-up">
             <button
               onClick={() => setShowDepositModal(false)}
@@ -821,12 +821,13 @@ export function WalletCompanyPanel() {
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Withdraw Modal */}
-      {showWithdrawModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      {/* Withdraw Modal — portal so overlay covers full viewport */}
+      {showWithdrawModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md bg-white rounded-[2rem] border border-gray-100 p-6 shadow-2xl space-y-6 relative animate-fade-in-up">
             <button
               onClick={() => setShowWithdrawModal(false)}
@@ -874,7 +875,8 @@ export function WalletCompanyPanel() {
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Call Details Modal — same look & feel as the Calls panel */}
