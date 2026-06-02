@@ -95,7 +95,7 @@ const mapBackendGigToGig = (gig: any): Gig => {
   const id = (gig._id as any)?.$oid || gig._id?.toString() || crypto.randomUUID();
 
   // Try to get company name from populated companyId object or fallback to companyName string
-  const companyName = gig.companyId?.name || gig.companyName || 'Unknown Company';
+  const companyName = gig.companyId?.name || gig.companyName || '';
 
   return {
     id,

@@ -91,7 +91,7 @@ export function PremiumDropdown({
                                             <span className={`text-base font-bold ${value === option.id ? 'text-blue-700' : 'text-gray-900'}`}>
                                                 {option.name}
                                             </span>
-                                            {option.company && (
+                                            {option.company && option.company !== 'Unknown Company' && (
                                                 <span className="text-xs text-gray-400 font-medium uppercase tracking-wider mt-0.5">
                                                     {option.company}
                                                 </span>
