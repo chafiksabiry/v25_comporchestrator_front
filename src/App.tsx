@@ -9,6 +9,7 @@ import {
   Clock,
   Lock,
   Phone,
+  CalendarDays,
   ChevronDown,
   Building2,
   LogOut,
@@ -758,6 +759,21 @@ function AppContent() {
                   </div>
                 )}
 
+                {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
+                  <div
+                    onClick={() => { setActiveProject('dashboard'); navigate('/dashboard/scheduler'); }}
+                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-br from-violet-500/15 via-violet-500/5 to-transparent border border-violet-500/25 text-xs font-bold text-violet-100/80 shadow-[0_0_18px_-6px_rgba(139,92,246,0.4)] hover:border-violet-400/50 hover:from-violet-500/25 hover:text-white hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group backdrop-blur-sm shrink-0"
+                  >
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/20 border border-violet-400/30 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
+                      <CalendarDays size={13} className="text-violet-400 group-hover:text-violet-300" />
+                    </div>
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-violet-400/70">{t('navbar.planning')}</span>
+                      <span className="text-sm font-black text-white tabular-nums">{t('navbar.planningLabel')}</span>
+                    </div>
+                  </div>
+                )}
+
                 {activeProject !== 'comporchestrator' && (
                   <>
                     {/* Escrow/Séquestre Widget (Telephony Lines) */}
@@ -838,7 +854,7 @@ function AppContent() {
                         className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
                       >
                         <Building2 size={16} className="text-gray-400" />
-                        <span className="font-bold">Profil</span>
+                        <span className="font-bold">{t('userMenu.profile')}</span>
                       </button>
                       <button
                         onClick={() => {
@@ -849,7 +865,7 @@ function AppContent() {
                         className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
                       >
                         <Settings size={16} className="text-gray-400" />
-                        <span className="font-bold">Paramètres</span>
+                        <span className="font-bold">{t('userMenu.settings')}</span>
                       </button>
                       <button
                         onClick={() => {
@@ -859,7 +875,7 @@ function AppContent() {
                         className="flex items-center gap-3 w-full p-4 text-left text-sm text-rose-400 hover:bg-white/5 transition-colors"
                       >
                         <LogOut size={16} className="text-rose-400" />
-                        <span className="font-bold">Déconnexion</span>
+                        <span className="font-bold">{t('userMenu.logout')}</span>
                       </button>
                     </div>
                   )}
