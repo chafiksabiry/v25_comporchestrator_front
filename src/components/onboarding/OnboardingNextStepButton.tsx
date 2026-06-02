@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { ChevronRight, Sparkles, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -18,10 +19,11 @@ export function OnboardingNextStepButton({
   const { t } = useTranslation();
   const label = t("companyOnboarding.ui.nextStep");
 
-  return (
+  const content = (
     <div
-      className="pointer-events-none fixed top-[72px] right-4 z-[60] sm:right-6"
+      style={{ position: "fixed", top: "72px", right: "24px", zIndex: 9999 }}
       aria-live="polite"
+      className="pointer-events-none"
     >
       <div className="onboarding-next-step-card pointer-events-auto flex flex-col items-end gap-2">
 
@@ -53,13 +55,9 @@ export function OnboardingNextStepButton({
               : "hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(16,185,129,0.70)] active:scale-[0.98]"
           }`}
         >
-          {/* Base gradient */}
           <span className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500" />
-          {/* Hover gradient */}
           <span className="absolute inset-0 bg-gradient-to-r from-teal-500 via-emerald-400 to-green-600 opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-disabled:opacity-0" />
-          {/* Shine sweep */}
           <span className="onboarding-next-step-shine pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-          {/* Pulse ring */}
           <span className="onboarding-next-step-ping pointer-events-none absolute -inset-1 rounded-xl bg-emerald-400/35" />
 
           <span className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 shadow-inner backdrop-blur-sm">
@@ -111,4 +109,10 @@ export function OnboardingNextStepButton({
       `}</style>
     </div>
   );
+
+  // Use a portal so the button is rendered directly on document.body.
+  // This guarantees true viewport-fixed positioning regardless of any
+  // overflow:auto / overflow:hidden / transform on ancestor elements.
+  if (typeof document === "undefined") return null;
+  return createPortal(content, document.body);
 }
