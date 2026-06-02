@@ -739,16 +739,6 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => {
-                    setShowAgentsModal(false);
-                    handleMatchingRedirect();
-                  }}
-                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-sm hover:shadow flex items-center gap-1.5 hover:scale-105 active:scale-95"
-                >
-                  <Sparkles size={12} className="animate-pulse animate-glow-pulse" />
-                  Match New Reps
-                </button>
-                <button
                   onClick={() => setShowAgentsModal(false)}
                   className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-all duration-300 hover:scale-110 active:scale-90"
                 >
