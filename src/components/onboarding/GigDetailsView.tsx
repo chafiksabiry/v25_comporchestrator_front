@@ -150,6 +150,25 @@ const labelCls = 'block text-[10px] font-black text-slate-400 uppercase tracking
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const SENIORITY_LEVELS = ['Junior', 'Mid-Level', 'Senior', 'Expert', 'C-Level'];
 const PROFICIENCY_LEVELS = ['Basic', 'Conversational', 'Intermediate', 'Advanced', 'Fluent', 'Native'];
+const GIG_CATEGORIES = [
+  'Outbound Sales', 'Inbound Sales', 'Customer Service', 'Technical Support',
+  'Lead Generation', 'Inside Sales', 'BPO / Outsourcing', 'Cold Calling',
+  'Appointment Setting', 'Account Management', 'Other',
+];
+const YEARS_EXPERIENCE = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '10+'];
+const SKILL_LEVELS = [
+  { value: 10, label: '1 – Débutant' },
+  { value: 25, label: '2 – Notions' },
+  { value: 50, label: '3 – Intermédiaire' },
+  { value: 75, label: '4 – Avancé' },
+  { value: 90, label: '5 – Expert' },
+  { value: 100, label: '6 – Maître' },
+];
+const TEAM_SIZES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '20', '25', '30', '50+'];
+const FLEXIBILITY_OPTIONS = [
+  'Remote', 'Hybrid', 'On-site', 'Full-time', 'Part-time',
+  'Weekends', 'Evenings', 'Flexible hours', 'Shifts', 'Night shift',
+];
 
 interface EditBtnProps { onClick: () => void }
 const EditBtn: React.FC<EditBtnProps> = ({ onClick }) => (
@@ -534,12 +553,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className={labelCls}>Category</label>
-                <input
-                  className={inputCls}
+                <select
+                  className={selectCls}
                   value={basicDraft.category}
                   onChange={e => setBasicDraft((d: any) => ({ ...d, category: e.target.value }))}
-                  placeholder="e.g. Outbound Sales"
-                />
+                >
+                  <option value="">-- Sélectionner --</option>
+                  {GIG_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
               <div>
                 <label className={labelCls}>Seniority Level</label>
@@ -553,14 +574,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
               </div>
               <div>
                 <label className={labelCls}>Years of Experience</label>
-                <input
-                  type="number"
-                  min="0"
-                  className={inputCls}
+                <select
+                  className={selectCls}
                   value={basicDraft.yearsExperience}
                   onChange={e => setBasicDraft((d: any) => ({ ...d, yearsExperience: e.target.value }))}
-                  placeholder="2"
-                />
+                >
+                  <option value="">-- Sélectionner --</option>
+                  {YEARS_EXPERIENCE.map(y => <option key={y} value={y}>{y} {y === '1' ? 'an' : 'ans'}</option>)}
+                </select>
               </div>
             </div>
           </div>
@@ -732,14 +753,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
           <div className="space-y-5">
             <div className="max-w-xs">
               <label className={labelCls}>Allocated Seats (Team Size)</label>
-              <input
-                type="number"
-                min="1"
-                className={inputCls}
+              <select
+                className={selectCls}
                 value={teamDraft.size}
                 onChange={e => setTeamDraft((d: any) => ({ ...d, size: e.target.value }))}
-                placeholder="5"
-              />
+              >
+                <option value="">-- Sélectionner --</option>
+                {TEAM_SIZES.map(s => <option key={s} value={s}>{s} {Number(s) === 1 ? 'agent' : 'agents'}</option>)}
+              </select>
             </div>
           </div>
         ) : (
@@ -1007,21 +1028,16 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                     ))}
                   </div>
                   <div className="flex gap-2">
-                    <input
-                      className={inputCls}
+                    <select
+                      className={selectCls}
                       value={scheduleDraft.newFlexibility || ''}
                       onChange={e => setScheduleDraft((d: any) => ({ ...d, newFlexibility: e.target.value }))}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && scheduleDraft.newFlexibility?.trim()) {
-                          setScheduleDraft((d: any) => ({
-                            ...d,
-                            flexibility: [...d.flexibility, d.newFlexibility.trim()],
-                            newFlexibility: '',
-                          }));
-                        }
-                      }}
-                      placeholder="Type and press Enter…"
-                    />
+                    >
+                      <option value="">-- Choisir une option --</option>
+                      {FLEXIBILITY_OPTIONS.filter(o => !scheduleDraft.flexibility?.includes(o)).map(o => (
+                        <option key={o} value={o}>{o}</option>
+                      ))}
+                    </select>
                     <button
                       onClick={() => {
                         if (scheduleDraft.newFlexibility?.trim()) {
@@ -1165,19 +1181,19 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                           })}
                           placeholder="Skill name…"
                         />
-                        <input
-                          type="number"
-                          min="1"
-                          max="100"
-                          className={inputCls}
+                        <select
+                          className={selectCls}
                           value={item.level}
                           onChange={e => setSkillsDraft((d: any) => {
                             const arr = [...d[type]];
-                            arr[idx] = { ...arr[idx], level: e.target.value };
+                            arr[idx] = { ...arr[idx], level: Number(e.target.value) };
                             return { ...d, [type]: arr };
                           })}
-                          placeholder="Level"
-                        />
+                        >
+                          {SKILL_LEVELS.map(sl => (
+                            <option key={sl.value} value={sl.value}>{sl.label}</option>
+                          ))}
+                        </select>
                         <button
                           onClick={() => setSkillsDraft((d: any) => ({
                             ...d,
