@@ -2751,7 +2751,7 @@ function CallsView({
             <ul className="divide-y divide-slate-100">
               {recentCalls.map((c, idx) => (
                 <li key={idx} className="flex items-center gap-3 py-2.5">
-                  <ScoreBubble score={c.score} />
+                  <AgentAvatar name={c.agent} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-slate-900">
                       {c.agent} <span className="text-slate-400">→</span> {c.lead}
@@ -3617,6 +3617,38 @@ function KpiCard({
         {value}
       </div>
       <div className={`text-[11px] font-bold ${subColor}`}>{sub}</div>
+    </div>
+  );
+}
+
+const AGENT_AVATAR_COLORS = [
+  'bg-harx-500/15 text-harx-700',
+  'bg-blue-500/15 text-blue-700',
+  'bg-emerald-500/15 text-emerald-700',
+  'bg-amber-500/15 text-amber-700',
+  'bg-rose-500/15 text-rose-700',
+  'bg-violet-500/15 text-violet-700',
+  'bg-cyan-500/15 text-cyan-700',
+  'bg-fuchsia-500/15 text-fuchsia-700',
+];
+
+function AgentAvatar({ name }: { name: string }) {
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+  const colorIdx =
+    name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) %
+    AGENT_AVATAR_COLORS.length;
+  return (
+    <div
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${AGENT_AVATAR_COLORS[colorIdx]}`}
+      title={name}
+    >
+      {initials || '?'}
     </div>
   );
 }
