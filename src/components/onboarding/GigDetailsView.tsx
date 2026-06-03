@@ -376,9 +376,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
       setBasicDraft({
         title: localGig.title || '',
         description: localGig.description || '',
+        // Store as the exact string value the DB uses so the <select> can match
         category: localGig.category || '',
         seniorityLevel: localGig.seniority?.level || '',
-        yearsExperience: localGig.seniority?.yearsExperience || '',
+        // yearsExperience can be stored as a number — coerce to string for the <select>
+        yearsExperience: localGig.seniority?.yearsExperience != null
+          ? String(localGig.seniority.yearsExperience)
+          : '',
       });
     } else if (section === 'commission') {
       const tc = localGig.commission?.transactionCommission;
@@ -387,13 +391,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
         transactionAmount: typeof tc === 'number' ? tc : (tc as any)?.amount ?? '',
         bonusAmount: localGig.commission?.bonusAmount ?? '',
         minimumVolumeAmount: localGig.commission?.minimumVolume?.amount ?? '',
+        // Period is stored as "Daily" / "Weekly" / "Monthly" — keep as-is
         minimumVolumePeriod: localGig.commission?.minimumVolume?.period ?? '',
         additionalDetails: localGig.commission?.additionalDetails ?? '',
       });
     } else if (section === 'schedule') {
       setScheduleDraft({
         schedule: (localGig.availability?.schedule || []).map((s: any) => ({
-          day: s.day,
+          day: s.day || 'Monday',
           start: s.hours?.start || '',
           end: s.hours?.end || '',
           _id: s._id,
@@ -401,6 +406,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
         daily: localGig.availability?.minimumHours?.daily ?? '',
         weekly: localGig.availability?.minimumHours?.weekly ?? '',
         monthly: localGig.availability?.minimumHours?.monthly ?? '',
+        // flexibility items are stored as strings like "Remote", "Hybrid", etc.
         flexibility: [...(localGig.availability?.flexibility || [])],
         newFlexibility: '',
       });
@@ -408,15 +414,16 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
       setSkillsDraft({
         professional: (localGig.skills?.professional || []).map((s: any) => ({
           name: typeof s.skill === 'object' ? s.skill?.name || '' : s.skill || '',
-          level: s.level ?? 1,
+          // level is a number — keep as number so the <select> value matches
+          level: s.level ?? 50,
         })),
         technical: (localGig.skills?.technical || []).map((s: any) => ({
           name: typeof s.skill === 'object' ? s.skill?.name || '' : s.skill || '',
-          level: s.level ?? 1,
+          level: s.level ?? 50,
         })),
         soft: (localGig.skills?.soft || []).map((s: any) => ({
           name: typeof s.skill === 'object' ? s.skill?.name || '' : s.skill || '',
-          level: s.level ?? 1,
+          level: s.level ?? 50,
         })),
         languages: (localGig.skills?.languages || []).map((l: any) => ({
           name: typeof l.language === 'object' ? l.language?.name || '' : l.language || '',
@@ -424,7 +431,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
         })),
       });
     } else if (section === 'team') {
-      setTeamDraft({ size: localGig.team?.size ?? '' });
+      // size can be a number — coerce to string for the <select>
+      setTeamDraft({ size: localGig.team?.size != null ? String(localGig.team.size) : '' });
     }
     setEditingSection(section);
   };
@@ -1231,7 +1239,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                         />
                         <select
                           className={selectCls}
-                          value={item.level}
+                          value={Number(item.level)}
                           onChange={e => setSkillsDraft((d: any) => {
                             const arr = [...d[type]];
                             arr[idx] = { ...arr[idx], level: Number(e.target.value) };
