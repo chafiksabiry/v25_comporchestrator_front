@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, MessageSquare, Activity as ActivityIcon, Globe, ShieldAlert, ShieldCheck,

@@ -1,3 +1,4 @@
+import React from 'react';
 import { 
   Calendar, Clock, DollarSign, Users, 
   Building2, Target,

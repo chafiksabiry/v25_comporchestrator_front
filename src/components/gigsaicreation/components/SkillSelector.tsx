@@ -1,3 +1,4 @@
+import React from 'react';
 import { Plus, X } from 'lucide-react';
 import { predefinedOptions } from '../lib/guidance';
 
