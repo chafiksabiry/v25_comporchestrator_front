@@ -148,6 +148,29 @@ const selectCls =
   'w-full px-3 py-2 text-sm font-semibold text-slate-800 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/20 focus:border-purple-400 transition-all cursor-pointer';
 const labelCls = 'block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1';
 
+// Recursively merges patch into base without overwriting nested objects entirely.
+// Arrays in patch replace the corresponding arrays in base (no array deep-merge).
+function deepMerge<T extends object>(base: T, patch: Partial<T>): T {
+  const result: any = { ...base };
+  for (const key of Object.keys(patch) as (keyof T)[]) {
+    const pv = patch[key];
+    const bv = base[key];
+    if (
+      pv !== null &&
+      typeof pv === 'object' &&
+      !Array.isArray(pv) &&
+      bv !== null &&
+      typeof bv === 'object' &&
+      !Array.isArray(bv)
+    ) {
+      result[key] = deepMerge(bv as any, pv as any);
+    } else {
+      result[key] = pv;
+    }
+  }
+  return result as T;
+}
+
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const YEARS_EXPERIENCE = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '10+'];
 const TEAM_SIZES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '20', '25', '30', '50+'];
@@ -525,9 +548,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const result = await res.json();
-      const updated = result.data || result;
-      const merged = { ...localGig, ...payload, ...updated };
+      // Use deep merge of payload only — don't spread the raw server response
+      // (it contains unpopulated ObjectIds that would overwrite populated fields)
+      const merged = deepMerge(localGig, payload);
       setLocalGig(merged);
       onGigUpdated?.(merged);
       setEditingSection(null);
