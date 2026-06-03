@@ -1255,9 +1255,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                     </button>
                   </div>
                   <div className="space-y-2">
-                    {skillsDraft[type]?.map((item: any, idx: number) => (
+                    {skillsDraft[type]?.map((item: any, idx: number) => {
+                      const usedIds = (skillsDraft[type] as any[])
+                        .filter((_: any, i: number) => i !== idx)
+                        .map((s: any) => s.skillId);
+                      return (
                       <div key={idx} className="grid grid-cols-[1fr_140px_auto] gap-2 items-center">
-                        {/* Skill dropdown from DB */}
+                        {/* Skill dropdown from DB — already-selected skills hidden */}
                         <select
                           className={selectCls}
                           value={item.skillId}
@@ -1270,9 +1274,11 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                           <option value="">— {g('placeholders.skillName')} —</option>
                           {loadingRefs
                             ? <option disabled>Loading…</option>
-                            : dbSkills[type].map((sk: any) => (
-                                <option key={sk._id} value={sk._id}>{sk.name}</option>
-                              ))
+                            : dbSkills[type]
+                                .filter((sk: any) => !usedIds.includes(sk._id) || sk._id === item.skillId)
+                                .map((sk: any) => (
+                                  <option key={sk._id} value={sk._id}>{sk.name}</option>
+                                ))
                           }
                         </select>
                         {/* Level dropdown */}
@@ -1299,7 +1305,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                           <Trash2 size={14} />
                         </button>
                       </div>
-                    ))}
+                      );
+                    })}
                     {skillsDraft[type]?.length === 0 && (
                       <p className="text-xs text-slate-400 italic">{g('display.noSkills')}</p>
                     )}
@@ -1322,9 +1329,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   </button>
                 </div>
                 <div className="space-y-2">
-                  {skillsDraft.languages?.map((item: any, idx: number) => (
+                  {skillsDraft.languages?.map((item: any, idx: number) => {
+                    const usedLangIds = (skillsDraft.languages as any[])
+                      .filter((_: any, i: number) => i !== idx)
+                      .map((l: any) => l.languageId);
+                    return (
                     <div key={idx} className="grid grid-cols-[1fr_160px_auto] gap-2 items-center">
-                      {/* Language dropdown from DB */}
+                      {/* Language dropdown from DB — already-selected languages hidden */}
                       <select
                         className={selectCls}
                         value={item.languageId}
@@ -1337,11 +1348,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                         <option value="">— {g('placeholders.languageName')} —</option>
                         {loadingRefs
                           ? <option disabled>Loading…</option>
-                          : dbLanguages.map((lang: any) => (
-                              <option key={lang._id} value={lang._id}>
-                                {lang.name}{lang.nativeName && lang.nativeName !== lang.name ? ` (${lang.nativeName})` : ''}
-                              </option>
-                            ))
+                          : dbLanguages
+                              .filter((lang: any) => !usedLangIds.includes(lang._id) || lang._id === item.languageId)
+                              .map((lang: any) => (
+                                <option key={lang._id} value={lang._id}>
+                                  {lang.name}{lang.nativeName && lang.nativeName !== lang.name ? ` (${lang.nativeName})` : ''}
+                                </option>
+                              ))
                         }
                       </select>
                       {/* Proficiency dropdown */}
@@ -1368,7 +1381,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                         <Trash2 size={14} />
                       </button>
                     </div>
-                  ))}
+                    );
+                  })}
                   {skillsDraft.languages?.length === 0 && (
                     <p className="text-xs text-slate-400 italic">{g('display.noLanguages')}</p>
                   )}
