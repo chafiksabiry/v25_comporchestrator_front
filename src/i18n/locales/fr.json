@@ -1746,7 +1746,7 @@
     "saving": "Enregistrement…",
     "cancel": "Annuler",
     "sections": {
-      "basicInfo": "Description du Poste",
+      "basicInfo": "Description du Gig(Mission)",
       "editingBasic": "Modification des Informations de Base",
       "commission": "Commission & Détails",
       "editingCommission": "Modification de la Commission",
