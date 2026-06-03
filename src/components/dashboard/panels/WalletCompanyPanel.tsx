@@ -515,12 +515,6 @@ export function WalletCompanyPanel() {
             <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
           </button>
           <button
-            onClick={() => setShowWithdrawModal(true)}
-            className="px-5 py-3 rounded-2xl border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold text-xs uppercase tracking-wider shadow-sm transition-all duration-300 active:scale-95"
-          >
-            Demander un retrait
-          </button>
-          <button
             onClick={() => setShowDepositModal(true)}
             className="px-6 py-3 bg-gradient-to-r from-orange-400 to-rose-500 hover:from-orange-500 hover:to-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-orange-500/20 rounded-2xl transition-all duration-300 active:scale-95 flex items-center gap-2"
           >
