@@ -1147,7 +1147,6 @@ export default function OperationsDashboard() {
           walletBalance={walletBalance}
           walletDaysLeft={walletDaysLeft}
           onSeeLeads={() => setTab('leads')}
-          onSeeResults={() => setTab('results')}
         />
       )}
     </div>
@@ -1417,7 +1416,7 @@ function LeadsView({
   return (
     <>
       {/* ---------- Leads KPI cards ---------- */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <KpiCard
           tone="primary"
           icon={<Database size={14} />}
@@ -1440,31 +1439,10 @@ function LeadsView({
         })()}
         <KpiCard
           tone="default"
-          icon={<Activity size={14} className="text-blue-500" />}
-          label={t('opsDashboard.leads.kpi.statusInProgress', 'En cours')}
-          value={inProgressCount.toLocaleString('fr-FR')}
-          sub={statusSub(inProgressPct)}
-        />
-        <KpiCard
-          tone="default"
-          icon={<Star size={14} className="text-amber-500" />}
-          label={t('opsDashboard.leads.kpi.statusQualified', 'Qualifiés')}
-          value={status.qualified.count.toLocaleString('fr-FR')}
-          sub={statusSub(status.qualified.pct)}
-        />
-        <KpiCard
-          tone="default"
           icon={<CalendarClock size={14} className="text-emerald-500" />}
           label={t('opsDashboard.leads.kpi.statusConverted', 'RDV & convertis')}
           value={convertedCount.toLocaleString('fr-FR')}
           sub={statusSub(convertedPct)}
-        />
-        <KpiCard
-          tone="dark"
-          icon={<XCircle size={14} />}
-          label={t('opsDashboard.leads.kpi.statusLost', 'Perdus')}
-          value={status.lost.count.toLocaleString('fr-FR')}
-          sub={statusSub(status.lost.pct)}
         />
       </div>
 
@@ -2302,7 +2280,6 @@ function OverviewView({
   walletBalance,
   walletDaysLeft,
   onSeeLeads,
-  onSeeResults,
 }: {
   stats: OverviewKpiStats;
   leadStats: OverviewLeadStats | null;
@@ -2316,7 +2293,6 @@ function OverviewView({
   walletBalance: number | null;
   walletDaysLeft: number | null;
   onSeeLeads: () => void;
-  onSeeResults: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -2511,13 +2487,6 @@ function OverviewView({
               <PieChart size={14} className="text-rose-500" />
               {t('opsDashboard.overview.outcomes.title', 'Résultats d\'appels (aujourd\'hui)')}
             </div>
-            <button
-              onClick={onSeeResults}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-700 transition-colors hover:bg-slate-50"
-            >
-              {t('opsDashboard.overview.detail', 'Détail')}
-              <ArrowUpRight size={12} />
-            </button>
           </header>
 
           <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-2">
