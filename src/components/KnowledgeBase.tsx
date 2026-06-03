@@ -1207,7 +1207,7 @@ const KnowledgeBase: React.FC = () => {
           </p>
           <button
             className="mt-4 bg-gradient-harx text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-harx-500/30 hover:scale-105 active:scale-95 transition-all"
-            onClick={() => setShowUploadModal(true)}
+            onClick={() => { setUploadGigId(selectedGigId); setShowUploadModal(true); }}
           >
             <Plus size={18} className="mr-3 inline-block" />
             {t('knowledgeBase.empty.ingestFirst')}
