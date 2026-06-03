@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   DollarSign, Users, Target,
   Languages,

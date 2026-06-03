@@ -1,3 +1,4 @@
+import React from 'react';
 import { InfoText } from './InfoText';
 import { 
   Target, TrendingUp, Zap, Flame, 

@@ -1,3 +1,4 @@
+import React from 'react';
 import { AlertCircle, CheckCircle, DollarSign, Users, FileText, ArrowRight, Star, TrendingUp, Clock, Coins, Target } from 'lucide-react';
 import { Dialog } from './Dialog';
 import { GigData } from '../types';
