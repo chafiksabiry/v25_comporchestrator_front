@@ -205,7 +205,7 @@ function outcomeTag(
   return map[outcome];
 }
 
-type TabId = 'overview' | 'leads' | 'calls' | 'results' | 'team' | 'wallet';
+type TabId = 'overview' | 'leads' | 'calls' | 'results' | 'wallet';
 
 interface StatusBucket {
   key: string;
@@ -963,7 +963,6 @@ export default function OperationsDashboard() {
     { id: 'leads', label: t('opsDashboard.tabs.leads', 'Leads'), icon: <Users size={14} /> },
     { id: 'calls', label: t('opsDashboard.tabs.calls', 'Appels'), icon: <PhoneCall size={14} /> },
     { id: 'results', label: t('opsDashboard.tabs.results', 'Résultats'), icon: <BarChart3 size={14} /> },
-    { id: 'team', label: t('opsDashboard.tabs.team', 'Équipe'), icon: <Trophy size={14} /> },
     { id: 'wallet', label: t('opsDashboard.tabs.wallet', 'Wallet'), icon: <Wallet size={14} /> },
   ];
 
@@ -1128,8 +1127,6 @@ export default function OperationsDashboard() {
           reps={repsMonth}
           seriousToday={stats.serious}
         />
-      ) : tab === 'team' ? (
-        <TeamView reps={repsMonth} />
       ) : tab === 'wallet' ? (
         <WalletView selectedGigId={selectedGigId} />
       ) : tab === 'calls' ? (
