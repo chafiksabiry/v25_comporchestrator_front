@@ -1738,5 +1738,138 @@
         "description": "Build training journeys, upload knowledge base documents, and prepare your reps for success before they hit the phones."
       }
     }
+  },
+  "gigDetailsView": {
+    "backToGigs": "Back to Gigs",
+    "edit": "Edit",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "sections": {
+      "basicInfo": "Job Description",
+      "editingBasic": "Editing Basic Info",
+      "commission": "Commission & Details",
+      "editingCommission": "Editing Commission",
+      "team": "Team & Territory Setup",
+      "editingTeam": "Editing Team",
+      "availability": "Availability",
+      "editingSchedule": "Editing Schedule",
+      "skills": "Skills & Requirements",
+      "editingSkills": "Editing Skills"
+    },
+    "fields": {
+      "title": "Title",
+      "description": "Description",
+      "category": "Category",
+      "seniorityLevel": "Seniority Level",
+      "yearsExperience": "Years of Experience",
+      "callRate": "€ / Call",
+      "transactionRate": "€ / Transaction",
+      "bonusAmount": "Bonus Amount (€)",
+      "minimumVolume": "Minimum Volume (calls to trigger bonus)",
+      "period": "Period",
+      "additionalDetails": "Additional Details / Terms",
+      "allocatedSeats": "Allocated Seats (Team Size)",
+      "scheduleEntries": "Schedule Entries",
+      "minimumHours": "Minimum Hours",
+      "flexibilityTags": "Flexibility Tags",
+      "professionalSkills": "Professional Skills",
+      "technicalSkills": "Technical Skills",
+      "softSkills": "Soft Skills",
+      "languages": "Languages"
+    },
+    "placeholders": {
+      "selectCategory": "-- Select a category --",
+      "selectSeniority": "-- Select --",
+      "selectYears": "-- Select --",
+      "selectPeriod": "Select period",
+      "selectTeamSize": "-- Select --",
+      "selectFlexibility": "-- Choose an option --",
+      "gigTitle": "Gig title",
+      "gigDescription": "Describe the gig…",
+      "skillName": "Skill name…",
+      "languageName": "Language name…",
+      "terms": "Describe commission terms…"
+    },
+    "actions": {
+      "addDay": "+ Add Day",
+      "add": "+ Add",
+      "matchAgents": "Match New Agents",
+      "viewList": "View List"
+    },
+    "display": {
+      "allocatedSeats": "Allocated Seats",
+      "territory": "Territory",
+      "perWeek": "/ week",
+      "days": "days",
+      "minimumHoursTitle": "Minimum Hours",
+      "flexibilityTitle": "Flexibility",
+      "coreCompetencies": "Core & Soft Competencies",
+      "technicalStack": "Technical & Operations Stack",
+      "enrolledReps": "Enrolled Representatives",
+      "assignedReps": "Assigned Representatives",
+      "noSchedule": "No schedule entries defined.",
+      "noSkills": "No skills yet. Click Add to start.",
+      "noLanguages": "No languages added yet."
+    },
+    "categories": {
+      "outboundSales": "Outbound Sales",
+      "inboundSales": "Inbound Sales",
+      "customerService": "Customer Service",
+      "technicalSupport": "Technical Support",
+      "leadGeneration": "Lead Generation",
+      "insideSales": "Inside Sales",
+      "bpo": "BPO / Outsourcing",
+      "coldCalling": "Cold Calling",
+      "appointmentSetting": "Appointment Setting",
+      "accountManagement": "Account Management",
+      "other": "Other"
+    },
+    "seniority": {
+      "junior": "Junior",
+      "midLevel": "Mid-Level",
+      "senior": "Senior",
+      "expert": "Expert",
+      "cLevel": "C-Level"
+    },
+    "periods": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "skillLevels": {
+      "10": "1 – Beginner",
+      "25": "2 – Elementary",
+      "50": "3 – Intermediate",
+      "75": "4 – Advanced",
+      "90": "5 – Expert",
+      "100": "6 – Master"
+    },
+    "proficiency": {
+      "basic": "Basic",
+      "conversational": "Conversational",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "fluent": "Fluent",
+      "native": "Native"
+    },
+    "flexibility": {
+      "remote": "Remote",
+      "hybrid": "Hybrid",
+      "onSite": "On-site",
+      "fullTime": "Full-time",
+      "partTime": "Part-time",
+      "weekends": "Weekends",
+      "evenings": "Evenings",
+      "flexibleHours": "Flexible hours",
+      "shifts": "Shifts",
+      "nightShift": "Night shift"
+    },
+    "agents": {
+      "enrolledTitle": "Enrolled Representatives",
+      "assignedTo": "Currently assigned agents for",
+      "matchScore": "MATCH SCORE",
+      "invited": "Invited"
+    }
   }
 }

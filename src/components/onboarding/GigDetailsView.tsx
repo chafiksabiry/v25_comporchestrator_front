@@ -3,6 +3,7 @@ import {
   ArrowLeft, Target, Users, MapPin, ClockIcon, Globe, Phone, Repeat, Star, X,
   ChevronRight, Briefcase, Sparkles, Calendar, Zap, Edit2, Check, Plus, Trash2, Loader2,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import RepProfileView from '../RepProfileView';
 import { groupSchedules } from '../gigsaicreation/lib/scheduleUtils';
 
@@ -148,64 +149,109 @@ const selectCls =
 const labelCls = 'block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const SENIORITY_LEVELS = ['Junior', 'Mid-Level', 'Senior', 'Expert', 'C-Level'];
-const PROFICIENCY_LEVELS = ['Basic', 'Conversational', 'Intermediate', 'Advanced', 'Fluent', 'Native'];
-const GIG_CATEGORIES = [
-  'Outbound Sales', 'Inbound Sales', 'Customer Service', 'Technical Support',
-  'Lead Generation', 'Inside Sales', 'BPO / Outsourcing', 'Cold Calling',
-  'Appointment Setting', 'Account Management', 'Other',
-];
 const YEARS_EXPERIENCE = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '10+'];
-const SKILL_LEVELS = [
-  { value: 10, label: '1 – Débutant' },
-  { value: 25, label: '2 – Notions' },
-  { value: 50, label: '3 – Intermédiaire' },
-  { value: 75, label: '4 – Avancé' },
-  { value: 90, label: '5 – Expert' },
-  { value: 100, label: '6 – Maître' },
-];
 const TEAM_SIZES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '20', '25', '30', '50+'];
+
+// value = what is stored in DB, labelKey = i18n key suffix
+const GIG_CATEGORY_OPTIONS = [
+  { value: 'Outbound Sales',      labelKey: 'outboundSales' },
+  { value: 'Inbound Sales',       labelKey: 'inboundSales' },
+  { value: 'Customer Service',    labelKey: 'customerService' },
+  { value: 'Technical Support',   labelKey: 'technicalSupport' },
+  { value: 'Lead Generation',     labelKey: 'leadGeneration' },
+  { value: 'Inside Sales',        labelKey: 'insideSales' },
+  { value: 'BPO / Outsourcing',   labelKey: 'bpo' },
+  { value: 'Cold Calling',        labelKey: 'coldCalling' },
+  { value: 'Appointment Setting', labelKey: 'appointmentSetting' },
+  { value: 'Account Management',  labelKey: 'accountManagement' },
+  { value: 'Other',               labelKey: 'other' },
+];
+const SENIORITY_OPTIONS = [
+  { value: 'Junior',    labelKey: 'junior' },
+  { value: 'Mid-Level', labelKey: 'midLevel' },
+  { value: 'Senior',    labelKey: 'senior' },
+  { value: 'Expert',    labelKey: 'expert' },
+  { value: 'C-Level',   labelKey: 'cLevel' },
+];
+const PERIOD_OPTIONS = [
+  { value: 'Daily',   labelKey: 'daily' },
+  { value: 'Weekly',  labelKey: 'weekly' },
+  { value: 'Monthly', labelKey: 'monthly' },
+];
+const SKILL_LEVEL_OPTIONS = [
+  { value: 10,  labelKey: '10' },
+  { value: 25,  labelKey: '25' },
+  { value: 50,  labelKey: '50' },
+  { value: 75,  labelKey: '75' },
+  { value: 90,  labelKey: '90' },
+  { value: 100, labelKey: '100' },
+];
+const PROFICIENCY_OPTIONS = [
+  { value: 'Basic',         labelKey: 'basic' },
+  { value: 'Conversational',labelKey: 'conversational' },
+  { value: 'Intermediate',  labelKey: 'intermediate' },
+  { value: 'Advanced',      labelKey: 'advanced' },
+  { value: 'Fluent',        labelKey: 'fluent' },
+  { value: 'Native',        labelKey: 'native' },
+];
 const FLEXIBILITY_OPTIONS = [
-  'Remote', 'Hybrid', 'On-site', 'Full-time', 'Part-time',
-  'Weekends', 'Evenings', 'Flexible hours', 'Shifts', 'Night shift',
+  { value: 'Remote',          labelKey: 'remote' },
+  { value: 'Hybrid',          labelKey: 'hybrid' },
+  { value: 'On-site',         labelKey: 'onSite' },
+  { value: 'Full-time',       labelKey: 'fullTime' },
+  { value: 'Part-time',       labelKey: 'partTime' },
+  { value: 'Weekends',        labelKey: 'weekends' },
+  { value: 'Evenings',        labelKey: 'evenings' },
+  { value: 'Flexible hours',  labelKey: 'flexibleHours' },
+  { value: 'Shifts',          labelKey: 'shifts' },
+  { value: 'Night shift',     labelKey: 'nightShift' },
 ];
 
 interface EditBtnProps { onClick: () => void }
-const EditBtn: React.FC<EditBtnProps> = ({ onClick }) => (
-  <button
-    onClick={onClick}
-    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500 bg-slate-50 border border-slate-200 rounded-full hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-all duration-200 active:scale-95"
-  >
-    <Edit2 size={11} />
-    Edit
-  </button>
-);
+const EditBtn: React.FC<EditBtnProps> = ({ onClick }) => {
+  const { t } = useTranslation();
+  return (
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500 bg-slate-50 border border-slate-200 rounded-full hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-all duration-200 active:scale-95"
+    >
+      <Edit2 size={11} />
+      {t('gigDetailsView.edit', 'Edit')}
+    </button>
+  );
+};
 
 interface SaveCancelProps { onSave: () => void; onCancel: () => void; saving: boolean }
-const SaveCancel: React.FC<SaveCancelProps> = ({ onSave, onCancel, saving }) => (
-  <div className="flex items-center gap-2">
-    <button
-      onClick={onSave}
-      disabled={saving}
-      className="inline-flex items-center gap-1.5 px-4 py-1.5 text-[10px] font-black uppercase tracking-wider text-white bg-purple-600 hover:bg-purple-700 rounded-full transition-all duration-200 active:scale-95 disabled:opacity-60 shadow-sm"
-    >
-      {saving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
-      {saving ? 'Saving…' : 'Save'}
-    </button>
-    <button
-      onClick={onCancel}
-      disabled={saving}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-all duration-200 active:scale-95 disabled:opacity-60"
-    >
-      <X size={11} />
-      Cancel
-    </button>
-  </div>
-);
+const SaveCancel: React.FC<SaveCancelProps> = ({ onSave, onCancel, saving }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={onSave}
+        disabled={saving}
+        className="inline-flex items-center gap-1.5 px-4 py-1.5 text-[10px] font-black uppercase tracking-wider text-white bg-purple-600 hover:bg-purple-700 rounded-full transition-all duration-200 active:scale-95 disabled:opacity-60 shadow-sm"
+      >
+        {saving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+        {saving ? t('gigDetailsView.saving', 'Saving…') : t('gigDetailsView.save', 'Save')}
+      </button>
+      <button
+        onClick={onCancel}
+        disabled={saving}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-all duration-200 active:scale-95 disabled:opacity-60"
+      >
+        <X size={11} />
+        {t('gigDetailsView.cancel', 'Cancel')}
+      </button>
+    </div>
+  );
+};
 
 // ─── main component ──────────────────────────────────────────────────────────
 
 const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdated }) => {
+  const { t } = useTranslation();
+  const g = (key: string, fallback?: string) => t(`gigDetailsView.${key}`, fallback ?? key);
+
   // ── existing agent-list state
   const [enrolledAgents, setEnrolledAgents] = useState<any[]>([]);
   const [showAgentsModal, setShowAgentsModal] = useState<boolean>(false);
@@ -499,7 +545,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
           className="inline-flex items-center gap-2.5 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:text-slate-950 transition-all duration-300 shadow-sm hover:scale-105 active:scale-95"
         >
           <ArrowLeft size={14} />
-          Back to Gigs
+          {g('backToGigs')}
         </button>
       </div>
 
@@ -526,61 +572,66 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
         {editingSection === 'basic' ? (
           <div className="relative z-10 space-y-5 border border-purple-100 bg-purple-50/30 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-black text-purple-600 uppercase tracking-wider">Editing Basic Info</h3>
+              <h3 className="text-xs font-black text-purple-600 uppercase tracking-wider">{g('sections.editingBasic')}</h3>
               <SaveCancel onSave={() => saveSection('basic')} onCancel={cancelEdit} saving={saving} />
             </div>
 
             <div>
-              <label className={labelCls}>Title</label>
+              <label className={labelCls}>{g('fields.title')}</label>
               <input
                 className={inputCls}
                 value={basicDraft.title}
                 onChange={e => setBasicDraft((d: any) => ({ ...d, title: e.target.value }))}
-                placeholder="Gig title"
+                placeholder={g('placeholders.gigTitle')}
               />
             </div>
 
             <div>
-              <label className={labelCls}>Description</label>
+              <label className={labelCls}>{g('fields.description')}</label>
               <textarea
                 className={inputCls + ' min-h-[100px] resize-y'}
                 value={basicDraft.description}
                 onChange={e => setBasicDraft((d: any) => ({ ...d, description: e.target.value }))}
-                placeholder="Describe the gig…"
+                placeholder={g('placeholders.gigDescription')}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className={labelCls}>Category</label>
+                <label className={labelCls}>{g('fields.category')}</label>
                 <select
                   className={selectCls}
                   value={basicDraft.category}
                   onChange={e => setBasicDraft((d: any) => ({ ...d, category: e.target.value }))}
                 >
-                  <option value="">-- Sélectionner --</option>
-                  {GIG_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="">{g('placeholders.selectCategory')}</option>
+                  {GIG_CATEGORY_OPTIONS.map(c => (
+                    <option key={c.value} value={c.value}>{g(`categories.${c.labelKey}`)}</option>
+                  ))}
                 </select>
               </div>
               <div>
-                <label className={labelCls}>Seniority Level</label>
+                <label className={labelCls}>{g('fields.seniorityLevel')}</label>
                 <select
                   className={selectCls}
                   value={basicDraft.seniorityLevel}
                   onChange={e => setBasicDraft((d: any) => ({ ...d, seniorityLevel: e.target.value }))}
                 >
-                  {SENIORITY_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                  <option value="">{g('placeholders.selectSeniority')}</option>
+                  {SENIORITY_OPTIONS.map(l => (
+                    <option key={l.value} value={l.value}>{g(`seniority.${l.labelKey}`)}</option>
+                  ))}
                 </select>
               </div>
               <div>
-                <label className={labelCls}>Years of Experience</label>
+                <label className={labelCls}>{g('fields.yearsExperience')}</label>
                 <select
                   className={selectCls}
                   value={basicDraft.yearsExperience}
                   onChange={e => setBasicDraft((d: any) => ({ ...d, yearsExperience: e.target.value }))}
                 >
-                  <option value="">-- Sélectionner --</option>
-                  {YEARS_EXPERIENCE.map(y => <option key={y} value={y}>{y} {y === '1' ? 'an' : 'ans'}</option>)}
+                  <option value="">{g('placeholders.selectYears')}</option>
+                  {YEARS_EXPERIENCE.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
             </div>
@@ -590,7 +641,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
             {/* Left: Job Description */}
             <div className="space-y-6 animate-slide-up [animation-delay:120ms]">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h2 className="text-xl font-black text-slate-900 uppercase tracking-wider">Job Description</h2>
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-wider">{g('sections.basicInfo')}</h2>
                 <EditBtn onClick={() => enterEdit('basic')} />
               </div>
               <p className="text-slate-600 leading-relaxed font-medium text-[15px]">
@@ -609,7 +660,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
             {/* Right: Commission display */}
             <div className="space-y-6 animate-slide-up [animation-delay:150ms]">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h2 className="text-xl font-black text-slate-900 uppercase tracking-wider">Commission & details</h2>
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-wider">{g('sections.commission')}</h2>
                 <EditBtn onClick={() => enterEdit('commission')} />
               </div>
               <div className="space-y-5">
@@ -644,13 +695,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
         {editingSection === 'commission' && (
           <div className="relative z-10 space-y-5 border border-purple-100 bg-purple-50/30 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-black text-purple-600 uppercase tracking-wider">Editing Commission</h3>
+              <h3 className="text-xs font-black text-purple-600 uppercase tracking-wider">{g('sections.editingCommission')}</h3>
               <SaveCancel onSave={() => saveSection('commission')} onCancel={cancelEdit} saving={saving} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className={labelCls}>€ / Call</label>
+                <label className={labelCls}>{g('fields.callRate')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -661,7 +712,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 />
               </div>
               <div>
-                <label className={labelCls}>€ / Transaction</label>
+                <label className={labelCls}>{g('fields.transactionRate')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -672,7 +723,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 />
               </div>
               <div>
-                <label className={labelCls}>Bonus Amount (€)</label>
+                <label className={labelCls}>{g('fields.bonusAmount')}</label>
                 <input
                   type="number"
                   className={inputCls}
@@ -685,7 +736,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Minimum Volume (calls to trigger bonus)</label>
+                <label className={labelCls}>{g('fields.minimumVolume')}</label>
                 <input
                   type="number"
                   className={inputCls}
@@ -695,30 +746,27 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 />
               </div>
               <div>
-                <label className={labelCls}>Period</label>
+                <label className={labelCls}>{g('fields.period')}</label>
                 <select
                   className={selectCls}
                   value={commissionDraft.minimumVolumePeriod}
                   onChange={e => setCommissionDraft((d: any) => ({ ...d, minimumVolumePeriod: e.target.value }))}
                 >
-                  <option value="">-- Sélectionner --</option>
-                  <option value="jour">Jour</option>
-                  <option value="semaine">Semaine</option>
-                  <option value="mois">Mois</option>
-                  <option value="trimestre">Trimestre</option>
-                  <option value="semestre">Semestre</option>
-                  <option value="année">Année</option>
+                  <option value="">{g('placeholders.selectPeriod')}</option>
+                  {PERIOD_OPTIONS.map(p => (
+                    <option key={p.value} value={p.value}>{g(`periods.${p.labelKey}`)}</option>
+                  ))}
                 </select>
               </div>
             </div>
 
             <div>
-              <label className={labelCls}>Additional Details / Terms</label>
+              <label className={labelCls}>{g('fields.additionalDetails')}</label>
               <textarea
                 className={inputCls + ' min-h-[80px] resize-y'}
                 value={commissionDraft.additionalDetails}
                 onChange={e => setCommissionDraft((d: any) => ({ ...d, additionalDetails: e.target.value }))}
-                placeholder="Describe commission terms…"
+                placeholder={g('placeholders.terms')}
               />
             </div>
           </div>
@@ -736,7 +784,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
           <div>
             <h2 className="text-lg font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
               <Users className="h-5 w-5 text-purple-600 animate-pulse animate-glow-pulse" />
-              Team & Territory setup
+              {g('sections.team')}
             </h2>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
               Campaign staffing, target zone & active assignments
@@ -752,13 +800,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
         {editingSection === 'team' ? (
           <div className="space-y-5">
             <div className="max-w-xs">
-              <label className={labelCls}>Allocated Seats (Team Size)</label>
+              <label className={labelCls}>{g('fields.allocatedSeats')}</label>
               <select
                 className={selectCls}
                 value={teamDraft.size}
                 onChange={e => setTeamDraft((d: any) => ({ ...d, size: e.target.value }))}
               >
-                <option value="">-- Sélectionner --</option>
+                <option value="">{g('placeholders.selectTeamSize')}</option>
                 {TEAM_SIZES.map(s => <option key={s} value={s}>{s} {Number(s) === 1 ? 'agent' : 'agents'}</option>)}
               </select>
             </div>
@@ -775,7 +823,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 </div>
                 <div>
                   <p className="text-2xl font-black text-slate-955 leading-none">{localGig.team?.size || 5}</p>
-                  <p className="text-[10px] text-purple-600 font-bold mt-1 uppercase tracking-wider">Allocated Seats</p>
+                  <p className="text-[10px] text-purple-600 font-bold mt-1 uppercase tracking-wider">{g('display.allocatedSeats')}</p>
                 </div>
               </div>
             </div>
@@ -831,7 +879,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                     )}
                   </div>
                   <span className="text-[10px] font-black text-indigo-600 group-hover:text-indigo-800 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0">
-                    View List <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform animate-pulse" />
+                    {g('actions.viewList')} <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform animate-pulse" />
                   </span>
                 </div>
               ) : (
@@ -840,7 +888,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   className="w-full p-4 bg-indigo-50/50 hover:bg-indigo-100/50 rounded-2xl border border-indigo-100/70 border-dashed flex items-center justify-center gap-2 transition-all duration-300 group shadow-sm hover:scale-[1.02]"
                 >
                   <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse animate-glow-pulse group-hover:scale-110" />
-                  <span className="text-[10px] text-indigo-600 font-black uppercase tracking-wider group-hover:text-indigo-800">Match New Agents</span>
+                  <span className="text-[10px] text-indigo-600 font-black uppercase tracking-wider group-hover:text-indigo-800">{g('actions.matchAgents')}</span>
                 </button>
               )}
             </div>
@@ -872,7 +920,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
 
         const tz: any = localGig.availability?.time_zone;
         const timezoneDisplay =
-          (tz && typeof tz === 'object' && (tz.zoneName || tz.countryName)) ||
+          (tz && typeof tz === 'object' && (tz.name || tz.zoneName || tz.countryName || tz.abbreviation)) ||
           (typeof tz === 'string' ? tz : '') || '';
 
         const flexibility = Array.isArray(localGig.availability?.flexibility) ? localGig.availability.flexibility : [];
@@ -894,7 +942,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   <Calendar className="h-5 w-5 text-indigo-600 animate-pulse animate-glow-pulse" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wider">Availability</h2>
+                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wider">{g('sections.availability')}</h2>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Plages horaires actives du gig</p>
                 </div>
               </div>
@@ -903,7 +951,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 border border-indigo-100">
                       <ClockIcon className="w-3 h-3" />
-                      {totalHoursDisplay} / semaine
+                      {totalHoursDisplay} {g('display.perWeek')}
                     </div>
                     {timezoneDisplay && (
                       <div className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 border border-emerald-100">
@@ -912,7 +960,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                       </div>
                     )}
                     <div className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-full text-[11px] font-black uppercase tracking-wider border border-slate-200">
-                      {rawSchedule.length} jours
+                      {rawSchedule.length} {g('display.days')}
                     </div>
                   </div>
                 )}
@@ -929,7 +977,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 {/* Schedule entries */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <span className={labelCls}>Schedule Entries</span>
+                    <span className={labelCls}>{g('fields.scheduleEntries')}</span>
                     <button
                       onClick={() => setScheduleDraft((d: any) => ({
                         ...d,
@@ -937,7 +985,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                       }))}
                       className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full hover:bg-emerald-100 transition-all active:scale-95"
                     >
-                      <Plus size={11} /> Add Day
+                      <Plus size={11} /> {g('actions.addDay')}
                     </button>
                   </div>
                   <div className="space-y-2">
@@ -993,11 +1041,11 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
 
                 {/* Minimum hours */}
                 <div>
-                  <span className={labelCls}>Minimum Hours</span>
+                  <span className={labelCls}>{g('fields.minimumHours')}</span>
                   <div className="grid grid-cols-3 gap-3">
                     {(['daily', 'weekly', 'monthly'] as const).map(key => (
                       <div key={key}>
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">{key}</label>
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">{g(`periods.${key}`)}</label>
                         <input
                           type="number"
                           min="0"
@@ -1013,11 +1061,11 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
 
                 {/* Flexibility */}
                 <div>
-                  <span className={labelCls}>Flexibility Tags</span>
+                  <span className={labelCls}>{g('fields.flexibilityTags')}</span>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {scheduleDraft.flexibility?.map((opt: string, i: number) => (
                       <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-extrabold text-slate-700">
-                        {opt}
+                        {g(`flexibility.${FLEXIBILITY_OPTIONS.find(f => f.value === opt)?.labelKey ?? ''}`, opt)}
                         <button
                           onClick={() => setScheduleDraft((d: any) => ({ ...d, flexibility: d.flexibility.filter((_: any, fi: number) => fi !== i) }))}
                           className="text-rose-400 hover:text-rose-600 transition-colors"
@@ -1033,9 +1081,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                       value={scheduleDraft.newFlexibility || ''}
                       onChange={e => setScheduleDraft((d: any) => ({ ...d, newFlexibility: e.target.value }))}
                     >
-                      <option value="">-- Choisir une option --</option>
-                      {FLEXIBILITY_OPTIONS.filter(o => !scheduleDraft.flexibility?.includes(o)).map(o => (
-                        <option key={o} value={o}>{o}</option>
+                      <option value="">{g('placeholders.selectFlexibility')}</option>
+                      {FLEXIBILITY_OPTIONS.filter(o => !scheduleDraft.flexibility?.includes(o.value)).map(o => (
+                        <option key={o.value} value={o.value}>{g(`flexibility.${o.labelKey}`)}</option>
                       ))}
                     </select>
                     <button
@@ -1142,7 +1190,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
               <div className="p-3 bg-purple-50 rounded-xl">
                 <Target className="h-5 w-5 text-purple-600 animate-pulse animate-glow-pulse" />
               </div>
-              <h2 className="text-lg font-black text-slate-900 uppercase tracking-wider">Skills & Requirements</h2>
+              <h2 className="text-lg font-black text-slate-900 uppercase tracking-wider">{g('sections.skills')}</h2>
             </div>
             {editingSection !== 'skills'
               ? <EditBtn onClick={() => enterEdit('skills')} />
@@ -1157,7 +1205,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
               {(['professional', 'technical', 'soft'] as const).map(type => (
                 <div key={type}>
                   <div className="flex items-center justify-between mb-3">
-                    <span className={labelCls}>{type} Skills</span>
+                    <span className={labelCls}>{g(`fields.${type === 'professional' ? 'professionalSkills' : type === 'technical' ? 'technicalSkills' : 'softSkills'}`)}</span>
                     <button
                       onClick={() => setSkillsDraft((d: any) => ({
                         ...d,
@@ -1165,7 +1213,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                       }))}
                       className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full hover:bg-emerald-100 transition-all active:scale-95"
                     >
-                      <Plus size={11} /> Add
+                      <Plus size={11} /> {g('actions.add')}
                     </button>
                   </div>
                   <div className="space-y-2">
@@ -1179,7 +1227,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                             arr[idx] = { ...arr[idx], name: e.target.value };
                             return { ...d, [type]: arr };
                           })}
-                          placeholder="Skill name…"
+                          placeholder={g('placeholders.skillName')}
                         />
                         <select
                           className={selectCls}
@@ -1190,8 +1238,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                             return { ...d, [type]: arr };
                           })}
                         >
-                          {SKILL_LEVELS.map(sl => (
-                            <option key={sl.value} value={sl.value}>{sl.label}</option>
+                          {SKILL_LEVEL_OPTIONS.map(sl => (
+                            <option key={sl.value} value={sl.value}>{g(`skillLevels.${sl.labelKey}`)}</option>
                           ))}
                         </select>
                         <button
@@ -1206,7 +1254,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                       </div>
                     ))}
                     {skillsDraft[type]?.length === 0 && (
-                      <p className="text-xs text-slate-400 italic">No {type} skills. Click "Add" to start.</p>
+                      <p className="text-xs text-slate-400 italic">{g('display.noSkills')}</p>
                     )}
                   </div>
                 </div>
@@ -1215,7 +1263,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
               {/* Languages */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className={labelCls}>Languages</span>
+                  <span className={labelCls}>{g('fields.languages')}</span>
                   <button
                     onClick={() => setSkillsDraft((d: any) => ({
                       ...d,
@@ -1223,7 +1271,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                     }))}
                     className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full hover:bg-emerald-100 transition-all active:scale-95"
                   >
-                    <Plus size={11} /> Add
+                    <Plus size={11} /> {g('actions.add')}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -1237,7 +1285,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                           arr[idx] = { ...arr[idx], name: e.target.value };
                           return { ...d, languages: arr };
                         })}
-                        placeholder="Language name…"
+                        placeholder={g('placeholders.languageName')}
                       />
                       <select
                         className={selectCls}
@@ -1248,7 +1296,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                           return { ...d, languages: arr };
                         })}
                       >
-                        {PROFICIENCY_LEVELS.map(p => <option key={p}>{p}</option>)}
+                        {PROFICIENCY_OPTIONS.map(p => (
+                          <option key={p.value} value={p.value}>{g(`proficiency.${p.labelKey}`)}</option>
+                        ))}
                       </select>
                       <button
                         onClick={() => setSkillsDraft((d: any) => ({
@@ -1262,7 +1312,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                     </div>
                   ))}
                   {skillsDraft.languages?.length === 0 && (
-                    <p className="text-xs text-slate-400 italic">No languages added yet.</p>
+                    <p className="text-xs text-slate-400 italic">{g('display.noLanguages')}</p>
                   )}
                 </div>
               </div>
@@ -1274,7 +1324,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 <div className="bg-slate-50/50 border border-slate-100/80 rounded-2xl p-6 hover:bg-white hover:border-slate-200 transition-all duration-300 hover:shadow-md">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                    Core & Soft Competencies
+                    {g('display.coreCompetencies')}
                   </h3>
                   <div className="flex flex-wrap gap-2.5">
                     {localGig.skills?.professional?.map((item: any, index: number) => (
@@ -1299,7 +1349,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 <div className="bg-slate-50/50 border border-slate-100/80 rounded-2xl p-6 hover:bg-white hover:border-slate-200 transition-all duration-300 hover:shadow-md">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
-                    Technical & Operations Stack
+                    {g('display.technicalStack')}
                   </h3>
                   <div className="flex flex-wrap gap-2.5">
                     {localGig.skills?.technical?.map((item: any, index: number) => (
@@ -1329,8 +1379,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                             <p className="text-xs font-extrabold text-slate-800">
                               {typeof item.language === 'object' ? item.language?.name : (item.language || 'Unnamed Language')}
                             </p>
-                            {typeof item.language === 'object' && item.language?.nativeName && (
-                              <p className="text-[10px] text-slate-400 mt-0.5 font-bold italic">{item.language.nativeName}</p>
+                            {typeof item.language === 'object' && (item.language?.nativeName || item.language?.iso639_1) && (
+                              <p className="text-[10px] text-slate-400 mt-0.5 font-bold italic">{item.language.nativeName || item.language.iso639_1}</p>
                             )}
                           </div>
                           <span className="text-[9px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-md uppercase tracking-wider">
@@ -1357,10 +1407,10 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
               <div>
                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                   <Users className="text-purple-600 animate-pulse animate-glow-pulse" />
-                  Enrolled Representatives
+                  {g('agents.enrolledTitle')}
                 </h3>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                  Currently assigned agents for <span className="font-extrabold text-purple-600">{localGig.title}</span>
+                  {g('agents.assignedTo')} <span className="font-extrabold text-purple-600">{localGig.title}</span>
                 </p>
               </div>
               <button
@@ -1402,7 +1452,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                             </span>
                             {agent.emailSent && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100">
-                                Invited
+                                {g('agents.invited')}
                               </span>
                             )}
                           </div>
@@ -1410,7 +1460,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                       </div>
                       <div className="flex items-center gap-6 self-end md:self-center">
                         <div className="text-right">
-                          <span className="text-[10px] text-slate-400 font-bold block mb-1">MATCH SCORE</span>
+                          <span className="text-[10px] text-slate-400 font-bold block mb-1">{g('agents.matchScore')}</span>
                           <div className="flex items-center gap-2">
                             <div className="w-24 bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
                               <div

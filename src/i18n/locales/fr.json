@@ -1738,5 +1738,138 @@
         "description": "Construisez des parcours de formation, importez vos documents et préparez vos reps au succès avant qu'ils passent les appels."
       }
     }
+  },
+  "gigDetailsView": {
+    "backToGigs": "Retour aux Gigs",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "cancel": "Annuler",
+    "sections": {
+      "basicInfo": "Description du Poste",
+      "editingBasic": "Modification des Informations de Base",
+      "commission": "Commission & Détails",
+      "editingCommission": "Modification de la Commission",
+      "team": "Équipe & Territoire",
+      "editingTeam": "Modification de l'Équipe",
+      "availability": "Disponibilité",
+      "editingSchedule": "Modification des Horaires",
+      "skills": "Compétences & Prérequis",
+      "editingSkills": "Modification des Compétences"
+    },
+    "fields": {
+      "title": "Titre",
+      "description": "Description",
+      "category": "Catégorie",
+      "seniorityLevel": "Niveau de Séniorité",
+      "yearsExperience": "Années d'Expérience",
+      "callRate": "€ / Appel",
+      "transactionRate": "€ / Transaction",
+      "bonusAmount": "Montant du Bonus (€)",
+      "minimumVolume": "Volume Minimum (appels pour déclencher le bonus)",
+      "period": "Période",
+      "additionalDetails": "Détails Additionnels / Conditions",
+      "allocatedSeats": "Sièges Alloués (Taille de l'Équipe)",
+      "scheduleEntries": "Plages Horaires",
+      "minimumHours": "Heures Minimum",
+      "flexibilityTags": "Options de Flexibilité",
+      "professionalSkills": "Compétences Professionnelles",
+      "technicalSkills": "Compétences Techniques",
+      "softSkills": "Compétences Comportementales",
+      "languages": "Langues"
+    },
+    "placeholders": {
+      "selectCategory": "-- Sélectionner une catégorie --",
+      "selectSeniority": "-- Sélectionner --",
+      "selectYears": "-- Sélectionner --",
+      "selectPeriod": "Select period",
+      "selectTeamSize": "-- Sélectionner --",
+      "selectFlexibility": "-- Choisir une option --",
+      "gigTitle": "Titre du gig",
+      "gigDescription": "Décrivez le gig…",
+      "skillName": "Nom de la compétence…",
+      "languageName": "Nom de la langue…",
+      "terms": "Décrivez les conditions de commission…"
+    },
+    "actions": {
+      "addDay": "+ Ajouter un Jour",
+      "add": "+ Ajouter",
+      "matchAgents": "Matcher des Agents",
+      "viewList": "Voir la Liste"
+    },
+    "display": {
+      "allocatedSeats": "Sièges Alloués",
+      "territory": "Territoire",
+      "perWeek": "/ semaine",
+      "days": "jours",
+      "minimumHoursTitle": "Heures Minimum",
+      "flexibilityTitle": "Flexibilité",
+      "coreCompetencies": "Compétences Principales & Comportementales",
+      "technicalStack": "Stack Technique & Opérations",
+      "enrolledReps": "Représentants Inscrits",
+      "assignedReps": "Représentants Assignés",
+      "noSchedule": "Aucune plage horaire renseignée.",
+      "noSkills": "Aucune compétence pour l'instant. Cliquez sur Ajouter.",
+      "noLanguages": "Aucune langue ajoutée pour l'instant."
+    },
+    "categories": {
+      "outboundSales": "Outbound Sales",
+      "inboundSales": "Inbound Sales",
+      "customerService": "Service Client",
+      "technicalSupport": "Support Technique",
+      "leadGeneration": "Génération de Leads",
+      "insideSales": "Inside Sales",
+      "bpo": "BPO / Externalisation",
+      "coldCalling": "Cold Calling",
+      "appointmentSetting": "Prise de Rendez-vous",
+      "accountManagement": "Gestion de Compte",
+      "other": "Autre"
+    },
+    "seniority": {
+      "junior": "Junior",
+      "midLevel": "Mid-Level",
+      "senior": "Senior",
+      "expert": "Expert",
+      "cLevel": "C-Level"
+    },
+    "periods": {
+      "daily": "Quotidien",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuel"
+    },
+    "skillLevels": {
+      "10": "1 – Débutant",
+      "25": "2 – Notions",
+      "50": "3 – Intermédiaire",
+      "75": "4 – Avancé",
+      "90": "5 – Expert",
+      "100": "6 – Maître"
+    },
+    "proficiency": {
+      "basic": "Basique",
+      "conversational": "Conversationnel",
+      "intermediate": "Intermédiaire",
+      "advanced": "Avancé",
+      "fluent": "Courant",
+      "native": "Natif"
+    },
+    "flexibility": {
+      "remote": "Télétravail",
+      "hybrid": "Hybride",
+      "onSite": "Présentiel",
+      "fullTime": "Temps Plein",
+      "partTime": "Temps Partiel",
+      "weekends": "Week-ends",
+      "evenings": "Soirées",
+      "flexibleHours": "Horaires Flexibles",
+      "shifts": "Travail en Équipes",
+      "nightShift": "Quart de Nuit"
+    },
+    "agents": {
+      "enrolledTitle": "Représentants Inscrits",
+      "assignedTo": "Agents actuellement assignés à",
+      "matchScore": "SCORE DE CORRESPONDANCE",
+      "invited": "Invité"
+    }
   }
 }
