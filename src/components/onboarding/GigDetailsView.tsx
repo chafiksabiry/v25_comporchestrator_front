@@ -187,14 +187,21 @@ const SKILL_LEVEL_OPTIONS = [
   { value: 90,  labelKey: '90' },
   { value: 100, labelKey: '100' },
 ];
+// CEFR codes stored in DB; labels are translated via i18n
 const PROFICIENCY_OPTIONS = [
-  { value: 'Basic',         labelKey: 'basic' },
-  { value: 'Conversational',labelKey: 'conversational' },
-  { value: 'Intermediate',  labelKey: 'intermediate' },
-  { value: 'Advanced',      labelKey: 'advanced' },
-  { value: 'Fluent',        labelKey: 'fluent' },
-  { value: 'Native',        labelKey: 'native' },
+  { value: 'A1', labelKey: 'a1' },
+  { value: 'A2', labelKey: 'a2' },
+  { value: 'B1', labelKey: 'b1' },
+  { value: 'B2', labelKey: 'b2' },
+  { value: 'C1', labelKey: 'c1' },
+  { value: 'C2', labelKey: 'c2' },
 ];
+// Map legacy text values → CEFR code so old data displays correctly
+const LEGACY_PROFICIENCY_MAP: Record<string, string> = {
+  basic: 'A1', elementary: 'A2', conversational: 'B1',
+  intermediate: 'B1', 'upper-intermediate': 'B2',
+  advanced: 'C1', fluent: 'C1', native: 'C2', mastery: 'C2',
+};
 const FLEXIBILITY_OPTIONS = [
   { value: 'Remote',          labelKey: 'remote' },
   { value: 'Hybrid',          labelKey: 'hybrid' },
@@ -453,10 +460,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
           skillId: extractId(s.skill),
           level: s.level ?? 50,
         })),
-        languages: (localGig.skills?.languages || []).map((l: any) => ({
-          languageId: extractId(l.language),
-          proficiency: l.proficiency || 'Intermediate',
-        })),
+        languages: (localGig.skills?.languages || []).map((l: any) => {
+          const raw = (l.proficiency || 'B1') as string;
+          // Normalize legacy text values to CEFR code
+          const cefrCode = PROFICIENCY_OPTIONS.find(p => p.value === raw)
+            ? raw
+            : (LEGACY_PROFICIENCY_MAP[raw.toLowerCase()] ?? 'B1');
+          return { languageId: extractId(l.language), proficiency: cefrCode };
+        }),
       });
     } else if (section === 'team') {
       // size can be a number — coerce to string for the <select>
@@ -1456,7 +1467,13 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                             )}
                           </div>
                           <span className="text-[9px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-md uppercase tracking-wider">
-                            {item.proficiency}
+                            {(() => {
+                              const raw = item.proficiency || '';
+                              const opt = PROFICIENCY_OPTIONS.find(p => p.value === raw)
+                                ?? PROFICIENCY_OPTIONS.find(p =>
+                                    p.value === LEGACY_PROFICIENCY_MAP[raw.toLowerCase()]);
+                              return opt ? g(`proficiency.${opt.labelKey}`) : raw;
+                            })()}
                           </span>
                         </div>
                       ))}
