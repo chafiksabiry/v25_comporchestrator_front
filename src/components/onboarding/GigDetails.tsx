@@ -305,6 +305,12 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
       <GigDetailsView
         gig={mappedGig as any}
         onBack={() => setSelectedGig(null)}
+        onGigUpdated={(updatedGig: any) => {
+          setSelectedGig(updatedGig);
+          setGigs((prev: any[]) => prev.map((g: any) =>
+            g._id === updatedGig._id ? updatedGig : g
+          ));
+        }}
       />
     );
   }
