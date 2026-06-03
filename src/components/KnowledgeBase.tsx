@@ -173,11 +173,22 @@ const KnowledgeBase: React.FC = () => {
   const getAudioDuration = (file: File): Promise<number> => {
     return new Promise((resolve) => {
       const audio = new Audio();
-      audio.src = URL.createObjectURL(file);
+      const objectUrl = URL.createObjectURL(file);
+      audio.src = objectUrl;
+      const cleanup = () => URL.revokeObjectURL(objectUrl);
       audio.addEventListener('loadedmetadata', () => {
-        URL.revokeObjectURL(audio.src);
-        resolve(Math.round(audio.duration / 60)); // Convert to minutes and round
+        cleanup();
+        resolve(Math.round(audio.duration / 60));
       });
+      audio.addEventListener('error', () => {
+        cleanup();
+        resolve(0);
+      });
+      // Fallback timeout: if metadata never loads, resolve with 0
+      setTimeout(() => {
+        cleanup();
+        resolve(0);
+      }, 5000);
     });
   };
 
