@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Trash2, Video, LayoutGrid, MessageSquare, Activity as ActivityIcon, Globe, ShieldAlert, ShieldCheck, TrendingUp, Star } from 'lucide-react';
+import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Trash2, Video, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
@@ -138,7 +138,6 @@ const KnowledgeBase: React.FC = () => {
   const [isGigDropdownOpen, setIsGigDropdownOpen] = useState(false);
   const [transcriptionShowCount, setTranscriptionShowCount] = useState<{ [key: string]: number }>({});
   const TRANSCRIPTION_PAGE_SIZE = 5;
-  const [callAnalysisTab, setCallAnalysisTab] = useState<{ [id: string]: 'transcript' | 'insights' }>({});
 
   // Load items from localStorage on mount
   useEffect(() => {
@@ -1386,155 +1385,15 @@ const KnowledgeBase: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    {/* ── Tabs ── */}
-                    <div className="flex items-center gap-3 mb-6">
-                      <button
-                        onClick={() => setCallAnalysisTab(prev => ({ ...prev, [item.id]: 'transcript' }))}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${(callAnalysisTab[item.id] ?? 'transcript') === 'transcript' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-100'}`}
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                        Transcript
-                      </button>
-                      <button
-                        onClick={() => setCallAnalysisTab(prev => ({ ...prev, [item.id]: 'insights' }))}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${callAnalysisTab[item.id] === 'insights' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-100'}`}
-                      >
-                        <ActivityIcon className="w-4 h-4" />
-                        AI Insights
-                      </button>
-                    </div>
-
-                    {/* ── Tab content ── */}
-                    {(callAnalysisTab[item.id] ?? 'transcript') === 'transcript' ? (
-                      /* ── Transcript ── */
-                      (() => {
-                        const segs = (documentAnalysis[item.id] as any)?.transcription?.segments;
-                        if (!segs) {
-                          return (
-                            <div className="flex flex-col items-center justify-center py-12 bg-white/40 rounded-3xl border border-white shadow-inner">
-                              <Loader2 className="animate-spin text-harx-500 mb-4" size={32} />
-                              <p className="text-xs font-black text-gray-500 uppercase tracking-widest animate-pulse">Chargement de la transcription…</p>
-                            </div>
-                          );
-                        }
-                        if (segs.length === 0) {
-                          return (
-                            <div className="py-10 text-center">
-                              <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Transcription non disponible pour cet enregistrement</p>
-                            </div>
-                          );
-                        }
-                        return (
-                          <div className="max-w-4xl mx-auto space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                            {segs.map((entry: any, i: number) => {
-                              const isAgent = entry.speaker?.toLowerCase().includes('agent') || entry.speaker === 'rep' || entry.speaker === 'A';
-                              return (
-                                <div key={i} className={`flex gap-4 ${isAgent ? 'flex-row' : 'flex-row-reverse'}`}>
-                                  <div className={`flex flex-col max-w-[75%] ${isAgent ? 'items-start' : 'items-end'}`}>
-                                    <div className="flex items-center gap-2 mb-1.5 px-2">
-                                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{entry.speaker}</span>
-                                      {entry.start && <span className="text-[9px] font-bold text-slate-300">{entry.start}</span>}
-                                    </div>
-                                    <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${isAgent ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm' : 'bg-gradient-harx text-white rounded-tr-none shadow-lg shadow-harx-500/20'}`}>
-                                      {entry.text}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        );
-                      })()
+                    {documentAnalysis[item.id] ? (
+                      renderAnalysisContent(documentAnalysis[item.id], item.id)
                     ) : (
-                      /* ── AI Insights ── */
-                      (() => {
-                        const colorMap: Record<string, { bg: string; text: string; bgBar: string }> = {
-                          emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', bgBar: 'bg-emerald-500' },
-                          blue:    { bg: 'bg-blue-50',    text: 'text-blue-600',    bgBar: 'bg-blue-500'    },
-                          rose:    { bg: 'bg-rose-50',    text: 'text-rose-600',    bgBar: 'bg-rose-500'    },
-                          indigo:  { bg: 'bg-indigo-50',  text: 'text-indigo-600',  bgBar: 'bg-indigo-500'  },
-                          amber:   { bg: 'bg-amber-50',   text: 'text-amber-600',   bgBar: 'bg-amber-500'   },
-                        };
-                        const scoring = (documentAnalysis[item.id] as any)?.scoring?.result;
-                        const metrics = [
-                          { label: 'Agent Fluency',       key: 'Agent fluency',       icon: Globe,        color: 'emerald' },
-                          { label: 'Sentiment Analysis',  key: 'Sentiment analysis',  icon: ActivityIcon, color: 'blue'    },
-                          { label: 'Fraud Detection',     key: 'Fraud detection',     icon: ShieldAlert,  color: 'rose'    },
-                          { label: 'Script Coherence',    key: 'Script coherence',    icon: ShieldCheck,  color: 'indigo'  },
-                          { label: 'Argumentation',       key: 'Argumentation',       icon: TrendingUp,   color: 'amber'   },
-                          { label: 'Transaction Anal.',   key: 'Transaction analysis',icon: TrendingUp,   color: 'emerald' },
-                        ];
-                        if (!scoring) {
-                          return (
-                            <div className="flex flex-col items-center justify-center py-12 bg-white/40 rounded-3xl border border-white shadow-inner">
-                              <Loader2 className="animate-spin text-harx-500 mb-4" size={32} />
-                              <p className="text-xs font-black text-gray-500 uppercase tracking-widest animate-pulse">Chargement des scores IA…</p>
-                            </div>
-                          );
-                        }
-                        return (
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {metrics.map((metric, mIdx) => {
-                                const metricData = scoring[metric.key];
-                                if (!metricData) return null;
-                                const isFraud = metric.key === 'Fraud detection';
-                                const raw = metricData?.score || 0;
-                                const score = isFraud ? 100 - raw : raw;
-                                const feedback = metricData?.feedback || '';
-                                const theme = colorMap[metric.color] || colorMap.emerald;
-                                return (
-                                  <div key={mIdx} className="bg-white rounded-[24px] p-5 border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-                                    <div>
-                                      <div className="flex justify-between items-start mb-4">
-                                        <div className={`w-10 h-10 rounded-xl ${theme.bg} ${theme.text} flex items-center justify-center shadow-sm shrink-0`}>
-                                          <metric.icon className="w-5 h-5" />
-                                        </div>
-                                        <div className="text-right">
-                                          <span className={`text-base font-black ${theme.text}`}>{score}%</span>
-                                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Score</p>
-                                        </div>
-                                      </div>
-                                      <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <span className={`w-1.5 h-3.5 ${theme.bgBar} rounded-full`} />
-                                        {metric.label}
-                                      </h5>
-                                    </div>
-                                    <div className="text-xs font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl p-4 border border-slate-50 group-hover:bg-white group-hover:border-slate-100 transition-all max-h-[160px] overflow-y-auto custom-scrollbar italic">
-                                      {feedback || 'Analyse terminée.'}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-
-                            {/* Executive Summary */}
-                            {scoring.overall && (
-                              <div className="relative group mt-4">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-[28px] blur opacity-10 group-hover:opacity-20 transition duration-1000" />
-                                <div className="relative bg-white rounded-[28px] border border-emerald-100/50 shadow-2xl shadow-emerald-500/5 p-6 sm:p-8 overflow-hidden">
-                                  <div className="flex items-center gap-4 mb-5">
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 shrink-0">
-                                      <Star className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                      <h4 className="text-lg font-black text-slate-900 uppercase tracking-widest">Executive Summary</h4>
-                                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-0.5 opacity-80">Overall AI Evaluation</p>
-                                    </div>
-                                  </div>
-                                  <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] p-5 sm:p-6 border border-slate-100 shadow-inner">
-                                    <p className="text-base font-bold text-slate-800 leading-relaxed italic relative">
-                                      <span className="absolute -left-2 -top-3 text-emerald-200 text-4xl font-serif opacity-50">&quot;</span>
-                                      {scoring.overall?.feedback || "L'agent a fait preuve de performances standards."}
-                                      <span className="text-emerald-200 text-4xl font-serif opacity-50 ml-1 leading-none align-bottom">&quot;</span>
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()
+                      <div className="flex flex-col items-center justify-center py-12 bg-white/40 rounded-3xl border border-white shadow-inner">
+                        <Loader2 className="animate-spin text-harx-500 mb-4" size={32} />
+                        <p className="text-xs font-black text-gray-500 uppercase tracking-widest animate-pulse">
+                          {t('knowledgeBase.intelligenceDashboard.generatingInsights')}
+                        </p>
+                      </div>
                     )}
                   </div>
                 )
