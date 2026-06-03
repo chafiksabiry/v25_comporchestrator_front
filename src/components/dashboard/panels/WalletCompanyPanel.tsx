@@ -561,29 +561,6 @@ export function WalletCompanyPanel() {
             </div>
           </div>
         </div>
-
-        <div className="bg-white rounded-[2rem] border border-gray-100 p-8 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-rose-500 font-bold text-xs uppercase tracking-wider mb-4">
-              <TrendingUp size={16} />
-              <span>Activité Représentants</span>
-            </div>
-            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">Demandes de retraits en attente</h3>
-            <span className="text-4xl font-black text-slate-900 block mb-2">
-              {agentWithdrawals.length}
-            </span>
-            <p className="text-xs text-gray-500">
-              Représentants en attente de versement de commission accumulée lors de leurs appels qualifiés.
-            </p>
-          </div>
-
-          <div className="pt-4 border-t border-gray-100">
-            <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Total à liquider</span>
-            <span className="text-lg font-black text-slate-800">
-              {agentWithdrawals.reduce((sum, w) => sum + w.amount, 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Wallet ledger — credits (deposits) + debits (commissions) */}
