@@ -616,20 +616,20 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 <div className="flex flex-wrap gap-3.5">
                   <div className="px-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-cyan-500/10 hover:scale-105 transition-all duration-300 cursor-default">
                     <Phone size={14} className="animate-bounce" />
-                    {localGig.commission?.commission_per_call || '2.8'}€ / APPEL
+                    {localGig.commission?.commission_per_call ?? '2.8'}€ / APPEL
                   </div>
                   <div className="px-5 py-3 animate-shimmer-purple animate-pulse-subtle text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:scale-105 transition-all duration-300 shadow-lg shadow-purple-500/15 cursor-default">
                     <Repeat size={14} className="animate-spin-slow" />
                     {typeof localGig.commission?.transactionCommission === 'number'
                       ? localGig.commission.transactionCommission
-                      : ((localGig.commission?.transactionCommission as any)?.amount || '21')}€ / TRANSACTION
+                      : ((localGig.commission?.transactionCommission as any)?.amount ?? '21')}€ / TRANSACTION
                   </div>
                 </div>
                 <div className="px-5 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest inline-flex items-center gap-2 shadow-lg shadow-rose-500/10 hover:scale-105 transition-all duration-300 cursor-default">
                   <Star size={14} className="animate-spin-slow" />
-                  +{localGig.commission?.bonusAmount || '84'}€ BONUS
+                  +{localGig.commission?.bonusAmount ?? '84'}€ BONUS
                   <span className="text-[10px] font-bold opacity-80 normal-case ml-1 tracking-normal bg-black/15 px-2 py-0.5 rounded-md">
-                    Chaque {localGig.commission?.minimumVolume?.amount || '25'} appels / {localGig.commission?.minimumVolume?.period || 'mois'}
+                    Chaque {localGig.commission?.minimumVolume?.amount ?? '25'} appels / {localGig.commission?.minimumVolume?.period ?? 'mois'}
                   </span>
                 </div>
                 <div className="bg-slate-50 rounded-2xl p-6 text-slate-600 text-xs font-medium leading-relaxed italic border border-slate-100">
