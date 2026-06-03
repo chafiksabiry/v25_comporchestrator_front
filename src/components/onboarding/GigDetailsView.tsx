@@ -675,12 +675,19 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
               </div>
               <div>
                 <label className={labelCls}>Period</label>
-                <input
-                  className={inputCls}
+                <select
+                  className={selectCls}
                   value={commissionDraft.minimumVolumePeriod}
                   onChange={e => setCommissionDraft((d: any) => ({ ...d, minimumVolumePeriod: e.target.value }))}
-                  placeholder="mois"
-                />
+                >
+                  <option value="">-- Sélectionner --</option>
+                  <option value="jour">Jour</option>
+                  <option value="semaine">Semaine</option>
+                  <option value="mois">Mois</option>
+                  <option value="trimestre">Trimestre</option>
+                  <option value="semestre">Semestre</option>
+                  <option value="année">Année</option>
+                </select>
               </div>
             </div>
 
