@@ -274,6 +274,32 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
   const [skillsDraft, setSkillsDraft] = useState<any>({});
   const [teamDraft, setTeamDraft] = useState<any>({});
 
+  // ── DB reference data for skills / languages dropdowns
+  const [dbSkills, setDbSkills] = useState<{ professional: any[]; technical: any[]; soft: any[] }>({
+    professional: [], technical: [], soft: [],
+  });
+  const [dbLanguages, setDbLanguages] = useState<any[]>([]);
+  const [loadingRefs, setLoadingRefs] = useState(false);
+
+  useEffect(() => {
+    const REP_API = import.meta.env.VITE_REP_API;
+    if (!REP_API) return;
+    setLoadingRefs(true);
+    Promise.all([
+      fetch(`${REP_API}/skills/professional`).then(r => r.json()).catch(() => null),
+      fetch(`${REP_API}/skills/technical`).then(r => r.json()).catch(() => null),
+      fetch(`${REP_API}/skills/soft`).then(r => r.json()).catch(() => null),
+      fetch(`${REP_API}/languages`).then(r => r.json()).catch(() => null),
+    ]).then(([pro, tech, soft, langs]) => {
+      setDbSkills({
+        professional: pro?.data ?? [],
+        technical: tech?.data ?? [],
+        soft: soft?.data ?? [],
+      });
+      setDbLanguages(langs?.data ?? []);
+    }).finally(() => setLoadingRefs(false));
+  }, []);
+
   // ── existing handlers
   const handleMatchingRedirect = () => {
     if (window.location.hash.includes('dashboard') || window.location.pathname.includes('dashboard')) {
@@ -412,22 +438,23 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
         newFlexibility: '',
       });
     } else if (section === 'skills') {
+      const extractId = (v: any) =>
+        typeof v === 'string' ? v : (v?._id ?? v?.$oid ?? '');
       setSkillsDraft({
         professional: (localGig.skills?.professional || []).map((s: any) => ({
-          name: typeof s.skill === 'object' ? s.skill?.name || '' : s.skill || '',
-          // level is a number — keep as number so the <select> value matches
+          skillId: extractId(s.skill),
           level: s.level ?? 50,
         })),
         technical: (localGig.skills?.technical || []).map((s: any) => ({
-          name: typeof s.skill === 'object' ? s.skill?.name || '' : s.skill || '',
+          skillId: extractId(s.skill),
           level: s.level ?? 50,
         })),
         soft: (localGig.skills?.soft || []).map((s: any) => ({
-          name: typeof s.skill === 'object' ? s.skill?.name || '' : s.skill || '',
+          skillId: extractId(s.skill),
           level: s.level ?? 50,
         })),
         languages: (localGig.skills?.languages || []).map((l: any) => ({
-          name: typeof l.language === 'object' ? l.language?.name || '' : l.language || '',
+          languageId: extractId(l.language),
           proficiency: l.proficiency || 'Intermediate',
         })),
       });
@@ -494,22 +521,18 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
       } else if (section === 'skills') {
         payload = {
           skills: {
-            professional: skillsDraft.professional.map((s: any) => ({
-              skill: { name: s.name, category: 'professional' },
-              level: Number(s.level),
-            })),
-            technical: skillsDraft.technical.map((s: any) => ({
-              skill: { name: s.name, category: 'technical' },
-              level: Number(s.level),
-            })),
-            soft: skillsDraft.soft.map((s: any) => ({
-              skill: { name: s.name, category: 'soft' },
-              level: Number(s.level),
-            })),
-            languages: skillsDraft.languages.map((l: any) => ({
-              language: { name: l.name, nativeName: l.name },
-              proficiency: l.proficiency,
-            })),
+            professional: skillsDraft.professional
+              .filter((s: any) => s.skillId)
+              .map((s: any) => ({ skill: s.skillId, level: Number(s.level) })),
+            technical: skillsDraft.technical
+              .filter((s: any) => s.skillId)
+              .map((s: any) => ({ skill: s.skillId, level: Number(s.level) })),
+            soft: skillsDraft.soft
+              .filter((s: any) => s.skillId)
+              .map((s: any) => ({ skill: s.skillId, level: Number(s.level) })),
+            languages: skillsDraft.languages
+              .filter((l: any) => l.languageId)
+              .map((l: any) => ({ language: l.languageId, proficiency: l.proficiency })),
           },
         };
       } else if (section === 'team') {
@@ -1224,7 +1247,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                     <button
                       onClick={() => setSkillsDraft((d: any) => ({
                         ...d,
-                        [type]: [...(d[type] || []), { name: '', level: 1 }],
+                        [type]: [...(d[type] || []), { skillId: '', level: 50 }],
                       }))}
                       className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full hover:bg-emerald-100 transition-all active:scale-95"
                     >
@@ -1233,17 +1256,26 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   </div>
                   <div className="space-y-2">
                     {skillsDraft[type]?.map((item: any, idx: number) => (
-                      <div key={idx} className="grid grid-cols-[1fr_100px_auto] gap-2 items-center">
-                        <input
-                          className={inputCls}
-                          value={item.name}
+                      <div key={idx} className="grid grid-cols-[1fr_140px_auto] gap-2 items-center">
+                        {/* Skill dropdown from DB */}
+                        <select
+                          className={selectCls}
+                          value={item.skillId}
                           onChange={e => setSkillsDraft((d: any) => {
                             const arr = [...d[type]];
-                            arr[idx] = { ...arr[idx], name: e.target.value };
+                            arr[idx] = { ...arr[idx], skillId: e.target.value };
                             return { ...d, [type]: arr };
                           })}
-                          placeholder={g('placeholders.skillName')}
-                        />
+                        >
+                          <option value="">— {g('placeholders.skillName')} —</option>
+                          {loadingRefs
+                            ? <option disabled>Loading…</option>
+                            : dbSkills[type].map((sk: any) => (
+                                <option key={sk._id} value={sk._id}>{sk.name}</option>
+                              ))
+                          }
+                        </select>
+                        {/* Level dropdown */}
                         <select
                           className={selectCls}
                           value={Number(item.level)}
@@ -1282,7 +1314,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   <button
                     onClick={() => setSkillsDraft((d: any) => ({
                       ...d,
-                      languages: [...(d.languages || []), { name: '', proficiency: 'Intermediate' }],
+                      languages: [...(d.languages || []), { languageId: '', proficiency: 'Intermediate' }],
                     }))}
                     className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full hover:bg-emerald-100 transition-all active:scale-95"
                   >
@@ -1292,16 +1324,27 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 <div className="space-y-2">
                   {skillsDraft.languages?.map((item: any, idx: number) => (
                     <div key={idx} className="grid grid-cols-[1fr_160px_auto] gap-2 items-center">
-                      <input
-                        className={inputCls}
-                        value={item.name}
+                      {/* Language dropdown from DB */}
+                      <select
+                        className={selectCls}
+                        value={item.languageId}
                         onChange={e => setSkillsDraft((d: any) => {
                           const arr = [...d.languages];
-                          arr[idx] = { ...arr[idx], name: e.target.value };
+                          arr[idx] = { ...arr[idx], languageId: e.target.value };
                           return { ...d, languages: arr };
                         })}
-                        placeholder={g('placeholders.languageName')}
-                      />
+                      >
+                        <option value="">— {g('placeholders.languageName')} —</option>
+                        {loadingRefs
+                          ? <option disabled>Loading…</option>
+                          : dbLanguages.map((lang: any) => (
+                              <option key={lang._id} value={lang._id}>
+                                {lang.name}{lang.nativeName && lang.nativeName !== lang.name ? ` (${lang.nativeName})` : ''}
+                              </option>
+                            ))
+                        }
+                      </select>
+                      {/* Proficiency dropdown */}
                       <select
                         className={selectCls}
                         value={item.proficiency}
