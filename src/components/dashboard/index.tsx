@@ -18,10 +18,10 @@ const actions = initGlobalState(initialState);
 // Register microfrontends
 registerMicroApps([
   {
-    name: 'app1',
+    name: 'auth',
     entry: 'https://harx25register.netlify.app/',
-    container: '#container-app1',
-    activeRule: '/app1',
+    container: '#container-auth',
+    activeRule: '/auth',
     props: {
       sandbox: {
         experimentalStyleIsolation: true,

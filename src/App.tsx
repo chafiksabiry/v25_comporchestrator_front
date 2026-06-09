@@ -679,7 +679,7 @@ function AppContent() {
       try { localStorage.setItem(k, v); } catch { /* ignore quota */ }
     });
 
-    window.location.replace('/app1');
+    window.location.replace('/auth/signin');
   };
 
   const renderContent = () => {

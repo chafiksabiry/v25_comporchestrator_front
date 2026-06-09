@@ -18,10 +18,10 @@ let root: Root | null = null;
 /* const userId = localStorage.getItem('userId');
 
 
-// Éviter la redirection si nous sommes déjà sur app1
-if (!userId && !window.location.pathname.includes('/app1')) {
+// Éviter la redirection si nous sommes déjà sur auth
+if (!userId && !window.location.pathname.includes('/auth')) {
   
-  window.location.href = "/app1";
+  window.location.href = "/auth/signin";
 } */
 const companyId = import.meta.env.VITE_ENV === 'test' 
   ? '6807abfc2c1ca099fe2b13c5'
@@ -29,7 +29,7 @@ const companyId = import.meta.env.VITE_ENV === 'test'
 
 
 /*   if (companyId == null){
-    window.location.href = "/app1"
+    window.location.href = "/auth/signin"
   } */
 
 interface RenderProps {
