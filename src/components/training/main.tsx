@@ -49,10 +49,10 @@ if (!token || !userId) {
   // Redirect to main app login page
   if (window.location.hostname === 'training.harx.ai') {
     // If accessed directly via training.harx.ai, redirect to main app
-    window.location.href = 'https://harx25pageslinks.netlify.app/app1';
+    window.location.href = 'https://harx25pageslinks.netlify.app/auth/signin';
   } else {
-    // If accessed via v25.harx.ai (Qiankun), redirect to app1
-    window.location.href = '/app1';
+    // If accessed via v25.harx.ai (Qiankun), redirect to auth
+    window.location.href = '/auth/signin';
   }
 } else {
   // Decode token and get user info
@@ -61,10 +61,10 @@ if (!token || !userId) {
 
   // Check if token is expired
   if (userInfo && userInfo.exp && userInfo.exp * 1000 < Date.now()) {
-    logger.warn('[Training] Token is expired, redirecting to /app1');
+    logger.warn('[Training] Token is expired, redirecting to /auth/signin');
     localStorage.removeItem('token');
     Cookies.remove('userId');
-    window.location.href = '/app1';
+    window.location.href = '/auth/signin';
   }
 }
 
