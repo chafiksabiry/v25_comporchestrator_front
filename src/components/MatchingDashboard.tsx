@@ -1464,7 +1464,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 <div key={`enrollment-${agent._id || index}`} className="bg-blue-50 border border-blue-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
-                                                            <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
+                                                            <h3
+                                                                className="text-lg font-bold text-gray-900 cursor-pointer hover:text-harx-600 transition-colors inline-flex items-center gap-1.5"
+                                                                onClick={() => {
+                                                                    const repId = agent.agentId?._id || agent.agentId;
+                                                                    if (repId) handleAgentClick(repId);
+                                                                }}
+                                                                title={t('matchingDashboard.enrollment.viewProfile')}
+                                                            >
+                                                                {agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}
+                                                            </h3>
                                                             <div className="mt-2 space-y-1">
                                                                 <p className="text-sm text-blue-600 font-medium">
                                                                     <span className="font-medium">{t('matchingDashboard.enrollment.status')}</span> {agent.enrollmentStatus || 'Pending'}
@@ -1482,6 +1491,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center space-x-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const repId = agent.agentId?._id || agent.agentId;
+                                                                    if (repId) handleAgentClick(repId);
+                                                                }}
+                                                                disabled={loadingProfile}
+                                                                className="px-4 py-2 bg-white text-harx-600 border border-harx-200 rounded-lg hover:bg-harx-50 transition-all duration-200 text-sm font-medium flex items-center gap-1.5 disabled:opacity-60"
+                                                            >
+                                                                👁️ {t('matchingDashboard.enrollment.viewProfile')}
+                                                            </button>
                                                             <button
                                                                 onClick={async () => {
                                                                     try {
