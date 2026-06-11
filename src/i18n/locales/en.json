@@ -1673,6 +1673,7 @@
       "status": "Status:",
       "approve": "Approve",
       "reject": "Reject",
+      "viewProfile": "View profile",
       "noRequests": "No enrollment requests",
       "noWaiting": "No reps are waiting for approval."
     },

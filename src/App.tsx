@@ -47,6 +47,7 @@ import Subscription from './components/Subscription';
 import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideModal';
 import WalletTopUpModal from './components/wallet/WalletTopUpModal';
 import { refreshAndBroadcastWalletBalance } from './lib/walletBalanceSync';
+import { connectEscrowSocket } from './lib/escrowSocket';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import { OnboardingNextStepButton } from './components/onboarding/OnboardingNextStepButton';
 import { goToCompanyOnboardingTab } from './hooks/useOnboardingGlobalBack';
@@ -227,11 +228,19 @@ function AppContent() {
     };
     window.addEventListener('userProfileUpdated', handleUserProfileUpdated);
 
+    // Live wallet updates: when a call/sale is validated server-side (after AI
+    // analysis reconcile), the backend broadcasts over WebSocket so we refresh
+    // the company balance without a manual reload.
+    const disposeEscrowSocket = connectEscrowSocket(() => {
+      void refreshAndBroadcastWalletBalance();
+    });
+
     return () => {
       clearTimeout(initTimer);
       window.removeEventListener('harx:company-ready', handleCompanyReady);
       window.removeEventListener('balanceUpdated', handleBalanceUpdateEvent);
       window.removeEventListener('userProfileUpdated', handleUserProfileUpdated);
+      disposeEscrowSocket();
     };
   }, [fetchNavbarBalances]);
 
