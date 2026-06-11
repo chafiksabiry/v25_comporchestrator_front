@@ -33,6 +33,7 @@ import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import RepProfileView from './RepProfileView';
 import { connectCompanyEnrollmentRequestsSocket } from '../lib/enrollmentRequestsSocket';
+import { playNotificationSound } from '../utils/notificationSound';
 
 export type MatchingDashboardProps = {
   /** When embedded in Company Onboarding (step 13), closes the step — tab is already company-onboarding. */
@@ -177,7 +178,11 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
     useEffect(() => {
         const companyId = Cookies.get('companyId') || '685abf28641398dc582f4c95';
         const dispose = connectCompanyEnrollmentRequestsSocket(
-            () => {
+            (data) => {
+                // New application from a rep → play the notification chime.
+                if (data?.type === 'request_received') {
+                    playNotificationSound();
+                }
                 void refreshCompanyLists();
             },
             { companyId, onConnect: () => { void refreshCompanyLists(); } }
