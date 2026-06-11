@@ -655,10 +655,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                     <div className="container mx-auto px-4">
                         <nav className="flex space-x-0">
                             {[
-                                { id: 'matching', label: t('matchingDashboard.tabs.matching'), icon: '🎯', description: t('matchingDashboard.tabs.matchingDesc') },
-                                { id: 'invited', label: t('matchingDashboard.tabs.invited'), icon: '📧', description: t('matchingDashboard.tabs.invitedDesc') },
-                                { id: 'enrollment', label: t('matchingDashboard.tabs.enrollment'), icon: '📋', description: t('matchingDashboard.tabs.enrollmentDesc') },
-                                { id: 'active', label: t('matchingDashboard.tabs.active'), icon: '✅', description: t('matchingDashboard.tabs.activeDesc') }
+                                { id: 'matching', label: t('matchingDashboard.tabs.matching'), icon: '🎯', description: t('matchingDashboard.tabs.matchingDesc'), badge: 0 },
+                                { id: 'invited', label: t('matchingDashboard.tabs.invited'), icon: '📧', description: t('matchingDashboard.tabs.invitedDesc'), badge: invitedAgentsList.length },
+                                { id: 'enrollment', label: t('matchingDashboard.tabs.enrollment'), icon: '📋', description: t('matchingDashboard.tabs.enrollmentDesc'), badge: enrollmentRequests.length },
+                                { id: 'active', label: t('matchingDashboard.tabs.active'), icon: '✅', description: t('matchingDashboard.tabs.activeDesc'), badge: 0 }
                             ].map(section => (
                                 <button
                                     key={section.id}
@@ -669,7 +669,14 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         }`}
                                 >
                                     <div className="flex flex-col sm:flex-row items-center sm:space-x-3 gap-1 sm:gap-0">
-                                        <span className="text-lg sm:text-xl">{section.icon}</span>
+                                        <span className="relative text-lg sm:text-xl">
+                                            {section.icon}
+                                            {section.badge > 0 && (
+                                                <span className="absolute -top-2 -right-2.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none ring-2 ring-white shadow-md animate-pulse">
+                                                    {section.badge > 99 ? '99+' : section.badge}
+                                                </span>
+                                            )}
+                                        </span>
                                         <div className="min-w-0">
                                             <div className={`font-medium text-xs sm:text-base leading-tight ${activeSection === section.id ? 'text-white' : 'text-harx-50 group-hover:text-white'}`}>
                                                 {section.label}
