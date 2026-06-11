@@ -1403,15 +1403,15 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         {activeSection === 'invited' && (
                             <div className="space-y-6">
 
-                                <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
-                                    <div className="flex items-center justify-between mb-4 shrink-0">
+                                <div className="bg-white rounded-3xl shadow-lg p-4 sm:p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 shrink-0">
                                         <div className="flex items-center space-x-3">
-                                            <h2 className="text-xl font-bold text-gray-900">📧 {t('matchingDashboard.invited.title')}</h2>
-                                            <span className="px-3 py-1 bg-harx-alt-100 text-harx-alt-600 rounded-full text-xs font-medium border border-harx-alt-200">
+                                            <h2 className="text-lg sm:text-xl font-bold text-gray-900">📧 {t('matchingDashboard.invited.title')}</h2>
+                                            <span className="px-3 py-1 bg-harx-alt-100 text-harx-alt-600 rounded-full text-xs font-medium border border-harx-alt-200 whitespace-nowrap">
                                                 {invitedAgentsList.length} {t('matchingDashboard.invited.pending')}
                                             </span>
                                         </div>
-                                        <div className="relative w-64">
+                                        <div className="relative w-full sm:w-64">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1440,10 +1440,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 
 
                                                 return (
-                                                    <div key={`invited-${agent._id || index}`} className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex-1">
-                                                                <h3 className="text-lg font-bold text-gray-900">{agent.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
+                                                    <div key={`invited-${agent._id || index}`} className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-all duration-200">
+                                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                                            <div className="flex-1 min-w-0">
+                                                                <h3 className="text-lg font-bold text-gray-900 break-words">{agent.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
                                                                 <div className="mt-2 space-y-1">
                                                                     <p className="text-sm text-yellow-600 font-medium bg-yellow-100/50 inline-block px-2 py-0.5 rounded">
                                                                         {t('matchingDashboard.invited.waitingResponse')}
@@ -1455,8 +1455,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                            <div className="flex items-center space-x-2">
-                                                                <span className="inline-flex items-center px-3 py-2 bg-yellow-900/40 text-yellow-300 rounded-lg text-sm font-medium">
+                                                            <div className="flex items-center space-x-2 sm:shrink-0">
+                                                                <span className="inline-flex items-center px-3 py-2 bg-yellow-900/40 text-yellow-300 rounded-lg text-sm font-medium whitespace-nowrap">
                                                                     📧 {t('matchingDashboard.invited.pending')}
                                                                 </span>
                                                             </div>
@@ -1483,15 +1483,15 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         {activeSection === 'enrollment' && (
                             <div className="space-y-6">
 
-                                <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
-                                    <div className="flex items-center justify-between mb-4 shrink-0">
+                                <div className="bg-white rounded-3xl shadow-lg p-4 sm:p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 shrink-0">
                                         <div className="flex items-center space-x-3">
-                                            <h2 className="text-xl font-bold text-gray-900">📋 {t('matchingDashboard.enrollment.title')}</h2>
-                                            <span className="px-3 py-1 bg-harx-50 text-harx-600 rounded-full text-xs font-medium border border-harx-100">
+                                            <h2 className="text-lg sm:text-xl font-bold text-gray-900">📋 {t('matchingDashboard.enrollment.title')}</h2>
+                                            <span className="px-3 py-1 bg-harx-50 text-harx-600 rounded-full text-xs font-medium border border-harx-100 whitespace-nowrap">
                                                 {enrollmentRequests.length} {t('matchingDashboard.enrollment.requests')}
                                             </span>
                                         </div>
-                                        <div className="relative w-64">
+                                        <div className="relative w-full sm:w-64">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1516,11 +1516,11 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                                                 (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
                                             ).map((agent: any, index: number) => agent && (
-                                                <div key={`enrollment-${agent._id || index}`} className="bg-blue-50 border border-blue-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex-1">
+                                                <div key={`enrollment-${agent._id || index}`} className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-all duration-200">
+                                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                                        <div className="flex-1 min-w-0">
                                                             <h3
-                                                                className="text-lg font-bold text-gray-900 cursor-pointer hover:text-harx-600 transition-colors inline-flex items-center gap-1.5"
+                                                                className="text-lg font-bold text-gray-900 cursor-pointer hover:text-harx-600 transition-colors inline-flex items-center gap-1.5 break-words"
                                                                 onClick={() => {
                                                                     const repId = agent.agentId?._id || agent.agentId;
                                                                     if (repId) handleAgentClick(repId);
@@ -1545,14 +1545,14 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center space-x-2">
+                                                        <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:shrink-0">
                                                             <button
                                                                 onClick={() => {
                                                                     const repId = agent.agentId?._id || agent.agentId;
                                                                     if (repId) handleAgentClick(repId);
                                                                 }}
                                                                 disabled={loadingProfile}
-                                                                className="px-4 py-2 bg-white text-harx-600 border border-harx-200 rounded-lg hover:bg-harx-50 transition-all duration-200 text-sm font-medium flex items-center gap-1.5 disabled:opacity-60"
+                                                                className="flex-1 lg:flex-none justify-center px-4 py-2 bg-white text-harx-600 border border-harx-200 rounded-lg hover:bg-harx-50 transition-all duration-200 text-sm font-medium flex items-center gap-1.5 disabled:opacity-60 whitespace-nowrap"
                                                             >
                                                                 👁️ {t('matchingDashboard.enrollment.viewProfile')}
                                                             </button>
@@ -1575,7 +1575,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         // TODO: Show error toast
                                                                     }
                                                                 }}
-                                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 text-sm font-medium"
+                                                                className="flex-1 lg:flex-none px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 text-sm font-medium whitespace-nowrap"
                                                             >
                                                                 ✅ {t('matchingDashboard.enrollment.approve')}
                                                             </button>
@@ -1598,7 +1598,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         // TODO: Show error toast
                                                                     }
                                                                 }}
-                                                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 text-sm font-medium"
+                                                                className="flex-1 lg:flex-none px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 text-sm font-medium whitespace-nowrap"
                                                             >
                                                                 ❌ {t('matchingDashboard.enrollment.reject')}
                                                             </button>
@@ -1625,15 +1625,15 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         {activeSection === 'active' && (
                             <div className="space-y-6">
 
-                                <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
-                                    <div className="flex items-center justify-between mb-4 shrink-0">
+                                <div className="bg-white rounded-3xl shadow-lg p-4 sm:p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 shrink-0">
                                         <div className="flex items-center space-x-3">
-                                            <h2 className="text-xl font-bold text-gray-900">✅ {t('matchingDashboard.active.title')}</h2>
-                                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200">
+                                            <h2 className="text-lg sm:text-xl font-bold text-gray-900">✅ {t('matchingDashboard.active.title')}</h2>
+                                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200 whitespace-nowrap">
                                                 {activeAgentsList.length} {t('matchingDashboard.active.active')}
                                             </span>
                                         </div>
-                                        <div className="relative w-64">
+                                        <div className="relative w-full sm:w-64">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1658,9 +1658,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                                                 (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
                                             ).map((agent: any, index: number) => agent && (
-                                                <div key={`active-${agent._id || index}`} className="bg-green-50 border border-green-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex-1">
+                                                <div key={`active-${agent._id || index}`} className="bg-green-50 border border-green-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-all duration-200">
+                                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                                        <div className="flex-1 min-w-0">
                                                             <div className="flex items-center gap-3 mb-2">
                                                                 <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
                                                                 <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
@@ -1711,8 +1711,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex flex-col items-end space-y-2">
-                                                            <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm font-medium">
+                                                        <div className="flex flex-col items-stretch lg:items-end gap-2 lg:shrink-0">
+                                                            <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm font-medium whitespace-nowrap">
                                                                 {t('matchingDashboard.active.manageProfile')}
                                                             </button>
                                                         </div>
