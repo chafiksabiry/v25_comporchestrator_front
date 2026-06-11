@@ -16,6 +16,7 @@ import {
   Building2,
   LogOut,
   Settings,
+  Menu,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
@@ -98,6 +99,13 @@ function AppContent() {
   });
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Close the mobile sidebar drawer whenever the route changes (e.g. a nav
+  // link is tapped) so it doesn't stay open over the content.
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [location.pathname]);
   const [userFullName, setUserFullName] = useState(() => localStorage.getItem('userFullName') || '');
   const [companyName, setCompanyName] = useState<string | null>(() => localStorage.getItem('companyName'));
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string; steps?: string[] } | null>(null);
@@ -739,23 +747,52 @@ function AppContent() {
     <StripeContainer>
       <Toaster position="top-right" />
       <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-        {/* Unified Master Sidebar */}
-        <MasterSidebar
-          isCollapsed={isCollapsed}
-          onToggle={() => setIsCollapsed(!isCollapsed)}
-          activeProject={activeProject}
-          setActiveProject={setActiveProject}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          onLogout={handleLogout}
-          currentStepGuide={currentStepGuide}
-        />
+        {/* Mobile backdrop: closes the off-canvas sidebar when tapped. */}
+        {mobileSidebarOpen && (
+          <div
+            className="fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm md:hidden"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Unified Master Sidebar.
+            On md+ it's part of the flex flow; below md it becomes an
+            off-canvas drawer toggled by the navbar hamburger. */}
+        <div
+          className={`md:shrink-0 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-[60] max-md:transition-transform max-md:duration-300 ${
+            mobileSidebarOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
+          }`}
+        >
+          <MasterSidebar
+            isCollapsed={isCollapsed}
+            onToggle={() => setIsCollapsed(!isCollapsed)}
+            activeProject={activeProject}
+            setActiveProject={setActiveProject}
+            activeTab={activeTab}
+            setActiveTab={(tab) => {
+              setActiveTab(tab);
+              setMobileSidebarOpen(false);
+            }}
+            onLogout={handleLogout}
+            currentStepGuide={currentStepGuide}
+          />
+        </div>
 
         <div className="flex flex-1 flex-col overflow-hidden relative bg-black">
           {/* Top Navigation / Navbar */}
           <header className={`bg-black h-16 flex items-center shrink-0 px-5 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-6">
+                {/* Mobile-only hamburger to open the sidebar drawer. */}
+                <button
+                  type="button"
+                  onClick={() => setMobileSidebarOpen(true)}
+                  className="md:hidden flex items-center justify-center h-10 w-10 rounded-xl text-white bg-white/10 hover:bg-white/20 transition-colors shrink-0"
+                  aria-label="Open menu"
+                >
+                  <Menu size={20} />
+                </button>
                 {/* The legacy "Back to onboarding" pill that used to live here
                     has been moved out of the navbar. We now show a floating
                     "Next step · Back to onboarding" button at the bottom-right
@@ -765,7 +802,7 @@ function AppContent() {
               </div>
 
               {/* Credits, Balance, and Upgrade Widgets */}
-              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+              <div className="absolute left-1/2 -translate-x-1/2 hidden lg:flex items-center gap-1.5">
                 {/* Balance Widget (My Wallet) — hidden in orchestrator until Activation phase */}
                 {showActivationNavbarWidgets && (
                   <div
