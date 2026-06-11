@@ -622,9 +622,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                             <div className="p-2 bg-white/20 rounded-lg">
                                 <Users size={24} className="text-white" />
                             </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-white">{t('matchingDashboard.header.title')}</h1>
-                                <p className="text-harx-50 text-sm">{t('matchingDashboard.header.subtitle')}</p>
+                            <div className="min-w-0">
+                                <h1 className="text-lg sm:text-2xl font-bold text-white leading-tight">{t('matchingDashboard.header.title')}</h1>
+                                <p className="text-harx-50 text-xs sm:text-sm">{t('matchingDashboard.header.subtitle')}</p>
                             </div>
                         </div>
 
@@ -663,18 +663,18 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 <button
                                     key={section.id}
                                     onClick={() => setActiveSection(section.id as any)}
-                                    className={`flex-1 px-4 py-4 text-left transition-all duration-200 border-b-4 ${activeSection === section.id
+                                    className={`flex-1 px-2 sm:px-4 py-3 sm:py-4 text-center sm:text-left transition-all duration-200 border-b-4 ${activeSection === section.id
                                         ? 'border-white bg-white/20'
                                         : 'border-transparent hover:bg-white/10 text-harx-50 hover:text-white'
                                         }`}
                                 >
-                                    <div className="flex items-center space-x-3">
-                                        <span className="text-xl">{section.icon}</span>
-                                        <div>
-                                            <div className={`font-medium ${activeSection === section.id ? 'text-white' : 'text-harx-50 group-hover:text-white'}`}>
+                                    <div className="flex flex-col sm:flex-row items-center sm:space-x-3 gap-1 sm:gap-0">
+                                        <span className="text-lg sm:text-xl">{section.icon}</span>
+                                        <div className="min-w-0">
+                                            <div className={`font-medium text-xs sm:text-base leading-tight ${activeSection === section.id ? 'text-white' : 'text-harx-50 group-hover:text-white'}`}>
                                                 {section.label}
                                             </div>
-                                            <div className={`text-xs opacity-80 ${activeSection === section.id ? 'text-white' : 'text-harx-100'}`}>{section.description}</div>
+                                            <div className={`hidden md:block text-xs opacity-80 ${activeSection === section.id ? 'text-white' : 'text-harx-100'}`}>{section.description}</div>
                                         </div>
                                     </div>
                                 </button>
