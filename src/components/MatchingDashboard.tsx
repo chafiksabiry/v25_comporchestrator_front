@@ -992,6 +992,21 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                         match.enrollmentStatus === 'accepted' ||
                                                         match.agentInfo?.status === 'accepted';
 
+                                                    // Rep applied to this gig (status 'requested') — show a distinct
+                                                    // "Applied" status instead of the Invite button, and let the
+                                                    // company jump straight to the enrollment requests tab.
+                                                    const hasRequested = (
+                                                        match.status === 'requested' ||
+                                                        match.enrollmentStatus === 'requested' ||
+                                                        match.agentResponse === 'requested'
+                                                    ) || enrollmentRequests.some((req: any) => {
+                                                        const reqAgentId = req.agentId?._id || req.agentId;
+                                                        const reqGigId = req.gigId?._id || req.gigId || req.gig?._id || req.gig;
+                                                        const sameAgent = String(reqAgentId) === String(match.agentId);
+                                                        const sameGig = !selectedGig?._id || String(reqGigId) === String(selectedGig._id);
+                                                        return sameAgent && sameGig;
+                                                    });
+
 
 
                                                     const matchScore = Math.round((match.totalMatchingScore || 0) * 100);
@@ -1045,6 +1060,14 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
                                                                             {t('matchingDashboard.matching.alreadyEnrolled')}
                                                                         </span>
+                                                                    ) : hasRequested ? (
+                                                                        <button
+                                                                            onClick={() => setActiveSection('enrollment')}
+                                                                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium border border-amber-200 hover:bg-amber-200 transition-all duration-200"
+                                                                            title={t('matchingDashboard.matching.reviewRequest')}
+                                                                        >
+                                                                            ⌛ {t('matchingDashboard.matching.requested')}
+                                                                        </button>
                                                                     ) : isInvited ? (
                                                                         <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
                                                                             {t('matchingDashboard.matching.invited')}
