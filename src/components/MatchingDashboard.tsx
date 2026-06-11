@@ -720,10 +720,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
 
                                 {/* Two Column Layout: Gigs and Reps */}
-                                <div className="resizable-container flex gap-4 w-full max-w-full h-[calc(100vh-320px)] min-h-0 overflow-hidden">
+                                <div className="resizable-container flex flex-col lg:flex-row gap-4 w-full max-w-full lg:h-[calc(100vh-320px)] min-h-0 overflow-visible lg:overflow-hidden">
                                     {/* Left Column: Gig Selection */}
                                     <div
-                                        className="bg-white rounded-3xl shadow-xl p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-harx-100/50 backdrop-blur-sm flex flex-col"
+                                        className="bg-white rounded-3xl shadow-xl p-4 sm:p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-harx-100/50 backdrop-blur-sm flex flex-col max-lg:!w-full max-lg:!min-w-0 max-lg:!max-w-full max-lg:max-h-[50vh]"
                                         style={{ width: `${leftColumnWidth}%`, minWidth: '280px', maxWidth: '50%' }}
                                     >
                                         <div className="flex items-center justify-between mb-6">
@@ -951,7 +951,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
                                     {/* Resize Handle */}
                                     <div
-                                        className={`flex-shrink-0 w-1 bg-antigravity-border hover:bg-harx-500 cursor-col-resize transition-colors duration-200 rounded-full flex items-center justify-center group ${isResizing ? 'bg-harx-500' : ''}`}
+                                        className={`hidden lg:flex flex-shrink-0 w-1 bg-antigravity-border hover:bg-harx-500 cursor-col-resize transition-colors duration-200 rounded-full items-center justify-center group ${isResizing ? 'bg-harx-500' : ''}`}
                                         onMouseDown={handleMouseDown}
                                         title="Drag to resize"
                                     >
@@ -960,16 +960,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
                                     {/* Right Column: Matching Results */}
                                     <div
-                                        className="bg-white rounded-3xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 border border-gray-100 flex flex-col"
+                                        className="bg-white rounded-3xl shadow-lg p-4 sm:p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 w-full border border-gray-100 flex flex-col max-lg:max-h-[60vh]"
                                     >
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h3 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
-                                                        <Users size={20} className="text-harx-500" />
-                                                        <span>{selectedGig ? `${t('matchingDashboard.matching.matchesFor')} "${selectedGig.title}"` : t('matchingDashboard.matching.selectGig')}</span>
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                                            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center space-x-2 min-w-0">
+                                                        <Users size={20} className="text-harx-500 shrink-0" />
+                                                        <span className="truncate">{selectedGig ? `${t('matchingDashboard.matching.matchesFor')} "${selectedGig.title}"` : t('matchingDashboard.matching.selectGig')}</span>
                                                     </h3>
                                             
                                             {selectedGig && (
-                                                <div className="relative w-64">
+                                                <div className="relative w-full sm:w-64 sm:shrink-0">
                                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                         <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
