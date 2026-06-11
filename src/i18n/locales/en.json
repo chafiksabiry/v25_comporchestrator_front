@@ -1636,6 +1636,8 @@
       "alreadyEnrolled": "Already Enrolled",
       "invited": "Invited",
       "invite": "Invite",
+      "requested": "Applied",
+      "reviewRequest": "Review request",
       "hideDetails": "Hide Details",
       "skills": "Skills",
       "matchedSkills": "Matched Skills:",

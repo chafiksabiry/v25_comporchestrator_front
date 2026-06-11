@@ -1636,6 +1636,8 @@
       "alreadyEnrolled": "Déjà Inscrit",
       "invited": "Invité",
       "invite": "Inviter",
+      "requested": "A postulé",
+      "reviewRequest": "Voir la demande",
       "hideDetails": "Masquer les Détails",
       "skills": "Compétences",
       "matchedSkills": "Compétences Correspondantes :",
