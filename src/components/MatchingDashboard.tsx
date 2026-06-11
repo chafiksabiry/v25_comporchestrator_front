@@ -32,6 +32,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import RepProfileView from './RepProfileView';
+import { connectCompanyEnrollmentRequestsSocket } from '../lib/enrollmentRequestsSocket';
 
 export type MatchingDashboardProps = {
   /** When embedded in Company Onboarding (step 13), closes the step — tab is already company-onboarding. */
@@ -152,6 +153,37 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
     // Fetch data from real backend
 
+    // Refetch the company's invited / requested / active lists (used by the
+    // live WebSocket so the "requests" panel updates without a page reload).
+    const refreshCompanyLists = React.useCallback(async () => {
+        const companyId = Cookies.get('companyId') || '685abf28641398dc582f4c95';
+        if (!companyId) return;
+        try {
+            const [invitedAgentsData, enrollmentRequestsData, activeAgentsData] = await Promise.all([
+                getInvitedAgentsForCompany(companyId),
+                getEnrollmentRequestsForCompany(companyId),
+                getActiveAgentsForCompany(companyId)
+            ]);
+            setCompanyInvitedAgents(invitedAgentsData);
+            setEnrollmentRequests(enrollmentRequestsData);
+            setActiveAgentsList(activeAgentsData);
+        } catch (error) {
+            console.error('Error refreshing company lists:', error);
+        }
+    }, []);
+
+    // Live updates: a rep applied to one of this company's gigs → refresh the
+    // "requests" list in real time (and on reconnect to catch missed events).
+    useEffect(() => {
+        const companyId = Cookies.get('companyId') || '685abf28641398dc582f4c95';
+        const dispose = connectCompanyEnrollmentRequestsSocket(
+            () => {
+                void refreshCompanyLists();
+            },
+            { companyId, onConnect: () => { void refreshCompanyLists(); } }
+        );
+        return dispose;
+    }, [refreshCompanyLists]);
 
     useEffect(() => {
         const fetchData = async () => {
