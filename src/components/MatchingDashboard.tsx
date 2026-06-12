@@ -130,6 +130,17 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         return null;
     };
 
+    // A country/timezone stored as a 24-char hex string means the backend
+    // did NOT populate the reference (e.g. .populate('agentId') only). Such a
+    // profile must be re-fetched through getAgentById which deep-populates
+    // country, languages, skills, etc.
+    const isUnpopulatedProfile = (profile: any): boolean => {
+        if (!profile) return true;
+        const country = profile.personalInfo?.country ?? profile.country;
+        if (typeof country === 'string' && /^[0-9a-fA-F]{24}$/.test(country)) return true;
+        return false;
+    };
+
     const openAgentProfile = async (source: any) => {
         const embedded = extractEmbeddedProfile(source);
         const agentId = resolveAgentId(source);
@@ -138,37 +149,19 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             setSelectedAgentProfile(normalizeAgentProfile(profile));
         };
 
-        const hasRichProfile = Boolean(
-            embedded?.professionalSummary?.profileDescription
-            || embedded?.personalInfo?.photo
-            || (embedded?.personalInfo?.name && embedded?.professionalSummary)
-        );
-
-        if (hasRichProfile) {
-            openProfile(embedded);
-            return;
-        }
-
-        if (embedded && !agentId) {
-            openProfile(embedded);
-            return;
-        }
+        // The embedded object is fully usable only when its references are
+        // already populated (country is an object, not a raw ObjectId).
+        const embeddedIsPopulated = embedded && !isUnpopulatedProfile(embedded);
 
         try {
             setLoadingProfile(true);
             setError(null);
 
-            const repName = embedded?.personalInfo?.name || embedded?.name;
-
+            // Always prefer the deep-populated profile from the backend when we
+            // can resolve a real agent id (this is what makes country & co show).
             if (agentId) {
-                const cachedRep = reps.find((rep) => String(rep._id) === agentId);
-                if (cachedRep) {
-                    openProfile(cachedRep);
-                    return;
-                }
-
                 const cachedMatch = matches.find((match) => String(match.agentId) === agentId);
-                if (cachedMatch?.agentInfo) {
+                if (cachedMatch?.agentInfo && !isUnpopulatedProfile(cachedMatch.agentInfo)) {
                     openProfile(cachedMatch.agentInfo);
                     return;
                 }
@@ -178,23 +171,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                     openProfile(fetched);
                     return;
                 } catch (fetchErr) {
-                    console.warn('getAgentById failed, trying cache fallbacks:', fetchErr);
+                    console.warn('getAgentById failed, falling back to embedded profile:', fetchErr);
                 }
             }
 
-            if (repName) {
-                const byName = reps.find((rep) => rep.personalInfo?.name === repName);
-                if (byName) {
-                    openProfile(byName);
-                    return;
-                }
-                const matchByName = matches.find((match) => match.agentInfo?.name === repName);
-                if (matchByName?.agentInfo) {
-                    openProfile(matchByName.agentInfo);
-                    return;
-                }
+            if (embeddedIsPopulated) {
+                openProfile(embedded);
+                return;
             }
 
+            // Last resort: show whatever we have rather than nothing.
             if (embedded) {
                 openProfile(embedded);
                 return;
@@ -1832,11 +1818,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex flex-col items-stretch lg:items-end gap-2 lg:shrink-0">
-                                                            <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm font-medium whitespace-nowrap">
-                                                                {t('matchingDashboard.active.manageProfile')}
-                                                            </button>
-                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}

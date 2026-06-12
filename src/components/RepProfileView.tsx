@@ -20,8 +20,11 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
     const getCountryDisplayName = () => {
         const country = profile.personalInfo?.country;
         if (country) {
-            if (typeof country === 'string') return country;
-            if (typeof country === 'object') {
+            if (typeof country === 'string') {
+                // Raw ObjectId means the reference was not populated.
+                if (!/^[0-9a-fA-F]{24}$/.test(country)) return country;
+            } else if (typeof country === 'object') {
+                if (country.name) return country.name;
                 if (country.countryName) return country.countryName;
                 if (country.zoneName) return country.zoneName;
             }
