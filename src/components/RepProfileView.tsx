@@ -72,13 +72,13 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                                     <div className="flex flex-wrap gap-6 rounded-2xl border border-slate-200/60 bg-slate-50/50 p-4 backdrop-blur-sm">
                                         {profile.personalInfo.presentationVideo.duration && (
                                             <div className="flex items-center gap-2 text-sm text-slate-600">
-                                                <Clock className="w-4 h-4 text-harx-400" />
+                                                <Clock className="w-4 h-4 text-indigo-400" />
                                                 <span>{Math.floor(profile.personalInfo.presentationVideo.duration)}s</span>
                                             </div>
                                         )}
                                         {profile.personalInfo.presentationVideo.recordedAt && (
                                             <div className="flex items-center gap-2 text-sm text-slate-600">
-                                                <Calendar className="w-4 h-4 text-harx-400" />
+                                                <Calendar className="w-4 h-4 text-indigo-400" />
                                                 <span>Recorded {new Date(profile.personalInfo.presentationVideo.recordedAt).toLocaleDateString()}</span>
                                             </div>
                                         )}
@@ -124,7 +124,7 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                 <div>
                     <button
                         onClick={onClose}
-                        className="flex items-center text-harx-500 hover:text-harx-600 font-medium mb-4 transition-colors"
+                        className="flex items-center text-indigo-500 hover:text-indigo-600 font-medium mb-4 transition-colors"
                     >
                         <ChevronLeft size={20} className="mr-1" />
                         <span>Back</span>
@@ -140,13 +140,13 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                 {/* Navbar */}
                 <div className="flex space-x-2 border-b border-gray-200">
                     <button
-                        className={`py-2 px-4 font-bold text-sm transition-colors ${activeTab === 'profile' ? 'border-b-2 border-harx-500 text-harx-600' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`py-2 px-4 font-bold text-sm transition-colors ${activeTab === 'profile' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
                         onClick={() => setActiveTab('profile')}
                     >
                         Profile
                     </button>
                     <button
-                        className={`py-2 px-4 font-bold text-sm transition-colors ${activeTab === 'skills' ? 'border-b-2 border-harx-500 text-harx-600' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`py-2 px-4 font-bold text-sm transition-colors ${activeTab === 'skills' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
                         onClick={() => setActiveTab('skills')}
                     >
                         Skills
@@ -176,7 +176,7 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                             <div className="flex-1 w-full">
                                 <div className="mb-4">
                                     <h2 className="text-2xl font-black text-gray-900 tracking-tight">{profile.personalInfo?.name || profile.name}</h2>
-                                    <p className="text-sm font-bold text-harx-500 uppercase tracking-widest italic">{profile.professionalSummary?.currentRole || profile.currentRole || 'Representative'}</p>
+                                    <p className="text-sm font-bold text-indigo-500 uppercase tracking-widest italic">{profile.professionalSummary?.currentRole || profile.currentRole || 'Representative'}</p>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -184,7 +184,7 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Country</label>
                                         <div className="flex items-center gap-2 py-1.5 px-3 bg-slate-50 rounded-xl border border-gray-100">
-                                            <MapPin className="w-3.5 h-3.5 text-harx-400" />
+                                            <MapPin className="w-3.5 h-3.5 text-indigo-400" />
                                             <span className="text-sm font-bold text-slate-900">{getCountryDisplayName()}</span>
                                         </div>
                                     </div>
@@ -194,12 +194,12 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                                 {/* Stats */}
                                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-gray-100 shadow-sm">
-                                        <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-harx-500">
+                                        <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-indigo-500">
                                             <Target size={20} />
                                         </div>
                                         <div>
-                                            <div className="text-[10px] font-black text-harx-400 uppercase tracking-widest">REPS Score</div>
-                                            <div className="text-xl font-black text-harx-900 tracking-tighter leading-none mt-0.5">{calculateOverallScore()} / 100</div>
+                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">REPS Score</div>
+                                            <div className="text-xl font-black text-indigo-900 tracking-tighter leading-none mt-0.5">{calculateOverallScore()} / 100</div>
                                         </div>
                                     </div>
 

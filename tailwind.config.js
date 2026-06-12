@@ -63,9 +63,9 @@ export default {
       },
       backgroundImage: {
         'gradient-harx': 'linear-gradient(to right, #ff4d4d, #ec4899)',
-        'gradient-harx-soft': 'linear-gradient(135deg, #ff6b6b 0%, #f472b6 55%, #ec4899 100%)',
-        'gradient-harx-header': 'linear-gradient(135deg, #fff5f5 0%, #ffffff 45%, #fdf2f8 100%)',
-        'gradient-matching-page': 'radial-gradient(ellipse at top left, #fff5f5 0%, #f8fafc 40%, #ffffff 100%)',
+        'gradient-rep-accent': 'linear-gradient(135deg, #6366f1 0%, #818cf8 55%, #4f46e5 100%)',
+        'gradient-rep-header': 'linear-gradient(135deg, #eef2ff 0%, #ffffff 50%, #f8fafc 100%)',
+        'gradient-rep-page': 'radial-gradient(ellipse at top left, #eef2ff 0%, #f8fafc 40%, #ffffff 100%)',
         'gradient-escrow': 'linear-gradient(135deg, rgba(251, 191, 36, 0.25) 0%, rgba(244, 63, 94, 0.2) 50%, rgba(255, 77, 77, 0.15) 100%)',
         'gradient-escrow-icon': 'linear-gradient(135deg, #f59e0b 0%, #f43f5e 50%, #ff4d4d 100%)',
         'premium-gradient': 'radial-gradient(circle at top left, #fff5f5 0%, #ffffff 100%)',
