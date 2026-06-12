@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MapPin, Target, Briefcase, Calendar, Clock, ChevronLeft, Video, ShieldCheck, AlertTriangle, Languages as LanguagesIcon, CheckCircle2 } from 'lucide-react';
+import { X, MapPin, Target, Briefcase, Clock, ChevronLeft, Video, ShieldCheck, AlertTriangle, Languages as LanguagesIcon, CheckCircle2 } from 'lucide-react';
 
 interface RepProfileViewProps {
     profile: any;
@@ -194,40 +194,6 @@ export const RepProfileView: React.FC<RepProfileViewProps> = ({ profile, onClose
                     <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{profile.professionalSummary.profileDescription}</p>
                 ) : (
                     <p className="text-slate-500 italic">No professional summary provided</p>
-                )}
-            </div>
-
-            {/* Introduction Video Section */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Introduction Video</h3>
-                {profile.personalInfo?.presentationVideo?.url || profile.presentationVideo?.url ? (
-                    <div className="space-y-4">
-                        <div className="relative overflow-hidden rounded-2xl bg-slate-950 shadow-lg">
-                            <video controls className="aspect-video w-full object-cover">
-                                <source src={profile.personalInfo?.presentationVideo?.url || profile.presentationVideo?.url} type="video/mp4" />
-                                Your browser does not support the video tag.
-                            </video>
-                        </div>
-                        <div className="flex flex-wrap gap-6 rounded-2xl border border-slate-200/60 bg-slate-50/50 p-4">
-                            {(profile.personalInfo?.presentationVideo?.duration) && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Clock className="w-4 h-4 text-indigo-400" />
-                                    <span>{Math.floor(profile.personalInfo.presentationVideo.duration)}s</span>
-                                </div>
-                            )}
-                            {(profile.personalInfo?.presentationVideo?.recordedAt) && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Calendar className="w-4 h-4 text-indigo-400" />
-                                    <span>Recorded {new Date(profile.personalInfo.presentationVideo.recordedAt).toLocaleDateString()}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="flex items-start gap-3 rounded-2xl border border-amber-200/60 bg-gradient-to-r from-amber-50/80 to-white p-4 text-sm text-amber-900 shadow-sm">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-lg" aria-hidden>🎥</span>
-                        <p className="pt-1 leading-relaxed">No video introduction provided by the representative.</p>
-                    </div>
                 )}
             </div>
         </div>
