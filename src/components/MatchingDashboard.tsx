@@ -697,41 +697,20 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         });
     };
 
-    // Professional, score-driven styling for match cards (high → low).
-    const getScoreTier = (score: number) => {
-        if (score >= 80) {
-            return {
-                label: t('matchingDashboard.matching.match'),
-                card: 'bg-white border-emerald-200 hover:border-emerald-300',
-                accent: 'before:bg-emerald-500',
-                badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-                bar: 'bg-emerald-500',
-            };
-        }
-        if (score >= 65) {
-            return {
-                label: t('matchingDashboard.matching.match'),
-                card: 'bg-white border-teal-200 hover:border-teal-300',
-                accent: 'before:bg-teal-500',
-                badge: 'bg-teal-50 text-teal-700 border border-teal-200',
-                bar: 'bg-teal-500',
-            };
-        }
-        if (score >= 50) {
-            return {
-                label: t('matchingDashboard.matching.match'),
-                card: 'bg-white border-amber-200 hover:border-amber-300',
-                accent: 'before:bg-amber-500',
-                badge: 'bg-amber-50 text-amber-700 border border-amber-200',
-                bar: 'bg-amber-500',
-            };
-        }
+    // Continuous, score-driven color: green at 100 → muted red at 0.
+    // Each degree maps to its own hue for a smooth professional gradient.
+    const getScoreColor = (score: number) => {
+        const clamped = Math.max(0, Math.min(100, score));
+        // Hue 0 (red) at score 0 → 140 (green) at score 100.
+        const hue = (clamped / 100) * 140;
+        // Slightly desaturate/darken the low end so red stays "non clair".
+        const sat = 55 + (clamped / 100) * 15; // 55% → 70%
+        const light = 38 + (clamped / 100) * 7; // 38% → 45%
         return {
-            label: t('matchingDashboard.matching.match'),
-            card: 'bg-white border-slate-200 hover:border-slate-300',
-            accent: 'before:bg-slate-400',
-            badge: 'bg-slate-100 text-slate-600 border border-slate-200',
-            bar: 'bg-slate-400',
+            main: `hsl(${hue}, ${sat}%, ${light}%)`,
+            soft: `hsl(${hue}, ${sat}%, 96%)`,
+            border: `hsl(${hue}, ${sat}%, 86%)`,
+            track: `hsl(${hue}, ${sat}%, 92%)`,
         };
     };
 
@@ -1185,12 +1164,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
 
                                                     const matchScore = Math.round((match.totalMatchingScore || 0) * 100);
-                                                    const tier = getScoreTier(matchScore);
+                                                    const scoreColor = getScoreColor(matchScore);
 
                                                     const isExpanded = expandedReps.has(match.agentId);
 
                                                     return (
-                                                        <div key={`match-${match.agentId}-${index}`} className={`relative overflow-hidden rounded-xl p-4 sm:p-5 pl-5 sm:pl-6 border transition-all duration-200 shadow-sm hover:shadow-md before:absolute before:left-0 before:top-0 before:h-full before:w-1.5 ${tier.accent} ${tier.card}`}>
+                                                        <div
+                                                            key={`match-${match.agentId}-${index}`}
+                                                            className="relative overflow-hidden rounded-xl bg-white p-4 sm:p-5 pl-5 sm:pl-6 border transition-all duration-200 shadow-sm hover:shadow-md"
+                                                            style={{ borderColor: scoreColor.border, borderLeftWidth: '6px', borderLeftColor: scoreColor.main }}
+                                                        >
                                                             {/* Rep Header */}
                                                             <div className="flex items-center justify-between mb-4">
                                                                 <div className="flex-1 min-w-0">
@@ -1201,9 +1184,12 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         >
                                                                             {match.agentInfo?.name}
                                                                         </h4>
-                                                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${tier.badge}`}>
-                                                                            <span className={`h-1.5 w-1.5 rounded-full ${tier.bar}`}></span>
-                                                                            {matchScore}% {tier.label}
+                                                                        <span
+                                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border"
+                                                                            style={{ backgroundColor: scoreColor.soft, color: scoreColor.main, borderColor: scoreColor.border }}
+                                                                        >
+                                                                            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: scoreColor.main }}></span>
+                                                                            {matchScore}% {t('matchingDashboard.matching.match')}
                                                                         </span>
                                                                     </div>
                                                                     <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
@@ -1220,8 +1206,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                             <span>🗣️ {match.agentInfo.personalInfo.languages.length} {t('matchingDashboard.matching.languages').replace(':', '')}</span>
                                                                         )}
                                                                     </div>
-                                                                    <div className="mt-3 h-1.5 w-full max-w-xs rounded-full bg-slate-100 overflow-hidden">
-                                                                        <div className={`h-full rounded-full transition-all duration-500 ${tier.bar}`} style={{ width: `${matchScore}%` }}></div>
+                                                                    <div className="mt-3 h-1.5 w-full max-w-xs rounded-full overflow-hidden" style={{ backgroundColor: scoreColor.track }}>
+                                                                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${matchScore}%`, backgroundColor: scoreColor.main }}></div>
                                                                     </div>
                                                                 </div>
 
