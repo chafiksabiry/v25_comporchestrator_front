@@ -608,9 +608,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         });
     };
     return (
-        <div className="h-full bg-slate-50/50 w-full max-w-full overflow-hidden text-slate-900 flex flex-col rounded-3xl">
+        <div className="min-h-full w-full max-w-full overflow-visible text-slate-900 flex flex-col rounded-3xl bg-gradient-matching-page">
             {selectedAgentProfile ? (
-                <div className="w-full h-full p-4">
+                <div className="w-full p-4">
                     <RepProfileView
                         profile={selectedAgentProfile}
                         onClose={() => setSelectedAgentProfile(null)}
@@ -619,46 +619,41 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             ) : (
                 <>
                     {/* Header with Navigation Tabs */}
-                    <header className="bg-gradient-harx border-b border-harx-600 shadow-lg rounded-t-3xl">
+                    <header className="bg-gradient-harx-header border-b border-harx-100/80 shadow-sm rounded-t-3xl">
                 {/* Top Header */}
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex justify-between items-center">
+                <div className="container mx-auto px-4 py-5">
+                    <div className="flex justify-between items-center gap-4">
                         <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-white/20 rounded-lg">
-                                <Users size={24} className="text-white" />
+                            <div className="p-2.5 bg-gradient-harx-soft rounded-xl shadow-sm shadow-harx-200/50">
+                                <Users size={22} className="text-white" />
                             </div>
                             <div className="min-w-0">
-                                <h1 className="text-lg sm:text-2xl font-bold text-white leading-tight">{t('matchingDashboard.header.title')}</h1>
-                                <p className="text-harx-50 text-xs sm:text-sm">{t('matchingDashboard.header.subtitle')}</p>
+                                <h1 className="text-lg sm:text-2xl font-bold text-slate-800 leading-tight">{t('matchingDashboard.header.title')}</h1>
+                                <p className="text-slate-500 text-xs sm:text-sm">{t('matchingDashboard.header.subtitle')}</p>
                             </div>
                         </div>
 
                         {/* Quick Stats */}
-                        <div className="hidden lg:flex items-center space-x-6 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-sm">
-                            <div className="text-center">
-                                <div className="font-bold text-lg text-white">{reps.length}</div>
-                                <div className="text-harx-50 text-xs">{t('matchingDashboard.header.totalReps')}</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="font-bold text-lg text-white">{invitedAgentsList.length}</div>
-                                <div className="text-harx-50 text-xs">{t('matchingDashboard.header.invited')}</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="font-bold text-lg text-white">{enrollmentRequests.length}</div>
-                                <div className="text-harx-50 text-xs">{t('matchingDashboard.header.requests')}</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="font-bold text-lg text-white">{activeAgentsList.length}</div>
-                                <div className="text-harx-50 text-xs">{t('matchingDashboard.header.active')}</div>
-                            </div>
+                        <div className="hidden lg:flex items-center gap-3">
+                            {[
+                                { value: reps.length, label: t('matchingDashboard.header.totalReps'), accent: 'text-slate-800 bg-white border-slate-200' },
+                                { value: invitedAgentsList.length, label: t('matchingDashboard.header.invited'), accent: 'text-harx-600 bg-harx-50 border-harx-100' },
+                                { value: enrollmentRequests.length, label: t('matchingDashboard.header.requests'), accent: 'text-harx-alt-600 bg-harx-alt-50 border-harx-alt-100' },
+                                { value: activeAgentsList.length, label: t('matchingDashboard.header.active'), accent: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
+                            ].map((stat) => (
+                                <div key={stat.label} className={`text-center px-4 py-2 rounded-xl border shadow-sm ${stat.accent}`}>
+                                    <div className="font-bold text-lg leading-none">{stat.value}</div>
+                                    <div className="text-[11px] font-medium opacity-80 mt-1">{stat.label}</div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="border-t border-white/20">
+                <div className="border-t border-harx-100/60 bg-white/40">
                     <div className="container mx-auto px-4">
-                        <nav className="flex space-x-0">
+                        <nav className="flex gap-1 sm:gap-2 py-2 overflow-x-auto">
                             {[
                                 { id: 'matching', label: t('matchingDashboard.tabs.matching'), icon: '🎯', description: t('matchingDashboard.tabs.matchingDesc'), badge: 0 },
                                 { id: 'invited', label: t('matchingDashboard.tabs.invited'), icon: '📧', description: t('matchingDashboard.tabs.invitedDesc'), badge: invitedAgentsList.length },
@@ -668,25 +663,25 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 <button
                                     key={section.id}
                                     onClick={() => setActiveSection(section.id as any)}
-                                    className={`flex-1 px-2 sm:px-4 py-3 sm:py-4 text-center sm:text-left transition-all duration-200 border-b-4 ${activeSection === section.id
-                                        ? 'border-white bg-white/20'
-                                        : 'border-transparent hover:bg-white/10 text-harx-50 hover:text-white'
+                                    className={`flex-1 min-w-[120px] px-3 sm:px-4 py-3 text-center sm:text-left transition-all duration-200 rounded-xl border ${activeSection === section.id
+                                        ? 'border-harx-200 bg-white shadow-md shadow-harx-100/50 text-harx-700'
+                                        : 'border-transparent hover:bg-white/70 text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
                                     <div className="flex flex-col sm:flex-row items-center sm:space-x-3 gap-1 sm:gap-0">
                                         <span className="relative text-lg sm:text-xl">
                                             {section.icon}
                                             {section.badge > 0 && (
-                                                <span className="absolute -top-2 -right-2.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none ring-2 ring-white shadow-md animate-pulse">
+                                                <span className="absolute -top-2 -right-2.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-harx-500 text-white text-[10px] font-bold leading-none ring-2 ring-white shadow-sm">
                                                     {section.badge > 99 ? '99+' : section.badge}
                                                 </span>
                                             )}
                                         </span>
                                         <div className="min-w-0">
-                                            <div className={`font-medium text-xs sm:text-base leading-tight ${activeSection === section.id ? 'text-white' : 'text-harx-50 group-hover:text-white'}`}>
+                                            <div className={`font-semibold text-xs sm:text-sm leading-tight ${activeSection === section.id ? 'text-harx-700' : 'text-slate-600'}`}>
                                                 {section.label}
                                             </div>
-                                            <div className={`hidden md:block text-xs opacity-80 ${activeSection === section.id ? 'text-white' : 'text-harx-100'}`}>{section.description}</div>
+                                            <div className={`hidden md:block text-xs ${activeSection === section.id ? 'text-slate-500' : 'text-slate-400'}`}>{section.description}</div>
                                         </div>
                                     </div>
                                 </button>
@@ -697,11 +692,11 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-hidden p-4 w-full max-w-full flex flex-col min-h-0">
+            <main className="p-4 sm:p-6 w-full max-w-full">
 
                 {/* Error Message */}
                 {error && (
-                    <div className="mb-6 bg-red-900/20 border-l-4 border-antigravity-accent text-harx-alt-600 px-4 py-3 rounded-lg shadow-md backdrop-blur-sm">
+                    <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl shadow-sm">
                         <p className="flex items-center">
                             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -732,56 +727,56 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
 
                                 {/* Two Column Layout: Gigs and Reps */}
-                                <div className="resizable-container flex flex-col lg:flex-row gap-4 w-full max-w-full lg:h-[calc(100vh-320px)] min-h-0 overflow-visible lg:overflow-hidden">
+                                <div className="resizable-container flex flex-col lg:flex-row gap-5 w-full max-w-full items-start">
                                     {/* Left Column: Gig Selection */}
                                     <div
-                                        className="bg-white rounded-3xl shadow-xl p-4 sm:p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-harx-100/50 backdrop-blur-sm flex flex-col max-lg:!w-full max-lg:!min-w-0 max-lg:!max-w-full max-lg:max-h-[50vh]"
+                                        className="bg-white/90 rounded-2xl shadow-sm p-4 sm:p-5 transition-all duration-200 flex-shrink-0 border border-slate-200/80 flex flex-col max-lg:!w-full max-lg:!min-w-0 max-lg:!max-w-full"
                                         style={{ width: `${leftColumnWidth}%`, minWidth: '280px', maxWidth: '50%' }}
                                     >
-                                        <div className="flex items-center justify-between mb-6">
-                                            <h3 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                                 <div className="p-2 bg-harx-50 rounded-lg">
-                                                    <Briefcase size={20} className="text-harx-600" />
+                                                    <Briefcase size={18} className="text-harx-500" />
                                                 </div>
-                                                <span className="bg-clip-text text-transparent bg-gradient-harx">{t('matchingDashboard.matching.availableGigs')}</span>
+                                                <span>{t('matchingDashboard.matching.availableGigs')}</span>
                                             </h3>
-                                            <span className="bg-harx-50 text-harx-600 py-1 px-3 rounded-full text-xs font-bold border border-harx-100">
+                                            <span className="bg-harx-50 text-harx-600 py-1 px-2.5 rounded-full text-xs font-semibold border border-harx-100">
                                                 {gigs.length}
                                             </span>
                                         </div>
 
-                                        <div className="space-y-3 flex-1 overflow-y-auto pr-2 scrollbar-auto min-h-0">
+                                        <div className="space-y-2.5">
                                             {gigs.map((gig: Gig) => {
                                                 const isGigExpanded = expandedGigs.has(gig._id || '');
 
                                                 return (
-                                                    <div key={gig._id} className={`group relative rounded-xl border transition-all duration-300 ${selectedGig?._id === gig._id
-                                                        ? "border-harx-500 shadow-xl bg-gradient-harx text-white transform scale-[1.02] ring-2 ring-harx-200 ring-offset-2"
-                                                        : "bg-white/60 backdrop-blur-md border-white/20 hover:border-harx-300 hover:shadow-xl hover:bg-white/80"
+                                                    <div key={gig._id} className={`group relative rounded-xl border transition-all duration-200 ${selectedGig?._id === gig._id
+                                                        ? "border-harx-300 bg-harx-50/80 shadow-md ring-1 ring-harx-200"
+                                                        : "bg-slate-50/50 border-slate-200/80 hover:border-harx-200 hover:bg-white hover:shadow-sm"
                                                         }`}>
                                                         {/* Gig Header - Clickable for selection */}
                                                         <div
                                                             className="cursor-pointer p-4"
                                                             onClick={() => handleGigSelect(gig)}
                                                         >
-                                                            <div className="flex items-center space-x-3 mb-3">
-                                                                <div className={`p-2.5 rounded-xl transition-colors duration-200 ${selectedGig?._id === gig._id
-                                                                    ? "bg-white/20 backdrop-blur-sm"
-                                                                    : "bg-harx-50 group-hover:bg-white shadow-sm"
+                                                            <div className="flex items-center space-x-3 mb-2">
+                                                                <div className={`p-2 rounded-lg transition-colors duration-200 ${selectedGig?._id === gig._id
+                                                                    ? "bg-gradient-harx-soft shadow-sm"
+                                                                    : "bg-white group-hover:bg-harx-50 border border-slate-100"
                                                                     }`}>
-                                                                    <Briefcase size={18} className={`${selectedGig?._id === gig._id ? "text-white" : "text-harx-600"}`} />
+                                                                    <Briefcase size={16} className={`${selectedGig?._id === gig._id ? "text-white" : "text-harx-500"}`} />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
-                                                                    <h4 className={`font-bold text-sm mb-0.5 ${selectedGig?._id === gig._id ? "text-white" : "text-gray-800"
+                                                                    <h4 className={`font-semibold text-sm mb-0.5 ${selectedGig?._id === gig._id ? "text-harx-800" : "text-slate-800"
                                                                         }`}>
                                                                         {gig.title}
                                                                     </h4>
-                                                                    <p className={`text-xs truncate font-medium ${selectedGig?._id === gig._id ? "text-harx-50" : "text-gray-500"}`}>{gig.companyName}</p>
+                                                                    <p className={`text-xs truncate ${selectedGig?._id === gig._id ? "text-harx-600/80" : "text-slate-500"}`}>{gig.companyName}</p>
                                                                 </div>
                                                             </div>
 
                                                             {selectedGig?._id === gig._id && (
-                                                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                                                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm">
                                                                     <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                                                     </svg>
@@ -797,8 +792,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     toggleGigDetails(gig._id || '');
                                                                 }}
                                                                 className={`w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${selectedGig?._id === gig._id
-                                                                    ? "bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm"
-                                                                    : "bg-harx-50/50 hover:bg-harx-100 text-harx-700"}`}
+                                                                    ? "bg-white border border-harx-200 text-harx-700 hover:bg-harx-50"
+                                                                    : "bg-white border border-slate-200 text-slate-600 hover:border-harx-200 hover:text-harx-600"}`}
                                                             >
                                                                 <span>{t('matchingDashboard.matching.viewDetails')}</span>
                                                                 <svg
@@ -972,7 +967,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
                                     {/* Right Column: Matching Results */}
                                     <div
-                                        className="bg-white rounded-3xl shadow-lg p-4 sm:p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 w-full border border-gray-100 flex flex-col max-lg:max-h-[60vh]"
+                                        className="bg-white/90 rounded-2xl shadow-sm p-4 sm:p-5 transition-all duration-200 flex-1 min-w-0 w-full border border-slate-200/80 flex flex-col"
                                     >
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                                             <h3 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center space-x-2 min-w-0">
@@ -998,7 +993,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             )}
                                         </div>
 
-                                        <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
+                                        <div>
                                             {!selectedGig ? (
                                             <div className="text-center py-12">
                                                 <div className="bg-slate-50/50 rounded-xl p-8 max-w-md mx-auto border border-slate-200">
@@ -1054,14 +1049,14 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
 
                                                     const matchScore = Math.round((match.totalMatchingScore || 0) * 100);
-                                                    const cardBgColor = matchScore >= 70 ? 'bg-white border-green-500/30 hover:border-green-500/60 shadow-lg' :
-                                                        matchScore >= 50 ? 'bg-white border-yellow-500/30 hover:border-yellow-500/60 shadow-lg' :
-                                                            'bg-white border-red-500/30 hover:border-red-500/60 shadow-lg';
+                                                    const cardBgColor = matchScore >= 70 ? 'bg-emerald-50/40 border-emerald-200/60 hover:border-emerald-300' :
+                                                        matchScore >= 50 ? 'bg-amber-50/40 border-amber-200/60 hover:border-amber-300' :
+                                                            'bg-slate-50 border-slate-200 hover:border-slate-300';
 
                                                     const isExpanded = expandedReps.has(match.agentId);
 
                                                     return (
-                                                        <div key={`match-${match.agentId}-${index}`} className={`rounded-xl p-6 border transition-all duration-300 ${cardBgColor}`}>
+                                                        <div key={`match-${match.agentId}-${index}`} className={`rounded-xl p-4 sm:p-5 border transition-all duration-200 shadow-sm hover:shadow-md ${cardBgColor}`}>
                                                             {/* Rep Header */}
                                                             <div className="flex items-center justify-between mb-4">
                                                                 <div className="flex-1 min-w-0">
@@ -1072,9 +1067,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         >
                                                                             {match.agentInfo?.name}
                                                                         </h4>
-                                                                        <div className={`px-4 py-2 rounded-full text-sm font-bold shadow-sm ${matchScore >= 70 ? 'bg-green-500 text-white' :
-                                                                            matchScore >= 50 ? 'bg-yellow-500 text-white' :
-                                                                                'bg-red-500 text-white'
+                                                                        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${matchScore >= 70 ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                                                                            matchScore >= 50 ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                                                                                'bg-slate-100 text-slate-600 border border-slate-200'
                                                                             }`}>
                                                                             {matchScore}% {t('matchingDashboard.matching.match')}
                                                                         </div>
@@ -1118,10 +1113,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         </span>
                                                                     ) : (
                                                                         <button
-                                                                            className="inline-flex items-center px-3 py-1 bg-harx-600 text-white rounded-lg hover:bg-harx-700 transition-all duration-200 text-sm font-medium gap-1 shadow-sm"
+                                                                            className="inline-flex items-center px-3 py-1.5 bg-gradient-harx-soft text-white rounded-lg hover:opacity-90 transition-all duration-200 text-sm font-medium gap-1 shadow-sm"
                                                                             onClick={() => handleCreateGigAgent(match)}
                                                                             disabled={creatingGigAgent}
-                                                                        >
+                                        >
                                                                             <Zap className="w-4 h-4" />
                                                                             {t('matchingDashboard.matching.invite')}
                                                                         </button>
@@ -1133,7 +1128,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                             <div className="flex justify-center mt-4">
                                                                 <button
                                                                     onClick={() => toggleRepDetails(match.agentId)}
-                                                                    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-harx-600 to-harx-700 hover:from-harx-700 hover:to-harx-800 text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                                                                    className="flex items-center space-x-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:border-harx-300 hover:text-harx-600 rounded-lg transition-all duration-200 text-sm font-medium shadow-sm hover:shadow"
                                                                 >
                                                                     <span>{isExpanded ? t('matchingDashboard.matching.hideDetails') : t('matchingDashboard.matching.viewDetails')}</span>
                                                                     <svg
@@ -1415,10 +1410,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         {activeSection === 'invited' && (
                             <div className="space-y-6">
 
-                                <div className="bg-white rounded-3xl shadow-lg p-4 sm:p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 shrink-0">
+                                <div className="bg-white/90 rounded-2xl shadow-sm p-4 sm:p-6 border border-slate-200/80">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                                         <div className="flex items-center space-x-3">
-                                            <h2 className="text-lg sm:text-xl font-bold text-gray-900">📧 {t('matchingDashboard.invited.title')}</h2>
+                                            <h2 className="text-lg sm:text-xl font-bold text-slate-800">📧 {t('matchingDashboard.invited.title')}</h2>
                                             <span className="px-3 py-1 bg-harx-alt-100 text-harx-alt-600 rounded-full text-xs font-medium border border-harx-alt-200 whitespace-nowrap">
                                                 {invitedAgentsList.length} {t('matchingDashboard.invited.pending')}
                                             </span>
@@ -1438,12 +1433,12 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
+                                    <div>
                                         {invitedAgentsList.filter((a: any) => 
                                             (a.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                                             (a.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
                                         ).length > 0 ? (
-                                        <div className="space-y-4">
+                                        <div className="space-y-3">
                                             {(invitedAgentsList || []).filter((a: any) => 
                                                 (a.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                                                 (a.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -1452,7 +1447,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 
 
                                                 return (
-                                                    <div key={`invited-${agent._id || index}`} className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-all duration-200">
+                                                    <div key={`invited-${agent._id || index}`} className="bg-amber-50/60 border border-amber-200/70 rounded-xl p-4 sm:p-5 hover:shadow-sm transition-all duration-200">
                                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                                             <div className="flex-1 min-w-0">
                                                                 <h3 className="text-lg font-bold text-gray-900 break-words">{agent.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
@@ -1468,7 +1463,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center space-x-2 sm:shrink-0">
-                                                                <span className="inline-flex items-center px-3 py-2 bg-yellow-900/40 text-yellow-300 rounded-lg text-sm font-medium whitespace-nowrap">
+                                                                <span className="inline-flex items-center px-3 py-2 bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-sm font-medium whitespace-nowrap">
                                                                     📧 {t('matchingDashboard.invited.pending')}
                                                                 </span>
                                                             </div>
@@ -1495,10 +1490,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         {activeSection === 'enrollment' && (
                             <div className="space-y-6">
 
-                                <div className="bg-white rounded-3xl shadow-lg p-4 sm:p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 shrink-0">
+                                <div className="bg-white/90 rounded-2xl shadow-sm p-4 sm:p-6 border border-slate-200/80">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                                         <div className="flex items-center space-x-3">
-                                            <h2 className="text-lg sm:text-xl font-bold text-gray-900">📋 {t('matchingDashboard.enrollment.title')}</h2>
+                                            <h2 className="text-lg sm:text-xl font-bold text-slate-800">📋 {t('matchingDashboard.enrollment.title')}</h2>
                                             <span className="px-3 py-1 bg-harx-50 text-harx-600 rounded-full text-xs font-medium border border-harx-100 whitespace-nowrap">
                                                 {enrollmentRequests.length} {t('matchingDashboard.enrollment.requests')}
                                             </span>
@@ -1518,17 +1513,17 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
+                                    <div>
                                         {enrollmentRequests.filter((a: any) => 
                                             (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                                             (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
                                         ).length > 0 ? (
-                                        <div className="space-y-4">
+                                        <div className="space-y-3">
                                             {(enrollmentRequests || []).filter((a: any) => 
                                                 (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                                                 (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
                                             ).map((agent: any, index: number) => agent && (
-                                                <div key={`enrollment-${agent._id || index}`} className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-all duration-200">
+                                                <div key={`enrollment-${agent._id || index}`} className="bg-sky-50/60 border border-sky-200/70 rounded-xl p-4 sm:p-5 hover:shadow-sm transition-all duration-200">
                                                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                                         <div className="flex-1 min-w-0">
                                                             <h3
@@ -1637,10 +1632,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         {activeSection === 'active' && (
                             <div className="space-y-6">
 
-                                <div className="bg-white rounded-3xl shadow-lg p-4 sm:p-6 border border-gray-100 h-[calc(100vh-320px)] flex flex-col overflow-hidden">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 shrink-0">
+                                <div className="bg-white/90 rounded-2xl shadow-sm p-4 sm:p-6 border border-slate-200/80">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                                         <div className="flex items-center space-x-3">
-                                            <h2 className="text-lg sm:text-xl font-bold text-gray-900">✅ {t('matchingDashboard.active.title')}</h2>
+                                            <h2 className="text-lg sm:text-xl font-bold text-slate-800">✅ {t('matchingDashboard.active.title')}</h2>
                                             <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200 whitespace-nowrap">
                                                 {activeAgentsList.length} {t('matchingDashboard.active.active')}
                                             </span>
@@ -1660,17 +1655,17 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto scrollbar-auto pr-2 min-h-0">
+                                    <div>
                                         {activeAgentsList.filter((a: any) => 
                                             (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                                             (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
                                         ).length > 0 ? (
-                                        <div className="space-y-4">
+                                        <div className="space-y-3">
                                             {(activeAgentsList || []).filter((a: any) => 
                                                 (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                                                 (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
                                             ).map((agent: any, index: number) => agent && (
-                                                <div key={`active-${agent._id || index}`} className="bg-green-50 border border-green-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-all duration-200">
+                                                <div key={`active-${agent._id || index}`} className="bg-emerald-50/60 border border-emerald-200/70 rounded-xl p-4 sm:p-5 hover:shadow-sm transition-all duration-200">
                                                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center gap-3 mb-2">
@@ -1698,7 +1693,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
                                                                 <div className="flex flex-wrap gap-2">
                                                                     {(agent.agentId?.professionalSummary?.keyExpertise || []).slice(0, 5).map((skill: any, i: any) => (
-                                                                        <span key={i} className="px-2 py-1 bg-green-900/30 text-green-300 rounded text-xs">
+                                                                        <span key={i} className="px-2 py-1 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-xs">
                                                                             {skill}
                                                                         </span>
                                                                     ))}
