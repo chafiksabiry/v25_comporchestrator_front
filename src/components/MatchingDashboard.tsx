@@ -608,7 +608,15 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         });
     };
     return (
-        <div className="min-h-full w-full max-w-full overflow-visible text-slate-900 flex flex-col rounded-3xl bg-gradient-matching-page">
+        <div className="min-h-full w-full max-w-full overflow-visible text-slate-900 flex flex-col rounded-3xl bg-gradient-rep-page">
+            {loadingProfile && !selectedAgentProfile && (
+                <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-slate-900/30 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl px-8 py-6 flex flex-col items-center gap-3">
+                        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500"></div>
+                        <p className="text-sm font-medium text-slate-600">{t('matchingDashboard.enrollment.viewProfile')}…</p>
+                    </div>
+                </div>
+            )}
             {selectedAgentProfile ? (
                 <div className="w-full p-4">
                     <RepProfileView
@@ -619,12 +627,12 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             ) : (
                 <>
                     {/* Header with Navigation Tabs */}
-                    <header className="bg-gradient-harx-header border-b border-harx-100/80 shadow-sm rounded-t-3xl">
+                    <header className="bg-gradient-rep-header border-b border-indigo-100/80 shadow-sm rounded-t-3xl">
                 {/* Top Header */}
                 <div className="container mx-auto px-4 py-5">
                     <div className="flex justify-between items-center gap-4">
                         <div className="flex items-center space-x-3">
-                            <div className="p-2.5 bg-gradient-harx-soft rounded-xl shadow-sm shadow-harx-200/50">
+                            <div className="p-2.5 bg-gradient-rep-accent rounded-xl shadow-sm shadow-indigo-200/50">
                                 <Users size={22} className="text-white" />
                             </div>
                             <div className="min-w-0">
@@ -637,8 +645,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         <div className="hidden lg:flex items-center gap-3">
                             {[
                                 { value: reps.length, label: t('matchingDashboard.header.totalReps'), accent: 'text-slate-800 bg-white border-slate-200' },
-                                { value: invitedAgentsList.length, label: t('matchingDashboard.header.invited'), accent: 'text-harx-600 bg-harx-50 border-harx-100' },
-                                { value: enrollmentRequests.length, label: t('matchingDashboard.header.requests'), accent: 'text-harx-alt-600 bg-harx-alt-50 border-harx-alt-100' },
+                                { value: invitedAgentsList.length, label: t('matchingDashboard.header.invited'), accent: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
+                                { value: enrollmentRequests.length, label: t('matchingDashboard.header.requests'), accent: 'text-sky-700 bg-sky-50 border-sky-100' },
                                 { value: activeAgentsList.length, label: t('matchingDashboard.header.active'), accent: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
                             ].map((stat) => (
                                 <div key={stat.label} className={`text-center px-4 py-2 rounded-xl border shadow-sm ${stat.accent}`}>
@@ -651,7 +659,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="border-t border-harx-100/60 bg-white/40">
+                <div className="border-t border-indigo-100/60 bg-white/40">
                     <div className="container mx-auto px-4">
                         <nav className="flex gap-1 sm:gap-2 py-2 overflow-x-auto">
                             {[
@@ -664,7 +672,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                     key={section.id}
                                     onClick={() => setActiveSection(section.id as any)}
                                     className={`flex-1 min-w-[120px] px-3 sm:px-4 py-3 text-center sm:text-left transition-all duration-200 rounded-xl border ${activeSection === section.id
-                                        ? 'border-harx-200 bg-white shadow-md shadow-harx-100/50 text-harx-700'
+                                        ? 'border-indigo-200 bg-white shadow-md shadow-indigo-100/50 text-indigo-700'
                                         : 'border-transparent hover:bg-white/70 text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
@@ -672,13 +680,13 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         <span className="relative text-lg sm:text-xl">
                                             {section.icon}
                                             {section.badge > 0 && (
-                                                <span className="absolute -top-2 -right-2.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-harx-500 text-white text-[10px] font-bold leading-none ring-2 ring-white shadow-sm">
+                                                <span className="absolute -top-2 -right-2.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-indigo-500 text-white text-[10px] font-bold leading-none ring-2 ring-white shadow-sm">
                                                     {section.badge > 99 ? '99+' : section.badge}
                                                 </span>
                                             )}
                                         </span>
                                         <div className="min-w-0">
-                                            <div className={`font-semibold text-xs sm:text-sm leading-tight ${activeSection === section.id ? 'text-harx-700' : 'text-slate-600'}`}>
+                                            <div className={`font-semibold text-xs sm:text-sm leading-tight ${activeSection === section.id ? 'text-indigo-700' : 'text-slate-600'}`}>
                                                 {section.label}
                                             </div>
                                             <div className={`hidden md:block text-xs ${activeSection === section.id ? 'text-slate-500' : 'text-slate-400'}`}>{section.description}</div>
@@ -710,9 +718,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                 {initialLoading && (
                     <div className="flex justify-center items-center py-20">
                         <div className="relative">
-                            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-harx-500"></div>
+                            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500"></div>
                             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                                <Zap size={24} className="text-harx-600 animate-pulse" />
+                                <Zap size={24} className="text-indigo-600 animate-pulse" />
                             </div>
                         </div>
                     </div>
@@ -735,12 +743,12 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                     >
                                         <div className="flex items-center justify-between mb-4">
                                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                                <div className="p-2 bg-harx-50 rounded-lg">
-                                                    <Briefcase size={18} className="text-harx-500" />
+                                                <div className="p-2 bg-indigo-50 rounded-lg">
+                                                    <Briefcase size={18} className="text-indigo-500" />
                                                 </div>
                                                 <span>{t('matchingDashboard.matching.availableGigs')}</span>
                                             </h3>
-                                            <span className="bg-harx-50 text-harx-600 py-1 px-2.5 rounded-full text-xs font-semibold border border-harx-100">
+                                            <span className="bg-indigo-50 text-indigo-600 py-1 px-2.5 rounded-full text-xs font-semibold border border-indigo-100">
                                                 {gigs.length}
                                             </span>
                                         </div>
@@ -751,8 +759,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
                                                 return (
                                                     <div key={gig._id} className={`group relative rounded-xl border transition-all duration-200 ${selectedGig?._id === gig._id
-                                                        ? "border-harx-300 bg-harx-50/80 shadow-md ring-1 ring-harx-200"
-                                                        : "bg-slate-50/50 border-slate-200/80 hover:border-harx-200 hover:bg-white hover:shadow-sm"
+                                                        ? "border-indigo-300 bg-indigo-50/80 shadow-md ring-1 ring-indigo-200"
+                                                        : "bg-slate-50/50 border-slate-200/80 hover:border-indigo-200 hover:bg-white hover:shadow-sm"
                                                         }`}>
                                                         {/* Gig Header - Clickable for selection */}
                                                         <div
@@ -761,17 +769,17 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                         >
                                                             <div className="flex items-center space-x-3 mb-2">
                                                                 <div className={`p-2 rounded-lg transition-colors duration-200 ${selectedGig?._id === gig._id
-                                                                    ? "bg-gradient-harx-soft shadow-sm"
-                                                                    : "bg-white group-hover:bg-harx-50 border border-slate-100"
+                                                                    ? "bg-gradient-rep-accent shadow-sm"
+                                                                    : "bg-white group-hover:bg-indigo-50 border border-slate-100"
                                                                     }`}>
-                                                                    <Briefcase size={16} className={`${selectedGig?._id === gig._id ? "text-white" : "text-harx-500"}`} />
+                                                                    <Briefcase size={16} className={`${selectedGig?._id === gig._id ? "text-white" : "text-indigo-500"}`} />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
-                                                                    <h4 className={`font-semibold text-sm mb-0.5 ${selectedGig?._id === gig._id ? "text-harx-800" : "text-slate-800"
+                                                                    <h4 className={`font-semibold text-sm mb-0.5 ${selectedGig?._id === gig._id ? "text-indigo-800" : "text-slate-800"
                                                                         }`}>
                                                                         {gig.title}
                                                                     </h4>
-                                                                    <p className={`text-xs truncate ${selectedGig?._id === gig._id ? "text-harx-600/80" : "text-slate-500"}`}>{gig.companyName}</p>
+                                                                    <p className={`text-xs truncate ${selectedGig?._id === gig._id ? "text-indigo-600/80" : "text-slate-500"}`}>{gig.companyName}</p>
                                                                 </div>
                                                             </div>
 
@@ -792,8 +800,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     toggleGigDetails(gig._id || '');
                                                                 }}
                                                                 className={`w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${selectedGig?._id === gig._id
-                                                                    ? "bg-white border border-harx-200 text-harx-700 hover:bg-harx-50"
-                                                                    : "bg-white border border-slate-200 text-slate-600 hover:border-harx-200 hover:text-harx-600"}`}
+                                                                    ? "bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                                                                    : "bg-white border border-slate-200 text-slate-600 hover:border-indigo-200 hover:text-indigo-600"}`}
                                                             >
                                                                 <span>{t('matchingDashboard.matching.viewDetails')}</span>
                                                                 <svg
@@ -821,7 +829,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                     const displayName = industry.name ||
                                                                                         (typeof industry === 'string' && !industry.match(/^[0-9a-fA-F]{24}$/) ? industry : 'Industry');
                                                                                     return (
-                                                                                        <span key={i} className="px-2 py-1 px-2.5 py-1 bg-harx-50 text-harx-600 border border-harx-100/30 rounded-lg text-xs font-bold transition-all duration-200">
+                                                                                        <span key={i} className="px-2 py-1 px-2.5 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100/30 rounded-lg text-xs font-bold transition-all duration-200">
                                                                                             {displayName}
                                                                                         </span>
                                                                                     );
@@ -839,7 +847,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                     const displayName = activity.name ||
                                                                                         (typeof activity === 'string' && !activity.match(/^[0-9a-fA-F]{24}$/) ? activity : 'Activity');
                                                                                     return (
-                                                                                        <span key={i} className="px-2 py-1 px-2.5 py-1 bg-harx-alt-50 text-harx-alt-600 border border-harx-alt-100/30 rounded-lg text-xs font-bold transition-all duration-200">
+                                                                                        <span key={i} className="px-2 py-1 px-2.5 py-1 bg-sky-50 text-sky-700 border border-sky-100/30 rounded-lg text-xs font-bold transition-all duration-200">
                                                                                             {displayName}
                                                                                         </span>
                                                                                     );
@@ -860,7 +868,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                             <p className="text-gray-500 font-medium mb-2">{t('matchingDashboard.matching.languages')}</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.languages.map((lang: any, i: number) => (
-                                                                                    <span key={i} className="px-2 py-1 px-2.5 py-1 bg-harx-50 text-harx-700 border border-harx-200/30 rounded-lg text-xs font-bold">
+                                                                                    <span key={i} className="px-2 py-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200/30 rounded-lg text-xs font-bold">
                                                                                         {getLanguageNameByCode(lang.language || lang.iso639_1 || lang)}
                                                                                         {lang.proficiency && <span className="ml-1 text-purple-800">({lang.proficiency})</span>}
                                                                                     </span>
@@ -888,7 +896,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                             <p className="text-gray-500 font-medium mb-2">{t('matchingDashboard.matching.professionalSkills')}</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.professional.map((skillItem: any, i: number) => (
-                                                                                    <span key={`prof-${i}`} className="px-2 py-1 px-2.5 py-1 bg-harx-50 text-harx-600 border border-harx-100/30 rounded-lg text-xs font-bold">
+                                                                                    <span key={`prof-${i}`} className="px-2 py-1 px-2.5 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100/30 rounded-lg text-xs font-bold">
                                                                                         {getSkillNameById(skillItem.skill || skillItem, 'professional')}
                                                                                     </span>
                                                                                 ))}
@@ -902,7 +910,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                             <p className="text-gray-500 font-medium mb-2">{t('matchingDashboard.matching.technicalSkills')}</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.technical.map((skillItem: any, i: number) => (
-                                                                                    <span key={`tech-${i}`} className="px-2 py-1 px-2.5 py-1 bg-harx-alt-50 text-harx-alt-600 border border-harx-alt-100/30 rounded-lg text-xs font-bold">
+                                                                                    <span key={`tech-${i}`} className="px-2 py-1 px-2.5 py-1 bg-sky-50 text-sky-700 border border-sky-100/30 rounded-lg text-xs font-bold">
                                                                                         {getSkillNameById(skillItem.skill || skillItem, 'technical')}
                                                                                     </span>
                                                                                 ))}
@@ -916,7 +924,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                             <p className="text-gray-500 font-medium mb-2">{t('matchingDashboard.matching.softSkills')}</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.soft.map((skillItem: any, i: number) => (
-                                                                                    <span key={`soft-${i}`} className="px-2 py-1 px-2.5 py-1 bg-harx-50 text-harx-500 border border-harx-100/30 rounded-lg text-xs font-bold">
+                                                                                    <span key={`soft-${i}`} className="px-2 py-1 px-2.5 py-1 bg-indigo-50 text-indigo-500 border border-indigo-100/30 rounded-lg text-xs font-bold">
                                                                                         {getSkillNameById(skillItem.skill || skillItem, 'soft')}
                                                                                     </span>
                                                                                 ))}
@@ -958,7 +966,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
                                     {/* Resize Handle */}
                                     <div
-                                        className={`hidden lg:flex flex-shrink-0 w-1 bg-antigravity-border hover:bg-harx-500 cursor-col-resize transition-colors duration-200 rounded-full items-center justify-center group ${isResizing ? 'bg-harx-500' : ''}`}
+                                        className={`hidden lg:flex flex-shrink-0 w-1 bg-antigravity-border hover:bg-indigo-500 cursor-col-resize transition-colors duration-200 rounded-full items-center justify-center group ${isResizing ? 'bg-indigo-500' : ''}`}
                                         onMouseDown={handleMouseDown}
                                         title="Drag to resize"
                                     >
@@ -971,7 +979,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                     >
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                                             <h3 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center space-x-2 min-w-0">
-                                                        <Users size={20} className="text-harx-500 shrink-0" />
+                                                        <Users size={20} className="text-indigo-500 shrink-0" />
                                                         <span className="truncate">{selectedGig ? `${t('matchingDashboard.matching.matchesFor')} "${selectedGig.title}"` : t('matchingDashboard.matching.selectGig')}</span>
                                                     </h3>
                                             
@@ -987,7 +995,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                         placeholder={t('matchingDashboard.matching.searchReps')}
                                                         value={searchTerm}
                                                         onChange={(e: any) => setSearchTerm(e.target.value)}
-                                                        className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
+                                                        className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-900 transition-all shadow-sm"
                                                     />
                                                 </div>
                                             )}
@@ -1005,9 +1013,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         ) : loading ? (
                                             <div className="flex justify-center items-center py-12">
                                                 <div className="relative">
-                                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-harx-500"></div>
+                                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
                                                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                                                        <Zap size={16} className="text-harx-600 animate-pulse" />
+                                                        <Zap size={16} className="text-indigo-600 animate-pulse" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1062,7 +1070,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center gap-3 mb-2">
                                                                         <h4
-                                                                            className="text-lg font-bold text-gray-900 truncate cursor-pointer hover:text-harx-600 transition-colors"
+                                                                            className="text-lg font-bold text-gray-900 truncate cursor-pointer hover:text-indigo-600 transition-colors"
                                                                             onClick={() => setSelectedAgentProfile(match.agentInfo)}
                                                                         >
                                                                             {match.agentInfo?.name}
@@ -1113,7 +1121,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         </span>
                                                                     ) : (
                                                                         <button
-                                                                            className="inline-flex items-center px-3 py-1.5 bg-gradient-harx-soft text-white rounded-lg hover:opacity-90 transition-all duration-200 text-sm font-medium gap-1 shadow-sm"
+                                                                            className="inline-flex items-center px-3 py-1.5 bg-gradient-rep-accent text-white rounded-lg hover:opacity-90 transition-all duration-200 text-sm font-medium gap-1 shadow-sm"
                                                                             onClick={() => handleCreateGigAgent(match)}
                                                                             disabled={creatingGigAgent}
                                         >
@@ -1128,7 +1136,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                             <div className="flex justify-center mt-4">
                                                                 <button
                                                                     onClick={() => toggleRepDetails(match.agentId)}
-                                                                    className="flex items-center space-x-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:border-harx-300 hover:text-harx-600 rounded-lg transition-all duration-200 text-sm font-medium shadow-sm hover:shadow"
+                                                                    className="flex items-center space-x-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:border-indigo-300 hover:text-indigo-600 rounded-lg transition-all duration-200 text-sm font-medium shadow-sm hover:shadow"
                                                                 >
                                                                     <span>{isExpanded ? t('matchingDashboard.matching.hideDetails') : t('matchingDashboard.matching.viewDetails')}</span>
                                                                     <svg
@@ -1163,7 +1171,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                         <p className="text-xs text-gray-500 mb-2">{t('matchingDashboard.matching.matchedSkills')}</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.skillsMatch.details.matchingSkills.slice(0, 3).map((skill: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-harx-50 text-harx-600 rounded text-xs font-medium border border-harx-100">
+                                                                                                <span key={i} className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-xs font-medium border border-indigo-100">
                                                                                                     {skill.skill?.name || skill.skillName || skill.name || skill}
                                                                                                 </span>
                                                                                             ))}
@@ -1195,9 +1203,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                                         <p className="text-xs text-gray-500 mb-2">{t('matchingDashboard.matching.matchedLanguages')}</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.languageMatch.details.matchingLanguages.slice(0, 3).map((lang: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-harx-alt-50 text-harx-alt-600 rounded text-xs font-medium border border-harx-alt-100">
+                                                                                                <span key={i} className="px-2 py-1 bg-sky-50 text-sky-700 rounded text-xs font-medium border border-sky-100">
                                                                                                     {lang.language?.name || lang.languageName || getLanguageNameByCode(lang.language || lang.code || lang)}
-                                                                                                    {lang.agentLevel && <span className="ml-1 text-harx-alt-700">({lang.agentLevel})</span>}
+                                                                                                    {lang.agentLevel && <span className="ml-1 text-sky-800">({lang.agentLevel})</span>}
                                                                                                 </span>
                                                                                             ))}
                                                                                             {match.languageMatch.details.matchingLanguages.length > 3 && (
@@ -1414,7 +1422,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                                         <div className="flex items-center space-x-3">
                                             <h2 className="text-lg sm:text-xl font-bold text-slate-800">📧 {t('matchingDashboard.invited.title')}</h2>
-                                            <span className="px-3 py-1 bg-harx-alt-100 text-harx-alt-600 rounded-full text-xs font-medium border border-harx-alt-200 whitespace-nowrap">
+                                            <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-full text-xs font-medium border border-sky-200 whitespace-nowrap">
                                                 {invitedAgentsList.length} {t('matchingDashboard.invited.pending')}
                                             </span>
                                         </div>
@@ -1429,7 +1437,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 placeholder={t('matchingDashboard.invited.search')}
                                                 value={searchTerm}
                                                 onChange={(e: any) => setSearchTerm(e.target.value)}
-                                                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
+                                                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-900 transition-all shadow-sm"
                                             />
                                         </div>
                                     </div>
@@ -1447,12 +1455,17 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 
 
                                                 return (
-                                                    <div key={`invited-${agent._id || index}`} className="bg-amber-50/60 border border-amber-200/70 rounded-xl p-4 sm:p-5 hover:shadow-sm transition-all duration-200">
+                                                    <div
+                                                        key={`invited-${agent._id || index}`}
+                                                        onClick={() => { if (agent._id) handleAgentClick(agent._id); }}
+                                                        title={t('matchingDashboard.enrollment.viewProfile')}
+                                                        className="bg-amber-50/60 border border-amber-200/70 rounded-xl p-4 sm:p-5 hover:shadow-sm hover:border-amber-300 transition-all duration-200 cursor-pointer"
+                                                    >
                                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                                             <div className="flex-1 min-w-0">
-                                                                <h3 className="text-lg font-bold text-gray-900 break-words">{agent.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
+                                                                <h3 className="text-lg font-bold text-gray-900 break-words hover:text-indigo-600 transition-colors">{agent.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
                                                                 <div className="mt-2 space-y-1">
-                                                                    <p className="text-sm text-yellow-600 font-medium bg-yellow-100/50 inline-block px-2 py-0.5 rounded">
+                                                                    <p className="text-sm text-amber-700 font-medium bg-amber-100/60 inline-block px-2 py-0.5 rounded">
                                                                         {t('matchingDashboard.invited.waitingResponse')}
                                                                     </p>
                                                                     {(agent.gigId?.title || agent.gig?.title) && (
@@ -1494,7 +1507,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                                         <div className="flex items-center space-x-3">
                                             <h2 className="text-lg sm:text-xl font-bold text-slate-800">📋 {t('matchingDashboard.enrollment.title')}</h2>
-                                            <span className="px-3 py-1 bg-harx-50 text-harx-600 rounded-full text-xs font-medium border border-harx-100 whitespace-nowrap">
+                                            <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-medium border border-indigo-100 whitespace-nowrap">
                                                 {enrollmentRequests.length} {t('matchingDashboard.enrollment.requests')}
                                             </span>
                                         </div>
@@ -1509,7 +1522,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 placeholder={t('matchingDashboard.enrollment.search')}
                                                 value={searchTerm}
                                                 onChange={(e: any) => setSearchTerm(e.target.value)}
-                                                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
+                                                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-900 transition-all shadow-sm"
                                             />
                                         </div>
                                     </div>
@@ -1527,7 +1540,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                                         <div className="flex-1 min-w-0">
                                                             <h3
-                                                                className="text-lg font-bold text-gray-900 cursor-pointer hover:text-harx-600 transition-colors inline-flex items-center gap-1.5 break-words"
+                                                                className="text-lg font-bold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5 break-words"
                                                                 onClick={() => {
                                                                     const repId = agent.agentId?._id || agent.agentId;
                                                                     if (repId) handleAgentClick(repId);
@@ -1559,7 +1572,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     if (repId) handleAgentClick(repId);
                                                                 }}
                                                                 disabled={loadingProfile}
-                                                                className="flex-1 lg:flex-none justify-center px-4 py-2 bg-white text-harx-600 border border-harx-200 rounded-lg hover:bg-harx-50 transition-all duration-200 text-sm font-medium flex items-center gap-1.5 disabled:opacity-60 whitespace-nowrap"
+                                                                className="flex-1 lg:flex-none justify-center px-4 py-2 bg-white text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-all duration-200 text-sm font-medium flex items-center gap-1.5 disabled:opacity-60 whitespace-nowrap"
                                                             >
                                                                 👁️ {t('matchingDashboard.enrollment.viewProfile')}
                                                             </button>
@@ -1651,7 +1664,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 placeholder={t('matchingDashboard.active.search')}
                                                 value={searchTerm}
                                                 onChange={(e: any) => setSearchTerm(e.target.value)}
-                                                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 text-xs text-slate-900 transition-all shadow-sm"
+                                                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-900 transition-all shadow-sm"
                                             />
                                         </div>
                                     </div>
@@ -1665,11 +1678,18 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                                                 (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
                                             ).map((agent: any, index: number) => agent && (
-                                                <div key={`active-${agent._id || index}`} className="bg-emerald-50/60 border border-emerald-200/70 rounded-xl p-4 sm:p-5 hover:shadow-sm transition-all duration-200">
+                                                <div key={`active-${agent._id || index}`} className="bg-emerald-50/60 border border-emerald-200/70 rounded-xl p-4 sm:p-5 hover:shadow-sm hover:border-emerald-300 transition-all duration-200">
                                                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center gap-3 mb-2">
-                                                                <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
+                                                                <h3
+                                                                    className="text-lg font-bold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5"
+                                                                    onClick={() => {
+                                                                        const repId = agent.agentId?._id || agent.agentId;
+                                                                        if (repId) handleAgentClick(repId);
+                                                                    }}
+                                                                    title={t('matchingDashboard.enrollment.viewProfile')}
+                                                                >{agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
                                                                 <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
                                                                     ✅ {t('matchingDashboard.active.active')}
                                                                 </span>
