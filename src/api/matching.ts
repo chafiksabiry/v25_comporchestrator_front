@@ -34,6 +34,25 @@ export const getReps = async (): Promise<Rep[]> => {
     }
 };
 
+export const getAgentById = async (agentId: string): Promise<any> => {
+    try {
+        const response = await fetch(`${MATCHING_API_URL}/agents/${agentId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to fetch agent profile');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error in getAgentById:', error);
+        throw error;
+    }
+};
+
 // ===== GIGS API =====
 export const getGigs = async (): Promise<Gig[]> => {
     

@@ -25,6 +25,7 @@ import {
     getAllSkills,
     getLanguages,
     getGigWeights,
+    getAgentById,
     Skill,
     Language
 } from '../api/matching';
@@ -85,22 +86,124 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
     const [selectedAgentProfile, setSelectedAgentProfile] = useState<any>(null);
     const [loadingProfile, setLoadingProfile] = useState(false);
 
-    const handleAgentClick = async (agentId: string) => {
+    const normalizeAgentProfile = (raw: any) => {
+        if (!raw) return null;
+        const name = raw.personalInfo?.name || raw.name;
+        return {
+            ...raw,
+            name,
+            personalInfo: {
+                ...(raw.personalInfo || {}),
+                name,
+            },
+        };
+    };
+
+    const extractEmbeddedProfile = (source: any): any | null => {
+        if (!source) return null;
+        if (source.agentInfo && (source.agentInfo.personalInfo || source.agentInfo.name || source.agentInfo.professionalSummary)) {
+            return source.agentInfo;
+        }
+        if (source.agentId && typeof source.agentId === 'object' && (source.agentId.personalInfo || source.agentId.professionalSummary)) {
+            return source.agentId;
+        }
+        if (source.personalInfo || source.professionalSummary || source.name) {
+            return source;
+        }
+        return null;
+    };
+
+    const resolveAgentId = (source: any): string | null => {
+        if (!source) return null;
+        if (typeof source === 'string') return source;
+        if (source.agentId) {
+            return typeof source.agentId === 'object'
+                ? String(source.agentId._id || source.agentId.id || '')
+                : String(source.agentId);
+        }
+        if (source.agentInfo?._id) return String(source.agentInfo._id);
+        if (source.agentInfo?.agentId) return String(source.agentInfo.agentId);
+        const isGigAgentRecord = Boolean(source.gigId || source.gig || source.enrollmentStatus);
+        if (source._id && (source.personalInfo || source.professionalSummary) && !isGigAgentRecord) {
+            return String(source._id);
+        }
+        return null;
+    };
+
+    const openAgentProfile = async (source: any) => {
+        const embedded = extractEmbeddedProfile(source);
+        const agentId = resolveAgentId(source);
+
+        const openProfile = (profile: any) => {
+            setSelectedAgentProfile(normalizeAgentProfile(profile));
+        };
+
+        const hasRichProfile = Boolean(
+            embedded?.professionalSummary?.profileDescription
+            || embedded?.personalInfo?.photo
+            || (embedded?.personalInfo?.name && embedded?.professionalSummary)
+        );
+
+        if (hasRichProfile) {
+            openProfile(embedded);
+            return;
+        }
+
+        if (embedded && !agentId) {
+            openProfile(embedded);
+            return;
+        }
+
         try {
             setLoadingProfile(true);
-            const REP_API_URL = 'https://v25repscreationwizardbackend-production.up.railway.app/api';
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${REP_API_URL}/profiles/${agentId}`, {
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-            });
-            if (!response.ok) {
-                throw new Error('Failed to fetch profile');
+            setError(null);
+
+            const repName = embedded?.personalInfo?.name || embedded?.name;
+
+            if (agentId) {
+                const cachedRep = reps.find((rep) => String(rep._id) === agentId);
+                if (cachedRep) {
+                    openProfile(cachedRep);
+                    return;
+                }
+
+                const cachedMatch = matches.find((match) => String(match.agentId) === agentId);
+                if (cachedMatch?.agentInfo) {
+                    openProfile(cachedMatch.agentInfo);
+                    return;
+                }
+
+                try {
+                    const fetched = await getAgentById(agentId);
+                    openProfile(fetched);
+                    return;
+                } catch (fetchErr) {
+                    console.warn('getAgentById failed, trying cache fallbacks:', fetchErr);
+                }
             }
-            const data = await response.json();
-            setSelectedAgentProfile(data);
+
+            if (repName) {
+                const byName = reps.find((rep) => rep.personalInfo?.name === repName);
+                if (byName) {
+                    openProfile(byName);
+                    return;
+                }
+                const matchByName = matches.find((match) => match.agentInfo?.name === repName);
+                if (matchByName?.agentInfo) {
+                    openProfile(matchByName.agentInfo);
+                    return;
+                }
+            }
+
+            if (embedded) {
+                openProfile(embedded);
+                return;
+            }
+
+            throw new Error('Agent profile not found');
         } catch (err) {
             console.error('Error fetching profile:', err);
-            alert('Impossible de charger le profil de l\'agent.');
+            setError('Impossible de charger le profil du représentant.');
         } finally {
             setLoadingProfile(false);
         }
@@ -608,7 +711,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         });
     };
     return (
-        <div className="min-h-full w-full max-w-full overflow-visible text-slate-900 flex flex-col rounded-3xl bg-gradient-rep-page">
+        <div className="min-h-full w-full max-w-full overflow-visible text-slate-900 flex flex-col bg-gradient-rep-page">
             {loadingProfile && !selectedAgentProfile && (
                 <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-slate-900/30 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-xl px-8 py-6 flex flex-col items-center gap-3">
@@ -627,7 +730,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             ) : (
                 <>
                     {/* Header with Navigation Tabs */}
-                    <header className="bg-gradient-rep-header border-b border-indigo-100/80 shadow-sm rounded-t-3xl">
+                    <header className="bg-gradient-rep-header border-b border-indigo-100/80 shadow-sm">
                 {/* Top Header */}
                 <div className="container mx-auto px-4 py-5">
                     <div className="flex justify-between items-center gap-4">
@@ -1071,7 +1174,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                     <div className="flex items-center gap-3 mb-2">
                                                                         <h4
                                                                             className="text-lg font-bold text-gray-900 truncate cursor-pointer hover:text-indigo-600 transition-colors"
-                                                                            onClick={() => setSelectedAgentProfile(match.agentInfo)}
+                                                                            onClick={() => openAgentProfile({ agentInfo: match.agentInfo, agentId: match.agentId })}
                                                                         >
                                                                             {match.agentInfo?.name}
                                                                         </h4>
@@ -1457,7 +1560,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                 return (
                                                     <div
                                                         key={`invited-${agent._id || index}`}
-                                                        onClick={() => { if (agent._id) handleAgentClick(agent._id); }}
+                                                        onClick={() => openAgentProfile(agent)}
                                                         title={t('matchingDashboard.enrollment.viewProfile')}
                                                         className="bg-amber-50/60 border border-amber-200/70 rounded-xl p-4 sm:p-5 hover:shadow-sm hover:border-amber-300 transition-all duration-200 cursor-pointer"
                                                     >
@@ -1541,10 +1644,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                         <div className="flex-1 min-w-0">
                                                             <h3
                                                                 className="text-lg font-bold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5 break-words"
-                                                                onClick={() => {
-                                                                    const repId = agent.agentId?._id || agent.agentId;
-                                                                    if (repId) handleAgentClick(repId);
-                                                                }}
+                                                                onClick={() => openAgentProfile(agent)}
                                                                 title={t('matchingDashboard.enrollment.viewProfile')}
                                                             >
                                                                 {agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}
@@ -1567,10 +1667,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                         </div>
                                                         <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:shrink-0">
                                                             <button
-                                                                onClick={() => {
-                                                                    const repId = agent.agentId?._id || agent.agentId;
-                                                                    if (repId) handleAgentClick(repId);
-                                                                }}
+                                                                onClick={() => openAgentProfile(agent)}
                                                                 disabled={loadingProfile}
                                                                 className="flex-1 lg:flex-none justify-center px-4 py-2 bg-white text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-all duration-200 text-sm font-medium flex items-center gap-1.5 disabled:opacity-60 whitespace-nowrap"
                                                             >
@@ -1684,10 +1781,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                             <div className="flex items-center gap-3 mb-2">
                                                                 <h3
                                                                     className="text-lg font-bold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5"
-                                                                    onClick={() => {
-                                                                        const repId = agent.agentId?._id || agent.agentId;
-                                                                        if (repId) handleAgentClick(repId);
-                                                                    }}
+                                                                    onClick={() => openAgentProfile(agent)}
                                                                     title={t('matchingDashboard.enrollment.viewProfile')}
                                                                 >{agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
                                                                 <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
