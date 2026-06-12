@@ -953,7 +953,7 @@ function AppContent() {
           </header>
 
           {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full bg-white rounded-tl-[20px] shadow-2xl shadow-black/5">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full bg-white shadow-2xl shadow-black/5">
             <ProjectViewSwitch
               activeView={activeProject}
               dashboard={<DashboardApp />}
