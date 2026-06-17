@@ -32,7 +32,7 @@ export function companyTransactionCanValidate(
 ): boolean {
   if (transaction?.validByCompany === true) return false;
   if (call.status?.toLowerCase() !== 'completed') return false;
-  return call.validByAI === true || call.validByAI === false;
+  return call.validByAI === true;
 }
 
 /** @deprecated alias */

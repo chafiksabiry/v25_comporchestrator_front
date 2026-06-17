@@ -304,6 +304,16 @@ export function WalletCompanyPanel() {
   }, [companyId]);
 
   useEffect(() => {
+    const onWalletRefresh = (event: Event) => {
+      const detail = (event as CustomEvent<{ companyId?: string }>).detail;
+      if (detail?.companyId && String(detail.companyId) !== String(companyId)) return;
+      void fetchData(true);
+    };
+    window.addEventListener('COMPANY_WALLET_REFRESH', onWalletRefresh);
+    return () => window.removeEventListener('COMPANY_WALLET_REFRESH', onWalletRefresh);
+  }, [companyId]);
+
+  useEffect(() => {
     if (!showDepositModal) return;
     fetchPaymentConfig(apiBaseUrl).then((cfg) => {
       setPaypalEnabled(cfg.paypalEnabled);

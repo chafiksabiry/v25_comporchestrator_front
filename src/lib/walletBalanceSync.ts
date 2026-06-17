@@ -92,6 +92,11 @@ export async function refreshAndBroadcastWalletBalance(
     const snapshot = await fetchCompanyWalletSnapshot(companyId);
     if (snapshot) {
       broadcastWalletBalance(snapshot);
+      window.dispatchEvent(
+        new CustomEvent('COMPANY_WALLET_REFRESH', {
+          detail: { companyId: companyId || Cookies.get('companyId') },
+        })
+      );
       return snapshot;
     }
     if (attempt < retries) {
@@ -99,4 +104,27 @@ export async function refreshAndBroadcastWalletBalance(
     }
   }
   return null;
+}
+
+/** Book pending commissions server-side after company validates/refuses a sale. */
+export async function triggerCompanyWalletReconcile(companyId?: string): Promise<void> {
+  const compId = companyId || Cookies.get('companyId');
+  if (!compId) return;
+
+  const apiBaseUrl = getApiBaseUrl();
+  try {
+    await fetch(`${apiBaseUrl}/escrow/reconcile/${compId}`, { method: 'POST' });
+  } catch (err) {
+    console.warn('[walletBalanceSync] reconcile request failed:', err);
+  }
+}
+
+/**
+ * After transaction validation — reconcile ledger, refresh header balance,
+ * and notify wallet panels (no full page reload).
+ */
+export async function refreshCompanyWalletAfterValidation(companyId?: string): Promise<void> {
+  const compId = companyId || Cookies.get('companyId');
+  await triggerCompanyWalletReconcile(compId || undefined);
+  await refreshAndBroadcastWalletBalance(compId || undefined, { retries: 3, delayMs: 350 });
 }
