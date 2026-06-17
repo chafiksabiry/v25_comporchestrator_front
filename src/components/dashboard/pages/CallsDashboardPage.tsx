@@ -3,7 +3,8 @@ import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import CallDetailModal, { type NormalizedCall, companyTransactionNeedsValidation } from '../components/CallDetailModal';
+import CallDetailModal, { type NormalizedCall, companyTransactionCanValidate } from '../components/CallDetailModal';
+import { resolveUnvalidatedTransactionStatus } from '../../../utils/callStatusDisplay';
 import { callsApi } from '../services/api/calls';
 import { getCallsApiBase } from '../lib/callsApiBase';
 import { getCallAnalyzeErrorMessage } from '../lib/callAnalyzeErrors';
@@ -454,12 +455,19 @@ export default function CallsDashboardPage() {
                                 </span>
                               ) : (call.validByAI === null || call.validByAI === undefined) ? (
                                 <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
-                              ) : companyTransactionNeedsValidation(call.transaction) ? (
+                              ) : companyTransactionCanValidate(call, call.transaction) ? (
                                 <div className="flex flex-col items-center gap-1.5">
-                                  <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-200/40 shadow-sm w-44 whitespace-nowrap text-center" title="Analyse IA positive, en attente de votre validation finale">
-                                    <Clock className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
-                                    À valider
-                                  </span>
+                                  {(() => {
+                                    const txStatus = resolveUnvalidatedTransactionStatus(call);
+                                    return (
+                                      <span
+                                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm min-w-[7rem] max-w-[11rem] text-center leading-tight ${txStatus.tone}`}
+                                        title={txStatus.title}
+                                      >
+                                        {txStatus.label}
+                                      </span>
+                                    );
+                                  })()}
                                   <div className="flex items-center gap-1">
                                     <button
                                       type="button"
@@ -473,19 +481,14 @@ export default function CallsDashboardPage() {
                                     <button
                                       type="button"
                                       onClick={() => handleUpdateTransactionValidation(callId, call.transaction?.validByCompany ?? null, false)}
-                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100 transition-all text-[9px] font-black uppercase tracking-widest"
-                                      title="Refuser la transaction"
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition-all text-[9px] font-black uppercase tracking-widest"
+                                      title="Marquer comme non signé"
                                     >
                                       <X className="w-3 h-3" />
-                                      Refuser
+                                      Non signé
                                     </button>
                                   </div>
                                 </div>
-                              ) : call.transaction?.validByAI === false ? (
-                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
-                                  <X className="w-3.5 h-3.5" />
-                                  Refusé AI
-                                </span>
                               ) : (
                                 <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
                               )}
@@ -528,6 +531,7 @@ export default function CallsDashboardPage() {
           leadName: selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name
             ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim()
             : 'Call Details',
+          status: selectedCall.status,
           createdAt: selectedCall.createdAt || selectedCall.date || '',
           recording_url: selectedCall.recording_url,
           recording_url_cloudinary: selectedCall.recording_url_cloudinary,
@@ -536,6 +540,7 @@ export default function CallsDashboardPage() {
           ai_summary_en: selectedCall.ai_summary_en,
           ai_summary_fr: selectedCall.ai_summary_fr,
           validByAI: selectedCall.validByAI,
+          callOutcome: selectedCall.callOutcome,
           transaction: selectedCall.transaction,
         };
         return (
