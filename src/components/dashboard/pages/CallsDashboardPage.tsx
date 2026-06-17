@@ -440,7 +440,7 @@ export default function CallsDashboardPage() {
                               ) : (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 border border-slate-200/40 shadow-sm w-32 whitespace-nowrap">
                                   <Clock className="w-3.5 h-3.5 animate-pulse" />
-                                  Analyse en cours
+                                  Pending analyse
                                 </span>
                               )}
                             </div>
