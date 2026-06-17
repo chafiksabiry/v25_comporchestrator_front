@@ -6,27 +6,40 @@ import {
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
+import { resolveUnvalidatedTransactionStatus } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;
   leadName: string;
   agentName?: string;
+  status?: string;
   createdAt: string;
   recording_url?: string | null;
   recording_url_cloudinary?: string | null;
   transcript?: { speaker: string; text: string; timestamp?: string }[];
-  ai_call_score?: any;
+  ai_call_score?: Record<string, { passed?: boolean; score?: number }> | null;
   ai_summary_en?: string;
   ai_summary_fr?: string;
   validByAI?: boolean | null;
+  callOutcome?: string | null;
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null };
 }
 
-/** IA a détecté une vente et l'entreprise n'a pas encore approuvé (null ou false stale). */
+/** L'entreprise peut valider/refuser dès que l'appel est analysé (transaction optionnelle). */
+export function companyTransactionCanValidate(
+  call: { validByAI?: boolean | null; status?: string },
+  transaction?: { validByAI?: boolean | null; validByCompany?: boolean | null } | null
+): boolean {
+  if (transaction?.validByCompany === true) return false;
+  if (call.status?.toLowerCase() !== 'completed') return false;
+  return call.validByAI === true || call.validByAI === false;
+}
+
+/** @deprecated alias */
 export function companyTransactionNeedsValidation(
   transaction?: { validByAI?: boolean | null; validByCompany?: boolean | null } | null
 ): boolean {
-  return transaction?.validByAI === true && transaction?.validByCompany !== true;
+  return !!transaction && transaction.validByCompany !== true;
 }
 
 interface Props {
@@ -176,18 +189,22 @@ export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCal
                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Trans.</span>
                 {call.transaction?.validByCompany === true
                   ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100" title="Validé par l'entreprise"><Check className="w-3 h-3" /></span>
-                  : companyTransactionNeedsValidation(call.transaction)
-                    ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100" title="En attente de votre validation"><Clock className="w-3 h-3 animate-pulse" /></span>
-                    : call.transaction?.validByAI === false
-                      ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title="Refusé par l'IA"><X className="w-3 h-3" /></span>
-                      : call.transaction?.validByCompany === false
-                        ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title="Refusé par l'entreprise"><X className="w-3 h-3" /></span>
-                        : <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-slate-50 text-slate-400 border border-slate-100"><Clock className="w-3 h-3 animate-pulse" /></span>
+                  : (() => {
+                    const status = resolveUnvalidatedTransactionStatus(call);
+                    return (
+                      <span
+                        className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider border ${status.tone}`}
+                        title={status.title}
+                      >
+                        {status.label}
+                      </span>
+                    );
+                  })()
                 }
               </div>
             </div>
 
-            {onValidateTransaction && companyTransactionNeedsValidation(call.transaction) && (
+            {onValidateTransaction && companyTransactionCanValidate(call, call.transaction) && (
               <div className="flex items-center gap-3">
                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Votre choix:</span>
                 <div className="flex items-center gap-1.5">
@@ -202,10 +219,10 @@ export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCal
                   <button
                     type="button"
                     onClick={() => onValidateTransaction(call.id, call.transaction?.validByCompany ?? null, false)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-100/60 hover:bg-rose-100/60 transition-all shadow-sm text-[9px] font-black uppercase tracking-widest"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-50 text-slate-600 border border-slate-200/60 hover:bg-slate-100/60 transition-all shadow-sm text-[9px] font-black uppercase tracking-widest"
                   >
                     <X className="w-3.5 h-3.5" />
-                    Refuser
+                    Non signé
                   </button>
                 </div>
               </div>
