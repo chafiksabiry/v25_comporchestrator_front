@@ -8,6 +8,7 @@ import { resolveUnvalidatedTransactionStatus } from '../../../utils/callStatusDi
 import { callsApi } from '../services/api/calls';
 import { getCallsApiBase } from '../lib/callsApiBase';
 import { getCallAnalyzeErrorMessage } from '../lib/callAnalyzeErrors';
+import { refreshCompanyWalletAfterValidation } from '../../../lib/walletBalanceSync';
 
 export default function CallsDashboardPage() {
   const { t, i18n } = useTranslation();
@@ -167,6 +168,7 @@ export default function CallsDashboardPage() {
         } else {
           toast.success('Validation transaction annulée');
         }
+        void refreshCompanyWalletAfterValidation(companyId || undefined);
       } else {
         toast.error('Impossible de mettre à jour la validation');
       }
@@ -455,6 +457,18 @@ export default function CallsDashboardPage() {
                                 </span>
                               ) : (call.validByAI === null || call.validByAI === undefined) ? (
                                 <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
+                              ) : call.validByAI === false ? (
+                                (() => {
+                                  const txStatus = resolveUnvalidatedTransactionStatus(call);
+                                  return (
+                                    <span
+                                      className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm min-w-[7rem] max-w-[11rem] text-center leading-tight ${txStatus.tone}`}
+                                      title={txStatus.title}
+                                    >
+                                      {txStatus.label}
+                                    </span>
+                                  );
+                                })()
                               ) : companyTransactionCanValidate(call, call.transaction) ? (
                                 <div className="flex flex-col items-center gap-1.5">
                                   {(() => {
