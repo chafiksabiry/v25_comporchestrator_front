@@ -22,15 +22,23 @@ export interface NormalizedCall {
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null };
 }
 
+/** IA a détecté une vente et l'entreprise n'a pas encore approuvé (null ou false stale). */
+export function companyTransactionNeedsValidation(
+  transaction?: { validByAI?: boolean | null; validByCompany?: boolean | null } | null
+): boolean {
+  return transaction?.validByAI === true && transaction?.validByCompany !== true;
+}
+
 interface Props {
   call: NormalizedCall;
   onClose: () => void;
   onAnalyze?: (callId: string) => void;
   analyzingCallId?: string | null;
+  analysisError?: string | null;
   onValidateTransaction?: (callId: string, current: boolean | null, next: boolean) => void;
 }
 
-export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCallId, onValidateTransaction }: Props) {
+export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCallId, analysisError, onValidateTransaction }: Props) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'transcript' | 'insights'>('transcript');
 
@@ -64,6 +72,17 @@ export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCal
     { label: 'Prise de RDV',             key: 'RDV',            icon: Calendar,    color: 'emerald'},
     { label: 'À plus tard / Rappel',     key: 'A plus tard',    icon: Clock,       color: 'amber'  },
   ];
+
+  const renderAnalysisErrorBanner = () =>
+    analysisError ? (
+      <div
+        role="alert"
+        className="w-full max-w-lg mx-auto flex items-start gap-3 p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-700 text-sm font-medium text-left"
+      >
+        <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+        <p>{analysisError}</p>
+      </div>
+    ) : null;
 
   return createPortal(
     <div
@@ -156,20 +175,38 @@ export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCal
                 <CreditCard className="w-3.5 h-3.5 text-slate-400" />
                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Trans.</span>
                 {call.transaction?.validByCompany === true
-                  ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"><Check className="w-3 h-3" /></span>
-                  : call.transaction?.validByCompany === false
-                    ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100"><X className="w-3 h-3" /></span>
-                    : <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-slate-50 text-slate-400 border border-slate-100"><Clock className="w-3 h-3 animate-pulse" /></span>
+                  ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100" title="Validé par l'entreprise"><Check className="w-3 h-3" /></span>
+                  : companyTransactionNeedsValidation(call.transaction)
+                    ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100" title="En attente de votre validation"><Clock className="w-3 h-3 animate-pulse" /></span>
+                    : call.transaction?.validByAI === false
+                      ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title="Refusé par l'IA"><X className="w-3 h-3" /></span>
+                      : call.transaction?.validByCompany === false
+                        ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title="Refusé par l'entreprise"><X className="w-3 h-3" /></span>
+                        : <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-slate-50 text-slate-400 border border-slate-100"><Clock className="w-3 h-3 animate-pulse" /></span>
                 }
               </div>
             </div>
 
-            {onValidateTransaction && call.transaction?.validByCompany === null && (
+            {onValidateTransaction && companyTransactionNeedsValidation(call.transaction) && (
               <div className="flex items-center gap-3">
                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Votre choix:</span>
                 <div className="flex items-center gap-1.5">
-                  <button onClick={() => onValidateTransaction(call.id, null, true)} className="p-1.5 rounded-xl bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60 transition-all shadow-sm"><Check className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => onValidateTransaction(call.id, null, false)} className="p-1.5 rounded-xl bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60 transition-all shadow-sm"><X className="w-3.5 h-3.5" /></button>
+                  <button
+                    type="button"
+                    onClick={() => onValidateTransaction(call.id, call.transaction?.validByCompany ?? null, true)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100/60 hover:bg-emerald-100/60 transition-all shadow-sm text-[9px] font-black uppercase tracking-widest"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Valider
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onValidateTransaction(call.id, call.transaction?.validByCompany ?? null, false)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-100/60 hover:bg-rose-100/60 transition-all shadow-sm text-[9px] font-black uppercase tracking-widest"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Refuser
+                  </button>
                 </div>
               </div>
             )}
@@ -198,6 +235,7 @@ export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCal
                 ))
                 : (
                   <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
+                    {renderAnalysisErrorBanner()}
                     <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Transcript not available for this call</p>
                     {onAnalyze && (
                       <button
@@ -217,6 +255,7 @@ export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCal
             <div className="max-w-5xl mx-auto space-y-4 pb-2">
               {(!call.ai_call_score || !call.ai_call_score.overall?.score) ? (
                 <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
+                  {renderAnalysisErrorBanner()}
                   <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">No analysis available for this call</p>
                   {onAnalyze && (
                     <button

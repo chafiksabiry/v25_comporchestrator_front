@@ -3,6 +3,7 @@ import { apiCall } from './index';
 import { Lead } from './leads';
 import { Agent } from './agents';
 import { getDashCallsApiOrigin } from '../../lib/callsApiBase';
+import { toCallAnalyzeFailure } from '../../lib/callAnalyzeErrors';
 
 /**
  * Dedicated axios client for v25_dash_calls_backend (AI analyze + analytics).
@@ -150,14 +151,32 @@ getCallDetails:async (callSid: string, ) => {
   analyze: async (id: string) => {
     // Always hits v25_dash_calls_backend regardless of VITE_API_URL_CALL,
     // because the analyze controller only exists on that service.
-    const response = await dashCallsApi.post<{
-      success: boolean;
-      data: any;
-      transcript: any[];
-      validByAI: boolean;
-      message?: string;
-    }>(`/api/calls/${id}/analyze`);
-    return response.data;
+    try {
+      const response = await dashCallsApi.post<{
+        success: boolean;
+        data: any;
+        transcript: any[];
+        validByAI: boolean;
+        message?: string;
+        inProgress?: boolean;
+      }>(`/api/calls/${id}/analyze`);
+      return response.data;
+    } catch (error: any) {
+      const status = error.response?.status;
+      const data = error.response?.data;
+      if (status === 409 || status === 202) {
+        return {
+          success: true,
+          inProgress: true,
+          message: data?.message || 'Analysis already in progress for this call.',
+          ai_call_status: 'processing' as const,
+        };
+      }
+      if (status === 400 || status === 404) {
+        return toCallAnalyzeFailure(error);
+      }
+      throw error;
+    }
   },
 
 }

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
+import toast from 'react-hot-toast';
 import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import CallDetailModal, { type NormalizedCall } from '../components/CallDetailModal';
+import CallDetailModal, { type NormalizedCall, companyTransactionNeedsValidation } from '../components/CallDetailModal';
 import { callsApi } from '../services/api/calls';
 import { getCallsApiBase } from '../lib/callsApiBase';
+import { getCallAnalyzeErrorMessage } from '../lib/callAnalyzeErrors';
 
 export default function CallsDashboardPage() {
   const { t, i18n } = useTranslation();
@@ -21,6 +23,7 @@ export default function CallsDashboardPage() {
   const companyId = Cookies.get('companyId');
 
   const [analyzingCallId, setAnalyzingCallId] = useState<string | null>(null);
+  const [analysisError, setAnalysisError] = useState<{ callId: string; message: string } | null>(null);
 
   useEffect(() => {
     if (companyId) {
@@ -72,8 +75,17 @@ export default function CallsDashboardPage() {
   const handleAnalyzeCall = async (callId: string) => {
     try {
       setAnalyzingCallId(callId);
+      setAnalysisError(null);
       // Same endpoint as dash_rep: POST /api/calls/:id/analyze on v25_dash_calls_backend
       const result = await callsApi.analyze(callId);
+
+      if ((result as { inProgress?: boolean })?.inProgress) {
+        if (selectedCall && selectedCall._id === callId) {
+          setSelectedCall({ ...selectedCall, ai_call_status: 'processing' });
+        }
+        await fetchCalls();
+        return;
+      }
 
       if (result?.success) {
         if (selectedCall && selectedCall._id === callId) {
@@ -88,12 +100,26 @@ export default function CallsDashboardPage() {
         }
         await fetchCalls();
       } else {
-        console.warn(
-          '[CallsDashboard] analyze failed:',
-          (result as { message?: string })?.message || result
+        const message = getCallAnalyzeErrorMessage(result);
+        setAnalysisError({ callId, message });
+        toast.error(message);
+        if (selectedCall && selectedCall._id === callId) {
+          setSelectedCall({ ...selectedCall, ai_call_status: 'error' });
+        }
+        setCalls((prev) =>
+          prev.map((c) => (c._id === callId ? { ...c, ai_call_status: 'error' } : c))
         );
       }
     } catch (error: unknown) {
+      const message = getCallAnalyzeErrorMessage(error);
+      setAnalysisError({ callId, message });
+      toast.error(message);
+      if (selectedCall && selectedCall._id === callId) {
+        setSelectedCall({ ...selectedCall, ai_call_status: 'error' });
+      }
+      setCalls((prev) =>
+        prev.map((c) => (c._id === callId ? { ...c, ai_call_status: 'error' } : c))
+      );
       console.error('Error analyzing call:', error);
     } finally {
       setAnalyzingCallId(null);
@@ -133,9 +159,19 @@ export default function CallsDashboardPage() {
           }
           return prev;
         });
+        if (status === true) {
+          toast.success('Transaction validée par votre entreprise');
+        } else if (status === false) {
+          toast.success('Transaction refusée');
+        } else {
+          toast.success('Validation transaction annulée');
+        }
+      } else {
+        toast.error('Impossible de mettre à jour la validation');
       }
     } catch (error) {
       console.error('Error updating transaction validation:', error);
+      toast.error('Erreur lors de la validation');
     }
   };
 
@@ -201,6 +237,20 @@ export default function CallsDashboardPage() {
     const matchesGig = gigFilter === 'all' || callGigId(call) === gigFilter;
     return matchesSearch && matchesStatus && matchesGig;
   });
+
+  const selectedCallAnalysisError =
+    selectedCall && analysisError?.callId === selectedCall._id ? analysisError.message : null;
+
+  const renderAnalysisErrorBanner = () =>
+    selectedCallAnalysisError ? (
+      <div
+        role="alert"
+        className="w-full max-w-lg mx-auto flex items-start gap-3 p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-700 text-sm font-medium text-left"
+      >
+        <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+        <p>{selectedCallAnalysisError}</p>
+      </div>
+    ) : null;
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-700 relative">
@@ -404,11 +454,33 @@ export default function CallsDashboardPage() {
                                 </span>
                               ) : (call.validByAI === null || call.validByAI === undefined) ? (
                                 <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
-                              ) : call.transaction?.validByAI === true ? (
-                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-200/40 shadow-sm w-44 whitespace-nowrap text-center cursor-help" title="Analyse IA positive, en attente de votre validation finale">
-                                  <Clock className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
-                                  Wait for your Validation
-                                </span>
+                              ) : companyTransactionNeedsValidation(call.transaction) ? (
+                                <div className="flex flex-col items-center gap-1.5">
+                                  <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-200/40 shadow-sm w-44 whitespace-nowrap text-center" title="Analyse IA positive, en attente de votre validation finale">
+                                    <Clock className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
+                                    À valider
+                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateTransactionValidation(callId, call.transaction?.validByCompany ?? null, true)}
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 transition-all text-[9px] font-black uppercase tracking-widest"
+                                      title="Valider la transaction"
+                                    >
+                                      <Check className="w-3 h-3" />
+                                      Valider
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateTransactionValidation(callId, call.transaction?.validByCompany ?? null, false)}
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100 transition-all text-[9px] font-black uppercase tracking-widest"
+                                      title="Refuser la transaction"
+                                    >
+                                      <X className="w-3 h-3" />
+                                      Refuser
+                                    </button>
+                                  </div>
+                                </div>
                               ) : call.transaction?.validByAI === false ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
                                   <X className="w-3.5 h-3.5" />
@@ -469,9 +541,13 @@ export default function CallsDashboardPage() {
         return (
           <CallDetailModal
             call={normalized}
-            onClose={() => setSelectedCall(null)}
+            onClose={() => {
+              setSelectedCall(null);
+              setAnalysisError(null);
+            }}
             onAnalyze={handleAnalyzeCall}
             analyzingCallId={analyzingCallId}
+            analysisError={selectedCallAnalysisError}
             onValidateTransaction={(callId, current, next) => handleUpdateTransactionValidation(callId, current, next)}
           />
         );
@@ -652,6 +728,7 @@ export default function CallsDashboardPage() {
                     ))
                   ) : (
                     <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
+                      {renderAnalysisErrorBanner()}
                       <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Transcript not available for this call</p>
                       <button
                         onClick={() => handleAnalyzeCall(selectedCall._id)}
@@ -668,6 +745,7 @@ export default function CallsDashboardPage() {
                 <div className="max-w-5xl mx-auto space-y-4 pb-2">
                   {(!selectedCall.ai_call_score || !selectedCall.ai_call_score.overall?.score) ? (
                     <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
+                      {renderAnalysisErrorBanner()}
                       <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">No analysis available for this call</p>
                       <button
                         onClick={() => handleAnalyzeCall(selectedCall._id)}
