@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
-import { resolveUnvalidatedTransactionStatus } from '../../../utils/callStatusDisplay';
+import { isCallRejectedByAI, resolveUnvalidatedTransactionStatus } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;

@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import CallDetailModal, { type NormalizedCall, companyTransactionCanValidate } from '../components/CallDetailModal';
-import { resolveUnvalidatedTransactionStatus } from '../../../utils/callStatusDisplay';
+import { isCallApprovedByAI, isCallRejectedByAI, resolveUnvalidatedTransactionStatus } from '../../../utils/callStatusDisplay';
 import { callsApi } from '../services/api/calls';
 import { getCallsApiBase } from '../lib/callsApiBase';
 import { getCallAnalyzeErrorMessage } from '../lib/callAnalyzeErrors';
@@ -427,12 +427,12 @@ export default function CallsDashboardPage() {
                             {/* Validation de l'Appel AI */}
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Appel</span>
-                              {call.validByAI === true || call.valid === true ? (
+                              {isCallApprovedByAI(call) ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
                                   Validé par AI (-{(call.lead?.gigId?.commission?.commission_per_call || call.lead?.gigId?.rewardPerCall || 4).toFixed(2)}€)
                                 </span>
-                              ) : call.validByAI === false ? (
+                              ) : isCallRejectedByAI(call) ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
                                   <X className="w-3.5 h-3.5" />
                                   Refusé AI
@@ -455,9 +455,7 @@ export default function CallsDashboardPage() {
                                   <Check className="w-3.5 h-3.5" />
                                   Signé (-{(call.lead?.gigId?.commission?.transactionCommission || call.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€)
                                 </span>
-                              ) : (call.validByAI === null || call.validByAI === undefined) ? (
-                                <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
-                              ) : call.validByAI === false ? (
+                              ) : isCallRejectedByAI(call) ? (
                                 (() => {
                                   const txStatus = resolveUnvalidatedTransactionStatus(call);
                                   return (
@@ -465,10 +463,13 @@ export default function CallsDashboardPage() {
                                       className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm min-w-[7rem] max-w-[11rem] text-center leading-tight ${txStatus.tone}`}
                                       title={txStatus.title}
                                     >
+                                      <X className="w-3.5 h-3.5 shrink-0" />
                                       {txStatus.label}
                                     </span>
                                   );
                                 })()
+                              ) : !isCallApprovedByAI(call) ? (
+                                <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
                               ) : companyTransactionCanValidate(call, call.transaction) ? (
                                 <div className="flex flex-col items-center gap-1.5">
                                   {(() => {
