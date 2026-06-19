@@ -179,7 +179,7 @@ export function PhoneNumberPanel() {
   const [checkoutPaymentId, setCheckoutPaymentId] = useState<string | null>(null);
   const [paypalEnabled, setPaypalEnabled] = useState(false);
   const [stripeEnabled, setStripeEnabled] = useState(false);
-  const [linePrice, setLinePrice] = useState({ amountCents: 500, currency: 'EUR' });
+  const [linePrice, setLinePrice] = useState({ amountCents: 999, currency: 'EUR' });
 
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   // In production we MUST resolve to the live orchestrator backend; the old
