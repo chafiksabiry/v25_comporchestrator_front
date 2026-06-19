@@ -249,7 +249,9 @@ export default function CallsDashboardPage() {
       leadName.includes(q) ||
       callGigTitle(call).toLowerCase().includes(q) ||
       callIdStr(call).toLowerCase().includes(q);
-    const matchesStatus = statusFilter === 'all' || call.status === statusFilter;
+    const matchesStatus =
+      statusFilter === 'all' ||
+      String(call.status || '').toLowerCase() === statusFilter.toLowerCase();
     const matchesGig = gigFilter === 'all' || callGigId(call) === gigFilter;
     return matchesSearch && matchesStatus && matchesGig;
   });

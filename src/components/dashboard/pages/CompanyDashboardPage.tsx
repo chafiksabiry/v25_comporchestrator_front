@@ -4,7 +4,6 @@ import { Building2, PencilLine, BarChart3, MapPin, Mail, Phone, Globe, Briefcase
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { getGigsByCompanyId } from '../matching';
-import { getCallsApiBase } from '../lib/callsApiBase';
 
 interface CompanyCallStat {
   duration?: number;
@@ -49,6 +48,7 @@ export function CompanyDashboardPage() {
   const [calls, setCalls] = useState<CompanyCallStat[]>([]);
 
   const base = import.meta.env.VITE_COMPANY_API_URL;
+  const orchestratorBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
 
   const loadCompany = useCallback(async () => {
     const userId = Cookies.get('userId');
@@ -114,26 +114,14 @@ export function CompanyDashboardPage() {
       }
 
       try {
-        const callsBase = getCallsApiBase();
-        if (!callsBase) {
-          setCalls([]);
-        } else {
-          const res = await axios.get(
-            `${callsBase}/calls?companyId=${encodeURIComponent(cid)}&populate=lead&populate=agent`
-          );
-          const body = res.data;
-          const payload = Array.isArray(body?.data)
-            ? body.data
-            : Array.isArray(body)
-              ? body
-              : [];
-          setCalls(payload);
-        }
+        const res = await axios.get(`${orchestratorBase}/escrow/calls/${cid}`);
+        const payload = res.data?.data;
+        setCalls(Array.isArray(payload) ? payload : []);
       } catch {
         setCalls([]);
       }
     },
-    [base]
+    [base, orchestratorBase]
   );
 
   // Performance rates — computed exactly like the rep dashboard so the company
