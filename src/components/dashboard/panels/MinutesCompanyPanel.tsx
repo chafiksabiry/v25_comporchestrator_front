@@ -38,7 +38,6 @@ import {
   MINUTE_PACKS,
   formatMinutesPurchasePrice,
 } from '../../../utils/minutesPricing';
-import { StripeMinutesPricingTable } from '../../stripe/StripeMinutesPricingTable';
 
 interface MinutesState {
   companyId: string;
@@ -170,9 +169,7 @@ export function MinutesCompanyPanel() {
   const [selectedCallTab, setSelectedCallTab] = useState<'transcript' | 'insights'>('transcript');
 
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
-  const companyEmail = Cookies.get('email') || Cookies.get('userEmail') || undefined;
   const apiBaseUrl = getOrchestratorApiBase();
-  const minutesPricingRef = React.useRef<HTMLDivElement>(null);
 
   const fetchData = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -321,10 +318,7 @@ export function MinutesCompanyPanel() {
             <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
           </button>
           <button
-            onClick={() => {
-              minutesPricingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              setShowBuyModal(true);
-            }}
+            onClick={() => setShowBuyModal(true)}
             className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-blue-500/20 rounded-2xl transition-all duration-300 active:scale-95 flex items-center gap-2"
           >
             <Zap size={16} />
@@ -396,30 +390,6 @@ export function MinutesCompanyPanel() {
           </div>
         </div>
       </div>
-
-      {/* Dépôt minutes — Stripe Pricing Table */}
-      <section
-        ref={minutesPricingRef}
-        className="bg-white rounded-[2rem] border border-gray-100 p-6 sm:p-8 shadow-sm space-y-4"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-black text-slate-900 tracking-tight">Dépôt de minutes</h2>
-            <p className="text-sm text-gray-500 mt-1 max-w-2xl">
-              Choisissez un forfait Standard, Pro ou Expert. Le paiement est sécurisé par Stripe et
-              vos minutes sont créditées automatiquement après validation.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void fetchData(true)}
-            className="shrink-0 text-[10px] font-black uppercase tracking-wider text-blue-600 hover:text-blue-800"
-          >
-            Rafraîchir le solde
-          </button>
-        </div>
-        <StripeMinutesPricingTable companyId={companyId} customerEmail={companyEmail} />
-      </section>
 
       {/* Calling History Logs list */}
       <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
@@ -549,29 +519,19 @@ export function MinutesCompanyPanel() {
       {/* Buy Minutes Modal — rendered via portal so the overlay covers the full viewport */}
       {showBuyModal && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-4xl max-h-[92vh] overflow-y-auto bg-white rounded-[2rem] border border-gray-100 p-6 shadow-2xl space-y-6 relative animate-fade-in-up">
+          <div className="w-full max-w-md bg-white rounded-[2rem] border border-gray-100 p-6 shadow-2xl space-y-6 relative animate-fade-in-up">
             <button
-              onClick={() => {
-                setShowBuyModal(false);
-                void fetchData(true);
-              }}
-              className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-xl transition-all z-10"
+              onClick={() => setShowBuyModal(false)}
+              className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-xl transition-all"
             >
               <X size={18} />
             </button>
 
             <div>
-              <h3 className="text-lg font-black text-slate-800 tracking-tight">Recharger des minutes d&apos;appels</h3>
-              <p className="text-xs text-gray-500">Forfaits Stripe ou paiement PayPal pour un volume personnalisé.</p>
+              <h3 className="text-lg font-black text-slate-800 tracking-tight">Recharger des minutes d'appels</h3>
+              <p className="text-xs text-gray-500">Ajoutez des minutes d'appel directement par carte bancaire ou PayPal.</p>
             </div>
 
-            <StripeMinutesPricingTable companyId={companyId} customerEmail={companyEmail} />
-
-            <details className="rounded-2xl border border-gray-100 bg-gray-50/80 p-4">
-              <summary className="cursor-pointer text-xs font-black uppercase tracking-wider text-slate-600">
-                Autre option — PayPal ou montant personnalisé
-              </summary>
-              <div className="mt-4 space-y-4">
             {/* Quick pack cards */}
             <div className="grid grid-cols-3 gap-2">
               {MINUTE_PACKS.map((pack) => (
@@ -653,8 +613,6 @@ export function MinutesCompanyPanel() {
                     : `Payer ${purchasePriceLabel} par carte`}
               </button>
             </form>
-              </div>
-            </details>
           </div>
         </div>,
         document.body
