@@ -34,6 +34,10 @@ import {
   formatBilledMinutesFromSeconds,
   formatWalletMinutesBalance
 } from '../../../utils/billingMinutes';
+import {
+  MINUTE_PACKS,
+  formatMinutesPurchasePrice,
+} from '../../../utils/minutesPricing';
 
 interface MinutesState {
   companyId: string;
@@ -154,7 +158,7 @@ export function MinutesCompanyPanel() {
 
   // Modals state
   const [showBuyModal, setShowBuyModal] = useState(false);
-  const [minutesToBuy, setMinutesToBuy] = useState('500');
+  const [minutesToBuy, setMinutesToBuy] = useState('150');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
   const [submittingBuy, setSubmittingBuy] = useState(false);
   const [paypalEnabled, setPaypalEnabled] = useState(false);
@@ -231,6 +235,8 @@ export function MinutesCompanyPanel() {
     fetchData(true);
     toast.success('Minutes rechargées mis à jour.', { id: 'refresh-mins-toast' });
   };
+
+  const purchasePriceLabel = formatMinutesPurchasePrice(parseFloat(minutesToBuy) || 0);
 
   const handleBuySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -528,16 +534,12 @@ export function MinutesCompanyPanel() {
 
             {/* Quick pack cards */}
             <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: 'Standard', mins: '100', cost: '100 €' },
-                { label: 'Pro', mins: '500', cost: '500 €' },
-                { label: 'Expert', mins: '1000', cost: '1000 €' },
-              ].map((pack) => (
+              {MINUTE_PACKS.map((pack) => (
                 <button
                   key={pack.mins}
                   type="button"
-                  onClick={() => setMinutesToBuy(pack.mins)}
-                  className={`p-3 border rounded-xl flex flex-col items-center justify-between text-center transition-all ${minutesToBuy === pack.mins ? 'border-blue-500 bg-blue-50/50' : 'border-gray-100 hover:bg-gray-50'}`}
+                  onClick={() => setMinutesToBuy(String(pack.mins))}
+                  className={`p-3 border rounded-xl flex flex-col items-center justify-between text-center transition-all ${minutesToBuy === String(pack.mins) ? 'border-blue-500 bg-blue-50/50' : 'border-gray-100 hover:bg-gray-50'}`}
                 >
                   <span className="text-[9px] text-gray-400 font-bold uppercase">{pack.label}</span>
                   <span className="text-sm font-black text-slate-900 mt-1">{pack.mins} Min</span>
@@ -589,7 +591,7 @@ export function MinutesCompanyPanel() {
               <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl flex gap-2.5 text-[10px] text-blue-800/80 font-bold leading-relaxed">
                 <Info size={16} className="shrink-0 text-blue-600" />
                 <span>
-                  Paiement sécurisé — le portefeuille cash HARX n&apos;est pas débité. Tarif : 1 € / minute.
+                  Paiement sécurisé — le portefeuille cash HARX n&apos;est pas débité. Tarif : 0,0666 € / minute (packs Standard, Pro, Expert).
                   {paymentMethod === 'paypal' && ' Une fenêtre PayPal s&apos;ouvrira pour valider le paiement.'}
                   {paymentMethod === 'card' && ' Une fenêtre sécurisée s&apos;ouvrira pour saisir votre carte.'}
                 </span>
@@ -607,8 +609,8 @@ export function MinutesCompanyPanel() {
                 {submittingBuy
                   ? 'Paiement en cours...'
                   : paymentMethod === 'paypal'
-                    ? `Payer ${minutesToBuy} € avec PayPal`
-                    : `Payer ${minutesToBuy} € par carte`}
+                    ? `Payer ${purchasePriceLabel} avec PayPal`
+                    : `Payer ${purchasePriceLabel} par carte`}
               </button>
             </form>
           </div>
