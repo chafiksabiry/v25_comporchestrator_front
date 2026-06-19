@@ -151,6 +151,85 @@ function normalizeAiCallScore(raw: unknown): NormalizedAiScore | null {
   };
 }
 
+function mapApiCallToCompanyCall(raw: Record<string, unknown>): CompanyCall {
+  const agent = raw.agent;
+  let agentName = 'Agent';
+  if (typeof agent === 'string') {
+    agentName = agent;
+  } else if (agent && typeof agent === 'object') {
+    const a = agent as Record<string, unknown>;
+    const personal = a.personalInfo as { name?: string } | undefined;
+    agentName =
+      `${a.firstName || a.first_name || ''} ${a.lastName || a.last_name || ''}`.trim() ||
+      personal?.name ||
+      (typeof a.name === 'string' ? a.name : '') ||
+      (typeof a.email === 'string' ? a.email : '') ||
+      'Agent';
+  }
+
+  const lead = raw.lead;
+  let leadObj: CompanyCall['leadObj'];
+  let leadStr = 'Inconnu';
+  if (lead && typeof lead === 'object') {
+    const l = lead as Record<string, unknown>;
+    leadObj = {
+      First_Name: String(l.First_Name || l.firstName || ''),
+      Last_Name: String(l.Last_Name || l.lastName || ''),
+    };
+    leadStr = `${leadObj.First_Name} ${leadObj.Last_Name}`.trim() || leadStr;
+  } else if (typeof lead === 'string') {
+    leadStr = lead;
+  }
+
+  const rawId = raw._id ?? raw.callId;
+  const callId =
+    rawId && typeof rawId === 'object' && '$oid' in (rawId as object)
+      ? String((rawId as { $oid: string }).$oid)
+      : String(rawId || '');
+
+  const startTime =
+    (typeof raw.startTime === 'string' && raw.startTime) ||
+    (typeof raw.createdAt === 'string' && raw.createdAt) ||
+    (typeof raw.date === 'string' && raw.date) ||
+    new Date().toISOString();
+
+  return {
+    callId,
+    agent: agentName,
+    lead: leadStr,
+    leadObj,
+    direction: String(raw.direction || ''),
+    duration: typeof raw.duration === 'number' ? raw.duration : 0,
+    startTime,
+    createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : undefined,
+    status: String(raw.status || ''),
+    validByCompany:
+      typeof raw.validByCompany === 'boolean' ? raw.validByCompany : null,
+    validByReps: typeof raw.validByReps === 'boolean' ? raw.validByReps : null,
+    validByAI:
+      typeof raw.validByAI === 'boolean'
+        ? raw.validByAI
+        : typeof raw.valid === 'boolean'
+          ? raw.valid
+          : null,
+    valid: typeof raw.valid === 'boolean' ? raw.valid : null,
+    recording_url:
+      typeof raw.recording_url === 'string' ? raw.recording_url : null,
+    recording_url_cloudinary:
+      typeof raw.recording_url_cloudinary === 'string'
+        ? raw.recording_url_cloudinary
+        : null,
+    transcript: raw.transcript as CompanyCall['transcript'],
+    ai_call_score: raw.ai_call_score,
+    repCallCommission:
+      typeof raw.repCallCommission === 'number' ? raw.repCallCommission : undefined,
+    platformCallCommission:
+      typeof raw.platformCallCommission === 'number'
+        ? raw.platformCallCommission
+        : undefined,
+  };
+}
+
 export function MinutesCompanyPanel() {
   const [minutesWallet, setMinutesWallet] = useState<MinutesState | null>(null);
   const [calls, setCalls] = useState<CompanyCall[]>([]);
@@ -212,7 +291,7 @@ export function MinutesCompanyPanel() {
             : Array.isArray(callsData)
               ? callsData
               : [];
-          setCalls(list);
+          setCalls(list.map((item: Record<string, unknown>) => mapApiCallToCompanyCall(item)));
         } else {
           setCalls([]);
         }

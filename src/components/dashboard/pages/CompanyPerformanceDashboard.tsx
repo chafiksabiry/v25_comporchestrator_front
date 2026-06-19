@@ -25,6 +25,7 @@ import { Bar, Line, Pie } from 'react-chartjs-2';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { getActiveAgentsForCompany, getGigsByCompanyId } from '../matching';
+import { getCallsApiBase } from '../lib/callsApiBase';
 import { useTranslation } from 'react-i18next';
 
 ChartJS.register(
@@ -207,8 +208,7 @@ export function CompanyPerformanceDashboard() {
                 // "Total" instead of a +/- % pill, which is honest.
 
                 // 3. Fetch Calls
-                const callsApiUrl = import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_DASHBOARD_API;
-                const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
+                const callsBase = getCallsApiBase();
                 let callsUrl = `${callsBase}/calls?companyId=${companyId}&limit=10000`;
 
                 if (selectedGig !== 'all') {
