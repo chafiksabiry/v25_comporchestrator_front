@@ -5,6 +5,7 @@ import {
   Search,
   Trash2,
   Edit,
+  Eye,
   Phone,
   Mail,
   Globe,
@@ -20,8 +21,10 @@ import {
   LogOut,
   AlertTriangle,
   MapPin,
-  Calendar
+  Calendar,
+  Users
 } from 'lucide-react';
+import LeadDetailModal from '../dashboard/components/LeadDetailModal';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -232,6 +235,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [validationResults, setValidationResults] = useState<any>(null);
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
   const [editingSavedLead, setEditingSavedLead] = useState<Lead | null>(null);
+  const [viewingLeadDetail, setViewingLeadDetail] = useState<Lead | null>(null);
   const [isSavingLeadEdit, setIsSavingLeadEdit] = useState(false);
   const [dataTooLarge, setDataTooLarge] = useState(false);
   const urlParamsProcessedRef = useRef(false);
@@ -1516,9 +1520,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           <button
             key={i}
             onClick={() => fetchLeads(i)}
-            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${i === currentPage
-              ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+            className={`relative inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${i === currentPage
+              ? 'z-10 bg-gradient-harx text-white shadow-md shadow-harx-500/20'
+              : 'text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100'
               }`}
           >
             {i}
@@ -1533,9 +1537,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       <button
         key={1}
         onClick={() => fetchLeads(1, searchQuery)}
-        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${1 === currentPage
-          ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-          : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+        className={`relative inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${1 === currentPage
+          ? 'z-10 bg-gradient-harx text-white shadow-md shadow-harx-500/20'
+          : 'text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100'
           }`}
       >
         1
@@ -1568,9 +1572,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         <button
           key={i}
           onClick={() => fetchLeads(i, searchQuery)}
-          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${i === currentPage
-            ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+          className={`relative inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${i === currentPage
+            ? 'z-10 bg-gradient-harx text-white shadow-md shadow-harx-500/20'
+            : 'text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100'
             }`}
         >
           {i}
@@ -2496,9 +2500,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Channel Filter */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
-        <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center tracking-tight">
-          <Globe className="mr-2 h-5 w-5 text-harx-500" />
+      <div className="bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/60 p-4">
+        <h3 className="text-sm font-black text-slate-900 mb-3 flex items-center uppercase tracking-widest">
+          <Globe className="mr-2 h-4 w-4 text-harx-500" />
           {t('uploadContacts.filter.title')}
         </h3>
         <div className="flex flex-wrap gap-2">
@@ -2508,9 +2512,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             return (
               <button
                 key={channel.id}
-                className={`flex items-center space-x-2 rounded-full px-3 py-1.5 text-sm font-bold transition-all duration-200 transform hover:scale-105 ${isSelected
-                  ? 'bg-gradient-harx text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+                className={`flex items-center space-x-2 rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${isSelected
+                  ? 'bg-gradient-harx text-white shadow-md shadow-harx-500/20 scale-[1.02]'
+                  : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 hover:border-slate-300'
                   }`}
                 onClick={() => toggleChannel(channel.id)}
               >
@@ -2523,53 +2527,53 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Contact List */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-100 h-[calc(100vh-480px)] flex flex-col overflow-hidden relative min-h-[400px]">
-        <div className="border-b border-gray-200 p-3 flex-shrink-0 bg-white rounded-t-xl">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-white/40 backdrop-blur-xl rounded-[28px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-480px)] flex flex-col overflow-hidden relative min-h-[400px]">
+        <div className="border-b border-slate-100/80 p-5 flex-shrink-0 bg-white/50 backdrop-blur-sm rounded-t-[28px]">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-bold text-gray-900 flex items-center tracking-tight">
-                <FileText className="mr-2 h-5 w-5 text-harx-500" />
+              <h3 className="text-lg font-black text-slate-900 flex items-center tracking-tight uppercase">
+                <Users className="mr-2 h-5 w-5 text-harx-500" />
                 {t('uploadContacts.list.title')}
               </h3>
-              <div className="mt-1">
+              <div className="mt-1.5">
                 {selectedGigId ? (
-                  <div className="text-xs text-gray-600">
+                  <div className="text-xs text-slate-500 font-medium">
                     {parsedLeads.length > 0 ? (
-                      <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">
+                      <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full font-bold border border-emerald-100">
                         {isSavingLeads
                           ? t('uploadContacts.list.saving', { saved: savedLeadsCount, total: parsedLeads.length + savedLeadsCount })
                           : t('uploadContacts.list.ready', { count: parsedLeads.length })}
                       </span>
                     ) : leads.length > 0 ? (
-                      <span className="bg-harx-50 text-harx-700 px-2 py-0.5 rounded-full font-bold">
+                      <span className="inline-flex items-center gap-1.5 bg-harx-50 text-harx-700 px-3 py-1 rounded-full font-bold border border-harx-100">
                         {t('uploadContacts.list.showing', { filtered: filteredLeads.length, total: totalCount })} {searchQuery && `(filtered by "${searchQuery}")`}
                       </span>
                     ) : (
-                      <span className="bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full font-bold">
+                      <span className="inline-flex items-center gap-1.5 bg-slate-50 text-slate-500 px-3 py-1 rounded-full font-bold border border-slate-200">
                         {t('uploadContacts.list.empty')}
                       </span>
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500">{t('uploadContacts.list.selectGig')}</p>
+                  <p className="text-xs text-slate-400 font-medium">{t('uploadContacts.list.selectGig')}</p>
                 )}
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Search className="h-4 w-4 text-gray-400" />
+                  <Search className="h-4 w-4 text-slate-400" />
                 </div>
                 <input
                   type="text"
-                  className="block w-full rounded-xl border-gray-200 pl-9 py-1.5 focus:border-harx-500 focus:ring-harx-500 text-sm shadow-sm"
+                  className="block w-full rounded-xl border-slate-200 bg-white/80 pl-9 py-2 focus:border-harx-500 focus:ring-harx-500 text-sm shadow-sm min-w-[180px]"
                   placeholder={t('uploadContacts.list.search')}
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                 />
               </div>
               <select
-                className="rounded-xl border-gray-200 py-1.5 pl-3 pr-8 text-sm focus:border-harx-500 focus:outline-none focus:ring-harx-500 shadow-sm"
+                className="rounded-xl border-slate-200 bg-white/80 py-2 pl-3 pr-8 text-sm font-medium focus:border-harx-500 focus:outline-none focus:ring-harx-500 shadow-sm"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
@@ -2582,7 +2586,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   setSearchQuery('');
                   fetchLeads(1);
                 }}
-                className="flex items-center rounded-xl bg-gradient-harx px-3 py-1.5 text-sm font-bold text-white shadow-md hover:brightness-110 transition-all duration-200 transform hover:scale-105"
+                className="flex items-center rounded-xl bg-gradient-harx px-4 py-2 text-sm font-bold text-white shadow-md shadow-harx-500/20 hover:brightness-110 transition-all duration-200"
                 disabled={isLoadingLeads || !selectedGigId}
               >
                 {isLoadingLeads ? (
@@ -2604,45 +2608,45 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 overflow-y-auto scrollbar-auto min-h-0">
             <div className="relative">
-              <table className="w-full table-fixed divide-y divide-gray-100">
-                <thead className="bg-gray-100 sticky top-0 z-[50] shadow-md text-center">
+              <table className="w-full table-fixed divide-y divide-slate-100">
+                <thead className="bg-slate-50/90 sticky top-0 z-[50] backdrop-blur-sm">
                   <tr>
-                    <th scope="col" className="w-[10%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
+                    <th scope="col" className="w-[9%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
                       {t('uploadContacts.list.table.lastName')}
                     </th>
-                    <th scope="col" className="w-[10%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
+                    <th scope="col" className="w-[9%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
                       {t('uploadContacts.list.table.firstName')}
                     </th>
-                    <th scope="col" className="w-[22%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
+                    <th scope="col" className="w-[20%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
                       {t('uploadContacts.list.table.email')}
                     </th>
-                    <th scope="col" className="w-[22%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
+                    <th scope="col" className="w-[20%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
                       {t('uploadContacts.list.table.address')}
                     </th>
-                    <th scope="col" className="w-[14%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
+                    <th scope="col" className="w-[12%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
                       {t('uploadContacts.list.table.city')}
                     </th>
-                    <th scope="col" className="w-[10%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
+                    <th scope="col" className="w-[9%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
                       {t('uploadContacts.list.table.postalCode')}
                     </th>
-                    <th scope="col" className="w-[11%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
+                    <th scope="col" className="w-[11%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
                       {t('uploadContacts.list.table.mobile')}
                     </th>
-                    <th scope="col" className="w-[7%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50">
+                    <th scope="col" className="w-[10%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">
                       {t('uploadContacts.list.table.actions')}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
+                <tbody className="divide-y divide-slate-100 bg-white/60">
                   {error ? (
                     <tr>
-                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-red-500">
+                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-red-500">
                         {error}
                       </td>
                     </tr>
                   ) : isLoadingLeads ? (
                     <tr>
-                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-slate-500">
                         <div className="flex items-center justify-center py-8">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-harx-500 mr-3"></div>
                           Loading leads...
@@ -2651,83 +2655,105 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     </tr>
                   ) : (filteredLeads && filteredLeads.length > 0) ? (
                     filteredLeads.map((lead, index) => lead && (
-                      <tr key={lead._id || `filtered-${index}`} className={`hover:bg-harx-50/30 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-amber-400' : ''}`}>
-                        <td className="px-2 py-2 text-xs font-bold text-gray-900 border-r border-gray-100 truncate max-w-0">
-                          {lead.Last_Name || '-'}
+                      <tr key={lead._id || `filtered-${index}`} className={`group hover:bg-harx-50/40 transition-all duration-150 ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-amber-400' : ''}`}>
+                        <td className="px-3 py-3 text-sm font-semibold text-slate-800 truncate max-w-0">
+                          {lead.Last_Name || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs font-bold text-gray-900 border-r border-gray-100 truncate max-w-0">
-                          {lead.First_Name || '-'}
+                        <td className="px-3 py-3 text-sm font-semibold text-slate-800 truncate max-w-0">
+                          {lead.First_Name || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs italic font-bold text-harx-600 border-r border-gray-100 truncate max-w-0">
-                          {lead.Email_1 || '-'}
+                        <td className="px-3 py-3 text-sm text-harx-600 truncate max-w-0">
+                          {lead.Email_1 || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
-                          {lead.Address || '-'}
+                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
+                          {lead.Address || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
-                          {lead.City || '-'}
+                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
+                          {lead.City || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
-                          {lead.Postal_Code || '-'}
+                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
+                          {lead.Postal_Code || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs font-black text-gray-900 truncate max-w-0">
-                          {lead.Phone || '-'}
+                        <td className="px-3 py-3 text-sm font-medium text-slate-700 truncate max-w-0">
+                          {lead.Phone || '—'}
                         </td>
-                        <td className="px-2 py-2 text-center">
-                          <button
-                            type="button"
-                            onClick={() => setEditingSavedLead({ ...lead })}
-                            className="inline-flex items-center justify-center p-1.5 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-harx-600 hover:border-harx-200 hover:bg-harx-50 transition-colors"
-                            title={t('uploadContacts.list.edit.button')}
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </button>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setViewingLeadDetail({ ...lead })}
+                              className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-harx-600 hover:border-harx-200 hover:bg-harx-50 transition-all opacity-70 group-hover:opacity-100"
+                              title={t('uploadContacts.list.details.button')}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingSavedLead({ ...lead })}
+                              className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all opacity-70 group-hover:opacity-100"
+                              title={t('uploadContacts.list.edit.button')}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
                   ) : (realtimeLeads && realtimeLeads.length > 0) ? (
                     realtimeLeads.map((lead, index) => lead && (
-                      <tr key={lead._id || `realtime-${index}`} className={`hover:bg-harx-50/30 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
-                        <td className="px-2 py-2 text-xs font-bold text-gray-900 border-r border-gray-100 truncate max-w-0">
-                          {lead.Last_Name || '-'}
+                      <tr key={lead._id || `realtime-${index}`} className="group hover:bg-harx-50/40 transition-all duration-150">
+                        <td className="px-3 py-3 text-sm font-semibold text-slate-800 truncate max-w-0">
+                          {lead.Last_Name || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs font-bold text-gray-900 border-r border-gray-100 truncate max-w-0">
-                          {lead.First_Name || '-'}
+                        <td className="px-3 py-3 text-sm font-semibold text-slate-800 truncate max-w-0">
+                          {lead.First_Name || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs italic font-bold text-harx-600 border-r border-gray-100 truncate max-w-0">
-                          {lead.Email_1 || '-'}
+                        <td className="px-3 py-3 text-sm text-harx-600 truncate max-w-0">
+                          {lead.Email_1 || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
-                          {lead.Address || '-'}
+                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
+                          {lead.Address || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
-                          {lead.City || '-'}
+                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
+                          {lead.City || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs text-gray-600 border-r border-gray-100 truncate max-w-0">
-                          {lead.Postal_Code || '-'}
+                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
+                          {lead.Postal_Code || '—'}
                         </td>
-                        <td className="px-2 py-2 text-xs font-black text-gray-900 truncate max-w-0">
-                          {lead.Phone || '-'}
+                        <td className="px-3 py-3 text-sm font-medium text-slate-700 truncate max-w-0">
+                          {lead.Phone || '—'}
                         </td>
-                        <td className="px-2 py-2 text-center">
-                          <button
-                            type="button"
-                            onClick={() => setEditingSavedLead({ ...lead })}
-                            className="inline-flex items-center justify-center p-1.5 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-harx-600 hover:border-harx-200 hover:bg-harx-50 transition-colors"
-                            title={t('uploadContacts.list.edit.button')}
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </button>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setViewingLeadDetail({ ...lead })}
+                              className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-harx-600 hover:border-harx-200 hover:bg-harx-50 transition-all opacity-70 group-hover:opacity-100"
+                              title={t('uploadContacts.list.details.button')}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingSavedLead({ ...lead })}
+                              className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all opacity-70 group-hover:opacity-100"
+                              title={t('uploadContacts.list.edit.button')}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
-                        <div className="flex flex-col items-center justify-center py-8">
-                          <FileText className="h-12 w-12 text-gray-300 mb-2" />
-                          <p>{t('uploadContacts.list.empty')}</p>
-                          <p className="text-xs text-gray-400 mt-1">{t('uploadContacts.list.emptyHint')}</p>
+                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-slate-500">
+                        <div className="flex flex-col items-center justify-center py-12">
+                          <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-3 border border-slate-100">
+                            <Users className="h-8 w-8 text-slate-300" />
+                          </div>
+                          <p className="font-semibold text-slate-600">{t('uploadContacts.list.empty')}</p>
+                          <p className="text-xs text-slate-400 mt-1">{t('uploadContacts.list.emptyHint')}</p>
                         </div>
                       </td>
                     </tr>
@@ -2739,9 +2765,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         </div>
         {/* Pagination Controls */}
         {(filteredLeads.length > 0 || realtimeLeads.length > 0) && (
-          <div className="bg-white px-4 py-2 border-t border-gray-100 flex-shrink-0">
+          <div className="bg-white/60 backdrop-blur-sm px-5 py-3 border-t border-slate-100/80 flex-shrink-0 rounded-b-[28px]">
             <div className="flex items-center justify-between">
-              <div className="flex items-center text-xs font-bold text-gray-500">
+              <div className="flex items-center text-xs font-medium text-slate-500">
                 <span>
                   {searchQuery ? (
                     <>
@@ -2816,7 +2842,18 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         </div>
       )}
 
-      {/* Import Choice Modal */}
+      {viewingLeadDetail && (
+        <LeadDetailModal
+          lead={viewingLeadDetail}
+          onClose={() => setViewingLeadDetail(null)}
+          onEdit={() => {
+            setEditingSavedLead({ ...viewingLeadDetail });
+            setViewingLeadDetail(null);
+          }}
+        />
+      )}
+
+      {/* Edit lead modal */}
       {editingSavedLead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
