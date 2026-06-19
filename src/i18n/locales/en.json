@@ -1247,6 +1247,12 @@
       "statusAll": "All Status",
       "statusActive": "Active",
       "statusInactive": "Inactive",
+      "callFilterGig": "Filter by gig",
+      "callStatusFilter": "Filter by call status",
+      "callStatusAll": "All calls",
+      "callStatusCalled": "Already called",
+      "callStatusNotCalled": "Not called yet",
+      "calledBadge": "Already called",
       "loading": "Loading...",
       "refresh": "Refresh",
       "emptyHint": "Try importing some leads or check your filters",
@@ -1890,6 +1896,20 @@
       "assignedTo": "Currently assigned agents for",
       "matchScore": "MATCH SCORE",
       "invited": "Invited"
+    }
+  },
+  "calls": {
+    "empty": {
+      "noCompany": "Company not identified",
+      "noCompanyHint": "Sign in again or select a company to view call history.",
+      "none": "No calls",
+      "noneHint": "Calls will appear here once recorded by your representatives.",
+      "filtered": "No results",
+      "filteredHint": "No calls match the selected filters. Reset search or change the gig."
+    },
+    "errors": {
+      "config": "Calls API configuration is missing.",
+      "load": "Unable to load calls."
     }
   }
 }

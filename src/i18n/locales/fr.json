@@ -1247,6 +1247,12 @@
       "statusAll": "Tous les Statuts",
       "statusActive": "Actifs",
       "statusInactive": "Inactifs",
+      "callFilterGig": "Filtrer par gig",
+      "callStatusFilter": "Filtrer par statut d'appel",
+      "callStatusAll": "Tous les appels",
+      "callStatusCalled": "Déjà appelés",
+      "callStatusNotCalled": "Pas encore appelés",
+      "calledBadge": "Déjà appelé",
       "loading": "Chargement...",
       "refresh": "Rafraîchir",
       "emptyHint": "Essayez d'importer des leads ou vérifiez vos filtres",
@@ -1890,6 +1896,20 @@
       "assignedTo": "Agents actuellement assignés à",
       "matchScore": "SCORE DE CORRESPONDANCE",
       "invited": "Invité"
+    }
+  },
+  "calls": {
+    "empty": {
+      "noCompany": "Entreprise non identifiée",
+      "noCompanyHint": "Reconnectez-vous ou sélectionnez une entreprise pour afficher l'historique des appels.",
+      "none": "Aucun appel",
+      "noneHint": "Les appels apparaîtront ici une fois enregistrés par vos représentants.",
+      "filtered": "Aucun résultat",
+      "filteredHint": "Aucun appel ne correspond aux filtres sélectionnés. Réinitialisez la recherche ou changez de mission."
+    },
+    "errors": {
+      "config": "Configuration API appels manquante.",
+      "load": "Impossible de charger les appels."
     }
   }
 }

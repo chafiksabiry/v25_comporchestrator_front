@@ -28,10 +28,12 @@ export default function CallsDashboardPage() {
   const [analysisError, setAnalysisError] = useState<{ callId: string; message: string } | null>(null);
 
   useEffect(() => {
-    if (companyId) {
-      fetchCalls();
-      fetchGigs();
+    if (!companyId) {
+      setLoading(false);
+      return;
     }
+    fetchCalls();
+    fetchGigs();
   }, [companyId]);
 
   const fetchGigs = async () => {
@@ -54,16 +56,27 @@ export default function CallsDashboardPage() {
     try {
       setLoading(true);
       const callsBase = getCallsApiBase();
-      if (!callsBase) return;
+      if (!callsBase) {
+        toast.error(t('calls.errors.config', 'Configuration API appels manquante.'));
+        setCalls([]);
+        return;
+      }
 
-      const response = await fetch(`${callsBase}/calls?companyId=${companyId}&populate=lead&populate=agent`);
+      const response = await fetch(
+        `${callsBase}/calls?companyId=${encodeURIComponent(companyId!)}&populate=lead&populate=agent`
+      );
       if (response.ok) {
         const data = await response.json();
         const callsArray = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
         setCalls(callsArray.sort((a: any, b: any) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()));
+      } else {
+        toast.error(t('calls.errors.load', 'Impossible de charger les appels.'));
+        setCalls([]);
       }
     } catch (error) {
       console.error('Error fetching calls:', error);
+      toast.error(t('calls.errors.load', 'Impossible de charger les appels.'));
+      setCalls([]);
     } finally {
       setLoading(false);
     }
@@ -342,14 +355,49 @@ export default function CallsDashboardPage() {
                 </div>
               ))}
             </div>
+          ) : !companyId ? (
+            <div className="flex flex-col justify-center items-center p-20 text-center">
+              <div className="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-6">
+                <Phone className="w-10 h-10 text-slate-300 opacity-40" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest">
+                {t('calls.empty.noCompany', 'Entreprise non identifiée')}
+              </h3>
+              <p className="text-sm text-slate-500 mt-2 max-w-sm">
+                {t(
+                  'calls.empty.noCompanyHint',
+                  'Reconnectez-vous ou sélectionnez une entreprise pour afficher l’historique des appels.'
+                )}
+              </p>
+            </div>
+          ) : calls.length === 0 ? (
+            <div className="flex flex-col justify-center items-center p-20 text-center">
+              <div className="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-6">
+                <Phone className="w-10 h-10 text-slate-300 opacity-40" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest">
+                {t('calls.empty.none', 'Aucun appel')}
+              </h3>
+              <p className="text-sm text-slate-500 mt-2 max-w-sm">
+                {t(
+                  'calls.empty.noneHint',
+                  'Aucun appel enregistré pour cette entreprise pour le moment.'
+                )}
+              </p>
+            </div>
           ) : filteredCalls.length === 0 ? (
             <div className="flex flex-col justify-center items-center p-20 text-center">
               <div className="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-6">
                 <Phone className="w-10 h-10 text-slate-300 opacity-40" />
               </div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest">No calls found</h3>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest">
+                {t('calls.empty.filtered', 'Aucun résultat')}
+              </h3>
               <p className="text-sm text-slate-500 mt-2 max-w-sm">
-                No call records were found matching your filters.
+                {t(
+                  'calls.empty.filteredHint',
+                  'Aucun appel ne correspond à vos filtres. Réinitialisez la recherche ou le gig sélectionné.'
+                )}
               </p>
             </div>
           ) : (
