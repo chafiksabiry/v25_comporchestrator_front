@@ -231,6 +231,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [showLeadsPreview, setShowLeadsPreview] = useState(true);
   const [validationResults, setValidationResults] = useState<any>(null);
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
+  const [editingSavedLead, setEditingSavedLead] = useState<Lead | null>(null);
+  const [isSavingLeadEdit, setIsSavingLeadEdit] = useState(false);
   const [dataTooLarge, setDataTooLarge] = useState(false);
   const urlParamsProcessedRef = useRef(false);
   const processingRef = useRef(false);
@@ -1693,6 +1695,74 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     setParsedLeads(newLeads);
   };
 
+  const updateSavedLeadDraft = (field: keyof Lead, value: string) => {
+    setEditingSavedLead((prev) => (prev ? { ...prev, [field]: value } : null));
+  };
+
+  const saveEditedLead = async () => {
+    if (!editingSavedLead?._id) return;
+
+    setIsSavingLeadEdit(true);
+    try {
+      const userId = Cookies.get('userId');
+      const gigId = selectedGigId || editingSavedLead.gigId;
+      const phoneRaw = String(editingSavedLead.Phone || '').trim();
+      const phone = phoneRaw ? (phoneRaw.startsWith('+') ? phoneRaw : `+${phoneRaw}`) : '';
+
+      const payload = {
+        First_Name: editingSavedLead.First_Name || '',
+        Last_Name: editingSavedLead.Last_Name || '',
+        Email_1: editingSavedLead.Email_1 || '',
+        Phone: phone,
+        Address: editingSavedLead.Address || '',
+        Postal_Code: editingSavedLead.Postal_Code || '',
+        City: editingSavedLead.City || '',
+        Date_of_Birth: editingSavedLead.Date_of_Birth || '',
+        Deal_Name:
+          editingSavedLead.Deal_Name ||
+          `${editingSavedLead.First_Name || ''} ${editingSavedLead.Last_Name || ''}`.trim() ||
+          'Unnamed Lead',
+        userId,
+        gigId,
+      };
+
+      const response = await axios.put(
+        `${import.meta.env.VITE_DASHBOARD_API}/leads/${editingSavedLead._id}`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${gigId}:${userId}`,
+          },
+        }
+      );
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.error || 'Update failed');
+      }
+
+      const updated = response.data.data as Lead;
+      const mergeList = (list: Lead[]) =>
+        list.map((item) => (item._id === updated._id ? { ...item, ...updated } : item));
+
+      setLeads((prev) => mergeList(prev));
+      setFilteredLeads((prev) => mergeList(prev));
+      setRealtimeLeads((prev) => mergeList(prev));
+
+      toast.success(t('uploadContacts.list.edit.success'));
+      setEditingSavedLead(null);
+    } catch (err) {
+      console.error('Error updating lead:', err);
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.error
+          ? String(err.response.data.error)
+          : t('uploadContacts.list.edit.error');
+      toast.error(message);
+    } finally {
+      setIsSavingLeadEdit(false);
+    }
+  };
+
   // Fonction de filtrage des leads - maintenant déclenche une recherche API
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -2555,21 +2625,24 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     <th scope="col" className="w-[10%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
                       {t('uploadContacts.list.table.postalCode')}
                     </th>
-                    <th scope="col" className="w-[12%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
+                    <th scope="col" className="w-[11%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 truncate">
                       {t('uploadContacts.list.table.mobile')}
+                    </th>
+                    <th scope="col" className="w-[7%] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50">
+                      {t('uploadContacts.list.table.actions')}
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {error ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-4 text-center text-sm text-red-500">
+                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-red-500">
                         {error}
                       </td>
                     </tr>
                   ) : isLoadingLeads ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex items-center justify-center py-8">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-harx-500 mr-3"></div>
                           Loading leads...
@@ -2600,6 +2673,16 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         <td className="px-2 py-2 text-xs font-black text-gray-900 truncate max-w-0">
                           {lead.Phone || '-'}
                         </td>
+                        <td className="px-2 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => setEditingSavedLead({ ...lead })}
+                            className="inline-flex items-center justify-center p-1.5 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-harx-600 hover:border-harx-200 hover:bg-harx-50 transition-colors"
+                            title={t('uploadContacts.list.edit.button')}
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
                       </tr>
                     ))
                   ) : (realtimeLeads && realtimeLeads.length > 0) ? (
@@ -2626,11 +2709,21 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         <td className="px-2 py-2 text-xs font-black text-gray-900 truncate max-w-0">
                           {lead.Phone || '-'}
                         </td>
+                        <td className="px-2 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => setEditingSavedLead({ ...lead })}
+                            className="inline-flex items-center justify-center p-1.5 rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-harx-600 hover:border-harx-200 hover:bg-harx-50 transition-colors"
+                            title={t('uploadContacts.list.edit.button')}
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
                           <FileText className="h-12 w-12 text-gray-300 mb-2" />
                           <p>{t('uploadContacts.list.empty')}</p>
@@ -2724,6 +2817,130 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       )}
 
       {/* Import Choice Modal */}
+      {editingSavedLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/80">
+              <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">
+                {t('uploadContacts.list.edit.title')}
+              </h3>
+              <button
+                type="button"
+                onClick={() => !isSavingLeadEdit && setEditingSavedLead(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                disabled={isSavingLeadEdit}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
+                    {t('uploadContacts.list.table.firstName')}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingSavedLead.First_Name || ''}
+                    onChange={(e) => updateSavedLeadDraft('First_Name', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
+                    {t('uploadContacts.list.table.lastName')}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingSavedLead.Last_Name || ''}
+                    onChange={(e) => updateSavedLeadDraft('Last_Name', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
+                  {t('uploadContacts.list.table.email')}
+                </label>
+                <input
+                  type="email"
+                  value={editingSavedLead.Email_1 || ''}
+                  onChange={(e) => updateSavedLeadDraft('Email_1', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
+                  {t('uploadContacts.list.table.mobile')}
+                </label>
+                <input
+                  type="tel"
+                  value={editingSavedLead.Phone || ''}
+                  onChange={(e) => updateSavedLeadDraft('Phone', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
+                  {t('uploadContacts.list.table.address')}
+                </label>
+                <input
+                  type="text"
+                  value={editingSavedLead.Address || ''}
+                  onChange={(e) => updateSavedLeadDraft('Address', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
+                    {t('uploadContacts.list.table.postalCode')}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingSavedLead.Postal_Code || ''}
+                    onChange={(e) => updateSavedLeadDraft('Postal_Code', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
+                    {t('uploadContacts.list.table.city')}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingSavedLead.City || ''}
+                    onChange={(e) => updateSavedLeadDraft('City', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 bg-gray-50/50">
+              <button
+                type="button"
+                onClick={() => setEditingSavedLead(null)}
+                disabled={isSavingLeadEdit}
+                className="px-4 py-2 text-xs font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50"
+              >
+                {t('uploadContacts.list.edit.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveEditedLead()}
+                disabled={isSavingLeadEdit}
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-black text-white bg-gradient-harx rounded-xl hover:brightness-110 disabled:opacity-50"
+              >
+                {isSavingLeadEdit ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                {t('uploadContacts.list.edit.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showImportChoiceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="relative w-full max-w-sm transform rounded-2xl bg-white p-6 text-left shadow-2xl transition-all border border-harx-100">
