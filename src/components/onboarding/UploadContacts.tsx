@@ -12,6 +12,9 @@ import {
   X,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
   UserPlus,
   FileSpreadsheet,
   Cloud,
@@ -75,6 +78,26 @@ interface UploadContactsProps {
   onCancelProcessing?: () => void;
   companyId?: string | null;
 }
+
+const getLeadInitials = (lead: Lead): string => {
+  const first = lead.First_Name?.[0] || '';
+  const last = lead.Last_Name?.[0] || '';
+  return (first + last).toUpperCase() || '?';
+};
+
+const avatarGradients = [
+  'from-rose-500 to-pink-500',
+  'from-violet-500 to-purple-500',
+  'from-blue-500 to-indigo-500',
+  'from-emerald-500 to-teal-500',
+  'from-amber-500 to-orange-500',
+  'from-cyan-500 to-sky-500',
+];
+
+const getLeadAvatarGradient = (lead: Lead): string => {
+  const seed = (lead._id || lead.Email_1 || lead.Last_Name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return avatarGradients[seed % avatarGradients.length];
+};
 
 const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyId }: UploadContactsProps) => {
   const { t } = useTranslation();
@@ -1817,27 +1840,26 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
   return (
-    <div className="w-full py-1 space-y-3 animate-in fade-in duration-500">
+    <div className="w-full p-2 md:p-4 space-y-5 animate-in fade-in duration-700">
       {/* Header Area - Branded Gradient */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-4 mb-2 shadow-lg shadow-harx-500/20">
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-harx p-6 shadow-xl shadow-harx-500/25">
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20">
-                <UserPlus className="h-6 w-6 text-white" />
+              <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/25 ring-1 ring-white/10">
+                <UserPlus className="h-7 w-7 text-white" />
               </div>
               <div>
-                <h2 className="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
+                <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
                   {t('uploadContacts.title')}
                 </h2>
-                <p className="text-[14px] font-medium text-white/90">{t('uploadContacts.subtitle')}</p>
+                <p className="text-sm font-medium text-white/85 mt-0.5">{t('uploadContacts.subtitle')}</p>
               </div>
             </div>
           </div>
         </div>
-        {/* Abstract background pattern */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/10 rounded-full blur-2xl" />
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 bg-black/10 rounded-full blur-2xl" />
       </div>
 
 
@@ -2499,94 +2521,120 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         )}
       </div>
 
-      {/* Channel Filter */}
-      <div className="bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/60 p-4">
-        <h3 className="text-sm font-black text-slate-900 mb-3 flex items-center uppercase tracking-widest">
-          <Globe className="mr-2 h-4 w-4 text-harx-500" />
-          {t('uploadContacts.filter.title')}
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {channels.map((channel) => {
-            const Icon = channel.icon;
-            const isSelected = selectedChannels.includes(channel.id);
-            return (
-              <button
-                key={channel.id}
-                className={`flex items-center space-x-2 rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${isSelected
-                  ? 'bg-gradient-harx text-white shadow-md shadow-harx-500/20 scale-[1.02]'
-                  : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 hover:border-slate-300'
-                  }`}
-                onClick={() => toggleChannel(channel.id)}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{channel.name}</span>
-              </button>
-            );
-          })}
+      {/* Channel Filter + quick stats */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-4 items-stretch">
+        <div className="relative overflow-hidden rounded-[24px] bg-white/60 backdrop-blur-xl border border-white/70 shadow-lg shadow-slate-200/30 p-5">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-harx-500/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+          <h3 className="text-[11px] font-black text-slate-500 mb-3 flex items-center uppercase tracking-[0.2em]">
+            <Globe className="mr-2 h-4 w-4 text-harx-500" />
+            {t('uploadContacts.filter.title')}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {channels.map((channel) => {
+              const Icon = channel.icon;
+              const isSelected = selectedChannels.includes(channel.id);
+              return (
+                <button
+                  key={channel.id}
+                  className={`flex items-center space-x-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-300 ${isSelected
+                    ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/25 scale-[1.02] ring-2 ring-harx-500/20'
+                    : 'bg-white/80 text-slate-600 border border-slate-200/80 hover:bg-white hover:border-slate-300 hover:shadow-sm'
+                    }`}
+                  onClick={() => toggleChannel(channel.id)}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{channel.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
+
+        {selectedGigId && totalCount > 0 && (
+          <div className="flex xl:flex-col gap-3 xl:min-w-[200px]">
+            <div className="flex-1 rounded-[24px] bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-xl shadow-slate-900/20 border border-white/10">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">{t('uploadContacts.list.leads')}</p>
+              <p className="text-3xl font-black tracking-tight">{totalCount.toLocaleString()}</p>
+              <p className="text-xs font-medium text-white/60 mt-1">{t('uploadContacts.list.showing', { filtered: filteredLeads.length, total: totalCount })}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Contact List */}
-      <div className="bg-white/40 backdrop-blur-xl rounded-[28px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-480px)] flex flex-col overflow-hidden relative min-h-[400px]">
-        <div className="border-b border-slate-100/80 p-5 flex-shrink-0 bg-white/50 backdrop-blur-sm rounded-t-[28px]">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-420px)] flex flex-col overflow-hidden relative min-h-[420px]">
+        <div className="border-b border-slate-100/80 p-6 flex-shrink-0 bg-gradient-to-r from-white/80 via-white/60 to-harx-50/30 backdrop-blur-sm rounded-t-[32px]">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <div>
-              <h3 className="text-lg font-black text-slate-900 flex items-center tracking-tight uppercase">
-                <Users className="mr-2 h-5 w-5 text-harx-500" />
-                {t('uploadContacts.list.title')}
-              </h3>
-              <div className="mt-1.5">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/25">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    {t('uploadContacts.list.title')}
+                  </h3>
+                  <p className="text-xs font-medium text-slate-500 mt-0.5">
+                    {selectedGigId
+                      ? gigs.find(g => g._id === selectedGigId)?.title
+                      : t('uploadContacts.list.selectGig')}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
                 {selectedGigId ? (
-                  <div className="text-xs text-slate-500 font-medium">
-                    {parsedLeads.length > 0 ? (
-                      <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full font-bold border border-emerald-100">
-                        {isSavingLeads
-                          ? t('uploadContacts.list.saving', { saved: savedLeadsCount, total: parsedLeads.length + savedLeadsCount })
-                          : t('uploadContacts.list.ready', { count: parsedLeads.length })}
-                      </span>
-                    ) : leads.length > 0 ? (
-                      <span className="inline-flex items-center gap-1.5 bg-harx-50 text-harx-700 px-3 py-1 rounded-full font-bold border border-harx-100">
-                        {t('uploadContacts.list.showing', { filtered: filteredLeads.length, total: totalCount })} {searchQuery && `(filtered by "${searchQuery}")`}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 bg-slate-50 text-slate-500 px-3 py-1 rounded-full font-bold border border-slate-200">
-                        {t('uploadContacts.list.empty')}
-                      </span>
-                    )}
-                  </div>
+                  parsedLeads.length > 0 ? (
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-100/80 shadow-sm">
+                      {isSavingLeads
+                        ? t('uploadContacts.list.saving', { saved: savedLeadsCount, total: parsedLeads.length + savedLeadsCount })
+                        : t('uploadContacts.list.ready', { count: parsedLeads.length })}
+                    </span>
+                  ) : leads.length > 0 ? (
+                    <span className="inline-flex items-center gap-1.5 bg-harx-50 text-harx-700 px-3 py-1.5 rounded-full text-xs font-bold border border-harx-100/80 shadow-sm">
+                      {t('uploadContacts.list.showing', { filtered: filteredLeads.length, total: totalCount })}
+                      {searchQuery && (
+                        <span className="text-harx-500/80 font-medium">· "{searchQuery}"</span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 bg-slate-50 text-slate-500 px-3 py-1.5 rounded-full text-xs font-bold border border-slate-200">
+                      {t('uploadContacts.list.empty')}
+                    </span>
+                  )
                 ) : (
-                  <p className="text-xs text-slate-400 font-medium">{t('uploadContacts.list.selectGig')}</p>
+                  <span className="text-xs text-slate-400 font-medium">{t('uploadContacts.list.selectGig')}</span>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Search className="h-4 w-4 text-slate-400" />
-                </div>
+            <div className="flex items-center gap-2 flex-wrap lg:justify-end">
+              <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 px-4 py-2 flex items-center gap-3 shadow-sm focus-within:ring-2 focus-within:ring-harx-500/20 transition-all min-w-[220px]">
+                <Search className="h-4 w-4 text-slate-400 shrink-0" />
                 <input
                   type="text"
-                  className="block w-full rounded-xl border-slate-200 bg-white/80 pl-9 py-2 focus:border-harx-500 focus:ring-harx-500 text-sm shadow-sm min-w-[180px]"
+                  className="bg-transparent border-none outline-none text-sm font-medium text-slate-700 w-full placeholder:text-slate-400"
                   placeholder={t('uploadContacts.list.search')}
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                 />
               </div>
-              <select
-                className="rounded-xl border-slate-200 bg-white/80 py-2 pl-3 pr-8 text-sm font-medium focus:border-harx-500 focus:outline-none focus:ring-harx-500 shadow-sm"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="all">{t('uploadContacts.list.statusAll')}</option>
-                <option value="active">{t('uploadContacts.list.statusActive')}</option>
-                <option value="inactive">{t('uploadContacts.list.statusInactive')}</option>
-              </select>
+              <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 px-4 py-2 flex items-center gap-3 shadow-sm">
+                <Filter className="h-4 w-4 text-slate-400 shrink-0" />
+                <select
+                  className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer"
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="all">{t('uploadContacts.list.statusAll')}</option>
+                  <option value="active">{t('uploadContacts.list.statusActive')}</option>
+                  <option value="inactive">{t('uploadContacts.list.statusInactive')}</option>
+                </select>
+              </div>
               <button
                 onClick={() => {
                   setSearchQuery('');
                   fetchLeads(1);
                 }}
-                className="flex items-center rounded-xl bg-gradient-harx px-4 py-2 text-sm font-bold text-white shadow-md shadow-harx-500/20 hover:brightness-110 transition-all duration-200"
+                className="flex items-center rounded-2xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-harx-500/25 hover:brightness-110 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
                 disabled={isLoadingLeads || !selectedGigId}
               >
                 {isLoadingLeads ? (
@@ -2606,154 +2654,160 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         </div>
         {/* Tableau d'affichage des leads */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto scrollbar-auto min-h-0">
-            <div className="relative">
-              <table className="w-full table-fixed divide-y divide-slate-100">
-                <thead className="bg-slate-50/90 sticky top-0 z-[50] backdrop-blur-sm">
+          <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+            <div className="relative px-2 pb-2">
+              <table className="w-full table-fixed border-separate border-spacing-y-1.5">
+                <thead className="sticky top-0 z-[50]">
                   <tr>
-                    <th scope="col" className="w-[9%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
+                    <th scope="col" className="w-[5%] px-2 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left" />
+                    <th scope="col" className="w-[10%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
                       {t('uploadContacts.list.table.lastName')}
                     </th>
-                    <th scope="col" className="w-[9%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
+                    <th scope="col" className="w-[10%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
                       {t('uploadContacts.list.table.firstName')}
                     </th>
-                    <th scope="col" className="w-[20%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
+                    <th scope="col" className="w-[18%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
                       {t('uploadContacts.list.table.email')}
                     </th>
-                    <th scope="col" className="w-[20%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
+                    <th scope="col" className="w-[18%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
                       {t('uploadContacts.list.table.address')}
                     </th>
-                    <th scope="col" className="w-[12%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
+                    <th scope="col" className="w-[11%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
                       {t('uploadContacts.list.table.city')}
                     </th>
-                    <th scope="col" className="w-[9%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
+                    <th scope="col" className="w-[8%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
                       {t('uploadContacts.list.table.postalCode')}
                     </th>
-                    <th scope="col" className="w-[11%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-left">
+                    <th scope="col" className="w-[11%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
                       {t('uploadContacts.list.table.mobile')}
                     </th>
-                    <th scope="col" className="w-[10%] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">
+                    <th scope="col" className="w-[9%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-center">
                       {t('uploadContacts.list.table.actions')}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 bg-white/60">
+                <tbody>
                   {error ? (
                     <tr>
-                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-red-500">
-                        {error}
-                      </td>
-                    </tr>
-                  ) : isLoadingLeads ? (
-                    <tr>
-                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-slate-500">
-                        <div className="flex items-center justify-center py-8">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-harx-500 mr-3"></div>
-                          Loading leads...
+                      <td colSpan={9} className="px-6 py-12 text-center">
+                        <div className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-rose-50 text-rose-600 text-sm font-semibold border border-rose-100">
+                          {error}
                         </div>
                       </td>
                     </tr>
+                  ) : isLoadingLeads ? (
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <tr key={`skeleton-${i}`}>
+                        <td colSpan={9} className="px-2 py-1">
+                          <div className="flex items-center gap-4 p-4 bg-white/70 rounded-2xl border border-slate-100 animate-pulse">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 shrink-0" />
+                            <div className="flex-1 space-y-2">
+                              <div className="h-3 bg-slate-100 rounded-md w-1/4" />
+                              <div className="h-2.5 bg-slate-100 rounded-md w-1/2" />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   ) : (filteredLeads && filteredLeads.length > 0) ? (
                     filteredLeads.map((lead, index) => lead && (
-                      <tr key={lead._id || `filtered-${index}`} className={`group hover:bg-harx-50/40 transition-all duration-150 ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-amber-400' : ''}`}>
-                        <td className="px-3 py-3 text-sm font-semibold text-slate-800 truncate max-w-0">
-                          {lead.Last_Name || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm font-semibold text-slate-800 truncate max-w-0">
-                          {lead.First_Name || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-harx-600 truncate max-w-0">
-                          {lead.Email_1 || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
-                          {lead.Address || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
-                          {lead.City || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
-                          {lead.Postal_Code || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm font-medium text-slate-700 truncate max-w-0">
-                          {lead.Phone || '—'}
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => setViewingLeadDetail({ ...lead })}
-                              className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-harx-600 hover:border-harx-200 hover:bg-harx-50 transition-all opacity-70 group-hover:opacity-100"
-                              title={t('uploadContacts.list.details.button')}
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditingSavedLead({ ...lead })}
-                              className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all opacity-70 group-hover:opacity-100"
-                              title={t('uploadContacts.list.edit.button')}
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                            </button>
+                      <tr key={lead._id || `filtered-${index}`} className="group">
+                        <td colSpan={9} className="px-2 py-0.5">
+                          <div className={`grid grid-cols-[5%_10%_10%_18%_18%_11%_8%_11%_9%] items-center p-3.5 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-md hover:border-harx-100/60 hover:bg-white transition-all duration-300 ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-l-amber-400' : ''}`}>
+                            <div className="flex justify-center">
+                              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-white text-xs font-black flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300`}>
+                                {getLeadInitials(lead)}
+                              </div>
+                            </div>
+                            <div className="px-2 text-sm font-bold text-slate-900 truncate">{lead.Last_Name || '—'}</div>
+                            <div className="px-2 text-sm font-semibold text-slate-700 truncate">{lead.First_Name || '—'}</div>
+                            <div className="px-2 flex items-center gap-1.5 min-w-0">
+                              <Mail className="h-3.5 w-3.5 text-slate-300 shrink-0 group-hover:text-harx-400 transition-colors" />
+                              <span className="text-sm text-slate-600 truncate group-hover:text-harx-600 transition-colors">{lead.Email_1 || '—'}</span>
+                            </div>
+                            <div className="px-2 text-sm text-slate-500 truncate">{lead.Address || '—'}</div>
+                            <div className="px-2 text-sm text-slate-500 truncate">{lead.City || '—'}</div>
+                            <div className="px-2 text-sm text-slate-500 truncate">{lead.Postal_Code || '—'}</div>
+                            <div className="px-2 flex items-center gap-1.5 min-w-0">
+                              <Phone className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                              <span className="text-sm font-medium text-slate-700 truncate">{lead.Phone || '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setViewingLeadDetail({ ...lead })}
+                                className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200/80 bg-white text-slate-400 hover:text-white hover:bg-gradient-harx hover:border-transparent hover:shadow-md transition-all duration-200"
+                                title={t('uploadContacts.list.details.button')}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingSavedLead({ ...lead })}
+                                className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200/80 bg-white text-slate-400 hover:text-slate-800 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                                title={t('uploadContacts.list.edit.button')}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                            </div>
                           </div>
                         </td>
                       </tr>
                     ))
                   ) : (realtimeLeads && realtimeLeads.length > 0) ? (
                     realtimeLeads.map((lead, index) => lead && (
-                      <tr key={lead._id || `realtime-${index}`} className="group hover:bg-harx-50/40 transition-all duration-150">
-                        <td className="px-3 py-3 text-sm font-semibold text-slate-800 truncate max-w-0">
-                          {lead.Last_Name || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm font-semibold text-slate-800 truncate max-w-0">
-                          {lead.First_Name || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-harx-600 truncate max-w-0">
-                          {lead.Email_1 || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
-                          {lead.Address || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
-                          {lead.City || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-slate-500 truncate max-w-0">
-                          {lead.Postal_Code || '—'}
-                        </td>
-                        <td className="px-3 py-3 text-sm font-medium text-slate-700 truncate max-w-0">
-                          {lead.Phone || '—'}
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => setViewingLeadDetail({ ...lead })}
-                              className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-harx-600 hover:border-harx-200 hover:bg-harx-50 transition-all opacity-70 group-hover:opacity-100"
-                              title={t('uploadContacts.list.details.button')}
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditingSavedLead({ ...lead })}
-                              className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all opacity-70 group-hover:opacity-100"
-                              title={t('uploadContacts.list.edit.button')}
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                            </button>
+                      <tr key={lead._id || `realtime-${index}`} className="group">
+                        <td colSpan={9} className="px-2 py-0.5">
+                          <div className="grid grid-cols-[5%_10%_10%_18%_18%_11%_8%_11%_9%] items-center p-3.5 bg-white/80 backdrop-blur-sm rounded-2xl border border-emerald-100/60 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-300">
+                            <div className="flex justify-center">
+                              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-white text-xs font-black flex items-center justify-center shadow-md`}>
+                                {getLeadInitials(lead)}
+                              </div>
+                            </div>
+                            <div className="px-2 text-sm font-bold text-slate-900 truncate">{lead.Last_Name || '—'}</div>
+                            <div className="px-2 text-sm font-semibold text-slate-700 truncate">{lead.First_Name || '—'}</div>
+                            <div className="px-2 flex items-center gap-1.5 min-w-0">
+                              <Mail className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                              <span className="text-sm text-slate-600 truncate">{lead.Email_1 || '—'}</span>
+                            </div>
+                            <div className="px-2 text-sm text-slate-500 truncate">{lead.Address || '—'}</div>
+                            <div className="px-2 text-sm text-slate-500 truncate">{lead.City || '—'}</div>
+                            <div className="px-2 text-sm text-slate-500 truncate">{lead.Postal_Code || '—'}</div>
+                            <div className="px-2 flex items-center gap-1.5 min-w-0">
+                              <Phone className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                              <span className="text-sm font-medium text-slate-700 truncate">{lead.Phone || '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setViewingLeadDetail({ ...lead })}
+                                className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200/80 bg-white text-slate-400 hover:text-white hover:bg-gradient-harx hover:border-transparent transition-all duration-200"
+                                title={t('uploadContacts.list.details.button')}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingSavedLead({ ...lead })}
+                                className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200/80 bg-white text-slate-400 hover:text-slate-800 hover:bg-slate-50 transition-all duration-200"
+                                title={t('uploadContacts.list.edit.button')}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                            </div>
                           </div>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-slate-500">
-                        <div className="flex flex-col items-center justify-center py-12">
-                          <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-3 border border-slate-100">
-                            <Users className="h-8 w-8 text-slate-300" />
+                      <td colSpan={9} className="px-6 py-4 text-center">
+                        <div className="flex flex-col items-center justify-center py-16">
+                          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-50 to-harx-50/50 flex items-center justify-center mb-4 border border-slate-100 shadow-inner">
+                            <Users className="h-10 w-10 text-slate-300" />
                           </div>
-                          <p className="font-semibold text-slate-600">{t('uploadContacts.list.empty')}</p>
-                          <p className="text-xs text-slate-400 mt-1">{t('uploadContacts.list.emptyHint')}</p>
+                          <p className="font-black text-slate-700 text-lg tracking-tight">{t('uploadContacts.list.empty')}</p>
+                          <p className="text-sm text-slate-400 mt-2 max-w-xs">{t('uploadContacts.list.emptyHint')}</p>
                         </div>
                       </td>
                     </tr>
@@ -2765,40 +2819,43 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         </div>
         {/* Pagination Controls */}
         {(filteredLeads.length > 0 || realtimeLeads.length > 0) && (
-          <div className="bg-white/60 backdrop-blur-sm px-5 py-3 border-t border-slate-100/80 flex-shrink-0 rounded-b-[28px]">
-            <div className="flex items-center justify-between">
+          <div className="bg-white/70 backdrop-blur-md px-6 py-4 border-t border-slate-100/80 flex-shrink-0 rounded-b-[32px]">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center text-xs font-medium text-slate-500">
                 <span>
                   {searchQuery ? (
                     <>
-                      <span className="font-black">{filteredLeads.length}</span> {t('uploadContacts.list.resultsFor')} "{searchQuery}"
+                      <span className="font-black text-slate-800">{filteredLeads.length}</span> {t('uploadContacts.list.resultsFor')} "<span className="text-harx-600">{searchQuery}</span>"
                     </>
                   ) : (
                     <>
-                      <span className="font-black">{filteredLeads.length > 0 ? filteredLeads.length : realtimeLeads.length}</span> {t('uploadContacts.list.of')}{' '}
-                      <span className="font-black">{totalCount > 0 ? totalCount : realtimeLeads.length}</span> {t('uploadContacts.list.leads')}
+                      <span className="font-black text-slate-800">{filteredLeads.length > 0 ? filteredLeads.length : realtimeLeads.length}</span>{' '}
+                      {t('uploadContacts.list.of')}{' '}
+                      <span className="font-black text-slate-800">{totalCount > 0 ? totalCount : realtimeLeads.length}</span> {t('uploadContacts.list.leads')}
                     </>
                   )}
                 </span>
               </div>
               {!searchQuery && totalPages > 1 && (
-                <div className="flex items-center space-x-1.5">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => fetchLeads(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-1 text-xs font-bold text-gray-600 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold text-slate-600 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
                   >
+                    <ChevronLeft className="h-4 w-4" />
                     {t('uploadContacts.list.prev')}
                   </button>
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center gap-1">
                     {renderPaginationButtons()}
                   </div>
                   <button
                     onClick={() => fetchLeads(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-1 text-xs font-bold text-gray-600 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold text-slate-600 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
                   >
                     {t('uploadContacts.list.next')}
+                    <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               )}
@@ -2809,31 +2866,32 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       {/* Ajout d'une section pour afficher les leads en temps réel */}
       {realtimeLeads.length > 0 && (
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
-          <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center">
+        <div className="bg-white/60 backdrop-blur-xl rounded-[24px] shadow-lg border border-white/70 p-5">
+          <h3 className="text-base font-black text-slate-900 mb-3 flex items-center tracking-tight">
             <RefreshCw className="mr-2 h-5 w-5 text-harx-500 animate-spin" />
             {t('uploadContacts.realtime.title')}
           </h3>
-          <div className="bg-gradient-to-r from-harx-50 to-harx-100 border border-harx-100 rounded-lg p-2 mb-2">
-            <p className="text-xs font-bold text-harx-700">
-              {t('uploadContacts.realtime.count')} <span className="bg-white text-harx-800 px-2 py-0.5 rounded-full text-xs font-black">{realtimeLeads.length}</span>
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100/80 rounded-2xl p-3 mb-3">
+            <p className="text-xs font-bold text-emerald-700">
+              {t('uploadContacts.realtime.count')}{' '}
+              <span className="bg-white text-emerald-800 px-2.5 py-0.5 rounded-full text-xs font-black shadow-sm">{realtimeLeads.length}</span>
             </p>
           </div>
-          <div className="max-h-96 overflow-y-auto border border-gray-100 rounded-lg">
-            <div className="min-w-full divide-y divide-gray-100">
-              <div className="bg-gradient-to-r from-harx-50 to-harx-100 sticky top-0">
-                <div className="grid grid-cols-3 px-4 py-2">
-                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">{t('uploadContacts.list.table.email')}</div>
-                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">{t('uploadContacts.realtime.phone')}</div>
-                  <div className="text-left text-[10px] font-black text-harx-700 uppercase tracking-widest">{t('uploadContacts.realtime.lead')}</div>
+          <div className="max-h-96 overflow-y-auto custom-scrollbar rounded-2xl border border-slate-100">
+            <div className="min-w-full divide-y divide-slate-100">
+              <div className="bg-slate-50/90 sticky top-0 backdrop-blur-sm">
+                <div className="grid grid-cols-3 px-4 py-3">
+                  <div className="text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('uploadContacts.list.table.email')}</div>
+                  <div className="text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('uploadContacts.realtime.phone')}</div>
+                  <div className="text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('uploadContacts.realtime.lead')}</div>
                 </div>
               </div>
-              <div className="bg-white divide-y divide-gray-100">
+              <div className="bg-white divide-y divide-slate-50">
                 {(realtimeLeads || []).map((lead, index) => lead && (
-                  <div key={lead._id || index} className="grid grid-cols-3 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
-                    <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'N/A'}</div>
-                    <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
-                    <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
+                  <div key={lead._id || index} className="grid grid-cols-3 px-4 py-3.5 hover:bg-harx-50/30 transition-colors duration-200">
+                    <div className="text-sm font-medium text-slate-700 truncate">{lead.Email_1 || 'N/A'}</div>
+                    <div className="text-sm text-slate-600">{lead.Phone || 'N/A'}</div>
+                    <div className="text-sm text-slate-600 truncate">{lead.Deal_Name || 'N/A'}</div>
                   </div>
                 ))}
               </div>
