@@ -1272,6 +1272,14 @@
         "cancel": "Cancel",
         "success": "Lead updated successfully",
         "error": "Unable to update lead"
+      },
+      "details": {
+        "button": "View details",
+        "contactInfo": "Contact Information",
+        "addressInfo": "Address",
+        "additionalInfo": "Additional Information",
+        "lastUpdated": "Last Updated",
+        "close": "Close"
       }
     },
     "realtime": {

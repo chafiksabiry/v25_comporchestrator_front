@@ -1272,6 +1272,14 @@
         "cancel": "Annuler",
         "success": "Lead mis à jour avec succès",
         "error": "Impossible de mettre à jour le lead"
+      },
+      "details": {
+        "button": "Voir les détails",
+        "contactInfo": "Coordonnées",
+        "addressInfo": "Adresse",
+        "additionalInfo": "Informations complémentaires",
+        "lastUpdated": "Dernière mise à jour",
+        "close": "Fermer"
       }
     },
     "realtime": {
