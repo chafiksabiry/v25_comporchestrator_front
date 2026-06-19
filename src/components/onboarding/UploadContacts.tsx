@@ -15,6 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  Briefcase,
+  PhoneCall,
   UserPlus,
   FileSpreadsheet,
   Cloud,
@@ -35,6 +37,7 @@ import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
 import { markGigStepDone } from '../../services/gigSetupSync';
 import { useTranslation } from 'react-i18next';
+import { getCallsApiBase } from '../dashboard/lib/callsApiBase';
 
 interface Lead {
   _id: string;
@@ -54,7 +57,8 @@ interface Lead {
   City?: string;
   Date_of_Birth?: string;
   __v?: number;
-  _isPlaceholder?: boolean; // Mark for invalid/unprocessed leads
+  _isPlaceholder?: boolean;
+  hasBeenCalled?: boolean;
 }
 
 interface Gig {
@@ -219,6 +223,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [callStatusFilter, setCallStatusFilter] = useState<'all' | 'called' | 'not_called'>('all');
+  const [callFilterGigId, setCallFilterGigId] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -1339,6 +1345,44 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   };
 
+  const fetchCalledLeadIdsForGig = async (gigId: string): Promise<Set<string>> => {
+    const callsBase = getCallsApiBase();
+    const companyId = Cookies.get('companyId');
+    if (!callsBase || !companyId || !gigId) return new Set();
+
+    try {
+      const res = await fetch(`${callsBase}/calls?companyId=${companyId}&gigId=${gigId}`);
+      if (!res.ok) return new Set();
+      const json = await res.json();
+      const calls = Array.isArray(json.data) ? json.data : [];
+      const ids = new Set<string>();
+      calls.forEach((call: { lead?: string | { _id?: string } }) => {
+        const leadRef = call.lead;
+        const leadId =
+          typeof leadRef === 'object' && leadRef !== null
+            ? leadRef._id
+            : leadRef;
+        if (leadId) ids.add(String(leadId));
+      });
+      return ids;
+    } catch (err) {
+      console.error('Error fetching called lead ids:', err);
+      return new Set();
+    }
+  };
+
+  const applyCallStatusFilter = async (items: Lead[], gigId: string, status: typeof callStatusFilter) => {
+    const calledIds = await fetchCalledLeadIdsForGig(gigId);
+    const annotated = items.map((lead) => ({
+      ...lead,
+      hasBeenCalled: calledIds.has(String(lead._id)),
+    }));
+    if (status === 'all') return annotated;
+    return annotated.filter((lead) =>
+      status === 'called' ? lead.hasBeenCalled : !lead.hasBeenCalled
+    );
+  };
+
   const fetchLeads = async (page = 1, searchQuery = '') => {
     // Skip fetching leads if we're currently processing a file
     if (isProcessing || processingRef.current) {
@@ -1371,13 +1415,20 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       let apiUrl: string;
 
       if (searchQuery.trim()) {
-        // Utiliser l'endpoint de recherche dédié
         apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}/search?search=${encodeURIComponent(searchQuery.trim())}`;
-        
       } else {
-        // Utiliser l'endpoint normal avec pagination
-        apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
-        
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: '50',
+        });
+        if (callStatusFilter !== 'all') {
+          params.set('callFilter', callStatusFilter);
+        }
+        const gigForCalls = callFilterGigId || selectedGigId;
+        if (gigForCalls) {
+          params.set('callFilterGigId', gigForCalls);
+        }
+        apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?${params.toString()}`;
       }
 
       const response = await fetch(apiUrl, {
@@ -1402,8 +1453,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         throw new Error('Invalid response format: expected data to be an array');
       }
 
-      setLeads(responseData.data);
-      setFilteredLeads(responseData.data); // Initialiser les leads filtrés
+      let leadResults = responseData.data as Lead[];
+
+      if (searchQuery.trim()) {
+        const gigForCalls = callFilterGigId || selectedGigId;
+        leadResults = await applyCallStatusFilter(leadResults, gigForCalls, callStatusFilter);
+      }
+
+      setLeads(leadResults);
+      setFilteredLeads(leadResults);
 
       // Nettoyer realtimeLeads quand on charge des leads depuis l'API
       // Ne pas effacer parsedLeads si un fichier est en cours de traitement
@@ -1413,12 +1471,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       }
 
       if (searchQuery.trim()) {
-        // Pour la recherche, afficher tous les résultats sur une seule page
         setTotalPages(1);
         setCurrentPage(1);
-        setTotalCount(responseData.data.length);
+        setTotalCount(leadResults.length);
       } else {
-        // Pour la pagination normale
         setTotalPages(responseData.totalPages);
         setCurrentPage(responseData.currentPage);
         setTotalCount(responseData.total);
@@ -1432,6 +1488,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       setIsLoadingLeads(false);
     }
   };
+
+  useEffect(() => {
+    if (selectedGigId) {
+      setCallFilterGigId(selectedGigId);
+    }
+  }, [selectedGigId]);
 
   // useEffect pour charger les leads normalement
   useEffect(() => {
@@ -1451,7 +1513,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
     if (selectedGigId) {
       
-      fetchLeads(1, '').catch(error => {
+      fetchLeads(1, searchQuery).catch(error => {
         console.error('Error in useEffect:', error);
         setError('Failed to load leads');
       });
@@ -1468,7 +1530,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         setCurrentPage(1);
       }
     }
-  }, [selectedGigId, isProcessing]);
+  }, [selectedGigId, isProcessing, callStatusFilter, callFilterGigId]);
 
   // useEffect pour recharger les leads après l'import Zoho
   useEffect(() => {
@@ -2618,6 +2680,39 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 />
               </div>
               <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 px-4 py-2 flex items-center gap-3 shadow-sm">
+                <Briefcase className="h-4 w-4 text-slate-400 shrink-0" />
+                <select
+                  className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer max-w-[180px]"
+                  value={callFilterGigId || selectedGigId}
+                  onChange={(e) => {
+                    const gigId = e.target.value;
+                    setCallFilterGigId(gigId);
+                    setSelectedGigId(gigId);
+                  }}
+                  disabled={!gigs.length}
+                  title={t('uploadContacts.list.callFilterGig')}
+                >
+                  {gigs.map((gig) => (
+                    <option key={gig._id} value={gig._id}>
+                      {gig.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 px-4 py-2 flex items-center gap-3 shadow-sm">
+                <PhoneCall className="h-4 w-4 text-slate-400 shrink-0" />
+                <select
+                  className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer"
+                  value={callStatusFilter}
+                  onChange={(e) => setCallStatusFilter(e.target.value as typeof callStatusFilter)}
+                  title={t('uploadContacts.list.callStatusFilter')}
+                >
+                  <option value="all">{t('uploadContacts.list.callStatusAll')}</option>
+                  <option value="called">{t('uploadContacts.list.callStatusCalled')}</option>
+                  <option value="not_called">{t('uploadContacts.list.callStatusNotCalled')}</option>
+                </select>
+              </div>
+              <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 px-4 py-2 flex items-center gap-3 shadow-sm">
                 <Filter className="h-4 w-4 text-slate-400 shrink-0" />
                 <select
                   className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer"
@@ -2715,8 +2810,18 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         <td colSpan={9} className="px-2 py-0.5">
                           <div className={`grid grid-cols-[5%_10%_10%_18%_18%_11%_8%_11%_9%] items-center p-3.5 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-md hover:border-harx-100/60 hover:bg-white transition-all duration-300 ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-l-amber-400' : ''}`}>
                             <div className="flex justify-center">
-                              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-white text-xs font-black flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300`}>
-                                {getLeadInitials(lead)}
+                              <div className="relative">
+                                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-white text-xs font-black flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300`}>
+                                  {getLeadInitials(lead)}
+                                </div>
+                                {lead.hasBeenCalled && (
+                                  <span
+                                    className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 border-2 border-white shadow-sm"
+                                    title={t('uploadContacts.list.calledBadge')}
+                                  >
+                                    <PhoneCall className="w-2.5 h-2.5 text-white" />
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <div className="px-2 text-sm font-bold text-slate-900 truncate">{lead.Last_Name || '—'}</div>
@@ -2760,8 +2865,18 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         <td colSpan={9} className="px-2 py-0.5">
                           <div className="grid grid-cols-[5%_10%_10%_18%_18%_11%_8%_11%_9%] items-center p-3.5 bg-white/80 backdrop-blur-sm rounded-2xl border border-emerald-100/60 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-300">
                             <div className="flex justify-center">
-                              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-white text-xs font-black flex items-center justify-center shadow-md`}>
-                                {getLeadInitials(lead)}
+                              <div className="relative">
+                                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-white text-xs font-black flex items-center justify-center shadow-md`}>
+                                  {getLeadInitials(lead)}
+                                </div>
+                                {lead.hasBeenCalled && (
+                                  <span
+                                    className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 border-2 border-white shadow-sm"
+                                    title={t('uploadContacts.list.calledBadge')}
+                                  >
+                                    <PhoneCall className="w-2.5 h-2.5 text-white" />
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <div className="px-2 text-sm font-bold text-slate-900 truncate">{lead.Last_Name || '—'}</div>

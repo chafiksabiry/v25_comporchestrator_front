@@ -30,6 +30,7 @@ import {
   runPaypalCheckoutFlow,
   runStripeCheckoutFlow
 } from '../../../lib/paypalCheckout';
+import { getCallsApiBase } from '../lib/callsApiBase';
 import {
   formatBilledMinutesFromSeconds,
   formatWalletMinutesBalance
@@ -198,15 +199,25 @@ export function MinutesCompanyPanel() {
         }
       }
 
-      // 2. Fetch calls history for logs
-      const callsRes = await fetch(`${apiBaseUrl}/escrow/calls/${companyId}`);
-      if (callsRes.ok) {
-        const callsData = await callsRes.json();
-        if (callsData.success && Array.isArray(callsData.data)) {
-          setCalls(callsData.data);
+      // 2. Fetch calls history (v25_dashboard_backend)
+      const callsBase = getCallsApiBase();
+      if (callsBase) {
+        const callsRes = await fetch(
+          `${callsBase}/calls?companyId=${encodeURIComponent(companyId)}&populate=lead&populate=agent`
+        );
+        if (callsRes.ok) {
+          const callsData = await callsRes.json();
+          const list = Array.isArray(callsData?.data)
+            ? callsData.data
+            : Array.isArray(callsData)
+              ? callsData
+              : [];
+          setCalls(list);
         } else {
           setCalls([]);
         }
+      } else {
+        setCalls([]);
       }
 
     } catch (err) {
