@@ -1262,7 +1262,16 @@
         "address": "Address",
         "city": "City",
         "postalCode": "Postal Code",
-        "mobile": "Mobile"
+        "mobile": "Mobile",
+        "actions": "Actions"
+      },
+      "edit": {
+        "title": "Edit lead",
+        "button": "Edit lead",
+        "save": "Save",
+        "cancel": "Cancel",
+        "success": "Lead updated successfully",
+        "error": "Unable to update lead"
       }
     },
     "realtime": {

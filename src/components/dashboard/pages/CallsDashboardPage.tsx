@@ -717,6 +717,7 @@ export default function CallsDashboardPage() {
                         className="p-1.5 rounded-xl transition-all flex items-center justify-center shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60"
                         title="Refuser"
                       >
+  
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
