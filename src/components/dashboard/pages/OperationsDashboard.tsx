@@ -1146,8 +1146,9 @@ export default function OperationsDashboard() {
           series7d={series7dChart.length ? series7dChart : null}
           walletBalance={walletBalance}
           walletDaysLeft={walletDaysLeft}
+          repsMonth={repsMonth}
+          fmtDuration={fmtDuration}
           onSeeLeads={() => setTab('leads')}
-          onNavigateTab={setTab}
         />
       )}
     </div>
@@ -2231,16 +2232,26 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
 interface OverviewKpiStats {
   total: number;
   serious: number;
+  voicemail: number;
+  unreachable: number;
+  fraud: number;
+  avgDurationSec: number;
   pctSerious: number;
+  pctVoicemail: number;
+  pctUnreachable: number;
 }
 
-interface OverviewLeadStats {
+type OverviewKpiId = 'wallet' | 'leads' | 'callsToday' | 'seriousCalls' | 'transactions' | 'quality';
+
+type OverviewLeadStatsFull = {
   total: number;
   called: number;
   contacted: number;
   exhausted: number;
+  avgAttempts: number;
   coveragePct: number;
-}
+  reachablePct: number;
+};
 
 interface OutcomeBucket {
   key: string;
@@ -2280,11 +2291,12 @@ function OverviewView({
   series7d,
   walletBalance,
   walletDaysLeft,
+  repsMonth,
+  fmtDuration,
   onSeeLeads,
-  onNavigateTab,
 }: {
   stats: OverviewKpiStats;
-  leadStats: OverviewLeadStats | null;
+  leadStats: OverviewLeadStatsFull | null;
   transactionsToday: number;
   conversionPct: number;
   vsYesterdayPct: number | null;
@@ -2294,10 +2306,16 @@ function OverviewView({
   series7d: Array<{ date: string; total: number; transactions: number }> | null;
   walletBalance: number | null;
   walletDaysLeft: number | null;
+  repsMonth: AnalyticsRep[] | null;
+  fmtDuration: (sec: number) => string;
   onSeeLeads: () => void;
-  onNavigateTab: (tab: TabId) => void;
 }) {
   const { t } = useTranslation();
+  const [selectedKpi, setSelectedKpi] = useState<OverviewKpiId | null>(null);
+
+  const toggleKpi = (id: OverviewKpiId) => {
+    setSelectedKpi((prev) => (prev === id ? null : id));
+  };
 
   // ── Leads-coverage rows. Fallback values keep the card meaningful when
   //    /leads/.../stats hasn't responded yet (first paint).
@@ -2387,7 +2405,8 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.wallet', 'Wallet')}
           value={walletValue}
           sub={walletSub}
-          onClick={() => onNavigateTab('wallet')}
+          selected={selectedKpi === 'wallet'}
+          onClick={() => toggleKpi('wallet')}
         />
 
         {/* 2) Leads base — real company count (no hardcoded fallback). */}
@@ -2397,7 +2416,8 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.leadsBase', 'Leads base')}
           value={fmtNum(leadsBase)}
           sub={`${coveragePct.toFixed(0)}% ${t('opsDashboard.overview.kpi.covered', 'couverts')}`}
-          onClick={() => onNavigateTab('leads')}
+          selected={selectedKpi === 'leads'}
+          onClick={() => toggleKpi('leads')}
         />
 
         {/* 3) Appels aujourd'hui — with delta vs yesterday from series7d */}
@@ -2407,7 +2427,8 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.callsToday', 'Appels aujourd\'hui')}
           value={fmtNum(stats.total)}
           sub={fmtDelta(vsYesterdayPct)}
-          onClick={() => onNavigateTab('calls')}
+          selected={selectedKpi === 'callsToday'}
+          onClick={() => toggleKpi('callsToday')}
         />
 
         {/* 4) Appels sérieux */}
@@ -2417,7 +2438,8 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.seriousCalls', 'Appels sérieux')}
           value={fmtNum(stats.serious)}
           sub={`${stats.pctSerious.toFixed(1)}% ${t('opsDashboard.overview.kpi.rate', 'taux')}`}
-          onClick={() => onNavigateTab('calls')}
+          selected={selectedKpi === 'seriousCalls'}
+          onClick={() => toggleKpi('seriousCalls')}
         />
 
         {/* 5) Transactions today */}
@@ -2427,7 +2449,8 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.transactions', 'Transactions')}
           value={fmtNum(transactionsToday)}
           sub={`${conversionPct.toFixed(1)}% ${t('opsDashboard.overview.kpi.conversion', 'conversion')}`}
-          onClick={() => onNavigateTab('calls')}
+          selected={selectedKpi === 'transactions'}
+          onClick={() => toggleKpi('transactions')}
         />
 
         {/* 6) Score qualité — avg validByAIPct across reps (month). */}
@@ -2437,9 +2460,31 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.quality', 'Score qualité')}
           value={qualityScore !== null ? `${qualityScore}/100` : '—'}
           sub={t('opsDashboard.overview.kpi.qualitySub', 'moyenne équipe')}
-          onClick={() => onNavigateTab('calls')}
+          selected={selectedKpi === 'quality'}
+          onClick={() => toggleKpi('quality')}
         />
       </div>
+
+      {selectedKpi && (
+        <OverviewKpiDetail
+          kpiId={selectedKpi}
+          stats={stats}
+          leadStats={leadStats}
+          transactionsToday={transactionsToday}
+          conversionPct={conversionPct}
+          vsYesterdayPct={vsYesterdayPct}
+          qualityScore={qualityScore}
+          outcomeBuckets={outcomeBuckets}
+          series7d={series7d}
+          walletBalance={walletBalance}
+          walletDaysLeft={walletDaysLeft}
+          repsMonth={repsMonth}
+          fmtDuration={fmtDuration}
+          fmtNum={fmtNum}
+          fmtDelta={fmtDelta}
+          onClose={() => setSelectedKpi(null)}
+        />
+      )}
 
       {/* ---------- Couverture leads + Résultats d'appels (donut) ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -2534,6 +2579,286 @@ function OverviewView({
       {/* ---------- Performance 7 jours ---------- */}
       <Performance7Days series={series7d} />
     </>
+  );
+}
+
+/** Compact detail panel shown below KPI cards when one is selected. */
+function OverviewKpiDetail({
+  kpiId,
+  stats,
+  leadStats,
+  transactionsToday,
+  conversionPct,
+  vsYesterdayPct,
+  qualityScore,
+  outcomeBuckets,
+  series7d,
+  walletBalance,
+  walletDaysLeft,
+  repsMonth,
+  fmtDuration,
+  fmtNum,
+  fmtDelta,
+  onClose,
+}: {
+  kpiId: OverviewKpiId;
+  stats: OverviewKpiStats;
+  leadStats: OverviewLeadStatsFull | null;
+  transactionsToday: number;
+  conversionPct: number;
+  vsYesterdayPct: number | null;
+  qualityScore: number | null;
+  outcomeBuckets: OutcomeBucket[];
+  series7d: Array<{ date: string; total: number; transactions: number }> | null;
+  walletBalance: number | null;
+  walletDaysLeft: number | null;
+  repsMonth: AnalyticsRep[] | null;
+  fmtDuration: (sec: number) => string;
+  fmtNum: (n: number) => string;
+  fmtDelta: (n: number | null) => string;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+
+  const bucketCount = (key: string) => outcomeBuckets.find((b) => b.key === key)?.count ?? 0;
+
+  const titles: Record<OverviewKpiId, string> = {
+    wallet: t('opsDashboard.overview.kpi.wallet', 'Wallet'),
+    leads: t('opsDashboard.overview.kpi.leadsBase', 'Leads base'),
+    callsToday: t('opsDashboard.overview.kpi.callsToday', 'Appels aujourd\'hui'),
+    seriousCalls: t('opsDashboard.overview.kpi.seriousCalls', 'Appels sérieux'),
+    transactions: t('opsDashboard.overview.kpi.transactions', 'Transactions'),
+    quality: t('opsDashboard.overview.kpi.quality', 'Score qualité'),
+  };
+
+  const walletFmt =
+    walletBalance === null
+      ? '—'
+      : `€${walletBalance.toLocaleString('fr-FR', {
+          minimumFractionDigits: walletBalance % 1 === 0 ? 0 : 2,
+          maximumFractionDigits: 2,
+        })}`;
+
+  const leadsBase = leadStats?.total ?? 0;
+  const called = leadStats?.called ?? 0;
+  const contacted = leadStats?.contacted ?? 0;
+  const exhausted = leadStats?.exhausted ?? 0;
+  const remaining = Math.max(0, leadsBase - called);
+  const pctOf = (n: number) => (leadsBase > 0 ? `${((n / leadsBase) * 100).toFixed(0)}%` : '—');
+
+  const lastDays = (series7d ?? []).slice(-4).reverse();
+
+  const rankedReps = [...(repsMonth ?? [])]
+    .filter((r) => r.total > 0)
+    .sort((a, b) => (b.validByAIPct || 0) - (a.validByAIPct || 0));
+
+  const renderRows = () => {
+    switch (kpiId) {
+      case 'wallet':
+        return (
+          <>
+            <DetailRow label={t('opsDashboard.overview.detail.walletBalance', 'Solde disponible')} value={walletFmt} />
+            <DetailRow
+              label={t('opsDashboard.overview.detail.walletRunway', 'Autonomie estimée')}
+              value={
+                walletDaysLeft !== null && Number.isFinite(walletDaysLeft)
+                  ? t('opsDashboard.overview.detail.walletRunwayDays', {
+                      days: walletDaysLeft.toFixed(1),
+                      defaultValue: '{{days}} jours',
+                    })
+                  : t('opsDashboard.overview.detail.walletRunwayUnknown', 'Pas assez d\'historique')
+              }
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.detail.walletHint', 'Consommation')}
+              value={t('opsDashboard.overview.detail.walletHintValue', 'Moyenne glissante 30 jours')}
+              muted
+            />
+          </>
+        );
+      case 'leads':
+        return (
+          <>
+            <DetailRow label={t('opsDashboard.overview.detail.leadsTotal', 'Total base')} value={fmtNum(leadsBase)} />
+            <DetailRow
+              label={t('opsDashboard.overview.detail.leadsCalled', 'Appelés ≥ 1 fois')}
+              value={`${fmtNum(called)} (${pctOf(called)})`}
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.detail.leadsContacted', 'Contactés')}
+              value={`${fmtNum(contacted)} (${pctOf(contacted)})`}
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.detail.leadsRemaining', 'Non encore appelés')}
+              value={`${fmtNum(remaining)} (${pctOf(remaining)})`}
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.detail.leadsExhausted', 'Épuisés (>5 tentatives)')}
+              value={fmtNum(exhausted)}
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.detail.leadsAvgAttempts', 'Tentatives moyennes')}
+              value={leadStats?.avgAttempts != null ? leadStats.avgAttempts.toFixed(1) : '—'}
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.detail.leadsReachable', 'Joignabilité')}
+              value={leadStats?.reachablePct != null ? `${leadStats.reachablePct.toFixed(0)}%` : '—'}
+            />
+          </>
+        );
+      case 'callsToday':
+        return (
+          <>
+            <DetailRow label={t('opsDashboard.overview.detail.callsTotal', 'Total du jour')} value={fmtNum(stats.total)} />
+            <DetailRow label={t('opsDashboard.overview.detail.callsVsYesterday', 'Évolution vs hier')} value={fmtDelta(vsYesterdayPct)} />
+            <DetailRow label={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')} value={`${fmtNum(stats.voicemail)} (${stats.pctVoicemail.toFixed(1)}%)`} />
+            <DetailRow label={t('opsDashboard.kpi.unreachable', 'Injoignables')} value={`${fmtNum(stats.unreachable)} (${stats.pctUnreachable.toFixed(1)}%)`} />
+            <DetailRow label={t('opsDashboard.kpi.fraud', 'Fraude détectée')} value={fmtNum(stats.fraud)} />
+            {lastDays.length > 0 && (
+              <div className="col-span-full mt-1 border-t border-slate-100 pt-3">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {t('opsDashboard.overview.detail.recentDays', 'Volume récent')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {lastDays.map((d) => (
+                    <span
+                      key={d.date}
+                      className="rounded-lg bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600 tabular-nums"
+                    >
+                      {d.date.slice(5).replace('-', '/')} · {fmtNum(d.total)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        );
+      case 'seriousCalls':
+        return (
+          <>
+            <DetailRow label={t('opsDashboard.overview.detail.seriousCount', 'Appels sérieux')} value={fmtNum(stats.serious)} />
+            <DetailRow label={t('opsDashboard.overview.detail.seriousRate', 'Taux sur total')} value={`${stats.pctSerious.toFixed(1)}%`} />
+            <DetailRow
+              label={t('opsDashboard.overview.donut.argued', 'Argumentés')}
+              value={fmtNum(bucketCount('argued'))}
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.donut.appointment', 'RDV')}
+              value={fmtNum(bucketCount('appointment'))}
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.donut.callback', 'Rappels')}
+              value={fmtNum(bucketCount('callback'))}
+            />
+            <DetailRow
+              label={t('opsDashboard.kpi.avgDuration', 'Durée moy.')}
+              value={fmtDuration(stats.avgDurationSec)}
+            />
+          </>
+        );
+      case 'transactions':
+        return (
+          <>
+            <DetailRow label={t('opsDashboard.overview.detail.txCount', 'Transactions du jour')} value={fmtNum(transactionsToday)} />
+            <DetailRow label={t('opsDashboard.overview.detail.txConversion', 'Taux de conversion')} value={`${conversionPct.toFixed(1)}%`} />
+            <DetailRow
+              label={t('opsDashboard.overview.detail.txOnCalls', 'Sur appels totaux')}
+              value={`${fmtNum(transactionsToday)} / ${fmtNum(stats.total)}`}
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.donut.appointment', 'RDV fixés')}
+              value={fmtNum(bucketCount('appointment'))}
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.donut.callback', 'Rappels demandés')}
+              value={fmtNum(bucketCount('callback'))}
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.donut.refusal', 'Refus')}
+              value={fmtNum(bucketCount('refusal'))}
+            />
+          </>
+        );
+      case 'quality':
+        return (
+          <>
+            <DetailRow
+              label={t('opsDashboard.overview.detail.qualityAvg', 'Score moyen équipe')}
+              value={qualityScore !== null ? `${qualityScore}/100` : '—'}
+            />
+            <DetailRow
+              label={t('opsDashboard.overview.detail.qualityReps', 'Reps actifs (MTD)')}
+              value={fmtNum(rankedReps.length)}
+            />
+            {rankedReps.length > 0 ? (
+              <div className="col-span-full mt-1 border-t border-slate-100 pt-3">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {t('opsDashboard.overview.detail.qualityByRep', 'Par rep (validation IA)')}
+                </p>
+                <ul className="space-y-1.5">
+                  {rankedReps.slice(0, 5).map((r) => (
+                    <li key={r.userId} className="flex items-center justify-between text-[12px]">
+                      <span className="truncate font-semibold text-slate-700">{r.name}</span>
+                      <span className="shrink-0 font-black tabular-nums text-slate-900">
+                        {Math.round(r.validByAIPct || 0)}/100
+                        <span className="ml-1.5 text-[10px] font-bold text-slate-400">
+                          ({fmtNum(r.total)} {t('opsDashboard.overview.detail.qualityCalls', 'appels')})
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <DetailRow
+                label={t('opsDashboard.overview.detail.qualityEmpty', 'Données')}
+                value={t('opsDashboard.overview.detail.qualityEmptyValue', 'Aucun rep avec appels ce mois')}
+                muted
+              />
+            )}
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-harx-200 bg-harx-50/40 p-4 shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
+      <header className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-black text-slate-900">{titles[kpiId]}</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
+          aria-label={t('common.close', 'Fermer')}
+        >
+          <XCircle size={16} />
+        </button>
+      </header>
+      <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+        {renderRows()}
+      </div>
+    </section>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+  muted,
+}: {
+  label: string;
+  value: string;
+  muted?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 py-1">
+      <span className="text-[11px] font-semibold text-slate-500">{label}</span>
+      <span className={`text-[12px] font-black tabular-nums ${muted ? 'text-slate-400' : 'text-slate-900'}`}>
+        {value}
+      </span>
+    </div>
   );
 }
 
@@ -3549,6 +3874,7 @@ function KpiCard({
   subTone,
   tone,
   onClick,
+  selected,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -3557,6 +3883,7 @@ function KpiCard({
   subTone?: 'rose';
   tone: 'default' | 'primary' | 'dark';
   onClick?: () => void;
+  selected?: boolean;
 }) {
   const baseTone =
     tone === 'primary'
@@ -3564,6 +3891,10 @@ function KpiCard({
       : tone === 'dark'
       ? 'border-slate-900 bg-slate-900 text-white'
       : 'border-slate-200 bg-white';
+
+  const selectedTone = selected
+    ? 'ring-2 ring-harx-500 border-harx-400 shadow-md'
+    : '';
 
   const labelColor =
     tone === 'dark' ? 'text-slate-300' : tone === 'primary' ? 'text-harx-700' : 'text-slate-500';
@@ -3607,7 +3938,8 @@ function KpiCard({
       <button
         type="button"
         onClick={onClick}
-        className={`relative flex w-full flex-col gap-2 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 ${baseTone} ${interactiveClass}`}
+        aria-pressed={selected}
+        className={`relative flex w-full flex-col gap-2 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 ${baseTone} ${selectedTone} ${interactiveClass}`}
       >
         {content}
       </button>
@@ -3616,7 +3948,7 @@ function KpiCard({
 
   return (
     <div
-      className={`relative flex flex-col gap-2 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 ${baseTone}`}
+      className={`relative flex flex-col gap-2 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 ${baseTone} ${selectedTone}`}
     >
       {content}
     </div>
