@@ -5,9 +5,33 @@ import { playNotificationSound } from '../utils/notificationSound';
 import type { EscrowMessage } from './escrowSocket';
 
 export const CALL_ANALYSIS_HELP_EVENT = 'harx:call-analysis-help';
+export const OPEN_CALL_DETAILS_EVENT = 'harx:open-call-details';
+
+export type OpenCallDetailsDetail = {
+  callId: string;
+  tab?: 'transcript' | 'insights';
+};
 
 export function dispatchCallAnalysisHelpEvent(data: EscrowMessage) {
   window.dispatchEvent(new CustomEvent(CALL_ANALYSIS_HELP_EVENT, { detail: data }));
+}
+
+export function dispatchOpenCallDetails(callId: string, tab: 'transcript' | 'insights' = 'insights') {
+  window.dispatchEvent(
+    new CustomEvent<OpenCallDetailsDetail>(OPEN_CALL_DETAILS_EVENT, {
+      detail: { callId: String(callId), tab },
+    })
+  );
+}
+
+export function requestOpenCallDetails(callId: string, tab: 'transcript' | 'insights' = 'insights') {
+  const targetHash = '#/dashboard/calls';
+  if (window.location.hash !== targetHash) {
+    sessionStorage.setItem('harx:pendingCallOpen', JSON.stringify({ callId: String(callId), tab }));
+    window.location.hash = targetHash;
+    return;
+  }
+  dispatchOpenCallDetails(callId, tab);
 }
 
 export function showCallAnalysisHelpToast(data: EscrowMessage) {
@@ -38,8 +62,8 @@ export function showCallAnalysisHelpToast(data: EscrowMessage) {
               className: 'mt-2 text-xs font-black uppercase tracking-widest text-harx-600',
               onClick: () => {
                 toast.dismiss(toastData.id);
-                window.location.hash = '#/dashboard/calls';
                 dispatchCallAnalysisHelpEvent(data);
+                requestOpenCallDetails(callId, 'insights');
               },
             },
             "Voir l'appel"
