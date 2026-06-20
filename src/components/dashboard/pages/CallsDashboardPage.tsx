@@ -9,7 +9,8 @@ import { callsApi } from '../services/api/calls';
 import { getCallsApiBase } from '../lib/callsApiBase';
 import { getCallAnalyzeErrorMessage } from '../lib/callAnalyzeErrors';
 import { refreshCompanyWalletAfterValidation } from '../../../lib/walletBalanceSync';
-import { connectEscrowSocket } from '../../../lib/escrowSocket';
+import { CALL_ANALYSIS_HELP_EVENT } from '../../../lib/callAnalysisHelpNotification';
+import type { EscrowMessage } from '../../../lib/escrowSocket';
 
 export default function CallsDashboardPage() {
   const { t, i18n } = useTranslation();
@@ -40,67 +41,33 @@ export default function CallsDashboardPage() {
   useEffect(() => {
     if (!companyId) return;
 
-    const dispose = connectEscrowSocket(() => {}, {
-      onEvent: (data) => {
-        if (data?.type !== 'call_analysis_help_requested') return;
+    const applyAnalysisHelpAlert = (data: EscrowMessage) => {
+      const callId = data.callId ? String(data.callId) : '';
+      if (!callId) return;
 
-        const callId = data.callId ? String(data.callId) : '';
-        if (!callId) return;
+      const alert = {
+        requestedAt: data.requestedAt || new Date().toISOString(),
+        repName: data.repName || 'Rep',
+        message: data.message || '',
+        requestCount: data.requestCount || 1,
+      };
 
-        const alert = {
-          requestedAt: data.requestedAt || new Date().toISOString(),
-          repName: data.repName || 'Rep',
-          message: data.message || '',
-          requestCount: data.requestCount || 1,
-        };
+      setCalls((prev) =>
+        prev.map((c) => (String(c._id) === callId ? { ...c, analysisCompanyAlert: alert } : c))
+      );
+      setSelectedCall((prev: any) =>
+        prev && String(prev._id) === callId ? { ...prev, analysisCompanyAlert: alert } : prev
+      );
+    };
 
-        setCalls((prev) =>
-          prev.map((c) => (String(c._id) === callId ? { ...c, analysisCompanyAlert: alert } : c))
-        );
-        setSelectedCall((prev: any) =>
-          prev && String(prev._id) === callId ? { ...prev, analysisCompanyAlert: alert } : prev
-        );
+    const onAnalysisHelp = (event: Event) => {
+      const data = (event as CustomEvent<EscrowMessage>).detail;
+      if (!data) return;
+      applyAnalysisHelpAlert(data);
+    };
 
-        toast(
-          (toastData) => (
-            <div className="flex items-start gap-3">
-              <BellRing className="w-5 h-5 text-amber-600 shrink-0" />
-              <div>
-                <p className="font-bold text-sm">Analyse bloquée — action requise</p>
-                <p className="text-xs mt-1 opacity-90">
-                  {data.repName || 'Un rep'} demande une relance pour l&apos;appel avec{' '}
-                  {data.leadName || 'un client'}.
-                </p>
-                <button
-                  type="button"
-                  className="mt-2 text-xs font-black uppercase tracking-widest text-harx-600"
-                  onClick={() => {
-                    toast.dismiss(toastData.id);
-                    void (async () => {
-                      const callsBase = getCallsApiBase();
-                      if (!callsBase) return;
-                      try {
-                        const res = await fetch(`${callsBase}/calls/${encodeURIComponent(callId)}`);
-                        if (!res.ok) return;
-                        const json = await res.json();
-                        if (json?.data) openCallDetails(json.data, 'insights');
-                      } catch {
-                        /* ignore */
-                      }
-                    })();
-                  }}
-                >
-                  Voir l&apos;appel
-                </button>
-              </div>
-            </div>
-          ),
-          { duration: 8000, icon: null }
-        );
-      },
-    });
-
-    return dispose;
+    window.addEventListener(CALL_ANALYSIS_HELP_EVENT, onAnalysisHelp);
+    return () => window.removeEventListener(CALL_ANALYSIS_HELP_EVENT, onAnalysisHelp);
   }, [companyId]);
 
   const fetchGigs = async () => {

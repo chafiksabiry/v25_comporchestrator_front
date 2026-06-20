@@ -1,6 +1,6 @@
 import Cookies from 'js-cookie';
 
-type EscrowMessage = {
+export type EscrowMessage = {
   type?: string;
   companyId?: string;
   callId?: string;
