@@ -49,6 +49,7 @@ import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideMod
 import WalletTopUpModal from './components/wallet/WalletTopUpModal';
 import { refreshAndBroadcastWalletBalance } from './lib/walletBalanceSync';
 import { connectEscrowSocket } from './lib/escrowSocket';
+import { resolveSessionUserId } from './lib/sessionUserId';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import { OnboardingNextStepButton } from './components/onboarding/OnboardingNextStepButton';
 import { goToCompanyOnboardingTab } from './hooks/useOnboardingGlobalBack';
@@ -324,7 +325,7 @@ function AppContent() {
   useEffect(() => {
     const handlePageShow = (event: PageTransitionEvent) => {
       if (!event.persisted) return;
-      const stillLoggedIn = Boolean(Cookies.get('userId'));
+      const stillLoggedIn = Boolean(resolveSessionUserId());
       const onPublicRoute = isZohoCallback || isZohoAuth;
       if (!stillLoggedIn && !onPublicRoute) {
         window.location.replace('/auth');
@@ -345,8 +346,8 @@ function AppContent() {
       setActiveProject('comporchestrator');
     }
 
-    // 3. Auth Check & Setup
-    const userId = Cookies.get('userId');
+    // 3. Auth Check & Setup — cookie may be missing while token/localStorage still hold the session.
+    const userId = resolveSessionUserId();
     if (!userId && !isZohoCallback && !isZohoAuth) {
       window.location.replace('/auth');
       return;
@@ -444,7 +445,7 @@ function AppContent() {
     };
 
     fetchData();
-  }, [location.pathname, isZohoCallback, isZohoAuth, onboardingComplete]);
+  }, [location.pathname, isZohoCallback, isZohoAuth]);
 
   useEffect(() => {
     const initializeZoho = async () => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
-import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck, BellRing } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import CallDetailModal, { type NormalizedCall, companyTransactionCanValidate } from '../components/CallDetailModal';
 import { isCallApprovedByAI, isCallRejectedByAI, resolveUnvalidatedTransactionStatus } from '../../../utils/callStatusDisplay';
@@ -9,6 +9,7 @@ import { callsApi } from '../services/api/calls';
 import { getCallsApiBase } from '../lib/callsApiBase';
 import { getCallAnalyzeErrorMessage } from '../lib/callAnalyzeErrors';
 import { refreshCompanyWalletAfterValidation } from '../../../lib/walletBalanceSync';
+import { connectEscrowSocket } from '../../../lib/escrowSocket';
 
 export default function CallsDashboardPage() {
   const { t, i18n } = useTranslation();
@@ -34,6 +35,72 @@ export default function CallsDashboardPage() {
     }
     fetchCalls();
     fetchGigs();
+  }, [companyId]);
+
+  useEffect(() => {
+    if (!companyId) return;
+
+    const dispose = connectEscrowSocket(() => {}, {
+      onEvent: (data) => {
+        if (data?.type !== 'call_analysis_help_requested') return;
+
+        const callId = data.callId ? String(data.callId) : '';
+        if (!callId) return;
+
+        const alert = {
+          requestedAt: data.requestedAt || new Date().toISOString(),
+          repName: data.repName || 'Rep',
+          message: data.message || '',
+          requestCount: data.requestCount || 1,
+        };
+
+        setCalls((prev) =>
+          prev.map((c) => (String(c._id) === callId ? { ...c, analysisCompanyAlert: alert } : c))
+        );
+        setSelectedCall((prev: any) =>
+          prev && String(prev._id) === callId ? { ...prev, analysisCompanyAlert: alert } : prev
+        );
+
+        toast(
+          (toastData) => (
+            <div className="flex items-start gap-3">
+              <BellRing className="w-5 h-5 text-amber-600 shrink-0" />
+              <div>
+                <p className="font-bold text-sm">Analyse bloquée — action requise</p>
+                <p className="text-xs mt-1 opacity-90">
+                  {data.repName || 'Un rep'} demande une relance pour l&apos;appel avec{' '}
+                  {data.leadName || 'un client'}.
+                </p>
+                <button
+                  type="button"
+                  className="mt-2 text-xs font-black uppercase tracking-widest text-harx-600"
+                  onClick={() => {
+                    toast.dismiss(toastData.id);
+                    void (async () => {
+                      const callsBase = getCallsApiBase();
+                      if (!callsBase) return;
+                      try {
+                        const res = await fetch(`${callsBase}/calls/${encodeURIComponent(callId)}`);
+                        if (!res.ok) return;
+                        const json = await res.json();
+                        if (json?.data) openCallDetails(json.data, 'insights');
+                      } catch {
+                        /* ignore */
+                      }
+                    })();
+                  }}
+                >
+                  Voir l&apos;appel
+                </button>
+              </div>
+            </div>
+          ),
+          { duration: 8000, icon: null }
+        );
+      },
+    });
+
+    return dispose;
   }, [companyId]);
 
   const fetchGigs = async () => {
@@ -448,6 +515,12 @@ export default function CallsDashboardPage() {
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm border ${call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 'bg-rose-50 text-rose-600 border-rose-100/50'}`}>
                               {call.status}
                             </span>
+                            {call.analysisCompanyAlert?.requestedAt && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
+                                <BellRing className="w-3 h-3" />
+                                Rep demande analyse
+                              </span>
+                            )}
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 text-slate-500 border border-slate-100 px-2 py-0.5 rounded-full">
                               Durée: {Math.floor((call.duration || 0) / 60)}m {(call.duration || 0) % 60}s
                             </span>

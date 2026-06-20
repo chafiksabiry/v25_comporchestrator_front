@@ -3,7 +3,18 @@ import Cookies from 'js-cookie';
 type EscrowMessage = {
   type?: string;
   companyId?: string;
+  callId?: string;
+  repName?: string;
+  leadName?: string;
+  message?: string;
+  requestedAt?: string;
+  requestCount?: number;
   [key: string]: unknown;
+};
+
+export type EscrowSocketOptions = {
+  /** Called for every parsed WS message (after companyId filter when set). */
+  onEvent?: (data: EscrowMessage) => void;
 };
 
 function getWsUrl(): string | null {
@@ -29,7 +40,10 @@ function getWsUrl(): string | null {
  * server broadcasts a wallet-affecting event for the current company. Returns
  * a disposer that closes the socket and stops reconnection.
  */
-export function connectEscrowSocket(onCompanyUpdate: () => void): () => void {
+export function connectEscrowSocket(
+  onCompanyUpdate: () => void,
+  options?: EscrowSocketOptions
+): () => void {
   const wsUrl = getWsUrl();
   if (!wsUrl) return () => {};
 
@@ -59,13 +73,16 @@ export function connectEscrowSocket(onCompanyUpdate: () => void): () => void {
       } catch {
         return;
       }
-      if (!data?.type || !RELEVANT_TYPES.has(data.type)) return;
+      if (!data?.type) return;
 
-      // Filter by company when the broadcast targets one.
       const myCompanyId = Cookies.get('companyId');
       if (data.companyId && myCompanyId && String(data.companyId) !== String(myCompanyId)) {
         return;
       }
+
+      options?.onEvent?.(data);
+
+      if (!RELEVANT_TYPES.has(data.type)) return;
       onCompanyUpdate();
     };
 

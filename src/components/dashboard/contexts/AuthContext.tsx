@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
+import { resolveSessionUserId } from '../../lib/sessionUserId';
 
 interface AuthContextType {
   currentUser: { id: string } | null;
@@ -30,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const userId = import.meta.env.VITE_ENV === 'test'
       ? '6807abfc2c1ca099fe2b13c5'
-      : Cookies.get('userId');
+      : resolveSessionUserId();
     
 
     if (userId) {
