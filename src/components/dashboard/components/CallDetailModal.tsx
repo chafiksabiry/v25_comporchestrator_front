@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
-import { isCallRejectedByAI, resolveUnvalidatedTransactionStatus } from '../../../utils/callStatusDisplay';
+import { isCallRejectedByAI, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;
@@ -96,6 +96,9 @@ export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCal
         <p>{analysisError}</p>
       </div>
     ) : null;
+
+  const displayTranscript = getDisplayTranscript(call.transcript, call.ai_call_score);
+  const selfCallNotice = getSelfCallTranscriptNotice(call.ai_call_score, i18n.language);
 
   return createPortal(
     <div
@@ -234,22 +237,37 @@ export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCal
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-slate-50/20 custom-scrollbar">
           {activeTab === 'transcript' ? (
             <div className="max-w-4xl mx-auto space-y-6">
-              {call.transcript && call.transcript.length > 0
-                ? call.transcript.map((entry, i) => (
-                  <div key={i} className={`flex gap-4 ${entry.speaker?.toLowerCase().includes('agent') || entry.speaker === 'rep' ? 'flex-row' : 'flex-row-reverse'}`}>
-                    <div className={`flex flex-col max-w-[75%] ${entry.speaker?.toLowerCase().includes('agent') || entry.speaker === 'rep' ? 'items-start' : 'items-end'}`}>
+              {selfCallNotice && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-sm font-medium"
+                >
+                  <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-amber-600" />
+                  <p>{selfCallNotice}</p>
+                </div>
+              )}
+              {displayTranscript.length > 0
+                ? displayTranscript.map((entry, i) => {
+                  const simulated = isSimulatedTranscriptTurn(entry);
+                  const isAgent = !simulated && (entry.speaker?.toLowerCase().includes('agent') || entry.speaker === 'rep');
+                  return (
+                  <div key={i} className={`flex gap-4 ${isAgent || simulated ? 'flex-row' : 'flex-row-reverse'}`}>
+                    <div className={`flex flex-col max-w-[75%] ${isAgent || simulated ? 'items-start' : 'items-end'}`}>
                       <div className="flex items-center gap-2 mb-1.5 px-2">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{entry.speaker}</span>
+                        <span className={`text-[9px] font-black uppercase tracking-widest ${simulated ? 'text-amber-600' : 'text-slate-400'}`}>{entry.speaker}</span>
                         {entry.timestamp && <span className="text-[9px] font-bold text-slate-300">{entry.timestamp}</span>}
                       </div>
-                      <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${entry.speaker?.toLowerCase().includes('agent') || entry.speaker === 'rep'
+                      <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${simulated
+                        ? 'bg-amber-50 text-amber-900 rounded-tl-none border border-amber-200 border-dashed shadow-sm'
+                        : isAgent
                         ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm'
                         : 'bg-gradient-harx text-white rounded-tr-none shadow-lg shadow-harx-500/20'}`}>
                         {entry.text}
                       </div>
                     </div>
                   </div>
-                ))
+                  );
+                })
                 : (
                   <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                     {renderAnalysisErrorBanner()}
