@@ -1147,6 +1147,7 @@ export default function OperationsDashboard() {
           walletBalance={walletBalance}
           walletDaysLeft={walletDaysLeft}
           onSeeLeads={() => setTab('leads')}
+          onNavigateTab={setTab}
         />
       )}
     </div>
@@ -2280,6 +2281,7 @@ function OverviewView({
   walletBalance,
   walletDaysLeft,
   onSeeLeads,
+  onNavigateTab,
 }: {
   stats: OverviewKpiStats;
   leadStats: OverviewLeadStats | null;
@@ -2293,6 +2295,7 @@ function OverviewView({
   walletBalance: number | null;
   walletDaysLeft: number | null;
   onSeeLeads: () => void;
+  onNavigateTab: (tab: TabId) => void;
 }) {
   const { t } = useTranslation();
 
@@ -2384,6 +2387,7 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.wallet', 'Wallet')}
           value={walletValue}
           sub={walletSub}
+          onClick={() => onNavigateTab('wallet')}
         />
 
         {/* 2) Leads base — real company count (no hardcoded fallback). */}
@@ -2393,6 +2397,7 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.leadsBase', 'Leads base')}
           value={fmtNum(leadsBase)}
           sub={`${coveragePct.toFixed(0)}% ${t('opsDashboard.overview.kpi.covered', 'couverts')}`}
+          onClick={() => onNavigateTab('leads')}
         />
 
         {/* 3) Appels aujourd'hui — with delta vs yesterday from series7d */}
@@ -2402,6 +2407,7 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.callsToday', 'Appels aujourd\'hui')}
           value={fmtNum(stats.total)}
           sub={fmtDelta(vsYesterdayPct)}
+          onClick={() => onNavigateTab('calls')}
         />
 
         {/* 4) Appels sérieux */}
@@ -2411,6 +2417,7 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.seriousCalls', 'Appels sérieux')}
           value={fmtNum(stats.serious)}
           sub={`${stats.pctSerious.toFixed(1)}% ${t('opsDashboard.overview.kpi.rate', 'taux')}`}
+          onClick={() => onNavigateTab('calls')}
         />
 
         {/* 5) Transactions today */}
@@ -2420,6 +2427,7 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.transactions', 'Transactions')}
           value={fmtNum(transactionsToday)}
           sub={`${conversionPct.toFixed(1)}% ${t('opsDashboard.overview.kpi.conversion', 'conversion')}`}
+          onClick={() => onNavigateTab('calls')}
         />
 
         {/* 6) Score qualité — avg validByAIPct across reps (month). */}
@@ -2429,6 +2437,7 @@ function OverviewView({
           label={t('opsDashboard.overview.kpi.quality', 'Score qualité')}
           value={qualityScore !== null ? `${qualityScore}/100` : '—'}
           sub={t('opsDashboard.overview.kpi.qualitySub', 'moyenne équipe')}
+          onClick={() => onNavigateTab('calls')}
         />
       </div>
 
@@ -3539,6 +3548,7 @@ function KpiCard({
   sub,
   subTone,
   tone,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -3546,6 +3556,7 @@ function KpiCard({
   sub: string;
   subTone?: 'rose';
   tone: 'default' | 'primary' | 'dark';
+  onClick?: () => void;
 }) {
   const baseTone =
     tone === 'primary'
@@ -3570,10 +3581,12 @@ function KpiCard({
       ? 'text-slate-400'
       : 'text-slate-400';
 
-  return (
-    <div
-      className={`relative flex flex-col gap-2 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 ${baseTone}`}
-    >
+  const interactiveClass = onClick
+    ? 'cursor-pointer text-left hover:shadow-md hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/40 active:translate-y-0'
+    : '';
+
+  const content = (
+    <>
       <div className="flex items-center gap-2">
         <span className={`flex h-6 w-6 items-center justify-center rounded-lg ${iconBg}`}>
           {icon}
@@ -3586,6 +3599,26 @@ function KpiCard({
         {value}
       </div>
       <div className={`text-[11px] font-bold ${subColor}`}>{sub}</div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`relative flex w-full flex-col gap-2 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 ${baseTone} ${interactiveClass}`}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className={`relative flex flex-col gap-2 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 ${baseTone}`}
+    >
+      {content}
     </div>
   );
 }
