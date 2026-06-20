@@ -3,10 +3,10 @@
  * its own "Payment confirmation page" redirect URL in the Stripe Dashboard.
  *
  * Onboarding redirect (configure on the ONBOARDING table):
- *   https://harx25pageslinks.netlify.app/company?subscription=success#/orchestrator
+ *   https://harx.ai/company?subscription=success#/orchestrator
  *
  * Dashboard redirect (configure on the DASHBOARD table):
- *   https://harx25pageslinks.netlify.app/company?subscription=success#/dashboard/subscription
+ *   https://harx.ai/company?subscription=success#/dashboard/subscription
  *
  * Until you duplicate the table in Stripe, both env vars can point to the same
  * prctbl_… ID — only the Dashboard redirect URL needs to differ once duplicated.
