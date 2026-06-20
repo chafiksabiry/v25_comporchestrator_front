@@ -38,7 +38,7 @@ type PaypalPopupOutcome = 'approved' | 'cancelled' | 'closed';
 
 const PAYPAL_RETURN_ORIGINS = new Set([
   'https://harxv25comporchestratorfront.netlify.app',
-  'https://harx25pageslinks.netlify.app'
+  'https://harx.ai'
 ]);
 
 /** Wait until PayPal redirects to our return/cancel page or the user closes the popup. */

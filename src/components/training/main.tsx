@@ -49,7 +49,7 @@ if (!token || !userId) {
   // Redirect to main app login page
   if (window.location.hostname === 'training.harx.ai') {
     // If accessed directly via training.harx.ai, redirect to main app
-    window.location.href = 'https://harx25pageslinks.netlify.app/auth/signin';
+    window.location.href = 'https://harx.ai/auth/signin';
   } else {
     // If accessed via v25.harx.ai (Qiankun), redirect to auth
     window.location.href = '/auth/signin';
