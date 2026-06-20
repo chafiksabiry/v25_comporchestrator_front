@@ -49,7 +49,12 @@ import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideMod
 import WalletTopUpModal from './components/wallet/WalletTopUpModal';
 import { refreshAndBroadcastWalletBalance } from './lib/walletBalanceSync';
 import { connectEscrowSocket } from './lib/escrowSocket';
-import { handleCallAnalysisHelpMessage } from './lib/callAnalysisHelpNotification';
+import {
+  dispatchOpenCallDetails,
+  handleCallAnalysisHelpMessage,
+  NAVIGATE_OPEN_CALL_EVENT,
+  type OpenCallDetailsDetail,
+} from './lib/callAnalysisHelpNotification';
 import { resolveSessionUserId } from './lib/sessionUserId';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import { OnboardingNextStepButton } from './components/onboarding/OnboardingNextStepButton';
@@ -511,6 +516,30 @@ function AppContent() {
       window.removeEventListener('openCompanyDashboard', openCompanyDashboard);
     };
   }, [location.pathname, isZohoCallback, isZohoAuth, navigate, markGuideComplete]);
+
+  useEffect(() => {
+    const onNavigateOpenCall = (event: Event) => {
+      const detail = (event as CustomEvent<OpenCallDetailsDetail>).detail;
+      if (!detail?.callId) return;
+
+      const isOnCallsPage = location.pathname === '/dashboard/calls';
+
+      if (isOnCallsPage) {
+        dispatchOpenCallDetails(detail.callId, detail.tab || 'insights');
+        return;
+      }
+
+      sessionStorage.setItem(
+        'harx:pendingCallOpen',
+        JSON.stringify({ callId: detail.callId, tab: detail.tab || 'insights' })
+      );
+      setActiveProject('dashboard');
+      navigate('/dashboard/calls');
+    };
+
+    window.addEventListener(NAVIGATE_OPEN_CALL_EVENT, onNavigateOpenCall);
+    return () => window.removeEventListener(NAVIGATE_OPEN_CALL_EVENT, onNavigateOpenCall);
+  }, [navigate, location.pathname]);
 
   // Stable listeners — never torn down on navigation changes.
   useEffect(() => {
