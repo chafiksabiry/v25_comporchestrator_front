@@ -49,6 +49,7 @@ import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideMod
 import WalletTopUpModal from './components/wallet/WalletTopUpModal';
 import { refreshAndBroadcastWalletBalance } from './lib/walletBalanceSync';
 import { connectEscrowSocket } from './lib/escrowSocket';
+import { handleCallAnalysisHelpMessage } from './lib/callAnalysisHelpNotification';
 import { resolveSessionUserId } from './lib/sessionUserId';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import { OnboardingNextStepButton } from './components/onboarding/OnboardingNextStepButton';
@@ -240,9 +241,16 @@ function AppContent() {
     // Live wallet updates: when a call/sale is validated server-side (after AI
     // analysis reconcile), the backend broadcasts over WebSocket so we refresh
     // the company balance without a manual reload.
-    const disposeEscrowSocket = connectEscrowSocket(() => {
-      void refreshAndBroadcastWalletBalance();
-    });
+    const disposeEscrowSocket = connectEscrowSocket(
+      () => {
+        void refreshAndBroadcastWalletBalance();
+      },
+      {
+        onEvent: (data) => {
+          handleCallAnalysisHelpMessage(data);
+        },
+      }
+    );
 
     return () => {
       clearTimeout(initTimer);
