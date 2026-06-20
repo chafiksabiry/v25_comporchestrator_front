@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck, BellRing } from 'lucide-react';
@@ -9,7 +9,7 @@ import { callsApi } from '../services/api/calls';
 import { getCallsApiBase } from '../lib/callsApiBase';
 import { getCallAnalyzeErrorMessage } from '../lib/callAnalyzeErrors';
 import { refreshCompanyWalletAfterValidation } from '../../../lib/walletBalanceSync';
-import { CALL_ANALYSIS_HELP_EVENT } from '../../../lib/callAnalysisHelpNotification';
+import { CALL_ANALYSIS_HELP_EVENT, OPEN_CALL_DETAILS_EVENT, type OpenCallDetailsDetail } from '../../../lib/callAnalysisHelpNotification';
 import type { EscrowMessage } from '../../../lib/escrowSocket';
 
 export default function CallsDashboardPage() {
@@ -28,6 +28,39 @@ export default function CallsDashboardPage() {
 
   const [analyzingCallId, setAnalyzingCallId] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<{ callId: string; message: string } | null>(null);
+
+  const normalizeCallId = (callOrId: { _id?: unknown } | string | undefined) => {
+    if (!callOrId) return '';
+    if (typeof callOrId === 'string') return callOrId;
+    const id = callOrId._id;
+    if (typeof id === 'object' && id && '$oid' in (id as object)) return String((id as { $oid: string }).$oid);
+    return String(id ?? '');
+  };
+
+  const openCallDetails = useCallback((call: any, tab: 'transcript' | 'insights') => {
+    setSelectedCall(call);
+    setActiveTab(tab);
+  }, []);
+
+  const openCallById = useCallback(async (callId: string, tab: 'transcript' | 'insights' = 'insights') => {
+    const normalizedId = String(callId);
+    const existing = calls.find((c) => normalizeCallId(c) === normalizedId);
+    if (existing) {
+      openCallDetails(existing, tab);
+      return;
+    }
+
+    const callsBase = getCallsApiBase();
+    if (!callsBase) return;
+    try {
+      const res = await fetch(`${callsBase}/calls/${encodeURIComponent(normalizedId)}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json?.data) openCallDetails(json.data, tab);
+    } catch {
+      /* ignore */
+    }
+  }, [calls, openCallDetails]);
 
   useEffect(() => {
     if (!companyId) {
@@ -53,10 +86,10 @@ export default function CallsDashboardPage() {
       };
 
       setCalls((prev) =>
-        prev.map((c) => (String(c._id) === callId ? { ...c, analysisCompanyAlert: alert } : c))
+        prev.map((c) => (normalizeCallId(c) === callId ? { ...c, analysisCompanyAlert: alert } : c))
       );
       setSelectedCall((prev: any) =>
-        prev && String(prev._id) === callId ? { ...prev, analysisCompanyAlert: alert } : prev
+        prev && normalizeCallId(prev) === callId ? { ...prev, analysisCompanyAlert: alert } : prev
       );
     };
 
@@ -69,6 +102,32 @@ export default function CallsDashboardPage() {
     window.addEventListener(CALL_ANALYSIS_HELP_EVENT, onAnalysisHelp);
     return () => window.removeEventListener(CALL_ANALYSIS_HELP_EVENT, onAnalysisHelp);
   }, [companyId]);
+
+  useEffect(() => {
+    if (!companyId) return;
+
+    const onOpenCallDetails = (event: Event) => {
+      const detail = (event as CustomEvent<OpenCallDetailsDetail>).detail;
+      if (!detail?.callId) return;
+      void openCallById(detail.callId, detail.tab || 'insights');
+    };
+
+    const pendingRaw = sessionStorage.getItem('harx:pendingCallOpen');
+    if (pendingRaw) {
+      sessionStorage.removeItem('harx:pendingCallOpen');
+      try {
+        const pending = JSON.parse(pendingRaw) as OpenCallDetailsDetail;
+        if (pending?.callId) {
+          void openCallById(pending.callId, pending.tab || 'insights');
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+
+    window.addEventListener(OPEN_CALL_DETAILS_EVENT, onOpenCallDetails);
+    return () => window.removeEventListener(OPEN_CALL_DETAILS_EVENT, onOpenCallDetails);
+  }, [companyId, openCallById]);
 
   const fetchGigs = async () => {
     try {
@@ -114,11 +173,6 @@ export default function CallsDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const openCallDetails = (call: any, tab: 'transcript' | 'insights') => {
-    setSelectedCall(call);
-    setActiveTab(tab);
   };
 
   const handleAnalyzeCall = async (callId: string) => {
@@ -448,7 +502,26 @@ export default function CallsDashboardPage() {
                 return (
                   <div
                     key={callId}
-                    className="p-6 bg-white rounded-3xl border border-slate-100/80 hover:border-indigo-100 shadow-sm hover:shadow-md transition-all duration-300 group"
+                    role={call.status?.toLowerCase() === 'completed' ? 'button' : undefined}
+                    tabIndex={call.status?.toLowerCase() === 'completed' ? 0 : undefined}
+                    onClick={
+                      call.status?.toLowerCase() === 'completed'
+                        ? () => openCallDetails(call, 'insights')
+                        : undefined
+                    }
+                    onKeyDown={
+                      call.status?.toLowerCase() === 'completed'
+                        ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              openCallDetails(call, 'insights');
+                            }
+                          }
+                        : undefined
+                    }
+                    className={`p-6 bg-white rounded-3xl border border-slate-100/80 hover:border-indigo-100 shadow-sm hover:shadow-md transition-all duration-300 group ${
+                      call.status?.toLowerCase() === 'completed' ? 'cursor-pointer' : ''
+                    }`}
                   >
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
@@ -483,10 +556,17 @@ export default function CallsDashboardPage() {
                               {call.status}
                             </span>
                             {call.analysisCompanyAlert?.requestedAt && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openCallDetails(call, 'insights');
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-50 text-amber-700 border border-amber-200 animate-pulse hover:bg-amber-100 transition-colors"
+                              >
                                 <BellRing className="w-3 h-3" />
                                 Rep demande analyse
-                              </span>
+                              </button>
                             )}
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 text-slate-500 border border-slate-100 px-2 py-0.5 rounded-full">
                               Durée: {Math.floor((call.duration || 0) / 60)}m {(call.duration || 0) % 60}s
@@ -576,7 +656,10 @@ export default function CallsDashboardPage() {
                                   <div className="flex items-center gap-1">
                                     <button
                                       type="button"
-                                      onClick={() => handleUpdateTransactionValidation(callId, call.transaction?.validByCompany ?? null, true)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUpdateTransactionValidation(callId, call.transaction?.validByCompany ?? null, true);
+                                      }}
                                       className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 transition-all text-[9px] font-black uppercase tracking-widest"
                                       title="Valider la transaction"
                                     >
@@ -585,7 +668,10 @@ export default function CallsDashboardPage() {
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => handleUpdateTransactionValidation(callId, call.transaction?.validByCompany ?? null, false)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUpdateTransactionValidation(callId, call.transaction?.validByCompany ?? null, false);
+                                      }}
                                       className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition-all text-[9px] font-black uppercase tracking-widest"
                                       title="Marquer comme non signé"
                                     >
@@ -611,7 +697,10 @@ export default function CallsDashboardPage() {
                         {call.status?.toLowerCase() === 'completed' && (
                           <div className="flex items-center gap-2 ml-2">
                             <button
-                              onClick={() => openCallDetails(call, 'insights')}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openCallDetails(call, 'insights');
+                              }}
                               className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100 transition-all"
                               title="View Details"
                             >
