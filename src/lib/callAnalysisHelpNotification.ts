@@ -6,6 +6,7 @@ import type { EscrowMessage } from './escrowSocket';
 
 export const CALL_ANALYSIS_HELP_EVENT = 'harx:call-analysis-help';
 export const OPEN_CALL_DETAILS_EVENT = 'harx:open-call-details';
+export const NAVIGATE_OPEN_CALL_EVENT = 'harx:navigate-open-call';
 
 export type OpenCallDetailsDetail = {
   callId: string;
@@ -25,13 +26,11 @@ export function dispatchOpenCallDetails(callId: string, tab: 'transcript' | 'ins
 }
 
 export function requestOpenCallDetails(callId: string, tab: 'transcript' | 'insights' = 'insights') {
-  const targetHash = '#/dashboard/calls';
-  if (window.location.hash !== targetHash) {
-    sessionStorage.setItem('harx:pendingCallOpen', JSON.stringify({ callId: String(callId), tab }));
-    window.location.hash = targetHash;
-    return;
-  }
-  dispatchOpenCallDetails(callId, tab);
+  window.dispatchEvent(
+    new CustomEvent<OpenCallDetailsDetail>(NAVIGATE_OPEN_CALL_EVENT, {
+      detail: { callId: String(callId), tab },
+    })
+  );
 }
 
 export function showCallAnalysisHelpToast(data: EscrowMessage) {

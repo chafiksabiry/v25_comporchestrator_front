@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck, BellRing } from 'lucide-react';
@@ -36,6 +36,8 @@ export default function CallsDashboardPage() {
     if (typeof id === 'object' && id && '$oid' in (id as object)) return String((id as { $oid: string }).$oid);
     return String(id ?? '');
   };
+
+  const pendingCallHandledRef = useRef(false);
 
   const openCallDetails = useCallback((call: any, tab: 'transcript' | 'insights') => {
     setSelectedCall(call);
@@ -112,21 +114,27 @@ export default function CallsDashboardPage() {
       void openCallById(detail.callId, detail.tab || 'insights');
     };
 
-    const pendingRaw = sessionStorage.getItem('harx:pendingCallOpen');
-    if (pendingRaw) {
-      sessionStorage.removeItem('harx:pendingCallOpen');
-      try {
-        const pending = JSON.parse(pendingRaw) as OpenCallDetailsDetail;
-        if (pending?.callId) {
-          void openCallById(pending.callId, pending.tab || 'insights');
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-
     window.addEventListener(OPEN_CALL_DETAILS_EVENT, onOpenCallDetails);
     return () => window.removeEventListener(OPEN_CALL_DETAILS_EVENT, onOpenCallDetails);
+  }, [companyId, openCallById]);
+
+  useEffect(() => {
+    if (!companyId || pendingCallHandledRef.current) return;
+
+    const pendingRaw = sessionStorage.getItem('harx:pendingCallOpen');
+    if (!pendingRaw) return;
+
+    pendingCallHandledRef.current = true;
+    sessionStorage.removeItem('harx:pendingCallOpen');
+
+    try {
+      const pending = JSON.parse(pendingRaw) as OpenCallDetailsDetail;
+      if (pending?.callId) {
+        void openCallById(pending.callId, pending.tab || 'insights');
+      }
+    } catch {
+      /* ignore */
+    }
   }, [companyId, openCallById]);
 
   const fetchGigs = async () => {
