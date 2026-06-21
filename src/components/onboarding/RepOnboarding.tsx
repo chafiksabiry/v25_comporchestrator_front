@@ -349,14 +349,13 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
         type="button"
         tabIndex={-1}
         aria-hidden
-        className="fixed inset-0 z-[9998] cursor-default bg-slate-900/15 backdrop-blur-[2px]"
+        className="fixed inset-0 z-[9998] cursor-default bg-slate-900/10 backdrop-blur-[1px] transition-opacity"
         onClick={() => setOpen(false)}
       />
       <div
         style={menuStyle}
-        className="overflow-hidden rounded-2xl border border-harx-100/80 bg-white shadow-2xl shadow-harx-500/10 ring-1 ring-black/5"
+        className="z-[9999] overflow-hidden rounded-xl border border-slate-200/90 bg-white/95 shadow-[0_16px_48px_-12px_rgba(15,23,42,0.18)] ring-1 ring-black/5 backdrop-blur-md animate-fade-in"
       >
-        <div className="h-1 bg-gradient-harx" aria-hidden />
         <ul
           role="listbox"
           aria-labelledby={id}
@@ -381,12 +380,12 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
                     onChange(option.value);
                     setOpen(false);
                   }}
-                  className={`group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left transition-all ${
+                  className={`group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-all duration-150 ${
                     isSelected
-                      ? 'bg-gradient-harx text-white shadow-md shadow-harx-500/25'
+                      ? 'bg-harx-500 text-white shadow-sm shadow-harx-500/20'
                       : isHighlighted
-                        ? 'bg-harx-50 text-harx-800 ring-1 ring-harx-100'
-                        : 'text-gray-700 hover:bg-harx-50/80 hover:text-harx-800'
+                        ? 'bg-harx-50 text-harx-800'
+                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
                   {OptionIcon ? (
@@ -447,10 +446,10 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
           });
         }}
         onKeyDown={handleTriggerKeyDown}
-        className={`flex w-full items-center gap-2.5 rounded-xl border-2 bg-white px-4 py-3 text-left shadow-sm outline-none transition-all ${
+        className={`flex w-full items-center gap-2.5 rounded-xl border bg-white px-3 py-2.5 text-left shadow-sm outline-none transition-all duration-200 ${
           open
-            ? 'border-harx-400 ring-2 ring-harx-500/20 shadow-md shadow-harx-500/10'
-            : 'border-gray-100 hover:border-harx-200 hover:shadow-md'
+            ? 'border-harx-400 ring-2 ring-harx-500/15 shadow-md'
+            : 'border-slate-200 hover:border-harx-300 hover:shadow-md'
         }`}
       >
         {SelectedIcon ? (
@@ -472,6 +471,15 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
     </div>
   );
 };
+
+const FORMATION_BTN_PRIMARY =
+  'inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-harx-500/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-harx-500/30 active:translate-y-0 disabled:pointer-events-none disabled:opacity-50';
+
+const FORMATION_BTN_SECONDARY =
+  'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-harx-200 hover:bg-harx-50/50 hover:text-harx-700 active:scale-[0.98] disabled:opacity-50';
+
+const FORMATION_PANEL =
+  'overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-4px_rgba(15,23,42,0.07)]';
 
 const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const { t } = useTranslation();
@@ -1524,8 +1532,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   }
 
   return (
-    <div className="space-y-8 px-4 py-2 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
+    <div className="relative min-h-full">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[radial-gradient(ellipse_90%_70%_at_50%_-30%,rgba(255,77,77,0.07),transparent_65%)]"
+        aria-hidden
+      />
+      <div className="relative mx-auto max-w-7xl animate-fade-in px-1 pb-10 sm:px-2">
         {selectedImageSet ? (
           <div className="relative overflow-hidden rounded-[1.75rem] border border-harx-600/35 bg-gradient-to-br from-harx-950 via-neutral-950 to-harx-alt-950 shadow-[0_32px_120px_-24px_rgba(236,72,153,0.25)] ring-1 ring-harx-500/20">
             {/* Fond ambiance HARX */}
@@ -1702,34 +1714,35 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           </div>
         ) : (
           <>
-        <header className="mb-8 rounded-[2rem] border border-gray-100 bg-white px-6 py-6 shadow-xl shadow-gray-200/30 sm:px-8 sm:py-7">
-          <div className="h-1 w-full -mx-6 -mt-6 mb-6 rounded-t-[2rem] bg-gradient-harx sm:-mx-8 sm:-mt-7 sm:mb-7" aria-hidden />
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-4">
-              <div className="rounded-2xl bg-gradient-harx p-3.5 text-white shadow-lg shadow-harx-500/30">
-                <BookOpen className="h-7 w-7" />
+        <header className={`mb-5 ${FORMATION_PANEL} p-5 sm:p-6`}>
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-harx text-white shadow-md shadow-harx-500/25 transition-transform duration-300 hover:scale-105">
+                <BookOpen className="h-5 w-5" />
               </div>
-              <div>
-                <h1 className="text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">{t('repOnboarding.trainingSection.title')}</h1>
-                <p className="mt-1 text-sm font-medium text-gray-500 sm:text-base">{t('repOnboarding.trainingSection.subtitle')}</p>
+              <div className="min-w-0">
+                <h1 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">{t('repOnboarding.trainingSection.title')}</h1>
+                <p className="mt-1 text-sm text-slate-500">{t('repOnboarding.trainingSection.subtitle')}</p>
               </div>
             </div>
-            <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row sm:items-stretch">
-              <div className="flex flex-col gap-2 rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-3 sm:flex-row sm:items-center">
-                <span className="shrink-0 text-xs font-black uppercase tracking-wider text-gray-500">{t('repOnboarding.header.gigFilter')}</span>
+            <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:min-w-[220px]">
+                <label htmlFor="gig-filter-dropdown" className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  {t('repOnboarding.header.gigFilter')}
+                </label>
                 <HarxSelect
                   id="gig-filter-dropdown"
                   value={filterGigId}
                   onChange={setFilterGigId}
                   options={gigFilterOptions}
-                  minWidthClass="min-w-[260px]"
+                  minWidthClass="min-w-full sm:min-w-[240px]"
                   separateFirstOption
                 />
               </div>
               <button
                 type="button"
                 onClick={handleCreateNewTrainingJourney}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-harx px-5 py-3 text-sm font-black text-white shadow-lg shadow-harx-500/20 transition-all hover:-translate-y-0.5 hover:shadow-harx-500/40 sm:w-auto sm:self-stretch"
+                className={`${FORMATION_BTN_PRIMARY} w-full sm:w-auto sm:shrink-0`}
               >
                 <Plus className="h-4 w-4" />
                 <span>{t('repOnboarding.header.newJourneyBtn')}</span>
@@ -1738,30 +1751,36 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           </div>
         </header>
 
-        <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
-            { value: participants.length, label: t('repOnboarding.trackingStats.participants'), tab: 'participants' as FormationPageTab, accent: 'text-indigo-700', bg: 'bg-indigo-50', border: 'border-indigo-100' },
-            { value: `${trackingStats.avgProgress}%`, label: t('repOnboarding.trackingStats.avgProgress'), tab: 'tracking' as FormationPageTab, accent: 'text-sky-700', bg: 'bg-sky-50', border: 'border-sky-100' },
-            { value: `${trackingStats.completionRate}%`, label: t('repOnboarding.trackingStats.completionRate'), tab: 'tracking' as FormationPageTab, accent: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-            { value: trainings.length, label: t('repOnboarding.trackingStats.trainings'), tab: 'courses' as FormationPageTab, accent: 'text-harx-700', bg: 'bg-harx-50', border: 'border-harx-100' },
-          ].map((stat) => (
+            { value: participants.length, label: t('repOnboarding.trackingStats.participants'), tab: 'participants' as FormationPageTab, icon: Users, tone: 'from-indigo-500/10 to-indigo-50 border-indigo-100 text-indigo-700' },
+            { value: `${trackingStats.avgProgress}%`, label: t('repOnboarding.trackingStats.avgProgress'), tab: 'tracking' as FormationPageTab, icon: TrendingUp, tone: 'from-sky-500/10 to-sky-50 border-sky-100 text-sky-700' },
+            { value: `${trackingStats.completionRate}%`, label: t('repOnboarding.trackingStats.completionRate'), tab: 'tracking' as FormationPageTab, icon: Award, tone: 'from-emerald-500/10 to-emerald-50 border-emerald-100 text-emerald-700' },
+            { value: trainings.length, label: t('repOnboarding.trackingStats.trainings'), tab: 'courses' as FormationPageTab, icon: BookOpen, tone: 'from-harx-500/10 to-harx-50 border-harx-100 text-harx-700' },
+          ].map((stat, index) => (
             <button
               key={stat.label}
               type="button"
               onClick={() => setPageTab(stat.tab)}
-              className={`rounded-2xl border bg-white px-5 py-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${stat.border} ${
-                pageTab === stat.tab ? 'ring-2 ring-harx-400 ring-offset-2' : ''
+              style={{ animationDelay: `${index * 70}ms` }}
+              className={`group relative overflow-hidden rounded-xl border bg-gradient-to-br p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-fade-in ${stat.tone} ${
+                pageTab === stat.tab
+                  ? 'ring-2 ring-harx-400/50 shadow-md'
+                  : 'opacity-95 hover:opacity-100'
               }`}
             >
-              <div className={`mb-3 inline-flex rounded-xl px-2.5 py-1 text-xs font-black uppercase tracking-wide ${stat.bg} ${stat.accent}`}>
-                {stat.label}
+              <div className="mb-3 flex items-center justify-between">
+                <span className={`flex h-9 w-9 items-center justify-center rounded-lg bg-white/70 shadow-sm ${stat.tone.split(' ').pop()}`}>
+                  <stat.icon className="h-4 w-4" />
+                </span>
               </div>
-              <div className={`text-3xl font-black leading-none ${stat.accent}`}>{stat.value}</div>
+              <div className="text-2xl font-black leading-none tabular-nums text-slate-900">{stat.value}</div>
+              <div className="mt-1.5 text-[11px] font-semibold text-slate-600">{stat.label}</div>
             </button>
           ))}
         </div>
 
-        <nav className="mb-8 grid grid-cols-1 gap-2 rounded-2xl border border-gray-100 bg-white p-2 shadow-sm sm:grid-cols-3">
+        <nav className="mb-5 flex flex-wrap gap-1 rounded-xl border border-slate-200/80 bg-slate-100/70 p-1">
           {([
             { id: 'courses' as FormationPageTab, label: t('repOnboarding.pageTabs.courses'), icon: BookOpen },
             { id: 'participants' as FormationPageTab, label: t('repOnboarding.pageTabs.participants'), icon: Users, badge: participants.length },
@@ -1771,17 +1790,17 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               key={tab.id}
               type="button"
               onClick={() => setPageTab(tab.id)}
-              className={`inline-flex items-center justify-center gap-2.5 rounded-xl px-5 py-3.5 text-sm font-bold transition-all ${
+              className={`inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
                 pageTab === tab.id
-                  ? 'bg-gradient-harx text-white shadow-md shadow-harx-500/25'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80'
+                  : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
               }`}
             >
-              <tab.icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{tab.label}</span>
+              <tab.icon className={`h-4 w-4 transition-colors ${pageTab === tab.id ? 'text-harx-500' : ''}`} />
+              <span>{tab.label}</span>
               {'badge' in tab && tab.badge ? (
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
-                  pageTab === tab.id ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-700'
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums ${
+                  pageTab === tab.id ? 'bg-harx-100 text-harx-700' : 'bg-slate-200/80 text-slate-600'
                 }`}>
                   {tab.badge}
                 </span>
@@ -1790,19 +1809,17 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           ))}
         </nav>
 
-        <div className="space-y-8">
-          <div className="space-y-6">
+        <div className="space-y-5">
+          <div>
             {pageTab === 'courses' && (
-            <section className="relative overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-xl shadow-gray-200/30">
-              <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-harx-50/40 blur-[100px] -mr-32 -mt-32" />
-              <div className="h-1 w-full bg-gradient-harx" aria-hidden />
-              <div className="relative z-10 p-6 sm:p-8">
+            <section className={`${FORMATION_PANEL} p-5 sm:p-6 animate-fade-in`}>
+              <div className="relative z-10">
                 {selectedJourneyForContent ? (
-                  <div className="mt-4 overflow-hidden rounded-2xl border border-harx-100 bg-white shadow-sm">
-                    <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50/30">
+                    <div className="flex items-center justify-between border-b border-slate-200/80 bg-white px-4 py-3 sm:px-5">
                       <div className="min-w-0">
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-harx-600">{t('repOnboarding.viewer.title')}</p>
-                        <h3 className="truncate text-sm font-semibold text-slate-700">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-harx-500">{t('repOnboarding.viewer.title')}</p>
+                        <h3 className="truncate text-sm font-semibold text-slate-800">
                           {String(selectedJourneyForContent?.title || selectedJourneyForContent?.name || 'Formation')}
                         </h3>
                       </div>
@@ -1812,7 +1829,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                           setSelectedJourneyForContent(null);
                           setRepViewerHtml(null);
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        className={FORMATION_BTN_SECONDARY}
                       >
                         <ChevronLeft className="h-3.5 w-3.5" />
                         {t('repOnboarding.viewer.backList')}
@@ -1827,36 +1844,35 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         className="h-[70vh] w-full border-0 bg-white"
                       />
                     ) : (
-                      <div className="p-4 text-sm text-slate-600">{t('repOnboarding.viewer.unavailable')}</div>
+                      <div className="p-6 text-sm text-slate-600">{t('repOnboarding.viewer.unavailable')}</div>
                     )}
                   </div>
                 ) : loadingTrainings ? (
-                  <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-harx-100 py-12">
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-16">
                     <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
-                    <p className="mt-4 text-sm font-medium text-gray-600">{t('repOnboarding.trainingSection.loading')}</p>
+                    <p className="mt-4 text-sm font-medium text-slate-600">{t('repOnboarding.trainingSection.loading')}</p>
                   </div>
                 ) : trainings.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-harx-200 py-12 p-8 text-center">
-                    <div className="mb-4 rounded-2xl border border-harx-100 bg-white p-3">
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-harx-200/80 bg-gradient-to-b from-harx-50/30 to-white py-16 px-6 text-center">
+                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-harx-100">
                       <Plus className="h-6 w-6 text-harx-500" />
                     </div>
-                    <h3 className="text-base font-bold text-gray-900">{t('repOnboarding.trainingSection.emptyTitle')}</h3>
-                    <p className="mx-auto mt-2 max-w-xs text-sm text-gray-600">
+                    <h3 className="text-base font-bold text-slate-900">{t('repOnboarding.trainingSection.emptyTitle')}</h3>
+                    <p className="mx-auto mt-2 max-w-sm text-sm text-slate-500">
                       {t('repOnboarding.trainingSection.emptyDesc')}
                     </p>
                     <button
                       type="button"
                       onClick={handleCreateNewTrainingJourney}
-                      className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"
+                      className={`${FORMATION_BTN_PRIMARY} mt-6`}
                     >
                       <Plus className="h-4 w-4" />
                       <span>{t('repOnboarding.trainingSection.createFirstBtn')}</span>
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 xl:grid-cols-3">
-                      {trainings.filter(Boolean).map((journey) => {
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      {trainings.filter(Boolean).map((journey, cardIndex) => {
                         const journeyId = extractMongoId(journey._id || journey.id);
                         const gigId = resolveJourneyGigId(journey);
                         const stats =
@@ -1872,108 +1888,116 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         return (
                           <div
                           key={formatted.id}
-                          className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-harx-300 hover:shadow-lg"
+                          style={{ animationDelay: `${cardIndex * 80}ms` }}
+                          className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 animate-fade-in hover:-translate-y-1 hover:border-harx-300/50 hover:shadow-[0_16px_40px_-12px_rgba(255,77,77,0.18)]"
                           >
-                          <div className="h-1 w-full shrink-0 bg-gradient-harx" aria-hidden />
-                          <div className="relative z-10 flex flex-1 flex-col p-5">
+                          <div className="absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b from-harx-500 to-harx-alt-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden />
+                          <div className="relative z-10 flex flex-1 flex-col p-4">
                             <div className="flex items-start gap-3">
-                              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-sm ${formatted.status === 'completed' ? 'bg-green-100 text-green-600' :
-                                formatted.status === 'in_progress' ? 'bg-gradient-harx text-white shadow-harx-500/25' : 'bg-harx-50 text-harx-500'
+                              {trainingPreviewImage ? (
+                                <img
+                                  src={trainingPreviewImage}
+                                  alt=""
+                                  className="h-16 w-16 shrink-0 rounded-xl border border-slate-100 object-cover shadow-sm transition-transform duration-300 group-hover:scale-[1.02]"
+                                />
+                              ) : (
+                                <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-xl shadow-sm ${
+                                  formatted.status === 'completed'
+                                    ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100'
+                                    : formatted.status === 'in_progress'
+                                    ? 'bg-gradient-harx text-white shadow-harx-500/20'
+                                    : 'bg-harx-50 text-harx-500 ring-1 ring-harx-100'
                                 }`}>
-                                {formatted.status === 'completed' ? <CheckCircle className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                              </div>
+                                  {formatted.status === 'completed' ? <CheckCircle className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                                </div>
+                              )}
                               <div className="min-w-0 flex-1">
-                                <h3 className="line-clamp-2 text-base font-black leading-snug text-gray-900 transition-colors group-hover:text-harx-700">
+                                <h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 transition-colors group-hover:text-harx-700">
                                   {displayTitle}
                                 </h3>
-                                <p className="mt-1 line-clamp-2 text-xs text-gray-500">
-                                  {formatted.description}
-                                </p>
-                                <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-semibold text-gray-600">
-                                  <span className="inline-flex items-center gap-1.5">
+                                {formatted.description ? (
+                                  <p className="mt-1 line-clamp-1 text-xs text-slate-500">
+                                    {formatted.description}
+                                  </p>
+                                ) : null}
+                                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-medium text-slate-500">
+                                  <span className="inline-flex items-center gap-1">
                                     <Clock className="h-3.5 w-3.5 text-harx-500" />
                                     {formatted.duration}
                                   </span>
-                                  <span className="inline-flex items-center gap-1.5">
+                                  <span className="inline-flex items-center gap-1">
                                     <FileText className="h-3.5 w-3.5 text-harx-alt-500" />
                                     {formatted.modulesCount} {t('repOnboarding.trainingSection.modules')}
                                   </span>
                                 </div>
                               </div>
-                              {trainingPreviewImage ? (
-                                <img
-                                  src={trainingPreviewImage}
-                                  alt=""
-                                  className="h-16 w-16 shrink-0 rounded-xl border border-gray-100 object-cover"
-                                />
-                              ) : null}
                             </div>
 
-                            <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50/80 px-4 py-3">
-                              <div className="flex items-center gap-3">
-                                <span className="shrink-0 text-xs font-semibold text-gray-500">
+                            <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2.5">
+                              <div className="mb-1.5 flex items-center justify-between gap-2">
+                                <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                                   {t('repOnboarding.trainingSection.avgProgress')}
                                 </span>
-                                <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-200">
-                                  <div
-                                    className="h-full rounded-full bg-gradient-harx transition-all"
-                                    style={{ width: `${formatted.progress}%` }}
-                                  />
-                                </div>
-                                <span className="shrink-0 text-xs font-black tabular-nums text-gray-800">
+                                <span className="text-xs font-bold tabular-nums text-slate-800">
                                   {formatted.progress}%
                                 </span>
                               </div>
-                              <div className="mt-2.5 flex flex-wrap gap-1.5 text-xs font-bold leading-none">
-                                <span className="rounded-lg bg-indigo-50 px-2 py-1 text-indigo-700">
+                              <div className="h-2 overflow-hidden rounded-full bg-slate-200/80">
+                                <div
+                                  className="h-full rounded-full bg-gradient-harx transition-[width] duration-500 ease-out"
+                                  style={{ width: `${formatted.progress}%` }}
+                                />
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold">
+                                <span className="rounded-md bg-white px-2 py-0.5 text-indigo-700 ring-1 ring-indigo-100">
                                   {formatted.participantCount} {t('repOnboarding.trainingSection.participantsShort')}
                                 </span>
                                 {formatted.completedCount > 0 ? (
-                                  <span className="rounded-lg bg-emerald-50 px-2 py-1 text-emerald-700">
+                                  <span className="rounded-md bg-white px-2 py-0.5 text-emerald-700 ring-1 ring-emerald-100">
                                     {formatted.completedCount} {t('repOnboarding.trainingSection.completedShort')}
                                   </span>
                                 ) : null}
                                 {formatted.inProgressCount > 0 ? (
-                                  <span className="rounded-lg bg-sky-50 px-2 py-1 text-sky-700">
+                                  <span className="rounded-md bg-white px-2 py-0.5 text-sky-700 ring-1 ring-sky-100">
                                     {formatted.inProgressCount} {t('repOnboarding.trainingSection.inProgressShort')}
                                   </span>
                                 ) : null}
                                 {formatted.participantCount === 0 ? (
-                                  <span className="rounded-lg bg-gray-100 px-2 py-1 text-gray-600">
+                                  <span className="rounded-md bg-white px-2 py-0.5 text-slate-600 ring-1 ring-slate-200">
                                     {t('repOnboarding.trainingSection.noParticipantsYet')}
                                   </span>
                                 ) : null}
                               </div>
                             </div>
 
-                            <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
-                              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() => openJourneyStartViewer(journey)}
                                   disabled={deletingJourneyId === formatted.id}
-                                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:shadow-md"
+                                  className="inline-flex items-center gap-1 rounded-lg bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50"
                                 >
-                                  <Play className="h-4 w-4" />
+                                  <Play className="h-3.5 w-3.5" />
                                   <span>{t('repOnboarding.trainingSection.previewBtn')}</span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => openJourneyStartViewer(journey)}
                                   disabled={deletingJourneyId === formatted.id}
-                                  className="inline-flex items-center gap-1.5 rounded-xl border border-harx-200 bg-white px-3.5 py-2 text-xs font-bold text-harx-700 hover:bg-harx-50 disabled:opacity-50"
+                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all duration-200 hover:border-harx-200 hover:bg-harx-50/50 hover:text-harx-700 disabled:opacity-50"
                                 >
-                                  <FileText className="h-4 w-4" />
+                                  <FileText className="h-3.5 w-3.5" />
                                   <span className="hidden sm:inline">{t('repOnboarding.trainingSection.contentBtn')}</span>
                                 </button>
                               </div>
 
-                              <div className="flex shrink-0 items-center gap-1.5">
+                              <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-slate-200/80 bg-slate-50/80 p-0.5">
                                 <button
                                   type="button"
                                   onClick={() => handleOpenTrainingChat(journey)}
                                   disabled={deletingJourneyId === formatted.id}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-white text-sky-700 hover:bg-sky-50 disabled:opacity-50"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-sky-600 transition-colors hover:bg-white hover:text-sky-700 disabled:opacity-50"
                                   title="Open training chat"
                                 >
                                   <MessageSquare className="h-4 w-4" />
@@ -1982,7 +2006,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   type="button"
                                   onClick={() => openTrainingSettings(journey)}
                                   disabled={deletingJourneyId === formatted.id}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-harx-200 bg-white text-harx-700 hover:bg-harx-50 disabled:opacity-50"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-white hover:text-harx-700 disabled:opacity-50"
                                   title="Training settings"
                                 >
                                   <Settings className="h-4 w-4" />
@@ -1991,7 +2015,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   type="button"
                                   onClick={() => handleDeleteJourney(journey)}
                                   disabled={deletingJourneyId === formatted.id}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-rose-500 transition-colors hover:bg-white hover:text-rose-600 disabled:opacity-50"
                                   title="Delete training"
                                 >
                                   {deletingJourneyId === formatted.id ? (
@@ -2007,25 +2031,22 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         );
                       })}
                     </div>
-                  </div>
                 )}
               </div>
             </section>
             )}
 
             {pageTab === 'participants' && (
-            <section className="relative overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-xl shadow-gray-200/30">
-              <div className="h-1 w-full bg-gradient-harx" aria-hidden />
-              <div className="relative z-10 p-6 sm:p-8">
-                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <section className={`${FORMATION_PANEL} p-5 sm:p-6 animate-fade-in`}>
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-xl font-black text-gray-900">{t('repOnboarding.participants.title')}</h2>
-                    <p className="text-sm text-gray-500">{t('repOnboarding.participants.subtitle')}</p>
+                    <h2 className="text-lg font-black text-slate-900 sm:text-xl">{t('repOnboarding.participants.title')}</h2>
+                    <p className="mt-0.5 text-sm text-slate-500">{t('repOnboarding.participants.subtitle')}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => void fetchParticipants()}
-                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50"
+                    className={FORMATION_BTN_SECONDARY}
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${loadingParticipants ? 'animate-spin' : ''}`} />
                     {t('repOnboarding.participants.refresh')}
@@ -2033,57 +2054,57 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 </div>
 
                 {loadingParticipants ? (
-                  <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-harx-100 py-12">
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-16">
                     <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
-                    <p className="mt-4 text-sm font-medium text-gray-600">{t('repOnboarding.participants.loading')}</p>
+                    <p className="mt-4 text-sm font-medium text-slate-600">{t('repOnboarding.participants.loading')}</p>
                   </div>
                 ) : participants.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-gray-200 py-12 text-center">
-                    <Users className="mx-auto h-10 w-10 text-gray-300" />
-                    <p className="mt-3 text-base font-bold text-gray-900">{t('repOnboarding.participants.emptyTitle')}</p>
-                    <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">{t('repOnboarding.participants.emptyDesc')}</p>
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/30 py-16 text-center">
+                    <Users className="mx-auto h-10 w-10 text-slate-300" />
+                    <p className="mt-3 text-base font-bold text-slate-900">{t('repOnboarding.participants.emptyTitle')}</p>
+                    <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{t('repOnboarding.participants.emptyDesc')}</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-2xl border border-gray-100">
-                    <table className="min-w-full divide-y divide-gray-100">
-                      <thead className="bg-gray-50/80">
+                  <div className="overflow-x-auto rounded-xl border border-slate-200/80">
+                    <table className="min-w-full divide-y divide-slate-100">
+                      <thead className="bg-slate-50/90">
                         <tr>
-                          <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wide text-gray-500">{t('repOnboarding.participants.name')}</th>
-                          <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wide text-gray-500">{t('repOnboarding.participants.gig')}</th>
-                          <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wide text-gray-500">{t('repOnboarding.participants.training')}</th>
-                          <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wide text-gray-500">{t('repOnboarding.participants.progress')}</th>
-                          <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wide text-gray-500">{t('repOnboarding.participants.status')}</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">{t('repOnboarding.participants.name')}</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">{t('repOnboarding.participants.gig')}</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">{t('repOnboarding.participants.training')}</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">{t('repOnboarding.participants.progress')}</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">{t('repOnboarding.participants.status')}</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100 bg-white">
+                      <tbody className="divide-y divide-slate-100 bg-white">
                         {participants.map((participant) => (
-                          <tr key={participant.id} className="hover:bg-harx-50/30">
-                            <td className="px-6 py-4">
-                              <div className="font-semibold text-gray-900">{participant.name}</div>
+                          <tr key={participant.id} className="transition-colors hover:bg-harx-50/40">
+                            <td className="px-4 py-3.5">
+                              <div className="font-semibold text-slate-900">{participant.name}</div>
                               {participant.email ? (
-                                <div className="mt-0.5 text-sm text-gray-500">{participant.email}</div>
+                                <div className="text-xs text-slate-500">{participant.email}</div>
                               ) : null}
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{participant.gigTitle}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{participant.journeyTitle || '—'}</td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="h-2.5 w-28 overflow-hidden rounded-full bg-gray-100">
+                            <td className="px-4 py-3.5 text-sm text-slate-700">{participant.gigTitle}</td>
+                            <td className="px-4 py-3.5 text-sm text-slate-700">{participant.journeyTitle || '—'}</td>
+                            <td className="px-4 py-3.5">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
                                   <div
-                                    className="h-full rounded-full bg-gradient-harx transition-all"
+                                    className="h-full rounded-full bg-gradient-harx transition-[width] duration-500"
                                     style={{ width: `${participant.progress}%` }}
                                   />
                                 </div>
-                                <span className="text-sm font-bold text-gray-700">{participant.progress}%</span>
+                                <span className="text-xs font-bold tabular-nums text-slate-700">{participant.progress}%</span>
                               </div>
                             </td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold ${
+                            <td className="px-4 py-3.5">
+                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
                                 participant.status === 'completed'
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : participant.status === 'in_progress'
                                   ? 'bg-sky-100 text-sky-800'
-                                  : 'bg-gray-100 text-gray-700'
+                                  : 'bg-slate-100 text-slate-700'
                               }`}>
                                 {participant.status === 'completed'
                                   ? t('repOnboarding.participants.statusCompleted')
@@ -2098,94 +2119,94 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     </table>
                   </div>
                 )}
-              </div>
             </section>
             )}
 
             {pageTab === 'tracking' && (
-            <section className="relative overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-xl shadow-gray-200/30">
-              <div className="h-1 w-full bg-gradient-harx" aria-hidden />
-              <div className="relative z-10 space-y-8 p-6 sm:p-8">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <section className={`${FORMATION_PANEL} p-5 sm:p-6 animate-fade-in`}>
+              <div className="space-y-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <h2 className="text-xl font-black text-gray-900">{t('repOnboarding.trackingStats.title')}</h2>
-                    <p className="text-sm text-gray-500">{t('repOnboarding.trackingStats.subtitle')}</p>
+                    <h2 className="text-lg font-black text-slate-900 sm:text-xl">{t('repOnboarding.trackingStats.title')}</h2>
+                    <p className="mt-0.5 text-sm text-slate-500">{t('repOnboarding.trackingStats.subtitle')}</p>
                   </div>
                   <HarxSelect
                     value={statsJourneyId}
                     onChange={setStatsJourneyId}
                     options={journeyFilterOptions}
-                    minWidthClass="min-w-[260px]"
+                    minWidthClass="min-w-full sm:min-w-[260px]"
                     separateFirstOption
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   {[
-                    { label: t('repOnboarding.trackingStats.participants'), value: trackingStats.total, icon: Users, color: 'text-indigo-600 bg-indigo-50' },
-                    { label: t('repOnboarding.trackingStats.inProgress'), value: trackingStats.inProgress, icon: TrendingUp, color: 'text-sky-700 bg-sky-50' },
-                    { label: t('repOnboarding.trackingStats.completionRate'), value: `${trackingStats.completionRate}%`, icon: Award, color: 'text-emerald-700 bg-emerald-50' },
-                    { label: t('repOnboarding.trackingStats.avgProgress'), value: `${trackingStats.avgProgress}%`, icon: Target, color: 'text-harx-600 bg-harx-50' },
-                  ].map((item) => (
-                    <div key={item.label} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                      <div className="mb-4 flex items-center justify-between">
-                        <div className={`rounded-xl p-2.5 ${item.color}`}>
-                          <item.icon className="h-5 w-5" />
-                        </div>
+                    { label: t('repOnboarding.trackingStats.participants'), value: trackingStats.total, icon: Users, color: 'text-indigo-600 bg-indigo-50 ring-indigo-100' },
+                    { label: t('repOnboarding.trackingStats.inProgress'), value: trackingStats.inProgress, icon: TrendingUp, color: 'text-sky-700 bg-sky-50 ring-sky-100' },
+                    { label: t('repOnboarding.trackingStats.completionRate'), value: `${trackingStats.completionRate}%`, icon: Award, color: 'text-emerald-700 bg-emerald-50 ring-emerald-100' },
+                    { label: t('repOnboarding.trackingStats.avgProgress'), value: `${trackingStats.avgProgress}%`, icon: Target, color: 'text-harx-600 bg-harx-50 ring-harx-100' },
+                  ].map((item, index) => (
+                    <div
+                      key={item.label}
+                      style={{ animationDelay: `${index * 70}ms` }}
+                      className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 animate-fade-in hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                      <div className={`mb-3 inline-flex rounded-lg p-2 ring-1 ${item.color}`}>
+                        <item.icon className="h-5 w-5" />
                       </div>
-                      <p className="text-xs font-black uppercase tracking-wide text-gray-500">{item.label}</p>
-                      <p className="mt-2 text-3xl font-black text-gray-900">{item.value}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{item.label}</p>
+                      <p className="mt-1 text-2xl font-black tabular-nums text-slate-900">{item.value}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                  <div className="rounded-2xl border border-gray-100 p-6">
-                    <h3 className="mb-5 text-sm font-black uppercase tracking-wide text-gray-700">{t('repOnboarding.trackingStats.progressOverview')}</h3>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <div className="rounded-xl border border-slate-200/80 bg-slate-50/30 p-5">
+                    <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-600">{t('repOnboarding.trackingStats.progressOverview')}</h3>
                     <div className="space-y-4">
                       <div>
-                        <div className="mb-2 flex justify-between text-sm font-semibold text-gray-600">
+                        <div className="mb-1.5 flex justify-between text-xs font-semibold text-slate-600">
                           <span>{t('repOnboarding.trackingStats.avgProgress')}</span>
-                          <span>{trackingStats.avgProgress}%</span>
+                          <span className="tabular-nums">{trackingStats.avgProgress}%</span>
                         </div>
-                        <div className="h-2.5 overflow-hidden rounded-full bg-gray-100">
-                          <div className="h-full rounded-full bg-gradient-harx" style={{ width: `${trackingStats.avgProgress}%` }} />
+                        <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/80">
+                          <div className="h-full rounded-full bg-gradient-harx transition-[width] duration-700 ease-out" style={{ width: `${trackingStats.avgProgress}%` }} />
                         </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-3 text-center">
-                        <div className="rounded-xl bg-emerald-50 px-3 py-4">
-                          <div className="text-xl font-black text-emerald-700">{trackingStats.completed}</div>
-                          <div className="mt-1 text-[11px] font-semibold uppercase text-emerald-800">{t('repOnboarding.trackingStats.completed')}</div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-xl border border-emerald-100 bg-emerald-50/80 px-2 py-3">
+                          <div className="text-lg font-black tabular-nums text-emerald-700">{trackingStats.completed}</div>
+                          <div className="text-[10px] font-semibold uppercase text-emerald-800">{t('repOnboarding.trackingStats.completed')}</div>
                         </div>
-                        <div className="rounded-xl bg-sky-50 px-3 py-4">
-                          <div className="text-xl font-black text-sky-700">{trackingStats.inProgress}</div>
-                          <div className="mt-1 text-[11px] font-semibold uppercase text-sky-800">{t('repOnboarding.trackingStats.inProgress')}</div>
+                        <div className="rounded-xl border border-sky-100 bg-sky-50/80 px-2 py-3">
+                          <div className="text-lg font-black tabular-nums text-sky-700">{trackingStats.inProgress}</div>
+                          <div className="text-[10px] font-semibold uppercase text-sky-800">{t('repOnboarding.trackingStats.inProgress')}</div>
                         </div>
-                        <div className="rounded-xl bg-gray-50 px-3 py-4">
-                          <div className="text-xl font-black text-gray-700">{trackingStats.notStarted}</div>
-                          <div className="mt-1 text-[11px] font-semibold uppercase text-gray-600">{t('repOnboarding.trackingStats.notStarted')}</div>
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-2 py-3">
+                          <div className="text-lg font-black tabular-nums text-slate-700">{trackingStats.notStarted}</div>
+                          <div className="text-[10px] font-semibold uppercase text-slate-600">{t('repOnboarding.trackingStats.notStarted')}</div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-gray-100 p-6">
-                    <h3 className="mb-5 text-sm font-black uppercase tracking-wide text-gray-700">{t('repOnboarding.trackingStats.byTraining')}</h3>
+                  <div className="rounded-xl border border-slate-200/80 bg-slate-50/30 p-5">
+                    <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-600">{t('repOnboarding.trackingStats.byTraining')}</h3>
                     {trackingStats.moduleStats.length === 0 ? (
-                      <p className="text-sm text-gray-500">{t('repOnboarding.trackingStats.noTrainingData')}</p>
+                      <p className="text-sm text-slate-500">{t('repOnboarding.trackingStats.noTrainingData')}</p>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-2.5">
                         {trackingStats.moduleStats.map((item) => (
-                          <div key={item.id} className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="truncate text-sm font-bold text-gray-900">{item.title}</p>
-                              <span className="text-sm font-bold text-harx-700">{item.progress}%</span>
+                          <div key={item.id} className="rounded-xl border border-slate-200/80 bg-white p-3 transition-colors hover:border-harx-200/60">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="truncate text-sm font-semibold text-slate-900">{item.title}</p>
+                              <span className="text-xs font-bold tabular-nums text-harx-600">{item.progress}%</span>
                             </div>
-                            <p className="mt-1.5 text-xs text-gray-500">
+                            <p className="mt-0.5 text-xs text-slate-500">
                               {item.modulesCount} {t('repOnboarding.trainingSection.modules')}
                             </p>
-                            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
-                              <div className="h-full rounded-full bg-gradient-harx" style={{ width: `${item.progress}%` }} />
+                            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                              <div className="h-full rounded-full bg-gradient-harx transition-[width] duration-500" style={{ width: `${item.progress}%` }} />
                             </div>
                           </div>
                         ))}
@@ -2278,10 +2299,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         )}
       </div>
       {isSettingsOpen && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-harx-100 bg-white p-5 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-black text-gray-900">{t('repOnboarding.settings.title')}</h3>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-fade-in">
+          <div className={`w-full max-w-xl ${FORMATION_PANEL} p-5 sm:p-6`}>
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-black text-slate-900">{t('repOnboarding.settings.title')}</h3>
               <button
                 type="button"
                 onClick={() => {
@@ -2289,36 +2310,36 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   setIsSettingsOpen(false);
                   setSettingsJourney(null);
                 }}
-                className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-50"
+                className={FORMATION_BTN_SECONDARY}
               >
                 {t('repOnboarding.settings.closeBtn')}
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">{t('repOnboarding.settings.titleLabel')}</label>
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500">{t('repOnboarding.settings.titleLabel')}</label>
                 <input
                   value={settingsForm.title}
                   onChange={(e) => setSettingsForm((prev) => ({ ...prev, title: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-harx-400 focus:ring-2 focus:ring-harx-500/15"
                   placeholder={t('repOnboarding.settings.titlePlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">{t('repOnboarding.settings.descLabel')}</label>
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500">{t('repOnboarding.settings.descLabel')}</label>
                 <textarea
                   value={settingsForm.description}
                   onChange={(e) => setSettingsForm((prev) => ({ ...prev, description: e.target.value }))}
                   rows={3}
-                  className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-harx-400 focus:ring-2 focus:ring-harx-500/15"
                   placeholder={t('repOnboarding.settings.descPlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">{t('repOnboarding.settings.logoLabel')}</label>
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500">{t('repOnboarding.settings.logoLabel')}</label>
                 <input
                   ref={logoInputRef}
                   type="file"
@@ -2364,7 +2385,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               </div>
             </div>
 
-            <div className="mt-5 flex items-center justify-end gap-2">
+            <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
               <button
                 type="button"
                 onClick={() => {
@@ -2372,7 +2393,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   setIsSettingsOpen(false);
                   setSettingsJourney(null);
                 }}
-                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                className={FORMATION_BTN_SECONDARY}
               >
                 {t('repOnboarding.settings.cancelBtn')}
               </button>
@@ -2380,7 +2401,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 type="button"
                 onClick={() => void handleSaveTrainingSettings()}
                 disabled={isSavingSettings}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-harx px-4 py-2 text-sm font-bold text-white shadow-sm disabled:opacity-60"
+                className={FORMATION_BTN_PRIMARY}
               >
                 {isSavingSettings ? <RefreshCw className="h-4 w-4 animate-spin" /> : null}
                 {t('repOnboarding.settings.saveBtn')}
