@@ -103,6 +103,44 @@ export interface GigProgress {
   }>;
 }
 
+export interface CompanyParticipantProgressRow {
+  repId: string;
+  gigId: string;
+  name: string;
+  email: string;
+  journeyId: string;
+  journeyTitle: string;
+  progress: number;
+  status: 'not_started' | 'in_progress' | 'completed';
+}
+
+export interface CompanyJourneyProgressStats {
+  journeyId: string;
+  title: string;
+  gigId: string;
+  modulesCount: number;
+  durationMinutes: number;
+  participantCount: number;
+  avgProgress: number;
+  completionRate: number;
+  completedCount: number;
+  inProgressCount: number;
+  notStartedCount: number;
+}
+
+export interface CompanyParticipantsProgressPayload {
+  participants: CompanyParticipantProgressRow[];
+  journeys: CompanyJourneyProgressStats[];
+  summary: {
+    total: number;
+    completed: number;
+    inProgress: number;
+    notStarted: number;
+    avgProgress: number;
+    completionRate: number;
+  };
+}
+
 export class ProgressService {
   private static readonly BASE_URL = '/training_journeys';
 
@@ -163,6 +201,32 @@ export class ProgressService {
       return null;
     } catch (error) {
       console.error('Error fetching rep progress by gig:', error);
+      return null;
+    }
+  }
+
+  static async getCompanyParticipantsProgress(
+    companyId: string,
+    input: {
+      gigId?: string;
+      entries: Array<{ repId: string; gigId: string }>;
+    }
+  ): Promise<CompanyParticipantsProgressPayload | null> {
+    try {
+      const response = await ApiClient.post(
+        `${this.BASE_URL}/trainer/companyId/${companyId}/participants-progress`,
+        {
+          gigId: input.gigId,
+          entries: input.entries
+        }
+      );
+
+      if (response.data.success && response.data.data) {
+        return response.data.data as CompanyParticipantsProgressPayload;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching company participants progress:', error);
       return null;
     }
   }
