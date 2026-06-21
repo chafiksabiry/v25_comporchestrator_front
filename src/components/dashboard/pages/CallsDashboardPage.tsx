@@ -14,6 +14,7 @@ import {
   isCallApprovedByAI,
   isCallFraudDetected,
   isCallRejectedByAI,
+  isCallVoicemail,
   resolveUnvalidatedTransactionStatus,
 } from '../../../utils/callStatusDisplay';
 import { callsApi } from '../services/api/calls';
@@ -379,7 +380,9 @@ export default function CallsDashboardPage() {
       callIdStr(call).toLowerCase().includes(q);
     const matchesStatus =
       statusFilter === 'all' ||
-      String(call.status || '').toLowerCase() === statusFilter.toLowerCase();
+      (statusFilter === 'voicemail' && isCallVoicemail(call)) ||
+      (statusFilter !== 'voicemail' &&
+        String(call.status || '').toLowerCase() === statusFilter.toLowerCase());
     const matchesGig = gigFilter === 'all' || callGigId(call) === gigFilter;
     return matchesSearch && matchesStatus && matchesGig;
   });
@@ -484,6 +487,7 @@ export default function CallsDashboardPage() {
               <option value="completed">{t('calls.status.completed', 'Terminé')}</option>
               <option value="missed">{t('calls.status.missed', 'Manqué')}</option>
               <option value="failed">{t('calls.status.failed', 'Échoué')}</option>
+              <option value="voicemail">{t('calls.status.voicemail', 'Messagerie')}</option>
             </select>
           </div>
         </div>
@@ -672,6 +676,12 @@ export default function CallsDashboardPage() {
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm border ${call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 'bg-rose-50 text-rose-600 border-rose-100/50'}`}>
                               {call.status}
                             </span>
+                            {isCallVoicemail(call) && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-slate-50 text-slate-600 border border-slate-200">
+                                <Phone className="w-3 h-3" />
+                                {i18n.language.startsWith('en') ? 'Voicemail' : 'Messagerie'}
+                              </span>
+                            )}
                             {isCallFraudDetected(call) && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-50 text-rose-700 border border-rose-200">
                                 <ShieldAlert className="w-3 h-3" />
