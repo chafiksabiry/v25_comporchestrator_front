@@ -139,6 +139,22 @@ export function isCallFraudDetected(call: CallLike & { flags?: { fraud?: boolean
   return typeof fraudScore === 'number' && fraudScore < 50;
 }
 
+/** Messagerie or fraud — no per-rubric evaluation; only the executive summary is shown. */
+export function isNonEvaluableCall(call: CallLike): boolean {
+  return isCallVoicemail(call) || isCallFraudDetected(call);
+}
+
+/** Display score: forced to 0 for voicemail/fraud even on legacy analyses. */
+export function getDisplayOverallScore(call: CallLike): number | null {
+  const raw = call.ai_call_score?.overall?.score;
+  if (typeof raw !== 'number') return null;
+  return isNonEvaluableCall(call) ? 0 : raw;
+}
+
+export function hasAiCallAnalysis(call: CallLike): boolean {
+  return typeof call.ai_call_score?.overall?.score === 'number';
+}
+
 /** Single-voice self-call: transcript Customer labels were inferred, not real. */
 export function isSingleVoiceSelfCall(aiCallScore?: AiCallScoreWithVoice): boolean {
   const fraudScore = aiCallScore?.['Fraud detection']?.score;
