@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
-import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, getDisplayOverallScore, hasAiCallAnalysis } from '../../../utils/callStatusDisplay';
+import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getExecutiveSummaryScore, getExecutiveSummaryText, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, getDisplayOverallScore, hasAiCallAnalysis } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;
@@ -345,12 +345,48 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                     </button>
                   )}
                 </div>
-              ) : isNonEvaluableCall(call) ? (
-                <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
-                  {renderAnalysisErrorBanner()}
-                  {renderRelaunchButton()}
-                </div>
               ) : (
+                <>
+                  {/* Executive Summary — always shown when analysis exists */}
+                  <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-[28px] sm:rounded-[40px] blur opacity-10 group-hover:opacity-20 transition duration-1000" />
+                    <div className="relative bg-white rounded-[28px] sm:rounded-[40px] border border-emerald-100/50 shadow-2xl shadow-emerald-500/5 p-6 sm:p-10 overflow-hidden">
+                      <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full -mr-40 -mt-40 blur-3xl" />
+                      <div className="relative z-10">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6">
+                          <div className="flex items-center gap-4 sm:gap-6">
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 shrink-0">
+                              <Star className="w-6 h-6 sm:w-8 sm:h-8" />
+                            </div>
+                            <div>
+                              <h4 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-widest">{t('calls.executiveSummary', 'Executive Summary')}</h4>
+                              <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">{t('calls.globalAudit', 'Audit Global de Performance')}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 bg-slate-50/80 px-4 py-3 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm self-start sm:self-auto">
+                            <div className="text-right">
+                              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Score Global</p>
+                              <div className="text-2xl sm:text-4xl font-black text-slate-900 leading-none">
+                                {getExecutiveSummaryScore(call)}<span className="text-base sm:text-xl text-slate-400">%</span>
+                              </div>
+                            </div>
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+                              <TrendingUp className={`w-5 h-5 sm:w-6 sm:h-6 ${getExecutiveSummaryScore(call) >= 70 ? 'text-emerald-500' : 'text-rose-500'}`} />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-inner">
+                          <p className="text-base sm:text-xl font-bold text-slate-800 leading-relaxed italic relative">
+                            <span className="absolute -left-2 -top-4 sm:-left-4 sm:-top-4 text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50">&quot;</span>
+                            {getExecutiveSummaryText(call, i18n.language) || (i18n.language === 'en' ? 'The agent demonstrated standard performance.' : "L'agent a fait preuve de performances standards.")}
+                            <span className="text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50 ml-1 leading-none align-bottom">&quot;</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {!isNonEvaluableCall(call) && (
                 <>
                   {/* Primary metric cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -445,47 +481,8 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                       })}
                     </div>
                   </div>
-
-                  {/* Executive Summary */}
-                  <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-[28px] sm:rounded-[40px] blur opacity-10 group-hover:opacity-20 transition duration-1000" />
-                    <div className="relative bg-white rounded-[28px] sm:rounded-[40px] border border-emerald-100/50 shadow-2xl shadow-emerald-500/5 p-6 sm:p-10 overflow-hidden">
-                      <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full -mr-40 -mt-40 blur-3xl" />
-                      <div className="relative z-10">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6">
-                          <div className="flex items-center gap-4 sm:gap-6">
-                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 shrink-0">
-                              <Star className="w-6 h-6 sm:w-8 sm:h-8" />
-                            </div>
-                            <div>
-                              <h4 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-widest">{t('calls.executiveSummary', 'Executive Summary')}</h4>
-                              <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">{t('calls.globalAudit', 'Audit Global de Performance')}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4 bg-slate-50/80 px-4 py-3 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm self-start sm:self-auto">
-                            <div className="text-right">
-                              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Score Global</p>
-                              <div className="text-2xl sm:text-4xl font-black text-slate-900 leading-none">
-                                {getDisplayOverallScore(call) ?? 0}<span className="text-base sm:text-xl text-slate-400">%</span>
-                              </div>
-                            </div>
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                              <TrendingUp className={`w-5 h-5 sm:w-6 sm:h-6 ${(getDisplayOverallScore(call) ?? 0) >= 70 ? 'text-emerald-500' : 'text-rose-500'}`} />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-inner">
-                          <p className="text-base sm:text-xl font-bold text-slate-800 leading-relaxed italic relative">
-                            <span className="absolute -left-2 -top-4 sm:-left-4 sm:-top-4 text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50">&quot;</span>
-                            {i18n.language === 'en'
-                              ? (call.ai_summary_en || call.ai_call_score?.overall?.feedback_en || call.ai_call_score?.overall?.feedback || 'The agent demonstrated standard performance.')
-                              : (call.ai_summary_fr || call.ai_call_score?.overall?.feedback_fr || call.ai_call_score?.overall?.feedback || "L'agent a fait preuve de performances standards.")}
-                            <span className="text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50 ml-1 leading-none align-bottom">&quot;</span>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                </>
+                  )}
                 </>
               )}
             </div>
