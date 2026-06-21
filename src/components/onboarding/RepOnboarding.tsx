@@ -1596,7 +1596,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   </div>
                 ) : (
                   <div className="space-y-5">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
                       {trainings.filter(Boolean).map((journey) => {
                         const journeyId = extractMongoId(journey._id || journey.id);
                         const gigId = resolveJourneyGigId(journey);
@@ -1606,127 +1606,115 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         const formatted = formatTrainingJourney(journey, stats);
                         const imageSet = findImageSetForJourney(journey);
                         const displayTitle = resolveCardTrainingTitle(journey, formatted, imageSet);
-                        const trainingBgImage =
+                        const trainingPreviewImage =
                           String(formatted?.trainingLogo?.type || '').toLowerCase() === 'image'
                             ? String(formatted?.trainingLogo?.value || '').trim()
                             : '';
-                        const trainingPreviewImage = trainingBgImage;
                         return (
                           <div
                           key={formatted.id}
-                          className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-harx-300 hover:shadow-md"
+                          className="group relative flex max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-harx-300 hover:shadow-md"
                           >
-                          {trainingBgImage ? (
-                            <>
-                              <div
-                                className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-[0.18]"
-                                style={{ backgroundImage: `url("${trainingBgImage}")` }}
-                              />
-                              <div className="pointer-events-none absolute inset-0 bg-white/82" />
-                            </>
-                          ) : null}
-                          <div className="h-1 w-full bg-gradient-harx" aria-hidden />
-                          <div className="relative z-10 p-4">
-                            <div className="mb-4 flex items-start justify-between gap-3">
-                              <div className="flex items-start space-x-3">
-                                <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${formatted.status === 'completed' ? 'bg-green-100 text-green-600' :
-                                  formatted.status === 'in_progress' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/25' : 'bg-harx-50 text-harx-500'
-                                  }`}>
-                                  {formatted.status === 'completed' ? <CheckCircle className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                                </div>
-                                <div className="min-w-0">
-                                  <h3 className="line-clamp-2 text-lg font-black leading-tight text-gray-900 transition-colors group-hover:text-harx-700">
-                                    {displayTitle}
-                                  </h3>
-                                  <p className="mt-1 line-clamp-2 text-xs font-medium text-gray-500">
-                                    {formatted.description}
-                                  </p>
+                          <div className="h-1 w-full shrink-0 bg-gradient-harx" aria-hidden />
+                          <div className="relative z-10 flex flex-1 flex-col p-3">
+                            <div className="flex items-start gap-2.5">
+                              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-sm ${formatted.status === 'completed' ? 'bg-green-100 text-green-600' :
+                                formatted.status === 'in_progress' ? 'bg-gradient-harx text-white shadow-harx-500/25' : 'bg-harx-50 text-harx-500'
+                                }`}>
+                                {formatted.status === 'completed' ? <CheckCircle className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="line-clamp-1 text-sm font-black leading-snug text-gray-900 transition-colors group-hover:text-harx-700">
+                                  {displayTitle}
+                                </h3>
+                                <p className="mt-0.5 line-clamp-1 text-[11px] text-gray-500">
+                                  {formatted.description}
+                                </p>
+                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-semibold text-gray-600">
+                                  <span className="inline-flex items-center gap-1">
+                                    <Clock className="h-3 w-3 text-harx-500" />
+                                    {formatted.duration}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1">
+                                    <FileText className="h-3 w-3 text-harx-alt-500" />
+                                    {formatted.modulesCount} {t('repOnboarding.trainingSection.modules')}
+                                  </span>
                                 </div>
                               </div>
-                            </div>
-                            {trainingPreviewImage ? (
-                              <div className="mb-3 overflow-hidden rounded-xl border border-gray-100 bg-white/90 shadow-sm">
+                              {trainingPreviewImage ? (
                                 <img
                                   src={trainingPreviewImage}
-                                  alt={`${displayTitle} preview`}
-                                  className="h-28 w-full object-cover"
+                                  alt=""
+                                  className="h-14 w-14 shrink-0 rounded-lg border border-gray-100 object-cover"
                                 />
-                              </div>
-                            ) : null}
-                            <div className="mb-3 grid grid-cols-2 gap-2">
-                              <div className="rounded-xl border border-gray-100 bg-white/90 px-3 py-2 text-xs font-semibold text-gray-600 shadow-sm backdrop-blur">
-                                <Clock className="mr-1.5 inline h-3.5 w-3.5 text-harx-500" />
-                                {formatted.duration}
-                              </div>
-                              <div className="rounded-xl border border-gray-100 bg-white/90 px-3 py-2 text-xs font-semibold text-gray-600 shadow-sm backdrop-blur">
-                                <FileText className="mr-1.5 inline h-3.5 w-3.5 text-harx-alt-500" />
-                                {formatted.modulesCount} {t('repOnboarding.trainingSection.modules')}
-                              </div>
-                              <div className="col-span-2 truncate rounded-xl border border-harx-100 bg-harx-50/50 px-3 py-2 text-xs font-semibold text-harx-700">
-                                {t('repOnboarding.trainingSection.contentDesc')}
-                              </div>
+                              ) : null}
                             </div>
-                            <div className="mb-3 rounded-xl border border-gray-100 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur">
-                              <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-gray-500">
-                                <span>{t('repOnboarding.trainingSection.avgProgress')}</span>
-                                <span className="tabular-nums text-gray-800">{formatted.progress}%</span>
+
+                            <div className="mt-2.5 rounded-lg border border-gray-100 bg-gray-50/80 px-2.5 py-2">
+                              <div className="flex items-center gap-2">
+                                <span className="shrink-0 text-[10px] font-semibold text-gray-500">
+                                  {t('repOnboarding.trainingSection.avgProgress')}
+                                </span>
+                                <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-200">
+                                  <div
+                                    className="h-full rounded-full bg-gradient-harx transition-all"
+                                    style={{ width: `${formatted.progress}%` }}
+                                  />
+                                </div>
+                                <span className="shrink-0 text-[10px] font-black tabular-nums text-gray-800">
+                                  {formatted.progress}%
+                                </span>
                               </div>
-                              <div className="h-2 overflow-hidden rounded-full bg-gray-100">
-                                <div
-                                  className="h-full rounded-full bg-gradient-harx transition-all"
-                                  style={{ width: `${formatted.progress}%` }}
-                                />
-                              </div>
-                              <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold">
-                                <span className="rounded-lg bg-indigo-50 px-2 py-0.5 text-indigo-700">
-                                  {formatted.participantCount}{' '}
-                                  {t('repOnboarding.trainingSection.participantsShort')}
+                              <div className="mt-1.5 flex flex-wrap gap-1 text-[10px] font-bold leading-none">
+                                <span className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-indigo-700">
+                                  {formatted.participantCount} {t('repOnboarding.trainingSection.participantsShort')}
                                 </span>
                                 {formatted.completedCount > 0 ? (
-                                  <span className="rounded-lg bg-emerald-50 px-2 py-0.5 text-emerald-700">
+                                  <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-emerald-700">
                                     {formatted.completedCount} {t('repOnboarding.trainingSection.completedShort')}
                                   </span>
                                 ) : null}
                                 {formatted.inProgressCount > 0 ? (
-                                  <span className="rounded-lg bg-sky-50 px-2 py-0.5 text-sky-700">
+                                  <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-sky-700">
                                     {formatted.inProgressCount} {t('repOnboarding.trainingSection.inProgressShort')}
                                   </span>
                                 ) : null}
                                 {formatted.participantCount === 0 ? (
-                                  <span className="rounded-lg bg-gray-100 px-2 py-0.5 text-gray-600">
+                                  <span className="rounded-md bg-gray-100 px-1.5 py-0.5 text-gray-600">
                                     {t('repOnboarding.trainingSection.noParticipantsYet')}
                                   </span>
                                 ) : null}
                               </div>
                             </div>
-                            <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                              <div className="flex items-center gap-2">
+
+                            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                              <div className="flex min-w-0 items-center gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() => openJourneyStartViewer(journey)}
                                   disabled={deletingJourneyId === formatted.id}
-                                  className="inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-bold text-white shadow-lg shadow-harx-500/20 transition-all hover:-translate-y-0.5 hover:shadow-harx-500/40"
+                                  className="inline-flex items-center gap-1 rounded-lg bg-gradient-harx px-2.5 py-1.5 text-[11px] font-bold text-white shadow-sm hover:shadow-md"
                                 >
-                                  <Play className="h-4 w-4" />
+                                  <Play className="h-3.5 w-3.5" />
                                   <span>{t('repOnboarding.trainingSection.previewBtn')}</span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => openJourneyStartViewer(journey)}
                                   disabled={deletingJourneyId === formatted.id}
-                                  className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-xs font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="inline-flex items-center gap-1 rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-harx-700 hover:bg-harx-50 disabled:opacity-50"
                                 >
-                                  <FileText className="h-4 w-4" />
-                                  {t('repOnboarding.trainingSection.contentBtn')}
+                                  <FileText className="h-3.5 w-3.5" />
+                                  <span className="hidden sm:inline">{t('repOnboarding.trainingSection.contentBtn')}</span>
                                 </button>
                               </div>
 
-                              <div className="flex items-center gap-2">
+                              <div className="flex shrink-0 items-center gap-1">
                                 <button
                                   type="button"
                                   onClick={() => handleOpenTrainingChat(journey)}
                                   disabled={deletingJourneyId === formatted.id}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-white/85 text-sky-700 shadow-sm hover:bg-sky-50 disabled:opacity-50"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200 bg-white text-sky-700 hover:bg-sky-50 disabled:opacity-50"
                                   title="Open training chat"
                                 >
                                   <MessageSquare className="h-4 w-4" />
@@ -1735,7 +1723,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   type="button"
                                   onClick={() => openTrainingSettings(journey)}
                                   disabled={deletingJourneyId === formatted.id}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-harx-200 bg-white/85 text-harx-700 shadow-sm hover:bg-harx-50 disabled:opacity-50"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-harx-200 bg-white text-harx-700 hover:bg-harx-50 disabled:opacity-50"
                                   title="Training settings"
                                 >
                                   <Settings className="h-4 w-4" />
@@ -1744,7 +1732,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   type="button"
                                   onClick={() => handleDeleteJourney(journey)}
                                   disabled={deletingJourneyId === formatted.id}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-white/85 text-rose-600 shadow-sm hover:bg-rose-50 disabled:opacity-50"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 disabled:opacity-50"
                                   title="Delete training"
                                 >
                                   {deletingJourneyId === formatted.id ? (
