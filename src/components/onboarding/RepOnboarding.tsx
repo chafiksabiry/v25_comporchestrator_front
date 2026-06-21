@@ -35,6 +35,11 @@ import { getGigsByCompanyId, getActiveAgentsForCompany } from '../../api/matchin
 import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
 import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../training/infrastructure/services/AIService';
+import {
+  ProgressService,
+  type GigProgress,
+  type RepProgress,
+} from '../training/infrastructure/services/ProgressService';
 import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
 
@@ -53,6 +58,193 @@ type TrainingParticipantRow = {
   journeyTitle?: string;
 };
 
+type JourneyParticipantStats = {
+  participantCount: number;
+  avgProgress: number;
+  completionRate: number;
+  completedCount: number;
+  inProgressCount: number;
+  notStartedCount: number;
+};
+
+const extractMongoId = (value: unknown): string => {
+  if (value == null) return '';
+  if (typeof value === 'string' || typeof value === 'number') return String(value).trim();
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    if (typeof record.$oid === 'string') return record.$oid;
+    if (record._id != null) return extractMongoId(record._id);
+    if (record.id != null) return extractMongoId(record.id);
+  }
+  return '';
+};
+
+const clampProgressPercent = (value: unknown): number => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(100, Math.round(numeric)));
+};
+
+const computeProgressFromRepProgress = (repProgress: RepProgress | null): number => {
+  if (!repProgress) return 0;
+  if (repProgress.moduleTotal > 0) {
+    return clampProgressPercent((repProgress.moduleFinished / repProgress.moduleTotal) * 100);
+  }
+  const modules = Object.values(repProgress.modules || {});
+  if (modules.length === 0) return 0;
+  const average = modules.reduce((sum, module) => sum + Number(module.progress || 0), 0) / modules.length;
+  return clampProgressPercent(average);
+};
+
+const mapTrainingStatus = (
+  status: string | undefined,
+  progress: number
+): TrainingParticipantRow['status'] => {
+  const normalized = String(status || '').toLowerCase().replace(/_/g, '-');
+  if (progress >= 100 || normalized === 'completed' || normalized === 'finished') {
+    return 'completed';
+  }
+  if (progress > 0 || normalized === 'in-progress' || normalized === 'active') {
+    return 'in_progress';
+  }
+  return 'not_started';
+};
+
+const resolveParticipantProgress = async (
+  repId: string,
+  gigId: string,
+  journeyId: string
+): Promise<{ progress: number; status: TrainingParticipantRow['status']; journeyTitle?: string }> => {
+  if (!repId || !gigId) {
+    return { progress: 0, status: 'not_started' };
+  }
+
+  try {
+    const gigProgress: GigProgress | null = await ProgressService.getRepProgressByGig(repId, gigId);
+    if (gigProgress?.trainings?.length) {
+      const matchedTraining =
+        (journeyId
+          ? gigProgress.trainings.find(
+              (training) => extractMongoId(training.journeyId) === journeyId
+            )
+          : undefined) || gigProgress.trainings[0];
+
+      if (matchedTraining) {
+        const progress = clampProgressPercent(matchedTraining.progress);
+        return {
+          progress,
+          status: mapTrainingStatus(matchedTraining.status, progress),
+          journeyTitle: matchedTraining.journeyTitle || undefined,
+        };
+      }
+    }
+
+    if (typeof gigProgress?.overallProgress === 'number') {
+      const progress = clampProgressPercent(gigProgress.overallProgress);
+      return {
+        progress,
+        status: mapTrainingStatus(undefined, progress),
+      };
+    }
+
+    if (journeyId) {
+      const repProgress = await ProgressService.getRepProgress(repId, journeyId);
+      const progress = computeProgressFromRepProgress(repProgress);
+      return {
+        progress,
+        status: mapTrainingStatus(undefined, progress),
+      };
+    }
+  } catch (error) {
+    console.warn('[RepOnboarding] Could not fetch training progress:', { repId, gigId, journeyId, error });
+  }
+
+  return { progress: 0, status: 'not_started' };
+};
+
+const resolveJourneyModulesCount = (journey: Record<string, unknown>): number => {
+  const modules = journey.modules;
+  if (Array.isArray(modules) && modules.length > 0) return modules.length;
+  const modulePlan = journey.modulePlan;
+  if (Array.isArray(modulePlan) && modulePlan.length > 0) return modulePlan.length;
+  const moduleCount = Number(journey.moduleCount ?? journey.modulesCount ?? 0);
+  return Number.isFinite(moduleCount) && moduleCount > 0 ? moduleCount : 0;
+};
+
+const computeJourneyDurationLabel = (journey: Record<string, unknown>): string => {
+  let totalMinutes = 0;
+  const modules = journey.modules;
+  if (Array.isArray(modules)) {
+    totalMinutes = modules.reduce((acc: number, module: Record<string, unknown>) => {
+      return acc + Number(module.duration ?? module.durationMinutes ?? module.estimatedDuration ?? 0);
+    }, 0);
+  }
+  const modulePlan = journey.modulePlan;
+  if (totalMinutes <= 0 && Array.isArray(modulePlan)) {
+    totalMinutes = modulePlan.reduce((acc: number, module: Record<string, unknown>) => {
+      return acc + Number(module.durationMinutes ?? module.duration ?? 0);
+    }, 0);
+  }
+  if (totalMinutes <= 0 && journey.estimatedDuration) {
+    return String(journey.estimatedDuration);
+  }
+  if (totalMinutes <= 0 && journey.totalDurationMinutes) {
+    totalMinutes = Number(journey.totalDurationMinutes);
+  }
+  if (totalMinutes <= 0) return 'N/A';
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0) {
+    return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
+  }
+  return `${minutes} min`;
+};
+
+const buildJourneyParticipantStats = (
+  participants: TrainingParticipantRow[],
+  trainings: Record<string, unknown>[],
+  resolveJourneyGigId: (journey: Record<string, unknown>) => string
+): Map<string, JourneyParticipantStats> => {
+  const participantsByGigId = new Map<string, TrainingParticipantRow[]>();
+  participants.forEach((participant) => {
+    if (!participant.gigId) return;
+    const existing = participantsByGigId.get(participant.gigId) || [];
+    existing.push(participant);
+    participantsByGigId.set(participant.gigId, existing);
+  });
+
+  const statsByKey = new Map<string, JourneyParticipantStats>();
+  trainings.forEach((journey) => {
+    const journeyId = extractMongoId(journey._id || journey.id);
+    const gigId = resolveJourneyGigId(journey);
+    const journeyParticipants = gigId ? participantsByGigId.get(gigId) || [] : [];
+    const participantCount = journeyParticipants.length;
+    const completedCount = journeyParticipants.filter((p) => p.status === 'completed').length;
+    const inProgressCount = journeyParticipants.filter((p) => p.status === 'in_progress').length;
+    const notStartedCount = journeyParticipants.filter((p) => p.status === 'not_started').length;
+    const avgProgress =
+      participantCount > 0
+        ? Math.round(journeyParticipants.reduce((sum, p) => sum + p.progress, 0) / participantCount)
+        : 0;
+    const completionRate =
+      participantCount > 0 ? Math.round((completedCount / participantCount) * 100) : 0;
+
+    const stats: JourneyParticipantStats = {
+      participantCount,
+      avgProgress,
+      completionRate,
+      completedCount,
+      inProgressCount,
+      notStartedCount,
+    };
+
+    if (journeyId) statsByKey.set(journeyId, stats);
+    if (gigId) statsByKey.set(`gig:${gigId}`, stats);
+  });
+
+  return statsByKey;
+};
+
 const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const { t } = useTranslation();
   const [trainings, setTrainings] = useState<any[]>([]);
@@ -64,6 +256,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [pageTab, setPageTab] = useState<FormationPageTab>('courses');
   const [participants, setParticipants] = useState<TrainingParticipantRow[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [journeyProgressStats, setJourneyProgressStats] = useState<Map<string, JourneyParticipantStats>>(
+    new Map()
+  );
   const [statsJourneyId, setStatsJourneyId] = useState<string>('all');
   const [savedPodcasts, setSavedPodcasts] = useState<SavedPodcastItem[]>([]);
   const [loadingPodcasts, setLoadingPodcasts] = useState(false);
@@ -119,40 +314,47 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     return fallback;
   };
 
-  const formatTrainingJourney = (journey: any) => {
-    // Map presentation fields
+  const formatTrainingJourney = (journey: any, stats?: JourneyParticipantStats) => {
     const presentationUrl = journey.presentationUrl || journey.presentation?.url;
-    // Calculate total duration from modules if available
-    let duration = 'N/A';
-    if (journey.modules && Array.isArray(journey.modules)) {
-      const totalMinutes = journey.modules.reduce((acc: number, module: any) => {
-        return acc + (module.duration || 0);
-      }, 0);
-      if (totalMinutes > 0) {
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        duration = hours > 0 ? `${hours}h ${minutes}min` : `${minutes} min`;
-      }
-    }
+    const duration = computeJourneyDurationLabel(journey);
+    const modulesCount = resolveJourneyModulesCount(journey);
 
-    // Map backend status to UI status
     let status = 'not_started';
-    if (journey.status === 'completed' || journey.journeyStatus === 'completed') {
+    let progress = 0;
+    if (stats && stats.participantCount > 0) {
+      progress = stats.avgProgress;
+      if (stats.completionRate >= 100 || stats.completedCount === stats.participantCount) {
+        status = 'completed';
+      } else if (stats.avgProgress > 0 || stats.inProgressCount > 0) {
+        status = 'in_progress';
+      }
+    } else if (journey.status === 'completed' || journey.journeyStatus === 'completed') {
       status = 'completed';
-    } else if (journey.status === 'in_progress' || journey.journeyStatus === 'in_progress' || journey.status === 'active') {
+      progress = clampProgressPercent(journey.progress || 100);
+    } else if (
+      journey.status === 'in_progress' ||
+      journey.journeyStatus === 'in_progress' ||
+      journey.status === 'active'
+    ) {
       status = 'in_progress';
+      progress = clampProgressPercent(journey.progress || 0);
     }
 
     return {
       id: String(journey._id || journey.id || ''),
       title: asUiString(journey.title ?? journey.name, 'Untitled Training'),
       description: asUiString(journey.description, 'No description provided'),
-      duration: duration,
-      modulesCount: journey.modules ? journey.modules.length : 0,
-      status: status,
-      progress: journey.progress || 0,
+      duration,
+      modulesCount,
+      status,
+      progress,
+      participantCount: stats?.participantCount ?? 0,
+      completedCount: stats?.completedCount ?? 0,
+      inProgressCount: stats?.inProgressCount ?? 0,
+      notStartedCount: stats?.notStartedCount ?? 0,
+      completionRate: stats?.completionRate ?? 0,
       presentationUrl,
-      trainingLogo: journey.trainingLogo || null
+      trainingLogo: journey.trainingLogo || null,
     };
   };
 
@@ -626,6 +828,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const fetchParticipants = useCallback(async () => {
     if (!companyId) {
       setParticipants([]);
+      setJourneyProgressStats(new Map());
       return;
     }
 
@@ -641,39 +844,103 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         });
       }
 
-      const rows: TrainingParticipantRow[] = filteredAgents.map((record: any, index: number) => {
-        const agent = record?.agentId && typeof record.agentId === 'object' ? record.agentId : record;
-        const gig = record?.gigId && typeof record.gigId === 'object' ? record.gigId : record?.gig;
-        const gigId = String(gig?._id || gig?.id || record?.gigId || '');
-        const linkedJourney = trainings.find((journey) => resolveJourneyGigId(journey) === gigId);
-        const rawProgress = Number(linkedJourney?.progress ?? record?.progress ?? 0);
-        const progress = Number.isFinite(rawProgress) ? Math.max(0, Math.min(100, Math.round(rawProgress))) : 0;
+      const entries = filteredAgents
+        .map((record: any) => {
+          const agent = record?.agentId && typeof record.agentId === 'object' ? record.agentId : record;
+          const gig = record?.gigId && typeof record.gigId === 'object' ? record.gigId : record?.gig;
+          return {
+            repId: String(agent?._id || agent?.id || record?.agentId || ''),
+            gigId: String(gig?._id || gig?.id || record?.gigId || ''),
+          };
+        })
+        .filter((entry) => entry.repId && entry.gigId);
 
-        let status: TrainingParticipantRow['status'] = 'not_started';
-        if (progress >= 100 || linkedJourney?.status === 'completed') {
-          status = 'completed';
-        } else if (progress > 0 || linkedJourney?.status === 'in_progress' || linkedJourney?.status === 'active') {
-          status = 'in_progress';
-        }
-
-        return {
-          id: String(agent?._id || agent?.id || record?._id || index),
-          name: agent?.personalInfo?.name || agent?.name || t('repOnboarding.participants.unnamed'),
-          email: agent?.personalInfo?.email || agent?.email || '',
-          gigTitle: gig?.title || t('repOnboarding.participants.noGig'),
-          gigId,
-          progress,
-          status,
-          journeyTitle: linkedJourney
-            ? asUiString(linkedJourney?.title ?? linkedJourney?.name, '')
-            : undefined,
-        };
+      const bulkProgress = await ProgressService.getCompanyParticipantsProgress(companyId, {
+        gigId: filterGigId !== 'all' ? filterGigId : undefined,
+        entries,
       });
 
+      if (bulkProgress?.participants?.length) {
+        const progressByKey = new Map(
+          bulkProgress.participants.map((row) => [`${row.repId}:${row.gigId}`, row])
+        );
+
+        const rows: TrainingParticipantRow[] = filteredAgents.map((record: any, index: number) => {
+          const agent = record?.agentId && typeof record.agentId === 'object' ? record.agentId : record;
+          const gig = record?.gigId && typeof record.gigId === 'object' ? record.gigId : record?.gig;
+          const gigId = String(gig?._id || gig?.id || record?.gigId || '');
+          const repId = String(agent?._id || agent?.id || record?.agentId || '');
+          const linkedJourney = trainings.find((journey) => resolveJourneyGigId(journey) === gigId);
+          const apiRow = progressByKey.get(`${repId}:${gigId}`);
+
+          return {
+            id: String(repId || record?._id || index),
+            name:
+              agent?.personalInfo?.name ||
+              agent?.name ||
+              apiRow?.name ||
+              t('repOnboarding.participants.unnamed'),
+            email: agent?.personalInfo?.email || agent?.email || apiRow?.email || '',
+            gigTitle: gig?.title || t('repOnboarding.participants.noGig'),
+            gigId,
+            progress: apiRow?.progress ?? 0,
+            status: apiRow?.status ?? 'not_started',
+            journeyTitle:
+              apiRow?.journeyTitle ||
+              (linkedJourney ? asUiString(linkedJourney?.title ?? linkedJourney?.name, '') : undefined),
+          };
+        });
+
+        const statsMap = new Map<string, JourneyParticipantStats>();
+        bulkProgress.journeys.forEach((journeyStats) => {
+          const stats: JourneyParticipantStats = {
+            participantCount: journeyStats.participantCount,
+            avgProgress: journeyStats.avgProgress,
+            completionRate: journeyStats.completionRate,
+            completedCount: journeyStats.completedCount,
+            inProgressCount: journeyStats.inProgressCount,
+            notStartedCount: journeyStats.notStartedCount,
+          };
+          if (journeyStats.journeyId) statsMap.set(journeyStats.journeyId, stats);
+          if (journeyStats.gigId) statsMap.set(`gig:${journeyStats.gigId}`, stats);
+        });
+
+        setParticipants(rows);
+        setJourneyProgressStats(statsMap);
+        return;
+      }
+
+      const rows: TrainingParticipantRow[] = await Promise.all(
+        filteredAgents.map(async (record: any, index: number) => {
+          const agent = record?.agentId && typeof record.agentId === 'object' ? record.agentId : record;
+          const gig = record?.gigId && typeof record.gigId === 'object' ? record.gigId : record?.gig;
+          const gigId = String(gig?._id || gig?.id || record?.gigId || '');
+          const repId = String(agent?._id || agent?.id || record?.agentId || '');
+          const linkedJourney = trainings.find((journey) => resolveJourneyGigId(journey) === gigId);
+          const journeyId = linkedJourney ? extractMongoId(linkedJourney._id || linkedJourney.id) : '';
+          const progressData = await resolveParticipantProgress(repId, gigId, journeyId);
+
+          return {
+            id: String(repId || record?._id || index),
+            name: agent?.personalInfo?.name || agent?.name || t('repOnboarding.participants.unnamed'),
+            email: agent?.personalInfo?.email || agent?.email || '',
+            gigTitle: gig?.title || t('repOnboarding.participants.noGig'),
+            gigId,
+            progress: progressData.progress,
+            status: progressData.status,
+            journeyTitle:
+              progressData.journeyTitle ||
+              (linkedJourney ? asUiString(linkedJourney?.title ?? linkedJourney?.name, '') : undefined),
+          };
+        })
+      );
+
       setParticipants(rows);
+      setJourneyProgressStats(new Map());
     } catch (error) {
       console.error('[RepOnboarding] Error fetching participants:', error);
       setParticipants([]);
+      setJourneyProgressStats(new Map());
     } finally {
       setLoadingParticipants(false);
     }
@@ -682,6 +949,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   useEffect(() => {
     void fetchParticipants();
   }, [fetchParticipants]);
+
+  const journeyParticipantStats = useMemo(() => {
+    if (journeyProgressStats.size > 0) {
+      return journeyProgressStats;
+    }
+    return buildJourneyParticipantStats(participants, trainings, resolveJourneyGigId);
+  }, [journeyProgressStats, participants, trainings, resolveJourneyGigId]);
 
   const trackingStats = useMemo(() => {
     const scopedParticipants =
@@ -709,12 +983,26 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         ? trainings
         : trainings.filter((journey) => String(journey._id || journey.id) === statsJourneyId);
 
-    const moduleStats = scopedTrainings.map((journey) => ({
-      id: String(journey._id || journey.id || ''),
-      title: asUiString(journey.title ?? journey.name, t('repOnboarding.trainingSection.title')),
-      modulesCount: Array.isArray(journey.modules) ? journey.modules.length : 0,
-      progress: Math.round(Number(journey.progress || 0)),
-    }));
+    const moduleStats = scopedTrainings.map((journey) => {
+      const journeyGigId = resolveJourneyGigId(journey);
+      const journeyParticipants = journeyGigId
+        ? scopedParticipants.filter((participant) => participant.gigId === journeyGigId)
+        : [];
+      const journeyAvgProgress =
+        journeyParticipants.length > 0
+          ? Math.round(
+              journeyParticipants.reduce((sum, participant) => sum + participant.progress, 0) /
+                journeyParticipants.length
+            )
+          : 0;
+
+      return {
+        id: String(journey._id || journey.id || ''),
+        title: asUiString(journey.title ?? journey.name, t('repOnboarding.trainingSection.title')),
+        modulesCount: Array.isArray(journey.modules) ? journey.modules.length : 0,
+        progress: journeyAvgProgress,
+      };
+    });
 
     return {
       total,
@@ -1310,7 +1598,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                       {trainings.filter(Boolean).map((journey) => {
-                        const formatted = formatTrainingJourney(journey);
+                        const journeyId = extractMongoId(journey._id || journey.id);
+                        const gigId = resolveJourneyGigId(journey);
+                        const stats =
+                          journeyParticipantStats.get(journeyId) ||
+                          (gigId ? journeyParticipantStats.get(`gig:${gigId}`) : undefined);
+                        const formatted = formatTrainingJourney(journey, stats);
                         const imageSet = findImageSetForJourney(journey);
                         const displayTitle = resolveCardTrainingTitle(journey, formatted, imageSet);
                         const trainingBgImage =
@@ -1373,21 +1666,49 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 {t('repOnboarding.trainingSection.contentDesc')}
                               </div>
                             </div>
+                            <div className="mb-3 rounded-xl border border-gray-100 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur">
+                              <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-gray-500">
+                                <span>{t('repOnboarding.trainingSection.avgProgress')}</span>
+                                <span className="tabular-nums text-gray-800">{formatted.progress}%</span>
+                              </div>
+                              <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+                                <div
+                                  className="h-full rounded-full bg-gradient-harx transition-all"
+                                  style={{ width: `${formatted.progress}%` }}
+                                />
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold">
+                                <span className="rounded-lg bg-indigo-50 px-2 py-0.5 text-indigo-700">
+                                  {formatted.participantCount}{' '}
+                                  {t('repOnboarding.trainingSection.participantsShort')}
+                                </span>
+                                {formatted.completedCount > 0 ? (
+                                  <span className="rounded-lg bg-emerald-50 px-2 py-0.5 text-emerald-700">
+                                    {formatted.completedCount} {t('repOnboarding.trainingSection.completedShort')}
+                                  </span>
+                                ) : null}
+                                {formatted.inProgressCount > 0 ? (
+                                  <span className="rounded-lg bg-sky-50 px-2 py-0.5 text-sky-700">
+                                    {formatted.inProgressCount} {t('repOnboarding.trainingSection.inProgressShort')}
+                                  </span>
+                                ) : null}
+                                {formatted.participantCount === 0 ? (
+                                  <span className="rounded-lg bg-gray-100 px-2 py-0.5 text-gray-600">
+                                    {t('repOnboarding.trainingSection.noParticipantsYet')}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
                             <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
                                   onClick={() => openJourneyStartViewer(journey)}
                                   disabled={deletingJourneyId === formatted.id}
-                                  className={`inline-flex items-center space-x-2 rounded-xl px-3 py-2 text-xs font-bold transition-all ${formatted.status === 'completed'
-                                    ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100 hover:bg-emerald-100'
-                                    : 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20 hover:-translate-y-0.5 hover:shadow-harx-500/40'
-                                    }`}
+                                  className="inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-bold text-white shadow-lg shadow-harx-500/20 transition-all hover:-translate-y-0.5 hover:shadow-harx-500/40"
                                 >
                                   <Play className="h-4 w-4" />
-                                  <span>
-                                    {formatted.status === 'completed' ? t('repOnboarding.trainingSection.reviewBtn') : formatted.status === 'in_progress' ? t('repOnboarding.trainingSection.continueBtn') : t('repOnboarding.trainingSection.startBtn')}
-                                  </span>
+                                  <span>{t('repOnboarding.trainingSection.previewBtn')}</span>
                                 </button>
                                 <button
                                   type="button"
