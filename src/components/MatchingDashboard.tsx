@@ -44,6 +44,8 @@ import {
     recordMatchesSearch,
     getGigTitle,
     sortRecordsByMatchScore,
+    mergeMatchCaches,
+    collectUniqueGigIds,
 } from './dashboard/utils/repMatchDisplay';
 
 export type MatchingDashboardProps = {
@@ -89,6 +91,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
     const [invitedAgentsList, setInvitedAgentsList] = useState<any[]>([]);
     const [enrollmentRequests, setEnrollmentRequests] = useState<any[]>([]);
     const [activeAgentsList, setActiveAgentsList] = useState<any[]>([]);
+    const [lifecycleMatchCache, setLifecycleMatchCache] = useState<Match[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [leftColumnWidth, setLeftColumnWidth] = useState<number>(25); // percentage
     const [isResizing, setIsResizing] = useState<boolean>(false);
@@ -250,6 +253,65 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         match.agentInfo?.personalInfo?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         match.agentInfo?.personalInfo?.email?.toLowerCase().includes(searchTerm.toLowerCase())
     ).sort((a: any, b: any) => (b.totalMatchingScore || 0) - (a.totalMatchingScore || 0));
+
+    const mergedMatchCache = React.useMemo(
+        () => mergeMatchCaches(matches, lifecycleMatchCache),
+        [matches, lifecycleMatchCache]
+    );
+
+    // Load per-gig match scores for invited / enrollment / active tabs
+    React.useEffect(() => {
+        const lifecycleRecords = [
+            ...companyInvitedAgents,
+            ...enrollmentRequests,
+            ...activeAgentsList,
+        ];
+        const gigIds = collectUniqueGigIds(lifecycleRecords);
+        const gigIdsToLoad = gigIds.length
+            ? gigIds
+            : gigs.map((gig) => String(gig._id || '')).filter(Boolean);
+
+        if (!gigIdsToLoad.length) {
+            setLifecycleMatchCache([]);
+            return;
+        }
+
+        let cancelled = false;
+
+        const loadLifecycleMatches = async () => {
+            const loaded: Match[] = [];
+
+            await Promise.all(gigIdsToLoad.map(async (gigId) => {
+                try {
+                    let gigWeights = weights;
+                    try {
+                        const savedWeights = await getGigWeights(gigId);
+                        gigWeights = savedWeights.matchingWeights;
+                    } catch {
+                        // Use current dashboard weights when no saved weights exist
+                    }
+
+                    const response = await findMatchesForGig(gigId, gigWeights);
+                    const gigMatches = response.preferedmatches || response.matches || [];
+                    gigMatches.forEach((match) => {
+                        loaded.push({ ...match, gigId: match.gigId || gigId });
+                    });
+                } catch (error) {
+                    console.warn('Failed to load lifecycle matches for gig:', gigId, error);
+                }
+            }));
+
+            if (!cancelled) {
+                setLifecycleMatchCache(loaded);
+            }
+        };
+
+        void loadLifecycleMatches();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [companyInvitedAgents, enrollmentRequests, activeAgentsList, weights, gigs]);
 
     // Fetch data from real backend
 
@@ -1548,16 +1610,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                     <div>
                                         {sortRecordsByMatchScore(
                                             invitedAgentsList.filter((record: any) => recordMatchesSearch(record, searchTerm)),
-                                            matches
+                                            mergedMatchCache
                                         ).length > 0 ? (
                                         <div className="space-y-3">
                                             {sortRecordsByMatchScore(
                                                 invitedAgentsList.filter((record: any) => recordMatchesSearch(record, searchTerm)),
-                                                matches
+                                                mergedMatchCache
                                             ).map((record: any, index: number) => {
                                                 if (!record) return null;
-                                                const normalizedMatch = normalizeRecordToMatch(record, matches);
-                                                const matchScore = getMatchScorePercent(record, matches);
+                                                const normalizedMatch = normalizeRecordToMatch(record, mergedMatchCache);
+                                                const matchScore = getMatchScorePercent(record, mergedMatchCache);
                                                 const expandKey = getRecordExpandKey(record);
 
                                                 return (
@@ -1626,16 +1688,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                     <div>
                                         {sortRecordsByMatchScore(
                                             enrollmentRequests.filter((record: any) => recordMatchesSearch(record, searchTerm)),
-                                            matches
+                                            mergedMatchCache
                                         ).length > 0 ? (
                                         <div className="space-y-3">
                                             {sortRecordsByMatchScore(
                                                 enrollmentRequests.filter((record: any) => recordMatchesSearch(record, searchTerm)),
-                                                matches
+                                                mergedMatchCache
                                             ).map((record: any, index: number) => {
                                                 if (!record) return null;
-                                                const normalizedMatch = normalizeRecordToMatch(record, matches);
-                                                const matchScore = getMatchScorePercent(record, matches);
+                                                const normalizedMatch = normalizeRecordToMatch(record, mergedMatchCache);
+                                                const matchScore = getMatchScorePercent(record, mergedMatchCache);
                                                 const expandKey = getRecordExpandKey(record);
 
                                                 return (
@@ -1752,16 +1814,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                     <div>
                                         {sortRecordsByMatchScore(
                                             activeAgentsList.filter((record: any) => recordMatchesSearch(record, searchTerm)),
-                                            matches
+                                            mergedMatchCache
                                         ).length > 0 ? (
                                         <div className="space-y-3">
                                             {sortRecordsByMatchScore(
                                                 activeAgentsList.filter((record: any) => recordMatchesSearch(record, searchTerm)),
-                                                matches
+                                                mergedMatchCache
                                             ).map((record: any, index: number) => {
                                                 if (!record) return null;
-                                                const normalizedMatch = normalizeRecordToMatch(record, matches);
-                                                const matchScore = getMatchScorePercent(record, matches);
+                                                const normalizedMatch = normalizeRecordToMatch(record, mergedMatchCache);
+                                                const matchScore = getMatchScorePercent(record, mergedMatchCache);
                                                 const expandKey = getRecordExpandKey(record);
 
                                                 return (
