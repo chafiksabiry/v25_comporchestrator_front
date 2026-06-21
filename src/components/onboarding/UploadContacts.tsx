@@ -2,7 +2,6 @@
 import {
   FileText,
   RefreshCw,
-  Search,
   Trash2,
   Edit,
   Eye,
@@ -14,8 +13,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Filter,
-  Briefcase,
   PhoneCall,
   UserPlus,
   FileSpreadsheet,
@@ -2789,62 +2786,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap lg:justify-end">
-              <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 px-4 py-2 flex items-center gap-3 shadow-sm focus-within:ring-2 focus-within:ring-harx-500/20 transition-all min-w-[220px]">
-                <Search className="h-4 w-4 text-slate-400 shrink-0" />
-                <input
-                  type="text"
-                  className="bg-transparent border-none outline-none text-sm font-medium text-slate-700 w-full placeholder:text-slate-400"
-                  placeholder={t('uploadContacts.list.search')}
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                />
-              </div>
-              <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 px-4 py-2 flex items-center gap-3 shadow-sm">
-                <Briefcase className="h-4 w-4 text-slate-400 shrink-0" />
-                <select
-                  className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer max-w-[180px]"
-                  value={callFilterGigId || selectedGigId}
-                  onChange={(e) => {
-                    const gigId = e.target.value;
-                    setCallFilterGigId(gigId);
-                    setSelectedGigId(gigId);
-                  }}
-                  disabled={!gigs.length}
-                  title={t('uploadContacts.list.callFilterGig')}
-                >
-                  {gigs.map((gig) => (
-                    <option key={gig._id} value={gig._id}>
-                      {gig.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 px-4 py-2 flex items-center gap-3 shadow-sm">
-                <PhoneCall className="h-4 w-4 text-slate-400 shrink-0" />
-                <select
-                  className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer"
-                  value={callStatusFilter}
-                  onChange={(e) => setCallStatusFilter(e.target.value as typeof callStatusFilter)}
-                  title={t('uploadContacts.list.callStatusFilter')}
-                >
-                  <option value="all">{t('uploadContacts.list.callStatusAll')}</option>
-                  <option value="called">{t('uploadContacts.list.callStatusCalled')}</option>
-                  <option value="not_called">{t('uploadContacts.list.callStatusNotCalled')}</option>
-                </select>
-              </div>
-              <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/80 px-4 py-2 flex items-center gap-3 shadow-sm">
-                <Filter className="h-4 w-4 text-slate-400 shrink-0" />
-                <select
-                  className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer"
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                >
-                  <option value="all">{t('uploadContacts.list.statusAll')}</option>
-                  <option value="active">{t('uploadContacts.list.statusActive')}</option>
-                  <option value="inactive">{t('uploadContacts.list.statusInactive')}</option>
-                </select>
-              </div>
+            <div className="flex items-center justify-end shrink-0">
               <button
                 onClick={() => {
                   setSearchQuery('');
