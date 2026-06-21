@@ -801,18 +801,28 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                             </div>
                         </div>
 
-                        {/* Quick Stats */}
-                        <div className="hidden lg:flex items-center gap-3">
+                        {/* Quick Stats — click to open the matching section */}
+                        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto max-w-full pb-1">
                             {[
-                                { value: reps.length, label: t('matchingDashboard.header.totalReps'), accent: 'text-slate-800 bg-white border-slate-200' },
-                                { value: invitedAgentsList.length, label: t('matchingDashboard.header.invited'), accent: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
-                                { value: enrollmentRequests.length, label: t('matchingDashboard.header.requests'), accent: 'text-sky-700 bg-sky-50 border-sky-100' },
-                                { value: activeAgentsList.length, label: t('matchingDashboard.header.active'), accent: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
+                                { value: reps.length, label: t('matchingDashboard.header.totalReps'), accent: 'text-slate-800 bg-white border-slate-200 hover:border-slate-300', sectionId: 'matching' as const },
+                                { value: invitedAgentsList.length, label: t('matchingDashboard.header.invited'), accent: 'text-indigo-600 bg-indigo-50 border-indigo-100 hover:border-indigo-200', sectionId: 'invited' as const },
+                                { value: enrollmentRequests.length, label: t('matchingDashboard.header.requests'), accent: 'text-sky-700 bg-sky-50 border-sky-100 hover:border-sky-200', sectionId: 'enrollment' as const },
+                                { value: activeAgentsList.length, label: t('matchingDashboard.header.active'), accent: 'text-emerald-700 bg-emerald-50 border-emerald-100 hover:border-emerald-200', sectionId: 'active' as const },
                             ].map((stat) => (
-                                <div key={stat.label} className={`text-center px-4 py-2 rounded-xl border shadow-sm ${stat.accent}`}>
-                                    <div className="font-bold text-lg leading-none">{stat.value}</div>
-                                    <div className="text-[11px] font-medium opacity-80 mt-1">{stat.label}</div>
-                                </div>
+                                <button
+                                    key={stat.label}
+                                    type="button"
+                                    onClick={() => setActiveSection(stat.sectionId)}
+                                    aria-pressed={activeSection === stat.sectionId}
+                                    className={`shrink-0 text-center px-3 sm:px-4 py-2 rounded-xl border shadow-sm transition-all duration-200 cursor-pointer hover:shadow-md ${stat.accent} ${
+                                        activeSection === stat.sectionId
+                                            ? 'ring-2 ring-indigo-400 ring-offset-1 shadow-md'
+                                            : 'opacity-90 hover:opacity-100'
+                                    }`}
+                                >
+                                    <div className="font-bold text-base sm:text-lg leading-none">{stat.value}</div>
+                                    <div className="text-[10px] sm:text-[11px] font-medium opacity-80 mt-1 whitespace-nowrap">{stat.label}</div>
+                                </button>
                             ))}
                         </div>
                     </div>
