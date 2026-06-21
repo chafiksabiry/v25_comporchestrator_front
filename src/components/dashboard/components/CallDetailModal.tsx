@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
-import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice } from '../../../utils/callStatusDisplay';
+import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, getDisplayOverallScore, hasAiCallAnalysis } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;
@@ -315,7 +315,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
             </div>
           ) : (
             <div className="max-w-5xl mx-auto space-y-4 pb-2">
-              {(!call.ai_call_score || !call.ai_call_score.overall?.score) ? (
+              {(!call.ai_call_score || !hasAiCallAnalysis(call)) ? (
                 <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                   {renderAnalysisErrorBanner()}
                   <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">No analysis available for this call</p>
@@ -332,6 +332,8 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                 </div>
               ) : (
                 <>
+                  {!isNonEvaluableCall(call) && (
+                  <>
                   {/* Primary metric cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     {primaryMetrics.map((metric, mIdx) => {
@@ -425,6 +427,8 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                       })}
                     </div>
                   </div>
+                  </>
+                  )}
 
                   {/* Executive Summary */}
                   <div className="relative group">
@@ -432,13 +436,26 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                     <div className="relative bg-white rounded-[28px] sm:rounded-[40px] border border-emerald-100/50 shadow-2xl shadow-emerald-500/5 p-6 sm:p-10 overflow-hidden">
                       <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full -mr-40 -mt-40 blur-3xl" />
                       <div className="relative z-10">
-                        <div className="flex items-center gap-4 sm:gap-6 mb-6">
-                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 shrink-0">
-                            <Star className="w-6 h-6 sm:w-8 sm:h-8" />
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6">
+                          <div className="flex items-center gap-4 sm:gap-6">
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 shrink-0">
+                              <Star className="w-6 h-6 sm:w-8 sm:h-8" />
+                            </div>
+                            <div>
+                              <h4 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-widest">{t('calls.executiveSummary', 'Executive Summary')}</h4>
+                              <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">{t('calls.globalAudit', 'Audit Global de Performance')}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-widest">Executive Summary</h4>
-                            <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">Overall AI Evaluation</p>
+                          <div className="flex items-center gap-4 bg-slate-50/80 px-4 py-3 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm self-start sm:self-auto">
+                            <div className="text-right">
+                              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Score Global</p>
+                              <div className="text-2xl sm:text-4xl font-black text-slate-900 leading-none">
+                                {getDisplayOverallScore(call) ?? 0}<span className="text-base sm:text-xl text-slate-400">%</span>
+                              </div>
+                            </div>
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+                              <TrendingUp className={`w-5 h-5 sm:w-6 sm:h-6 ${(getDisplayOverallScore(call) ?? 0) >= 70 ? 'text-emerald-500' : 'text-rose-500'}`} />
+                            </div>
                           </div>
                         </div>
                         <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-inner">
