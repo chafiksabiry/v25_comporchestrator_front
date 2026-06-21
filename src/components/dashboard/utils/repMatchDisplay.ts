@@ -56,18 +56,50 @@ const resolveGigId = (record: any): string | null => {
 
 const scoreFromMatchDetails = (details: any): number | null => {
     if (!details) return null;
-    const scores = [
-        details.skillsMatch?.score,
+
+    const languageScore = details.languageMatch?.score ?? 0;
+    const skillsScore = details.skillsMatch?.score ?? 0;
+    const industryScore = details.industryMatch?.score ?? 0;
+    const activityScore = details.activityMatch?.score ?? 0;
+    const experienceScore = details.experienceMatch?.score ?? 0;
+    const timezoneScore = details.timezoneMatch?.score ?? 0;
+    const regionScore = details.regionMatch?.score ?? 0;
+    const availabilityScore = details.availabilityMatch?.score ?? 0;
+
+    const weights = {
+        language: 0.15,
+        skills: 0.20,
+        industry: 0.20,
+        activity: 0.05,
+        experience: 0.20,
+        timezone: 0.10,
+        region: 0.05,
+        availability: 0.05,
+    };
+
+    const hasAnyScore = [
         details.languageMatch?.score,
+        details.skillsMatch?.score,
         details.industryMatch?.score,
         details.activityMatch?.score,
         details.experienceMatch?.score,
         details.timezoneMatch?.score,
         details.regionMatch?.score,
         details.availabilityMatch?.score,
-    ].filter((score): score is number => typeof score === 'number');
-    if (!scores.length) return null;
-    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+    ].some((score) => typeof score === 'number');
+
+    if (!hasAnyScore) return null;
+
+    return (
+        languageScore * weights.language +
+        skillsScore * weights.skills +
+        industryScore * weights.industry +
+        activityScore * weights.activity +
+        experienceScore * weights.experience +
+        timezoneScore * weights.timezone +
+        regionScore * weights.region +
+        availabilityScore * weights.availability
+    );
 };
 
 export const getMatchScorePercent = (record: any, cachedMatches: Match[] = []): number => {
@@ -93,6 +125,19 @@ export const getMatchScorePercent = (record: any, cachedMatches: Match[] = []): 
         });
         if (cached?.totalMatchingScore != null) {
             return Math.round(Number(cached.totalMatchingScore) * 100);
+        }
+
+        // Legacy records without gigId: use the best score found for this agent
+        if (!gigId) {
+            const agentMatches = cachedMatches.filter((match) => String(match.agentId) === String(agentId));
+            if (agentMatches.length) {
+                const best = agentMatches.reduce((bestMatch, current) =>
+                    (current.totalMatchingScore || 0) > (bestMatch.totalMatchingScore || 0) ? current : bestMatch
+                );
+                if (best.totalMatchingScore != null) {
+                    return Math.round(Number(best.totalMatchingScore) * 100);
+                }
+            }
         }
     }
 
@@ -186,3 +231,21 @@ export const sortRecordsByMatchScore = (records: any[], cachedMatches: Match[] =
     [...records].sort(
         (a, b) => getMatchScorePercent(b, cachedMatches) - getMatchScorePercent(a, cachedMatches)
     );
+
+export const mergeMatchCaches = (...caches: Match[][]): Match[] => {
+    const merged = new Map<string, Match>();
+    caches.flat().forEach((match) => {
+        if (!match?.agentId) return;
+        merged.set(`${match.agentId}-${match.gigId || ''}`, match);
+    });
+    return Array.from(merged.values());
+};
+
+export const collectUniqueGigIds = (records: any[]): string[] => {
+    const gigIds = new Set<string>();
+    records.forEach((record) => {
+        const gigId = resolveGigId(record);
+        if (gigId) gigIds.add(gigId);
+    });
+    return Array.from(gigIds);
+};
