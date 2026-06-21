@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import {
@@ -21,6 +22,8 @@ import {
   Laptop,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Check,
   Image as ImageIcon,
   Users,
   TrendingUp,
@@ -243,6 +246,231 @@ const buildJourneyParticipantStats = (
   });
 
   return statsByKey;
+};
+
+type HarxSelectOption = {
+  value: string;
+  label: string;
+  description?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+};
+
+type HarxSelectProps = {
+  id?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: HarxSelectOption[];
+  className?: string;
+  minWidthClass?: string;
+  /** Affiche un séparateur après la première option (ex. « Tous les gigs »). */
+  separateFirstOption?: boolean;
+};
+
+const HarxSelect: React.FC<HarxSelectProps> = ({
+  id,
+  value,
+  onChange,
+  options,
+  className = '',
+  minWidthClass = 'min-w-[170px]',
+  separateFirstOption = false,
+}) => {
+  const [open, setOpen] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const selected = options.find((option) => option.value === value) || options[0];
+  const SelectedIcon = selected?.icon;
+
+  const updateMenuPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    setMenuStyle({
+      position: 'fixed',
+      top: rect.bottom + 8,
+      left: rect.left,
+      width: rect.width,
+      zIndex: 9999,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updateMenuPosition();
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition, true);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open, updateMenuPosition]);
+
+  useEffect(() => {
+    if (open) {
+      const selectedIndex = options.findIndex((option) => option.value === value);
+      setHighlightIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    } else {
+      setHighlightIndex(-1);
+    }
+  }, [open, options, value]);
+
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setOpen(true);
+    }
+  };
+
+  const handleListKeyDown = (event: React.KeyboardEvent<HTMLUListElement>) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setHighlightIndex((prev) => Math.min(prev + 1, options.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setHighlightIndex((prev) => Math.max(prev - 1, 0));
+    } else if (event.key === 'Enter' && highlightIndex >= 0) {
+      event.preventDefault();
+      onChange(options[highlightIndex].value);
+      setOpen(false);
+    } else if (event.key === 'Escape') {
+      setOpen(false);
+    }
+  };
+
+  const dropdownPanel = open ? (
+    <>
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden
+        className="fixed inset-0 z-[9998] cursor-default bg-transparent"
+        onClick={() => setOpen(false)}
+      />
+      <div
+        style={menuStyle}
+        className="overflow-hidden rounded-2xl border border-harx-100/80 bg-white shadow-2xl shadow-harx-500/10 ring-1 ring-black/5"
+      >
+        <div className="h-1 bg-gradient-harx" aria-hidden />
+        <ul
+          role="listbox"
+          aria-labelledby={id}
+          tabIndex={-1}
+          onKeyDown={handleListKeyDown}
+          className="max-h-64 overflow-auto p-1.5 [scrollbar-width:thin] [scrollbar-color:#f43f5e20_#f8fafc]"
+        >
+          {options.map((option, index) => {
+            const isSelected = option.value === value;
+            const isHighlighted = index === highlightIndex;
+            const OptionIcon = option.icon;
+            const showSeparator = separateFirstOption && index === 0 && options.length > 1;
+
+            return (
+              <li key={option.value} role="presentation">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onMouseEnter={() => setHighlightIndex(index)}
+                  onClick={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                  className={`group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left transition-all ${
+                    isSelected
+                      ? 'bg-gradient-harx text-white shadow-md shadow-harx-500/25'
+                      : isHighlighted
+                        ? 'bg-harx-50 text-harx-800 ring-1 ring-harx-100'
+                        : 'text-gray-700 hover:bg-harx-50/80 hover:text-harx-800'
+                  }`}
+                >
+                  {OptionIcon ? (
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                        isSelected
+                          ? 'bg-white/20 text-white'
+                          : 'bg-gray-100 text-harx-600 group-hover:bg-white group-hover:shadow-sm'
+                      }`}
+                    >
+                      <OptionIcon className="h-4 w-4" />
+                    </span>
+                  ) : null}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold">{option.label}</span>
+                    {option.description ? (
+                      <span
+                        className={`mt-0.5 block truncate text-[11px] font-medium ${
+                          isSelected ? 'text-white/85' : 'text-gray-500'
+                        }`}
+                      >
+                        {option.description}
+                      </span>
+                    ) : null}
+                  </span>
+                  {isSelected ? (
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
+                  ) : null}
+                </button>
+                {showSeparator ? (
+                  <div className="my-1.5 border-t border-dashed border-gray-100" role="separator" />
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </>
+  ) : null;
+
+  return (
+    <div className={`relative ${minWidthClass} ${className}`}>
+      <button
+        ref={triggerRef}
+        type="button"
+        id={id}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen((prev) => {
+            const next = !prev;
+            if (next) {
+              requestAnimationFrame(updateMenuPosition);
+            }
+            return next;
+          });
+        }}
+        onKeyDown={handleTriggerKeyDown}
+        className={`flex w-full items-center gap-2.5 rounded-xl border-2 bg-white px-3 py-2.5 text-left shadow-sm outline-none transition-all ${
+          open
+            ? 'border-harx-400 ring-2 ring-harx-500/20 shadow-md shadow-harx-500/10'
+            : 'border-gray-100 hover:border-harx-200 hover:shadow-md'
+        }`}
+      >
+        {SelectedIcon ? (
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-harx-50 text-harx-600">
+            <SelectedIcon className="h-4 w-4" />
+          </span>
+        ) : null}
+        <span className="min-w-0 flex-1 truncate text-sm font-bold text-gray-800">{selected?.label || '—'}</span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-harx-500 transition-transform duration-200 ${
+            open ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      {typeof document !== 'undefined' && dropdownPanel
+        ? createPortal(dropdownPanel, document.body)
+        : null}
+    </div>
+  );
 };
 
 const RepOnboarding: React.FC<RepOnboardingProps> = () => {
@@ -957,6 +1185,40 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     return buildJourneyParticipantStats(participants, trainings, resolveJourneyGigId);
   }, [journeyProgressStats, participants, trainings, resolveJourneyGigId]);
 
+  const gigFilterOptions = useMemo<HarxSelectOption[]>(
+    () => [
+      {
+        value: 'all',
+        label: t('repOnboarding.header.allGigs'),
+        description: t('repOnboarding.header.allGigsHint'),
+        icon: Briefcase,
+      },
+      ...companyGigs.map((gig: any) => ({
+        value: String(gig._id || gig.id),
+        label: String(gig.title || gig.name || gig._id || gig.id),
+        icon: Briefcase,
+      })),
+    ],
+    [companyGigs, t]
+  );
+
+  const journeyFilterOptions = useMemo<HarxSelectOption[]>(
+    () => [
+      {
+        value: 'all',
+        label: t('repOnboarding.trackingStats.allTrainings'),
+        description: t('repOnboarding.trackingStats.allTrainingsHint'),
+        icon: BookOpen,
+      },
+      ...trainings.map((journey) => ({
+        value: String(journey._id || journey.id),
+        label: asUiString(journey.title ?? journey.name, t('repOnboarding.trainingSection.title')),
+        icon: GraduationCap,
+      })),
+    ],
+    [trainings, t]
+  );
+
   const trackingStats = useMemo(() => {
     const scopedParticipants =
       statsJourneyId === 'all'
@@ -1440,7 +1702,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           </div>
         ) : (
           <>
-        <header className="mb-6 overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white px-6 py-5 shadow-2xl shadow-gray-200/40">
+        <header className="mb-6 rounded-[2.5rem] border border-gray-100 bg-white px-6 py-5 shadow-2xl shadow-gray-200/40">
           <div className="h-1 w-full -mx-6 -mt-5 mb-5 rounded-t-2xl bg-gradient-harx" aria-hidden />
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-center gap-3">
@@ -1455,19 +1717,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-gray-500">{t('repOnboarding.header.gigFilter')}</span>
-                <select
+                <HarxSelect
                   id="gig-filter-dropdown"
                   value={filterGigId}
-                  onChange={(e) => setFilterGigId(e.target.value)}
-                  className="min-w-[170px] rounded-xl border-2 border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
-                >
-                  <option value="all">{t('repOnboarding.header.allGigs')}</option>
-                  {companyGigs.map((gig: any) => (
-                    <option key={gig._id || gig.id} value={gig._id || gig.id}>
-                      {gig.title}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setFilterGigId}
+                  options={gigFilterOptions}
+                  minWidthClass="min-w-[240px]"
+                  separateFirstOption
+                />
               </div>
               <button
                 type="button"
@@ -1852,18 +2109,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     <h2 className="text-xl font-black text-gray-900">{t('repOnboarding.trackingStats.title')}</h2>
                     <p className="text-sm text-gray-500">{t('repOnboarding.trackingStats.subtitle')}</p>
                   </div>
-                  <select
+                  <HarxSelect
                     value={statsJourneyId}
-                    onChange={(e) => setStatsJourneyId(e.target.value)}
-                    className="min-w-[220px] rounded-xl border-2 border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
-                  >
-                    <option value="all">{t('repOnboarding.trackingStats.allTrainings')}</option>
-                    {trainings.map((journey) => (
-                      <option key={String(journey._id || journey.id)} value={String(journey._id || journey.id)}>
-                        {asUiString(journey.title ?? journey.name, t('repOnboarding.trainingSection.title'))}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setStatsJourneyId}
+                    options={journeyFilterOptions}
+                    minWidthClass="min-w-[260px]"
+                    separateFirstOption
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

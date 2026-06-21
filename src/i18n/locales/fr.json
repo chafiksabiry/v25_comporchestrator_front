@@ -1551,6 +1551,7 @@
     "header": {
       "gigFilter": "Gig :",
       "allGigs": "Tous les gigs",
+      "allGigsHint": "Afficher toutes les formations",
       "newJourneyBtn": "Nouveau parcours de formation"
     },
     "pageTabs": {
@@ -1587,6 +1588,7 @@
       "completed": "Terminés",
       "notStarted": "Non démarrés",
       "allTrainings": "Toutes les formations",
+      "allTrainingsHint": "Vue globale de toutes les formations",
       "progressOverview": "Vue d'ensemble",
       "byTraining": "Par formation",
       "noTrainingData": "Aucune donnée de formation disponible."
