@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
-import { isCallRejectedByAI, isCallFraudDetected, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn } from '../../../utils/callStatusDisplay';
+import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;
@@ -57,6 +57,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'transcript' | 'insights'>('transcript');
   const isFraud = isCallFraudDetected(call);
+  const isVoicemail = isCallVoicemail(call);
 
   const recordingUrl = call.recording_url_cloudinary || call.recording_url;
   const finalUrl = recordingUrl
@@ -154,6 +155,15 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
             </button>
           </div>
         </div>
+
+        {isVoicemail && (
+          <div className="px-4 md:px-8 py-4 border-b border-slate-200 bg-slate-50/80 shrink-0">
+            <p className="text-[11px] font-bold text-slate-700 leading-relaxed flex items-start gap-2">
+              <Phone className="w-4 h-4 shrink-0 mt-0.5 text-slate-500" />
+              <span>{getVoicemailCallNotice(i18n.language)}</span>
+            </p>
+          </div>
+        )}
 
         {isFraud && (
           <div className="px-4 md:px-8 py-4 border-b border-rose-100 bg-rose-50/60 space-y-2 shrink-0">
