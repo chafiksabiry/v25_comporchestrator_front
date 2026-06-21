@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import {
   FileText,
   RefreshCw,
@@ -102,6 +102,135 @@ const getLeadAvatarGradient = (lead: Lead): string => {
   const seed = (lead._id || lead.Email_1 || lead.Last_Name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   return avatarGradients[seed % avatarGradients.length];
 };
+
+const LEAD_TABLE_COL_COUNT = 8;
+const LEAD_EMPTY = '\u2014';
+
+function formatLeadLocation(lead: Lead): string {
+  const cp = lead.Postal_Code?.trim();
+  const city = lead.City?.trim();
+  if (cp && city) return `${cp} \u00b7 ${city}`;
+  return cp || city || LEAD_EMPTY;
+}
+
+const LEAD_ROW_CELL =
+  'px-3 py-3 align-middle border-y border-slate-100/80 bg-white/80 backdrop-blur-sm transition-colors duration-200 group-hover:bg-white';
+
+type LeadTableRowProps = {
+  lead: Lead;
+  variant?: 'default' | 'realtime';
+  onView: (lead: Lead) => void;
+  onEdit: (lead: Lead) => void;
+  calledBadgeTitle: string;
+  viewTitle: string;
+  editTitle: string;
+};
+
+function LeadTableRow({
+  lead,
+  variant = 'default',
+  onView,
+  onEdit,
+  calledBadgeTitle,
+  viewTitle,
+  editTitle,
+}: LeadTableRowProps) {
+  const isPlaceholder = Boolean((lead as Lead & { _isPlaceholder?: boolean })._isPlaceholder);
+  const rowBorder =
+    variant === 'realtime'
+      ? 'border-emerald-100/60 group-hover:border-emerald-200'
+      : 'border-slate-100/80 group-hover:border-harx-100/60';
+
+  return (
+    <tr className={`group ${isPlaceholder ? 'opacity-75' : ''}`}>
+      <td
+        className={`${LEAD_ROW_CELL} w-[52px] rounded-l-2xl border-l pl-2.5 ${rowBorder} ${
+          isPlaceholder ? 'border-l-4 border-l-amber-400' : ''
+        }`}
+      >
+        <div className="flex justify-center">
+          <div className="relative">
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-xs font-black text-white shadow-md group-hover:scale-105 transition-transform duration-300`}
+            >
+              {getLeadInitials(lead)}
+            </div>
+            {lead.hasBeenCalled && (
+              <span
+                className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-emerald-500 shadow-sm"
+                title={calledBadgeTitle}
+              >
+                <PhoneCall className="h-2.5 w-2.5 text-white" />
+              </span>
+            )}
+          </div>
+        </div>
+      </td>
+      <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+        <span className="block truncate text-sm font-bold text-slate-900" title={lead.Last_Name || undefined}>
+          {lead.Last_Name || LEAD_EMPTY}
+        </span>
+      </td>
+      <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+        <span className="block truncate text-sm font-semibold text-slate-700" title={lead.First_Name || undefined}>
+          {lead.First_Name || LEAD_EMPTY}
+        </span>
+      </td>
+      <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Phone className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+          <span
+            className="truncate text-sm font-medium tabular-nums text-slate-800"
+            title={lead.Phone || undefined}
+          >
+            {lead.Phone || LEAD_EMPTY}
+          </span>
+        </div>
+      </td>
+      <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Mail className="h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-harx-400 transition-colors" />
+          <span
+            className="truncate text-sm text-slate-600 group-hover:text-harx-600 transition-colors"
+            title={lead.Email_1 || undefined}
+          >
+            {lead.Email_1 || LEAD_EMPTY}
+          </span>
+        </div>
+      </td>
+      <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+        <span className="block truncate text-sm text-slate-600" title={formatLeadLocation(lead)}>
+          {formatLeadLocation(lead)}
+        </span>
+      </td>
+      <td className={`${LEAD_ROW_CELL} min-w-0 ${rowBorder}`}>
+        <span className="block truncate text-sm text-slate-500" title={lead.Address || undefined}>
+          {lead.Address || LEAD_EMPTY}
+        </span>
+      </td>
+      <td className={`${LEAD_ROW_CELL} w-[88px] rounded-r-2xl border-r ${rowBorder}`}>
+        <div className="flex items-center justify-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onView({ ...lead })}
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-white p-2 text-slate-400 transition-all duration-200 hover:border-transparent hover:bg-gradient-harx hover:text-white hover:shadow-md"
+            title={viewTitle}
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onEdit({ ...lead })}
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-white p-2 text-slate-400 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 hover:shadow-sm"
+            title={editTitle}
+          >
+            <Edit className="h-4 w-4" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
 
 const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyId }: UploadContactsProps) => {
   const { t } = useTranslation();
@@ -320,10 +449,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       if (dataString.length > maxSize) {
         if (useSessionStorage) {
-          console.warn(`⚠️ Data for ${key} too large for sessionStorage (${Math.round(dataString.length / 1024 / 1024)}MB)`);
+          console.warn(`ÔÜá´©Å Data for ${key} too large for sessionStorage (${Math.round(dataString.length / 1024 / 1024)}MB)`);
           return false;
         } else {
-          console.warn(`⚠️ Data for ${key} too large for localStorage, using sessionStorage`);
+          console.warn(`ÔÜá´©Å Data for ${key} too large for localStorage, using sessionStorage`);
           return safeStorageSet(key, data, true);
         }
       }
@@ -335,7 +464,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       }
       return true;
     } catch (error) {
-      console.warn(`⚠️ Storage full for ${key}, cleaning up and retrying`);
+      console.warn(`ÔÜá´©Å Storage full for ${key}, cleaning up and retrying`);
 
       // Clean up storage and try again
       cleanupLocalStorage();
@@ -353,10 +482,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         return true;
       } catch (retryError) {
         if (useSessionStorage) {
-          console.error(`❌ Both localStorage and sessionStorage are full for ${key}`);
+          console.error(`ÔØî Both localStorage and sessionStorage are full for ${key}`);
           return false;
         } else {
-          console.warn(`⚠️ Still full after cleanup, trying sessionStorage for ${key}`);
+          console.warn(`ÔÜá´©Å Still full after cleanup, trying sessionStorage for ${key}`);
           return safeStorageSet(key, data, true);
         }
       }
@@ -380,7 +509,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       return null;
     } catch (error) {
-      console.error(`❌ Error parsing data for ${key}:`, error);
+      console.error(`ÔØî Error parsing data for ${key}:`, error);
       return null;
     }
   };
@@ -405,7 +534,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       }
       return data;
     } catch (error) {
-      console.error('❌ Error compressing data:', error);
+      console.error('ÔØî Error compressing data:', error);
       return data;
     }
   };
@@ -416,13 +545,13 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       if (Array.isArray(data)) {
         // If data is too large, keep only the most recent items
         if (data.length > maxItems) {
-          console.warn(`⚠️ Limiting data to ${maxItems} items (was ${data.length})`);
+          console.warn(`ÔÜá´©Å Limiting data to ${maxItems} items (was ${data.length})`);
           return data.slice(-maxItems); // Keep last 100 items
         }
       }
       return data;
     } catch (error) {
-      console.error('❌ Error limiting data size:', error);
+      console.error('ÔØî Error limiting data size:', error);
       return data;
     }
   };
@@ -454,7 +583,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       
     } catch (error) {
-      console.error('❌ Error cleaning up localStorage:', error);
+      console.error('ÔØî Error cleaning up localStorage:', error);
     }
   };
 
@@ -525,7 +654,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       // Only save if data is not too large
       const success = safeStorageSet('parsedLeads', parsedLeads);
       if (!success) {
-        console.warn('⚠️ Could not save parsed leads to storage - keeping in memory only');
+        console.warn('ÔÜá´©Å Could not save parsed leads to storage - keeping in memory only');
         // Set a flag to indicate data is only in memory
         setParsedLeads(prev => prev.map(lead => ({ ...lead, _memoryOnly: true })));
       }
@@ -669,7 +798,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       };
 
     } catch (error) {
-      console.error('❌ Error in processFileWithBackend:', error);
+      console.error('ÔØî Error in processFileWithBackend:', error);
       throw error;
     }
   };
@@ -754,11 +883,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         const validationStored = safeStorageSet('validationResults', result.validation);
 
         if (!leadsStored) {
-          console.warn('⚠️ Could not save leads to storage - data too large, keeping in memory only');
+          console.warn('ÔÜá´©Å Could not save leads to storage - data too large, keeping in memory only');
           setDataTooLarge(true);
         }
         if (!validationStored) {
-          console.warn('⚠️ Could not save validation results to storage - data too large');
+          console.warn('ÔÜá´©Å Could not save validation results to storage - data too large');
         }
 
         // Restore existing leads after processing
@@ -842,13 +971,13 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const handleSaveLeads = async () => {
     if (!parsedLeads || parsedLeads.length === 0) return;
 
-    // Début de la sauvegarde (séparé du processing)
+    // D├®but de la sauvegarde (s├®par├® du processing)
     setIsSavingLeads(true);
     setSavedLeadsCount(0);
     setRecentlySavedLeads([]);
     setShowSaveButton(false);
 
-    // Utiliser la référence pour suivre l'état de traitement de manière fiable
+    // Utiliser la r├®f├®rence pour suivre l'├®tat de traitement de mani├¿re fiable
     processingRef.current = true;
 
     try {
@@ -891,10 +1020,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         Date_of_Birth: lead.Date_of_Birth || ''
       }));
 
-      // Dédoublonnage côté client avant l'envoi : on ne renvoie pas deux fois
-      // le même email/téléphone (le backend filtre aussi mais on évite la
-      // bande passante inutile et on évite que le toast annonce un nombre
-      // de doublons gonflé par notre propre payload).
+      // D├®doublonnage c├┤t├® client avant l'envoi : on ne renvoie pas deux fois
+      // le m├¬me email/t├®l├®phone (le backend filtre aussi mais on ├®vite la
+      // bande passante inutile et on ├®vite que le toast annonce un nombre
+      // de doublons gonfl├® par notre propre payload).
       const seenEmails = new Set<string>();
       const seenPhones = new Set<string>();
       const leadsForAPI = mappedLeads.filter((lead) => {
@@ -916,7 +1045,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         throw new Error('Processing cancelled by user');
       }
 
-      // Progression fictive pour montrer que ça travaille
+      // Progression fictive pour montrer que ├ºa travaille
       setUploadProgress(30);
 
       const response = await axios.post(
@@ -944,11 +1073,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         if (savedCount > 0) {
           toast.success(
             totalSkipped > 0
-              ? `${savedCount} contact(s) enregistré(s), ${totalSkipped} doublon(s) ignoré(s)`
+              ? `${savedCount} contact(s) enregistr├®(s), ${totalSkipped} doublon(s) ignor├®(s)`
               : t('uploadContacts.success.savedContacts', { count: savedCount })
           );
         } else if (totalSkipped > 0) {
-          toast(`Aucun nouveau contact : ${totalSkipped} doublon(s) ignoré(s)`, { icon: 'ℹ️' });
+          toast(`Aucun nouveau contact : ${totalSkipped} doublon(s) ignor├®(s)`, { icon: 'Ôä╣´©Å' });
         }
 
         // Persist the per-gig setupSteps.uploadContacts flag so the
@@ -957,8 +1086,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           markGigStepDone(selectedGigId, 'uploadContacts', true);
         }
 
-        // Les leads sont maintenant ajoutés, on peut mettre à jour l'état local si nécessaire
-        // Pour l'instant, on se fie au rechargement ou à la réponse
+        // Les leads sont maintenant ajout├®s, on peut mettre ├á jour l'├®tat local si n├®cessaire
+        // Pour l'instant, on se fie au rechargement ou ├á la r├®ponse
         if (responseData.data && Array.isArray(responseData.data)) {
           const savedData: any[] = responseData.data;
           setRecentlySavedLeads(savedData);
@@ -968,7 +1097,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           setSavedLeadsCount(savedCount);
         }
 
-        // Les leads ont été ajoutés, effacer les leads parsés
+        // Les leads ont ├®t├® ajout├®s, effacer les leads pars├®s
         setParsedLeads([]);
 
         // Clear validation results immediately after save
@@ -977,7 +1106,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         sessionStorage.removeItem('validationResults');
 
 
-        // Mettre à jour l'onboarding
+        // Mettre ├á jour l'onboarding
         try {
           const companyId = Cookies.get('companyId');
           if (companyId) {
@@ -1008,7 +1137,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       toast.error(errorMessage);
 
     } finally {
-      // TOUJOURS réinitialiser l'état, même en cas d'erreur
+      // TOUJOURS r├®initialiser l'├®tat, m├¬me en cas d'erreur
       setIsSavingLeads(false);
       processingRef.current = false;
       setShowSaveButton(true);
@@ -1046,7 +1175,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   };
 
-  // Fonction pour forcer la réinitialisation complète
+  // Fonction pour forcer la r├®initialisation compl├¿te
 
   const handleZohoConnect = async () => {
     try {
@@ -1157,10 +1286,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       const accountsServer = urlParams.get('accounts-server');
 
       const params = new URLSearchParams(window.location.search);
-      // Vérifier si l'URL contient le paramètre startStep=5
+      // V├®rifier si l'URL contient le param├¿tre startStep=5
       if (params.get('session') === 'someGeneratedSessionId') {
 
-        // Nettoyer l'URL pour éviter de relancer à chaque render
+        // Nettoyer l'URL pour ├®viter de relancer ├á chaque render
         params.delete('session');
         const newSearch = params.toString();
         window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
@@ -1249,7 +1378,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         headers,
       });
       if (refreshRes.ok) {
-        // Réessayer la requête initiale
+        // R├®essayer la requ├¬te initiale
         response = await fetch(url, { ...options, headers });
       } else {
         toast.error(t('uploadContacts.errors.zohoTokenExpired'));
@@ -1322,7 +1451,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       
       await fetchLeads(1, '');
 
-      // Déclencher une mise à jour de l'état d'onboarding pour marquer le step 5 comme complété
+      // D├®clencher une mise ├á jour de l'├®tat d'onboarding pour marquer le step 5 comme compl├®t├®
       if (leadsFromApi.length > 0) {
         try {
           const companyId = Cookies.get('companyId');
@@ -1505,7 +1634,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       return;
     }
 
-    // Skip fetchLeads if we have parsed leads waiting to be saved — fetchLeads would wipe them
+    // Skip fetchLeads if we have parsed leads waiting to be saved ÔÇö fetchLeads would wipe them
     if (parsedLeads.length > 0) {
       
       return;
@@ -1532,7 +1661,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   }, [selectedGigId, isProcessing, callStatusFilter, callFilterGigId]);
 
-  // useEffect pour recharger les leads après l'import Zoho
+  // useEffect pour recharger les leads apr├¿s l'import Zoho
   useEffect(() => {
     
     // Recharger les leads si on vient de finir l'import Zoho et qu'on a des leads
@@ -1548,7 +1677,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   useEffect(() => {
     
 
-    // Charger les leads si on a un gigId et qu'on n'a pas encore de leads affichés
+    // Charger les leads si on a un gigId et qu'on n'a pas encore de leads affich├®s
     if (selectedGigId && leads.length === 0 && realtimeLeads.length === 0 && !isProcessing) {
       
       fetchLeads(1, '').catch(error => {
@@ -1556,7 +1685,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         setError('Failed to load leads');
       });
     }
-  }, []); // Se déclenche seulement au montage
+  }, []); // Se d├®clenche seulement au montage
 
   useEffect(() => {
     // Skip this effect if we're currently processing a file
@@ -1598,7 +1727,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     const buttons = [];
     const maxVisiblePages = 5; // Nombre maximum de pages visibles
 
-    // Si le nombre total de pages est inférieur ou égal au maximum visible, afficher toutes les pages
+    // Si le nombre total de pages est inf├®rieur ou ├®gal au maximum visible, afficher toutes les pages
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         buttons.push(
@@ -1617,7 +1746,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       return buttons;
     }
 
-    // Toujours afficher la première page
+    // Toujours afficher la premi├¿re page
     buttons.push(
       <button
         key={1}
@@ -1631,18 +1760,18 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </button>
     );
 
-    // Calculer les pages à afficher autour de la page courante
+    // Calculer les pages ├á afficher autour de la page courante
     let startPage = Math.max(2, currentPage - 1);
     let endPage = Math.min(totalPages - 1, currentPage + 1);
 
-    // Ajuster si on est proche du début ou de la fin
+    // Ajuster si on est proche du d├®but ou de la fin
     if (currentPage <= 3) {
       endPage = Math.min(4, totalPages - 1);
     } else if (currentPage >= totalPages - 2) {
       startPage = Math.max(2, totalPages - 3);
     }
 
-    // Ajouter les points de suspension au début si nécessaire
+    // Ajouter les points de suspension au d├®but si n├®cessaire
     if (startPage > 2) {
       buttons.push(
         <span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">
@@ -1667,7 +1796,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       );
     }
 
-    // Ajouter les points de suspension à la fin si nécessaire
+    // Ajouter les points de suspension ├á la fin si n├®cessaire
     if (endPage < totalPages - 1) {
       buttons.push(
         <span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">
@@ -1676,7 +1805,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       );
     }
 
-    // Toujours afficher la dernière page si elle existe et est différente de la première
+    // Toujours afficher la derni├¿re page si elle existe et est diff├®rente de la premi├¿re
     if (totalPages > 1) {
       buttons.push(
         <button
@@ -1730,7 +1859,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               targetGigId = urlGigId;
             }
           } catch {
-            // Non-browser environment or malformed URL — keep default.
+            // Non-browser environment or malformed URL ÔÇö keep default.
           }
           setSelectedGigId(targetGigId);
         }
@@ -1852,25 +1981,25 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   };
 
-  // Fonction de filtrage des leads - maintenant déclenche une recherche API
+  // Fonction de filtrage des leads - maintenant d├®clenche une recherche API
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
 
-    // Annuler le timeout précédent s'il existe
+    // Annuler le timeout pr├®c├®dent s'il existe
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // Délai pour éviter trop d'appels API pendant la frappe
+    // D├®lai pour ├®viter trop d'appels API pendant la frappe
     searchTimeoutRef.current = setTimeout(async () => {
-      // Si on a une requête de recherche, récupérer tous les résultats
+      // Si on a une requ├¬te de recherche, r├®cup├®rer tous les r├®sultats
       if (query.trim()) {
-        await fetchLeads(1, query); // Récupérer tous les résultats de recherche
+        await fetchLeads(1, query); // R├®cup├®rer tous les r├®sultats de recherche
       } else {
         // Si pas de recherche, recharger les leads normaux avec pagination
         await fetchLeads(1);
       }
-    }, 500); // 500ms de délai
+    }, 500); // 500ms de d├®lai
   };
 
   // Fonction de filtrage par statut (local uniquement)
@@ -1887,7 +2016,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     });
   };
 
-  // Effet pour filtrer les leads par statut seulement (la recherche est gérée par l'API)
+  // Effet pour filtrer les leads par statut seulement (la recherche est g├®r├®e par l'API)
   useEffect(() => {
     const filtered = filterLeadsByStatus(leads, filterStatus);
     setFilteredLeads(filtered);
@@ -2236,7 +2365,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <span>
                   {isProcessing && !uploadError && !uploadSuccess
                     ? `Analyse en cours... ${uploadProgress}%`
-                    : uploadProgress > 0 ? `${uploadProgress}% terminé` : 'Prêt'
+                    : uploadProgress > 0 ? `${uploadProgress}% termin├®` : 'Pr├¬t'
                   }
                 </span>
                 <span>{Math.round(selectedFile.size / 1024)} KB</span>
@@ -2319,7 +2448,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                           <div className="mt-3 space-y-2">
                             {validationResults.errors.map((error: string, index: number) => (
                               <div key={index} className="text-red-700 bg-red-50/80 backdrop-blur-sm p-3 rounded-xl border border-red-100 text-xs font-semibold">
-                                • {error}
+                                ÔÇó {error}
                               </div>
                             ))}
                           </div>
@@ -2550,7 +2679,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 </button>
 
 
-                {/* Bouton de sauvegarde séparé qui apparaît pendant la sauvegarde */}
+                {/* Bouton de sauvegarde s├®par├® qui appara├«t pendant la sauvegarde */}
                 {isSavingLeads && (
                   <div className="mt-4 space-y-3">
                     <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
@@ -2655,7 +2784,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     <span className="inline-flex items-center gap-1.5 bg-harx-50 text-harx-700 px-3 py-1.5 rounded-full text-xs font-bold border border-harx-100/80 shadow-sm">
                       {t('uploadContacts.list.showing', { filtered: filteredLeads.length, total: totalCount })}
                       {searchQuery && (
-                        <span className="text-harx-500/80 font-medium">· "{searchQuery}"</span>
+                        <span className="text-harx-500/80 font-medium">┬À "{searchQuery}"</span>
                       )}
                     </span>
                   ) : (
@@ -2749,34 +2878,41 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         </div>
         {/* Tableau d'affichage des leads */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
-            <div className="relative px-2 pb-2">
-              <table className="w-full table-fixed border-separate border-spacing-y-1.5">
-                <thead className="sticky top-0 z-[50]">
+          <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar min-h-0">
+            <div className="relative min-w-[980px] px-2 pb-2">
+              <table className="w-full border-separate border-spacing-y-1.5">
+                <colgroup>
+                  <col className="w-[52px]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[13%]" />
+                  <col />
+                  <col className="w-[88px]" />
+                </colgroup>
+                <thead className="sticky top-0 z-[50] bg-white/95 backdrop-blur-sm">
                   <tr>
-                    <th scope="col" className="w-[5%] px-2 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left" />
-                    <th scope="col" className="w-[10%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
+                    <th scope="col" className="px-2 py-2 text-left" aria-hidden="true" />
+                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
                       {t('uploadContacts.list.table.lastName')}
                     </th>
-                    <th scope="col" className="w-[10%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
+                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
                       {t('uploadContacts.list.table.firstName')}
                     </th>
-                    <th scope="col" className="w-[18%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
-                      {t('uploadContacts.list.table.email')}
-                    </th>
-                    <th scope="col" className="w-[18%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
-                      {t('uploadContacts.list.table.address')}
-                    </th>
-                    <th scope="col" className="w-[11%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
-                      {t('uploadContacts.list.table.city')}
-                    </th>
-                    <th scope="col" className="w-[8%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
-                      {t('uploadContacts.list.table.postalCode')}
-                    </th>
-                    <th scope="col" className="w-[11%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-left">
+                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
                       {t('uploadContacts.list.table.mobile')}
                     </th>
-                    <th scope="col" className="w-[9%] px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 text-center">
+                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
+                      {t('uploadContacts.list.table.email')}
+                    </th>
+                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
+                      {t('uploadContacts.list.table.location', 'Localisation')}
+                    </th>
+                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
+                      {t('uploadContacts.list.table.address')}
+                    </th>
+                    <th scope="col" className="px-3 py-2 text-center text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
                       {t('uploadContacts.list.table.actions')}
                     </th>
                   </tr>
@@ -2784,7 +2920,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <tbody>
                   {error ? (
                     <tr>
-                      <td colSpan={9} className="px-6 py-12 text-center">
+                      <td colSpan={LEAD_TABLE_COL_COUNT} className="px-6 py-12 text-center">
                         <div className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-rose-50 text-rose-600 text-sm font-semibold border border-rose-100">
                           {error}
                         </div>
@@ -2793,7 +2929,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   ) : isLoadingLeads ? (
                     Array.from({ length: 6 }).map((_, i) => (
                       <tr key={`skeleton-${i}`}>
-                        <td colSpan={9} className="px-2 py-1">
+                        <td colSpan={LEAD_TABLE_COL_COUNT} className="px-2 py-1">
                           <div className="flex items-center gap-4 p-4 bg-white/70 rounded-2xl border border-slate-100 animate-pulse">
                             <div className="w-10 h-10 rounded-xl bg-slate-100 shrink-0" />
                             <div className="flex-1 space-y-2">
@@ -2805,118 +2941,37 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                       </tr>
                     ))
                   ) : (filteredLeads && filteredLeads.length > 0) ? (
-                    filteredLeads.map((lead, index) => lead && (
-                      <tr key={lead._id || `filtered-${index}`} className="group">
-                        <td colSpan={9} className="px-2 py-0.5">
-                          <div className={`grid grid-cols-[5%_10%_10%_18%_18%_11%_8%_11%_9%] items-center p-3.5 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-md hover:border-harx-100/60 hover:bg-white transition-all duration-300 ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-l-amber-400' : ''}`}>
-                            <div className="flex justify-center">
-                              <div className="relative">
-                                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-white text-xs font-black flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300`}>
-                                  {getLeadInitials(lead)}
-                                </div>
-                                {lead.hasBeenCalled && (
-                                  <span
-                                    className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 border-2 border-white shadow-sm"
-                                    title={t('uploadContacts.list.calledBadge')}
-                                  >
-                                    <PhoneCall className="w-2.5 h-2.5 text-white" />
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="px-2 text-sm font-bold text-slate-900 truncate">{lead.Last_Name || '—'}</div>
-                            <div className="px-2 text-sm font-semibold text-slate-700 truncate">{lead.First_Name || '—'}</div>
-                            <div className="px-2 flex items-center gap-1.5 min-w-0">
-                              <Mail className="h-3.5 w-3.5 text-slate-300 shrink-0 group-hover:text-harx-400 transition-colors" />
-                              <span className="text-sm text-slate-600 truncate group-hover:text-harx-600 transition-colors">{lead.Email_1 || '—'}</span>
-                            </div>
-                            <div className="px-2 text-sm text-slate-500 truncate">{lead.Address || '—'}</div>
-                            <div className="px-2 text-sm text-slate-500 truncate">{lead.City || '—'}</div>
-                            <div className="px-2 text-sm text-slate-500 truncate">{lead.Postal_Code || '—'}</div>
-                            <div className="px-2 flex items-center gap-1.5 min-w-0">
-                              <Phone className="h-3.5 w-3.5 text-slate-300 shrink-0" />
-                              <span className="text-sm font-medium text-slate-700 truncate">{lead.Phone || '—'}</span>
-                            </div>
-                            <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => setViewingLeadDetail({ ...lead })}
-                                className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200/80 bg-white text-slate-400 hover:text-white hover:bg-gradient-harx hover:border-transparent hover:shadow-md transition-all duration-200"
-                                title={t('uploadContacts.list.details.button')}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditingSavedLead({ ...lead })}
-                                className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200/80 bg-white text-slate-400 hover:text-slate-800 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm transition-all duration-200"
-                                title={t('uploadContacts.list.edit.button')}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    filteredLeads.map((lead, index) =>
+                      lead ? (
+                        <LeadTableRow
+                          key={lead._id || `filtered-${index}`}
+                          lead={lead}
+                          onView={setViewingLeadDetail}
+                          onEdit={setEditingSavedLead}
+                          calledBadgeTitle={t('uploadContacts.list.calledBadge')}
+                          viewTitle={t('uploadContacts.list.details.button')}
+                          editTitle={t('uploadContacts.list.edit.button')}
+                        />
+                      ) : null
+                    )
                   ) : (realtimeLeads && realtimeLeads.length > 0) ? (
-                    realtimeLeads.map((lead, index) => lead && (
-                      <tr key={lead._id || `realtime-${index}`} className="group">
-                        <td colSpan={9} className="px-2 py-0.5">
-                          <div className="grid grid-cols-[5%_10%_10%_18%_18%_11%_8%_11%_9%] items-center p-3.5 bg-white/80 backdrop-blur-sm rounded-2xl border border-emerald-100/60 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-300">
-                            <div className="flex justify-center">
-                              <div className="relative">
-                                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-white text-xs font-black flex items-center justify-center shadow-md`}>
-                                  {getLeadInitials(lead)}
-                                </div>
-                                {lead.hasBeenCalled && (
-                                  <span
-                                    className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 border-2 border-white shadow-sm"
-                                    title={t('uploadContacts.list.calledBadge')}
-                                  >
-                                    <PhoneCall className="w-2.5 h-2.5 text-white" />
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="px-2 text-sm font-bold text-slate-900 truncate">{lead.Last_Name || '—'}</div>
-                            <div className="px-2 text-sm font-semibold text-slate-700 truncate">{lead.First_Name || '—'}</div>
-                            <div className="px-2 flex items-center gap-1.5 min-w-0">
-                              <Mail className="h-3.5 w-3.5 text-slate-300 shrink-0" />
-                              <span className="text-sm text-slate-600 truncate">{lead.Email_1 || '—'}</span>
-                            </div>
-                            <div className="px-2 text-sm text-slate-500 truncate">{lead.Address || '—'}</div>
-                            <div className="px-2 text-sm text-slate-500 truncate">{lead.City || '—'}</div>
-                            <div className="px-2 text-sm text-slate-500 truncate">{lead.Postal_Code || '—'}</div>
-                            <div className="px-2 flex items-center gap-1.5 min-w-0">
-                              <Phone className="h-3.5 w-3.5 text-slate-300 shrink-0" />
-                              <span className="text-sm font-medium text-slate-700 truncate">{lead.Phone || '—'}</span>
-                            </div>
-                            <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => setViewingLeadDetail({ ...lead })}
-                                className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200/80 bg-white text-slate-400 hover:text-white hover:bg-gradient-harx hover:border-transparent transition-all duration-200"
-                                title={t('uploadContacts.list.details.button')}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditingSavedLead({ ...lead })}
-                                className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200/80 bg-white text-slate-400 hover:text-slate-800 hover:bg-slate-50 transition-all duration-200"
-                                title={t('uploadContacts.list.edit.button')}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    realtimeLeads.map((lead, index) =>
+                      lead ? (
+                        <LeadTableRow
+                          key={lead._id || `realtime-${index}`}
+                          lead={lead}
+                          variant="realtime"
+                          onView={setViewingLeadDetail}
+                          onEdit={setEditingSavedLead}
+                          calledBadgeTitle={t('uploadContacts.list.calledBadge')}
+                          viewTitle={t('uploadContacts.list.details.button')}
+                          editTitle={t('uploadContacts.list.edit.button')}
+                        />
+                      ) : null
+                    )
                   ) : (
                     <tr>
-                      <td colSpan={9} className="px-6 py-4 text-center">
+                      <td colSpan={LEAD_TABLE_COL_COUNT} className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center justify-center py-16">
                           <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-50 to-harx-50/50 flex items-center justify-center mb-4 border border-slate-100 shadow-inner">
                             <Users className="h-10 w-10 text-slate-300" />
@@ -2979,7 +3034,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         )}
       </div>
 
-      {/* Ajout d'une section pour afficher les leads en temps réel */}
+      {/* Ajout d'une section pour afficher les leads en temps r├®el */}
       {realtimeLeads.length > 0 && (
         <div className="bg-white/60 backdrop-blur-xl rounded-[24px] shadow-lg border border-white/70 p-5">
           <h3 className="text-base font-black text-slate-900 mb-3 flex items-center tracking-tight">

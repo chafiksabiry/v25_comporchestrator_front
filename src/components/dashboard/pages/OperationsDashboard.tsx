@@ -7,6 +7,7 @@ import {
   ShieldAlert,
   Clock,
   Users,
+  UserCheck,
   PhoneCall,
   Trophy,
   BarChart3,
@@ -205,7 +206,7 @@ function outcomeTag(
   return map[outcome];
 }
 
-type TabId = 'overview' | 'leads' | 'calls' | 'wallet';
+type TabId = 'overview' | 'leads' | 'calls' | 'agents' | 'wallet';
 
 interface StatusBucket {
   key: string;
@@ -962,6 +963,7 @@ export default function OperationsDashboard() {
     { id: 'overview', label: t('opsDashboard.tabs.overview', 'Vue globale'), icon: <BarChart3 size={14} /> },
     { id: 'leads', label: t('opsDashboard.tabs.leads', 'Leads'), icon: <Users size={14} /> },
     { id: 'calls', label: t('opsDashboard.tabs.calls', 'Appels'), icon: <PhoneCall size={14} /> },
+    { id: 'agents', label: t('opsDashboard.tabs.agents', 'Agents'), icon: <UserCheck size={14} /> },
     { id: 'wallet', label: t('opsDashboard.tabs.wallet', 'Wallet'), icon: <Wallet size={14} /> },
   ];
 
@@ -1132,6 +1134,8 @@ export default function OperationsDashboard() {
           series7d={series7dChart.length ? series7dChart : null}
           fmtDuration={fmtDuration}
         />
+      ) : tab === 'agents' ? (
+        <TeamView reps={repsMonth} />
       ) : (
         // ── "Vue globale" — top-level KPIs + coverage + outcomes donut. ───
         <OverviewView
@@ -1149,6 +1153,7 @@ export default function OperationsDashboard() {
           repsMonth={repsMonth}
           fmtDuration={fmtDuration}
           onSeeLeads={() => setTab('leads')}
+          onSeeAgents={() => setTab('agents')}
         />
       )}
     </div>
@@ -2294,6 +2299,7 @@ function OverviewView({
   repsMonth,
   fmtDuration,
   onSeeLeads,
+  onSeeAgents,
 }: {
   stats: OverviewKpiStats;
   leadStats: OverviewLeadStatsFull | null;
@@ -2309,9 +2315,21 @@ function OverviewView({
   repsMonth: AnalyticsRep[] | null;
   fmtDuration: (sec: number) => string;
   onSeeLeads: () => void;
+  onSeeAgents: () => void;
 }) {
   const { t } = useTranslation();
   const [selectedKpi, setSelectedKpi] = useState<OverviewKpiId | null>(null);
+
+  const topAgents = useMemo(() => {
+    if (!repsMonth?.length) return [];
+    return [...repsMonth]
+      .filter((r) => r.total > 0)
+      .sort((a, b) => b.transaction - a.transaction)
+      .slice(0, 5);
+  }, [repsMonth]);
+
+  const agentsEnrolled = repsMonth?.length ?? 0;
+  const agentsActive = repsMonth?.filter((r) => r.total > 0).length ?? 0;
 
   const toggleKpi = (id: OverviewKpiId) => {
     setSelectedKpi((prev) => (prev === id ? null : id));
@@ -2575,6 +2593,79 @@ function OverviewView({
           </div>
         </section>
       </div>
+
+      {/* ---------- Agents (aperçu) ---------- */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <header className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+            <UserCheck size={14} className="text-harx-500" />
+            {t('opsDashboard.overview.agents.title', 'Agents')}
+          </div>
+          <button
+            onClick={onSeeAgents}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            {t('opsDashboard.overview.detail', 'Détail')}
+            <ArrowUpRight size={12} />
+          </button>
+        </header>
+
+        <div className="mb-4 flex flex-wrap gap-4 text-[11px] font-bold text-slate-600">
+          <span>
+            {t('opsDashboard.overview.agents.enrolled', 'Enrollés')}:{' '}
+            <span className="font-black text-slate-900">{agentsEnrolled}</span>
+          </span>
+          <span>
+            {t('opsDashboard.overview.agents.activeMtd', 'Actifs (MTD)')}:{' '}
+            <span className="font-black text-emerald-600">{agentsActive}</span>
+          </span>
+          {qualityScore !== null && (
+            <span>
+              {t('opsDashboard.overview.agents.avgScore', 'Score moyen')}:{' '}
+              <span className="font-black text-slate-900">{qualityScore}/100</span>
+            </span>
+          )}
+        </div>
+
+        {topAgents.length === 0 ? (
+          <p className="py-6 text-center text-xs font-bold text-slate-400">
+            {t('opsDashboard.overview.agents.empty', 'Aucun agent avec des appels ce mois-ci.')}
+          </p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {topAgents.map((r, idx) => {
+              const convPct = r.total > 0 ? Math.round((r.transaction / r.total) * 1000) / 10 : 0;
+              return (
+                <li key={r.userId} className="flex items-center gap-3 py-2.5">
+                  <span className="w-5 shrink-0 text-[11px] font-black tabular-nums text-slate-400">
+                    {idx + 1}
+                  </span>
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
+                      TEAM_PALETTE[idx % TEAM_PALETTE.length]
+                    }`}
+                  >
+                    {initialsOf(r.name)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-black text-slate-900">{r.name}</p>
+                    <p className="text-[11px] font-medium text-slate-500">
+                      {r.transaction} {t('opsDashboard.overview.agents.transactions', 'transactions')} ·{' '}
+                      {convPct.toFixed(1)}% conv. · score {Math.round(r.avgScore)}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-lg font-black tabular-nums text-slate-700">
+                    {r.total}
+                  </span>
+                  <span className="shrink-0 text-[10px] font-bold uppercase text-slate-400">
+                    {t('opsDashboard.overview.agents.calls', 'appels')}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       {/* ---------- Performance 7 jours ---------- */}
       <Performance7Days series={series7d} />
