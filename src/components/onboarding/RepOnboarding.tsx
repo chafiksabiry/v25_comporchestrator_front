@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import {
@@ -21,13 +21,17 @@ import {
   Laptop,
   ChevronLeft,
   ChevronRight,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Users,
+  TrendingUp,
+  Target,
+  Award
 } from 'lucide-react';
 import { PremiumAudioPlayer } from '../dashboard/components/PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
 
 import { AppContent } from '../training/App';
-import { getGigsByCompanyId } from '../../api/matching';
+import { getGigsByCompanyId, getActiveAgentsForCompany } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
 import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../training/infrastructure/services/AIService';
@@ -35,6 +39,19 @@ import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
 
 interface RepOnboardingProps { }
+
+type FormationPageTab = 'courses' | 'participants' | 'tracking';
+
+type TrainingParticipantRow = {
+  id: string;
+  name: string;
+  email: string;
+  gigTitle: string;
+  gigId: string;
+  progress: number;
+  status: 'not_started' | 'in_progress' | 'completed';
+  journeyTitle?: string;
+};
 
 const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const { t } = useTranslation();
@@ -44,6 +61,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [legacyCompanyId, setLegacyCompanyId] = useState<string | null>(null);
   const [companyGigs, setCompanyGigs] = useState<any[]>([]);
   const [filterGigId, setFilterGigId] = useState<string>('all');
+  const [pageTab, setPageTab] = useState<FormationPageTab>('courses');
+  const [participants, setParticipants] = useState<TrainingParticipantRow[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [statsJourneyId, setStatsJourneyId] = useState<string>('all');
   const [savedPodcasts, setSavedPodcasts] = useState<SavedPodcastItem[]>([]);
   const [loadingPodcasts, setLoadingPodcasts] = useState(false);
   const [savedImageSets, setSavedImageSets] = useState<TrainingImageSet[]>([]);
@@ -602,6 +623,111 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     void fetchSavedImageSets();
   }, [fetchSavedImageSets]);
 
+  const fetchParticipants = useCallback(async () => {
+    if (!companyId) {
+      setParticipants([]);
+      return;
+    }
+
+    setLoadingParticipants(true);
+    try {
+      const activeAgents = await getActiveAgentsForCompany(companyId);
+      let filteredAgents = Array.isArray(activeAgents) ? activeAgents : [];
+
+      if (filterGigId !== 'all') {
+        filteredAgents = filteredAgents.filter((record: any) => {
+          const gigId = record?.gigId?._id || record?.gigId || record?.gig?._id;
+          return String(gigId) === String(filterGigId);
+        });
+      }
+
+      const rows: TrainingParticipantRow[] = filteredAgents.map((record: any, index: number) => {
+        const agent = record?.agentId && typeof record.agentId === 'object' ? record.agentId : record;
+        const gig = record?.gigId && typeof record.gigId === 'object' ? record.gigId : record?.gig;
+        const gigId = String(gig?._id || gig?.id || record?.gigId || '');
+        const linkedJourney = trainings.find((journey) => resolveJourneyGigId(journey) === gigId);
+        const rawProgress = Number(linkedJourney?.progress ?? record?.progress ?? 0);
+        const progress = Number.isFinite(rawProgress) ? Math.max(0, Math.min(100, Math.round(rawProgress))) : 0;
+
+        let status: TrainingParticipantRow['status'] = 'not_started';
+        if (progress >= 100 || linkedJourney?.status === 'completed') {
+          status = 'completed';
+        } else if (progress > 0 || linkedJourney?.status === 'in_progress' || linkedJourney?.status === 'active') {
+          status = 'in_progress';
+        }
+
+        return {
+          id: String(agent?._id || agent?.id || record?._id || index),
+          name: agent?.personalInfo?.name || agent?.name || t('repOnboarding.participants.unnamed'),
+          email: agent?.personalInfo?.email || agent?.email || '',
+          gigTitle: gig?.title || t('repOnboarding.participants.noGig'),
+          gigId,
+          progress,
+          status,
+          journeyTitle: linkedJourney
+            ? asUiString(linkedJourney?.title ?? linkedJourney?.name, '')
+            : undefined,
+        };
+      });
+
+      setParticipants(rows);
+    } catch (error) {
+      console.error('[RepOnboarding] Error fetching participants:', error);
+      setParticipants([]);
+    } finally {
+      setLoadingParticipants(false);
+    }
+  }, [companyId, filterGigId, trainings, resolveJourneyGigId, t]);
+
+  useEffect(() => {
+    void fetchParticipants();
+  }, [fetchParticipants]);
+
+  const trackingStats = useMemo(() => {
+    const scopedParticipants =
+      statsJourneyId === 'all'
+        ? participants
+        : participants.filter((participant) => {
+            const journey = trainings.find((item) => String(item._id || item.id) === statsJourneyId);
+            if (!journey) return false;
+            const journeyGigId = resolveJourneyGigId(journey);
+            return journeyGigId && participant.gigId === journeyGigId;
+          });
+
+    const total = scopedParticipants.length;
+    const completed = scopedParticipants.filter((p) => p.status === 'completed').length;
+    const inProgress = scopedParticipants.filter((p) => p.status === 'in_progress').length;
+    const notStarted = scopedParticipants.filter((p) => p.status === 'not_started').length;
+    const avgProgress =
+      total > 0
+        ? Math.round(scopedParticipants.reduce((sum, p) => sum + p.progress, 0) / total)
+        : 0;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    const scopedTrainings =
+      statsJourneyId === 'all'
+        ? trainings
+        : trainings.filter((journey) => String(journey._id || journey.id) === statsJourneyId);
+
+    const moduleStats = scopedTrainings.map((journey) => ({
+      id: String(journey._id || journey.id || ''),
+      title: asUiString(journey.title ?? journey.name, t('repOnboarding.trainingSection.title')),
+      modulesCount: Array.isArray(journey.modules) ? journey.modules.length : 0,
+      progress: Math.round(Number(journey.progress || 0)),
+    }));
+
+    return {
+      total,
+      completed,
+      inProgress,
+      notStarted,
+      avgProgress,
+      completionRate,
+      moduleStats,
+      trainingCount: scopedTrainings.length,
+    };
+  }, [participants, trainings, statsJourneyId, resolveJourneyGigId, t]);
+
   const normalizeText = (value: unknown): string =>
     String(value || '')
       .toLowerCase()
@@ -1028,8 +1154,16 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           <>
         <header className="mb-6 overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white px-6 py-5 shadow-2xl shadow-gray-200/40">
           <div className="h-1 w-full -mx-6 -mt-5 mb-5 rounded-t-2xl bg-gradient-harx" aria-hidden />
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div className="min-w-0" />
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="rounded-2xl bg-gradient-harx p-3 text-white shadow-lg shadow-harx-500/30">
+                <BookOpen className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-xl font-black tracking-tight text-gray-900 sm:text-2xl">{t('repOnboarding.trainingSection.title')}</h1>
+                <p className="text-sm font-medium text-gray-500">{t('repOnboarding.trainingSection.subtitle')}</p>
+              </div>
+            </div>
             <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-gray-500">{t('repOnboarding.header.gigFilter')}</span>
@@ -1059,26 +1193,63 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           </div>
         </header>
 
+        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            { value: participants.length, label: t('repOnboarding.trackingStats.participants'), tab: 'participants' as FormationPageTab, accent: 'text-indigo-700 bg-indigo-50 border-indigo-100' },
+            { value: `${trackingStats.avgProgress}%`, label: t('repOnboarding.trackingStats.avgProgress'), tab: 'tracking' as FormationPageTab, accent: 'text-sky-700 bg-sky-50 border-sky-100' },
+            { value: `${trackingStats.completionRate}%`, label: t('repOnboarding.trackingStats.completionRate'), tab: 'tracking' as FormationPageTab, accent: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
+            { value: trainings.length, label: t('repOnboarding.trackingStats.trainings'), tab: 'courses' as FormationPageTab, accent: 'text-slate-800 bg-white border-slate-200' },
+          ].map((stat) => (
+            <button
+              key={stat.label}
+              type="button"
+              onClick={() => setPageTab(stat.tab)}
+              className={`rounded-xl border px-4 py-3 text-left shadow-sm transition-all hover:shadow-md ${stat.accent} ${
+                pageTab === stat.tab ? 'ring-2 ring-harx-400 ring-offset-1' : ''
+              }`}
+            >
+              <div className="text-xl font-black leading-none">{stat.value}</div>
+              <div className="mt-1 text-[11px] font-semibold opacity-80">{stat.label}</div>
+            </button>
+          ))}
+        </div>
+
+        <nav className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-gray-100 bg-white p-2 shadow-sm">
+          {([
+            { id: 'courses' as FormationPageTab, label: t('repOnboarding.pageTabs.courses'), icon: BookOpen },
+            { id: 'participants' as FormationPageTab, label: t('repOnboarding.pageTabs.participants'), icon: Users, badge: participants.length },
+            { id: 'tracking' as FormationPageTab, label: t('repOnboarding.pageTabs.tracking'), icon: BarChart3 },
+          ]).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setPageTab(tab.id)}
+              className={`inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all ${
+                pageTab === tab.id
+                  ? 'bg-gradient-harx text-white shadow-md shadow-harx-500/25'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              <span>{tab.label}</span>
+              {'badge' in tab && tab.badge ? (
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                  pageTab === tab.id ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-700'
+                }`}>
+                  {tab.badge}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </nav>
+
         <div className="space-y-8">
-          {/* Main Content */}
           <div className="space-y-6">
-            {/* Training Section — HARX brand (rose / purple) aligned with Journey Builder */}
+            {pageTab === 'courses' && (
             <section className="relative overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-2xl shadow-gray-200/50">
               <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-harx-50/40 blur-[100px] -mr-32 -mt-32" />
               <div className="h-1 w-full bg-gradient-harx" aria-hidden />
-              <div className="relative z-10 p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="rounded-2xl bg-gradient-harx p-3 text-white shadow-lg shadow-harx-500/30">
-                        <BookOpen className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-black tracking-tight text-gray-900">{t('repOnboarding.trainingSection.title')}</h2>
-                        <p className="text-sm font-medium text-gray-500">{t('repOnboarding.trainingSection.subtitle')}</p>
-                      </div>
-                    </div>
-                  </div>
-
+              <div className="relative z-10 p-2 sm:p-4">
                 {selectedJourneyForContent ? (
                   <div className="mt-4 overflow-hidden rounded-2xl border border-harx-100 bg-white shadow-sm">
                     <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
@@ -1272,6 +1443,197 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 )}
               </div>
             </section>
+            )}
+
+            {pageTab === 'participants' && (
+            <section className="relative overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white shadow-2xl shadow-gray-200/50">
+              <div className="h-1 w-full bg-gradient-harx" aria-hidden />
+              <div className="relative z-10 p-6">
+                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900">{t('repOnboarding.participants.title')}</h2>
+                    <p className="text-sm text-gray-500">{t('repOnboarding.participants.subtitle')}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void fetchParticipants()}
+                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${loadingParticipants ? 'animate-spin' : ''}`} />
+                    {t('repOnboarding.participants.refresh')}
+                  </button>
+                </div>
+
+                {loadingParticipants ? (
+                  <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-harx-100 py-12">
+                    <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
+                    <p className="mt-4 text-sm font-medium text-gray-600">{t('repOnboarding.participants.loading')}</p>
+                  </div>
+                ) : participants.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-gray-200 py-12 text-center">
+                    <Users className="mx-auto h-10 w-10 text-gray-300" />
+                    <p className="mt-3 text-base font-bold text-gray-900">{t('repOnboarding.participants.emptyTitle')}</p>
+                    <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">{t('repOnboarding.participants.emptyDesc')}</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-2xl border border-gray-100">
+                    <table className="min-w-full divide-y divide-gray-100">
+                      <thead className="bg-gray-50/80">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide text-gray-500">{t('repOnboarding.participants.name')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide text-gray-500">{t('repOnboarding.participants.gig')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide text-gray-500">{t('repOnboarding.participants.training')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide text-gray-500">{t('repOnboarding.participants.progress')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide text-gray-500">{t('repOnboarding.participants.status')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {participants.map((participant) => (
+                          <tr key={participant.id} className="hover:bg-harx-50/30">
+                            <td className="px-4 py-3">
+                              <div className="font-semibold text-gray-900">{participant.name}</div>
+                              {participant.email ? (
+                                <div className="text-xs text-gray-500">{participant.email}</div>
+                              ) : null}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{participant.gigTitle}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{participant.journeyTitle || '—'}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-24 overflow-hidden rounded-full bg-gray-100">
+                                  <div
+                                    className="h-full rounded-full bg-gradient-harx transition-all"
+                                    style={{ width: `${participant.progress}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-bold text-gray-700">{participant.progress}%</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
+                                participant.status === 'completed'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : participant.status === 'in_progress'
+                                  ? 'bg-sky-100 text-sky-800'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {participant.status === 'completed'
+                                  ? t('repOnboarding.participants.statusCompleted')
+                                  : participant.status === 'in_progress'
+                                  ? t('repOnboarding.participants.statusInProgress')
+                                  : t('repOnboarding.participants.statusNotStarted')}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </section>
+            )}
+
+            {pageTab === 'tracking' && (
+            <section className="relative overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white shadow-2xl shadow-gray-200/50">
+              <div className="h-1 w-full bg-gradient-harx" aria-hidden />
+              <div className="relative z-10 p-6 space-y-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900">{t('repOnboarding.trackingStats.title')}</h2>
+                    <p className="text-sm text-gray-500">{t('repOnboarding.trackingStats.subtitle')}</p>
+                  </div>
+                  <select
+                    value={statsJourneyId}
+                    onChange={(e) => setStatsJourneyId(e.target.value)}
+                    className="min-w-[220px] rounded-xl border-2 border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                  >
+                    <option value="all">{t('repOnboarding.trackingStats.allTrainings')}</option>
+                    {trainings.map((journey) => (
+                      <option key={String(journey._id || journey.id)} value={String(journey._id || journey.id)}>
+                        {asUiString(journey.title ?? journey.name, t('repOnboarding.trainingSection.title'))}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    { label: t('repOnboarding.trackingStats.participants'), value: trackingStats.total, icon: Users, color: 'text-indigo-600 bg-indigo-50' },
+                    { label: t('repOnboarding.trackingStats.inProgress'), value: trackingStats.inProgress, icon: TrendingUp, color: 'text-sky-700 bg-sky-50' },
+                    { label: t('repOnboarding.trackingStats.completionRate'), value: `${trackingStats.completionRate}%`, icon: Award, color: 'text-emerald-700 bg-emerald-50' },
+                    { label: t('repOnboarding.trackingStats.avgProgress'), value: `${trackingStats.avgProgress}%`, icon: Target, color: 'text-harx-600 bg-harx-50' },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                      <div className="mb-3 flex items-center justify-between">
+                        <div className={`rounded-xl p-2 ${item.color}`}>
+                          <item.icon className="h-5 w-5" />
+                        </div>
+                      </div>
+                      <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">{item.label}</p>
+                      <p className="mt-1 text-2xl font-black text-gray-900">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <div className="rounded-2xl border border-gray-100 p-5">
+                    <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-gray-700">{t('repOnboarding.trackingStats.progressOverview')}</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="mb-1 flex justify-between text-xs font-semibold text-gray-600">
+                          <span>{t('repOnboarding.trackingStats.avgProgress')}</span>
+                          <span>{trackingStats.avgProgress}%</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+                          <div className="h-full rounded-full bg-gradient-harx" style={{ width: `${trackingStats.avgProgress}%` }} />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-xl bg-emerald-50 px-2 py-3">
+                          <div className="text-lg font-black text-emerald-700">{trackingStats.completed}</div>
+                          <div className="text-[10px] font-semibold uppercase text-emerald-800">{t('repOnboarding.trackingStats.completed')}</div>
+                        </div>
+                        <div className="rounded-xl bg-sky-50 px-2 py-3">
+                          <div className="text-lg font-black text-sky-700">{trackingStats.inProgress}</div>
+                          <div className="text-[10px] font-semibold uppercase text-sky-800">{t('repOnboarding.trackingStats.inProgress')}</div>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 px-2 py-3">
+                          <div className="text-lg font-black text-gray-700">{trackingStats.notStarted}</div>
+                          <div className="text-[10px] font-semibold uppercase text-gray-600">{t('repOnboarding.trackingStats.notStarted')}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-gray-100 p-5">
+                    <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-gray-700">{t('repOnboarding.trackingStats.byTraining')}</h3>
+                    {trackingStats.moduleStats.length === 0 ? (
+                      <p className="text-sm text-gray-500">{t('repOnboarding.trackingStats.noTrainingData')}</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {trackingStats.moduleStats.map((item) => (
+                          <div key={item.id} className="rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="truncate text-sm font-bold text-gray-900">{item.title}</p>
+                              <span className="text-xs font-bold text-harx-700">{item.progress}%</span>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {item.modulesCount} {t('repOnboarding.trainingSection.modules')}
+                            </p>
+                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white">
+                              <div className="h-full rounded-full bg-gradient-harx" style={{ width: `${item.progress}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+            )}
+
             {/* Saved Podcasts section hidden per product decision — kept for future re-enable. */}
             {false && (
             <section className="relative overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-2xl shadow-gray-200/50">
