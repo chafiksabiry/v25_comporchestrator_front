@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
-import { isCallRejectedByAI, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn } from '../../../utils/callStatusDisplay';
+import { isCallRejectedByAI, isCallFraudDetected, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;
@@ -22,6 +22,7 @@ export interface NormalizedCall {
   ai_summary_fr?: string;
   validByAI?: boolean | null;
   callOutcome?: string | null;
+  flags?: { fraud?: boolean; selfCall?: boolean };
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null };
 }
 
@@ -44,6 +45,7 @@ export function companyTransactionNeedsValidation(
 
 interface Props {
   call: NormalizedCall;
+  agentFraudCount?: number;
   onClose: () => void;
   onAnalyze?: (callId: string) => void;
   analyzingCallId?: string | null;
@@ -51,9 +53,10 @@ interface Props {
   onValidateTransaction?: (callId: string, current: boolean | null, next: boolean) => void;
 }
 
-export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCallId, analysisError, onValidateTransaction }: Props) {
+export default function CallDetailModal({ call, agentFraudCount = 0, onClose, onAnalyze, analyzingCallId, analysisError, onValidateTransaction }: Props) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'transcript' | 'insights'>('transcript');
+  const isFraud = isCallFraudDetected(call);
 
   const recordingUrl = call.recording_url_cloudinary || call.recording_url;
   const finalUrl = recordingUrl
@@ -151,6 +154,20 @@ export default function CallDetailModal({ call, onClose, onAnalyze, analyzingCal
             </button>
           </div>
         </div>
+
+        {isFraud && (
+          <div className="px-4 md:px-8 py-4 border-b border-rose-100 bg-rose-50/60 space-y-2 shrink-0">
+            <p className="text-[11px] font-bold text-rose-800 leading-relaxed">
+              {getFraudCommissionNotice(i18n.language)}
+            </p>
+            {agentFraudCount > 0 && (
+              <p className="text-[11px] font-semibold text-rose-700 leading-relaxed flex items-start gap-2">
+                <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{getCompanyAgentFraudWarning(agentFraudCount, i18n.language)}</span>
+              </p>
+            )}
+          </div>
+        )}
 
         {/* ── Tabs + AI decision ── */}
         <div className="px-4 py-3 md:px-8 md:py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 bg-white shrink-0">
