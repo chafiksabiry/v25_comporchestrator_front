@@ -205,12 +205,17 @@ export default function CallsDashboardPage() {
     }
   };
 
-  const handleAnalyzeCall = async (callId: string) => {
+  const handleAnalyzeCall = async (callId: string, options?: { force?: boolean }) => {
     try {
       setAnalyzingCallId(callId);
       setAnalysisError(null);
       // Same endpoint as dash_rep: POST /api/calls/:id/analyze on v25_dash_calls_backend
-      const result = await callsApi.analyze(callId);
+      const result = await callsApi.analyze(callId, options);
+
+      if ((result as { alreadyAnalyzed?: boolean })?.alreadyAnalyzed && !options?.force) {
+        toast(t('calls.alreadyAnalyzed', 'Analyse déjà effectuée. Utilisez « Relancer l\'analyse » pour recalculer.'));
+        return;
+      }
 
       if ((result as { inProgress?: boolean })?.inProgress) {
         if (selectedCall && selectedCall._id === callId) {
@@ -221,6 +226,9 @@ export default function CallsDashboardPage() {
       }
 
       if (result?.success) {
+        if (options?.force) {
+          toast.success(t('calls.reanalyzeStarted', 'Analyse relancée — mise à jour en cours.'));
+        }
         if (selectedCall && selectedCall._id === callId) {
           setSelectedCall({
             ...selectedCall,

@@ -148,7 +148,7 @@ getCallDetails:async (callSid: string, ) => {
     return response.data;
   },
 
-  analyze: async (id: string) => {
+  analyze: async (id: string, options?: { force?: boolean }) => {
     // Always hits v25_dash_calls_backend regardless of VITE_API_URL_CALL,
     // because the analyze controller only exists on that service.
     try {
@@ -159,7 +159,10 @@ getCallDetails:async (callSid: string, ) => {
         validByAI: boolean;
         message?: string;
         inProgress?: boolean;
-      }>(`/api/calls/${id}/analyze`);
+        alreadyAnalyzed?: boolean;
+      }>(`/api/calls/${id}/analyze`, {
+        force: options?.force === true,
+      });
       return response.data;
     } catch (error: any) {
       const status = error.response?.status;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, MessageSquare, Activity as ActivityIcon, Globe, ShieldAlert, ShieldCheck,
-  TrendingUp, Star, Clock, Phone, CreditCard, Check, Brain, Calendar,
+  TrendingUp, Star, Clock, Phone, CreditCard, Check, Brain, Calendar, RefreshCw,
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
@@ -47,7 +47,7 @@ interface Props {
   call: NormalizedCall;
   agentFraudCount?: number;
   onClose: () => void;
-  onAnalyze?: (callId: string) => void;
+  onAnalyze?: (callId: string, options?: { force?: boolean }) => void;
   analyzingCallId?: string | null;
   analysisError?: string | null;
   onValidateTransaction?: (callId: string, current: boolean | null, next: boolean) => void;
@@ -99,6 +99,21 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
         <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
         <p>{analysisError}</p>
       </div>
+    ) : null;
+
+  const renderRelaunchButton = (className = '') =>
+    onAnalyze ? (
+      <button
+        type="button"
+        onClick={() => onAnalyze(call.id, { force: true })}
+        disabled={analyzingCallId === call.id}
+        className={`flex items-center gap-2 px-6 py-3 bg-white text-harx-600 border-2 border-harx-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-harx-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      >
+        <RefreshCw className={`w-4 h-4 ${analyzingCallId === call.id ? 'animate-spin' : ''}`} />
+        {analyzingCallId === call.id
+          ? (i18n.language === 'en' ? 'Re-analyzing...' : 'Analyse...')
+          : (i18n.language === 'en' ? 'Re-run analysis' : 'Relancer l\'analyse')}
+      </button>
     ) : null;
 
   const displayTranscript = getDisplayTranscript(call.transcript, call.ai_call_score);
@@ -330,7 +345,12 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                     </button>
                   )}
                 </div>
-              ) : isNonEvaluableCall(call) ? null : (
+              ) : isNonEvaluableCall(call) ? (
+                <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
+                  {renderAnalysisErrorBanner()}
+                  {renderRelaunchButton()}
+                </div>
+              ) : (
                 <>
                   {/* Primary metric cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -474,6 +494,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
 
         {/* ── Footer ── */}
         <div className="px-4 py-4 md:px-8 md:py-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 shrink-0">
+          {hasAiCallAnalysis(call) && renderRelaunchButton()}
           <button
             onClick={onClose}
             className="px-6 py-2.5 sm:px-8 sm:py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 shrink-0"
