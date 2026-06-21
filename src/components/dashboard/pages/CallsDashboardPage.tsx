@@ -1,12 +1,24 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck, BellRing } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import CallDetailModal, { type NormalizedCall, companyTransactionCanValidate } from '../components/CallDetailModal';
-import { isCallApprovedByAI, isCallRejectedByAI, resolveUnvalidatedTransactionStatus } from '../../../utils/callStatusDisplay';
+import {
+  computeAgentFraudStats,
+  getCompanyAgentFraudCountLabel,
+  getCompanyAgentFraudSectionTitle,
+  getCompanyAgentFraudWarning,
+  getCompanyFraudGlobalWarning,
+  getFraudDetectedCountLabel,
+  isCallApprovedByAI,
+  isCallFraudDetected,
+  isCallRejectedByAI,
+  resolveUnvalidatedTransactionStatus,
+} from '../../../utils/callStatusDisplay';
 import { callsApi } from '../services/api/calls';
 import { getCallsApiBase } from '../lib/callsApiBase';
+import { fetchCompanyFraudStats, pickBilingual, type CompanyFraudStatsApi } from '../../../lib/fraudStatsApi';
 import { getCallAnalyzeErrorMessage } from '../lib/callAnalyzeErrors';
 import { refreshCompanyWalletAfterValidation } from '../../../lib/walletBalanceSync';
 import { CALL_ANALYSIS_HELP_EVENT, OPEN_CALL_DETAILS_EVENT, type OpenCallDetailsDetail } from '../../../lib/callAnalysisHelpNotification';
@@ -22,6 +34,7 @@ export default function CallsDashboardPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [gigFilter, setGigFilter] = useState<string>('all');
   const [gigs, setGigs] = useState<Array<{ _id: string; title: string }>>([]);
+  const [companyFraudStats, setCompanyFraudStats] = useState<CompanyFraudStatsApi | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<{ callId: string; type: 'validation' | 'transaction' } | null>(null);
 
   const companyId = Cookies.get('companyId');
@@ -170,14 +183,22 @@ export default function CallsDashboardPage() {
         const data = await response.json();
         const callsArray = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
         setCalls(callsArray.sort((a: any, b: any) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()));
+        if (data.fraudStats) {
+          setCompanyFraudStats(data.fraudStats);
+        } else {
+          const stats = await fetchCompanyFraudStats(companyId!);
+          setCompanyFraudStats(stats);
+        }
       } else {
         toast.error(t('calls.errors.load', 'Impossible de charger les appels.'));
         setCalls([]);
+        setCompanyFraudStats(null);
       }
     } catch (error) {
       console.error('Error fetching calls:', error);
       toast.error(t('calls.errors.load', 'Impossible de charger les appels.'));
       setCalls([]);
+      setCompanyFraudStats(null);
     } finally {
       setLoading(false);
     }
@@ -337,6 +358,17 @@ export default function CallsDashboardPage() {
     return 'Agent';
   };
 
+  const callAgentId = (call: any): string => {
+    const agent = call?.agent;
+    if (agent && typeof agent === 'object') {
+      const raw = agent._id ?? agent.id;
+      if (raw && typeof raw === 'object' && (raw as any).$oid) return String((raw as any).$oid);
+      if (raw) return String(raw);
+    }
+    if (typeof agent === 'string') return agent;
+    return callAgentName(call);
+  };
+
   const filteredCalls = calls.filter(call => {
     const q = searchTerm.trim().toLowerCase();
     const leadName = `${call.lead?.First_Name || ''} ${call.lead?.Last_Name || ''}`.trim().toLowerCase();
@@ -351,6 +383,35 @@ export default function CallsDashboardPage() {
     const matchesGig = gigFilter === 'all' || callGigId(call) === gigFilter;
     return matchesSearch && matchesStatus && matchesGig;
   });
+
+  const fraudCallCount = companyFraudStats?.totalFraudCount ?? calls.filter(isCallFraudDetected).length;
+
+  const agentFraudStats = useMemo(() => {
+    if (companyFraudStats?.agentStats?.length) {
+      return companyFraudStats.agentStats.map((row) => ({
+        agentId: row.agentId,
+        agentName: row.agentName,
+        fraudCount: row.fraudCount,
+      }));
+    }
+    return computeAgentFraudStats(calls, callAgentId, callAgentName);
+  }, [companyFraudStats, calls]);
+
+  const agentFraudCountById = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const stat of agentFraudStats) {
+      map.set(stat.agentId, stat.fraudCount);
+    }
+    return map;
+  }, [agentFraudStats]);
+
+  const apiAgentWarning = (agentId: string, fallbackCount: number) => {
+    const fromApi = companyFraudStats?.agentStats?.find((row) => row.agentId === agentId);
+    if (fromApi?.warnings?.agent) {
+      return pickBilingual(fromApi.warnings.agent, i18n.language);
+    }
+    return getCompanyAgentFraudWarning(fallbackCount, i18n.language);
+  };
 
   const selectedCallAnalysisError =
     selectedCall && analysisError?.callId === selectedCall._id ? analysisError.message : null;
@@ -427,6 +488,54 @@ export default function CallsDashboardPage() {
           </div>
         </div>
       </div>
+
+      {fraudCallCount > 0 && (
+        <div className="space-y-4">
+          <div
+            role="alert"
+            className="flex items-start gap-3 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900"
+          >
+            <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-rose-600" />
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-rose-700">
+                {pickBilingual(companyFraudStats?.warnings?.countLabel, i18n.language) ||
+                  getFraudDetectedCountLabel(fraudCallCount, i18n.language)}
+              </p>
+              <p className="text-sm font-medium leading-relaxed">
+                {pickBilingual(companyFraudStats?.warnings?.global, i18n.language) ||
+                  getCompanyFraudGlobalWarning(fraudCallCount, i18n.language)}
+              </p>
+            </div>
+          </div>
+
+          {agentFraudStats.length > 0 && (
+            <div className="rounded-2xl border border-rose-100 bg-white p-4 md:p-5 shadow-sm space-y-3">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-rose-700">
+                {getCompanyAgentFraudSectionTitle(i18n.language)}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {agentFraudStats.map((agent) => (
+                  <div
+                    key={agent.agentId}
+                    className="rounded-xl border border-rose-100 bg-rose-50/40 p-4 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-black text-slate-900 truncate">{agent.agentName}</span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border bg-rose-100 text-rose-800 border-rose-200 shrink-0">
+                        <ShieldAlert className="w-3 h-3" />
+                        {getCompanyAgentFraudCountLabel(agent.fraudCount, i18n.language)}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-medium text-rose-800 leading-relaxed">
+                      {apiAgentWarning(agent.agentId, agent.fraudCount)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-320px)] flex flex-col overflow-hidden min-h-[400px]">
         <div className="flex-1 overflow-auto custom-scrollbar p-6">
@@ -563,6 +672,12 @@ export default function CallsDashboardPage() {
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm border ${call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 'bg-rose-50 text-rose-600 border-rose-100/50'}`}>
                               {call.status}
                             </span>
+                            {isCallFraudDetected(call) && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-50 text-rose-700 border border-rose-200">
+                                <ShieldAlert className="w-3 h-3" />
+                                {i18n.language.startsWith('en') ? 'Fraud' : 'Fraude'}
+                              </span>
+                            )}
                             {call.analysisCompanyAlert?.requestedAt && (
                               <button
                                 type="button"
@@ -584,6 +699,14 @@ export default function CallsDashboardPage() {
                             <Clock className="w-3.5 h-3.5 text-slate-300" />
                             <span>{new Date(call.createdAt || call.date).toLocaleString()}</span>
                           </div>
+                          {isCallFraudDetected(call) && (
+                            <p className="text-[10px] font-semibold text-rose-700 mt-2 leading-snug max-w-xl">
+                              {apiAgentWarning(
+                                callAgentId(call),
+                                agentFraudCountById.get(callAgentId(call)) || 1
+                              )}
+                            </p>
+                          )}
                           <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-1 flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                             <span>ID: {typeof call._id === 'object' ? (call._id as any).$oid : call._id}</span>
                           </div>
@@ -733,6 +856,7 @@ export default function CallsDashboardPage() {
           leadName: selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name
             ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim()
             : 'Call Details',
+          agentName: callAgentName(selectedCall),
           status: selectedCall.status,
           createdAt: selectedCall.createdAt || selectedCall.date || '',
           recording_url: selectedCall.recording_url,
@@ -743,11 +867,16 @@ export default function CallsDashboardPage() {
           ai_summary_fr: selectedCall.ai_summary_fr,
           validByAI: selectedCall.validByAI,
           callOutcome: selectedCall.callOutcome,
+          flags: selectedCall.flags,
           transaction: selectedCall.transaction,
         };
+        const selectedAgentFraudCount =
+          agentFraudCountById.get(callAgentId(selectedCall)) ||
+          (isCallFraudDetected(selectedCall) ? 1 : 0);
         return (
           <CallDetailModal
             call={normalized}
+            agentFraudCount={selectedAgentFraudCount}
             onClose={() => {
               setSelectedCall(null);
               setAnalysisError(null);

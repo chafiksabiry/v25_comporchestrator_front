@@ -160,6 +160,90 @@ export function isSimulatedTranscriptTurn(entry: TranscriptEntry): boolean {
   return entry.simulated === true || String(entry.speaker || '').toLowerCase().includes('simul');
 }
 
+function isEnglishLanguage(language: string): boolean {
+  return String(language || '').toLowerCase().startsWith('en');
+}
+
+export function getFraudDetectedCountLabel(count: number, language: string = 'fr'): string {
+  const n = Math.max(0, Math.round(count));
+  if (isEnglishLanguage(language)) {
+    return n === 1 ? '1 fraud detected' : `${n} frauds detected`;
+  }
+  return n === 1 ? '1 fraude détectée' : `${n} fraudes détectées`;
+}
+
+export function getFraudCommissionNotice(language: string = 'fr'): string {
+  return isEnglishLanguage(language)
+    ? 'Fraud detected — no call or transaction commission is due on this recording.'
+    : 'Fraude détectée — aucune commission appel ni transaction n\'est due sur cet enregistrement.';
+}
+
+/** Bandeau global côté entreprise. */
+export function getCompanyFraudGlobalWarning(count: number, language: string = 'fr'): string {
+  const n = Math.max(0, Math.round(count));
+  if (isEnglishLanguage(language)) {
+    return n === 1
+      ? '1 fraud detected on your calls. Monitor the agents involved — you may blacklist them at any time.'
+      : `${n} frauds detected on your calls. Monitor the agents involved — you may blacklist them at any time.`;
+  }
+  return n === 1
+    ? '1 fraude détectée sur vos appels. Surveillez les agents concernés — vous pouvez les blacklister à tout moment.'
+    : `${n} fraudes détectées sur vos appels. Surveillez les agents concernés — vous pouvez les blacklister à tout moment.`;
+}
+
+export function getCompanyAgentFraudCountLabel(count: number, language: string = 'fr'): string {
+  const n = Math.max(0, Math.round(count));
+  if (isEnglishLanguage(language)) {
+    return n === 1 ? '1 fraud' : `${n} frauds`;
+  }
+  return n === 1 ? '1 fraude' : `${n} fraudes`;
+}
+
+/** Avertissement par agent côté entreprise. */
+export function getCompanyAgentFraudWarning(count: number, language: string = 'fr'): string {
+  const n = Math.max(0, Math.round(count));
+  if (isEnglishLanguage(language)) {
+    return n === 1
+      ? '1 fraud detected for this agent. You may blacklist them at any time if fraud continues.'
+      : `${n} frauds detected for this agent. You may blacklist them at any time if fraud continues.`;
+  }
+  return n === 1
+    ? '1 fraude détectée pour cet agent. Vous pouvez le blacklister à tout moment si les fraudes se poursuivent.'
+    : `${n} fraudes détectées pour cet agent. Vous pouvez le blacklister à tout moment si les fraudes se poursuivent.`;
+}
+
+export function getCompanyAgentFraudSectionTitle(language: string = 'fr'): string {
+  return isEnglishLanguage(language) ? 'Agents with fraud alerts' : 'Agents avec alertes fraude';
+}
+
+export type AgentFraudStat = {
+  agentId: string;
+  agentName: string;
+  fraudCount: number;
+};
+
+export function computeAgentFraudStats<T extends CallLike>(
+  calls: T[],
+  resolveAgentId: (call: T) => string,
+  resolveAgentName: (call: T) => string
+): AgentFraudStat[] {
+  const map = new Map<string, AgentFraudStat>();
+
+  for (const call of calls) {
+    if (!isCallFraudDetected(call)) continue;
+    const agentId = resolveAgentId(call) || resolveAgentName(call);
+    const agentName = resolveAgentName(call);
+    const existing = map.get(agentId);
+    if (existing) {
+      existing.fraudCount += 1;
+    } else {
+      map.set(agentId, { agentId, agentName, fraudCount: 1 });
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => b.fraudCount - a.fraudCount || a.agentName.localeCompare(b.agentName));
+}
+
 export const CALL_REJECTED_BADGE: StatusBadge = {
   label: 'Appel refusé',
   tone: 'bg-rose-50 text-rose-700 border-rose-200',
