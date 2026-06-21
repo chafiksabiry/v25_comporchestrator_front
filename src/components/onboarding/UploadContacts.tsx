@@ -19,6 +19,7 @@ import {
   Cloud,
   Settings,
   CheckCircle,
+  CheckCircle2,
   Info,
   LogOut,
   AlertTriangle,
@@ -99,6 +100,51 @@ const getLeadAvatarGradient = (lead: Lead): string => {
   const seed = (lead._id || lead.Email_1 || lead.Last_Name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   return avatarGradients[seed % avatarGradients.length];
 };
+
+type LeadQuickStats = {
+  total: number;
+  called: number;
+  contacted: number;
+  rdv: number;
+  converted: number;
+};
+
+function LeadStatChip({
+  label,
+  value,
+  icon: Icon,
+  tone = 'default',
+}: {
+  label: string;
+  value: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tone?: 'default' | 'harx' | 'emerald' | 'violet' | 'amber';
+}) {
+  const tones = {
+    default: 'border-slate-200/80 bg-white/80 text-slate-900',
+    harx: 'border-harx-100/80 bg-harx-50/50 text-harx-700',
+    emerald: 'border-emerald-100/80 bg-emerald-50/50 text-emerald-700',
+    violet: 'border-violet-100/80 bg-violet-50/50 text-violet-700',
+    amber: 'border-amber-100/80 bg-amber-50/50 text-amber-700',
+  };
+  const iconTones = {
+    default: 'text-slate-400',
+    harx: 'text-harx-500',
+    emerald: 'text-emerald-500',
+    violet: 'text-violet-500',
+    amber: 'text-amber-500',
+  };
+
+  return (
+    <div className={`rounded-2xl border px-3 py-2.5 shadow-sm ${tones[tone]}`}>
+      <div className="mb-1 flex items-center gap-1.5">
+        <Icon className={`h-3.5 w-3.5 shrink-0 ${iconTones[tone]}`} />
+        <p className="truncate text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">{label}</p>
+      </div>
+      <p className="text-lg font-black tabular-nums leading-none">{value}</p>
+    </div>
+  );
+}
 
 const LEAD_TABLE_COL_COUNT = 7;
 const LEAD_EMPTY = '\u2014';
@@ -372,6 +418,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize] = useState(50);
   const [totalCount, setTotalCount] = useState(0);
+  const [leadQuickStats, setLeadQuickStats] = useState<LeadQuickStats | null>(null);
+  const [isLoadingQuickStats, setIsLoadingQuickStats] = useState(false);
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
@@ -1501,6 +1549,37 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     );
   };
 
+  const fetchLeadQuickStats = async (gigId: string) => {
+    const companyId = propCompanyId || Cookies.get('companyId');
+    const dashboardBase = import.meta.env.VITE_DASHBOARD_API;
+    if (!companyId || !dashboardBase || !gigId) {
+      setLeadQuickStats(null);
+      return;
+    }
+
+    setIsLoadingQuickStats(true);
+    try {
+      const params = new URLSearchParams({ gigId });
+      const res = await fetch(`${dashboardBase}/leads/company/${companyId}/stats?${params.toString()}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      if (!json.success || typeof json.total !== 'number') return;
+
+      const ss = json.statusSummary || {};
+      setLeadQuickStats({
+        total: json.total,
+        called: typeof json.called === 'number' ? json.called : 0,
+        contacted: typeof json.contacted === 'number' ? json.contacted : 0,
+        rdv: ss.appointment?.count ?? 0,
+        converted: ss.won?.count ?? 0,
+      });
+    } catch (err) {
+      console.warn('Failed to fetch lead quick stats', err);
+    } finally {
+      setIsLoadingQuickStats(false);
+    }
+  };
+
   const fetchLeads = async (page = 1, searchQuery = '') => {
     // Skip fetching leads if we're currently processing a file
     if (isProcessing || processingRef.current) {
@@ -1610,6 +1689,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   useEffect(() => {
     if (selectedGigId) {
       setCallFilterGigId(selectedGigId);
+      fetchLeadQuickStats(selectedGigId);
+    } else {
+      setLeadQuickStats(null);
     }
   }, [selectedGigId]);
 
@@ -2702,7 +2784,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Channel Filter + quick stats */}
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-4 items-stretch">
+      <div className="grid grid-cols-1 gap-4 items-stretch">
         <div className="relative overflow-hidden rounded-[24px] bg-white/60 backdrop-blur-xl border border-white/70 shadow-lg shadow-slate-200/30 p-5">
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-harx-500/10 to-transparent rounded-full blur-2xl pointer-events-none" />
           <h3 className="text-[11px] font-black text-slate-500 mb-3 flex items-center uppercase tracking-[0.2em]">
@@ -2728,17 +2810,54 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               );
             })}
           </div>
-        </div>
 
-        {selectedGigId && totalCount > 0 && (
-          <div className="flex xl:flex-col gap-3 xl:min-w-[200px]">
-            <div className="flex-1 rounded-[24px] bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-xl shadow-slate-900/20 border border-white/10">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">{t('uploadContacts.list.leads')}</p>
-              <p className="text-3xl font-black tracking-tight">{totalCount.toLocaleString()}</p>
-              <p className="text-xs font-medium text-white/60 mt-1">{t('uploadContacts.list.showing', { filtered: filteredLeads.length, total: totalCount })}</p>
+          {selectedGigId && (
+            <div className="mt-4 border-t border-slate-200/60 pt-4">
+              <p className="mb-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                {t('uploadContacts.stats.title', 'Statistiques')}
+              </p>
+              {isLoadingQuickStats && !leadQuickStats ? (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="h-[58px] animate-pulse rounded-2xl border border-slate-100 bg-white/70" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  <LeadStatChip
+                    label={t('uploadContacts.stats.leads', 'Leads')}
+                    value={(leadQuickStats?.total ?? totalCount).toLocaleString('fr-FR')}
+                    icon={Users}
+                    tone="harx"
+                  />
+                  <LeadStatChip
+                    label={t('uploadContacts.stats.called', 'Appelés')}
+                    value={(leadQuickStats?.called ?? 0).toLocaleString('fr-FR')}
+                    icon={PhoneCall}
+                  />
+                  <LeadStatChip
+                    label={t('uploadContacts.stats.contacted', 'Contactés')}
+                    value={(leadQuickStats?.contacted ?? 0).toLocaleString('fr-FR')}
+                    icon={CheckCircle2}
+                    tone="emerald"
+                  />
+                  <LeadStatChip
+                    label={t('uploadContacts.stats.rdv', 'RDV')}
+                    value={(leadQuickStats?.rdv ?? 0).toLocaleString('fr-FR')}
+                    icon={Calendar}
+                    tone="violet"
+                  />
+                  <LeadStatChip
+                    label={t('uploadContacts.stats.converted', 'Convertis')}
+                    value={(leadQuickStats?.converted ?? 0).toLocaleString('fr-FR')}
+                    icon={CheckCircle}
+                    tone="amber"
+                  />
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Contact List */}
@@ -2790,6 +2909,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               <button
                 onClick={() => {
                   setSearchQuery('');
+                  if (selectedGigId) fetchLeadQuickStats(selectedGigId);
                   fetchLeads(1);
                 }}
                 className="flex items-center rounded-2xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-harx-500/25 hover:brightness-110 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"

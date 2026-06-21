@@ -35,6 +35,16 @@ import { useTranslation } from 'react-i18next';
 import RepProfileView from './RepProfileView';
 import { connectCompanyEnrollmentRequestsSocket } from '../lib/enrollmentRequestsSocket';
 import { playNotificationSound } from '../utils/notificationSound';
+import RepMatchScoreCard from './dashboard/components/RepMatchScoreCard';
+import {
+    getScoreColor,
+    normalizeRecordToMatch,
+    getMatchScorePercent,
+    getRecordExpandKey,
+    recordMatchesSearch,
+    getGigTitle,
+    sortRecordsByMatchScore,
+} from './dashboard/utils/repMatchDisplay';
 
 export type MatchingDashboardProps = {
   /** When embedded in Company Onboarding (step 13), closes the step — tab is already company-onboarding. */
@@ -371,7 +381,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         
 
         // Directly set the lists without filtering again
-        setInvitedAgentsList(companyInvitedAgents.filter((agent: { isActive: any; hasCompletedOnboarding: any; }) => !agent.isActive && !agent.hasCompletedOnboarding));
+        setInvitedAgentsList(companyInvitedAgents.filter((record: any) => {
+            const agent = record.agentId && typeof record.agentId === 'object' ? record.agentId : record;
+            return !agent.isActive && !agent.hasCompletedOnboarding;
+        }));
         setEnrollmentRequests(enrollmentRequests);
         // Active agents come directly from the API endpoint
         
@@ -589,14 +602,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         
 
         // Use company invited reps from API endpoint
-        const invited = companyInvitedAgents.filter((agent: { isActive: any; hasCompletedOnboarding: any; personalInfo: { name: any; }; status: any; }) => {
-            // Show all reps who are not yet active, regardless of their status
-            const isInvited = !agent.isActive &&
-                !agent.hasCompletedOnboarding;
-
-            
-
-            return isInvited;
+        const invited = companyInvitedAgents.filter((record: any) => {
+            const agent = record.agentId && typeof record.agentId === 'object' ? record.agentId : record;
+            return !agent.isActive && !agent.hasCompletedOnboarding;
         });
 
         // Use enrollment requests from API endpoint
@@ -695,23 +703,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             }
             return newSet;
         });
-    };
-
-    // Continuous, score-driven color: green at 100 → muted red at 0.
-    // Each degree maps to its own hue for a smooth professional gradient.
-    const getScoreColor = (score: number) => {
-        const clamped = Math.max(0, Math.min(100, score));
-        // Hue 0 (red) at score 0 → 140 (green) at score 100.
-        const hue = (clamped / 100) * 140;
-        // Slightly desaturate/darken the low end so red stays "non clair".
-        const sat = 55 + (clamped / 100) * 15; // 55% → 70%
-        const light = 38 + (clamped / 100) * 7; // 38% → 45%
-        return {
-            main: `hsl(${hue}, ${sat}%, ${light}%)`,
-            soft: `hsl(${hue}, ${sat}%, 96%)`,
-            border: `hsl(${hue}, ${sat}%, 86%)`,
-            track: `hsl(${hue}, ${sat}%, 92%)`,
-        };
     };
 
     return (
@@ -1555,46 +1546,39 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         </div>
                                     </div>
                                     <div>
-                                        {invitedAgentsList.filter((a: any) => 
-                                            (a.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                            (a.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                        {sortRecordsByMatchScore(
+                                            invitedAgentsList.filter((record: any) => recordMatchesSearch(record, searchTerm)),
+                                            matches
                                         ).length > 0 ? (
                                         <div className="space-y-3">
-                                            {(invitedAgentsList || []).filter((a: any) => 
-                                                (a.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                                (a.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
-                                            ).map((agent: any, index: number) => {
-                                                if (!agent) return null;
-                                                
+                                            {sortRecordsByMatchScore(
+                                                invitedAgentsList.filter((record: any) => recordMatchesSearch(record, searchTerm)),
+                                                matches
+                                            ).map((record: any, index: number) => {
+                                                if (!record) return null;
+                                                const normalizedMatch = normalizeRecordToMatch(record, matches);
+                                                const matchScore = getMatchScorePercent(record, matches);
+                                                const expandKey = getRecordExpandKey(record);
 
                                                 return (
-                                                    <div
-                                                        key={`invited-${agent._id || index}`}
-                                                        onClick={() => openAgentProfile(agent)}
-                                                        title={t('matchingDashboard.enrollment.viewProfile')}
-                                                        className="bg-amber-50/60 border border-amber-200/70 rounded-xl p-4 sm:p-5 hover:shadow-sm hover:border-amber-300 transition-all duration-200 cursor-pointer"
-                                                    >
-                                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                                            <div className="flex-1 min-w-0">
-                                                                <h3 className="text-lg font-bold text-gray-900 break-words hover:text-indigo-600 transition-colors">{agent.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
-                                                                <div className="mt-2 space-y-1">
-                                                                    <p className="text-sm text-amber-700 font-medium bg-amber-100/60 inline-block px-2 py-0.5 rounded">
-                                                                        {t('matchingDashboard.invited.waitingResponse')}
-                                                                    </p>
-                                                                    {(agent.gigId?.title || agent.gig?.title) && (
-                                                                        <p className="text-sm text-slate-500">
-                                                                            <span className="font-medium">{t('matchingDashboard.invited.gig')}</span> {agent.gigId?.title || agent.gig?.title}
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-center space-x-2 sm:shrink-0">
-                                                                <span className="inline-flex items-center px-3 py-2 bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-sm font-medium whitespace-nowrap">
-                                                                    📧 {t('matchingDashboard.invited.pending')}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                    <RepMatchScoreCard
+                                                        key={`invited-${expandKey}-${index}`}
+                                                        match={normalizedMatch}
+                                                        matchScore={matchScore}
+                                                        scoreColor={getScoreColor(matchScore)}
+                                                        gigTitle={getGigTitle(record)}
+                                                        isExpanded={expandedReps.has(expandKey)}
+                                                        onToggleDetails={() => toggleRepDetails(expandKey)}
+                                                        onOpenProfile={() => openAgentProfile(record)}
+                                                        selectedGig={typeof record.gigId === 'object' ? record.gigId : selectedGig}
+                                                        t={t}
+                                                        getLanguageNameByCode={getLanguageNameByCode}
+                                                        rightAction={
+                                                            <span className="inline-flex items-center px-3 py-2 bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-sm font-medium whitespace-nowrap">
+                                                                📧 {t('matchingDashboard.invited.pending')}
+                                                            </span>
+                                                        }
+                                                    />
                                                 );
                                             })}
                                         </div>
@@ -1640,99 +1624,89 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         </div>
                                     </div>
                                     <div>
-                                        {enrollmentRequests.filter((a: any) => 
-                                            (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                            (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                        {sortRecordsByMatchScore(
+                                            enrollmentRequests.filter((record: any) => recordMatchesSearch(record, searchTerm)),
+                                            matches
                                         ).length > 0 ? (
                                         <div className="space-y-3">
-                                            {(enrollmentRequests || []).filter((a: any) => 
-                                                (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                                (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
-                                            ).map((agent: any, index: number) => agent && (
-                                                <div key={`enrollment-${agent._id || index}`} className="bg-sky-50/60 border border-sky-200/70 rounded-xl p-4 sm:p-5 hover:shadow-sm transition-all duration-200">
-                                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                                                        <div className="flex-1 min-w-0">
-                                                            <h3
-                                                                className="text-lg font-bold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5 break-words"
-                                                                onClick={() => openAgentProfile(agent)}
-                                                                title={t('matchingDashboard.enrollment.viewProfile')}
-                                                            >
-                                                                {agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}
-                                                            </h3>
-                                                            <div className="mt-2 space-y-1">
-                                                                <p className="text-sm text-blue-600 font-medium">
-                                                                    <span className="font-medium">{t('matchingDashboard.enrollment.status')}</span> {agent.enrollmentStatus || 'Pending'}
-                                                                </p>
-                                                                {(agent.gigId?.title || agent.gig?.title) && (
-                                                                    <p className="text-sm text-slate-500">
-                                                                        <span className="font-medium">{t('matchingDashboard.invited.gig')}</span> {agent.gigId?.title || agent.gig?.title}
-                                                                    </p>
-                                                                )}
-                                                                {agent.notes && (
-                                                                    <p className="text-sm text-slate-500 italic">
-                                                                        "{agent.notes}"
-                                                                    </p>
-                                                                )}
+                                            {sortRecordsByMatchScore(
+                                                enrollmentRequests.filter((record: any) => recordMatchesSearch(record, searchTerm)),
+                                                matches
+                                            ).map((record: any, index: number) => {
+                                                if (!record) return null;
+                                                const normalizedMatch = normalizeRecordToMatch(record, matches);
+                                                const matchScore = getMatchScorePercent(record, matches);
+                                                const expandKey = getRecordExpandKey(record);
+
+                                                return (
+                                                    <RepMatchScoreCard
+                                                        key={`enrollment-${expandKey}-${index}`}
+                                                        match={normalizedMatch}
+                                                        matchScore={matchScore}
+                                                        scoreColor={getScoreColor(matchScore)}
+                                                        gigTitle={getGigTitle(record)}
+                                                        isExpanded={expandedReps.has(expandKey)}
+                                                        onToggleDetails={() => toggleRepDetails(expandKey)}
+                                                        onOpenProfile={() => openAgentProfile(record)}
+                                                        selectedGig={typeof record.gigId === 'object' ? record.gigId : selectedGig}
+                                                        t={t}
+                                                        getLanguageNameByCode={getLanguageNameByCode}
+                                                        rightAction={
+                                                            <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:shrink-0">
+                                                                <button
+                                                                    onClick={() => openAgentProfile(record)}
+                                                                    disabled={loadingProfile}
+                                                                    className="flex-1 lg:flex-none justify-center px-4 py-2 bg-white text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-all duration-200 text-sm font-medium flex items-center gap-1.5 disabled:opacity-60 whitespace-nowrap"
+                                                                >
+                                                                    👁️ {t('matchingDashboard.enrollment.viewProfile')}
+                                                                </button>
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            await acceptEnrollmentRequest(record._id, "Welcome to the team! We are delighted to have you.");
+                                                                            const companyId = Cookies.get('companyId') || '';
+                                                                            const [invitedAgentsData, enrollmentRequestsData, activeAgentsData] = await Promise.all([
+                                                                                getInvitedAgentsForCompany(companyId),
+                                                                                getEnrollmentRequestsForCompany(companyId),
+                                                                                getActiveAgentsForCompany(companyId)
+                                                                            ]);
+                                                                            setCompanyInvitedAgents(invitedAgentsData);
+                                                                            setEnrollmentRequests(enrollmentRequestsData);
+                                                                            setActiveAgentsList(activeAgentsData);
+                                                                        } catch (error) {
+                                                                            console.error('Error accepting enrollment request:', error);
+                                                                        }
+                                                                    }}
+                                                                    className="flex-1 lg:flex-none px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 text-sm font-medium whitespace-nowrap"
+                                                                >
+                                                                    ✅ {t('matchingDashboard.enrollment.approve')}
+                                                                </button>
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            await rejectEnrollmentRequest(record._id, "Sorry, we cannot proceed with your application at this time.");
+                                                                            const companyId = Cookies.get('companyId') || '';
+                                                                            const [invitedAgentsData, enrollmentRequestsData, activeAgentsData] = await Promise.all([
+                                                                                getInvitedAgentsForCompany(companyId),
+                                                                                getEnrollmentRequestsForCompany(companyId),
+                                                                                getActiveAgentsForCompany(companyId)
+                                                                            ]);
+                                                                            setCompanyInvitedAgents(invitedAgentsData);
+                                                                            setEnrollmentRequests(enrollmentRequestsData);
+                                                                            setActiveAgentsList(activeAgentsData);
+                                                                        } catch (error) {
+                                                                            console.error('Error rejecting enrollment request:', error);
+                                                                        }
+                                                                    }}
+                                                                    className="flex-1 lg:flex-none px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 text-sm font-medium whitespace-nowrap"
+                                                                >
+                                                                    ❌ {t('matchingDashboard.enrollment.reject')}
+                                                                </button>
                                                             </div>
-                                                        </div>
-                                                        <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:shrink-0">
-                                                            <button
-                                                                onClick={() => openAgentProfile(agent)}
-                                                                disabled={loadingProfile}
-                                                                className="flex-1 lg:flex-none justify-center px-4 py-2 bg-white text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-all duration-200 text-sm font-medium flex items-center gap-1.5 disabled:opacity-60 whitespace-nowrap"
-                                                            >
-                                                                👁️ {t('matchingDashboard.enrollment.viewProfile')}
-                                                            </button>
-                                                            <button
-                                                                onClick={async () => {
-                                                                    try {
-                                                                        await acceptEnrollmentRequest(agent._id, "Welcome to the team! We are delighted to have you.");
-                                                                        // Refresh data
-                                                                        const companyId = Cookies.get('companyId') || '';
-                                                                        const [invitedAgentsData, enrollmentRequestsData, activeAgentsData] = await Promise.all([
-                                                                            getInvitedAgentsForCompany(companyId),
-                                                                            getEnrollmentRequestsForCompany(companyId),
-                                                                            getActiveAgentsForCompany(companyId)
-                                                                        ]);
-                                                                        setCompanyInvitedAgents(invitedAgentsData);
-                                                                        setEnrollmentRequests(enrollmentRequestsData);
-                                                                        setActiveAgentsList(activeAgentsData);
-                                                                    } catch (error) {
-                                                                        console.error('Error accepting enrollment request:', error);
-                                                                        // TODO: Show error toast
-                                                                    }
-                                                                }}
-                                                                className="flex-1 lg:flex-none px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 text-sm font-medium whitespace-nowrap"
-                                                            >
-                                                                ✅ {t('matchingDashboard.enrollment.approve')}
-                                                            </button>
-                                                            <button
-                                                                onClick={async () => {
-                                                                    try {
-                                                                        await rejectEnrollmentRequest(agent._id, "Sorry, we cannot proceed with your application at this time.");
-                                                                        // Refresh data
-                                                                        const companyId = Cookies.get('companyId') || '';
-                                                                        const [invitedAgentsData, enrollmentRequestsData, activeAgentsData] = await Promise.all([
-                                                                            getInvitedAgentsForCompany(companyId),
-                                                                            getEnrollmentRequestsForCompany(companyId),
-                                                                            getActiveAgentsForCompany(companyId)
-                                                                        ]);
-                                                                        setCompanyInvitedAgents(invitedAgentsData);
-                                                                        setEnrollmentRequests(enrollmentRequestsData);
-                                                                        setActiveAgentsList(activeAgentsData);
-                                                                    } catch (error) {
-                                                                        console.error('Error rejecting enrollment request:', error);
-                                                                        // TODO: Show error toast
-                                                                    }
-                                                                }}
-                                                                className="flex-1 lg:flex-none px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 text-sm font-medium whitespace-nowrap"
-                                                            >
-                                                                ❌ {t('matchingDashboard.enrollment.reject')}
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                        }
+                                                    />
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <div className="text-center py-12">
@@ -1776,75 +1750,41 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         </div>
                                     </div>
                                     <div>
-                                        {activeAgentsList.filter((a: any) => 
-                                            (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                            (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                        {sortRecordsByMatchScore(
+                                            activeAgentsList.filter((record: any) => recordMatchesSearch(record, searchTerm)),
+                                            matches
                                         ).length > 0 ? (
                                         <div className="space-y-3">
-                                            {(activeAgentsList || []).filter((a: any) => 
-                                                (a.agentId?.personalInfo?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                                (a.agentId?.personalInfo?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
-                                            ).map((agent: any, index: number) => agent && (
-                                                <div key={`active-${agent._id || index}`} className="bg-emerald-50/60 border border-emerald-200/70 rounded-xl p-4 sm:p-5 hover:shadow-sm hover:border-emerald-300 transition-all duration-200">
-                                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-3 mb-2">
-                                                                <h3
-                                                                    className="text-lg font-bold text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5"
-                                                                    onClick={() => openAgentProfile(agent)}
-                                                                    title={t('matchingDashboard.enrollment.viewProfile')}
-                                                                >{agent.agentId?.personalInfo?.name || t('matchingDashboard.invited.unnamedAgent')}</h3>
-                                                                <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
-                                                                    ✅ {t('matchingDashboard.active.active')}
-                                                                </span>
-                                                            </div>
-                                                            <div className="mt-3 space-y-2">
-                                                                {(agent.gigId?.title || agent.gig?.title) && (
-                                                                    <div className="mb-2">
-                                                                        <p className="text-sm text-slate-500">
-                                                                            <span className="font-medium">{t('matchingDashboard.invited.gig')}</span> {agent.gigId?.title || agent.gig?.title}
-                                                                        </p>
-                                                                    </div>
-                                                                )}
-                                                                <div className="flex items-center gap-4 text-sm">
-                                                                    <span className="text-slate-500">
-                                                                        <span className="font-medium">{t('matchingDashboard.active.experience')}</span> {agent.agentId?.professionalSummary?.yearsOfExperience || 0} {t('matchingDashboard.matching.years')}
-                                                                    </span>
-                                                                    <span className="text-slate-500">
-                                                                        <span className="font-medium">{t('matchingDashboard.active.role')}</span> {agent.agentId?.professionalSummary?.currentRole || t('matchingDashboard.active.na')}
-                                                                    </span>
-                                                                </div>
+                                            {sortRecordsByMatchScore(
+                                                activeAgentsList.filter((record: any) => recordMatchesSearch(record, searchTerm)),
+                                                matches
+                                            ).map((record: any, index: number) => {
+                                                if (!record) return null;
+                                                const normalizedMatch = normalizeRecordToMatch(record, matches);
+                                                const matchScore = getMatchScorePercent(record, matches);
+                                                const expandKey = getRecordExpandKey(record);
 
-                                                                <div className="flex flex-wrap gap-2">
-                                                                    {(agent.agentId?.professionalSummary?.keyExpertise || []).slice(0, 5).map((skill: any, i: any) => (
-                                                                        <span key={i} className="px-2 py-1 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-xs">
-                                                                            {skill}
-                                                                        </span>
-                                                                    ))}
-                                                                    {agent.agentId?.professionalSummary?.keyExpertise?.length > 5 && (
-                                                                        <span className="px-2 py-1 bg-slate-50/50 text-slate-500 rounded text-xs">
-                                                                            +{agent.agentId.professionalSummary.keyExpertise.length - 5} more
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-
-                                                                <div className="flex flex-wrap gap-4 text-sm text-slate-500">
-                                                                    <div>
-                                                                        <span className="font-medium">{t('matchingDashboard.active.availability')}</span> {agent.agentId?.availability?.schedule?.length || 0} {t('matchingDashboard.matching.daysWeek')}
-                                                                    </div>
-                                                                    <div>
-                                                                        <span className="font-medium">{t('matchingDashboard.active.status')}</span> {agent.agentId?.onboardingProgress?.currentPhase === 4 ? t('matchingDashboard.active.fullyOnboarded') : t('matchingDashboard.active.inProgress')}
-                                                                    </div>
-                                                                    <div>
-                                                                        <span className="font-medium">{t('matchingDashboard.active.languages')}</span> {agent.agentId?.personalInfo?.languages?.length || 0}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                return (
+                                                    <RepMatchScoreCard
+                                                        key={`active-${expandKey}-${index}`}
+                                                        match={normalizedMatch}
+                                                        matchScore={matchScore}
+                                                        scoreColor={getScoreColor(matchScore)}
+                                                        gigTitle={getGigTitle(record)}
+                                                        isExpanded={expandedReps.has(expandKey)}
+                                                        onToggleDetails={() => toggleRepDetails(expandKey)}
+                                                        onOpenProfile={() => openAgentProfile(record)}
+                                                        selectedGig={typeof record.gigId === 'object' ? record.gigId : selectedGig}
+                                                        t={t}
+                                                        getLanguageNameByCode={getLanguageNameByCode}
+                                                        rightAction={
+                                                            <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
+                                                                ✅ {t('matchingDashboard.active.active')}
+                                                            </span>
+                                                        }
+                                                    />
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <div className="text-center py-12">
