@@ -1553,6 +1553,44 @@
       "allGigs": "All gigs",
       "newJourneyBtn": "New training journey"
     },
+    "pageTabs": {
+      "courses": "Courses",
+      "participants": "Participants",
+      "tracking": "Tracking statistics"
+    },
+    "participants": {
+      "title": "Participants",
+      "subtitle": "Active REPs enrolled in trainings by gig",
+      "refresh": "Refresh",
+      "loading": "Loading participants...",
+      "emptyTitle": "No participants",
+      "emptyDesc": "Active REPs on your gigs will appear here with their progress.",
+      "unnamed": "Unnamed REP",
+      "noGig": "No gig",
+      "name": "Name",
+      "gig": "Gig",
+      "training": "Training",
+      "progress": "Progress",
+      "status": "Status",
+      "statusCompleted": "Completed",
+      "statusInProgress": "In progress",
+      "statusNotStarted": "Not started"
+    },
+    "trackingStats": {
+      "title": "Tracking statistics",
+      "subtitle": "Monitor training progress and completion",
+      "participants": "Participants",
+      "avgProgress": "Average progress",
+      "completionRate": "Completion rate",
+      "trainings": "Trainings",
+      "inProgress": "In progress",
+      "completed": "Completed",
+      "notStarted": "Not started",
+      "allTrainings": "All trainings",
+      "progressOverview": "Overview",
+      "byTraining": "By training",
+      "noTrainingData": "No training data available."
+    },
     "viewer": {
       "backBtn": "Back to trainings list",
       "backToTraining": "Back to training",

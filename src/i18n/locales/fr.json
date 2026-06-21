@@ -1553,6 +1553,44 @@
       "allGigs": "Tous les gigs",
       "newJourneyBtn": "Nouveau parcours de formation"
     },
+    "pageTabs": {
+      "courses": "Parcours",
+      "participants": "Participants",
+      "tracking": "Statistiques de suivi"
+    },
+    "participants": {
+      "title": "Participants",
+      "subtitle": "REPs actifs inscrits aux formations par gig",
+      "refresh": "Actualiser",
+      "loading": "Chargement des participants...",
+      "emptyTitle": "Aucun participant",
+      "emptyDesc": "Les REPs actifs sur vos gigs apparaîtront ici avec leur progression.",
+      "unnamed": "REP sans nom",
+      "noGig": "Gig non défini",
+      "name": "Nom",
+      "gig": "Gig",
+      "training": "Formation",
+      "progress": "Progression",
+      "status": "Statut",
+      "statusCompleted": "Terminé",
+      "statusInProgress": "En cours",
+      "statusNotStarted": "Non démarré"
+    },
+    "trackingStats": {
+      "title": "Statistiques de suivi",
+      "subtitle": "Suivez la progression et la complétion des formations",
+      "participants": "Participants",
+      "avgProgress": "Progression moyenne",
+      "completionRate": "Taux de complétion",
+      "trainings": "Formations",
+      "inProgress": "En cours",
+      "completed": "Terminés",
+      "notStarted": "Non démarrés",
+      "allTrainings": "Toutes les formations",
+      "progressOverview": "Vue d'ensemble",
+      "byTraining": "Par formation",
+      "noTrainingData": "Aucune donnée de formation disponible."
+    },
     "viewer": {
       "backBtn": "Retour à la liste des formations",
       "backToTraining": "Retour à la formation",
