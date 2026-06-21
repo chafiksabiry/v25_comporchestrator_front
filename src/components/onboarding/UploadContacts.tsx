@@ -103,7 +103,7 @@ const getLeadAvatarGradient = (lead: Lead): string => {
   return avatarGradients[seed % avatarGradients.length];
 };
 
-const LEAD_TABLE_COL_COUNT = 8;
+const LEAD_TABLE_COL_COUNT = 7;
 const LEAD_EMPTY = '\u2014';
 
 function formatLeadLocation(lead: Lead): string {
@@ -114,7 +114,7 @@ function formatLeadLocation(lead: Lead): string {
 }
 
 const LEAD_ROW_CELL =
-  'px-3 py-3 align-middle border-y border-slate-100/80 bg-white/80 backdrop-blur-sm transition-colors duration-200 group-hover:bg-white';
+  'max-w-0 overflow-hidden px-2 py-2.5 align-middle border-y border-slate-100/80 bg-white/80 backdrop-blur-sm transition-colors duration-200 group-hover:bg-white';
 
 type LeadTableRowProps = {
   lead: Lead;
@@ -144,87 +144,79 @@ function LeadTableRow({
   return (
     <tr className={`group ${isPlaceholder ? 'opacity-75' : ''}`}>
       <td
-        className={`${LEAD_ROW_CELL} w-[52px] rounded-l-2xl border-l pl-2.5 ${rowBorder} ${
+        className={`${LEAD_ROW_CELL} rounded-l-2xl border-l pl-1.5 ${rowBorder} ${
           isPlaceholder ? 'border-l-4 border-l-amber-400' : ''
         }`}
       >
         <div className="flex justify-center">
           <div className="relative">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-xs font-black text-white shadow-md group-hover:scale-105 transition-transform duration-300`}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-[10px] font-black text-white shadow-sm group-hover:scale-105 transition-transform duration-300`}
             >
               {getLeadInitials(lead)}
             </div>
             {lead.hasBeenCalled && (
               <span
-                className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-emerald-500 shadow-sm"
+                className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-emerald-500 shadow-sm"
                 title={calledBadgeTitle}
               >
-                <PhoneCall className="h-2.5 w-2.5 text-white" />
+                <PhoneCall className="h-2 w-2 text-white" />
               </span>
             )}
           </div>
         </div>
       </td>
       <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
-        <span className="block truncate text-sm font-bold text-slate-900" title={lead.Last_Name || undefined}>
+        <span className="block truncate text-xs font-bold text-slate-900" title={lead.Last_Name || undefined}>
           {lead.Last_Name || LEAD_EMPTY}
         </span>
       </td>
       <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
-        <span className="block truncate text-sm font-semibold text-slate-700" title={lead.First_Name || undefined}>
+        <span className="block truncate text-xs font-semibold text-slate-700" title={lead.First_Name || undefined}>
           {lead.First_Name || LEAD_EMPTY}
         </span>
       </td>
       <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
-        <div className="flex min-w-0 items-center gap-1.5">
-          <Phone className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-          <span
-            className="truncate text-sm font-medium tabular-nums text-slate-800"
-            title={lead.Phone || undefined}
-          >
-            {lead.Phone || LEAD_EMPTY}
-          </span>
-        </div>
+        <span
+          className="block truncate text-xs font-medium tabular-nums text-slate-800"
+          title={lead.Phone || undefined}
+        >
+          {lead.Phone || LEAD_EMPTY}
+        </span>
       </td>
       <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
-        <div className="flex min-w-0 items-center gap-1.5">
-          <Mail className="h-3.5 w-3.5 shrink-0 text-slate-300 group-hover:text-harx-400 transition-colors" />
-          <span
-            className="truncate text-sm text-slate-600 group-hover:text-harx-600 transition-colors"
-            title={lead.Email_1 || undefined}
-          >
-            {lead.Email_1 || LEAD_EMPTY}
-          </span>
-        </div>
+        <span
+          className="block truncate text-xs text-slate-600 group-hover:text-harx-600 transition-colors"
+          title={lead.Email_1 || undefined}
+        >
+          {lead.Email_1 || LEAD_EMPTY}
+        </span>
       </td>
       <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
-        <span className="block truncate text-sm text-slate-600" title={formatLeadLocation(lead)}>
+        <span
+          className="block truncate text-xs text-slate-600"
+          title={[lead.Address, formatLeadLocation(lead)].filter(Boolean).join(' — ') || undefined}
+        >
           {formatLeadLocation(lead)}
         </span>
       </td>
-      <td className={`${LEAD_ROW_CELL} min-w-0 ${rowBorder}`}>
-        <span className="block truncate text-sm text-slate-500" title={lead.Address || undefined}>
-          {lead.Address || LEAD_EMPTY}
-        </span>
-      </td>
-      <td className={`${LEAD_ROW_CELL} w-[88px] rounded-r-2xl border-r ${rowBorder}`}>
-        <div className="flex items-center justify-center gap-1.5">
+      <td className={`${LEAD_ROW_CELL} rounded-r-2xl border-r px-1 ${rowBorder}`}>
+        <div className="flex items-center justify-center gap-0.5">
           <button
             type="button"
             onClick={() => onView({ ...lead })}
-            className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-white p-2 text-slate-400 transition-all duration-200 hover:border-transparent hover:bg-gradient-harx hover:text-white hover:shadow-md"
+            className="inline-flex items-center justify-center rounded-md border border-slate-200/80 bg-white p-1 text-slate-400 transition-all duration-200 hover:border-transparent hover:bg-gradient-harx hover:text-white"
             title={viewTitle}
           >
-            <Eye className="h-4 w-4" />
+            <Eye className="h-3 w-3" />
           </button>
           <button
             type="button"
             onClick={() => onEdit({ ...lead })}
-            className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-white p-2 text-slate-400 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 hover:shadow-sm"
+            className="inline-flex items-center justify-center rounded-md border border-slate-200/80 bg-white p-1 text-slate-400 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
             title={editTitle}
           >
-            <Edit className="h-4 w-4" />
+            <Edit className="h-3 w-3" />
           </button>
         </div>
       </td>
@@ -2753,7 +2745,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Contact List */}
-      <div className="bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-420px)] flex flex-col overflow-hidden relative min-h-[420px]">
+      <div className="bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-420px)] flex flex-col overflow-hidden relative min-h-[420px] min-w-0">
         <div className="border-b border-slate-100/80 p-6 flex-shrink-0 bg-gradient-to-r from-white/80 via-white/60 to-harx-50/30 backdrop-blur-sm rounded-t-[32px]">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <div>
@@ -2877,42 +2869,38 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           </div>
         </div>
         {/* Tableau d'affichage des leads */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar min-h-0">
-            <div className="relative min-w-[980px] px-2 pb-2">
-              <table className="w-full border-separate border-spacing-y-1.5">
+        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar min-h-0">
+            <div className="relative w-full min-w-0 px-2 pb-2">
+              <table className="w-full table-fixed border-separate border-spacing-y-1.5">
                 <colgroup>
-                  <col className="w-[52px]" />
+                  <col className="w-[4%]" />
                   <col className="w-[11%]" />
                   <col className="w-[11%]" />
                   <col className="w-[14%]" />
-                  <col className="w-[18%]" />
-                  <col className="w-[13%]" />
-                  <col />
-                  <col className="w-[88px]" />
+                  <col className="w-[28%]" />
+                  <col className="w-[24%]" />
+                  <col className="w-[8%]" />
                 </colgroup>
                 <thead className="sticky top-0 z-[50] bg-white/95 backdrop-blur-sm">
                   <tr>
-                    <th scope="col" className="px-2 py-2 text-left" aria-hidden="true" />
-                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
+                    <th scope="col" className="px-1 py-2 text-left" aria-hidden="true" />
+                    <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.lastName')}
                     </th>
-                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
+                    <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.firstName')}
                     </th>
-                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
+                    <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.mobile')}
                     </th>
-                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
+                    <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.email')}
                     </th>
-                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
+                    <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.location', 'Localisation')}
                     </th>
-                    <th scope="col" className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
-                      {t('uploadContacts.list.table.address')}
-                    </th>
-                    <th scope="col" className="px-3 py-2 text-center text-[9px] font-black uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
+                    <th scope="col" className="px-1 py-2 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.actions')}
                     </th>
                   </tr>
