@@ -125,6 +125,12 @@
         "status": "Status",
         "unassigned": "Unassigned",
         "active": "active"
+      },
+      "filters": {
+        "searchPlaceholder": "Search a number or gig…",
+        "gigLabel": "Filter by gig",
+        "allGigs": "All gigs",
+        "noResults": "No numbers match your search."
       }
     },
     "buy": {

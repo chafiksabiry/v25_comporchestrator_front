@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -180,6 +180,8 @@ export function PhoneNumberPanel() {
   const [paypalEnabled, setPaypalEnabled] = useState(false);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [linePrice, setLinePrice] = useState({ amountCents: 999, currency: 'EUR' });
+  const [myNumbersSearch, setMyNumbersSearch] = useState('');
+  const [myNumbersGigFilter, setMyNumbersGigFilter] = useState('');
 
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   // In production we MUST resolve to the live orchestrator backend; the old
@@ -203,6 +205,19 @@ export function PhoneNumberPanel() {
     : [];
   const selectedGigHasReachedMinimum = numbersForSelectedGig.length >= minRequiredForSelectedGig;
   const selectedGigTitle = selectedGig?.title;
+
+  const filteredPhoneNumbers = useMemo(() => {
+    const query = myNumbersSearch.trim().toLowerCase();
+    return phoneNumbers.filter((num) => {
+      if (myNumbersGigFilter && num.gigId !== myNumbersGigFilter) return false;
+      if (!query) return true;
+      const linkedGig = gigsAndReps.find((g) => g.gigId === num.gigId);
+      const haystack = [num.phoneNumber, linkedGig?.title || '', num.status || '']
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [phoneNumbers, myNumbersSearch, myNumbersGigFilter, gigsAndReps]);
 
   const fetchData = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -867,19 +882,52 @@ export function PhoneNumberPanel() {
       {/* Tabs rendering */}
       {telephonyTab === 'my_numbers' ? (
         <div className="relative bg-white rounded-3xl border border-slate-200 p-6 space-y-5 min-w-0 overflow-hidden">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
               <span className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
                 <Hash size={12} />
               </span>
               {t('phoneNumberPanel.myNumbers.title')}
             </h3>
-            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full">
-              {phoneNumbers.length > 1
-                ? t('phoneNumberPanel.myNumbers.activePlural', { count: phoneNumbers.length })
-                : t('phoneNumberPanel.myNumbers.activeSingular', { count: phoneNumbers.length })}
+            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full shrink-0">
+              {filteredPhoneNumbers.length > 1
+                ? t('phoneNumberPanel.myNumbers.activePlural', { count: filteredPhoneNumbers.length })
+                : t('phoneNumberPanel.myNumbers.activeSingular', { count: filteredPhoneNumbers.length })}
             </span>
           </div>
+
+          {phoneNumbers.length > 0 && (
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 min-w-0">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none"
+                />
+                <input
+                  type="search"
+                  value={myNumbersSearch}
+                  onChange={(e) => setMyNumbersSearch(e.target.value)}
+                  placeholder={t('phoneNumberPanel.myNumbers.filters.searchPlaceholder')}
+                  className="w-full pl-10 pr-4 py-2.5 bg-indigo-50/40 border border-indigo-100 rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                />
+              </div>
+              <div className="sm:w-64 shrink-0">
+                <select
+                  value={myNumbersGigFilter}
+                  onChange={(e) => setMyNumbersGigFilter(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-indigo-50/40 border border-indigo-100 rounded-xl font-bold text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                  aria-label={t('phoneNumberPanel.myNumbers.filters.gigLabel')}
+                >
+                  <option value="">{t('phoneNumberPanel.myNumbers.filters.allGigs')}</option>
+                  {gigsAndReps.map((g) => (
+                    <option key={g.gigId} value={g.gigId}>
+                      {g.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           {phoneNumbers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-indigo-200 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 text-slate-400 gap-3">
@@ -895,6 +943,13 @@ export function PhoneNumberPanel() {
                 {t('phoneNumberPanel.myNumbers.empty.cta')}
               </button>
             </div>
+          ) : filteredPhoneNumbers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 text-slate-500 gap-2">
+              <Search size={32} className="text-indigo-300" />
+              <p className="text-sm font-bold text-slate-700">
+                {t('phoneNumberPanel.myNumbers.filters.noResults')}
+              </p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -907,7 +962,7 @@ export function PhoneNumberPanel() {
                   </tr>
                 </thead>
                 <tbody className="text-xs">
-                  {phoneNumbers.map((num) => {
+                  {filteredPhoneNumbers.map((num) => {
                     const linkedGig = gigsAndReps.find(g => g.gigId === num.gigId);
                     return (
                       <tr
