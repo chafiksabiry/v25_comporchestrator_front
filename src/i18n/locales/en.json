@@ -1752,7 +1752,12 @@
       "waitingResponse": "Invited • Waiting for response",
       "gig": "Gig:",
       "noPending": "No pending invitations",
-      "allResponded": "All invitations have been responded to."
+      "allResponded": "All invitations have been responded to.",
+      "cancelInvitation": "Cancel invitation",
+      "cancelling": "Cancelling...",
+      "cancelConfirm": "Cancel the invitation sent to {{name}}? The invitation will be archived.",
+      "cancelSuccess": "{{name}}'s invitation has been archived.",
+      "cancelError": "Unable to cancel the invitation."
     },
     "enrollment": {
       "title": "Enrollment Requests",
