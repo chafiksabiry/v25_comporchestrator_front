@@ -100,6 +100,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
     const [selectedAgentProfile, setSelectedAgentProfile] = useState<any>(null);
     const [loadingProfile, setLoadingProfile] = useState(false);
     const [archivingInvitationId, setArchivingInvitationId] = useState<string | null>(null);
+    const [invitationPendingArchive, setInvitationPendingArchive] = useState<any | null>(null);
 
     const normalizeAgentProfile = (raw: any) => {
         if (!raw) return null;
@@ -336,23 +337,22 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         }
     }, []);
 
+    const resolveInvitationAgentName = (record: any): string =>
+        record?.agentId?.personalInfo?.name ||
+        record?.agentId?.name ||
+        record?.agentInfo?.name ||
+        t('matchingDashboard.invited.unnamedAgent');
+
     const handleArchiveInvitation = async (record: any) => {
         const gigAgentId = String(record?._id || record?.id || '').trim();
         if (!gigAgentId) return;
 
-        const agentName =
-            record?.agentId?.personalInfo?.name ||
-            record?.agentId?.name ||
-            record?.agentInfo?.name ||
-            t('matchingDashboard.invited.unnamedAgent');
-
-        if (!window.confirm(t('matchingDashboard.invited.cancelConfirm', { name: agentName }))) {
-            return;
-        }
+        const agentName = resolveInvitationAgentName(record);
 
         try {
             setArchivingInvitationId(gigAgentId);
             await archiveInvitation(gigAgentId);
+            setInvitationPendingArchive(null);
             await refreshCompanyLists();
             setGigAgentSuccess(t('matchingDashboard.invited.cancelSuccess', { name: agentName }));
         } catch (error) {
@@ -798,6 +798,51 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
     return (
         <div className="min-h-full w-full max-w-full overflow-visible text-slate-900 flex flex-col bg-gradient-rep-page">
+            {invitationPendingArchive && (
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+                    onClick={() => {
+                        if (archivingInvitationId) return;
+                        setInvitationPendingArchive(null);
+                    }}
+                >
+                    <div
+                        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6"
+                        onClick={(event) => event.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
+                    >
+                        <h3 className="text-lg font-black text-slate-900">
+                            {t('matchingDashboard.invited.cancelModalTitle')}
+                        </h3>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                            {t('matchingDashboard.invited.cancelConfirm', {
+                                name: resolveInvitationAgentName(invitationPendingArchive),
+                            })}
+                        </p>
+                        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setInvitationPendingArchive(null)}
+                                disabled={!!archivingInvitationId}
+                                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-60"
+                            >
+                                {t('matchingDashboard.invited.cancelModalDismiss')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleArchiveInvitation(invitationPendingArchive)}
+                                disabled={!!archivingInvitationId}
+                                className="inline-flex items-center justify-center rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-rose-700 disabled:opacity-60"
+                            >
+                                {archivingInvitationId
+                                    ? t('matchingDashboard.invited.cancelling')
+                                    : t('matchingDashboard.invited.cancelModalConfirm')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {loadingProfile && !selectedAgentProfile && (
                 <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-slate-900/30 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-xl px-8 py-6 flex flex-col items-center gap-3">
@@ -1681,7 +1726,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                 </span>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => void handleArchiveInvitation(record)}
+                                                                    onClick={() => setInvitationPendingArchive(record)}
                                                                     disabled={archivingInvitationId === String(record._id || record.id)}
                                                                     className="inline-flex items-center justify-center px-4 py-2 bg-white text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-50 transition-all duration-200 text-sm font-medium whitespace-nowrap disabled:opacity-60"
                                                                 >
