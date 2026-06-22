@@ -137,6 +137,22 @@
         "buyForGig": "Buy a line",
         "clear": "Clear selection"
       },
+      "detailModal": {
+        "title": "Line details",
+        "gig": "Linked gig",
+        "price": "Price paid",
+        "status": "Status",
+        "provider": "Provider",
+        "features": "Features",
+        "voice": "Voice",
+        "sms": "SMS",
+        "mms": "MMS",
+        "enabled": "Enabled",
+        "disabled": "Unavailable",
+        "createdAt": "Purchase date",
+        "buyForGig": "Buy another line",
+        "close": "Close"
+      },
       "filters": {
         "searchPlaceholder": "Search a number or gig…",
         "gigLabel": "Filter by gig",

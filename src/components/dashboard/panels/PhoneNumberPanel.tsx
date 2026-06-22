@@ -285,24 +285,34 @@ export function PhoneNumberPanel() {
 
   const handlePhoneLineClick = (num: PurchasedNumber) => {
     setSelectedPhoneLine(num.phoneNumber);
-    if (num.gigId) {
-      setMyNumbersGigFilter(num.gigId);
-      setSelectedGigIdForNumber(num.gigId);
-    }
   };
 
-  const clearPhoneLineSelection = () => {
+  const closeLineDetailModal = () => {
     setSelectedPhoneLine(null);
   };
 
   const openBuyTabForSelectedLine = () => {
     const line = selectedPhoneLineData;
+    closeLineDetailModal();
     if (line?.gigId) {
       setSelectedGigIdForNumber(line.gigId);
       setTelephonyTab('buy');
       void doSearch(line.gigId);
     } else {
       setTelephonyTab('buy');
+    }
+  };
+
+  const formatLineDate = (value?: string) => {
+    if (!value) return '—';
+    try {
+      return new Date(value).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    } catch {
+      return '—';
     }
   };
 
@@ -1181,48 +1191,7 @@ export function PhoneNumberPanel() {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {selectedPhoneLineData && (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-violet-50/80 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-indigo-600 mb-1">
-                      {t('phoneNumberPanel.myNumbers.rowDetail.label')}
-                    </p>
-                    <p className="text-sm font-black text-slate-900 tabular-nums truncate">
-                      {selectedPhoneLineData.phoneNumber}
-                    </p>
-                    <p className="text-[11px] font-bold text-slate-500 truncate mt-0.5">
-                      {gigsAndReps.find((g) => g.gigId === selectedPhoneLineData.gigId)?.title
-                        || t('phoneNumberPanel.myNumbers.table.unassigned')}
-                      {' · '}
-                      {selectedPhoneLineData.isTrial
-                        ? t('phoneNumberPanel.myNumbers.table.freeTrial')
-                        : typeof selectedPhoneLineData.price === 'number' && selectedPhoneLineData.price > 0
-                          ? formatPrice(Math.round(selectedPhoneLineData.price * 100), selectedPhoneLineData.currency || 'EUR')
-                          : '—'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={openBuyTabForSelectedLine}
-                      className="px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-[10px] font-black uppercase tracking-wider transition-colors"
-                    >
-                      {t('phoneNumberPanel.myNumbers.rowDetail.buyForGig')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={clearPhoneLineSelection}
-                      className="p-2 rounded-xl border border-indigo-200 text-indigo-500 hover:bg-white transition-colors"
-                      aria-label={t('phoneNumberPanel.myNumbers.rowDetail.clear')}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 border-b border-indigo-100">
@@ -1236,13 +1205,11 @@ export function PhoneNumberPanel() {
                 <tbody className="text-xs">
                   {filteredPhoneNumbers.map((num) => {
                     const linkedGig = gigsAndReps.find(g => g.gigId === num.gigId);
-                    const isSelected = selectedPhoneLine === num.phoneNumber;
                     return (
                       <tr
                         key={num.phoneNumber}
                         role="button"
                         tabIndex={0}
-                        aria-selected={isSelected}
                         onClick={() => handlePhoneLineClick(num)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
@@ -1250,11 +1217,7 @@ export function PhoneNumberPanel() {
                             handlePhoneLineClick(num);
                           }
                         }}
-                        className={`group border-t border-slate-50 transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset ${
-                          isSelected
-                            ? 'bg-indigo-100/70 shadow-[inset_3px_0_0_0_rgb(79,70,229)]'
-                            : 'hover:bg-indigo-50/60 hover:shadow-sm'
-                        }`}
+                        className="group border-t border-slate-50 transition-all duration-200 cursor-pointer hover:bg-indigo-50/60 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset"
                       >
                         <td className="py-4 px-4 font-black text-slate-900 tracking-tight">
                           <div className="flex items-center gap-2">
@@ -1292,11 +1255,7 @@ export function PhoneNumberPanel() {
                         <td className="py-4 px-2 text-right">
                           <ChevronRight
                             size={16}
-                            className={`inline-block transition-all ${
-                              isSelected
-                                ? 'text-indigo-600 translate-x-0.5'
-                                : 'text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-0.5'
-                            }`}
+                            className="inline-block text-slate-300 transition-all group-hover:text-indigo-500 group-hover:translate-x-0.5"
                           />
                         </td>
                       </tr>
@@ -1323,7 +1282,6 @@ export function PhoneNumberPanel() {
                   </tr>
                 </tfoot>
               </table>
-              </div>
             </div>
           )}
         </div>
@@ -1472,6 +1430,149 @@ export function PhoneNumberPanel() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Line detail modal */}
+      {selectedPhoneLineData && createPortal(
+        <div
+          className="fixed inset-0 z-[9998] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-fade-in"
+          onClick={closeLineDetailModal}
+        >
+          <div
+            className="bg-white rounded-3xl w-full max-w-lg overflow-hidden border border-slate-200 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="line-detail-title"
+          >
+            <div className="relative px-6 py-5 bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 text-white overflow-hidden">
+              <div className="absolute -right-8 -top-8 h-32 w-32 bg-white/15 rounded-full blur-2xl" />
+              <button
+                type="button"
+                onClick={closeLineDetailModal}
+                className="absolute top-4 right-4 z-20 p-1.5 rounded-full hover:bg-white/15 transition"
+                aria-label={t('phoneNumberPanel.myNumbers.detailModal.close')}
+              >
+                <X size={16} />
+              </button>
+              <div className="relative z-10 flex items-start gap-3">
+                <span className="p-2.5 rounded-xl bg-white/15 border border-white/25 shrink-0">
+                  <Phone size={20} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80 mb-1">
+                    {t('phoneNumberPanel.myNumbers.detailModal.title')}
+                  </p>
+                  <h2 id="line-detail-title" className="text-xl font-black tracking-tight tabular-nums truncate">
+                    {selectedPhoneLineData.phoneNumber}
+                  </h2>
+                  {selectedPhoneLineData.isTrial && (
+                    <span className="inline-block mt-2 px-2 py-0.5 rounded-lg bg-cyan-400/20 text-cyan-100 border border-cyan-300/30 text-[9px] font-black uppercase tracking-wider">
+                      {t('phoneNumberPanel.myNumbers.table.freeTrial')}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-1">
+              <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-100">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {t('phoneNumberPanel.myNumbers.detailModal.gig')}
+                </span>
+                <span className="text-sm font-bold text-slate-900 text-right max-w-[60%]">
+                  {gigsAndReps.find((g) => g.gigId === selectedPhoneLineData.gigId)?.title
+                    || t('phoneNumberPanel.myNumbers.table.unassigned')}
+                </span>
+              </div>
+
+              <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-100">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {t('phoneNumberPanel.myNumbers.detailModal.price')}
+                </span>
+                <span className="text-sm font-black text-slate-900 tabular-nums">
+                  {selectedPhoneLineData.isTrial
+                    ? t('phoneNumberPanel.myNumbers.table.freeTrial')
+                    : typeof selectedPhoneLineData.price === 'number' && selectedPhoneLineData.price > 0
+                      ? formatPrice(Math.round(selectedPhoneLineData.price * 100), selectedPhoneLineData.currency || 'EUR')
+                      : '—'}
+                </span>
+              </div>
+
+              <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-100">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {t('phoneNumberPanel.myNumbers.detailModal.status')}
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-black text-[9px] uppercase tracking-wider">
+                  {selectedPhoneLineData.status || t('phoneNumberPanel.myNumbers.table.active')}
+                </span>
+              </div>
+
+              <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-100">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {t('phoneNumberPanel.myNumbers.detailModal.provider')}
+                </span>
+                <span className="text-sm font-bold text-slate-900 uppercase">
+                  {selectedPhoneLineData.provider || '—'}
+                </span>
+              </div>
+
+              <div className="py-3 border-b border-slate-100">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-2">
+                  {t('phoneNumberPanel.myNumbers.detailModal.features')}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {(['voice', 'sms', 'mms'] as const).map((feature) => {
+                    const enabled = selectedPhoneLineData.features?.[feature];
+                    return (
+                      <span
+                        key={feature}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
+                          enabled
+                            ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
+                            : 'bg-slate-50 text-slate-400 border-slate-100'
+                        }`}
+                      >
+                        {t(`phoneNumberPanel.myNumbers.detailModal.${feature}`)}
+                        {' · '}
+                        {enabled
+                          ? t('phoneNumberPanel.myNumbers.detailModal.enabled')
+                          : t('phoneNumberPanel.myNumbers.detailModal.disabled')}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-start justify-between gap-4 py-3">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {t('phoneNumberPanel.myNumbers.detailModal.createdAt')}
+                </span>
+                <span className="text-sm font-bold text-slate-900">
+                  {formatLineDate(selectedPhoneLineData.createdAt)}
+                </span>
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={openBuyTabForSelectedLine}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-[11px] font-black uppercase tracking-wider transition-colors"
+              >
+                {t('phoneNumberPanel.myNumbers.detailModal.buyForGig')}
+              </button>
+              <button
+                type="button"
+                onClick={closeLineDetailModal}
+                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-[11px] font-black uppercase tracking-wider transition-colors"
+              >
+                {t('phoneNumberPanel.myNumbers.detailModal.close')}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* ===========================================================
