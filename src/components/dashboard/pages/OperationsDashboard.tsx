@@ -89,11 +89,27 @@ function todayIsoRange(): { from: string; to: string } {
   return { from: start.toISOString(), to: end.toISOString() };
 }
 
-type DashboardPeriodId = 'today' | '7d' | '30d' | 'mtd';
+type DashboardPeriodId = 'today' | '7d' | '30d' | 'mtd' | 'custom';
 
-const DASHBOARD_PERIOD_IDS: DashboardPeriodId[] = ['today', '7d', '30d', 'mtd'];
+type CustomPeriodDates = { from: string; to: string };
 
-function periodIsoRange(periodId: DashboardPeriodId): { from: string; to: string } {
+const PRESET_PERIOD_IDS: DashboardPeriodId[] = ['today', '7d', '30d', 'mtd'];
+
+function formatDateInputValue(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function defaultCustomPeriodDates(): CustomPeriodDates {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 29);
+  return { from: formatDateInputValue(start), to: formatDateInputValue(end) };
+}
+
+function periodIsoRange(periodId: Exclude<DashboardPeriodId, 'custom'>): { from: string; to: string } {
   const end = new Date();
   end.setHours(23, 59, 59, 999);
   const start = new Date();
@@ -114,13 +130,29 @@ function periodIsoRange(periodId: DashboardPeriodId): { from: string; to: string
   }
 }
 
-function isDateInPeriod(iso: string | undefined, periodId: DashboardPeriodId): boolean {
+function resolvePeriodRange(
+  periodId: DashboardPeriodId,
+  customDates?: CustomPeriodDates | null
+): { from: string; to: string } {
+  if (periodId === 'custom' && customDates?.from && customDates?.to) {
+    const start = new Date(`${customDates.from}T00:00:00`);
+    const end = new Date(`${customDates.to}T23:59:59.999`);
+    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && start <= end) {
+      return { from: start.toISOString(), to: end.toISOString() };
+    }
+  }
+  if (periodId === 'custom') {
+    return periodIsoRange('30d');
+  }
+  return periodIsoRange(periodId);
+}
+
+function isDateInRange(iso: string | undefined, range: { from: string; to: string }): boolean {
   if (!iso) return false;
   const ts = new Date(iso).getTime();
   if (!Number.isFinite(ts)) return false;
-  const { from, to } = periodIsoRange(periodId);
-  const fromTs = new Date(from).getTime();
-  const toTs = new Date(to).getTime();
+  const fromTs = new Date(range.from).getTime();
+  const toTs = new Date(range.to).getTime();
   return ts >= fromTs && ts <= toTs;
 }
 
@@ -327,7 +359,7 @@ interface RecentCall {
  *  Layout follows the product mock: wallet alert banner + section tabs +
  *  6 KPI tiles + statuses panel + recent calls panel + MTD analysis grid. */
 export default function OperationsDashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabId>('overview');
   // Friendly greeting: use the user's first name if we can find one. Falls
   // back to "there" when nothing is stored yet (e.g. a fresh login).
@@ -346,11 +378,23 @@ export default function OperationsDashboard() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<DashboardPeriodId>(() => {
     const stored =
       typeof window !== 'undefined' ? localStorage.getItem('opsDashboard.selectedPeriodId') : null;
-    if (stored && DASHBOARD_PERIOD_IDS.includes(stored as DashboardPeriodId)) {
+    if (
+      stored &&
+      (PRESET_PERIOD_IDS.includes(stored as DashboardPeriodId) || stored === 'custom')
+    ) {
       return stored as DashboardPeriodId;
     }
     return 'today';
   });
+  const [customPeriodDates, setCustomPeriodDates] = useState<CustomPeriodDates>(() => {
+    if (typeof window !== 'undefined') {
+      const from = localStorage.getItem('opsDashboard.customPeriodFrom');
+      const to = localStorage.getItem('opsDashboard.customPeriodTo');
+      if (from && to) return { from, to };
+    }
+    return defaultCustomPeriodDates();
+  });
+  const [customPeriodDraft, setCustomPeriodDraft] = useState<CustomPeriodDates>(customPeriodDates);
   const [gigDropdownOpen, setGigDropdownOpen] = useState(false);
   const [periodDropdownOpen, setPeriodDropdownOpen] = useState(false);
   const gigDropdownRef = useRef<HTMLDivElement>(null);
@@ -411,6 +455,17 @@ export default function OperationsDashboard() {
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [periodDropdownOpen]);
 
+  useEffect(() => {
+    if (periodDropdownOpen) {
+      setCustomPeriodDraft(customPeriodDates);
+    }
+  }, [periodDropdownOpen, customPeriodDates]);
+
+  const periodRange = useMemo(
+    () => resolvePeriodRange(selectedPeriodId, customPeriodDates),
+    [selectedPeriodId, customPeriodDates]
+  );
+
   const selectedGig = useMemo(
     () => gigs.find((g) => g._id === selectedGigId) || null,
     [gigs, selectedGigId]
@@ -428,22 +483,49 @@ export default function OperationsDashboard() {
     setGigDropdownOpen(false);
   };
 
-  const handlePickPeriod = (id: DashboardPeriodId) => {
+  const handlePickPeriod = (id: Exclude<DashboardPeriodId, 'custom'>) => {
     setSelectedPeriodId(id);
     localStorage.setItem('opsDashboard.selectedPeriodId', id);
     setPeriodDropdownOpen(false);
   };
 
-  const selectedPeriodLabel = t(`opsDashboard.header.period.${selectedPeriodId}`, {
-    defaultValue:
-      selectedPeriodId === 'today'
-        ? "Aujourd'hui"
-        : selectedPeriodId === '7d'
-          ? '7 derniers jours'
-          : selectedPeriodId === '30d'
-            ? '30 derniers jours'
-            : 'Ce mois',
-  });
+  const handleApplyCustomPeriod = () => {
+    if (!customPeriodDraft.from || !customPeriodDraft.to) return;
+    if (customPeriodDraft.from > customPeriodDraft.to) return;
+    setCustomPeriodDates(customPeriodDraft);
+    localStorage.setItem('opsDashboard.customPeriodFrom', customPeriodDraft.from);
+    localStorage.setItem('opsDashboard.customPeriodTo', customPeriodDraft.to);
+    setSelectedPeriodId('custom');
+    localStorage.setItem('opsDashboard.selectedPeriodId', 'custom');
+    setPeriodDropdownOpen(false);
+  };
+
+  const formatPeriodChipDate = (value: string) => {
+    const parsed = new Date(`${value}T12:00:00`);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString(i18n.language || 'fr-FR', {
+      day: 'numeric',
+      month: 'short',
+    });
+  };
+
+  const selectedPeriodLabel =
+    selectedPeriodId === 'custom'
+      ? t('opsDashboard.header.period.customRange', {
+          from: formatPeriodChipDate(customPeriodDates.from),
+          to: formatPeriodChipDate(customPeriodDates.to),
+          defaultValue: '{{from}} – {{to}}',
+        })
+      : t(`opsDashboard.header.period.${selectedPeriodId}`, {
+          defaultValue:
+            selectedPeriodId === 'today'
+              ? "Aujourd'hui"
+              : selectedPeriodId === '7d'
+                ? '7 derniers jours'
+                : selectedPeriodId === '30d'
+                  ? '30 derniers jours'
+                  : 'Ce mois',
+        });
 
   // ----- Company wallet (real balance + runway days) -----
   //  Source of truth: same endpoint used by `WalletCompanyPanel` so the
@@ -651,7 +733,7 @@ export default function OperationsDashboard() {
         });
 
         const periodFilteredMovements = movements.filter((m) =>
-          isDateInPeriod(m.date, selectedPeriodId)
+          isDateInRange(m.date, periodRange)
         );
 
         setOverviewResources({
@@ -680,7 +762,7 @@ export default function OperationsDashboard() {
       cancelled = true;
       window.removeEventListener('balanceUpdated', handleBalanceUpdated);
     };
-  }, [selectedPeriodId]);
+  }, [selectedPeriodId, customPeriodDates, periodRange]);
 
   // ----- Lead stats (KPIs + quality + attempts breakdown) -----
   type LeadStatusBucket = { count: number; pct: number };
@@ -903,7 +985,7 @@ export default function OperationsDashboard() {
 
     let cancelled = false;
     const gq = gigQuery(selectedGigId);
-    const period = periodIsoRange(selectedPeriodId);
+    const period = periodRange;
 
     (async () => {
       try {
@@ -1012,7 +1094,7 @@ export default function OperationsDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [selectedGigId, selectedPeriodId]);
+  }, [selectedGigId, selectedPeriodId, periodRange]);
 
   const series7dChart = useMemo(
     () => overviewPeriod?.series7d ?? [],
@@ -1333,7 +1415,7 @@ export default function OperationsDashboard() {
               aria-expanded={periodDropdownOpen}
             >
               <CalendarClock size={14} className="shrink-0 text-slate-400" />
-              <span className="truncate max-w-[180px]">{selectedPeriodLabel}</span>
+              <span className="truncate max-w-[220px]">{selectedPeriodLabel}</span>
               <ChevronDown
                 size={14}
                 className={`text-slate-400 transition-transform duration-200 ${
@@ -1343,12 +1425,12 @@ export default function OperationsDashboard() {
             </button>
 
             {periodDropdownOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-56 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {t('opsDashboard.header.pickPeriod', 'Période')}
                 </div>
                 <ul className="py-1" role="listbox">
-                  {DASHBOARD_PERIOD_IDS.map((periodId) => (
+                  {PRESET_PERIOD_IDS.map((periodId) => (
                     <li key={periodId}>
                       <button
                         type="button"
@@ -1378,6 +1460,59 @@ export default function OperationsDashboard() {
                     </li>
                   ))}
                 </ul>
+
+                <div className="border-t border-slate-100 px-3 py-3 space-y-2.5 bg-slate-50/50">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    {t('opsDashboard.header.period.custom', 'Personnalisée')}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">
+                        {t('opsDashboard.header.period.from', 'Du')}
+                      </span>
+                      <input
+                        type="date"
+                        value={customPeriodDraft.from}
+                        max={customPeriodDraft.to || undefined}
+                        onChange={(e) =>
+                          setCustomPeriodDraft((prev) => ({ ...prev, from: e.target.value }))
+                        }
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-800 focus:border-harx-500 focus:outline-none focus:ring-1 focus:ring-harx-500/30"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">
+                        {t('opsDashboard.header.period.to', 'Au')}
+                      </span>
+                      <input
+                        type="date"
+                        value={customPeriodDraft.to}
+                        min={customPeriodDraft.from || undefined}
+                        onChange={(e) =>
+                          setCustomPeriodDraft((prev) => ({ ...prev, to: e.target.value }))
+                        }
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-800 focus:border-harx-500 focus:outline-none focus:ring-1 focus:ring-harx-500/30"
+                      />
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleApplyCustomPeriod}
+                    disabled={
+                      !customPeriodDraft.from ||
+                      !customPeriodDraft.to ||
+                      customPeriodDraft.from > customPeriodDraft.to
+                    }
+                    className="w-full rounded-xl bg-slate-900 py-2 text-[11px] font-black uppercase tracking-wider text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {t('opsDashboard.header.period.apply', 'Appliquer')}
+                  </button>
+                  {selectedPeriodId === 'custom' && (
+                    <p className="text-[10px] font-medium text-harx-600 text-center">
+                      {t('opsDashboard.header.period.customActive', 'Période personnalisée active')}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -1450,7 +1585,11 @@ export default function OperationsDashboard() {
           callbacksStats={callbacksStats}
         />
       ) : tab === 'wallet' ? (
-        <WalletView selectedGigId={selectedGigId} selectedPeriodId={selectedPeriodId} />
+        <WalletView
+          selectedGigId={selectedGigId}
+          selectedPeriodId={selectedPeriodId}
+          periodRange={periodRange}
+        />
       ) : tab === 'calls' ? (
         // ── "Appels" tab keeps the legacy call-centric layout. ────────────
         <CallsView
@@ -1479,6 +1618,7 @@ export default function OperationsDashboard() {
           walletDaysLeft={walletDaysLeft}
           overviewResources={overviewResources}
           selectedPeriodId={selectedPeriodId}
+          customPeriodDates={customPeriodDates}
           repsMonth={repsMonth}
           fmtDuration={fmtDuration}
           onSeeLeads={() => setTab('leads')}
@@ -2628,6 +2768,7 @@ function OverviewView({
   walletDaysLeft,
   overviewResources,
   selectedPeriodId,
+  customPeriodDates,
   repsMonth,
   fmtDuration,
   onSeeLeads,
@@ -2647,16 +2788,41 @@ function OverviewView({
   walletDaysLeft: number | null;
   overviewResources: OverviewResourcesSnapshot;
   selectedPeriodId: DashboardPeriodId;
+  customPeriodDates: CustomPeriodDates;
   repsMonth: AnalyticsRep[] | null;
   fmtDuration: (sec: number) => string;
   onSeeLeads: () => void;
   onSeeAgents: () => void;
   onSeeWallet: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedKpi, setSelectedKpi] = useState<OverviewKpiId | null>(null);
 
-  const callsKpiLabel = t(`opsDashboard.overview.kpi.callsPeriod.${selectedPeriodId}`, {
+  const formatPeriodChipDate = (value: string) => {
+    const parsed = new Date(`${value}T12:00:00`);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString(i18n.language || 'fr-FR', {
+      day: 'numeric',
+      month: 'short',
+    });
+  };
+
+  const customPeriodLabel =
+    selectedPeriodId === 'custom'
+      ? t('opsDashboard.header.period.customRange', {
+          from: formatPeriodChipDate(customPeriodDates.from),
+          to: formatPeriodChipDate(customPeriodDates.to),
+          defaultValue: '{{from}} – {{to}}',
+        })
+      : '';
+
+  const callsKpiLabel =
+    selectedPeriodId === 'custom'
+      ? t('opsDashboard.overview.kpi.callsPeriod.custom', {
+          range: customPeriodLabel,
+          defaultValue: 'Appels ({{range}})',
+        })
+      : t(`opsDashboard.overview.kpi.callsPeriod.${selectedPeriodId}`, {
     defaultValue:
       selectedPeriodId === 'today'
         ? "Appels aujourd'hui"
@@ -2665,9 +2831,15 @@ function OverviewView({
           : selectedPeriodId === '30d'
             ? 'Appels (30 jours)'
             : 'Appels (ce mois)',
-  });
+        });
 
-  const outcomesTitle = t(`opsDashboard.overview.outcomes.periodTitle.${selectedPeriodId}`, {
+  const outcomesTitle =
+    selectedPeriodId === 'custom'
+      ? t('opsDashboard.overview.outcomes.periodTitle.custom', {
+          range: customPeriodLabel,
+          defaultValue: 'Résultats d\'appels ({{range}})',
+        })
+      : t(`opsDashboard.overview.outcomes.periodTitle.${selectedPeriodId}`, {
     defaultValue:
       selectedPeriodId === 'today'
         ? "Résultats d'appels (aujourd'hui)"
@@ -2676,9 +2848,14 @@ function OverviewView({
           : selectedPeriodId === '30d'
             ? "Résultats d'appels (30 jours)"
             : "Résultats d'appels (ce mois)",
-  });
+        });
 
-  const outcomesEmpty = t(`opsDashboard.overview.outcomes.noDataPeriod.${selectedPeriodId}`, {
+  const outcomesEmpty =
+    selectedPeriodId === 'custom'
+      ? t('opsDashboard.overview.outcomes.noDataPeriod.custom', {
+          defaultValue: 'Aucun appel sur cette période',
+        })
+      : t(`opsDashboard.overview.outcomes.noDataPeriod.${selectedPeriodId}`, {
     defaultValue:
       selectedPeriodId === 'today'
         ? "Aucun appel aujourd'hui"
@@ -2688,7 +2865,12 @@ function OverviewView({
   const agentsActiveLabel =
     selectedPeriodId === 'today'
       ? t('opsDashboard.overview.agents.activeToday', 'Actifs (aujourd\'hui)')
-      : t(`opsDashboard.overview.agents.activePeriod.${selectedPeriodId}`, {
+      : selectedPeriodId === 'custom'
+        ? t('opsDashboard.overview.agents.activePeriod.custom', {
+            range: customPeriodLabel,
+            defaultValue: 'Actifs ({{range}})',
+          })
+        : t(`opsDashboard.overview.agents.activePeriod.${selectedPeriodId}`, {
           defaultValue:
             selectedPeriodId === '7d'
               ? 'Actifs (7 jours)'
@@ -2762,6 +2944,9 @@ function OverviewView({
   const fmtNum = (n: number) => n.toLocaleString('fr-FR');
   const fmtDelta = (n: number | null) => {
     if (selectedPeriodId !== 'today') {
+      if (selectedPeriodId === 'custom') {
+        return customPeriodLabel;
+      }
       return t(`opsDashboard.overview.kpi.callsPeriodSub.${selectedPeriodId}`, {
         defaultValue:
           selectedPeriodId === '7d'
@@ -3964,9 +4149,11 @@ function formatDurationFromCallSeconds(seconds?: number): string {
 function WalletView({
   selectedGigId,
   selectedPeriodId,
+  periodRange,
 }: {
   selectedGigId: string;
   selectedPeriodId: DashboardPeriodId;
+  periodRange: { from: string; to: string };
 }) {
   const { t, i18n } = useTranslation();
 
@@ -3995,13 +4182,13 @@ function WalletView({
       raw: entry,
     }));
     return [...reps, ...deposits]
-      .filter((m) => isDateInPeriod(m.date, selectedPeriodId))
+      .filter((m) => isDateInRange(m.date, periodRange))
       .sort((a, b) => {
         const da = a.date ? new Date(a.date).getTime() : 0;
         const db = b.date ? new Date(b.date).getTime() : 0;
         return db - da;
       });
-  }, [repTransactions, walletEntries, selectedPeriodId]);
+  }, [repTransactions, walletEntries, periodRange]);
 
   useEffect(() => {
     const companyId = Cookies.get('companyId');
@@ -4143,9 +4330,8 @@ function WalletView({
       {(() => {
         const now = new Date();
         const since30d = now.getTime() - 30 * 24 * 60 * 60 * 1000;
-        const { from, to } = periodIsoRange(selectedPeriodId);
-        const periodStart = new Date(from).getTime();
-        const periodEnd = new Date(to).getTime();
+        const periodStart = new Date(periodRange.from).getTime();
+        const periodEnd = new Date(periodRange.to).getTime();
         const repAmount = (tx: any) =>
           Math.abs(Number(tx?.amount ?? tx?.totalAmount ?? tx?.repAmount ?? 0)) || 0;
         const spentInPeriod = repTransactions.reduce((acc, tx: any) => {
@@ -4167,15 +4353,25 @@ function WalletView({
                 days: daysLeft.toFixed(1),
                 defaultValue: '{{days}} jours',
               });
-        const spentLabel = t(`opsDashboard.wallet.kpi.spentPeriod.${selectedPeriodId}`, {
-          defaultValue:
-            selectedPeriodId === 'today'
-              ? 'Dépensé aujourd\'hui'
-              : selectedPeriodId === 'mtd'
-                ? 'Dépensé MTD'
-                : 'Dépensé période',
-        });
-        const spentSub = t(`opsDashboard.wallet.kpi.spentPeriodSub.${selectedPeriodId}`, {
+        const spentLabel =
+          selectedPeriodId === 'custom'
+            ? t('opsDashboard.wallet.kpi.spentPeriod.custom', {
+                defaultValue: 'Dépensé (période)',
+              })
+            : t(`opsDashboard.wallet.kpi.spentPeriod.${selectedPeriodId}`, {
+                defaultValue:
+                  selectedPeriodId === 'today'
+                    ? 'Dépensé aujourd\'hui'
+                    : selectedPeriodId === 'mtd'
+                      ? 'Dépensé MTD'
+                      : 'Dépensé période',
+              });
+        const spentSub =
+          selectedPeriodId === 'custom'
+            ? t('opsDashboard.wallet.kpi.spentPeriodSub.custom', {
+                defaultValue: 'période choisie',
+              })
+            : t(`opsDashboard.wallet.kpi.spentPeriodSub.${selectedPeriodId}`, {
           defaultValue:
             selectedPeriodId === 'today'
               ? "aujourd'hui"
