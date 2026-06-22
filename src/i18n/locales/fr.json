@@ -101,7 +101,9 @@
       "rentedLabel": "Lignes Téléphoniques louées",
       "lineSingular": "Ligne",
       "linePlural": "Lignes",
-      "footer": "Numéros provisionnés & associés à vos Gigs"
+      "footer": "Numéros provisionnés & associés à vos Gigs",
+      "totalSpentLabel": "Total investi",
+      "spendBreakdown": "{{paid}} payant(s) · {{trial}} essai gratuit"
     },
     "gigsCard": {
       "title": "Gigs & Lignes",
@@ -124,13 +126,20 @@
         "price": "Prix",
         "status": "Statut",
         "unassigned": "Non affecté",
-        "active": "actif"
+        "active": "actif",
+        "freeTrial": "Essai gratuit",
+        "companyTotalLabel": "Total entreprise",
+        "filteredTotalLabel": "Total affiché",
+        "paidLinesShort": "payant(s)"
       },
       "filters": {
         "searchPlaceholder": "Rechercher un numéro ou un gig…",
         "gigLabel": "Filtrer par gig",
         "allGigs": "Tous les gigs",
-        "noResults": "Aucun numéro ne correspond à votre recherche."
+        "noResults": "Aucun numéro ne correspond à votre recherche.",
+        "linesCount_one": "{{count}} ligne",
+        "linesCount_other": "{{count}} lignes",
+        "filteredTotal": "Total filtré"
       }
     },
     "buy": {
