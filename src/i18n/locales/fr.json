@@ -1575,7 +1575,8 @@
       "status": "Statut",
       "statusCompleted": "Terminé",
       "statusInProgress": "En cours",
-      "statusNotStarted": "Non démarré"
+      "statusNotStarted": "Non démarré",
+      "viewTracking": "Voir le suivi de formation"
     },
     "trackingStats": {
       "title": "Statistiques de suivi",

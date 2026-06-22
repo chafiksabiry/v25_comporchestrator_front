@@ -1575,7 +1575,8 @@
       "status": "Status",
       "statusCompleted": "Completed",
       "statusInProgress": "In progress",
-      "statusNotStarted": "Not started"
+      "statusNotStarted": "Not started",
+      "viewTracking": "View training tracking"
     },
     "trackingStats": {
       "title": "Tracking statistics",
