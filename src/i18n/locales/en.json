@@ -1585,7 +1585,14 @@
       "trainingsCount": "Trainings",
       "trainingDetails": "Trainings in progress",
       "moduleProgress": "Module progress",
-      "noTrainings": "No published training for this gig"
+      "noTrainings": "No published training for this gig",
+      "tabTraining": "Training",
+      "tabProfile": "Agent profile",
+      "profileRole": "Role",
+      "profileCountry": "Country",
+      "profilePhone": "Phone",
+      "profileStatus": "Status",
+      "profileNoData": "Detailed profile unavailable"
     },
     "trackingStats": {
       "title": "Tracking statistics",

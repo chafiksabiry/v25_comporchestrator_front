@@ -1585,7 +1585,14 @@
       "trainingsCount": "Formations",
       "trainingDetails": "Formations suivies",
       "moduleProgress": "Progression par module",
-      "noTrainings": "Aucune formation publiée pour ce gig"
+      "noTrainings": "Aucune formation publiée pour ce gig",
+      "tabTraining": "Formation",
+      "tabProfile": "Profil agent",
+      "profileRole": "Rôle",
+      "profileCountry": "Pays",
+      "profilePhone": "Téléphone",
+      "profileStatus": "Statut",
+      "profileNoData": "Profil détaillé indisponible"
     },
     "trackingStats": {
       "title": "Statistiques de suivi",
