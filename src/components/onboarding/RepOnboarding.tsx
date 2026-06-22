@@ -36,7 +36,7 @@ import { PremiumAudioPlayer } from '../dashboard/components/PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
 
 import { AppContent } from '../training/App';
-import { getGigsByCompanyId, getActiveAgentsForCompany } from '../../api/matching';
+import { getGigsByCompanyId, getActiveAgentsForCompany, getAgentById } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
 import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../training/infrastructure/services/AIService';
@@ -51,6 +51,7 @@ import '../training/index.css';
 interface RepOnboardingProps { }
 
 type FormationPageTab = 'courses' | 'participants' | 'tracking';
+type ParticipantModalTab = 'training' | 'profile';
 
 type TrainingParticipantRow = {
   id: string;
@@ -565,8 +566,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [participants, setParticipants] = useState<TrainingParticipantRow[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [participantModal, setParticipantModal] = useState<TrainingParticipantRow | null>(null);
+  const [participantModalTab, setParticipantModalTab] = useState<ParticipantModalTab>('training');
   const [participantModalLoading, setParticipantModalLoading] = useState(false);
   const [participantGigProgress, setParticipantGigProgress] = useState<GigProgress | null>(null);
+  const [participantAgentProfile, setParticipantAgentProfile] = useState<any | null>(null);
   const [journeyProgressStats, setJourneyProgressStats] = useState<Map<string, JourneyParticipantStats>>(
     new Map()
   );
@@ -1391,19 +1394,27 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   const closeParticipantModal = useCallback(() => {
     setParticipantModal(null);
+    setParticipantModalTab('training');
     setParticipantGigProgress(null);
+    setParticipantAgentProfile(null);
     setParticipantModalLoading(false);
   }, []);
 
   const handleParticipantGigClick = useCallback(
     async (participant: TrainingParticipantRow) => {
       setParticipantModal(participant);
+      setParticipantModalTab('training');
       setParticipantModalLoading(true);
       setParticipantGigProgress(null);
+      setParticipantAgentProfile(null);
 
       try {
-        const progress = await ProgressService.getRepProgressByGig(participant.repId, participant.gigId);
+        const [progress, agentProfile] = await Promise.all([
+          ProgressService.getRepProgressByGig(participant.repId, participant.gigId),
+          getAgentById(participant.repId).catch(() => null),
+        ]);
         setParticipantGigProgress(progress);
+        setParticipantAgentProfile(agentProfile);
       } catch (error) {
         console.error('[RepOnboarding] Error loading participant gig progress:', error);
       } finally {
@@ -1412,6 +1423,21 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     },
     []
   );
+
+  const resolveParticipantPhotoUrl = useCallback((profile: any | null): string => {
+    const fromProfile =
+      profile?.personalInfo?.photo?.url ||
+      profile?.photo?.url ||
+      (typeof profile?.photo === 'string' ? profile.photo : '');
+    return String(fromProfile || '').trim();
+  }, []);
+
+  const resolveParticipantInitial = useCallback((profile: any | null, participant: TrainingParticipantRow): string => {
+    const name = String(
+      profile?.personalInfo?.name || profile?.name || participant.name || participant.email || '?'
+    ).trim();
+    return name.charAt(0).toUpperCase() || '?';
+  }, []);
 
   const normalizeText = (value: unknown): string =>
     String(value || '')
@@ -2465,233 +2491,317 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           </>
         )}
       </div>
-      {participantModal && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-fade-in"
-          onClick={closeParticipantModal}
-        >
+      {participantModal &&
+        typeof document !== 'undefined' &&
+        createPortal(
           <div
-            className={`flex max-h-[90vh] w-full max-w-2xl flex-col ${FORMATION_PANEL}`}
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="participant-training-modal-title"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm animate-fade-in"
+            onClick={closeParticipantModal}
           >
-            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
-              <div className="min-w-0">
-                <h3 id="participant-training-modal-title" className="text-lg font-black text-slate-900">
-                  {t('repOnboarding.participants.modalTitle')}
-                </h3>
-                <p className="mt-0.5 text-sm text-slate-500">{t('repOnboarding.participants.modalSubtitle')}</p>
-              </div>
-              <button
-                type="button"
-                onClick={closeParticipantModal}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
-                aria-label={t('repOnboarding.settings.closeBtn')}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="overflow-y-auto px-5 py-4 sm:px-6">
-              <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-harx text-white shadow-sm">
-                    <Users className="h-5 w-5" />
+            <div
+              className={`flex max-h-[90vh] w-full max-w-3xl flex-col ${FORMATION_PANEL}`}
+              onClick={(event) => event.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="participant-training-modal-title"
+            >
+              <div className="shrink-0 border-b border-slate-100 px-5 py-5 sm:px-6">
+                <div className="flex items-start gap-4">
+                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-slate-100 shadow-sm ring-1 ring-slate-200">
+                    {resolveParticipantPhotoUrl(participantAgentProfile) ? (
+                      <img
+                        src={resolveParticipantPhotoUrl(participantAgentProfile)}
+                        alt={participantModal.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-harx text-2xl font-black uppercase text-white">
+                        {resolveParticipantInitial(participantAgentProfile, participantModal)}
+                      </div>
+                    )}
                   </div>
+
                   <div className="min-w-0 flex-1">
-                    <p className="text-base font-black text-slate-900">{participantModal.name}</p>
+                    <h3 id="participant-training-modal-title" className="text-xl font-black text-slate-900">
+                      {participantAgentProfile?.personalInfo?.name ||
+                        participantAgentProfile?.name ||
+                        participantModal.name}
+                    </h3>
                     {participantModal.email ? (
                       <a
                         href={`mailto:${participantModal.email}`}
-                        className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-600 transition-colors hover:text-harx-700 hover:underline"
+                        className="mt-1 flex items-center gap-1.5 text-sm text-slate-600 transition-colors hover:text-harx-700 hover:underline"
                       >
                         <Mail className="h-3.5 w-3.5 shrink-0" />
-                        {participantModal.email}
+                        <span className="truncate">{participantModal.email}</span>
                       </a>
                     ) : null}
-                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                      <Briefcase className="h-3.5 w-3.5 text-harx-500" />
-                      {participantModal.gigTitle}
-                    </div>
+                    <p className="mt-3 flex items-start gap-1.5 text-sm font-semibold text-slate-700">
+                      <Briefcase className="mt-0.5 h-4 w-4 shrink-0 text-harx-500" aria-hidden />
+                      <span>{participantModal.gigTitle}</span>
+                    </p>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={closeParticipantModal}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
+                    aria-label={t('repOnboarding.settings.closeBtn')}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="mt-5 flex gap-1 border-b border-slate-100">
+                  {(
+                    [
+                      { id: 'training' as ParticipantModalTab, label: t('repOnboarding.participants.tabTraining'), icon: GraduationCap },
+                      { id: 'profile' as ParticipantModalTab, label: t('repOnboarding.participants.tabProfile'), icon: Users },
+                    ] as const
+                  ).map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setParticipantModalTab(tab.id)}
+                      className={`inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-bold transition-colors ${
+                        participantModalTab === tab.id
+                          ? 'border-harx-500 text-harx-700'
+                          : 'border-transparent text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <tab.icon className="h-4 w-4" />
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {participantModalLoading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
-                  <p className="mt-3 text-sm font-medium text-slate-600">
-                    {t('repOnboarding.participants.loadingDetails')}
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-4 space-y-4">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    {[
-                      {
-                        label: t('repOnboarding.participants.overallProgress'),
-                        value: `${participantGigProgress?.overallProgress ?? participantModal.progress}%`,
-                        icon: Target,
-                        tone: 'text-harx-700 bg-harx-50 ring-harx-100',
-                      },
-                      {
-                        label: t('repOnboarding.participants.timeSpent'),
-                        value: formatTrainingTimeSpent(
-                          participantGigProgress?.totalTimeSpent ?? 0
-                        ),
-                        icon: Clock,
-                        tone: 'text-sky-700 bg-sky-50 ring-sky-100',
-                      },
-                      {
-                        label: t('repOnboarding.participants.trainingsCount'),
-                        value: String(participantGigProgress?.totalTrainings ?? (participantModal.journeyTitle ? 1 : 0)),
-                        icon: GraduationCap,
-                        tone: 'text-indigo-700 bg-indigo-50 ring-indigo-100',
-                      },
-                    ].map((item) => (
-                      <div
-                        key={item.label}
-                        className={`rounded-xl p-3 ring-1 ${item.tone}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4 shrink-0 opacity-80" />
-                          <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">{item.label}</p>
+              <div className="overflow-y-auto px-5 py-4 sm:px-6">
+                {participantModalTab === 'profile' ? (
+                  participantModalLoading && !participantAgentProfile ? (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
+                      <p className="mt-3 text-sm font-medium text-slate-600">
+                        {t('repOnboarding.participants.loadingDetails')}
+                      </p>
+                    </div>
+                  ) : participantAgentProfile ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {[
+                        {
+                          label: t('repOnboarding.participants.profileRole'),
+                          value:
+                            participantAgentProfile?.professionalSummary?.currentRole ||
+                            participantAgentProfile?.currentRole ||
+                            '—',
+                        },
+                        {
+                          label: t('repOnboarding.participants.profileCountry'),
+                          value: (() => {
+                            const country = participantAgentProfile?.personalInfo?.country;
+                            if (typeof country === 'object' && country?.name) return String(country.name);
+                            if (typeof country === 'string' && country) return country;
+                            return participantAgentProfile?.timezone?.countryName || '—';
+                          })(),
+                        },
+                        {
+                          label: t('repOnboarding.participants.profilePhone'),
+                          value:
+                            participantAgentProfile?.personalInfo?.phone ||
+                            participantAgentProfile?.phone ||
+                            '—',
+                        },
+                        {
+                          label: t('repOnboarding.participants.profileStatus'),
+                          value: participantAgentProfile?.status || '—',
+                        },
+                      ].map((item) => (
+                        <div key={item.label} className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{item.label}</p>
+                          <p className="mt-1 text-sm font-semibold text-slate-900">{item.value}</p>
                         </div>
-                        <p className="mt-1 text-lg font-black tabular-nums">{item.value}</p>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-sm text-slate-500">
+                      {t('repOnboarding.participants.profileNoData')}
+                    </p>
+                  )
+                ) : participantModalLoading ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
+                    <p className="mt-3 text-sm font-medium text-slate-600">
+                      {t('repOnboarding.participants.loadingDetails')}
+                    </p>
                   </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      {[
+                        {
+                          label: t('repOnboarding.participants.overallProgress'),
+                          value: `${participantGigProgress?.overallProgress ?? participantModal.progress}%`,
+                          icon: Target,
+                          tone: 'text-harx-700 bg-harx-50 ring-harx-100',
+                        },
+                        {
+                          label: t('repOnboarding.participants.timeSpent'),
+                          value: formatTrainingTimeSpent(participantGigProgress?.totalTimeSpent ?? 0),
+                          icon: Clock,
+                          tone: 'text-sky-700 bg-sky-50 ring-sky-100',
+                        },
+                        {
+                          label: t('repOnboarding.participants.trainingsCount'),
+                          value: String(
+                            participantGigProgress?.totalTrainings ?? (participantModal.journeyTitle ? 1 : 0)
+                          ),
+                          icon: GraduationCap,
+                          tone: 'text-indigo-700 bg-indigo-50 ring-indigo-100',
+                        },
+                      ].map((item) => (
+                        <div key={item.label} className={`rounded-xl p-3 ring-1 ${item.tone}`}>
+                          <div className="flex items-center gap-2">
+                            <item.icon className="h-4 w-4 shrink-0 opacity-80" />
+                            <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">{item.label}</p>
+                          </div>
+                          <p className="mt-1 text-lg font-black tabular-nums">{item.value}</p>
+                        </div>
+                      ))}
+                    </div>
 
-                  <div>
-                    <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-600">
-                      {t('repOnboarding.participants.trainingDetails')}
-                    </h4>
+                    <div>
+                      <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-600">
+                        {t('repOnboarding.participants.trainingDetails')}
+                      </h4>
 
-                    {participantGigProgress?.trainings?.length ? (
-                      <div className="space-y-3">
-                        {participantGigProgress.trainings.map((training) => {
-                          const trainingStatus = mapTrainingStatus(training.status, training.progress);
-                          return (
-                            <div
-                              key={training.journeyId}
-                              className="rounded-xl border border-slate-200/80 bg-white p-4"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <p className="text-sm font-bold text-slate-900">{training.journeyTitle}</p>
-                                  {training.description ? (
-                                    <p className="mt-1 line-clamp-2 text-xs text-slate-500">{training.description}</p>
-                                  ) : null}
+                      {participantGigProgress?.trainings?.length ? (
+                        <div className="space-y-3">
+                          {participantGigProgress.trainings.map((training) => {
+                            const trainingStatus = mapTrainingStatus(training.status, training.progress);
+                            return (
+                              <div
+                                key={training.journeyId}
+                                className="rounded-xl border border-slate-200/80 bg-white p-4"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold text-slate-900">{training.journeyTitle}</p>
+                                    {training.description ? (
+                                      <p className="mt-1 line-clamp-2 text-xs text-slate-500">{training.description}</p>
+                                    ) : null}
+                                  </div>
+                                  <span
+                                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                      trainingStatus === 'completed'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : trainingStatus === 'in_progress'
+                                          ? 'bg-sky-100 text-sky-800'
+                                          : 'bg-slate-100 text-slate-700'
+                                    }`}
+                                  >
+                                    {trainingStatus === 'completed'
+                                      ? t('repOnboarding.participants.statusCompleted')
+                                      : trainingStatus === 'in_progress'
+                                        ? t('repOnboarding.participants.statusInProgress')
+                                        : t('repOnboarding.participants.statusNotStarted')}
+                                  </span>
                                 </div>
-                                <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                  trainingStatus === 'completed'
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : trainingStatus === 'in_progress'
+
+                                <div className="mt-3 flex items-center justify-between gap-2 text-xs text-slate-500">
+                                  <span>{t('repOnboarding.participants.progress')}</span>
+                                  <span className="font-bold tabular-nums text-harx-700">{training.progress}%</span>
+                                </div>
+                                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
+                                  <div
+                                    className="h-full rounded-full bg-gradient-harx transition-[width] duration-500"
+                                    style={{ width: `${training.progress}%` }}
+                                  />
+                                </div>
+
+                                {training.modulesProgress && training.modulesProgress.length > 0 ? (
+                                  <div className="mt-4 border-t border-slate-100 pt-3">
+                                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                                      {t('repOnboarding.participants.moduleProgress')}
+                                    </p>
+                                    <div className="space-y-2">
+                                      {training.modulesProgress.map((module) => {
+                                        const moduleStatus = mapTrainingStatus(module.status, module.progress);
+                                        return (
+                                          <div key={module.moduleId} className="rounded-lg bg-slate-50 px-3 py-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                              <p className="truncate text-xs font-semibold text-slate-800">
+                                                {resolveModuleTitle(training.journeyId, module.moduleId)}
+                                              </p>
+                                              <span className="shrink-0 text-xs font-bold tabular-nums text-slate-600">
+                                                {clampProgressPercent(module.progress)}%
+                                              </span>
+                                            </div>
+                                            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-200/80">
+                                              <div
+                                                className={`h-full rounded-full transition-[width] duration-500 ${
+                                                  moduleStatus === 'completed'
+                                                    ? 'bg-emerald-500'
+                                                    : moduleStatus === 'in_progress'
+                                                      ? 'bg-sky-500'
+                                                      : 'bg-slate-300'
+                                                }`}
+                                                style={{ width: `${clampProgressPercent(module.progress)}%` }}
+                                              />
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : participantModal.journeyTitle ? (
+                        <div className="rounded-xl border border-slate-200/80 bg-white p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-sm font-bold text-slate-900">{participantModal.journeyTitle}</p>
+                            <span
+                              className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                participantModal.status === 'completed'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : participantModal.status === 'in_progress'
                                     ? 'bg-sky-100 text-sky-800'
                                     : 'bg-slate-100 text-slate-700'
-                                }`}>
-                                  {trainingStatus === 'completed'
-                                    ? t('repOnboarding.participants.statusCompleted')
-                                    : trainingStatus === 'in_progress'
-                                    ? t('repOnboarding.participants.statusInProgress')
-                                    : t('repOnboarding.participants.statusNotStarted')}
-                                </span>
-                              </div>
-
-                              <div className="mt-3 flex items-center justify-between gap-2 text-xs text-slate-500">
-                                <span>{t('repOnboarding.participants.progress')}</span>
-                                <span className="font-bold tabular-nums text-harx-700">{training.progress}%</span>
-                              </div>
-                              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
-                                <div
-                                  className="h-full rounded-full bg-gradient-harx transition-[width] duration-500"
-                                  style={{ width: `${training.progress}%` }}
-                                />
-                              </div>
-
-                              {training.modulesProgress && training.modulesProgress.length > 0 ? (
-                                <div className="mt-4 border-t border-slate-100 pt-3">
-                                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                                    {t('repOnboarding.participants.moduleProgress')}
-                                  </p>
-                                  <div className="space-y-2">
-                                    {training.modulesProgress.map((module) => {
-                                      const moduleStatus = mapTrainingStatus(module.status, module.progress);
-                                      return (
-                                        <div key={module.moduleId} className="rounded-lg bg-slate-50 px-3 py-2">
-                                          <div className="flex items-center justify-between gap-2">
-                                            <p className="truncate text-xs font-semibold text-slate-800">
-                                              {resolveModuleTitle(training.journeyId, module.moduleId)}
-                                            </p>
-                                            <span className="shrink-0 text-xs font-bold tabular-nums text-slate-600">
-                                              {clampProgressPercent(module.progress)}%
-                                            </span>
-                                          </div>
-                                          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-200/80">
-                                            <div
-                                              className={`h-full rounded-full transition-[width] duration-500 ${
-                                                moduleStatus === 'completed'
-                                                  ? 'bg-emerald-500'
-                                                  : moduleStatus === 'in_progress'
-                                                  ? 'bg-sky-500'
-                                                  : 'bg-slate-300'
-                                              }`}
-                                              style={{ width: `${clampProgressPercent(module.progress)}%` }}
-                                            />
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : participantModal.journeyTitle ? (
-                      <div className="rounded-xl border border-slate-200/80 bg-white p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="text-sm font-bold text-slate-900">{participantModal.journeyTitle}</p>
-                          <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            participantModal.status === 'completed'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : participantModal.status === 'in_progress'
-                              ? 'bg-sky-100 text-sky-800'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}>
-                            {participantModal.status === 'completed'
-                              ? t('repOnboarding.participants.statusCompleted')
-                              : participantModal.status === 'in_progress'
-                              ? t('repOnboarding.participants.statusInProgress')
-                              : t('repOnboarding.participants.statusNotStarted')}
-                          </span>
+                              }`}
+                            >
+                              {participantModal.status === 'completed'
+                                ? t('repOnboarding.participants.statusCompleted')
+                                : participantModal.status === 'in_progress'
+                                  ? t('repOnboarding.participants.statusInProgress')
+                                  : t('repOnboarding.participants.statusNotStarted')}
+                            </span>
+                          </div>
+                          <div className="mt-3 flex items-center justify-between gap-2 text-xs text-slate-500">
+                            <span>{t('repOnboarding.participants.progress')}</span>
+                            <span className="font-bold tabular-nums text-harx-700">{participantModal.progress}%</span>
+                          </div>
+                          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className="h-full rounded-full bg-gradient-harx transition-[width] duration-500"
+                              style={{ width: `${participantModal.progress}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="mt-3 flex items-center justify-between gap-2 text-xs text-slate-500">
-                          <span>{t('repOnboarding.participants.progress')}</span>
-                          <span className="font-bold tabular-nums text-harx-700">{participantModal.progress}%</span>
-                        </div>
-                        <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className="h-full rounded-full bg-gradient-harx transition-[width] duration-500"
-                            style={{ width: `${participantModal.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-sm text-slate-500">
-                        {t('repOnboarding.participants.noTrainings')}
-                      </p>
-                    )}
+                      ) : (
+                        <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-sm text-slate-500">
+                          {t('repOnboarding.participants.noTrainings')}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
       {isSettingsOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-fade-in">
           <div className={`w-full max-w-xl ${FORMATION_PANEL} p-5 sm:p-6`}>
