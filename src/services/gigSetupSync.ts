@@ -96,6 +96,23 @@ const GIGS_API = () =>
     )
   );
 
+function normalizeGigStatus(status: string | undefined): string {
+  return (status || '').toLowerCase().replace(/-/g, '_');
+}
+
+/** Active gigs no longer need the setup funnel toast — they're already live. */
+async function isGigAlreadyActive(gigId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${GIGS_API()}/gigs/${encodeURIComponent(gigId)}`);
+    if (!res.ok) return false;
+    const payload = await res.json();
+    const gig = payload?.data ?? payload;
+    return normalizeGigStatus(gig?.status) === 'active';
+  } catch {
+    return false;
+  }
+}
+
 /** Fire-and-forget PATCH on `setupSteps.<field>` for a single gig.
  *  Silently swallows errors — the next probe run in the dashboard
  *  checklist will reconcile if the request fails. Also notifies
@@ -115,17 +132,20 @@ export async function markGigStepDone(
     });
   } catch {
     // ignore — best-effort, checklist will reconcile later
-  } finally {
-    try {
-      window.dispatchEvent(
-        new CustomEvent('harx:gig-step-progress', {
-          detail: { stepId: fieldToStepId(field), gigId, field, value },
-        })
-      );
-      // When a step has just been completed, surface a unified
-      // "Continue →" CTA via the top-level toast listener. We never
-      // show it on a regression (value === false).
-      if (value) {
+  }
+
+  try {
+    window.dispatchEvent(
+      new CustomEvent('harx:gig-step-progress', {
+        detail: { stepId: fieldToStepId(field), gigId, field, value },
+      })
+    );
+    // When a step has just been completed, surface a unified
+    // "Continue →" CTA via the top-level toast listener. Skip it
+    // for gigs that are already active — setup is done.
+    if (value) {
+      const gigActive = await isGigAlreadyActive(gigId);
+      if (!gigActive) {
         const nextRoute = getNextStepRoute(field, gigId);
         window.dispatchEvent(
           new CustomEvent('harx:gig-step-complete', {
@@ -133,9 +153,9 @@ export async function markGigStepDone(
           })
         );
       }
-    } catch {
-      // no-op — non-browser env
     }
+  } catch {
+    // no-op — non-browser env
   }
 }
 
