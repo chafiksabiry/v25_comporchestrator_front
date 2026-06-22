@@ -35,7 +35,6 @@ import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
 import { markGigStepDone } from '../../services/gigSetupSync';
 import { useTranslation } from 'react-i18next';
-import { getCallsApiBase } from '../dashboard/lib/callsApiBase';
 
 interface Lead {
   _id: string;
@@ -110,15 +109,6 @@ type LeadQuickStats = {
 };
 
 type LeadStatsFilter = 'all' | 'called' | 'contacted' | 'rdv' | 'converted';
-
-type GigCallIndex = {
-  called: Set<string>;
-  contacted: Set<string>;
-  rdv: Set<string>;
-  converted: Set<string>;
-};
-
-const NOT_CONTACTED_OUTCOMES = new Set(['no_answer', 'busy', 'voicemail', 'wrong_number']);
 
 function LeadStatChip({
   label,
@@ -1536,81 +1526,6 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   };
 
-  const extractLeadIdFromCall = (call: { lead?: string | { _id?: string } }): string | null => {
-    const leadRef = call.lead;
-    const leadId =
-      typeof leadRef === 'object' && leadRef !== null
-        ? leadRef._id
-        : leadRef;
-    return leadId ? String(leadId) : null;
-  };
-
-  const fetchGigCallIndex = async (gigId: string): Promise<GigCallIndex> => {
-    const callsBase = getCallsApiBase();
-    const companyId = Cookies.get('companyId');
-    const empty: GigCallIndex = {
-      called: new Set(),
-      contacted: new Set(),
-      rdv: new Set(),
-      converted: new Set(),
-    };
-    if (!callsBase || !companyId || !gigId) return empty;
-
-    try {
-      const res = await fetch(`${callsBase}/calls?companyId=${companyId}&gigId=${gigId}`);
-      if (!res.ok) return empty;
-      const json = await res.json();
-      const calls = Array.isArray(json.data) ? json.data : [];
-      const index: GigCallIndex = {
-        called: new Set(),
-        contacted: new Set(),
-        rdv: new Set(),
-        converted: new Set(),
-      };
-
-      calls.forEach((call: { lead?: string | { _id?: string }; outcome?: string }) => {
-        const leadId = extractLeadIdFromCall(call);
-        if (!leadId) return;
-
-        index.called.add(leadId);
-
-        const outcome = call.outcome?.toLowerCase();
-        if (outcome && !NOT_CONTACTED_OUTCOMES.has(outcome)) {
-          index.contacted.add(leadId);
-        }
-        if (outcome === 'appointment') {
-          index.rdv.add(leadId);
-        }
-        if (outcome === 'transaction') {
-          index.converted.add(leadId);
-        }
-      });
-
-      return index;
-    } catch (err) {
-      console.error('Error fetching gig call index:', err);
-      return empty;
-    }
-  };
-
-  const leadMatchesStatsFilter = (lead: Lead, filter: LeadStatsFilter, index: GigCallIndex): boolean => {
-    const leadId = String(lead._id);
-    const stage = (lead.Stage || '').toLowerCase();
-
-    switch (filter) {
-      case 'called':
-        return index.called.has(leadId);
-      case 'contacted':
-        return index.contacted.has(leadId);
-      case 'rdv':
-        return index.rdv.has(leadId) || stage.includes('appointment') || stage.includes('rdv');
-      case 'converted':
-        return index.converted.has(leadId) || stage.includes('won') || stage.includes('convert');
-      default:
-        return true;
-    }
-  };
-
   const toggleLeadStatsFilter = (filter: LeadStatsFilter) => {
     setLeadStatsFilter((current) => (current === filter ? 'all' : filter));
     leadsListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1679,7 +1594,17 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       let apiUrl: string;
 
       if (searchQuery.trim()) {
-        apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}/search?search=${encodeURIComponent(searchQuery.trim())}`;
+        const params = new URLSearchParams({
+          search: searchQuery.trim(),
+        });
+        if (leadStatsFilter !== 'all') {
+          params.set('callFilter', leadStatsFilter);
+        }
+        const gigForCalls = callFilterGigId || selectedGigId;
+        if (gigForCalls) {
+          params.set('callFilterGigId', gigForCalls);
+        }
+        apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}/search?${params.toString()}`;
       } else {
         const params = new URLSearchParams({
           page: String(page),
@@ -1717,22 +1642,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         throw new Error('Invalid response format: expected data to be an array');
       }
 
-      let leadResults = responseData.data as Lead[];
-
-      const gigForCalls = callFilterGigId || selectedGigId;
-      if (gigForCalls) {
-        const callIndex = await fetchGigCallIndex(gigForCalls);
-        leadResults = leadResults.map((lead) => ({
-          ...lead,
-          hasBeenCalled: callIndex.called.has(String(lead._id)),
-        }));
-
-        if (searchQuery.trim()) {
-          leadResults = leadResults.filter((lead) =>
-            leadMatchesStatsFilter(lead, leadStatsFilter, callIndex)
-          );
-        }
-      }
+      const leadResults = responseData.data as Lead[];
 
       setLeads(leadResults);
       setFilteredLeads(leadResults);
