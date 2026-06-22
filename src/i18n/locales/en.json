@@ -348,6 +348,25 @@
         "voicemail": "Voicemail",
         "unreachable": "Unreachable",
         "wrongNumber": "Wrong number"
+      },
+      "resources": {
+        "title": "Resources & billing",
+        "subtitle": "Minutes, subscription, wallet and phone lines at a glance.",
+        "minutes": "Minutes",
+        "minutesInvested": "Invested",
+        "minutesConsumed": "Consumed",
+        "subscription": "Subscription",
+        "noSubscription": "No active plan",
+        "noSubscriptionHint": "Choose a plan to unlock all features.",
+        "wallet": "Wallet",
+        "walletHint": "Company deposits & rep commissions",
+        "lines": "Phone lines",
+        "linesInvested": "Invested",
+        "linesBreakdown": "{{paid}} paid · {{trial}} trial",
+        "recentMovements": "Recent movements",
+        "seeAllWallet": "View full wallet",
+        "deposit": "Deposit",
+        "repTx": "Rep"
       }
     },
     "statusesTitle": "Call statuses",
