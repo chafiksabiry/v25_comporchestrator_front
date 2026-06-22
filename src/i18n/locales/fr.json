@@ -142,12 +142,6 @@
         "gig": "Gig associé",
         "price": "Prix payé",
         "status": "Statut",
-        "features": "Fonctionnalités",
-        "voice": "Voix",
-        "sms": "SMS",
-        "mms": "MMS",
-        "enabled": "Activé",
-        "disabled": "Non disponible",
         "createdAt": "Date d'acquisition",
         "buyForGig": "Acheter une autre ligne",
         "close": "Fermer"
