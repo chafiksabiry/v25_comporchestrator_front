@@ -264,6 +264,12 @@ type HarxSelectProps = {
   minWidthClass?: string;
   /** Affiche un séparateur après la première option (ex. « Tous les gigs »). */
   separateFirstOption?: boolean;
+  /** Alignement horizontal du panneau par rapport au trigger. */
+  menuAlign?: 'start' | 'end';
+  /** Permet au menu d'être plus large que le trigger pour afficher le texte complet. */
+  expandMenu?: boolean;
+  /** Réduit paddings et tailles pour un rendu plus compact. */
+  compact?: boolean;
 };
 
 const HarxSelect: React.FC<HarxSelectProps> = ({
@@ -274,6 +280,9 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
   className = '',
   minWidthClass = 'min-w-[170px]',
   separateFirstOption = false,
+  menuAlign = 'start',
+  expandMenu = false,
+  compact = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -286,14 +295,49 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
     const trigger = triggerRef.current;
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
+    const viewportPad = 8;
+    const gap = compact ? 2 : 4;
+    const maxMenuWidth = Math.min(520, window.innerWidth - viewportPad * 2);
+
+    if (expandMenu) {
+      if (menuAlign === 'end') {
+        setMenuStyle({
+          position: 'fixed',
+          top: rect.bottom + gap,
+          right: Math.max(viewportPad, window.innerWidth - rect.right),
+          minWidth: rect.width,
+          width: 'max-content',
+          maxWidth: maxMenuWidth,
+          zIndex: 9999,
+        });
+      } else {
+        setMenuStyle({
+          position: 'fixed',
+          top: rect.bottom + gap,
+          left: Math.max(viewportPad, rect.left),
+          minWidth: rect.width,
+          width: 'max-content',
+          maxWidth: maxMenuWidth,
+          zIndex: 9999,
+        });
+      }
+      return;
+    }
+
+    const menuWidth = rect.width;
+    const left =
+      menuAlign === 'end'
+        ? Math.max(viewportPad, rect.right - menuWidth)
+        : Math.max(viewportPad, Math.min(rect.left, window.innerWidth - menuWidth - viewportPad));
+
     setMenuStyle({
       position: 'fixed',
-      top: rect.bottom + 8,
-      left: rect.left,
-      width: rect.width,
+      top: rect.bottom + gap,
+      left,
+      width: menuWidth,
       zIndex: 9999,
     });
-  }, []);
+  }, [compact, expandMenu, menuAlign]);
 
   useEffect(() => {
     if (!open) return;
@@ -354,14 +398,18 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
       />
       <div
         style={menuStyle}
-        className="z-[9999] overflow-hidden rounded-xl border border-slate-200/90 bg-white/95 shadow-[0_16px_48px_-12px_rgba(15,23,42,0.18)] ring-1 ring-black/5 backdrop-blur-md animate-fade-in"
+        className={`z-[9999] overflow-hidden rounded-lg border border-slate-200/90 bg-white shadow-[0_12px_32px_-8px_rgba(15,23,42,0.16)] ring-1 ring-black/5 animate-fade-in ${
+          compact ? 'text-xs' : ''
+        }`}
       >
         <ul
           role="listbox"
           aria-labelledby={id}
           tabIndex={-1}
           onKeyDown={handleListKeyDown}
-          className="max-h-64 overflow-auto p-1.5 [scrollbar-width:thin] [scrollbar-color:#f43f5e20_#f8fafc]"
+          className={`max-h-72 overflow-auto [scrollbar-width:thin] [scrollbar-color:#f43f5e20_#f8fafc] ${
+            compact ? 'p-0.5' : 'p-1'
+          }`}
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;
@@ -380,9 +428,11 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
                     onChange(option.value);
                     setOpen(false);
                   }}
-                  className={`group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-all duration-150 ${
+                  className={`group flex w-full items-start gap-2 rounded-md text-left transition-colors duration-150 ${
+                    compact ? 'px-2 py-1.5' : 'px-2 py-2'
+                  } ${
                     isSelected
-                      ? 'bg-harx-500 text-white shadow-sm shadow-harx-500/20'
+                      ? 'bg-harx-500 text-white'
                       : isHighlighted
                         ? 'bg-harx-50 text-harx-800'
                         : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
@@ -390,21 +440,29 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
                 >
                   {OptionIcon ? (
                     <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                      className={`flex shrink-0 items-center justify-center rounded-md transition-colors ${
+                        compact ? 'mt-0.5 h-6 w-6' : 'h-7 w-7'
+                      } ${
                         isSelected
                           ? 'bg-white/20 text-white'
-                          : 'bg-gray-100 text-harx-600 group-hover:bg-white group-hover:shadow-sm'
+                          : 'bg-slate-100 text-harx-600 group-hover:bg-white'
                       }`}
                     >
-                      <OptionIcon className="h-4 w-4" />
+                      <OptionIcon className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
                     </span>
                   ) : null}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold">{option.label}</span>
+                    <span className={`block whitespace-normal break-words font-semibold leading-snug ${
+                      compact ? 'text-xs' : 'text-sm'
+                    }`}>
+                      {option.label}
+                    </span>
                     {option.description ? (
                       <span
-                        className={`mt-0.5 block truncate text-[11px] font-medium ${
-                          isSelected ? 'text-white/85' : 'text-gray-500'
+                        className={`mt-0.5 block whitespace-normal break-words leading-snug ${
+                          compact ? 'text-[10px]' : 'text-[11px]'
+                        } font-medium ${
+                          isSelected ? 'text-white/85' : 'text-slate-500'
                         }`}
                       >
                         {option.description}
@@ -412,13 +470,15 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
                     ) : null}
                   </span>
                   {isSelected ? (
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
-                      <Check className="h-3.5 w-3.5" />
+                    <span className={`flex shrink-0 items-center justify-center rounded-full bg-white/20 ${
+                      compact ? 'mt-0.5 h-5 w-5' : 'h-5 w-5'
+                    }`}>
+                      <Check className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
                     </span>
                   ) : null}
                 </button>
                 {showSeparator ? (
-                  <div className="my-1.5 border-t border-dashed border-gray-100" role="separator" />
+                  <div className={`border-t border-dashed border-slate-100 ${compact ? 'my-0.5' : 'my-1'}`} role="separator" />
                 ) : null}
               </li>
             );
@@ -446,22 +506,30 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
           });
         }}
         onKeyDown={handleTriggerKeyDown}
-        className={`flex w-full items-center gap-2.5 rounded-xl border bg-white px-3 py-2.5 text-left shadow-sm outline-none transition-all duration-200 ${
+        className={`flex w-full items-center border bg-white text-left shadow-sm outline-none transition-all duration-200 ${
+          compact ? 'gap-1.5 rounded-lg px-2 py-1.5' : 'gap-2 rounded-lg px-2.5 py-2'
+        } ${
           open
-            ? 'border-harx-400 ring-2 ring-harx-500/15 shadow-md'
-            : 'border-slate-200 hover:border-harx-300 hover:shadow-md'
+            ? 'border-harx-400 ring-1 ring-harx-500/15'
+            : 'border-slate-200 hover:border-harx-300'
         }`}
       >
         {SelectedIcon ? (
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-harx-50 text-harx-600">
-            <SelectedIcon className="h-4 w-4" />
+          <span className={`flex shrink-0 items-center justify-center rounded-md bg-harx-50 text-harx-600 ${
+            compact ? 'h-6 w-6' : 'h-7 w-7'
+          }`}>
+            <SelectedIcon className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
           </span>
         ) : null}
-        <span className="min-w-0 flex-1 truncate text-sm font-bold text-gray-800">{selected?.label || '—'}</span>
+        <span className={`min-w-0 flex-1 whitespace-normal break-words text-left font-semibold leading-snug text-slate-800 ${
+          compact ? 'text-xs' : 'text-sm'
+        }`}>
+          {selected?.label || '—'}
+        </span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-harx-500 transition-transform duration-200 ${
-            open ? 'rotate-180' : ''
-          }`}
+          className={`shrink-0 text-harx-500 transition-transform duration-200 ${
+            compact ? 'h-3.5 w-3.5' : 'h-4 w-4'
+          } ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -1714,20 +1782,20 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           </div>
         ) : (
           <>
-        <header className={`mb-5 ${FORMATION_PANEL} p-5 sm:p-6`}>
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-harx text-white shadow-md shadow-harx-500/25 transition-transform duration-300 hover:scale-105">
-                <BookOpen className="h-5 w-5" />
+        <header className={`mb-4 ${FORMATION_PANEL} p-4 sm:p-5`}>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-harx text-white shadow-sm shadow-harx-500/20">
+                <BookOpen className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">{t('repOnboarding.trainingSection.title')}</h1>
-                <p className="mt-1 text-sm text-slate-500">{t('repOnboarding.trainingSection.subtitle')}</p>
+                <h1 className="text-lg font-black tracking-tight text-slate-900 sm:text-xl">{t('repOnboarding.trainingSection.title')}</h1>
+                <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">{t('repOnboarding.trainingSection.subtitle')}</p>
               </div>
             </div>
-            <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:min-w-[220px]">
-                <label htmlFor="gig-filter-dropdown" className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <div className="flex min-w-0 flex-1 flex-col gap-1 sm:min-w-[200px]">
+                <label htmlFor="gig-filter-dropdown" className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                   {t('repOnboarding.header.gigFilter')}
                 </label>
                 <HarxSelect
@@ -1735,14 +1803,17 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   value={filterGigId}
                   onChange={setFilterGigId}
                   options={gigFilterOptions}
-                  minWidthClass="min-w-full sm:min-w-[240px]"
+                  minWidthClass="min-w-full sm:min-w-[200px]"
                   separateFirstOption
+                  menuAlign="end"
+                  expandMenu
+                  compact
                 />
               </div>
               <button
                 type="button"
                 onClick={handleCreateNewTrainingJourney}
-                className={`${FORMATION_BTN_PRIMARY} w-full sm:w-auto sm:shrink-0`}
+                className={`${FORMATION_BTN_PRIMARY} w-full px-3 py-2 text-xs sm:mt-5 sm:w-auto sm:text-sm`}
               >
                 <Plus className="h-4 w-4" />
                 <span>{t('repOnboarding.header.newJourneyBtn')}</span>
@@ -1751,7 +1822,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           </div>
         </header>
 
-        <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="mb-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
           {[
             { value: participants.length, label: t('repOnboarding.trackingStats.participants'), tab: 'participants' as FormationPageTab, icon: Users, tone: 'from-indigo-500/10 to-indigo-50 border-indigo-100 text-indigo-700' },
             { value: `${trackingStats.avgProgress}%`, label: t('repOnboarding.trackingStats.avgProgress'), tab: 'tracking' as FormationPageTab, icon: TrendingUp, tone: 'from-sky-500/10 to-sky-50 border-sky-100 text-sky-700' },
@@ -1763,7 +1834,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               type="button"
               onClick={() => setPageTab(stat.tab)}
               style={{ animationDelay: `${index * 70}ms` }}
-              className={`group relative overflow-hidden rounded-xl border bg-gradient-to-br p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-fade-in ${stat.tone} ${
+              className={`group relative overflow-hidden rounded-lg border bg-gradient-to-br p-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md animate-fade-in ${stat.tone} ${
                 pageTab === stat.tab
                   ? 'ring-2 ring-harx-400/50 shadow-md'
                   : 'opacity-95 hover:opacity-100'
@@ -1780,7 +1851,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           ))}
         </div>
 
-        <nav className="mb-5 flex flex-wrap gap-1 rounded-xl border border-slate-200/80 bg-slate-100/70 p-1">
+        <nav className="mb-4 flex flex-wrap gap-0.5 rounded-lg border border-slate-200/80 bg-slate-100/70 p-0.5">
           {([
             { id: 'courses' as FormationPageTab, label: t('repOnboarding.pageTabs.courses'), icon: BookOpen },
             { id: 'participants' as FormationPageTab, label: t('repOnboarding.pageTabs.participants'), icon: Users, badge: participants.length },
@@ -1790,7 +1861,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               key={tab.id}
               type="button"
               onClick={() => setPageTab(tab.id)}
-              className={`inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
+              className={`inline-flex flex-1 min-w-[120px] items-center justify-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold transition-all duration-200 sm:text-sm ${
                 pageTab === tab.id
                   ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80'
                   : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
@@ -2134,8 +2205,11 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     value={statsJourneyId}
                     onChange={setStatsJourneyId}
                     options={journeyFilterOptions}
-                    minWidthClass="min-w-full sm:min-w-[260px]"
+                    minWidthClass="min-w-full sm:min-w-[220px]"
                     separateFirstOption
+                    menuAlign="end"
+                    expandMenu
+                    compact
                   />
                 </div>
 
