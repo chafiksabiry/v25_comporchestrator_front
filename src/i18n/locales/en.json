@@ -142,12 +142,6 @@
         "gig": "Linked gig",
         "price": "Price paid",
         "status": "Status",
-        "features": "Features",
-        "voice": "Voice",
-        "sms": "SMS",
-        "mms": "MMS",
-        "enabled": "Enabled",
-        "disabled": "Unavailable",
         "createdAt": "Purchase date",
         "buyForGig": "Buy another line",
         "close": "Close"

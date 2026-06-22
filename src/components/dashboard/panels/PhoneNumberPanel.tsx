@@ -1508,33 +1508,6 @@ export function PhoneNumberPanel() {
                 </span>
               </div>
 
-              <div className="py-3 border-b border-slate-100">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-2">
-                  {t('phoneNumberPanel.myNumbers.detailModal.features')}
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {(['voice', 'sms', 'mms'] as const).map((feature) => {
-                    const enabled = selectedPhoneLineData.features?.[feature];
-                    return (
-                      <span
-                        key={feature}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
-                          enabled
-                            ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
-                            : 'bg-slate-50 text-slate-400 border-slate-100'
-                        }`}
-                      >
-                        {t(`phoneNumberPanel.myNumbers.detailModal.${feature}`)}
-                        {' · '}
-                        {enabled
-                          ? t('phoneNumberPanel.myNumbers.detailModal.enabled')
-                          : t('phoneNumberPanel.myNumbers.detailModal.disabled')}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-
               <div className="flex items-start justify-between gap-4 py-3">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {t('phoneNumberPanel.myNumbers.detailModal.createdAt')}
