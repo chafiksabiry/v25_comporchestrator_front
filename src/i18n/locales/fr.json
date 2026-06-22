@@ -282,7 +282,14 @@
       "gigName": "Digital Assurance — Mutuelles Santé",
       "allGigs": "Tous les gigs",
       "pickGig": "Sélectionner un gig",
-      "noGigs": "Aucun gig disponible"
+      "noGigs": "Aucun gig disponible",
+      "pickPeriod": "Période",
+      "period": {
+        "today": "Aujourd'hui",
+        "7d": "7 derniers jours",
+        "30d": "30 derniers jours",
+        "mtd": "Ce mois"
+      }
     },
     "setupChecklist": {
       "pendingGigs_one": "{{count}} gig en attente de configuration pour passer à l'activation.",
@@ -326,7 +333,18 @@
         "transactions": "Transactions",
         "conversion": "conversion",
         "quality": "Score qualité",
-        "qualitySub": "moyenne équipe"
+        "qualitySub": "moyenne équipe",
+        "callsPeriod": {
+          "today": "Appels aujourd'hui",
+          "7d": "Appels (7 jours)",
+          "30d": "Appels (30 jours)",
+          "mtd": "Appels (ce mois)"
+        },
+        "callsPeriodSub": {
+          "7d": "sur 7 jours",
+          "30d": "sur 30 jours",
+          "mtd": "ce mois"
+        }
       },
       "coverage": {
         "title": "Couverture leads",
@@ -337,7 +355,19 @@
       },
       "outcomes": {
         "title": "Résultats d'appels (aujourd'hui)",
-        "noData": "Aucun appel aujourd'hui"
+        "noData": "Aucun appel aujourd'hui",
+        "periodTitle": {
+          "today": "Résultats d'appels (aujourd'hui)",
+          "7d": "Résultats d'appels (7 jours)",
+          "30d": "Résultats d'appels (30 jours)",
+          "mtd": "Résultats d'appels (ce mois)"
+        },
+        "noDataPeriod": {
+          "today": "Aucun appel aujourd'hui",
+          "7d": "Aucun appel sur 7 jours",
+          "30d": "Aucun appel sur 30 jours",
+          "mtd": "Aucun appel ce mois"
+        }
       },
       "donut": {
         "transaction": "Transaction",
@@ -539,6 +569,18 @@
         "onHoldSub": "en validation",
         "spentMtd": "Dépensé MTD",
         "spentMtdSub": "ce mois",
+        "spentPeriod": {
+          "today": "Dépensé aujourd'hui",
+          "7d": "Dépensé (7 jours)",
+          "30d": "Dépensé (30 jours)",
+          "mtd": "Dépensé MTD"
+        },
+        "spentPeriodSub": {
+          "today": "aujourd'hui",
+          "7d": "7 jours",
+          "30d": "30 jours",
+          "mtd": "ce mois"
+        },
         "burnRate": "Burn rate",
         "burnRateSub": "par jour"
       },
