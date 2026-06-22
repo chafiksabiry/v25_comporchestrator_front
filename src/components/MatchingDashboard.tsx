@@ -343,17 +343,48 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         record?.agentInfo?.name ||
         t('matchingDashboard.invited.unnamedAgent');
 
+    const resolveInvitationAgentId = (record: any): string =>
+        String(record?.agentId?._id || record?.agentId || record?.agentInfo?.agentId || '').trim();
+
+    const buildInvitedAgentIdsFromGigAgents = (gigAgents: any[]): Set<string> =>
+        new Set<string>(
+            gigAgents
+                .filter((ga: any) => ga.enrollmentStatus === 'invited')
+                .map((ga: any) => String(ga.agentId?._id || ga.agentId))
+                .filter(Boolean)
+        );
+
     const handleArchiveInvitation = async (record: any) => {
         const gigAgentId = String(record?._id || record?.id || '').trim();
         if (!gigAgentId) return;
 
         const agentName = resolveInvitationAgentName(record);
+        const agentId = resolveInvitationAgentId(record);
 
         try {
             setArchivingInvitationId(gigAgentId);
             await archiveInvitation(gigAgentId);
             setInvitationPendingArchive(null);
             await refreshCompanyLists();
+
+            if (agentId) {
+                setInvitedAgents((prev) => {
+                    const next = new Set(prev);
+                    next.delete(agentId);
+                    return next;
+                });
+                setMatches((prevMatches) =>
+                    prevMatches.map((m) =>
+                        String(m.agentId) === agentId ? { ...m, isInvited: false } : m
+                    )
+                );
+            }
+
+            if (selectedGig?._id) {
+                const gigAgents = await getGigAgentsForGig(selectedGig._id);
+                setInvitedAgents(buildInvitedAgentIdsFromGigAgents(gigAgents));
+            }
+
             setGigAgentSuccess(t('matchingDashboard.invited.cancelSuccess', { name: agentName }));
         } catch (error) {
             console.error('Error archiving invitation:', error);
@@ -513,10 +544,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                 // Keep current weights
             }
 
-            // Fetch invited reps for this gig
+            // Fetch invited reps for this gig (only pending invitations)
             const gigAgents = await getGigAgentsForGig(gig._id || '');
-            const invitedAgentIds = new Set<string>(gigAgents.map((ga: any) => ga.agentId as string));
-            setInvitedAgents(invitedAgentIds);
+            setInvitedAgents(buildInvitedAgentIdsFromGigAgents(gigAgents));
             
 
             // Find matches for the selected gig using current or loaded weights
@@ -812,10 +842,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         role="dialog"
                         aria-modal="true"
                     >
-                        <h3 className="text-lg font-black text-slate-900">
-                            {t('matchingDashboard.invited.cancelModalTitle')}
-                        </h3>
-                        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                        <p className="text-base font-semibold leading-relaxed text-slate-900">
                             {t('matchingDashboard.invited.cancelConfirm', {
                                 name: resolveInvitationAgentName(invitationPendingArchive),
                             })}
