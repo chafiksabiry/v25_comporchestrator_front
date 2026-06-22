@@ -629,7 +629,8 @@
       "hint": "Only one active script per gig — that's what reps see during calls.",
       "loading": "Loading...",
       "active": "Active",
-      "activate": "Activate"
+      "activate": "Activate",
+      "select": "Select a script"
     },
     "chatPanel": {
       "startConversation": "Start the conversation to generate the script.",

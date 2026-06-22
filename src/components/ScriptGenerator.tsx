@@ -208,6 +208,8 @@ const ScriptGenerator: React.FC = () => {
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
   const [activeScriptMessage, setActiveScriptMessage] = useState<ChatMessage | null>(null);
   const [isGigSelectorOpen, setIsGigSelectorOpen] = useState(false);
+  const [isGigScriptsDropdownOpen, setIsGigScriptsDropdownOpen] = useState(false);
+  const [selectedGigScriptId, setSelectedGigScriptId] = useState<string | null>(null);
   const [allSavedScripts, setAllSavedScripts] = useState<any[]>([]);
   const [isLoadingAllSavedScripts, setIsLoadingAllSavedScripts] = useState(true);
   const [showNewScriptSelection, setShowNewScriptSelection] = useState(false);
@@ -226,6 +228,8 @@ const ScriptGenerator: React.FC = () => {
   /** Controls whether fetchSavedScripts opens an existing script or starts a fresh generation. */
   const scriptLoadIntentRef = useRef<'new' | 'open' | null>(null);
   const pendingOpenScriptRef = useRef<SavedScript | null>(null);
+  /** Script currently being edited — re-save updates instead of creating duplicates. */
+  const currentScriptIdRef = useRef<string | null>(null);
 
   const addScriptIframe = () => {
     setScriptIframes((prev) => [...prev, { id: generateIframeId(), label: '', url: '' }]);
@@ -600,6 +604,23 @@ const ScriptGenerator: React.FC = () => {
     setError(null);
     setIsAutoGenerateWizardActive(true);
     setScriptIframes([]);
+    currentScriptIdRef.current = null;
+  };
+
+  const startNewScriptForGig = (gig: Gig) => {
+    scriptLoadIntentRef.current = 'new';
+    currentScriptIdRef.current = null;
+    setShowNewScriptSelection(false);
+    setActiveInteractiveStages(null);
+    setActiveInteractiveTitle('');
+
+    if (selectedGig?._id === gig._id) {
+      handleStartNewChat();
+      fetchSavedScripts(gig._id);
+      return;
+    }
+
+    setSelectedGig(gig);
   };
 
   const handleAutoGenerateInitialScript = () => {
@@ -609,12 +630,16 @@ const ScriptGenerator: React.FC = () => {
 
   useEffect(() => {
     if (!selectedGig) return;
+    setIsGigScriptsDropdownOpen(false);
     handleStartNewChat();
     fetchSavedScripts(selectedGig._id);
   }, [selectedGig?._id]);
 
   const handleGenerateInteractiveScriptFromScratch = async () => {
     if (!selectedGig) return;
+    if (scriptLoadIntentRef.current === 'new') {
+      currentScriptIdRef.current = null;
+    }
     setIsSending(true);
     setError(null);
     try {
@@ -717,13 +742,12 @@ const ScriptGenerator: React.FC = () => {
   };
 
   const handleSaveAndValidateInteractiveScript = async () => {
-    if (!activeInteractiveStages || activeInteractiveStages.length === 0) return;
+    if (!activeInteractiveStages || activeInteractiveStages.length === 0 || isSending) return;
     setIsSending(true);
     setError(null);
     try {
       if (!selectedGig?._id) throw new Error('Sélection de mission requise');
 
-      // Only persist iframes that have at least a URL; drop empty rows.
       const cleanedIframes = scriptIframes
         .map((iframe) => ({
           id: iframe.id,
@@ -750,15 +774,44 @@ const ScriptGenerator: React.FC = () => {
         isActive: true,
       };
 
-      const { data } = await apiClient.post('/rag/scripts', payload);
-      const savedScriptId = data?.data?._id || data?._id;
-      if (!savedScriptId) throw new Error('La sauvegarde du script a échoué');
+      const existingScriptId =
+        currentScriptIdRef.current ||
+        activeScriptMessage?.scriptId ||
+        null;
+
+      let savedScriptId: string;
+      if (existingScriptId) {
+        const { data } = await apiClient.put(`/rag/scripts/${existingScriptId}`, payload);
+        savedScriptId = data?.data?._id || data?._id || existingScriptId;
+      } else {
+        const { data } = await apiClient.post('/rag/scripts', payload);
+        savedScriptId = data?.data?._id || data?._id;
+        if (!savedScriptId) throw new Error('La sauvegarde du script a échoué');
+      }
+
+      currentScriptIdRef.current = String(savedScriptId);
+      setSelectedGigScriptId(String(savedScriptId));
+      setActiveScriptMessage((prev) =>
+        prev
+          ? { ...prev, scriptId: String(savedScriptId) }
+          : {
+              id: `assistant-saved-${savedScriptId}`,
+              role: 'assistant',
+              content: '',
+              scriptId: String(savedScriptId),
+            }
+      );
 
       setValidatedScriptIds(prev => ({ ...prev, [String(savedScriptId)]: true }));
 
       if (selectedGig?._id) {
         applyActiveScriptToLists(String(savedScriptId), selectedGig._id);
-        fetchSavedScripts(selectedGig._id);
+        scriptLoadIntentRef.current = null;
+        const { data: listData } = (await apiClient.get('/rag/scripts', {
+          params: { gigId: selectedGig._id },
+        })) as { data: any };
+        const items = Array.isArray(listData?.data) ? listData.data : [];
+        setSavedScripts(items);
         if (gigs.length > 0) fetchAllSavedScriptsForGigs(gigs);
         markGigStepDone(String(selectedGig._id), 'callScript', true);
       }
@@ -779,6 +832,45 @@ const ScriptGenerator: React.FC = () => {
       category: selectedGig.category?.trim() || 'No category',
     };
   }, [selectedGig]);
+
+  const sortedGigScripts = useMemo(
+    () =>
+      [...savedScripts].sort(
+        (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      ),
+    [savedScripts]
+  );
+
+  const selectedGigScript = useMemo(() => {
+    if (sortedGigScripts.length === 0) return null;
+    const picked = sortedGigScripts.find((s) => s._id === selectedGigScriptId);
+    if (picked) return picked;
+    return sortedGigScripts.find((s) => s.isActive) || sortedGigScripts[0];
+  }, [sortedGigScripts, selectedGigScriptId]);
+
+  useEffect(() => {
+    if (sortedGigScripts.length === 0) {
+      setSelectedGigScriptId(null);
+      return;
+    }
+    const stillValid = sortedGigScripts.some((s) => s._id === selectedGigScriptId);
+    if (!stillValid) {
+      const defaultScript =
+        sortedGigScripts.find((s) => s.isActive) || sortedGigScripts[0];
+      setSelectedGigScriptId(defaultScript?._id || null);
+    }
+  }, [sortedGigScripts, selectedGigScriptId, selectedGig?._id]);
+
+  const formatGigScriptLabel = (item: SavedScript, index: number) => {
+    const num = sortedGigScripts.length - index;
+    const status = item.isActive
+      ? t('scriptGenerator.gigScripts.active', 'Actif')
+      : t('scriptGenerator.listPanel.statusDraft', 'Brouillon');
+    const date = item.createdAt
+      ? new Date(item.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+      : '';
+    return `${t('scriptGenerator.listPanel.scriptNumber', 'Script #')}${num} · ${status}${date ? ` · ${date}` : ''}`;
+  };
 
   const sendMessageToApi = async (rawMessage: string, addUserBubble: boolean) => {
     const trimmedMessage = rawMessage.trim();
@@ -917,6 +1009,7 @@ const ScriptGenerator: React.FC = () => {
   };
 
   const openSavedScript = (item: SavedScript) => {
+    currentScriptIdRef.current = item._id;
     const normalizedText = normalizeScriptText(item?.script);
     const message: ChatMessage = {
       id: `assistant-saved-${item._id}-${Date.now()}`,
@@ -968,7 +1061,8 @@ const ScriptGenerator: React.FC = () => {
         delete next[scriptId];
         return next;
       });
-      if (activeScriptMessage?.scriptId === scriptId) {
+      if (activeScriptMessage?.scriptId === scriptId || currentScriptIdRef.current === scriptId) {
+        currentScriptIdRef.current = null;
         handleStartNewChat();
       }
     } catch (err: any) {
@@ -991,6 +1085,7 @@ const ScriptGenerator: React.FC = () => {
     setSavedScripts(markActive);
     setAllSavedScripts(markActive);
     setValidatedScriptIds((prev) => ({ ...prev, [scriptId]: true }));
+    setSelectedGigScriptId(scriptId);
   };
 
   const handleActivateScript = async (script: SavedScript & { gig?: Gig }) => {
@@ -1046,11 +1141,24 @@ const ScriptGenerator: React.FC = () => {
         const { data } = (await apiClient.post('/rag/scripts', payload)) as { data: any };
         savedScriptId = data?.data?._id || data?._id;
         if (!savedScriptId) throw new Error('Script save failed');
+        currentScriptIdRef.current = String(savedScriptId);
         setMessages((prev) =>
           prev.map((m) => (m.id === message.id ? { ...m, scriptId: String(savedScriptId) } : m))
         );
       } else {
-        await apiClient.put(`/rag/scripts/${savedScriptId}/status`, { isActive: true });
+        if (!selectedGig?._id) throw new Error('Gig selection is required');
+        const script = buildScriptStepsFromMessage(message);
+        const payload = {
+          gigId: selectedGig._id,
+          targetClient: 'general',
+          language: 'simple et direct',
+          details: input?.trim() || '',
+          script,
+          playbook: message.playbook,
+          isActive: true,
+        };
+        await apiClient.put(`/rag/scripts/${savedScriptId}`, payload);
+        currentScriptIdRef.current = String(savedScriptId);
       }
       setValidatedScriptIds((prev) => ({ ...prev, [String(savedScriptId)]: true, [message.id]: true }));
       if (selectedGig?._id) {
@@ -1274,67 +1382,118 @@ const ScriptGenerator: React.FC = () => {
                         {t('scriptGenerator.listPanel.noScripts', 'Aucun script pour ce gig.')}
                       </p>
                     ) : (
-                      <div className="space-y-1.5">
-                        {[...savedScripts]
-                          .sort(
-                            (a, b) =>
-                              new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-                          )
-                          .map((item, idx) => (
-                            <div
-                              key={item._id}
-                              className={`p-2 rounded-lg border space-y-1.5 ${
-                                item.isActive
-                                  ? 'bg-emerald-50/60 border-emerald-200'
-                                  : 'bg-slate-50 border-slate-200'
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setIsGigScriptsDropdownOpen((open) => !open)}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl font-extrabold text-slate-700 bg-slate-50/50 hover:bg-slate-100/50 focus:border-red-600 transition-all text-[10px] flex items-center justify-between cursor-pointer"
+                          >
+                            <span className="truncate text-left">
+                              {selectedGigScript
+                                ? formatGigScriptLabel(
+                                    selectedGigScript,
+                                    sortedGigScripts.findIndex((s) => s._id === selectedGigScript._id)
+                                  )
+                                : t('scriptGenerator.gigScripts.select', 'Choisir un script')}
+                            </span>
+                            <ChevronDown
+                              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ml-2 ${
+                                isGigScriptsDropdownOpen ? 'rotate-180' : ''
                               }`}
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-[8.5px] font-black text-slate-600 uppercase tracking-wider">
-                                  {t('scriptGenerator.listPanel.scriptNumber', 'Script #')}
-                                  {savedScripts.length - idx}
-                                </span>
-                                {item.isActive ? (
-                                  <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[7px] font-extrabold uppercase tracking-widest flex items-center gap-1">
-                                    <CheckCircle className="w-2.5 h-2.5" />
-                                    {t('scriptGenerator.gigScripts.active', 'Actif')}
-                                  </span>
-                                ) : (
-                                  <span className="px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded text-[7px] font-extrabold uppercase tracking-widest">
-                                    {t('scriptGenerator.listPanel.statusDraft', 'Brouillon')}
-                                  </span>
-                                )}
+                            />
+                          </button>
+
+                          {isGigScriptsDropdownOpen && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-[100]"
+                                onClick={() => setIsGigScriptsDropdownOpen(false)}
+                              />
+                              <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-100 rounded-xl shadow-2xl p-1 z-[110] max-h-40 overflow-y-auto animate-in fade-in slide-in-from-top-1.5 duration-150">
+                                {sortedGigScripts.map((item, idx) => (
+                                  <button
+                                    key={item._id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedGigScriptId(item._id);
+                                      setIsGigScriptsDropdownOpen(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold transition-all flex items-center justify-between gap-2 ${
+                                      selectedGigScript?._id === item._id
+                                        ? 'bg-red-50 text-red-600'
+                                        : 'text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    <span className="truncate">{formatGigScriptLabel(item, idx)}</span>
+                                    {item.isActive && (
+                                      <span className="shrink-0 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[7px] font-extrabold uppercase">
+                                        {t('scriptGenerator.gigScripts.active', 'Actif')}
+                                      </span>
+                                    )}
+                                  </button>
+                                ))}
                               </div>
-                              <div className="flex items-center gap-1">
+                            </>
+                          )}
+                        </div>
+
+                        {selectedGigScript && (
+                          <div
+                            className={`p-2 rounded-lg border space-y-1.5 ${
+                              selectedGigScript.isActive
+                                ? 'bg-emerald-50/60 border-emerald-200'
+                                : 'bg-slate-50 border-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[8.5px] font-black text-slate-600 uppercase tracking-wider">
+                                {formatGigScriptLabel(
+                                  selectedGigScript,
+                                  sortedGigScripts.findIndex((s) => s._id === selectedGigScript._id)
+                                )}
+                              </span>
+                              {selectedGigScript.isActive ? (
+                                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[7px] font-extrabold uppercase tracking-widest flex items-center gap-1">
+                                  <CheckCircle className="w-2.5 h-2.5" />
+                                  {t('scriptGenerator.gigScripts.active', 'Actif')}
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded text-[7px] font-extrabold uppercase tracking-widest">
+                                  {t('scriptGenerator.listPanel.statusDraft', 'Brouillon')}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  scriptLoadIntentRef.current = 'open';
+                                  pendingOpenScriptRef.current = selectedGigScript;
+                                  openSavedScript(selectedGigScript);
+                                }}
+                                className="flex-1 py-1.5 text-[8px] font-black uppercase tracking-wider rounded-md bg-white border border-slate-200 text-slate-600 hover:border-red-400 hover:text-red-600 transition-colors"
+                              >
+                                {t('scriptGenerator.listPanel.openScript', 'Ouvrir')}
+                              </button>
+                              {!selectedGigScript.isActive && (
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    scriptLoadIntentRef.current = 'open';
-                                    pendingOpenScriptRef.current = item;
-                                    openSavedScript(item);
-                                  }}
-                                  className="flex-1 py-1.5 text-[8px] font-black uppercase tracking-wider rounded-md bg-white border border-slate-200 text-slate-600 hover:border-red-400 hover:text-red-600 transition-colors"
+                                  disabled={activatingScriptId === selectedGigScript._id}
+                                  onClick={() => handleActivateScript(selectedGigScript)}
+                                  className="flex-1 py-1.5 text-[8px] font-black uppercase tracking-wider rounded-md bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-1"
                                 >
-                                  {t('scriptGenerator.listPanel.openScript', 'Ouvrir')}
+                                  {activatingScriptId === selectedGigScript._id ? (
+                                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="w-2.5 h-2.5" />
+                                  )}
+                                  {t('scriptGenerator.gigScripts.activate', 'Activer')}
                                 </button>
-                                {!item.isActive && (
-                                  <button
-                                    type="button"
-                                    disabled={activatingScriptId === item._id}
-                                    onClick={() => handleActivateScript(item)}
-                                    className="flex-1 py-1.5 text-[8px] font-black uppercase tracking-wider rounded-md bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-1"
-                                  >
-                                    {activatingScriptId === item._id ? (
-                                      <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                    ) : (
-                                      <CheckCircle className="w-2.5 h-2.5" />
-                                    )}
-                                    {t('scriptGenerator.gigScripts.activate', 'Activer')}
-                                  </button>
-                                )}
-                              </div>
+                              )}
                             </div>
-                          ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1711,11 +1870,7 @@ const ScriptGenerator: React.FC = () => {
                     return (
                       <button
                         key={gig._id}
-                        onClick={() => {
-                          scriptLoadIntentRef.current = 'new';
-                          setShowNewScriptSelection(false);
-                          setSelectedGig(gig);
-                        }}
+                        onClick={() => startNewScriptForGig(gig)}
                         className="p-3 text-left bg-slate-50 hover:bg-red-50/15 border border-slate-200/80 hover:border-red-500 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md flex flex-col gap-1 active:scale-[0.98] group"
                       >
                         <div className="flex items-center justify-between w-full">
