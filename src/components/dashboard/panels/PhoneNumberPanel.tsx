@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   X,
   ChevronDown,
-  Check
+  Check,
+  ChevronRight
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -186,6 +187,7 @@ export function PhoneNumberPanel() {
   const [myNumbersSearch, setMyNumbersSearch] = useState('');
   const [myNumbersGigFilter, setMyNumbersGigFilter] = useState('');
   const [isGigFilterOpen, setIsGigFilterOpen] = useState(false);
+  const [selectedPhoneLine, setSelectedPhoneLine] = useState<string | null>(null);
 
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   // In production we MUST resolve to the live orchestrator backend; the old
@@ -275,6 +277,34 @@ export function PhoneNumberPanel() {
   );
 
   const hasActiveFilters = Boolean(myNumbersGigFilter || myNumbersSearch.trim());
+
+  const selectedPhoneLineData = useMemo(
+    () => phoneNumbers.find((n) => n.phoneNumber === selectedPhoneLine) || null,
+    [phoneNumbers, selectedPhoneLine]
+  );
+
+  const handlePhoneLineClick = (num: PurchasedNumber) => {
+    setSelectedPhoneLine(num.phoneNumber);
+    if (num.gigId) {
+      setMyNumbersGigFilter(num.gigId);
+      setSelectedGigIdForNumber(num.gigId);
+    }
+  };
+
+  const clearPhoneLineSelection = () => {
+    setSelectedPhoneLine(null);
+  };
+
+  const openBuyTabForSelectedLine = () => {
+    const line = selectedPhoneLineData;
+    if (line?.gigId) {
+      setSelectedGigIdForNumber(line.gigId);
+      setTelephonyTab('buy');
+      void doSearch(line.gigId);
+    } else {
+      setTelephonyTab('buy');
+    }
+  };
 
   const fetchData = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -1151,7 +1181,48 @@ export function PhoneNumberPanel() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="space-y-3">
+              {selectedPhoneLineData && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-violet-50/80 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-indigo-600 mb-1">
+                      {t('phoneNumberPanel.myNumbers.rowDetail.label')}
+                    </p>
+                    <p className="text-sm font-black text-slate-900 tabular-nums truncate">
+                      {selectedPhoneLineData.phoneNumber}
+                    </p>
+                    <p className="text-[11px] font-bold text-slate-500 truncate mt-0.5">
+                      {gigsAndReps.find((g) => g.gigId === selectedPhoneLineData.gigId)?.title
+                        || t('phoneNumberPanel.myNumbers.table.unassigned')}
+                      {' · '}
+                      {selectedPhoneLineData.isTrial
+                        ? t('phoneNumberPanel.myNumbers.table.freeTrial')
+                        : typeof selectedPhoneLineData.price === 'number' && selectedPhoneLineData.price > 0
+                          ? formatPrice(Math.round(selectedPhoneLineData.price * 100), selectedPhoneLineData.currency || 'EUR')
+                          : '—'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={openBuyTabForSelectedLine}
+                      className="px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-[10px] font-black uppercase tracking-wider transition-colors"
+                    >
+                      {t('phoneNumberPanel.myNumbers.rowDetail.buyForGig')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearPhoneLineSelection}
+                      className="p-2 rounded-xl border border-indigo-200 text-indigo-500 hover:bg-white transition-colors"
+                      aria-label={t('phoneNumberPanel.myNumbers.rowDetail.clear')}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 border-b border-indigo-100">
@@ -1159,15 +1230,31 @@ export function PhoneNumberPanel() {
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.gig')}</th>
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.price')}</th>
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.status')}</th>
+                    <th className="py-3 px-4 w-10" aria-hidden />
                   </tr>
                 </thead>
                 <tbody className="text-xs">
                   {filteredPhoneNumbers.map((num) => {
                     const linkedGig = gigsAndReps.find(g => g.gigId === num.gigId);
+                    const isSelected = selectedPhoneLine === num.phoneNumber;
                     return (
                       <tr
                         key={num.phoneNumber}
-                        className="group border-t border-slate-50 hover:bg-indigo-50/40 transition-colors duration-200"
+                        role="button"
+                        tabIndex={0}
+                        aria-selected={isSelected}
+                        onClick={() => handlePhoneLineClick(num)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handlePhoneLineClick(num);
+                          }
+                        }}
+                        className={`group border-t border-slate-50 transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset ${
+                          isSelected
+                            ? 'bg-indigo-100/70 shadow-[inset_3px_0_0_0_rgb(79,70,229)]'
+                            : 'hover:bg-indigo-50/60 hover:shadow-sm'
+                        }`}
                       >
                         <td className="py-4 px-4 font-black text-slate-900 tracking-tight">
                           <div className="flex items-center gap-2">
@@ -1202,13 +1289,23 @@ export function PhoneNumberPanel() {
                             {num.status || t('phoneNumberPanel.myNumbers.table.active')}
                           </span>
                         </td>
+                        <td className="py-4 px-2 text-right">
+                          <ChevronRight
+                            size={16}
+                            className={`inline-block transition-all ${
+                              isSelected
+                                ? 'text-indigo-600 translate-x-0.5'
+                                : 'text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-0.5'
+                            }`}
+                          />
+                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-indigo-100 bg-indigo-50/30">
-                    <td colSpan={2} className="py-3 px-4 text-[10px] font-black uppercase tracking-wider text-indigo-700">
+                    <td colSpan={3} className="py-3 px-4 text-[10px] font-black uppercase tracking-wider text-indigo-700">
                       {hasActiveFilters
                         ? t('phoneNumberPanel.myNumbers.table.filteredTotalLabel')
                         : t('phoneNumberPanel.myNumbers.table.companyTotalLabel')}
@@ -1226,6 +1323,7 @@ export function PhoneNumberPanel() {
                   </tr>
                 </tfoot>
               </table>
+              </div>
             </div>
           )}
         </div>
