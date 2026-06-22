@@ -1508,15 +1508,6 @@ export function PhoneNumberPanel() {
                 </span>
               </div>
 
-              <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-100">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  {t('phoneNumberPanel.myNumbers.detailModal.provider')}
-                </span>
-                <span className="text-sm font-bold text-slate-900 uppercase">
-                  {selectedPhoneLineData.provider || '—'}
-                </span>
-              </div>
-
               <div className="py-3 border-b border-slate-100">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-2">
                   {t('phoneNumberPanel.myNumbers.detailModal.features')}
