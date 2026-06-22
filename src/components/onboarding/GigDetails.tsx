@@ -3,6 +3,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import Swal from 'sweetalert2';
 import GigDetailsView from './GigDetailsView';
+import GigParticipantsModal from './GigParticipantsModal';
 import {
   Plus,
   Trash2,
@@ -161,6 +162,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
+  const [participantsModalGig, setParticipantsModalGig] = useState<Gig | null>(null);
   const companyId = Cookies.get('companyId');
 
   useEffect(() => {
@@ -316,10 +318,10 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
     );
   }
 
-  const handleOpenParticipants = (e: React.MouseEvent, gigId: string) => {
+  const handleOpenParticipants = (e: React.MouseEvent, gig: Gig) => {
     e.preventDefault();
     e.stopPropagation();
-    window.location.hash = `#/dashboard/training?gigId=${encodeURIComponent(gigId)}&tab=participants`;
+    setParticipantsModalGig(gig);
   };
 
   const handleDelete = async (e: React.MouseEvent, gigId: string) => {
@@ -516,7 +518,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
                     <button
                       type="button"
                       className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 shadow-sm transition-all duration-300 hover:border-indigo-300 hover:bg-indigo-50 hover:scale-105 active:scale-95"
-                      onClick={(e) => handleOpenParticipants(e, gig._id)}
+                      onClick={(e) => handleOpenParticipants(e, gig)}
                       title={t('gigDetails.participantsBtn')}
                     >
                       <Users className="h-3.5 w-3.5" />
@@ -550,6 +552,15 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
             })}
           </div>
         </div>
+      )}
+
+      {participantsModalGig && companyId && (
+        <GigParticipantsModal
+          gigId={participantsModalGig._id}
+          gigTitle={participantsModalGig.title}
+          companyId={companyId}
+          onClose={() => setParticipantsModalGig(null)}
+        />
       )}
 
       {/* Styled custom classes and animations */}
