@@ -1104,6 +1104,7 @@
     "reps": "reps",
     "terminate": "Terminer l'actif d'intelligence",
     "detailsBtn": "Détails",
+    "participantsBtn": "Participants",
     "setupBanner": {
       "title": "Finalisez la configuration de ce gig",
       "subtitle": "Complétez les étapes restantes ci-dessous pour amener votre gig jusqu'à l'activation. Le plan d'abonnement est géré séparément et n'est pas bloquant.",

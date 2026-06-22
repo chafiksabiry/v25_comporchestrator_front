@@ -607,6 +607,21 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const podcastUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const podcastAudioRef = useRef<HTMLAudioElement | null>(null);
 
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    const queryStart = hash.indexOf('?');
+    if (queryStart === -1) return;
+
+    const params = new URLSearchParams(hash.slice(queryStart + 1));
+    const gigId = params.get('gigId')?.trim();
+    const tab = params.get('tab')?.trim();
+
+    if (gigId) setFilterGigId(gigId);
+    if (tab === 'participants' || tab === 'tracking' || tab === 'courses') {
+      setPageTab(tab);
+    }
+  }, []);
+
   const closeTrainingViewer = useCallback(() => {
     setShowTraining({ isOpen: false });
   }, []);
