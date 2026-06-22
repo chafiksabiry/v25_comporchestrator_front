@@ -622,6 +622,15 @@
       "statusDraft": "Brouillon",
       "openScript": "Ouvrir"
     },
+    "savedListHint": "Activez un script par mission — seul l'actif est visible côté reps",
+    "activateFailed": "Échec de l'activation du script",
+    "gigScripts": {
+      "title": "Scripts de la mission",
+      "hint": "Un seul script actif par mission — c'est celui que les reps voient pendant l'appel.",
+      "loading": "Chargement...",
+      "active": "Actif",
+      "activate": "Activer"
+    },
     "chatPanel": {
       "startConversation": "Commencez la conversation pour générer le script.",
       "alreadyValidatedWarning": "Un script est déjà validé pour ce gig.",

@@ -202,6 +202,7 @@ const ScriptGenerator: React.FC = () => {
   const [gigsError, setGigsError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [validatingScriptId, setValidatingScriptId] = useState<string | null>(null);
+  const [activatingScriptId, setActivatingScriptId] = useState<string | null>(null);
   const [validatedScriptIds, setValidatedScriptIds] = useState<Record<string, boolean>>({});
   const [savedScripts, setSavedScripts] = useState<SavedScript[]>([]);
   const [isLoadingSavedScripts, setIsLoadingSavedScripts] = useState(false);
@@ -755,13 +756,14 @@ const ScriptGenerator: React.FC = () => {
 
       setValidatedScriptIds(prev => ({ ...prev, [String(savedScriptId)]: true }));
 
-      await markOnboardingScriptStepCompleted();
-
-      // Persist the per-gig `setupSteps.callScript` flag so the
-      // dashboard checklist reflects progress without re-probing.
       if (selectedGig?._id) {
+        applyActiveScriptToLists(String(savedScriptId), selectedGig._id);
+        fetchSavedScripts(selectedGig._id);
+        if (gigs.length > 0) fetchAllSavedScriptsForGigs(gigs);
         markGigStepDone(String(selectedGig._id), 'callScript', true);
       }
+
+      await markOnboardingScriptStepCompleted();
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Échec de l’enregistrement du script');
     } finally {
@@ -974,6 +976,40 @@ const ScriptGenerator: React.FC = () => {
     }
   };
 
+  const applyActiveScriptToLists = (scriptId: string, gigId: string) => {
+    const markActive = (prev: SavedScript[]) =>
+      prev.map((s) => ({
+        ...s,
+        isActive:
+          String(s._id) === String(scriptId)
+            ? true
+            : String(s.gigId) === String(gigId)
+              ? false
+              : s.isActive,
+      }));
+
+    setSavedScripts(markActive);
+    setAllSavedScripts(markActive);
+    setValidatedScriptIds((prev) => ({ ...prev, [scriptId]: true }));
+  };
+
+  const handleActivateScript = async (script: SavedScript & { gig?: Gig }) => {
+    if (!script._id || script.isActive || activatingScriptId) return;
+    const gigId = String(script.gigId || selectedGig?._id || '');
+    if (!gigId) return;
+
+    setActivatingScriptId(script._id);
+    setError(null);
+    try {
+      await apiClient.put(`/rag/scripts/${script._id}/status`, { isActive: true });
+      applyActiveScriptToLists(script._id, gigId);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || t('scriptGenerator.activateFailed', 'Échec de l’activation du script'));
+    } finally {
+      setActivatingScriptId(null);
+    }
+  };
+
   const buildScriptStepsFromMessage = (message: ChatMessage): ScriptStep[] => {
     const rows = parseStyledDialogue(message.content);
     return rows
@@ -1018,7 +1054,9 @@ const ScriptGenerator: React.FC = () => {
       }
       setValidatedScriptIds((prev) => ({ ...prev, [String(savedScriptId)]: true, [message.id]: true }));
       if (selectedGig?._id) {
+        applyActiveScriptToLists(String(savedScriptId), selectedGig._id);
         fetchSavedScripts(selectedGig._id);
+        if (gigs.length > 0) fetchAllSavedScriptsForGigs(gigs);
         markGigStepDone(String(selectedGig._id), 'callScript', true);
       }
       await markOnboardingScriptStepCompleted();
@@ -1204,6 +1242,101 @@ const ScriptGenerator: React.FC = () => {
                     <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
                       <Briefcase className="w-3 h-3 text-slate-400" /> Détails de la mission
                     </p>
+                  </div>
+
+                  <hr className="border-slate-100" />
+
+                  {/* Scripts for this gig — one active at a time for reps */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <h5 className="text-[9px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <FileText className="w-3 h-3 text-red-600" />
+                        {t('scriptGenerator.gigScripts.title', 'Scripts de la mission')}
+                      </h5>
+                      <span className="text-[8px] font-black text-slate-400 uppercase">
+                        {savedScripts.length} {t('scriptGenerator.listPanel.scriptsCount', 'Scripts')}
+                      </span>
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-semibold leading-snug">
+                      {t(
+                        'scriptGenerator.gigScripts.hint',
+                        'Un seul script actif par mission — c’est celui que les reps voient pendant l’appel.'
+                      )}
+                    </p>
+
+                    {isLoadingSavedScripts ? (
+                      <div className="flex items-center gap-1.5 py-2 text-[10px] text-slate-400 font-bold">
+                        <Loader2 className="w-3 h-3 animate-spin text-red-600" />
+                        {t('scriptGenerator.gigScripts.loading', 'Chargement...')}
+                      </div>
+                    ) : savedScripts.length === 0 ? (
+                      <p className="text-[10px] text-slate-400 font-bold italic py-1">
+                        {t('scriptGenerator.listPanel.noScripts', 'Aucun script pour ce gig.')}
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {[...savedScripts]
+                          .sort(
+                            (a, b) =>
+                              new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+                          )
+                          .map((item, idx) => (
+                            <div
+                              key={item._id}
+                              className={`p-2 rounded-lg border space-y-1.5 ${
+                                item.isActive
+                                  ? 'bg-emerald-50/60 border-emerald-200'
+                                  : 'bg-slate-50 border-slate-200'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[8.5px] font-black text-slate-600 uppercase tracking-wider">
+                                  {t('scriptGenerator.listPanel.scriptNumber', 'Script #')}
+                                  {savedScripts.length - idx}
+                                </span>
+                                {item.isActive ? (
+                                  <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[7px] font-extrabold uppercase tracking-widest flex items-center gap-1">
+                                    <CheckCircle className="w-2.5 h-2.5" />
+                                    {t('scriptGenerator.gigScripts.active', 'Actif')}
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded text-[7px] font-extrabold uppercase tracking-widest">
+                                    {t('scriptGenerator.listPanel.statusDraft', 'Brouillon')}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    scriptLoadIntentRef.current = 'open';
+                                    pendingOpenScriptRef.current = item;
+                                    openSavedScript(item);
+                                  }}
+                                  className="flex-1 py-1.5 text-[8px] font-black uppercase tracking-wider rounded-md bg-white border border-slate-200 text-slate-600 hover:border-red-400 hover:text-red-600 transition-colors"
+                                >
+                                  {t('scriptGenerator.listPanel.openScript', 'Ouvrir')}
+                                </button>
+                                {!item.isActive && (
+                                  <button
+                                    type="button"
+                                    disabled={activatingScriptId === item._id}
+                                    onClick={() => handleActivateScript(item)}
+                                    className="flex-1 py-1.5 text-[8px] font-black uppercase tracking-wider rounded-md bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-1"
+                                  >
+                                    {activatingScriptId === item._id ? (
+                                      <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                    ) : (
+                                      <CheckCircle className="w-2.5 h-2.5" />
+                                    )}
+                                    {t('scriptGenerator.gigScripts.activate', 'Activer')}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
 
                   <hr className="border-slate-100" />
@@ -1450,7 +1583,12 @@ const ScriptGenerator: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Vos Scripts Enregistrés</h3>
-                      <p className="text-[10px] text-slate-400 font-bold">Sélectionnez un script validé ou concevez-en un nouveau</p>
+                      <p className="text-[10px] text-slate-400 font-bold">
+                        {t(
+                          'scriptGenerator.savedListHint',
+                          'Activez un script par mission — seul l’actif est visible côté reps'
+                        )}
+                      </p>
                     </div>
                   </div>
 
@@ -1500,6 +1638,21 @@ const ScriptGenerator: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
+                          {!script.isActive && (
+                            <button
+                              onClick={() => handleActivateScript(script)}
+                              disabled={activatingScriptId === script._id}
+                              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-extrabold text-[9px] rounded-lg transition-all duration-200 uppercase tracking-wider shadow-sm active:scale-95 flex items-center gap-1"
+                            >
+                              {activatingScriptId === script._id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <CheckCircle className="w-3 h-3" />
+                              )}
+                              {t('scriptGenerator.gigScripts.activate', 'Activer')}
+                            </button>
+                          )}
+
                           <button
                             onClick={() => {
                               scriptLoadIntentRef.current = 'open';

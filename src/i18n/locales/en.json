@@ -622,6 +622,15 @@
       "statusDraft": "Draft",
       "openScript": "Open"
     },
+    "savedListHint": "Activate one script per gig — only the active one is visible to reps",
+    "activateFailed": "Failed to activate script",
+    "gigScripts": {
+      "title": "Gig scripts",
+      "hint": "Only one active script per gig — that's what reps see during calls.",
+      "loading": "Loading...",
+      "active": "Active",
+      "activate": "Activate"
+    },
     "chatPanel": {
       "startConversation": "Start the conversation to generate the script.",
       "alreadyValidatedWarning": "A script is already validated for this gig.",
