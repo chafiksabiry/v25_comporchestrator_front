@@ -346,6 +346,28 @@ export const rejectEnrollmentRequest = async (gigAgentId: string, notes?: string
     }
 };
 
+export const archiveInvitation = async (gigAgentId: string, notes?: string): Promise<any> => {
+    try {
+        const response = await fetch(`${MATCHING_API_URL}/gig-agents/invitations/${gigAgentId}/archive`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ notes }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error archiving invitation:', error);
+        throw error;
+    }
+};
+
 export const getEnrollmentRequestsForCompany = async (companyId: string): Promise<any[]> => {
     try {
         const response = await fetch(`${MATCHING_API_URL}/gig-agents/enrollment-requests/company/${companyId}`);

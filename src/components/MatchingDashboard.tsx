@@ -22,6 +22,7 @@ import {
     getActiveAgentsForCompany,
     acceptEnrollmentRequest,
     rejectEnrollmentRequest,
+    archiveInvitation,
     getAllSkills,
     getLanguages,
     getGigWeights,
@@ -98,6 +99,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
     
     const [selectedAgentProfile, setSelectedAgentProfile] = useState<any>(null);
     const [loadingProfile, setLoadingProfile] = useState(false);
+    const [archivingInvitationId, setArchivingInvitationId] = useState<string | null>(null);
 
     const normalizeAgentProfile = (raw: any) => {
         if (!raw) return null;
@@ -333,6 +335,33 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             console.error('Error refreshing company lists:', error);
         }
     }, []);
+
+    const handleArchiveInvitation = async (record: any) => {
+        const gigAgentId = String(record?._id || record?.id || '').trim();
+        if (!gigAgentId) return;
+
+        const agentName =
+            record?.agentId?.personalInfo?.name ||
+            record?.agentId?.name ||
+            record?.agentInfo?.name ||
+            t('matchingDashboard.invited.unnamedAgent');
+
+        if (!window.confirm(t('matchingDashboard.invited.cancelConfirm', { name: agentName }))) {
+            return;
+        }
+
+        try {
+            setArchivingInvitationId(gigAgentId);
+            await archiveInvitation(gigAgentId);
+            await refreshCompanyLists();
+            setGigAgentSuccess(t('matchingDashboard.invited.cancelSuccess', { name: agentName }));
+        } catch (error) {
+            console.error('Error archiving invitation:', error);
+            setGigAgentError(t('matchingDashboard.invited.cancelError'));
+        } finally {
+            setArchivingInvitationId(null);
+        }
+    };
 
     // Live updates: a rep applied to one of this company's gigs → refresh the
     // "requests" list in real time (and on reconnect to catch missed events).
@@ -1646,9 +1675,21 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                         t={t}
                                                         getLanguageNameByCode={getLanguageNameByCode}
                                                         rightAction={
-                                                            <span className="inline-flex items-center px-3 py-2 bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-sm font-medium whitespace-nowrap">
-                                                                📧 {t('matchingDashboard.invited.pending')}
-                                                            </span>
+                                                            <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
+                                                                <span className="inline-flex items-center px-3 py-2 bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-sm font-medium whitespace-nowrap">
+                                                                    📧 {t('matchingDashboard.invited.pending')}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => void handleArchiveInvitation(record)}
+                                                                    disabled={archivingInvitationId === String(record._id || record.id)}
+                                                                    className="inline-flex items-center justify-center px-4 py-2 bg-white text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-50 transition-all duration-200 text-sm font-medium whitespace-nowrap disabled:opacity-60"
+                                                                >
+                                                                    {archivingInvitationId === String(record._id || record.id)
+                                                                        ? t('matchingDashboard.invited.cancelling')
+                                                                        : t('matchingDashboard.invited.cancelInvitation')}
+                                                                </button>
+                                                            </div>
                                                         }
                                                     />
                                                 );
