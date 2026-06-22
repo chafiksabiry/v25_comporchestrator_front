@@ -137,6 +137,22 @@
         "buyForGig": "Acheter une ligne",
         "clear": "Désélectionner"
       },
+      "detailModal": {
+        "title": "Détails de la ligne",
+        "gig": "Gig associé",
+        "price": "Prix payé",
+        "status": "Statut",
+        "provider": "Fournisseur",
+        "features": "Fonctionnalités",
+        "voice": "Voix",
+        "sms": "SMS",
+        "mms": "MMS",
+        "enabled": "Activé",
+        "disabled": "Non disponible",
+        "createdAt": "Date d'acquisition",
+        "buyForGig": "Acheter une autre ligne",
+        "close": "Fermer"
+      },
       "filters": {
         "searchPlaceholder": "Rechercher un numéro ou un gig…",
         "gigLabel": "Filtrer par gig",
