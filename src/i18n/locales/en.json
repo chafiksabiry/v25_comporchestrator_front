@@ -101,7 +101,9 @@
       "rentedLabel": "Rented Phone Lines",
       "lineSingular": "Line",
       "linePlural": "Lines",
-      "footer": "Numbers provisioned & linked to your Gigs"
+      "footer": "Numbers provisioned & linked to your Gigs",
+      "totalSpentLabel": "Total spent",
+      "spendBreakdown": "{{paid}} paid · {{trial}} free trial"
     },
     "gigsCard": {
       "title": "Gigs & Lines",
@@ -124,13 +126,20 @@
         "price": "Price",
         "status": "Status",
         "unassigned": "Unassigned",
-        "active": "active"
+        "active": "active",
+        "freeTrial": "Free trial",
+        "companyTotalLabel": "Company total",
+        "filteredTotalLabel": "Filtered total",
+        "paidLinesShort": "paid"
       },
       "filters": {
         "searchPlaceholder": "Search a number or gig…",
         "gigLabel": "Filter by gig",
         "allGigs": "All gigs",
-        "noResults": "No numbers match your search."
+        "noResults": "No numbers match your search.",
+        "linesCount_one": "{{count}} line",
+        "linesCount_other": "{{count}} lines",
+        "filteredTotal": "Filtered total"
       }
     },
     "buy": {

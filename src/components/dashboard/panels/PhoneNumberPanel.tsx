@@ -15,7 +15,9 @@ import {
   CreditCard,
   Lock,
   AlertTriangle,
-  X
+  X,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -125,6 +127,7 @@ interface PurchasedNumber {
   createdAt?: string;
   price?: number;
   currency?: string;
+  isTrial?: boolean;
 }
 
 interface EnrolledRep {
@@ -182,6 +185,7 @@ export function PhoneNumberPanel() {
   const [linePrice, setLinePrice] = useState({ amountCents: 999, currency: 'EUR' });
   const [myNumbersSearch, setMyNumbersSearch] = useState('');
   const [myNumbersGigFilter, setMyNumbersGigFilter] = useState('');
+  const [isGigFilterOpen, setIsGigFilterOpen] = useState(false);
 
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   // In production we MUST resolve to the live orchestrator backend; the old
@@ -189,6 +193,34 @@ export function PhoneNumberPanel() {
   const apiBaseUrl = getOrchestratorApiBase();
   const formatPrice = (cents: number, currency: string) =>
     `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} ${currency === 'EUR' ? '€' : currency}`;
+
+  const getNumberPriceCents = (num: PurchasedNumber): number => {
+    if (num.isTrial) return 0;
+    if (typeof num.price === 'number' && num.price > 0) {
+      return Math.round(num.price * 100);
+    }
+    return 0;
+  };
+
+  const summarizeNumbersSpend = (nums: PurchasedNumber[]) => {
+    let totalCents = 0;
+    let currency = 'EUR';
+    let paidCount = 0;
+    let trialCount = 0;
+    nums.forEach((num) => {
+      if (num.isTrial) {
+        trialCount += 1;
+        return;
+      }
+      const cents = getNumberPriceCents(num);
+      if (cents > 0) {
+        totalCents += cents;
+        paidCount += 1;
+        if (num.currency) currency = num.currency;
+      }
+    });
+    return { totalCents, currency, paidCount, trialCount };
+  };
 
   // A Gig must own at least as many phone lines as it has enrolled reps
   // (one line per rep, minimum). Once that quota is reached, any extra
@@ -218,6 +250,31 @@ export function PhoneNumberPanel() {
       return haystack.includes(query);
     });
   }, [phoneNumbers, myNumbersSearch, myNumbersGigFilter, gigsAndReps]);
+
+  const selectedGigFilterLabel = useMemo(() => {
+    if (!myNumbersGigFilter) return t('phoneNumberPanel.myNumbers.filters.allGigs');
+    return gigsAndReps.find((g) => g.gigId === myNumbersGigFilter)?.title || t('phoneNumberPanel.myNumbers.filters.allGigs');
+  }, [myNumbersGigFilter, gigsAndReps, t]);
+
+  const linesCountByGig = useMemo(() => {
+    const counts: Record<string, number> = {};
+    phoneNumbers.forEach((num) => {
+      if (num.gigId) counts[num.gigId] = (counts[num.gigId] || 0) + 1;
+    });
+    return counts;
+  }, [phoneNumbers]);
+
+  const companySpend = useMemo(
+    () => summarizeNumbersSpend(phoneNumbers),
+    [phoneNumbers]
+  );
+
+  const filteredSpend = useMemo(
+    () => summarizeNumbersSpend(filteredPhoneNumbers),
+    [filteredPhoneNumbers]
+  );
+
+  const hasActiveFilters = Boolean(myNumbersGigFilter || myNumbersSearch.trim());
 
   const fetchData = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -826,24 +883,45 @@ export function PhoneNumberPanel() {
               </div>
             </div>
 
-            <div>
-              <span className="text-[10px] text-white/80 font-bold uppercase tracking-[0.2em] block mb-2">
-                {t('phoneNumberPanel.hero.rentedLabel')}
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-6xl font-black tracking-tighter text-white">
-                  {phoneNumbers.length}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <span className="text-[10px] text-white/80 font-bold uppercase tracking-[0.2em] block mb-2">
+                  {t('phoneNumberPanel.hero.rentedLabel')}
                 </span>
-                <span className="text-base text-white/70 font-bold uppercase tracking-wider">
-                  {phoneNumbers.length !== 1
-                    ? t('phoneNumberPanel.hero.linePlural')
-                    : t('phoneNumberPanel.hero.lineSingular')}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-6xl font-black tracking-tighter text-white">
+                    {phoneNumbers.length}
+                  </span>
+                  <span className="text-base text-white/70 font-bold uppercase tracking-wider">
+                    {phoneNumbers.length !== 1
+                      ? t('phoneNumberPanel.hero.linePlural')
+                      : t('phoneNumberPanel.hero.lineSingular')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="sm:text-right sm:border-l sm:border-white/15 sm:pl-6">
+                <span className="text-[10px] text-white/80 font-bold uppercase tracking-[0.2em] block mb-2">
+                  {t('phoneNumberPanel.hero.totalSpentLabel')}
                 </span>
+                <div className="flex items-baseline gap-2 sm:justify-end">
+                  <CreditCard size={22} className="text-yellow-200 shrink-0 hidden sm:block" />
+                  <span className="text-4xl sm:text-5xl font-black tracking-tighter text-white tabular-nums">
+                    {formatPrice(companySpend.totalCents, companySpend.currency)}
+                  </span>
+                </div>
+                <p className="mt-2 text-[10px] text-white/70 font-bold">
+                  {t('phoneNumberPanel.hero.spendBreakdown', {
+                    paid: companySpend.paidCount,
+                    trial: companySpend.trialCount,
+                  })}
+                </p>
               </div>
-              <div className="mt-3 flex items-center gap-2 text-[11px] text-white/70">
-                <Sparkles size={12} className="text-yellow-200" />
-                <span>{t('phoneNumberPanel.hero.footer')}</span>
-              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-[11px] text-white/70">
+              <Sparkles size={12} className="text-yellow-200" />
+              <span>{t('phoneNumberPanel.hero.footer')}</span>
             </div>
           </div>
         </div>
@@ -898,6 +976,143 @@ export function PhoneNumberPanel() {
 
           {phoneNumbers.length > 0 && (
             <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative sm:w-72 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsGigFilterOpen((open) => !open)}
+                  aria-expanded={isGigFilterOpen}
+                  aria-haspopup="listbox"
+                  aria-label={t('phoneNumberPanel.myNumbers.filters.gigLabel')}
+                  className={`w-full px-4 py-2.5 bg-indigo-50/40 border rounded-xl font-bold text-sm text-slate-900 transition-all flex items-center justify-between gap-2 ${
+                    isGigFilterOpen
+                      ? 'border-indigo-500 bg-white ring-2 ring-indigo-500/20'
+                      : 'border-indigo-100 hover:border-indigo-300 hover:bg-white'
+                  }`}
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
+                      <Briefcase size={13} />
+                    </span>
+                    <span className="truncate text-left">{selectedGigFilterLabel}</span>
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className={`shrink-0 text-indigo-400 transition-transform duration-200 ${
+                      isGigFilterOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {isGigFilterOpen && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="close"
+                      className="fixed inset-0 z-40 cursor-default"
+                      onClick={() => setIsGigFilterOpen(false)}
+                    />
+                    <div
+                      role="listbox"
+                      className="absolute z-50 top-full left-0 right-0 mt-2 overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-[0_20px_50px_-12px_rgba(79,70,229,0.25)] animate-in fade-in slide-in-from-top-1 duration-200"
+                    >
+                      <div className="px-3 py-2 border-b border-indigo-50 bg-gradient-to-r from-indigo-50/80 to-violet-50/80">
+                        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-indigo-600">
+                          {t('phoneNumberPanel.myNumbers.filters.gigLabel')}
+                        </span>
+                      </div>
+                      <div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={!myNumbersGigFilter}
+                          onClick={() => {
+                            setMyNumbersGigFilter('');
+                            setIsGigFilterOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-all ${
+                            !myNumbersGigFilter
+                              ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
+                              : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-700'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span
+                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                                !myNumbersGigFilter
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                              }`}
+                            >
+                              <Radio size={13} />
+                            </span>
+                            <span className="text-[13px] font-bold truncate">
+                              {t('phoneNumberPanel.myNumbers.filters.allGigs')}
+                            </span>
+                          </span>
+                          <span
+                            className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                              !myNumbersGigFilter
+                                ? 'bg-white/20 text-white'
+                                : 'bg-slate-100 text-slate-500'
+                            }`}
+                          >
+                            {phoneNumbers.length}
+                          </span>
+                        </button>
+
+                        {gigsAndReps.map((g) => {
+                          const isActive = myNumbersGigFilter === g.gigId;
+                          const lineCount = linesCountByGig[g.gigId] || 0;
+                          return (
+                            <button
+                              key={g.gigId}
+                              type="button"
+                              role="option"
+                              aria-selected={isActive}
+                              onClick={() => {
+                                setMyNumbersGigFilter(g.gigId);
+                                setIsGigFilterOpen(false);
+                              }}
+                              className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-all ${
+                                isActive
+                                  ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
+                                  : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-700'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                                    isActive
+                                      ? 'bg-white/20 text-white'
+                                      : 'bg-violet-50 text-violet-600 border border-violet-100'
+                                  }`}
+                                >
+                                  <Briefcase size={13} />
+                                </span>
+                                <span className="text-[13px] font-bold truncate">{g.title}</span>
+                              </span>
+                              <span className="flex items-center gap-1.5 shrink-0">
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                                    isActive
+                                      ? 'bg-white/20 text-white'
+                                      : lineCount > 0
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                        : 'bg-slate-100 text-slate-400'
+                                  }`}
+                                >
+                                  {t('phoneNumberPanel.myNumbers.filters.linesCount', { count: lineCount })}
+                                </span>
+                                {isActive && <Check size={14} className="text-white" />}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
               <div className="relative flex-1 min-w-0">
                 <Search
                   size={16}
@@ -910,21 +1125,6 @@ export function PhoneNumberPanel() {
                   placeholder={t('phoneNumberPanel.myNumbers.filters.searchPlaceholder')}
                   className="w-full pl-10 pr-4 py-2.5 bg-indigo-50/40 border border-indigo-100 rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
                 />
-              </div>
-              <div className="sm:w-64 shrink-0">
-                <select
-                  value={myNumbersGigFilter}
-                  onChange={(e) => setMyNumbersGigFilter(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-indigo-50/40 border border-indigo-100 rounded-xl font-bold text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
-                  aria-label={t('phoneNumberPanel.myNumbers.filters.gigLabel')}
-                >
-                  <option value="">{t('phoneNumberPanel.myNumbers.filters.allGigs')}</option>
-                  {gigsAndReps.map((g) => (
-                    <option key={g.gigId} value={g.gigId}>
-                      {g.title}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
           )}
@@ -983,9 +1183,15 @@ export function PhoneNumberPanel() {
                             : <span className="text-slate-400 italic">{t('phoneNumberPanel.myNumbers.table.unassigned')}</span>}
                         </td>
                         <td className="py-4 px-4 font-black text-slate-900 tabular-nums">
-                          {typeof num.price === 'number' && num.price > 0
-                            ? formatPrice(Math.round(num.price * 100), num.currency || 'EUR')
-                            : <span className="text-slate-400 italic font-normal">—</span>}
+                          {num.isTrial ? (
+                            <span className="px-2 py-0.5 rounded-lg bg-cyan-50 text-cyan-700 border border-cyan-100 text-[10px] font-black uppercase">
+                              {t('phoneNumberPanel.myNumbers.table.freeTrial')}
+                            </span>
+                          ) : typeof num.price === 'number' && num.price > 0 ? (
+                            formatPrice(Math.round(num.price * 100), num.currency || 'EUR')
+                          ) : (
+                            <span className="text-slate-400 italic font-normal">—</span>
+                          )}
                         </td>
                         <td className="py-4 px-4">
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border border-emerald-100 font-black text-[9px] uppercase tracking-wider">
@@ -1000,6 +1206,25 @@ export function PhoneNumberPanel() {
                     );
                   })}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-indigo-100 bg-indigo-50/30">
+                    <td colSpan={2} className="py-3 px-4 text-[10px] font-black uppercase tracking-wider text-indigo-700">
+                      {hasActiveFilters
+                        ? t('phoneNumberPanel.myNumbers.table.filteredTotalLabel')
+                        : t('phoneNumberPanel.myNumbers.table.companyTotalLabel')}
+                    </td>
+                    <td className="py-3 px-4 font-black text-indigo-900 tabular-nums text-sm">
+                      {formatPrice(
+                        hasActiveFilters ? filteredSpend.totalCents : companySpend.totalCents,
+                        hasActiveFilters ? filteredSpend.currency : companySpend.currency
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-[10px] font-bold text-indigo-500">
+                      {(hasActiveFilters ? filteredSpend : companySpend).paidCount}{' '}
+                      {t('phoneNumberPanel.myNumbers.table.paidLinesShort')}
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
