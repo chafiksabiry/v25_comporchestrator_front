@@ -12,6 +12,17 @@ import {
   Users,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { getActiveAgentsForCompany } from '../../api/matching';
+
+const buildParticipantCountByGig = (activeAgents: any[]): Record<string, number> => {
+  const counts: Record<string, number> = {};
+  (Array.isArray(activeAgents) ? activeAgents : []).forEach((record: any) => {
+    const gigId = String(record?.gigId?._id || record?.gigId || record?.gig?._id || '');
+    if (!gigId) return;
+    counts[gigId] = (counts[gigId] || 0) + 1;
+  });
+  return counts;
+};
 
 interface Gig {
   _id: string;
@@ -163,7 +174,21 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
   const [error, setError] = useState<string | null>(null);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const [participantsModalGig, setParticipantsModalGig] = useState<Gig | null>(null);
+  const [participantCountByGig, setParticipantCountByGig] = useState<Record<string, number>>({});
   const companyId = Cookies.get('companyId');
+
+  const refreshParticipantCounts = React.useCallback(async () => {
+    if (!companyId) {
+      setParticipantCountByGig({});
+      return;
+    }
+    try {
+      const activeAgents = await getActiveAgentsForCompany(companyId);
+      setParticipantCountByGig(buildParticipantCountByGig(activeAgents));
+    } catch (err) {
+      console.error('Error fetching participant counts:', err);
+    }
+  }, [companyId]);
 
   useEffect(() => {
     const fetchGigs = async () => {
@@ -185,7 +210,8 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
     };
 
     fetchGigs();
-  }, [companyId, refreshKey]);
+    void refreshParticipantCounts();
+  }, [companyId, refreshKey, refreshParticipantCounts]);
 
   // Pending gigs are surfaced by the shared `GigSetupChecklist` widget below
   // (per-gig API probing + Continue buttons). Here we only need to know if a
@@ -420,6 +446,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
             {gigs.map((gig, index) => {
               const statusColors = getStatusColor(gig.status);
               const rowWarn = shouldWarnForGig(gig);
+              const participantCount = participantCountByGig[gig._id] ?? 0;
 
               return (
                 <div
@@ -519,10 +546,13 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
                       type="button"
                       className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 shadow-sm transition-all duration-300 hover:border-indigo-300 hover:bg-indigo-50 hover:scale-105 active:scale-95"
                       onClick={(e) => handleOpenParticipants(e, gig)}
-                      title={t('gigDetails.participantsBtn')}
+                      title={t('gigDetails.participantsModal.count', { count: participantCount })}
                     >
                       <Users className="h-3.5 w-3.5" />
                       {t('gigDetails.participantsBtn')}
+                      <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-100 px-1.5 py-0.5 text-[9px] font-black tabular-nums text-indigo-800">
+                        {participantCount}
+                      </span>
                     </button>
                     <button
                       className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-md hover:shadow-lg hover:shadow-purple-500/10 hover:scale-105 active:scale-95 hover:from-purple-700 hover:to-indigo-700 transition-all duration-300"
@@ -559,7 +589,10 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
           gigId={participantsModalGig._id}
           gigTitle={participantsModalGig.title}
           companyId={companyId}
-          onClose={() => setParticipantsModalGig(null)}
+          onClose={() => {
+            setParticipantsModalGig(null);
+            void refreshParticipantCounts();
+          }}
         />
       )}
 
