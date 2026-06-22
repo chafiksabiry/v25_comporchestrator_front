@@ -56,6 +56,7 @@ type TrainingParticipantRow = {
   email: string;
   gigTitle: string;
   gigId: string;
+  journeyId?: string;
   progress: number;
   status: 'not_started' | 'in_progress' | 'completed';
   journeyTitle?: string;
@@ -558,6 +559,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [companyGigs, setCompanyGigs] = useState<any[]>([]);
   const [filterGigId, setFilterGigId] = useState<string>('all');
   const [pageTab, setPageTab] = useState<FormationPageTab>('courses');
+  const [focusedParticipantId, setFocusedParticipantId] = useState<string | null>(null);
   const [participants, setParticipants] = useState<TrainingParticipantRow[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [journeyProgressStats, setJourneyProgressStats] = useState<Map<string, JourneyParticipantStats>>(
@@ -1187,6 +1189,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             email: agent?.personalInfo?.email || agent?.email || apiRow?.email || '',
             gigTitle: gig?.title || t('repOnboarding.participants.noGig'),
             gigId,
+            journeyId: linkedJourney ? extractMongoId(linkedJourney._id || linkedJourney.id) : undefined,
             progress: apiRow?.progress ?? 0,
             status: apiRow?.status ?? 'not_started',
             journeyTitle:
@@ -1230,6 +1233,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             email: agent?.personalInfo?.email || agent?.email || '',
             gigTitle: gig?.title || t('repOnboarding.participants.noGig'),
             gigId,
+            journeyId: linkedJourney ? extractMongoId(linkedJourney._id || linkedJourney.id) : undefined,
             progress: progressData.progress,
             status: progressData.status,
             journeyTitle:
@@ -1353,6 +1357,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       trainingCount: scopedTrainings.length,
     };
   }, [participants, trainings, statsJourneyId, resolveJourneyGigId, t]);
+
+  const handleParticipantRowClick = useCallback((participant: TrainingParticipantRow) => {
+    setFocusedParticipantId(participant.id);
+    setStatsJourneyId(participant.journeyId || 'all');
+    setPageTab('tracking');
+  }, []);
 
   const normalizeText = (value: unknown): string =>
     String(value || '')
@@ -2149,11 +2159,34 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
                         {participants.map((participant) => (
-                          <tr key={participant.id} className="transition-colors hover:bg-harx-50/40">
+                          <tr
+                            key={participant.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleParticipantRowClick(participant)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                handleParticipantRowClick(participant);
+                              }
+                            }}
+                            className={`group cursor-pointer transition-colors hover:bg-harx-50/70 focus-visible:bg-harx-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-harx-400/40 ${
+                              focusedParticipantId === participant.id ? 'bg-harx-50/50' : ''
+                            }`}
+                            title={t('repOnboarding.participants.viewTracking')}
+                          >
                             <td className="px-4 py-3.5">
-                              <div className="font-semibold text-slate-900">{participant.name}</div>
+                              <div className="font-semibold text-slate-900 transition-colors group-hover:text-harx-700">
+                                {participant.name}
+                              </div>
                               {participant.email ? (
-                                <div className="text-xs text-slate-500">{participant.email}</div>
+                                <a
+                                  href={`mailto:${participant.email}`}
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="text-xs text-slate-500 transition-colors hover:text-harx-600 hover:underline"
+                                >
+                                  {participant.email}
+                                </a>
                               ) : null}
                             </td>
                             <td className="px-4 py-3.5 text-sm text-slate-700">{participant.gigTitle}</td>
@@ -2170,19 +2203,22 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               </div>
                             </td>
                             <td className="px-4 py-3.5">
-                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                participant.status === 'completed'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : participant.status === 'in_progress'
-                                  ? 'bg-sky-100 text-sky-800'
-                                  : 'bg-slate-100 text-slate-700'
-                              }`}>
-                                {participant.status === 'completed'
-                                  ? t('repOnboarding.participants.statusCompleted')
-                                  : participant.status === 'in_progress'
-                                  ? t('repOnboarding.participants.statusInProgress')
-                                  : t('repOnboarding.participants.statusNotStarted')}
-                              </span>
+                              <div className="flex items-center justify-between gap-2">
+                                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                  participant.status === 'completed'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : participant.status === 'in_progress'
+                                    ? 'bg-sky-100 text-sky-800'
+                                    : 'bg-slate-100 text-slate-700'
+                                }`}>
+                                  {participant.status === 'completed'
+                                    ? t('repOnboarding.participants.statusCompleted')
+                                    : participant.status === 'in_progress'
+                                    ? t('repOnboarding.participants.statusInProgress')
+                                    : t('repOnboarding.participants.statusNotStarted')}
+                                </span>
+                                <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-harx-500" aria-hidden />
+                              </div>
                             </td>
                           </tr>
                         ))}
