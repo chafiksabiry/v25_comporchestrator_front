@@ -1755,7 +1755,10 @@
       "allResponded": "All invitations have been responded to.",
       "cancelInvitation": "Cancel invitation",
       "cancelling": "Cancelling...",
-      "cancelConfirm": "Cancel the invitation sent to {{name}}? The invitation will be archived.",
+      "cancelModalTitle": "Cancel invitation",
+      "cancelModalConfirm": "Archive invitation",
+      "cancelModalDismiss": "Go back",
+      "cancelConfirm": "Archive the invitation sent to {{name}}? The record will be kept with archived status.",
       "cancelSuccess": "{{name}}'s invitation has been archived.",
       "cancelError": "Unable to cancel the invitation."
     },

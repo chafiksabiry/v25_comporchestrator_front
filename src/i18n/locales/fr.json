@@ -1755,7 +1755,10 @@
       "allResponded": "Toutes les invitations ont reçu une réponse.",
       "cancelInvitation": "Annuler l'invitation",
       "cancelling": "Annulation...",
-      "cancelConfirm": "Annuler l'invitation envoyée à {{name}} ? L'invitation sera archivée.",
+      "cancelModalTitle": "Annuler l'invitation",
+      "cancelModalConfirm": "Archiver l'invitation",
+      "cancelModalDismiss": "Retour",
+      "cancelConfirm": "Voulez-vous archiver l'invitation envoyée à {{name}} ? Le document sera conservé avec le statut archivé.",
       "cancelSuccess": "Invitation de {{name}} archivée.",
       "cancelError": "Impossible d'annuler l'invitation."
     },
