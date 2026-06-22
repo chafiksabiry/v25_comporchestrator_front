@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
   Phone,
@@ -31,6 +32,8 @@ import {
   Sparkles,
   Plus,
   ChevronDown,
+  CreditCard,
+  Hash,
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -51,7 +54,9 @@ import type { TFunction } from 'i18next';
 import {
   billedMinutesFromSeconds,
   formatBilledMinutesFromSeconds,
+  formatWalletMinutesBalance,
 } from '../../../utils/billingMinutes';
+import { computeMinutesPurchaseCents } from '../../../utils/minutesPricing';
 // Analytics endpoints live on v25_dash_calls_backend. We deliberately
 // ignore VITE_API_URL_CALL (which targets the CRUD dashboard backend)
 // so swapping the CRUD provider never breaks the charts.
@@ -208,6 +213,71 @@ function outcomeTag(
 
 type TabId = 'overview' | 'leads' | 'calls' | 'agents' | 'wallet';
 
+type OverviewResourceMovement = {
+  id: string;
+  kind: 'deposit' | 'rep';
+  label: string;
+  amount: number;
+  date: string;
+};
+
+type OverviewResourcesSnapshot = {
+  loading: boolean;
+  minutes: {
+    balance: number;
+    purchased: number;
+    consumedSeconds: number;
+    investedCents: number;
+  } | null;
+  subscription: {
+    planName: string;
+    status: string;
+  } | null;
+  phoneLines: {
+    count: number;
+    trialCount: number;
+    paidCount: number;
+    totalSpentCents: number;
+    currency: string;
+  } | null;
+  movements: OverviewResourceMovement[];
+};
+
+const EMPTY_OVERVIEW_RESOURCES: OverviewResourcesSnapshot = {
+  loading: true,
+  minutes: null,
+  subscription: null,
+  phoneLines: null,
+  movements: [],
+};
+
+function summarizePhoneLinesSpend(
+  nums: Array<{ isTrial?: boolean; price?: number; currency?: string }>
+) {
+  let totalCents = 0;
+  let currency = 'EUR';
+  let paidCount = 0;
+  let trialCount = 0;
+  nums.forEach((num) => {
+    if (num.isTrial) {
+      trialCount += 1;
+      return;
+    }
+    if (typeof num.price === 'number' && num.price > 0) {
+      totalCents += Math.round(num.price * 100);
+      paidCount += 1;
+      if (num.currency) currency = num.currency;
+    }
+  });
+  return { totalCents, currency, paidCount, trialCount, count: nums.length };
+}
+
+function repDisplayName(rep?: { firstName?: string; lastName?: string; email?: string } | null): string {
+  if (!rep) return '';
+  const full = `${rep.firstName || ''} ${rep.lastName || ''}`.trim();
+  return full || rep.email || '';
+}
+
 interface StatusBucket {
   key: string;
   label: string;
@@ -325,6 +395,7 @@ export default function OperationsDashboard() {
   //  generic translated sub-text.
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [walletDaysLeft, setWalletDaysLeft] = useState<number | null>(null);
+  const [overviewResources, setOverviewResources] = useState<OverviewResourcesSnapshot>(EMPTY_OVERVIEW_RESOURCES);
 
   useEffect(() => {
     const companyId = Cookies.get('companyId');
@@ -392,6 +463,151 @@ export default function OperationsDashboard() {
       if (detail && typeof detail.balance === 'number') {
         setWalletBalance(detail.balance);
       }
+    };
+    window.addEventListener('balanceUpdated', handleBalanceUpdated);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('balanceUpdated', handleBalanceUpdated);
+    };
+  }, []);
+
+  // ----- Billing resources (minutes, subscription, lines, wallet movements) -----
+  useEffect(() => {
+    const companyId = Cookies.get('companyId');
+    if (!companyId) {
+      setOverviewResources({ ...EMPTY_OVERVIEW_RESOURCES, loading: false });
+      return;
+    }
+
+    const apiBaseUrl =
+      (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3003/api';
+    const backUrl =
+      import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL ||
+      apiBaseUrl.replace(/\/api\/?$/, '');
+
+    let cancelled = false;
+
+    const fetchResources = async () => {
+      setOverviewResources((prev) => ({ ...prev, loading: true }));
+      try {
+        const [minsRes, subRes, phoneRes, entriesRes, repTxRes] = await Promise.all([
+          fetch(`${apiBaseUrl}/minutes-company/${companyId}`).catch(() => null),
+          fetch(`${backUrl}/api/subscriptions/current/${companyId}`).catch(() => null),
+          fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
+          fetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
+          fetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`).catch(() => null),
+        ]);
+
+        if (cancelled) return;
+
+        let minutes: OverviewResourcesSnapshot['minutes'] = null;
+        if (minsRes?.ok) {
+          const json = await minsRes.json();
+          const data = json?.data ?? json;
+          if (data) {
+            const purchased = typeof data.purchasedMinutes === 'number' ? data.purchasedMinutes : 0;
+            minutes = {
+              balance: typeof data.minutes === 'number' ? data.minutes : 0,
+              purchased,
+              consumedSeconds: typeof data.consumedSeconds === 'number' ? data.consumedSeconds : 0,
+              investedCents: computeMinutesPurchaseCents(purchased),
+            };
+          }
+        }
+
+        let subscription: OverviewResourcesSnapshot['subscription'] = null;
+        if (subRes?.ok) {
+          const json = await subRes.json();
+          const subData = json?.data;
+          if (
+            subData &&
+            (subData.status === 'active' || subData.status === 'trialing') &&
+            subData.planId?.name
+          ) {
+            subscription = {
+              planName: subData.planId.name,
+              status: subData.status,
+            };
+          }
+        }
+
+        let phoneLines: OverviewResourcesSnapshot['phoneLines'] = null;
+        if (phoneRes?.ok) {
+          const phoneData = await phoneRes.json();
+          const list = (Array.isArray(phoneData) ? phoneData : []).filter(
+            (n: { companyId?: string }) => n.companyId === companyId
+          );
+          const spend = summarizePhoneLinesSpend(list);
+          phoneLines = {
+            count: spend.count,
+            trialCount: spend.trialCount,
+            paidCount: spend.paidCount,
+            totalSpentCents: spend.totalCents,
+            currency: spend.currency,
+          };
+        }
+
+        const movements: OverviewResourceMovement[] = [];
+        if (entriesRes?.ok) {
+          const json = await entriesRes.json();
+          const entries: WalletEntryListItem[] = Array.isArray(json?.data)
+            ? json.data
+            : Array.isArray(json)
+              ? json
+              : [];
+          entries
+            .filter((e) => e.direction === 'credit' && e.status !== 'failed')
+            .forEach((e) => {
+              movements.push({
+                id: `wallet-${e._id}`,
+                kind: 'deposit',
+                label: e.description?.trim() || 'deposit',
+                amount: Math.abs(Number(e.amount) || 0),
+                date: e.createdAt || '',
+              });
+            });
+        }
+        if (repTxRes?.ok) {
+          const json = await repTxRes.json();
+          const repTxs: RepTransactionRow[] = Array.isArray(json?.data) ? json.data : [];
+          repTxs.forEach((tx) => {
+            const repName = repDisplayName(tx.rep);
+            movements.push({
+              id: `rep-${tx._id}`,
+              kind: 'rep',
+              label: repName || tx.description || 'rep',
+              amount: -Math.abs(Number(tx.amount) || 0),
+              date: tx.call?.startTime || tx.createdAt || '',
+            });
+          });
+        }
+
+        movements.sort((a, b) => {
+          const da = a.date ? new Date(a.date).getTime() : 0;
+          const db = b.date ? new Date(b.date).getTime() : 0;
+          return db - da;
+        });
+
+        setOverviewResources({
+          loading: false,
+          minutes,
+          subscription,
+          phoneLines,
+          movements: movements.slice(0, 6),
+        });
+      } catch (err) {
+        console.warn('Failed to fetch overview billing resources', err);
+        if (!cancelled) {
+          setOverviewResources({ ...EMPTY_OVERVIEW_RESOURCES, loading: false });
+        }
+      }
+    };
+
+    fetchResources();
+
+    const handleBalanceUpdated = () => {
+      void fetchResources();
     };
     window.addEventListener('balanceUpdated', handleBalanceUpdated);
 
@@ -1150,10 +1366,12 @@ export default function OperationsDashboard() {
           series7d={series7dChart.length ? series7dChart : null}
           walletBalance={walletBalance}
           walletDaysLeft={walletDaysLeft}
+          overviewResources={overviewResources}
           repsMonth={repsMonth}
           fmtDuration={fmtDuration}
           onSeeLeads={() => setTab('leads')}
           onSeeAgents={() => setTab('agents')}
+          onSeeWallet={() => setTab('wallet')}
         />
       )}
     </div>
@@ -2296,10 +2514,12 @@ function OverviewView({
   series7d,
   walletBalance,
   walletDaysLeft,
+  overviewResources,
   repsMonth,
   fmtDuration,
   onSeeLeads,
   onSeeAgents,
+  onSeeWallet,
 }: {
   stats: OverviewKpiStats;
   leadStats: OverviewLeadStatsFull | null;
@@ -2312,10 +2532,12 @@ function OverviewView({
   series7d: Array<{ date: string; total: number; transactions: number }> | null;
   walletBalance: number | null;
   walletDaysLeft: number | null;
+  overviewResources: OverviewResourcesSnapshot;
   repsMonth: AnalyticsRep[] | null;
   fmtDuration: (sec: number) => string;
   onSeeLeads: () => void;
   onSeeAgents: () => void;
+  onSeeWallet: () => void;
 }) {
   const { t } = useTranslation();
   const [selectedKpi, setSelectedKpi] = useState<OverviewKpiId | null>(null);
@@ -2667,9 +2889,280 @@ function OverviewView({
         )}
       </section>
 
+      <OverviewResourcesSection
+        walletBalance={walletBalance}
+        walletDaysLeft={walletDaysLeft}
+        resources={overviewResources}
+        onSeeWallet={onSeeWallet}
+      />
+
       {/* ---------- Performance 7 jours ---------- */}
       <Performance7Days series={series7d} />
     </>
+  );
+}
+
+function OverviewResourcesSection({
+  walletBalance,
+  walletDaysLeft,
+  resources,
+  onSeeWallet,
+}: {
+  walletBalance: number | null;
+  walletDaysLeft: number | null;
+  resources: OverviewResourcesSnapshot;
+  onSeeWallet: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+
+  const fmtMoney = (cents: number, currency = 'EUR') => {
+    const value = cents / 100;
+    const suffix = currency === 'EUR' ? '€' : currency;
+    return `${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${suffix}`;
+  };
+
+  const fmtWallet = (n: number | null) =>
+    n === null
+      ? '—'
+      : `€${n.toLocaleString('fr-FR', {
+          minimumFractionDigits: n % 1 === 0 ? 0 : 2,
+          maximumFractionDigits: 2,
+        })}`;
+
+  const fmtMovementDate = (iso?: string) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString(i18n.language || 'fr-FR', { day: '2-digit', month: 'short' });
+  };
+
+  const fmtSignedMoney = (amount: number) => {
+    const sign = amount > 0 ? '+' : amount < 0 ? '−' : '';
+    return `${sign}${Math.abs(amount).toLocaleString('fr-FR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} €`;
+  };
+
+  const walletSub =
+    walletDaysLeft !== null && Number.isFinite(walletDaysLeft)
+      ? t('opsDashboard.overview.kpi.walletSubDynamic', {
+          days: walletDaysLeft.toFixed(1),
+          defaultValue: '{{days}} jours restants',
+        })
+      : t('opsDashboard.overview.kpi.walletSubFallback', 'Solde disponible');
+
+  const depositLabel = (raw: string) =>
+    t(`opsDashboard.wallet.txTypes.${raw}`, {
+      defaultValue: raw.charAt(0).toUpperCase() + raw.slice(1),
+    });
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="flex items-center gap-2 text-sm font-black text-slate-900">
+            <Sparkles size={14} className="text-harx-500" />
+            {t('opsDashboard.overview.resources.title', 'Ressources & facturation')}
+          </h3>
+          <p className="mt-1 text-[11px] font-medium text-slate-500">
+            {t(
+              'opsDashboard.overview.resources.subtitle',
+              'Minutes, abonnement, wallet et lignes téléphoniques en un coup d\'œil.'
+            )}
+          </p>
+        </div>
+      </header>
+
+      {resources.loading ? (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((n) => (
+            <div key={n} className="h-28 rounded-2xl border border-slate-100 bg-slate-50 animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-indigo-50/50 p-4">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-blue-700">
+                  <Clock size={12} />
+                  {t('opsDashboard.overview.resources.minutes', 'Minutes')}
+                </span>
+                <Link
+                  to="/dashboard/minutes"
+                  className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-600 hover:text-blue-800"
+                >
+                  {t('opsDashboard.overview.detail', 'Détail')}
+                  <ArrowUpRight size={11} />
+                </Link>
+              </div>
+              <p className="text-2xl font-black text-slate-900 tabular-nums">
+                {resources.minutes
+                  ? formatWalletMinutesBalance(resources.minutes.balance)
+                  : '—'}
+              </p>
+              <p className="mt-1 text-[11px] font-bold text-slate-500">
+                {t('opsDashboard.overview.resources.minutesInvested', 'Investi')}:{' '}
+                <span className="text-slate-800 tabular-nums">
+                  {resources.minutes ? fmtMoney(resources.minutes.investedCents) : '—'}
+                </span>
+              </p>
+              <p className="text-[10px] font-medium text-slate-400 mt-0.5">
+                {t('opsDashboard.overview.resources.minutesConsumed', 'Consommé')}:{' '}
+                {resources.minutes
+                  ? formatBilledMinutesFromSeconds(resources.minutes.consumedSeconds)
+                  : '—'}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/80 to-fuchsia-50/40 p-4">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-violet-700">
+                  <CreditCard size={12} />
+                  {t('opsDashboard.overview.resources.subscription', 'Abonnement')}
+                </span>
+                <Link
+                  to="/dashboard/subscription"
+                  className="inline-flex items-center gap-0.5 text-[10px] font-bold text-violet-600 hover:text-violet-800"
+                >
+                  {t('opsDashboard.overview.detail', 'Détail')}
+                  <ArrowUpRight size={11} />
+                </Link>
+              </div>
+              {resources.subscription ? (
+                <>
+                  <p className="text-lg font-black text-slate-900 truncate">{resources.subscription.planName}</p>
+                  <span className="inline-flex mt-2 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] font-black uppercase tracking-wider">
+                    {resources.subscription.status}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-black text-slate-500">
+                    {t('opsDashboard.overview.resources.noSubscription', 'Aucun plan actif')}
+                  </p>
+                  <p className="text-[10px] font-medium text-slate-400 mt-1">
+                    {t('opsDashboard.overview.resources.noSubscriptionHint', 'Choisissez un plan pour débloquer toutes les fonctionnalités.')}
+                  </p>
+                </>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 to-teal-50/40 p-4">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-700">
+                  <Wallet size={12} />
+                  {t('opsDashboard.overview.resources.wallet', 'Wallet')}
+                </span>
+                <button
+                  type="button"
+                  onClick={onSeeWallet}
+                  className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 hover:text-emerald-900"
+                >
+                  {t('opsDashboard.overview.detail', 'Détail')}
+                  <ArrowUpRight size={11} />
+                </button>
+              </div>
+              <p className="text-2xl font-black text-slate-900 tabular-nums">{fmtWallet(walletBalance)}</p>
+              <p className="mt-1 text-[11px] font-bold text-slate-500">{walletSub}</p>
+              <p className="text-[10px] font-medium text-slate-400 mt-0.5">
+                {t('opsDashboard.overview.resources.walletHint', 'Dépôts entreprise & commissions reps')}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-slate-50/50 p-4">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-700">
+                  <Hash size={12} />
+                  {t('opsDashboard.overview.resources.lines', 'Lignes tél.')}
+                </span>
+                <Link
+                  to="/dashboard/telephony"
+                  className="inline-flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 hover:text-indigo-800"
+                >
+                  {t('opsDashboard.overview.detail', 'Détail')}
+                  <ArrowUpRight size={11} />
+                </Link>
+              </div>
+              <p className="text-2xl font-black text-slate-900 tabular-nums">
+                {resources.phoneLines?.count ?? 0}
+              </p>
+              <p className="mt-1 text-[11px] font-bold text-slate-500">
+                {t('opsDashboard.overview.resources.linesInvested', 'Investi')}:{' '}
+                <span className="text-slate-800 tabular-nums">
+                  {resources.phoneLines ? fmtMoney(resources.phoneLines.totalSpentCents, resources.phoneLines.currency) : '—'}
+                </span>
+              </p>
+              <p className="text-[10px] font-medium text-slate-400 mt-0.5">
+                {resources.phoneLines
+                  ? t('opsDashboard.overview.resources.linesBreakdown', {
+                      paid: resources.phoneLines.paidCount,
+                      trial: resources.phoneLines.trialCount,
+                      defaultValue: '{{paid}} payante(s) · {{trial}} essai',
+                    })
+                  : '—'}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/40 p-4">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                {t('opsDashboard.overview.resources.recentMovements', 'Mouvements récents')}
+              </h4>
+              <button
+                type="button"
+                onClick={onSeeWallet}
+                className="text-[10px] font-bold text-slate-500 hover:text-slate-800"
+              >
+                {t('opsDashboard.overview.resources.seeAllWallet', 'Voir tout le wallet')}
+              </button>
+            </div>
+            {resources.movements.length === 0 ? (
+              <p className="py-4 text-center text-[11px] font-bold text-slate-400">
+                {t('opsDashboard.wallet.txEmpty', 'Aucune transaction pour le moment')}
+              </p>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {resources.movements.map((m) => (
+                  <li key={m.id} className="flex items-center justify-between gap-3 py-2.5 text-[11px]">
+                    <div className="min-w-0 flex items-center gap-2">
+                      <span
+                        className={`shrink-0 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                          m.kind === 'deposit'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-rose-50 text-rose-700'
+                        }`}
+                      >
+                        {m.kind === 'deposit'
+                          ? t('opsDashboard.overview.resources.deposit', 'Dépôt')
+                          : t('opsDashboard.overview.resources.repTx', 'Rep')}
+                      </span>
+                      <span className="truncate font-bold text-slate-700">
+                        {m.kind === 'deposit' ? depositLabel(m.label) : m.label}
+                      </span>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-3 tabular-nums">
+                      <span
+                        className={`font-black ${
+                          m.amount >= 0 ? 'text-emerald-700' : 'text-rose-600'
+                        }`}
+                      >
+                        {fmtSignedMoney(m.amount)}
+                      </span>
+                      <span className="text-slate-400 font-medium w-14 text-right">
+                        {fmtMovementDate(m.date)}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 

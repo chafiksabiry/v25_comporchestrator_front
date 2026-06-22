@@ -348,6 +348,25 @@
         "voicemail": "Msg vocale",
         "unreachable": "Injoignable",
         "wrongNumber": "Faux numéro"
+      },
+      "resources": {
+        "title": "Ressources & facturation",
+        "subtitle": "Minutes, abonnement, wallet et lignes téléphoniques en un coup d'œil.",
+        "minutes": "Minutes",
+        "minutesInvested": "Investi",
+        "minutesConsumed": "Consommé",
+        "subscription": "Abonnement",
+        "noSubscription": "Aucun plan actif",
+        "noSubscriptionHint": "Choisissez un plan pour débloquer toutes les fonctionnalités.",
+        "wallet": "Wallet",
+        "walletHint": "Dépôts entreprise & commissions reps",
+        "lines": "Lignes tél.",
+        "linesInvested": "Investi",
+        "linesBreakdown": "{{paid}} payante(s) · {{trial}} essai",
+        "recentMovements": "Mouvements récents",
+        "seeAllWallet": "Voir tout le wallet",
+        "deposit": "Dépôt",
+        "repTx": "Rep"
       }
     },
     "statusesTitle": "Statuts d'appels",
