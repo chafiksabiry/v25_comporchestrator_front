@@ -2210,36 +2210,42 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         {participants.map((participant) => (
                           <tr
                             key={`${participant.repId}:${participant.gigId}`}
-                            className={`transition-colors ${
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => void handleParticipantGigClick(participant)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                void handleParticipantGigClick(participant);
+                              }
+                            }}
+                            className={`group cursor-pointer transition-colors hover:bg-harx-50/70 focus-visible:bg-harx-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-harx-400/40 ${
                               participantModal?.repId === participant.repId &&
                               participantModal?.gigId === participant.gigId
                                 ? 'bg-harx-50/50'
                                 : ''
                             }`}
+                            title={t('repOnboarding.participants.viewTracking')}
                           >
                             <td className="px-4 py-3.5">
-                              <div className="font-semibold text-slate-900">{participant.name}</div>
+                              <div className="font-semibold text-slate-900 transition-colors group-hover:text-harx-700">
+                                {participant.name}
+                              </div>
                               {participant.email ? (
                                 <a
                                   href={`mailto:${participant.email}`}
+                                  onClick={(event) => event.stopPropagation()}
                                   className="text-xs text-slate-500 transition-colors hover:text-harx-600 hover:underline"
                                 >
                                   {participant.email}
                                 </a>
                               ) : null}
                             </td>
-                            <td className="px-4 py-3.5">
-                              <button
-                                type="button"
-                                onClick={() => void handleParticipantGigClick(participant)}
-                                className="group/gig inline-flex max-w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left text-sm font-semibold text-harx-700 transition-colors hover:bg-harx-50 hover:text-harx-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-400/40"
-                                title={t('repOnboarding.participants.viewTracking')}
-                              >
+                            <td className="px-4 py-3.5 text-sm font-semibold text-slate-700 transition-colors group-hover:text-harx-700">
+                              <span className="inline-flex max-w-full items-center gap-1.5">
                                 <Briefcase className="h-3.5 w-3.5 shrink-0 text-harx-500" aria-hidden />
-                                <span className="truncate underline-offset-2 group-hover/gig:underline">
-                                  {participant.gigTitle}
-                                </span>
-                              </button>
+                                <span className="truncate">{participant.gigTitle}</span>
+                              </span>
                             </td>
                             <td className="px-4 py-3.5 text-sm text-slate-700">{participant.journeyTitle || '—'}</td>
                             <td className="px-4 py-3.5">
@@ -2254,19 +2260,22 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               </div>
                             </td>
                             <td className="px-4 py-3.5">
-                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                participant.status === 'completed'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : participant.status === 'in_progress'
-                                  ? 'bg-sky-100 text-sky-800'
-                                  : 'bg-slate-100 text-slate-700'
-                              }`}>
-                                {participant.status === 'completed'
-                                  ? t('repOnboarding.participants.statusCompleted')
-                                  : participant.status === 'in_progress'
-                                  ? t('repOnboarding.participants.statusInProgress')
-                                  : t('repOnboarding.participants.statusNotStarted')}
-                              </span>
+                              <div className="flex items-center justify-between gap-2">
+                                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                  participant.status === 'completed'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : participant.status === 'in_progress'
+                                    ? 'bg-sky-100 text-sky-800'
+                                    : 'bg-slate-100 text-slate-700'
+                                }`}>
+                                  {participant.status === 'completed'
+                                    ? t('repOnboarding.participants.statusCompleted')
+                                    : participant.status === 'in_progress'
+                                    ? t('repOnboarding.participants.statusInProgress')
+                                    : t('repOnboarding.participants.statusNotStarted')}
+                                </span>
+                                <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-harx-500" aria-hidden />
+                              </div>
                             </td>
                           </tr>
                         ))}
