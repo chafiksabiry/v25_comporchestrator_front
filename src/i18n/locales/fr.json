@@ -1754,12 +1754,11 @@
       "noPending": "Aucune invitation en attente",
       "allResponded": "Toutes les invitations ont reçu une réponse.",
       "cancelInvitation": "Annuler l'invitation",
-      "cancelling": "Annulation...",
-      "cancelModalTitle": "Annuler l'invitation",
-      "cancelModalConfirm": "Archiver l'invitation",
+      "cancelling": "Suppression...",
+      "cancelModalConfirm": "Supprimer",
       "cancelModalDismiss": "Retour",
-      "cancelConfirm": "Voulez-vous archiver l'invitation envoyée à {{name}} ? Le document sera conservé avec le statut archivé.",
-      "cancelSuccess": "Invitation de {{name}} archivée.",
+      "cancelConfirm": "Voulez-vous supprimer l'invitation envoyée à {{name}} ?",
+      "cancelSuccess": "Invitation de {{name}} supprimée.",
       "cancelError": "Impossible d'annuler l'invitation."
     },
     "enrollment": {

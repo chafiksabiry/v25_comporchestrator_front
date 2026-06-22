@@ -1754,12 +1754,11 @@
       "noPending": "No pending invitations",
       "allResponded": "All invitations have been responded to.",
       "cancelInvitation": "Cancel invitation",
-      "cancelling": "Cancelling...",
-      "cancelModalTitle": "Cancel invitation",
-      "cancelModalConfirm": "Archive invitation",
+      "cancelling": "Deleting...",
+      "cancelModalConfirm": "Delete",
       "cancelModalDismiss": "Go back",
-      "cancelConfirm": "Archive the invitation sent to {{name}}? The record will be kept with archived status.",
-      "cancelSuccess": "{{name}}'s invitation has been archived.",
+      "cancelConfirm": "Do you want to delete the invitation sent to {{name}}?",
+      "cancelSuccess": "{{name}}'s invitation has been deleted.",
       "cancelError": "Unable to cancel the invitation."
     },
     "enrollment": {
