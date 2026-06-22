@@ -109,16 +109,31 @@ type LeadQuickStats = {
   converted: number;
 };
 
+type LeadStatsFilter = 'all' | 'called' | 'contacted' | 'rdv' | 'converted';
+
+type GigCallIndex = {
+  called: Set<string>;
+  contacted: Set<string>;
+  rdv: Set<string>;
+  converted: Set<string>;
+};
+
+const NOT_CONTACTED_OUTCOMES = new Set(['no_answer', 'busy', 'voicemail', 'wrong_number']);
+
 function LeadStatChip({
   label,
   value,
   icon: Icon,
   tone = 'default',
+  selected = false,
+  onClick,
 }: {
   label: string;
   value: string;
   icon: React.ComponentType<{ className?: string }>;
   tone?: 'default' | 'harx' | 'emerald' | 'violet' | 'amber';
+  selected?: boolean;
+  onClick?: () => void;
 }) {
   const tones = {
     default: 'border-slate-200/80 bg-white/80 text-slate-900',
@@ -134,15 +149,24 @@ function LeadStatChip({
     violet: 'text-violet-500',
     amber: 'text-amber-500',
   };
+  const selectedRing = selected ? 'ring-2 ring-harx-500 border-harx-300 shadow-md' : '';
+  const interactive = onClick
+    ? 'cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/40'
+    : '';
 
   return (
-    <div className={`rounded-2xl border px-3 py-2.5 shadow-sm ${tones[tone]}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full rounded-2xl border px-3 py-2.5 text-left shadow-sm ${tones[tone]} ${selectedRing} ${interactive}`}
+      aria-pressed={selected}
+    >
       <div className="mb-1 flex items-center gap-1.5">
         <Icon className={`h-3.5 w-3.5 shrink-0 ${iconTones[tone]}`} />
         <p className="truncate text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">{label}</p>
       </div>
       <p className="text-lg font-black tabular-nums leading-none">{value}</p>
-    </div>
+    </button>
   );
 }
 
@@ -387,7 +411,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [callStatusFilter, setCallStatusFilter] = useState<'all' | 'called' | 'not_called'>('all');
+  const [leadStatsFilter, setLeadStatsFilter] = useState<LeadStatsFilter>('all');
   const [callFilterGigId, setCallFilterGigId] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -400,6 +424,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
   const [gigDropdownOpen, setGigDropdownOpen] = useState(false);
   const gigDropdownRef = useRef<HTMLDivElement>(null);
+  const leadsListRef = useRef<HTMLDivElement>(null);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
   const [zohoConfig, setZohoConfig] = useState({
     clientId: '',
@@ -1511,42 +1536,84 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   };
 
-  const fetchCalledLeadIdsForGig = async (gigId: string): Promise<Set<string>> => {
+  const extractLeadIdFromCall = (call: { lead?: string | { _id?: string } }): string | null => {
+    const leadRef = call.lead;
+    const leadId =
+      typeof leadRef === 'object' && leadRef !== null
+        ? leadRef._id
+        : leadRef;
+    return leadId ? String(leadId) : null;
+  };
+
+  const fetchGigCallIndex = async (gigId: string): Promise<GigCallIndex> => {
     const callsBase = getCallsApiBase();
     const companyId = Cookies.get('companyId');
-    if (!callsBase || !companyId || !gigId) return new Set();
+    const empty: GigCallIndex = {
+      called: new Set(),
+      contacted: new Set(),
+      rdv: new Set(),
+      converted: new Set(),
+    };
+    if (!callsBase || !companyId || !gigId) return empty;
 
     try {
       const res = await fetch(`${callsBase}/calls?companyId=${companyId}&gigId=${gigId}`);
-      if (!res.ok) return new Set();
+      if (!res.ok) return empty;
       const json = await res.json();
       const calls = Array.isArray(json.data) ? json.data : [];
-      const ids = new Set<string>();
-      calls.forEach((call: { lead?: string | { _id?: string } }) => {
-        const leadRef = call.lead;
-        const leadId =
-          typeof leadRef === 'object' && leadRef !== null
-            ? leadRef._id
-            : leadRef;
-        if (leadId) ids.add(String(leadId));
+      const index: GigCallIndex = {
+        called: new Set(),
+        contacted: new Set(),
+        rdv: new Set(),
+        converted: new Set(),
+      };
+
+      calls.forEach((call: { lead?: string | { _id?: string }; outcome?: string }) => {
+        const leadId = extractLeadIdFromCall(call);
+        if (!leadId) return;
+
+        index.called.add(leadId);
+
+        const outcome = call.outcome?.toLowerCase();
+        if (outcome && !NOT_CONTACTED_OUTCOMES.has(outcome)) {
+          index.contacted.add(leadId);
+        }
+        if (outcome === 'appointment') {
+          index.rdv.add(leadId);
+        }
+        if (outcome === 'transaction') {
+          index.converted.add(leadId);
+        }
       });
-      return ids;
+
+      return index;
     } catch (err) {
-      console.error('Error fetching called lead ids:', err);
-      return new Set();
+      console.error('Error fetching gig call index:', err);
+      return empty;
     }
   };
 
-  const applyCallStatusFilter = async (items: Lead[], gigId: string, status: typeof callStatusFilter) => {
-    const calledIds = await fetchCalledLeadIdsForGig(gigId);
-    const annotated = items.map((lead) => ({
-      ...lead,
-      hasBeenCalled: calledIds.has(String(lead._id)),
-    }));
-    if (status === 'all') return annotated;
-    return annotated.filter((lead) =>
-      status === 'called' ? lead.hasBeenCalled : !lead.hasBeenCalled
-    );
+  const leadMatchesStatsFilter = (lead: Lead, filter: LeadStatsFilter, index: GigCallIndex): boolean => {
+    const leadId = String(lead._id);
+    const stage = (lead.Stage || '').toLowerCase();
+
+    switch (filter) {
+      case 'called':
+        return index.called.has(leadId);
+      case 'contacted':
+        return index.contacted.has(leadId);
+      case 'rdv':
+        return index.rdv.has(leadId) || stage.includes('appointment') || stage.includes('rdv');
+      case 'converted':
+        return index.converted.has(leadId) || stage.includes('won') || stage.includes('convert');
+      default:
+        return true;
+    }
+  };
+
+  const toggleLeadStatsFilter = (filter: LeadStatsFilter) => {
+    setLeadStatsFilter((current) => (current === filter ? 'all' : filter));
+    leadsListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const fetchLeadQuickStats = async (gigId: string) => {
@@ -1618,8 +1685,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           page: String(page),
           limit: '50',
         });
-        if (callStatusFilter !== 'all') {
-          params.set('callFilter', callStatusFilter);
+        if (leadStatsFilter !== 'all') {
+          params.set('callFilter', leadStatsFilter);
         }
         const gigForCalls = callFilterGigId || selectedGigId;
         if (gigForCalls) {
@@ -1652,9 +1719,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       let leadResults = responseData.data as Lead[];
 
-      if (searchQuery.trim()) {
-        const gigForCalls = callFilterGigId || selectedGigId;
-        leadResults = await applyCallStatusFilter(leadResults, gigForCalls, callStatusFilter);
+      const gigForCalls = callFilterGigId || selectedGigId;
+      if (gigForCalls) {
+        const callIndex = await fetchGigCallIndex(gigForCalls);
+        leadResults = leadResults.map((lead) => ({
+          ...lead,
+          hasBeenCalled: callIndex.called.has(String(lead._id)),
+        }));
+
+        if (searchQuery.trim()) {
+          leadResults = leadResults.filter((lead) =>
+            leadMatchesStatsFilter(lead, leadStatsFilter, callIndex)
+          );
+        }
       }
 
       setLeads(leadResults);
@@ -1689,9 +1766,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   useEffect(() => {
     if (selectedGigId) {
       setCallFilterGigId(selectedGigId);
+      setLeadStatsFilter('all');
       fetchLeadQuickStats(selectedGigId);
     } else {
       setLeadQuickStats(null);
+      setLeadStatsFilter('all');
     }
   }, [selectedGigId]);
 
@@ -1730,7 +1809,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         setCurrentPage(1);
       }
     }
-  }, [selectedGigId, isProcessing, callStatusFilter, callFilterGigId]);
+  }, [selectedGigId, isProcessing, leadStatsFilter, callFilterGigId]);
 
   // useEffect pour recharger les leads apr├¿s l'import Zoho
   useEffect(() => {
@@ -2829,29 +2908,39 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     value={(leadQuickStats?.total ?? totalCount).toLocaleString('fr-FR')}
                     icon={Users}
                     tone="harx"
+                    selected={leadStatsFilter === 'all'}
+                    onClick={() => toggleLeadStatsFilter('all')}
                   />
                   <LeadStatChip
                     label={t('uploadContacts.stats.called', 'Appelés')}
                     value={(leadQuickStats?.called ?? 0).toLocaleString('fr-FR')}
                     icon={PhoneCall}
+                    selected={leadStatsFilter === 'called'}
+                    onClick={() => toggleLeadStatsFilter('called')}
                   />
                   <LeadStatChip
                     label={t('uploadContacts.stats.contacted', 'Contactés')}
                     value={(leadQuickStats?.contacted ?? 0).toLocaleString('fr-FR')}
                     icon={CheckCircle2}
                     tone="emerald"
+                    selected={leadStatsFilter === 'contacted'}
+                    onClick={() => toggleLeadStatsFilter('contacted')}
                   />
                   <LeadStatChip
                     label={t('uploadContacts.stats.rdv', 'RDV')}
                     value={(leadQuickStats?.rdv ?? 0).toLocaleString('fr-FR')}
                     icon={Calendar}
                     tone="violet"
+                    selected={leadStatsFilter === 'rdv'}
+                    onClick={() => toggleLeadStatsFilter('rdv')}
                   />
                   <LeadStatChip
                     label={t('uploadContacts.stats.converted', 'Convertis')}
                     value={(leadQuickStats?.converted ?? 0).toLocaleString('fr-FR')}
                     icon={CheckCircle}
                     tone="amber"
+                    selected={leadStatsFilter === 'converted'}
+                    onClick={() => toggleLeadStatsFilter('converted')}
                   />
                 </div>
               )}
@@ -2861,7 +2950,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </div>
 
       {/* Contact List */}
-      <div className="bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-420px)] flex flex-col overflow-hidden relative min-h-[420px] min-w-0">
+      <div
+        ref={leadsListRef}
+        className="bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-420px)] flex flex-col overflow-hidden relative min-h-[420px] min-w-0"
+      >
         <div className="border-b border-slate-100/80 p-6 flex-shrink-0 bg-gradient-to-r from-white/80 via-white/60 to-harx-50/30 backdrop-blur-sm rounded-t-[32px]">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <div>
@@ -2889,12 +2981,24 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         : t('uploadContacts.list.ready', { count: parsedLeads.length })}
                     </span>
                   ) : leads.length > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 bg-harx-50 text-harx-700 px-3 py-1.5 rounded-full text-xs font-bold border border-harx-100/80 shadow-sm">
-                      {t('uploadContacts.list.showing', { filtered: filteredLeads.length, total: totalCount })}
-                      {searchQuery && (
-                        <span className="text-harx-500/80 font-medium">┬À "{searchQuery}"</span>
+                    <>
+                      <span className="inline-flex items-center gap-1.5 bg-harx-50 text-harx-700 px-3 py-1.5 rounded-full text-xs font-bold border border-harx-100/80 shadow-sm">
+                        {t('uploadContacts.list.showing', { filtered: filteredLeads.length, total: totalCount })}
+                        {searchQuery && (
+                          <span className="text-harx-500/80 font-medium"> · "{searchQuery}"</span>
+                        )}
+                      </span>
+                      {leadStatsFilter !== 'all' && (
+                        <button
+                          type="button"
+                          onClick={() => setLeadStatsFilter('all')}
+                          className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full text-xs font-bold border border-indigo-100/80 shadow-sm hover:bg-indigo-100 transition-colors"
+                        >
+                          {t('uploadContacts.stats.filterActive')}: {t(`uploadContacts.stats.${leadStatsFilter}`)}
+                          <X className="h-3 w-3" />
+                        </button>
                       )}
-                    </span>
+                    </>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 bg-slate-50 text-slate-500 px-3 py-1.5 rounded-full text-xs font-bold border border-slate-200">
                       {t('uploadContacts.list.empty')}

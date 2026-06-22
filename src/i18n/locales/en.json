@@ -1236,6 +1236,15 @@
     "filter": {
       "title": "Channel Filter"
     },
+    "stats": {
+      "title": "Statistics",
+      "leads": "Leads",
+      "called": "Called",
+      "contacted": "Contacted",
+      "rdv": "Appointments",
+      "converted": "Converted",
+      "filterActive": "Active filter"
+    },
     "list": {
       "title": "Leads List",
       "saving": "Saving {{saved}}/{{total}} contacts...",
