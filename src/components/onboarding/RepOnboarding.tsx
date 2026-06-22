@@ -36,7 +36,7 @@ import { PremiumAudioPlayer } from '../dashboard/components/PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
 
 import { AppContent } from '../training/App';
-import { getGigsByCompanyId, getActiveAgentsForCompany, getAgentById } from '../../api/matching';
+import { getGigsByCompanyId, getActiveAgentsForCompany } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
 import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../training/infrastructure/services/AIService';
@@ -51,7 +51,6 @@ import '../training/index.css';
 interface RepOnboardingProps { }
 
 type FormationPageTab = 'courses' | 'participants' | 'tracking';
-type ParticipantModalTab = 'training' | 'profile';
 
 type TrainingParticipantRow = {
   id: string;
@@ -566,10 +565,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [participants, setParticipants] = useState<TrainingParticipantRow[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [participantModal, setParticipantModal] = useState<TrainingParticipantRow | null>(null);
-  const [participantModalTab, setParticipantModalTab] = useState<ParticipantModalTab>('training');
   const [participantModalLoading, setParticipantModalLoading] = useState(false);
   const [participantGigProgress, setParticipantGigProgress] = useState<GigProgress | null>(null);
-  const [participantAgentProfile, setParticipantAgentProfile] = useState<any | null>(null);
   const [journeyProgressStats, setJourneyProgressStats] = useState<Map<string, JourneyParticipantStats>>(
     new Map()
   );
@@ -1394,27 +1391,19 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   const closeParticipantModal = useCallback(() => {
     setParticipantModal(null);
-    setParticipantModalTab('training');
     setParticipantGigProgress(null);
-    setParticipantAgentProfile(null);
     setParticipantModalLoading(false);
   }, []);
 
   const handleParticipantGigClick = useCallback(
     async (participant: TrainingParticipantRow) => {
       setParticipantModal(participant);
-      setParticipantModalTab('training');
       setParticipantModalLoading(true);
       setParticipantGigProgress(null);
-      setParticipantAgentProfile(null);
 
       try {
-        const [progress, agentProfile] = await Promise.all([
-          ProgressService.getRepProgressByGig(participant.repId, participant.gigId),
-          getAgentById(participant.repId).catch(() => null),
-        ]);
+        const progress = await ProgressService.getRepProgressByGig(participant.repId, participant.gigId);
         setParticipantGigProgress(progress);
-        setParticipantAgentProfile(agentProfile);
       } catch (error) {
         console.error('[RepOnboarding] Error loading participant gig progress:', error);
       } finally {
@@ -1423,21 +1412,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     },
     []
   );
-
-  const resolveParticipantPhotoUrl = useCallback((profile: any | null): string => {
-    const fromProfile =
-      profile?.personalInfo?.photo?.url ||
-      profile?.photo?.url ||
-      (typeof profile?.photo === 'string' ? profile.photo : '');
-    return String(fromProfile || '').trim();
-  }, []);
-
-  const resolveParticipantInitial = useCallback((profile: any | null, participant: TrainingParticipantRow): string => {
-    const name = String(
-      profile?.personalInfo?.name || profile?.name || participant.name || participant.email || '?'
-    ).trim();
-    return name.charAt(0).toUpperCase() || '?';
-  }, []);
 
   const normalizeText = (value: unknown): string =>
     String(value || '')
@@ -2507,25 +2481,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             >
               <div className="shrink-0 border-b border-slate-100 px-5 py-5 sm:px-6">
                 <div className="flex items-start gap-4">
-                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-slate-100 shadow-sm ring-1 ring-slate-200">
-                    {resolveParticipantPhotoUrl(participantAgentProfile) ? (
-                      <img
-                        src={resolveParticipantPhotoUrl(participantAgentProfile)}
-                        alt={participantModal.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-harx text-2xl font-black uppercase text-white">
-                        {resolveParticipantInitial(participantAgentProfile, participantModal)}
-                      </div>
-                    )}
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-gradient-harx text-2xl font-black uppercase text-white shadow-sm ring-1 ring-slate-200">
+                    {(participantModal.name || participantModal.email || '?').trim().charAt(0).toUpperCase() || '?'}
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <h3 id="participant-training-modal-title" className="text-xl font-black text-slate-900">
-                      {participantAgentProfile?.personalInfo?.name ||
-                        participantAgentProfile?.name ||
-                        participantModal.name}
+                      {participantModal.name}
                     </h3>
                     {participantModal.email ? (
                       <a
@@ -2551,83 +2513,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     <X className="h-4 w-4" />
                   </button>
                 </div>
-
-                <div className="mt-5 flex gap-1 border-b border-slate-100">
-                  {(
-                    [
-                      { id: 'training' as ParticipantModalTab, label: t('repOnboarding.participants.tabTraining'), icon: GraduationCap },
-                      { id: 'profile' as ParticipantModalTab, label: t('repOnboarding.participants.tabProfile'), icon: Users },
-                    ] as const
-                  ).map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setParticipantModalTab(tab.id)}
-                      className={`inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-bold transition-colors ${
-                        participantModalTab === tab.id
-                          ? 'border-harx-500 text-harx-700'
-                          : 'border-transparent text-slate-500 hover:text-slate-700'
-                      }`}
-                    >
-                      <tab.icon className="h-4 w-4" />
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <div className="overflow-y-auto px-5 py-4 sm:px-6">
-                {participantModalTab === 'profile' ? (
-                  participantModalLoading && !participantAgentProfile ? (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
-                      <p className="mt-3 text-sm font-medium text-slate-600">
-                        {t('repOnboarding.participants.loadingDetails')}
-                      </p>
-                    </div>
-                  ) : participantAgentProfile ? (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {[
-                        {
-                          label: t('repOnboarding.participants.profileRole'),
-                          value:
-                            participantAgentProfile?.professionalSummary?.currentRole ||
-                            participantAgentProfile?.currentRole ||
-                            '—',
-                        },
-                        {
-                          label: t('repOnboarding.participants.profileCountry'),
-                          value: (() => {
-                            const country = participantAgentProfile?.personalInfo?.country;
-                            if (typeof country === 'object' && country?.name) return String(country.name);
-                            if (typeof country === 'string' && country) return country;
-                            return participantAgentProfile?.timezone?.countryName || '—';
-                          })(),
-                        },
-                        {
-                          label: t('repOnboarding.participants.profilePhone'),
-                          value:
-                            participantAgentProfile?.personalInfo?.phone ||
-                            participantAgentProfile?.phone ||
-                            '—',
-                        },
-                        {
-                          label: t('repOnboarding.participants.profileStatus'),
-                          value: participantAgentProfile?.status || '—',
-                        },
-                      ].map((item) => (
-                        <div key={item.label} className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{item.label}</p>
-                          <p className="mt-1 text-sm font-semibold text-slate-900">{item.value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-sm text-slate-500">
-                      {t('repOnboarding.participants.profileNoData')}
-                    </p>
-                  )
-                ) : participantModalLoading ? (
+                {participantModalLoading ? (
                   <div className="flex flex-col items-center justify-center py-12">
                     <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
                     <p className="mt-3 text-sm font-medium text-slate-600">
