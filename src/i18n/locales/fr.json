@@ -629,7 +629,8 @@
       "hint": "Un seul script actif par mission — c'est celui que les reps voient pendant l'appel.",
       "loading": "Chargement...",
       "active": "Actif",
-      "activate": "Activer"
+      "activate": "Activer",
+      "select": "Choisir un script"
     },
     "chatPanel": {
       "startConversation": "Commencez la conversation pour générer le script.",
