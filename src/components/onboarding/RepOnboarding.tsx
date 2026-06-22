@@ -393,7 +393,7 @@ const HarxSelect: React.FC<HarxSelectProps> = ({
         type="button"
         tabIndex={-1}
         aria-hidden
-        className="fixed inset-0 z-[9998] cursor-default bg-slate-900/10 backdrop-blur-[1px] transition-opacity"
+        className="fixed inset-0 z-[9998] cursor-default bg-transparent"
         onClick={() => setOpen(false)}
       />
       <div
