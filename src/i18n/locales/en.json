@@ -294,7 +294,13 @@
         "today": "Today",
         "7d": "Last 7 days",
         "30d": "Last 30 days",
-        "mtd": "This month"
+        "mtd": "This month",
+        "custom": "Custom",
+        "customRange": "{{from}} – {{to}}",
+        "from": "From",
+        "to": "To",
+        "apply": "Apply",
+        "customActive": "Custom period active"
       }
     },
     "tabs": {
@@ -338,7 +344,8 @@
           "today": "Calls today",
           "7d": "Calls (7 days)",
           "30d": "Calls (30 days)",
-          "mtd": "Calls (this month)"
+          "mtd": "Calls (this month)",
+          "custom": "Calls ({{range}})"
         },
         "callsPeriodSub": {
           "7d": "over 7 days",
@@ -360,13 +367,15 @@
           "today": "Call outcomes (today)",
           "7d": "Call outcomes (7 days)",
           "30d": "Call outcomes (30 days)",
-          "mtd": "Call outcomes (this month)"
+          "mtd": "Call outcomes (this month)",
+          "custom": "Call outcomes ({{range}})"
         },
         "noDataPeriod": {
           "today": "No calls today",
           "7d": "No calls in the last 7 days",
           "30d": "No calls in the last 30 days",
-          "mtd": "No calls this month"
+          "mtd": "No calls this month",
+          "custom": "No calls in this period"
         }
       },
       "donut": {
@@ -573,13 +582,15 @@
           "today": "Spent today",
           "7d": "Spent (7 days)",
           "30d": "Spent (30 days)",
-          "mtd": "Spent MTD"
+          "mtd": "Spent MTD",
+          "custom": "Spent (period)"
         },
         "spentPeriodSub": {
           "today": "today",
           "7d": "7 days",
           "30d": "30 days",
-          "mtd": "this month"
+          "mtd": "this month",
+          "custom": "selected period"
         },
         "burnRate": "Burn rate",
         "burnRateSub": "per day"

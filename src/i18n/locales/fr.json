@@ -288,7 +288,13 @@
         "today": "Aujourd'hui",
         "7d": "7 derniers jours",
         "30d": "30 derniers jours",
-        "mtd": "Ce mois"
+        "mtd": "Ce mois",
+        "custom": "Personnalisée",
+        "customRange": "{{from}} – {{to}}",
+        "from": "Du",
+        "to": "Au",
+        "apply": "Appliquer",
+        "customActive": "Période personnalisée active"
       }
     },
     "setupChecklist": {
@@ -338,7 +344,8 @@
           "today": "Appels aujourd'hui",
           "7d": "Appels (7 jours)",
           "30d": "Appels (30 jours)",
-          "mtd": "Appels (ce mois)"
+          "mtd": "Appels (ce mois)",
+          "custom": "Appels ({{range}})"
         },
         "callsPeriodSub": {
           "7d": "sur 7 jours",
@@ -360,13 +367,15 @@
           "today": "Résultats d'appels (aujourd'hui)",
           "7d": "Résultats d'appels (7 jours)",
           "30d": "Résultats d'appels (30 jours)",
-          "mtd": "Résultats d'appels (ce mois)"
+          "mtd": "Résultats d'appels (ce mois)",
+          "custom": "Résultats d'appels ({{range}})"
         },
         "noDataPeriod": {
           "today": "Aucun appel aujourd'hui",
           "7d": "Aucun appel sur 7 jours",
           "30d": "Aucun appel sur 30 jours",
-          "mtd": "Aucun appel ce mois"
+          "mtd": "Aucun appel ce mois",
+          "custom": "Aucun appel sur cette période"
         }
       },
       "donut": {
@@ -573,13 +582,15 @@
           "today": "Dépensé aujourd'hui",
           "7d": "Dépensé (7 jours)",
           "30d": "Dépensé (30 jours)",
-          "mtd": "Dépensé MTD"
+          "mtd": "Dépensé MTD",
+          "custom": "Dépensé (période)"
         },
         "spentPeriodSub": {
           "today": "aujourd'hui",
           "7d": "7 jours",
           "30d": "30 jours",
-          "mtd": "ce mois"
+          "mtd": "ce mois",
+          "custom": "période choisie"
         },
         "burnRate": "Burn rate",
         "burnRateSub": "par jour"
