@@ -222,6 +222,9 @@ const ScriptGenerator: React.FC = () => {
   const [scriptIframes, setScriptIframes] = useState<ScriptIframe[]>([]);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  /** Controls whether fetchSavedScripts opens an existing script or starts a fresh generation. */
+  const scriptLoadIntentRef = useRef<'new' | 'open' | null>(null);
+  const pendingOpenScriptRef = useRef<SavedScript | null>(null);
 
   const addScriptIframe = () => {
     setScriptIframes((prev) => [...prev, { id: generateIframeId(), label: '', url: '' }]);
@@ -880,13 +883,27 @@ const ScriptGenerator: React.FC = () => {
       });
       setValidatedScriptIds(nextValidated);
 
-      // If the Gig already has saved scripts, automatically load the active/first one and deactivate the wizard
-      if (items.length > 0) {
-        const activeItem = items.find((item: any) => item.isActive) || items[0];
+      const intent = scriptLoadIntentRef.current;
+      scriptLoadIntentRef.current = null;
+
+      if (intent === 'open' && pendingOpenScriptRef.current) {
+        openSavedScript(pendingOpenScriptRef.current);
+        pendingOpenScriptRef.current = null;
+        return;
+      }
+
+      if (intent === 'new' || items.length === 0) {
+        setIsAutoGenerateWizardActive(true);
+        handleGenerateInteractiveScriptFromScratch();
+        return;
+      }
+
+      // Default: gig switch — open the active script for context
+      const activeItem = items.find((item: any) => item.isActive);
+      if (activeItem) {
         openSavedScript(activeItem);
       } else {
         setIsAutoGenerateWizardActive(true);
-        // Automatically trigger interactive script generation from scratch!
         handleGenerateInteractiveScriptFromScratch();
       }
     } catch (err: any) {
@@ -1485,8 +1502,9 @@ const ScriptGenerator: React.FC = () => {
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => {
+                              scriptLoadIntentRef.current = 'open';
+                              pendingOpenScriptRef.current = script;
                               setSelectedGig(script.gig);
-                              openSavedScript(script);
                             }}
                             className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:border-red-500 hover:text-red-600 font-extrabold text-[9px] rounded-lg transition-all duration-200 uppercase tracking-wider shadow-sm active:scale-95 flex items-center gap-1"
                           >
@@ -1511,7 +1529,7 @@ const ScriptGenerator: React.FC = () => {
                 )}
               </div>
             ) : (
-              /* Screen 2: Gigs grid selection screen (for New Script, showing ONLY Gigs without scripts) */
+              /* Screen 2: Gigs grid selection screen (for New Script) */
               <div className="relative overflow-hidden bg-white border border-slate-100 rounded-2xl shadow-xl p-6 text-center space-y-5 w-full">
 
                 {/* Mascot / Icon Container */}
@@ -1531,16 +1549,19 @@ const ScriptGenerator: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Beautiful Clickable Grid of Gigs without scripts */}
+                {/* Gigs grid — plusieurs scripts possibles par mission */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
-                  {gigs
-                    .filter((gig) => !allSavedScripts.some((s) => s.gigId === gig._id))
-                    .map((gig) => (
+                  {gigs.map((gig) => {
+                    const existingCount = allSavedScripts.filter(
+                      (s) => String(s.gigId) === String(gig._id)
+                    ).length;
+                    return (
                       <button
                         key={gig._id}
                         onClick={() => {
+                          scriptLoadIntentRef.current = 'new';
+                          setShowNewScriptSelection(false);
                           setSelectedGig(gig);
-                          handleStartNewChat();
                         }}
                         className="p-3 text-left bg-slate-50 hover:bg-red-50/15 border border-slate-200/80 hover:border-red-500 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md flex flex-col gap-1 active:scale-[0.98] group"
                       >
@@ -1549,7 +1570,7 @@ const ScriptGenerator: React.FC = () => {
                             {gig.category || 'Général'}
                           </span>
                           <span className="px-1.5 py-0.5 bg-red-600 text-white rounded text-[7px] font-black uppercase tracking-widest flex items-center gap-1">
-                            Nouveau
+                            {existingCount > 0 ? `+ Script (${existingCount})` : 'Nouveau'}
                           </span>
                         </div>
                         <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-tight mt-1 truncate w-full group-hover:text-red-600 transition-colors">
@@ -1559,13 +1580,13 @@ const ScriptGenerator: React.FC = () => {
                           {gig.description || 'Détails de la mission'}
                         </p>
                       </button>
-                    ))}
+                    );
+                  })}
 
-                  {/* Fallback if all gigs already have scripts */}
-                  {gigs.filter((gig) => !allSavedScripts.some((s) => s.gigId === gig._id)).length === 0 && (
+                  {gigs.length === 0 && !isLoadingGigs && (
                     <div className="col-span-1 sm:col-span-2 p-5 bg-slate-50 rounded-xl text-center space-y-1.5 border border-dashed border-slate-200">
-                      <p className="text-[11px] font-black text-slate-700 uppercase tracking-tight">Toutes vos missions ont déjà un script !</p>
-                      <p className="text-[9px] text-slate-400 font-bold">Retournez à la liste des scripts pour les ouvrir et les éditer.</p>
+                      <p className="text-[11px] font-black text-slate-700 uppercase tracking-tight">Aucune mission disponible</p>
+                      <p className="text-[9px] text-slate-400 font-bold">Créez d&apos;abord une mission (Gig) pour générer un script d&apos;appel.</p>
                     </div>
                   )}
                 </div>
