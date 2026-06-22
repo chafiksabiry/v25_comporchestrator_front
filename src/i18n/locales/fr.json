@@ -1576,7 +1576,16 @@
       "statusCompleted": "Terminé",
       "statusInProgress": "En cours",
       "statusNotStarted": "Non démarré",
-      "viewTracking": "Voir le suivi de formation"
+      "viewTracking": "Voir le suivi de formation",
+      "modalTitle": "Suivi de formation",
+      "modalSubtitle": "Détails de l'agent et progression sur le gig",
+      "loadingDetails": "Chargement du suivi...",
+      "overallProgress": "Progression globale",
+      "timeSpent": "Temps passé",
+      "trainingsCount": "Formations",
+      "trainingDetails": "Formations suivies",
+      "moduleProgress": "Progression par module",
+      "noTrainings": "Aucune formation publiée pour ce gig"
     },
     "trackingStats": {
       "title": "Statistiques de suivi",

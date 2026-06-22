@@ -1576,7 +1576,16 @@
       "statusCompleted": "Completed",
       "statusInProgress": "In progress",
       "statusNotStarted": "Not started",
-      "viewTracking": "View training tracking"
+      "viewTracking": "View training tracking",
+      "modalTitle": "Training tracking",
+      "modalSubtitle": "Agent details and gig training progress",
+      "loadingDetails": "Loading tracking details...",
+      "overallProgress": "Overall progress",
+      "timeSpent": "Time spent",
+      "trainingsCount": "Trainings",
+      "trainingDetails": "Trainings in progress",
+      "moduleProgress": "Module progress",
+      "noTrainings": "No published training for this gig"
     },
     "trackingStats": {
       "title": "Tracking statistics",
