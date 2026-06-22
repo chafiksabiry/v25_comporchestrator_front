@@ -76,6 +76,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
     });
     const [error, setError] = useState<string | null>(null);
     const [invitedAgents, setInvitedAgents] = useState<Set<string>>(new Set());
+    const [cancelledInvitedAgents, setCancelledInvitedAgents] = useState<Set<string>>(new Set());
     const [companyInvitedAgents, setCompanyInvitedAgents] = useState<any[]>([]);
     const [creatingGigAgent, setCreatingGigAgent] = useState(false);
     const [gigAgentSuccess, setGigAgentSuccess] = useState<string | null>(null);
@@ -354,6 +355,19 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                 .filter(Boolean)
         );
 
+    const buildCancelledInvitedAgentIdsFromGigAgents = (gigAgents: any[]): Set<string> =>
+        new Set<string>(
+            gigAgents
+                .filter((ga: any) => ['archived', 'cancelled'].includes(ga.enrollmentStatus))
+                .map((ga: any) => String(ga.agentId?._id || ga.agentId))
+                .filter(Boolean)
+        );
+
+    const syncInvitationStateFromGigAgents = (gigAgents: any[]) => {
+        setInvitedAgents(buildInvitedAgentIdsFromGigAgents(gigAgents));
+        setCancelledInvitedAgents(buildCancelledInvitedAgentIdsFromGigAgents(gigAgents));
+    };
+
     const handleArchiveInvitation = async (record: any) => {
         const gigAgentId = String(record?._id || record?.id || '').trim();
         if (!gigAgentId) return;
@@ -373,6 +387,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                     next.delete(agentId);
                     return next;
                 });
+                setCancelledInvitedAgents((prev) => new Set([...prev, agentId]));
                 setMatches((prevMatches) =>
                     prevMatches.map((m) =>
                         String(m.agentId) === agentId ? { ...m, isInvited: false } : m
@@ -382,7 +397,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
             if (selectedGig?._id) {
                 const gigAgents = await getGigAgentsForGig(selectedGig._id);
-                setInvitedAgents(buildInvitedAgentIdsFromGigAgents(gigAgents));
+                syncInvitationStateFromGigAgents(gigAgents);
             }
 
             setGigAgentSuccess(t('matchingDashboard.invited.cancelSuccess', { name: agentName }));
@@ -544,9 +559,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                 // Keep current weights
             }
 
-            // Fetch invited reps for this gig (only pending invitations)
+            // Fetch invited / cancelled reps for this gig
             const gigAgents = await getGigAgentsForGig(gig._id || '');
-            setInvitedAgents(buildInvitedAgentIdsFromGigAgents(gigAgents));
+            syncInvitationStateFromGigAgents(gigAgents);
             
 
             // Find matches for the selected gig using current or loaded weights
@@ -669,7 +684,13 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             }
 
             // Add rep to invited list
-            setInvitedAgents((prev: any) => new Set([...prev, match.agentId]));
+            const agentIdKey = String(match.agentId);
+            setInvitedAgents((prev: any) => new Set([...prev, agentIdKey]));
+            setCancelledInvitedAgents((prev) => {
+                const next = new Set(prev);
+                next.delete(agentIdKey);
+                return next;
+            });
 
             // Update the match object to mark it as invited
             setMatches((prevMatches: Match[]) =>
@@ -1302,7 +1323,11 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                         }
                                                     );
 
-                                                    const isInvited = match.isInvited !== undefined ? match.isInvited : invitedAgents.has(match.agentId);
+                                                    const agentIdKey = String(match.agentId);
+                                                    const isInvited = match.isInvited !== undefined
+                                                        ? match.isInvited
+                                                        : invitedAgents.has(agentIdKey);
+                                                    const isCancelledInvited = cancelledInvitedAgents.has(agentIdKey);
                                                     const isEnrolled = isAlreadyEnrolledInThisGig ||
                                                         match.isEnrolled ||
                                                         match.status === 'accepted' ||
@@ -1396,6 +1421,26 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                         <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
                                                                             {t('matchingDashboard.matching.invited')}
                                                                         </span>
+                                                                    ) : isCancelledInvited ? (
+                                                                        <div className="flex flex-col items-end gap-2">
+                                                                            <span
+                                                                                className="inline-flex items-center px-3 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-full text-sm font-medium"
+                                                                                title={t('matchingDashboard.matching.invitationCancelledHint')}
+                                                                            >
+                                                                                {t('matchingDashboard.matching.invitationCancelled')}
+                                                                            </span>
+                                                                            <span className="text-xs text-slate-500 text-right max-w-[180px] leading-snug">
+                                                                                {t('matchingDashboard.matching.invitationCancelledDesc')}
+                                                                            </span>
+                                                                            <button
+                                                                                className="inline-flex items-center px-3 py-1.5 bg-gradient-rep-accent text-white rounded-lg hover:opacity-90 transition-all duration-200 text-sm font-medium gap-1 shadow-sm"
+                                                                                onClick={() => handleCreateGigAgent(match)}
+                                                                                disabled={creatingGigAgent}
+                                                                            >
+                                                                                <Zap className="w-4 h-4" />
+                                                                                {t('matchingDashboard.matching.reinvite')}
+                                                                            </button>
+                                                                        </div>
                                                                     ) : (
                                                                         <button
                                                                             className="inline-flex items-center px-3 py-1.5 bg-gradient-rep-accent text-white rounded-lg hover:opacity-90 transition-all duration-200 text-sm font-medium gap-1 shadow-sm"
