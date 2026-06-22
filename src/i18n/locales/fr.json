@@ -132,6 +132,11 @@
         "filteredTotalLabel": "Total affiché",
         "paidLinesShort": "payant(s)"
       },
+      "rowDetail": {
+        "label": "Ligne sélectionnée",
+        "buyForGig": "Acheter une ligne",
+        "clear": "Désélectionner"
+      },
       "filters": {
         "searchPlaceholder": "Rechercher un numéro ou un gig…",
         "gigLabel": "Filtrer par gig",
