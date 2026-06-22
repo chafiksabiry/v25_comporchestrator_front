@@ -8,6 +8,7 @@ import {
   Trash2,
   ArrowRight,
   AlertCircle,
+  Users,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -315,6 +316,12 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
     );
   }
 
+  const handleOpenParticipants = (e: React.MouseEvent, gigId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.location.hash = `#/dashboard/training?gigId=${encodeURIComponent(gigId)}&tab=participants`;
+  };
+
   const handleDelete = async (e: React.MouseEvent, gigId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -498,13 +505,22 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
                   </div>
 
                   {/* Strategic Actions */}
-                  <div className="col-span-2 flex justify-end items-center gap-3">
+                  <div className="col-span-2 flex flex-wrap justify-end items-center gap-2">
                     <button
                       className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-100 hover:border-rose-100 hover:scale-110 active:scale-90 transition-all duration-300 shadow-sm"
                       onClick={(e) => handleDelete(e, gig._id)}
                       title={t('gigDetails.terminate')}
                     >
                       <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 shadow-sm transition-all duration-300 hover:border-indigo-300 hover:bg-indigo-50 hover:scale-105 active:scale-95"
+                      onClick={(e) => handleOpenParticipants(e, gig._id)}
+                      title={t('gigDetails.participantsBtn')}
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                      {t('gigDetails.participantsBtn')}
                     </button>
                     <button
                       className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-md hover:shadow-lg hover:shadow-purple-500/10 hover:scale-105 active:scale-95 hover:from-purple-700 hover:to-indigo-700 transition-all duration-300"
