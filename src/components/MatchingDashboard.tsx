@@ -102,6 +102,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
     const [loadingProfile, setLoadingProfile] = useState(false);
     const [archivingInvitationId, setArchivingInvitationId] = useState<string | null>(null);
     const [invitationPendingArchive, setInvitationPendingArchive] = useState<any | null>(null);
+    const [currentGigAgents, setCurrentGigAgents] = useState<any[]>([]);
 
     const normalizeAgentProfile = (raw: any) => {
         if (!raw) return null;
@@ -364,8 +365,28 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         );
 
     const syncInvitationStateFromGigAgents = (gigAgents: any[]) => {
+        setCurrentGigAgents(gigAgents);
         setInvitedAgents(buildInvitedAgentIdsFromGigAgents(gigAgents));
         setCancelledInvitedAgents(buildCancelledInvitedAgentIdsFromGigAgents(gigAgents));
+    };
+
+    const findPendingInvitationForAgent = (agentId: string): any | null => {
+        const agentKey = String(agentId);
+        const selectedGigId = selectedGig?._id ? String(selectedGig._id) : '';
+
+        const fromCurrentGig = currentGigAgents.find((ga: any) => {
+            const gaAgentId = String(ga.agentId?._id || ga.agentId);
+            return gaAgentId === agentKey && ga.enrollmentStatus === 'invited';
+        });
+        if (fromCurrentGig) return fromCurrentGig;
+
+        return companyInvitedAgents.find((record: any) => {
+            const recordAgentId = String(record.agentId?._id || record.agentId);
+            const recordGigId = String(record.gigId?._id || record.gigId || '');
+            const sameAgent = recordAgentId === agentKey;
+            const sameGig = !selectedGigId || recordGigId === selectedGigId;
+            return sameAgent && sameGig;
+        }) || null;
     };
 
     const handleArchiveInvitation = async (record: any) => {
@@ -398,6 +419,8 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             if (selectedGig?._id) {
                 const gigAgents = await getGigAgentsForGig(selectedGig._id);
                 syncInvitationStateFromGigAgents(gigAgents);
+            } else {
+                setCurrentGigAgents([]);
             }
 
             setGigAgentSuccess(t('matchingDashboard.invited.cancelSuccess', { name: agentName }));
@@ -707,6 +730,11 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             setTimeout(() => {
                 setGigAgentSuccess(null);
             }, 3000);
+
+            if (selectedGig._id) {
+                const gigAgents = await getGigAgentsForGig(selectedGig._id);
+                syncInvitationStateFromGigAgents(gigAgents);
+            }
 
             // Refresh only essential data
             // companyId is already declared at the top of this function
@@ -1356,6 +1384,12 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                     const scoreColor = getScoreColor(matchScore);
 
                                                     const isExpanded = expandedReps.has(match.agentId);
+                                                    const pendingInvitation = isInvited
+                                                        ? findPendingInvitationForAgent(match.agentId)
+                                                        : null;
+                                                    const pendingInvitationId = pendingInvitation
+                                                        ? String(pendingInvitation._id || pendingInvitation.id || '')
+                                                        : '';
 
                                                     return (
                                                         <div
@@ -1418,9 +1452,28 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                             ⌛ {t('matchingDashboard.matching.requested')}
                                                                         </button>
                                                                     ) : isInvited ? (
-                                                                        <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                                                                            {t('matchingDashboard.matching.invited')}
-                                                                        </span>
+                                                                        <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
+                                                                            <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium whitespace-nowrap">
+                                                                                {t('matchingDashboard.matching.invited')}
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    if (pendingInvitation) {
+                                                                                        setInvitationPendingArchive(pendingInvitation);
+                                                                                    }
+                                                                                }}
+                                                                                disabled={
+                                                                                    !pendingInvitationId ||
+                                                                                    archivingInvitationId === pendingInvitationId
+                                                                                }
+                                                                                className="inline-flex items-center justify-center px-3 py-1.5 bg-white text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-50 transition-all duration-200 text-sm font-medium whitespace-nowrap disabled:opacity-60"
+                                                                            >
+                                                                                {archivingInvitationId === pendingInvitationId
+                                                                                    ? t('matchingDashboard.invited.cancelling')
+                                                                                    : t('matchingDashboard.invited.cancelInvitation')}
+                                                                            </button>
+                                                                        </div>
                                                                     ) : isCancelledInvited ? (
                                                                         <div className="flex flex-col items-end gap-2">
                                                                             <span
