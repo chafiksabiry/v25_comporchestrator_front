@@ -370,23 +370,51 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         setCancelledInvitedAgents(buildCancelledInvitedAgentIdsFromGigAgents(gigAgents));
     };
 
+    const normalizeRecordId = (id: any): string => {
+        if (!id) return '';
+        if (typeof id === 'string') return id;
+        if (typeof id === 'object') return String(id._id || id.id || '');
+        return String(id);
+    };
+
+    const getAgentIdKey = (match: Match | any): string =>
+        normalizeRecordId(match?.agentId) ||
+        resolveAgentId(match) ||
+        normalizeRecordId(match?.agentInfo?._id);
+
     const findPendingInvitationForAgent = (agentId: string): any | null => {
-        const agentKey = String(agentId);
+        const agentKey = normalizeRecordId(agentId);
+        if (!agentKey) return null;
         const selectedGigId = selectedGig?._id ? String(selectedGig._id) : '';
 
         const fromCurrentGig = currentGigAgents.find((ga: any) => {
-            const gaAgentId = String(ga.agentId?._id || ga.agentId);
+            const gaAgentId = normalizeRecordId(ga.agentId?._id || ga.agentId);
             return gaAgentId === agentKey && ga.enrollmentStatus === 'invited';
         });
         if (fromCurrentGig) return fromCurrentGig;
 
         return companyInvitedAgents.find((record: any) => {
-            const recordAgentId = String(record.agentId?._id || record.agentId);
-            const recordGigId = String(record.gigId?._id || record.gigId || '');
+            const recordAgentId = normalizeRecordId(record.agentId?._id || record.agentId);
+            const recordGigId = normalizeRecordId(record.gigId?._id || record.gigId);
             const sameAgent = recordAgentId === agentKey;
             const sameGig = !selectedGigId || recordGigId === selectedGigId;
-            return sameAgent && sameGig;
+            return sameAgent && sameGig && record.enrollmentStatus === 'invited';
         }) || null;
+    };
+
+    const resolvePendingInvitation = async (agentIdKey: string): Promise<any | null> => {
+        const existing = findPendingInvitationForAgent(agentIdKey);
+        if (existing) return existing;
+
+        if (!selectedGig?._id) return null;
+
+        try {
+            const gigAgents = await getGigAgentsForGig(selectedGig._id);
+            syncInvitationStateFromGigAgents(gigAgents);
+            return findPendingInvitationForAgent(agentIdKey);
+        } catch {
+            return null;
+        }
     };
 
     const handleArchiveInvitation = async (record: any) => {
@@ -687,7 +715,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
         try {
             const response = await createGigAgent(requestData);
-            
+            const createdGigAgent = response?.gigAgent;
 
             // Update onboarding progress - Phase 4, Step 10 (MATCH HARX REPS)
             // When at least one invitation is sent, mark the step as completed
@@ -707,7 +735,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             }
 
             // Add rep to invited list
-            const agentIdKey = String(match.agentId);
+            const agentIdKey = getAgentIdKey(match);
             setInvitedAgents((prev: any) => new Set([...prev, agentIdKey]));
             setCancelledInvitedAgents((prev) => {
                 const next = new Set(prev);
@@ -715,10 +743,22 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                 return next;
             });
 
+            if (createdGigAgent && selectedGig._id) {
+                const gigKey = String(selectedGig._id);
+                setCurrentGigAgents((prev) => [
+                    ...prev.filter((ga: any) => {
+                        const gaAgent = normalizeRecordId(ga.agentId?._id || ga.agentId);
+                        const gaGig = normalizeRecordId(ga.gigId?._id || ga.gigId);
+                        return !(gaAgent === agentIdKey && gaGig === gigKey);
+                    }),
+                    createdGigAgent,
+                ]);
+            }
+
             // Update the match object to mark it as invited
             setMatches((prevMatches: Match[]) =>
                 prevMatches.map((m: Match) =>
-                    m.agentId === match.agentId
+                    getAgentIdKey(m) === agentIdKey
                         ? { ...m, isInvited: true }
                         : m
                 )
@@ -751,10 +791,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             setEnrollmentRequests(enrollmentRequestsData);
             setActiveAgentsList(activeAgentsData);
 
-            // If a gig is selected, refresh its matches
+            // If a gig is selected, refresh its matches but preserve invite flags for this rep
             if (selectedGig) {
                 const matchesData = await findMatchesForGig(selectedGig._id || '', weights);
-                setMatches(matchesData.preferedmatches || matchesData.matches || []);
+                const refreshed = matchesData.preferedmatches || matchesData.matches || [];
+                setMatches(
+                    refreshed.map((m: Match) => {
+                        const key = getAgentIdKey(m);
+                        return key === agentIdKey ? { ...m, isInvited: true } : m;
+                    })
+                );
             }
 
         } catch (error) {
@@ -1351,11 +1397,11 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                         }
                                                     );
 
-                                                    const agentIdKey = String(match.agentId);
-                                                    const isInvited = match.isInvited !== undefined
-                                                        ? match.isInvited
-                                                        : invitedAgents.has(agentIdKey);
+                                                    const agentIdKey = getAgentIdKey(match);
                                                     const isCancelledInvited = cancelledInvitedAgents.has(agentIdKey);
+                                                    const isInvited = !isCancelledInvited && (
+                                                        invitedAgents.has(agentIdKey) || match.isInvited === true
+                                                    );
                                                     const isEnrolled = isAlreadyEnrolledInThisGig ||
                                                         match.isEnrolled ||
                                                         match.status === 'accepted' ||
@@ -1459,14 +1505,20 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => {
-                                                                                    if (pendingInvitation) {
-                                                                                        setInvitationPendingArchive(pendingInvitation);
-                                                                                    }
+                                                                                    void (async () => {
+                                                                                        const invitation =
+                                                                                            pendingInvitation ||
+                                                                                            (await resolvePendingInvitation(agentIdKey));
+                                                                                        if (invitation) {
+                                                                                            setInvitationPendingArchive(invitation);
+                                                                                        } else {
+                                                                                            setGigAgentError(
+                                                                                                t('matchingDashboard.invited.cancelError')
+                                                                                            );
+                                                                                        }
+                                                                                    })();
                                                                                 }}
-                                                                                disabled={
-                                                                                    !pendingInvitationId ||
-                                                                                    archivingInvitationId === pendingInvitationId
-                                                                                }
+                                                                                disabled={archivingInvitationId === pendingInvitationId}
                                                                                 className="inline-flex items-center justify-center px-3 py-1.5 bg-white text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-50 transition-all duration-200 text-sm font-medium whitespace-nowrap disabled:opacity-60"
                                                                             >
                                                                                 {archivingInvitationId === pendingInvitationId
