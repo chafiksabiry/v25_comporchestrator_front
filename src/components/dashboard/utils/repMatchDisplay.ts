@@ -102,7 +102,36 @@ const scoreFromMatchDetails = (details: any): number | null => {
     );
 };
 
+const findCachedMatch = (record: any, cachedMatches: Match[] = []): Match | undefined => {
+    const agentId = resolveAgentId(record);
+    const gigId = resolveGigId(record);
+    if (!agentId) return undefined;
+
+    const exact = cachedMatches.find((match) => {
+        const sameAgent = String(match.agentId) === String(agentId);
+        const sameGig = !gigId || String(match.gigId || '') === String(gigId);
+        return sameAgent && sameGig;
+    });
+    if (exact) return exact;
+
+    if (!gigId) {
+        const agentMatches = cachedMatches.filter((match) => String(match.agentId) === String(agentId));
+        if (agentMatches.length) {
+            return agentMatches.reduce((bestMatch, current) =>
+                (current.totalMatchingScore || 0) > (bestMatch.totalMatchingScore || 0) ? current : bestMatch
+            );
+        }
+    }
+
+    return undefined;
+};
+
 export const getMatchScorePercent = (record: any, cachedMatches: Match[] = []): number => {
+    const cached = findCachedMatch(record, cachedMatches);
+    if (cached?.totalMatchingScore != null) {
+        return Math.round(Number(cached.totalMatchingScore) * 100);
+    }
+
     if (record?.totalMatchingScore != null) {
         return Math.round(Number(record.totalMatchingScore) * 100);
     }
@@ -115,57 +144,28 @@ export const getMatchScorePercent = (record: any, cachedMatches: Match[] = []): 
         return Math.round(detailsScore * 100);
     }
 
-    const agentId = resolveAgentId(record);
-    const gigId = resolveGigId(record);
-    if (agentId) {
-        const cached = cachedMatches.find((match) => {
-            const sameAgent = String(match.agentId) === String(agentId);
-            const sameGig = !gigId || String(match.gigId || '') === String(gigId);
-            return sameAgent && sameGig;
-        });
-        if (cached?.totalMatchingScore != null) {
-            return Math.round(Number(cached.totalMatchingScore) * 100);
-        }
-
-        // Legacy records without gigId: use the best score found for this agent
-        if (!gigId) {
-            const agentMatches = cachedMatches.filter((match) => String(match.agentId) === String(agentId));
-            if (agentMatches.length) {
-                const best = agentMatches.reduce((bestMatch, current) =>
-                    (current.totalMatchingScore || 0) > (bestMatch.totalMatchingScore || 0) ? current : bestMatch
-                );
-                if (best.totalMatchingScore != null) {
-                    return Math.round(Number(best.totalMatchingScore) * 100);
-                }
-            }
-        }
-    }
-
     return 0;
 };
 
 export const normalizeRecordToMatch = (record: any, cachedMatches: Match[] = []): Match => {
-    if (record?.agentInfo && record?.totalMatchingScore != null) {
-        return record as Match;
-    }
-
     const agentProfile = extractAgentProfile(record);
     const agentId = resolveAgentId(record) || '';
     const gigId = resolveGigId(record) || undefined;
-    const details = record?.matchDetails || {};
-    const cached = cachedMatches.find((match) => {
-        const sameAgent = String(match.agentId) === String(agentId);
-        const sameGig = !gigId || String(match.gigId || '') === String(gigId);
-        return sameAgent && sameGig;
-    });
 
+    const cached = findCachedMatch(record, cachedMatches);
     if (cached) {
         return cached;
     }
 
+    if (record?.agentInfo && record?.totalMatchingScore != null) {
+        return record as Match;
+    }
+
+    const details = record?.matchDetails || {};
+
     const totalMatchingScore =
-        record?.matchScore ??
         record?.totalMatchingScore ??
+        record?.matchScore ??
         scoreFromMatchDetails(details) ??
         0;
 
