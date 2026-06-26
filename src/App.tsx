@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
+import VisitorTracker from './lib/VisitorTracker';
 import { Provider } from 'react-redux';
 import { store } from './components/dashboard/store';
 import { AuthProvider } from './components/dashboard/contexts/AuthContext';
@@ -1131,6 +1132,7 @@ function App() {
     <AuthProvider>
       <Provider store={store}>
         <HashRouter>
+          <VisitorTracker />
           <AppContent />
         </HashRouter>
       </Provider>
