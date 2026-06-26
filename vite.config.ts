@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import qiankun from 'vite-plugin-qiankun';
 import * as cheerio from 'cheerio';
-import { stripHostManagedTrackingScripts } from '../shared/tracking/stripTrackingFromMicrofrontendHtml';
+import { stripHostManagedTrackingScripts } from './scripts/stripTrackingFromMicrofrontendHtml';
 
 // Plugin to remove React Refresh preamble
 const removeReactRefreshScript = () => {
@@ -41,7 +41,6 @@ export default defineConfig(() => {
       },
       fs: {
         strict: true,
-        allow: [path.resolve(__dirname, '..')],
       },
     },
     build: {
@@ -64,7 +63,6 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
-        '@harx/shared': path.resolve(__dirname, '../shared'),
       },
     },
   };
