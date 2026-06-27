@@ -40,6 +40,35 @@ import {
   formatMinutesPurchasePrice,
 } from '../../../utils/minutesPricing';
 
+type DisplayMinutePack = {
+  label: string;
+  mins: number;
+  priceCents: number;
+  cost: string;
+};
+
+function defaultDisplayPacks(): DisplayMinutePack[] {
+  return MINUTE_PACKS.map((pack) => ({
+    label: pack.label,
+    mins: pack.mins,
+    priceCents: pack.priceCents,
+    cost: pack.cost,
+  }));
+}
+
+function computeDisplayPriceCents(
+  minutes: number,
+  packs: DisplayMinutePack[],
+  customRateCents: number,
+) {
+  const qty = Number(minutes);
+  if (!Number.isFinite(qty) || qty <= 0) return 0;
+  const pack = packs.find((entry) => entry.mins === qty);
+  if (pack) return pack.priceCents;
+  if (customRateCents > 0) return Math.round(qty * customRateCents);
+  return 0;
+}
+
 interface MinutesState {
   companyId: string;
   minutes: number;
@@ -243,6 +272,8 @@ export function MinutesCompanyPanel() {
   const [submittingBuy, setSubmittingBuy] = useState(false);
   const [paypalEnabled, setPaypalEnabled] = useState(false);
   const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [displayPacks, setDisplayPacks] = useState<DisplayMinutePack[]>(defaultDisplayPacks);
+  const [customRateCents, setCustomRateCents] = useState(1000 / 150);
 
   // Detail Modal state
   const [selectedCall, setSelectedCall] = useState<CompanyCall | null>(null);
@@ -317,6 +348,22 @@ export function MinutesCompanyPanel() {
     fetchPaymentConfig(apiBaseUrl).then((cfg) => {
       setPaypalEnabled(cfg.paypalEnabled);
       setStripeEnabled(cfg.stripeEnabled);
+      if (cfg.minutePacks?.length) {
+        setDisplayPacks(
+          cfg.minutePacks.map((pack: { label: string; minutes: number; priceCents: number }) => ({
+            label: pack.label,
+            mins: pack.minutes,
+            priceCents: pack.priceCents,
+            cost: `${(pack.priceCents / 100).toLocaleString('fr-FR', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })} €`,
+          })),
+        );
+      } else {
+        setDisplayPacks(defaultDisplayPacks());
+      }
+      setCustomRateCents(cfg.minutesCustomRateCents || 1000 / 150);
     });
   }, [showBuyModal, apiBaseUrl]);
 
@@ -326,7 +373,16 @@ export function MinutesCompanyPanel() {
     toast.success('Minutes rechargées mis à jour.', { id: 'refresh-mins-toast' });
   };
 
-  const purchasePriceLabel = formatMinutesPurchasePrice(parseFloat(minutesToBuy) || 0);
+  const purchasePriceLabel = (() => {
+    const cents = computeDisplayPriceCents(parseFloat(minutesToBuy) || 0, displayPacks, customRateCents);
+    if (cents > 0) {
+      return `${(cents / 100).toLocaleString('fr-FR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })} €`;
+    }
+    return formatMinutesPurchasePrice(parseFloat(minutesToBuy) || 0);
+  })();
 
   const handleBuySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -624,7 +680,7 @@ export function MinutesCompanyPanel() {
 
             {/* Quick pack cards */}
             <div className="grid grid-cols-3 gap-2">
-              {MINUTE_PACKS.map((pack) => (
+              {displayPacks.map((pack) => (
                 <button
                   key={pack.mins}
                   type="button"
