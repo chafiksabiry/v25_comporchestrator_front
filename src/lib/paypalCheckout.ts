@@ -416,14 +416,15 @@ export async function fetchPaymentConfig(apiBaseUrl: string) {
     const res = await fetch(`${apiBaseUrl}/payments/checkout/config`);
     const cfg = await safeParseJson(res);
     if (!res.ok || !cfg) {
-      return { paypalEnabled: false, stripeEnabled: false, minutesUnitPriceEuros: 1 };
+      return { paypalEnabled: false, stripeEnabled: false, minutePacks: [], minutesCustomRateCents: 0 };
     }
     return {
       paypalEnabled: Boolean(cfg.paypal?.enabled),
       stripeEnabled: Boolean(cfg.stripe?.enabled),
-      minutesUnitPriceEuros: cfg.pricing?.minutesUnitPriceEuros ?? 1
+      minutePacks: Array.isArray(cfg.pricing?.minutePacks) ? cfg.pricing.minutePacks : [],
+      minutesCustomRateCents: Number(cfg.pricing?.minutesCustomRateCents || 0),
     };
   } catch {
-    return { paypalEnabled: false, stripeEnabled: false, minutesUnitPriceEuros: 1 };
+    return { paypalEnabled: false, stripeEnabled: false, minutePacks: [], minutesCustomRateCents: 0 };
   }
 }
