@@ -6,7 +6,17 @@ declare global {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
     _mfq?: Array<string | string[]>;
+    __harxMfPageTimer?: ReturnType<typeof setTimeout>;
   }
+}
+
+function pushMouseflowPageView(pagePath: string, title: string) {
+  window._mfq = window._mfq || [];
+  if (window.__harxMfPageTimer) clearTimeout(window.__harxMfPageTimer);
+  window.__harxMfPageTimer = setTimeout(() => {
+    window._mfq?.push(['newPageView', pagePath, title]);
+    window.__harxMfPageTimer = undefined;
+  }, 700);
 }
 
 function upsertMeta(name: string, content: string, attribute: 'name' | 'property' = 'name') {
@@ -39,8 +49,7 @@ export function trackPageView(path?: string): void {
     });
   }
 
-  window._mfq = window._mfq || [];
-  window._mfq.push(['newPageView', pagePath, document.title]);
+  pushMouseflowPageView(pagePath, document.title);
 }
 
 export function updatePageHead(meta: PageMeta): void {
