@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import GigSetupChecklist from '../components/GigSetupChecklist';
 import StepCompletionToaster from '../components/StepCompletionToaster';
 import { buildCompanyPageTitle, resolveCompanyTabTitle } from '../config/companySections';
-import { usePageTitle } from '../../lib/tracking/usePageTitle';
+import { usePageTitle } from '../../../lib/tracking/usePageTitle';
 
 export function DashboardLayout() {
   const location = useLocation();
