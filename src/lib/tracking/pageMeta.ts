@@ -1,3 +1,7 @@
+import {
+  resolveCompanyOrchestratorTabTitle,
+  resolveCompanyTabTitle,
+} from '../../components/dashboard/config/companySections';
 import { DEFAULT_PAGE_DESCRIPTION, HARX_SITE_URL } from './constants';
 
 export type PageMeta = {
@@ -106,38 +110,6 @@ const ROUTE_META: Array<{ test: (path: string) => boolean; meta: PageMeta }> = [
     },
   },
   {
-    test: (p) => p.startsWith('/company'),
-    meta: {
-      title: `${BASE_TITLE} — Portail entreprise`,
-      description: 'Pilotez vos opérations, reps et campagnes depuis le portail entreprise HARX.',
-      canonical: `${HARX_SITE_URL}/company`,
-    },
-  },
-  {
-    test: (p) => p.includes('/reps/orchestrator') || p.includes('/reporchestrator'),
-    meta: {
-      title: `${BASE_TITLE} — Onboarding rep`,
-      description: 'Parcours d’onboarding rep HARX.',
-      canonical: `${HARX_SITE_URL}/reps/orchestrator`,
-    },
-  },
-  {
-    test: (p) => p.includes('/reps/dashboard') || p.includes('/reps/profile'),
-    meta: {
-      title: `${BASE_TITLE} — Dashboard rep`,
-      description: 'Tableau de bord rep HARX.',
-      canonical: `${HARX_SITE_URL}/reps`,
-    },
-  },
-  {
-    test: (p) => p.startsWith('/reps') || p.startsWith('/reporchestrator'),
-    meta: {
-      title: `${BASE_TITLE} — Portail rep`,
-      description: 'Gérez votre activité rep, vos gigs et vos revenus sur HARX.',
-      canonical: `${HARX_SITE_URL}/reps`,
-    },
-  },
-  {
     test: (p) => p.startsWith('/linkedin'),
     meta: {
       title: `${BASE_TITLE} — LinkedIn`,
@@ -152,8 +124,64 @@ export function normalizeTrackingPath(path: string): string {
   return pathname.replace(/\/+$/, '') || '/';
 }
 
+export function extractAppPath(rawPath: string): { pathname: string; search: string } {
+  const hashIndex = rawPath.indexOf('#');
+  if (hashIndex >= 0) {
+    const afterHash = rawPath.slice(hashIndex + 1);
+    const [hashPathname, ...hashSearchParts] = afterHash.split('?');
+    if (hashPathname.startsWith('/')) {
+      return {
+        pathname: normalizeTrackingPath(hashPathname),
+        search: hashSearchParts.length ? `?${hashSearchParts.join('?')}` : '',
+      };
+    }
+  }
+
+  const withoutHash = rawPath.split('#')[0] || '/';
+  const [pathnamePart, ...searchParts] = withoutHash.split('?');
+  return {
+    pathname: normalizeTrackingPath(pathnamePart),
+    search: searchParts.length ? `?${searchParts.join('?')}` : '',
+  };
+}
+
+function isCompanyPortalPath(pathname: string, rawPath: string): boolean {
+  return (
+    pathname.startsWith('/company') ||
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/orchestrator') ||
+    rawPath.includes('/company') ||
+    rawPath.includes('#/dashboard') ||
+    rawPath.includes('#/orchestrator')
+  );
+}
+
+function resolveCompanyPageMeta(rawPath: string): PageMeta | null {
+  const { pathname } = extractAppPath(rawPath);
+  if (!isCompanyPortalPath(pathname, rawPath)) return null;
+
+  const sectionLabel = resolveCompanyTabTitle(pathname);
+  return {
+    title: `${BASE_TITLE} — Entreprise · ${sectionLabel}`,
+    description: `Portail entreprise HARX — ${sectionLabel}.`,
+    canonical: `${HARX_SITE_URL}/company`,
+  };
+}
+
+export function buildCompanyOrchestratorMeta(activeTab: string): PageMeta {
+  const sectionLabel = resolveCompanyOrchestratorTabTitle(activeTab);
+  return {
+    title: `${BASE_TITLE} — Entreprise · ${sectionLabel}`,
+    description: `Portail entreprise HARX — ${sectionLabel}.`,
+    canonical: `${HARX_SITE_URL}/company`,
+  };
+}
+
 export function resolvePageMeta(rawPath: string): PageMeta {
   const full = rawPath || '/';
+  const companyMeta = resolveCompanyPageMeta(full);
+  if (companyMeta) return companyMeta;
+
   const match = ROUTE_META.find(({ test }) => test(full) || test(normalizeTrackingPath(full)));
   return (
     match?.meta ?? {

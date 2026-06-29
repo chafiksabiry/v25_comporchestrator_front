@@ -37,6 +37,11 @@ import PrompAI from "./gigsaicreation/components/PrompAI";
 import { useTranslation } from "react-i18next";
 import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
 import {
+  buildCompanyPageTitle,
+  resolveCompanyOnboardingFocusTitle,
+} from "./dashboard/config/companySections";
+import { usePageTitle } from "../lib/tracking/usePageTitle";
+import {
   markStepGuideSeen,
   shouldShowStepGuide,
 } from "../hooks/useStepGuide";
@@ -322,6 +327,20 @@ const CompanyOnboarding = () => {
     mode: 'start' | 'review';
   } | null>(null);
   const [pendingInStepGuide, setPendingInStepGuide] = useState<number | null>(null);
+
+  usePageTitle(
+    buildCompanyPageTitle(
+      resolveCompanyOnboardingFocusTitle({
+        focusedStepId: activeStep,
+        showGigCreation,
+        showGigDetails,
+        showTelephonySetup,
+        showUploadContacts,
+        showKnowledgeBase,
+      }),
+    ),
+    'Onboarding entreprise HARX.',
+  );
 
   const findPhaseIdForStep = (stepId: number) =>
     phases.find((p) => p.steps.some((s) => s.id === stepId))?.id ?? 1;

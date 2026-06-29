@@ -21,6 +21,8 @@ import {
 import { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
 import VisitorTracker from './lib/VisitorTracker';
+import { buildCompanyOrchestratorMeta } from './lib/tracking/pageMeta';
+import { updatePageHead } from './lib/tracking/visitorTracking';
 import { Provider } from 'react-redux';
 import { store } from './components/dashboard/store';
 import { AuthProvider } from './components/dashboard/contexts/AuthContext';
@@ -108,6 +110,12 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (activeProject !== 'comporchestrator') return;
+    if (activeTab === 'company-onboarding') return;
+    updatePageHead(buildCompanyOrchestratorMeta(activeTab));
+  }, [activeProject, activeTab]);
 
   // Close the mobile sidebar drawer whenever the route changes (e.g. a nav
   // link is tapped) so it doesn't stay open over the content.
