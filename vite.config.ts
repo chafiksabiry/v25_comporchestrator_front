@@ -20,7 +20,7 @@ const removeReactRefreshScript = () => {
 
 export default defineConfig(() => {
   return {
-    base: 'https://harxv25comporchestratorfront.netlify.app/',
+    base: 'https://harx26comporchestratorfront-dev.netlify.app/',
     plugins: [
       react({
         jsxRuntime: 'classic',
