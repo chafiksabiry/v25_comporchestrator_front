@@ -335,10 +335,10 @@ export function PhoneNumberPanel() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || data.error || 'Test call failed');
       }
-      toast.success(t('phoneNumberPanel.toasts.testCallSuccess', { defaultValue: 'Appel de test lancé avec succès !' }));
+      toast.success(t('phoneNumberPanel.toasts.testCallSuccess', { defaultValue: "Appel de test lancé avec succès !" }));
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || t('phoneNumberPanel.toasts.testCallFailed', { defaultValue: 'Erreur lors du test d\\'appel' }));
+      toast.error(err.message || t('phoneNumberPanel.toasts.testCallFailed', { defaultValue: "Erreur lors du test d'appel" }));
     } finally {
       setTestingCall(false);
     }
