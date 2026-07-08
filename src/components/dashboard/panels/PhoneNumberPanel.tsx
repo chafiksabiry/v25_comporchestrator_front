@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
+import { TelnyxRTC } from '@telnyx/webrtc';
 import { gigsApi } from '../services/api/endpoints';
 import { waitForStripePopup, getOrchestratorApiBase } from '../../../lib/paypalCheckout';
 import { markGigStepDone } from '../../../services/gigSetupSync';
@@ -189,8 +190,121 @@ export function PhoneNumberPanel() {
   const [isGigFilterOpen, setIsGigFilterOpen] = useState(false);
   const [selectedPhoneLine, setSelectedPhoneLine] = useState<string | null>(null);
 
-  const [testNumber, setTestNumber] = useState('+212637446431');
+  const [testNumber, setTestNumber] = useState('');
   const [testingCall, setTestingCall] = useState(false);
+  const [rtcClient, setRtcClient] = useState<any>(null);
+  const [rtcState, setRtcState] = useState<'idle' | 'connecting' | 'connected' | 'ringing' | 'active'>('idle');
+  const [activeCall, setActiveCall] = useState<any>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showSoftphone, setShowSoftphone] = useState(false);
+
+  // Gérer la fin d'un appel WebRTC
+  const handleWebRTCHangup = useCallback(() => {
+    if (activeCall) {
+      activeCall.hangup();
+    }
+    setActiveCall(null);
+    setRtcState(rtcClient ? 'connected' : 'idle');
+    setShowSoftphone(false);
+  }, [activeCall, rtcClient]);
+
+  // Initialiser TelnyxRTC
+  const initTelnyxRTC = useCallback(async () => {
+    const sipUser = import.meta.env.VITE_TELNYX_SIP_USER;
+    const sipPassword = import.meta.env.VITE_TELNYX_SIP_PASSWORD;
+
+    if (!sipUser || !sipPassword) {
+      toast.error('Les identifiants SIP (VITE_TELNYX_SIP_USER / PASSWORD) ne sont pas configurés.');
+      return null;
+    }
+
+    try {
+      const client = new TelnyxRTC({
+        login: sipUser,
+        password: sipPassword,
+      });
+
+      client.on('telnyx.ready', () => {
+        console.log('TelnyxRTC Ready');
+        setRtcState('connected');
+      });
+
+      client.on('telnyx.error', (error: any) => {
+        console.error('TelnyxRTC Error:', error);
+        toast.error('Erreur de connexion WebRTC.');
+        setRtcState('idle');
+      });
+
+      client.on('telnyx.notification', (notification: any) => {
+        if (notification.type === 'callUpdate') {
+          const call = notification.call;
+          if (call.state === 'ringing') {
+            setRtcState('ringing');
+            setActiveCall(call);
+          } else if (call.state === 'active') {
+            setRtcState('active');
+            setActiveCall(call);
+          } else if (call.state === 'destroy') {
+            setRtcState('connected');
+            setActiveCall(null);
+            setShowSoftphone(false);
+          }
+        }
+      });
+
+      await client.connect();
+      setRtcClient(client);
+      return client;
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Impossible d\'initialiser le softphone.');
+      setRtcState('idle');
+      return null;
+    }
+  }, []);
+
+  const handleTestCallWithMic = async () => {
+    if (!testNumber) {
+      toast.error('Veuillez entrer un numéro de destination.');
+      return;
+    }
+
+    setShowSoftphone(true);
+    setRtcState('connecting');
+
+    let client = rtcClient;
+    if (!client) {
+      client = await initTelnyxRTC();
+    }
+
+    if (!client) {
+      setShowSoftphone(false);
+      return;
+    }
+
+    // Demander l'accès au micro
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      toast.error('Accès au microphone refusé.');
+      setShowSoftphone(false);
+      setRtcState(client ? 'connected' : 'idle');
+      return;
+    }
+
+    try {
+      client.newCall({
+        destinationNumber: testNumber,
+        audio: true,
+        video: false
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erreur lors de l\'appel sortant.');
+      setShowSoftphone(false);
+      setRtcState('connected');
+    }
+  };
 
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   // In production we MUST resolve to the live orchestrator backend; the old
@@ -1327,12 +1441,63 @@ export function PhoneNumberPanel() {
                   onClick={handleTestCall}
                   disabled={testingCall}
                   className="px-5 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-50"
-                  title="Lancer l'appel de test"
+                  title="Lancer l'appel de test par API"
                 >
                   {testingCall ? <RefreshCw size={14} className="animate-spin" /> : <Phone size={14} />}
-                  <span>Tester</span>
+                  <span>Tester (API)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTestCallWithMic}
+                  disabled={rtcState === 'connecting' || rtcState === 'ringing' || rtcState === 'active'}
+                  className="px-5 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-50"
+                  title="Tester l'appel avec votre microphone via WebRTC"
+                >
+                  {rtcState === 'connecting' ? <RefreshCw size={14} className="animate-spin" /> : <Radio size={14} />}
+                  <span>Tester (Micro)</span>
                 </button>
               </div>
+
+              {/* Softphone UI Modal / Inline */}
+              {showSoftphone && (
+                <div className="mt-4 p-5 border border-violet-200 rounded-2xl bg-white shadow-lg flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className={`p-4 rounded-full ${rtcState === 'active' ? 'bg-emerald-100 text-emerald-600 animate-pulse' : rtcState === 'ringing' ? 'bg-amber-100 text-amber-600 animate-bounce' : 'bg-violet-100 text-violet-600'}`}>
+                      <Phone size={24} />
+                    </div>
+                    <p className="font-black text-slate-900 mt-2">{testNumber}</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                      {rtcState === 'connecting' && 'Connexion...'}
+                      {rtcState === 'ringing' && 'Sonnerie en cours...'}
+                      {rtcState === 'active' && 'Appel en cours'}
+                    </p>
+                  </div>
+
+                  {rtcState === 'active' && (
+                    <div className="flex gap-4">
+                      <button
+                        onClick={() => {
+                          if (activeCall) {
+                            if (isMuted) activeCall.unmuteAudio();
+                            else activeCall.muteAudio();
+                            setIsMuted(!isMuted);
+                          }
+                        }}
+                        className={`px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors ${isMuted ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                      >
+                        {isMuted ? 'Désactiver Mute' : 'Mute'}
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleWebRTCHangup}
+                    className="px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider transition-colors shadow-md shadow-red-500/20"
+                  >
+                    Raccrocher
+                  </button>
+                </div>
+              )}
             </div>
             </>
           )}
