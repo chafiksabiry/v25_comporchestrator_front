@@ -1218,8 +1218,9 @@ export function PhoneNumberPanel() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 border-b border-indigo-100">
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.number')}</th>
@@ -1333,6 +1334,7 @@ export function PhoneNumberPanel() {
                 </button>
               </div>
             </div>
+            </>
           )}
         </div>
       ) : (
