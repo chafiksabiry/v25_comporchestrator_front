@@ -189,6 +189,9 @@ export function PhoneNumberPanel() {
   const [isGigFilterOpen, setIsGigFilterOpen] = useState(false);
   const [selectedPhoneLine, setSelectedPhoneLine] = useState<string | null>(null);
 
+  const [testNumber, setTestNumber] = useState('+212637446431');
+  const [testingCall, setTestingCall] = useState(false);
+
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   // In production we MUST resolve to the live orchestrator backend; the old
   // localhost default would silently break checkout for every deployed user.
@@ -313,6 +316,31 @@ export function PhoneNumberPanel() {
       });
     } catch {
       return '—';
+    }
+  };
+
+  const handleTestCall = async () => {
+    if (!selectedPhoneLineData) return;
+    setTestingCall(true);
+    try {
+      const res = await fetch(`${apiBaseUrl}/phone-numbers/test-call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromNumber: selectedPhoneLineData.phoneNumber,
+          toNumber: testNumber
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Test call failed');
+      }
+      toast.success(t('phoneNumberPanel.toasts.testCallSuccess', { defaultValue: 'Appel de test lancé avec succès !' }));
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || t('phoneNumberPanel.toasts.testCallFailed', { defaultValue: 'Erreur lors du test d\\'appel' }));
+    } finally {
+      setTestingCall(false);
     }
   };
 
@@ -1515,6 +1543,28 @@ export function PhoneNumberPanel() {
                 <span className="text-sm font-bold text-slate-900">
                   {formatLineDate(selectedPhoneLineData.createdAt)}
                 </span>
+              </div>
+              
+              <div className="py-3 border-t border-slate-100">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Tester l'appel</p>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={testNumber}
+                    onChange={(e) => setTestNumber(e.target.value)}
+                    placeholder="+212637446431"
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:border-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleTestCall}
+                    disabled={testingCall}
+                    className="px-4 py-2 flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-xs transition-colors disabled:opacity-50"
+                    title="Lancer l'appel de test"
+                  >
+                    {testingCall ? <RefreshCw size={14} className="animate-spin" /> : <Phone size={14} />}
+                  </button>
+                </div>
               </div>
             </div>
 
