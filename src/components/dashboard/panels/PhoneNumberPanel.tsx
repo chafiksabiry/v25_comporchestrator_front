@@ -244,6 +244,11 @@ export function PhoneNumberPanel() {
           } else if (call.state === 'active') {
             setRtcState('active');
             setActiveCall(call);
+            // Attacher le flux audio distant à l'élément <audio>
+            const remoteAudio = document.getElementById('remoteMedia') as HTMLAudioElement;
+            if (remoteAudio && call.remoteStream) {
+              remoteAudio.srcObject = call.remoteStream;
+            }
           } else if (call.state === 'destroy') {
             setRtcState('connected');
             setActiveCall(null);
@@ -946,6 +951,7 @@ export function PhoneNumberPanel() {
 
       {/* Header section */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 min-w-0">
+        <audio id="remoteMedia" autoPlay className="hidden" />
         <div className="min-w-0">
           <div className="flex items-center gap-3 mb-1">
             <span className="p-2.5 rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 text-white">
