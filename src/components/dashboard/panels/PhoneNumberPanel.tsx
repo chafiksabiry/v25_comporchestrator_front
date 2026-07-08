@@ -295,6 +295,7 @@ export function PhoneNumberPanel() {
     try {
       client.newCall({
         destinationNumber: testNumber,
+        callerNumber: '+33423330953', // Ajout du numéro autorisé pour éviter les rejets
         audio: true,
         video: false
       });
