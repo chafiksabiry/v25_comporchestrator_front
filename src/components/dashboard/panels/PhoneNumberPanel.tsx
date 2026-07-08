@@ -320,14 +320,13 @@ export function PhoneNumberPanel() {
   };
 
   const handleTestCall = async () => {
-    if (!selectedPhoneLineData) return;
     setTestingCall(true);
     try {
       const res = await fetch(`${apiBaseUrl}/phone-numbers/test-call`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fromNumber: selectedPhoneLineData.phoneNumber,
+          fromNumber: '+33423330953',
           toNumber: testNumber
         })
       });
@@ -1311,6 +1310,29 @@ export function PhoneNumberPanel() {
                 </tfoot>
               </table>
             </div>
+            
+            <div className="mt-4 p-4 border border-indigo-100 rounded-2xl bg-indigo-50/30">
+              <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700 mb-2">Tester l'appel (Depuis +33423330953)</p>
+              <div className="flex gap-2 max-w-md">
+                <input 
+                  type="text" 
+                  value={testNumber}
+                  onChange={(e) => setTestNumber(e.target.value)}
+                  placeholder="+212637446431"
+                  className="flex-1 px-4 py-2.5 bg-white border border-indigo-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={handleTestCall}
+                  disabled={testingCall}
+                  className="px-5 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-50"
+                  title="Lancer l'appel de test"
+                >
+                  {testingCall ? <RefreshCw size={14} className="animate-spin" /> : <Phone size={14} />}
+                  <span>Tester</span>
+                </button>
+              </div>
+            </div>
           )}
         </div>
       ) : (
@@ -1543,28 +1565,6 @@ export function PhoneNumberPanel() {
                 <span className="text-sm font-bold text-slate-900">
                   {formatLineDate(selectedPhoneLineData.createdAt)}
                 </span>
-              </div>
-              
-              <div className="py-3 border-t border-slate-100">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Tester l'appel</p>
-                <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    value={testNumber}
-                    onChange={(e) => setTestNumber(e.target.value)}
-                    placeholder="+212637446431"
-                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:border-indigo-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleTestCall}
-                    disabled={testingCall}
-                    className="px-4 py-2 flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-xs transition-colors disabled:opacity-50"
-                    title="Lancer l'appel de test"
-                  >
-                    {testingCall ? <RefreshCw size={14} className="animate-spin" /> : <Phone size={14} />}
-                  </button>
-                </div>
               </div>
             </div>
 
