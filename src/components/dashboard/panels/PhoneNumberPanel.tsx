@@ -193,6 +193,7 @@ export function PhoneNumberPanel() {
   const [searchProvider, setSearchProvider] = useState<'twilio' | 'telnyx'>('telnyx');
 
   const [testNumber, setTestNumber] = useState('');
+  const [testFromNumber, setTestFromNumber] = useState('+33423330953');
   const [testingCall, setTestingCall] = useState(false);
   const [rtcClient, setRtcClient] = useState<any>(null);
   const [rtcState, setRtcState] = useState<'idle' | 'connecting' | 'connected' | 'ringing' | 'active'>('idle');
@@ -302,7 +303,7 @@ export function PhoneNumberPanel() {
     try {
       client.newCall({
         destinationNumber: testNumber,
-        callerNumber: '+33423330953', // Ajout du numéro autorisé pour éviter les rejets
+        callerNumber: testFromNumber || '+33423330953', // Utilise le numéro renseigné dans l'input
         audio: true,
         video: false
       });
@@ -448,7 +449,7 @@ export function PhoneNumberPanel() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fromNumber: '+33423330953',
+          fromNumber: testFromNumber || '+33423330953',
           toNumber: testNumber
         })
       });
@@ -1445,13 +1446,20 @@ export function PhoneNumberPanel() {
             </div>
             
             <div className="mt-4 p-4 border border-indigo-100 rounded-2xl bg-indigo-50/30">
-              <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700 mb-2">Tester l'appel (Depuis +33423330953)</p>
-              <div className="flex gap-2 max-w-md">
+              <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700 mb-2">Tester l'appel</p>
+              <div className="flex gap-2 max-w-xl">
+                <input 
+                  type="text" 
+                  value={testFromNumber}
+                  onChange={(e) => setTestFromNumber(e.target.value)}
+                  placeholder="Numéro Appelant (ex: +33...)"
+                  className="flex-1 px-4 py-2.5 bg-white border border-indigo-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                />
                 <input 
                   type="text" 
                   value={testNumber}
                   onChange={(e) => setTestNumber(e.target.value)}
-                  placeholder="+212637446431"
+                  placeholder="Numéro Appelé (ex: +212...)"
                   className="flex-1 px-4 py-2.5 bg-white border border-indigo-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                 />
                 <button
