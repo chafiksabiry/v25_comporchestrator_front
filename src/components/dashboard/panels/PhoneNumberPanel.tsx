@@ -1622,8 +1622,8 @@ export function PhoneNumberPanel() {
               </div>
             ) : (
               <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin">
-                {searchResults.map((resultNum: any) => {
-                  const numberString = resultNum.phoneNumber || resultNum.nationalFormat || resultNum;
+                {searchResults.map((resultNum: any, idx: number) => {
+                  const numberString = typeof resultNum === 'string' ? resultNum : (resultNum.phoneNumber || resultNum.phone_number || resultNum.nationalFormat || `number-${idx}`);
                   return (
                     <div
                       key={numberString}
