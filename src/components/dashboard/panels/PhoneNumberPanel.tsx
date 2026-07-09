@@ -27,6 +27,7 @@ import { gigsApi } from '../services/api/endpoints';
 import { waitForStripePopup, getOrchestratorApiBase } from '../../../lib/paypalCheckout';
 import { markGigStepDone } from '../../../services/gigSetupSync';
 import { requirementService } from '../../../services/requirementService';
+import { useAuth } from '../contexts/AuthContext';
 import { RequirementFormModal } from '../../RequirementFormModal';
 
 type CheckoutStep = 'select' | 'paypal' | 'processing' | 'success';
@@ -149,6 +150,8 @@ interface GigAndReps {
 export function PhoneNumberPanel() {
   const { t } = useTranslation();
   const location = useLocation();
+  const { currentUser } = useAuth();
+  const companyId = currentUser?.id;
   const [phoneNumbers, setPhoneNumbers] = useState<PurchasedNumber[]>([]);
   const [gigsAndReps, setGigsAndReps] = useState<GigAndReps[]>([]);
   /** gigId → required team size (from gig.team.size) */
