@@ -1374,6 +1374,9 @@ export function PhoneNumberPanel() {
                               <Hash size={14} />
                             </span>
                             <span>{num.phoneNumber}</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
+                              {num.provider === 'twilio' ? 'Twilio' : 'Telnyx'}
+                            </span>
                           </div>
                         </td>
                         <td className="py-4 px-4 font-bold text-slate-700">
@@ -1629,11 +1632,14 @@ export function PhoneNumberPanel() {
                       key={numberString}
                       className="group p-4 bg-gradient-to-r from-cyan-50/50 via-white to-indigo-50/50 rounded-2xl border border-slate-100 hover:border-indigo-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0 transition-colors duration-200"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-50 to-teal-50 border border-cyan-100 text-cyan-700">
                           <Hash size={15} />
                         </span>
                         <span className="text-sm font-black text-slate-900 tracking-tight tabular-nums truncate">{numberString}</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
+                          Telnyx
+                        </span>
                       </div>
 
                       <button
@@ -1695,6 +1701,9 @@ export function PhoneNumberPanel() {
                       {t('phoneNumberPanel.myNumbers.table.freeTrial')}
                     </span>
                   )}
+                  <span className="inline-block mt-2 ml-2 px-2 py-0.5 rounded-lg bg-white/20 text-white border border-white/30 text-[9px] font-black uppercase tracking-wider">
+                    {selectedPhoneLineData.provider === 'twilio' ? 'Twilio' : 'Telnyx'}
+                  </span>
                 </div>
               </div>
             </div>
