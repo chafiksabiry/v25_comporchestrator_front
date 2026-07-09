@@ -189,7 +189,7 @@ export function PhoneNumberPanel() {
   const [myNumbersSearch, setMyNumbersSearch] = useState('');
   const [myNumbersGigFilter, setMyNumbersGigFilter] = useState('');
   const [isGigFilterOpen, setIsGigFilterOpen] = useState(false);
-  const [selectedPhoneLineData, setSelectedPhoneLineData] = useState<any>(null);
+  const [selectedPhoneLine, setSelectedPhoneLine] = useState<string | null>(null);
   const [searchProvider, setSearchProvider] = useState<'twilio' | 'telnyx'>('telnyx');
 
   const [testNumber, setTestNumber] = useState('');
