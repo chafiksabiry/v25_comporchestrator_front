@@ -556,7 +556,7 @@ export function PhoneNumberPanel() {
         return;
       }
 
-      const endpoint = `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${targetCountry}&limit=${searchLimit}`;
+      const endpoint = `${apiBaseUrl}/phone-numbers/search?countryCode=${targetCountry}&limit=${searchLimit}`;
       console.log('[handleSearchNumbers] Fetching telephony search endpoint:', endpoint);
       const res = await fetch(endpoint);
       if (res.ok) {
@@ -714,7 +714,7 @@ export function PhoneNumberPanel() {
     async (paymentId: string) => {
       if (!checkoutNumber || !selectedGigIdForNumber) return;
 
-      const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase/twilio`, {
+      const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
