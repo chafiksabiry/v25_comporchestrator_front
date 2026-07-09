@@ -179,6 +179,7 @@ export function PhoneNumberPanel() {
 
   // Checkout / payment state for the new Stripe-or-PayPal flow
   const [checkoutNumber, setCheckoutNumber] = useState<string | null>(null);
+  const [checkoutProvider, setCheckoutProvider] = useState<'twilio' | 'telnyx'>('telnyx');
   const [checkoutMethod, setCheckoutMethod] = useState<'stripe' | 'paypal'>('stripe');
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('select');
   const [checkoutPaymentId, setCheckoutPaymentId] = useState<string | null>(null);
@@ -188,7 +189,8 @@ export function PhoneNumberPanel() {
   const [myNumbersSearch, setMyNumbersSearch] = useState('');
   const [myNumbersGigFilter, setMyNumbersGigFilter] = useState('');
   const [isGigFilterOpen, setIsGigFilterOpen] = useState(false);
-  const [selectedPhoneLine, setSelectedPhoneLine] = useState<string | null>(null);
+  const [selectedPhoneLineData, setSelectedPhoneLineData] = useState<any>(null);
+  const [searchProvider, setSearchProvider] = useState<'twilio' | 'telnyx'>('telnyx');
 
   const [testNumber, setTestNumber] = useState('');
   const [testingCall, setTestingCall] = useState(false);
@@ -556,7 +558,9 @@ export function PhoneNumberPanel() {
         return;
       }
 
-      const endpoint = `${apiBaseUrl}/phone-numbers/search?countryCode=${targetCountry}&limit=${searchLimit}`;
+      const endpoint = searchProvider === 'twilio' 
+        ? `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${targetCountry}&limit=${searchLimit}`
+        : `${apiBaseUrl}/phone-numbers/search?countryCode=${targetCountry}&limit=${searchLimit}`;
       console.log('[handleSearchNumbers] Fetching telephony search endpoint:', endpoint);
       const res = await fetch(endpoint);
       if (res.ok) {
@@ -573,17 +577,18 @@ export function PhoneNumberPanel() {
           );
           return;
         }
+        const injectProvider = (items: any[]) => items.map(item => ({ ...item, provider: searchProvider }));
         if (Array.isArray(data)) {
-          setSearchResults(data);
+          setSearchResults(injectProvider(data));
           if (data.length === 0) {
             toast.error(t('phoneNumberPanel.toasts.noNumbersFound'));
           } else {
             toast.success(t('phoneNumberPanel.toasts.numbersFound', { count: data.length }));
           }
         } else if (data.data && Array.isArray(data.data)) {
-          setSearchResults(data.data);
+          setSearchResults(injectProvider(data.data));
         } else if (Array.isArray(data.numbers)) {
-          setSearchResults(data.numbers);
+          setSearchResults(injectProvider(data.numbers));
           if (data.numbers.length === 0) {
             toast.error(t('phoneNumberPanel.toasts.noNumbersFound'));
           } else {
@@ -611,12 +616,13 @@ export function PhoneNumberPanel() {
   };
 
   // Step 1 — open the payment modal (does NOT debit the wallet).
-  const handlePurchaseNumber = (numberToBuy: string) => {
+  const handlePurchaseNumber = (numberToBuy: string, provider: 'twilio' | 'telnyx') => {
     if (!selectedGigIdForNumber) {
       toast.error(t('phoneNumberPanel.toasts.selectGigFirst'));
       return;
     }
     setCheckoutNumber(numberToBuy);
+    setCheckoutProvider(provider);
     setCheckoutMethod('stripe');
     setCheckoutStep('select');
     setCheckoutPaymentId(null);
@@ -625,6 +631,7 @@ export function PhoneNumberPanel() {
   const closeCheckoutModal = () => {
     if (checkoutStep === 'processing') return;
     setCheckoutNumber(null);
+    setCheckoutProvider('telnyx');
     setCheckoutPaymentId(null);
     setCheckoutStep('select');
   };
@@ -719,6 +726,7 @@ export function PhoneNumberPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: checkoutNumber,
+          provider: checkoutProvider,
           gigId: selectedGigIdForNumber,
           companyId,
           paymentId
@@ -1375,7 +1383,7 @@ export function PhoneNumberPanel() {
                             </span>
                             <span>{num.phoneNumber}</span>
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
-                              {num.provider === 'twilio' ? 'Twilio' : 'Telnyx'}
+                              {num.provider === 'twilio' ? 'Fournisseur 1' : 'Fournisseur 2'}
                             </span>
                           </div>
                         </td>
@@ -1587,6 +1595,36 @@ export function PhoneNumberPanel() {
                 </div>
               )}
 
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block mb-1">
+                  Fournisseur
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="searchProvider" 
+                      value="twilio"
+                      checked={searchProvider === 'twilio'}
+                      onChange={() => setSearchProvider('twilio')}
+                      className="text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-xs font-bold text-slate-700">Fournisseur 1</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="searchProvider" 
+                      value="telnyx"
+                      checked={searchProvider === 'telnyx'}
+                      onChange={() => setSearchProvider('telnyx')}
+                      className="text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-xs font-bold text-slate-700">Fournisseur 2</span>
+                  </label>
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={searching}
@@ -1638,12 +1676,12 @@ export function PhoneNumberPanel() {
                         </span>
                         <span className="text-sm font-black text-slate-900 tracking-tight tabular-nums truncate">{numberString}</span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
-                          Telnyx
+                          {searchProvider === 'twilio' ? 'Fournisseur 1' : 'Fournisseur 2'}
                         </span>
                       </div>
 
                       <button
-                        onClick={() => handlePurchaseNumber(numberString)}
+                        onClick={() => handlePurchaseNumber(numberString, resultNum.provider || searchProvider)}
                         disabled={purchasing !== null}
                         className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-colors duration-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
                         title={t('phoneNumberPanel.buy.results.buyTooltip')}
@@ -1702,7 +1740,7 @@ export function PhoneNumberPanel() {
                     </span>
                   )}
                   <span className="inline-block mt-2 ml-2 px-2 py-0.5 rounded-lg bg-white/20 text-white border border-white/30 text-[9px] font-black uppercase tracking-wider">
-                    {selectedPhoneLineData.provider === 'twilio' ? 'Twilio' : 'Telnyx'}
+                    {selectedPhoneLineData.provider === 'twilio' ? 'Fournisseur 1' : 'Fournisseur 2'}
                   </span>
                 </div>
               </div>
