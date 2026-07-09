@@ -26,6 +26,8 @@ import { TelnyxRTC } from '@telnyx/webrtc';
 import { gigsApi } from '../services/api/endpoints';
 import { waitForStripePopup, getOrchestratorApiBase } from '../../../lib/paypalCheckout';
 import { markGigStepDone } from '../../../services/gigSetupSync';
+import { requirementService } from '../../../services/requirementService';
+import { RequirementFormModal } from '../../RequirementFormModal';
 
 type CheckoutStep = 'select' | 'paypal' | 'processing' | 'success';
 
@@ -192,6 +194,26 @@ export function PhoneNumberPanel() {
   const [selectedPhoneLine, setSelectedPhoneLine] = useState<string | null>(null);
   const [searchProvider, setSearchProvider] = useState<'twilio' | 'telnyx'>('telnyx');
 
+  const [showRequirementModal, setShowRequirementModal] = useState(false);
+  const [countryReq, setCountryReq] = useState<{
+    hasRequirements: boolean;
+    requirements?: any[];
+  }>({ hasRequirements: false });
+
+  const [requirementStatus, setRequirementStatus] = useState<{
+    isChecking: boolean;
+    hasRequirements: boolean;
+    isComplete: boolean;
+    error: string | null;
+    groupId?: string;
+    telnyxId?: string;
+  }>({
+    isChecking: false,
+    hasRequirements: false,
+    isComplete: false,
+    error: null
+  });
+
   const [testNumber, setTestNumber] = useState('');
   const [testFromNumber, setTestFromNumber] = useState('+33423330953');
   const [testingCall, setTestingCall] = useState(false);
@@ -210,6 +232,56 @@ export function PhoneNumberPanel() {
     setRtcState(rtcClient ? 'connected' : 'idle');
     setShowSoftphone(false);
   }, [activeCall, rtcClient]);
+
+  const selectedGigForSearch = useMemo(() => gigsAndReps.find(g => g.gigId === selectedGigIdForNumber), [gigsAndReps, selectedGigIdForNumber]);
+  const destZone = selectedGigForSearch?.destinationCountry;
+
+  useEffect(() => {
+    if (!destZone || searchProvider !== 'telnyx' || !companyId) return;
+
+    const checkRequirements = async () => {
+      try {
+        setRequirementStatus(prev => ({ ...prev, isChecking: true }));
+        const response = await requirementService.checkCountryRequirements(destZone);
+        setCountryReq(response);
+
+        if (response.hasRequirements) {
+          const { group, isNew } = await requirementService.getOrCreateGroup(companyId, destZone);
+          if (isNew) {
+            setRequirementStatus({
+              isChecking: false,
+              hasRequirements: true,
+              isComplete: false,
+              error: null,
+              groupId: group._id,
+              telnyxId: group.telnyxId
+            });
+          } else {
+            const detailedStatus = await requirementService.getDetailedGroupStatus(group._id);
+            setRequirementStatus({
+              isChecking: false,
+              hasRequirements: true,
+              isComplete: detailedStatus.isComplete,
+              error: null,
+              groupId: group._id,
+              telnyxId: group.telnyxId
+            });
+          }
+        } else {
+          setRequirementStatus({
+            isChecking: false,
+            hasRequirements: false,
+            isComplete: true,
+            error: null
+          });
+        }
+      } catch (error) {
+        console.error('Error checking telnyx requirements:', error);
+        setRequirementStatus(prev => ({ ...prev, isChecking: false, error: 'Failed to check requirements' }));
+      }
+    };
+    checkRequirements();
+  }, [destZone, searchProvider, companyId]);
 
   // Initialiser TelnyxRTC
   const initTelnyxRTC = useCallback(async () => {
@@ -622,6 +694,22 @@ export function PhoneNumberPanel() {
       toast.error(t('phoneNumberPanel.toasts.selectGigFirst'));
       return;
     }
+
+    if (provider === 'telnyx') {
+      if (requirementStatus.isChecking) {
+        toast.error('Veuillez patienter pendant la vérification des exigences réglementaires...');
+        return;
+      }
+      if (requirementStatus.hasRequirements && !requirementStatus.isComplete) {
+        // Intercept purchase to show requirement modal
+        setShowRequirementModal(true);
+        // We temporarily store the number they wanted to buy so we can resume later
+        setCheckoutNumber(numberToBuy);
+        setCheckoutProvider(provider);
+        return;
+      }
+    }
+
     setCheckoutNumber(numberToBuy);
     setCheckoutProvider(provider);
     setCheckoutMethod('stripe');
