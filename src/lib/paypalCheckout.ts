@@ -2,6 +2,9 @@ export type PaypalPopupOutcome = 'approved' | 'cancelled' | 'closed';
 
 const RETURN_ORIGINS = new Set([
   'https://harx26comporchestratorfront-dev.netlify.app',
+  'https://harxv25comporchestratorfront.netlify.app',
+  'http://localhost:5004',
+  'http://127.0.0.1:5004',
   'https://harx.ai'
 ]);
 
