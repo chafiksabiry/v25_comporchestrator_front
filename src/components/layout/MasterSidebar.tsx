@@ -31,7 +31,7 @@ import {
 import { getHiddenSections } from '../dashboard/config/sections';
 import Cookies from 'js-cookie';
 import { useAuth } from '../dashboard/contexts/AuthContext';
-import type { ProjectView } from '../../App';
+import type { ProjectView } from '../ProjectViewSwitch';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { goToCompanyOnboardingTab } from '../../hooks/useOnboardingGlobalBack';
