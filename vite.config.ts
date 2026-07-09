@@ -45,7 +45,6 @@ export default defineConfig(() => {
     },
     build: {
       target: 'esnext',
-      sourcemap: true,
       cssCodeSplit: false,
       rollupOptions: {
         output: {
