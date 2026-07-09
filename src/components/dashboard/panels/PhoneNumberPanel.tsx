@@ -1606,7 +1606,10 @@ export function PhoneNumberPanel() {
                       name="searchProvider" 
                       value="twilio"
                       checked={searchProvider === 'twilio'}
-                      onChange={() => setSearchProvider('twilio')}
+                      onChange={() => {
+                        setSearchProvider('twilio');
+                        setSearchResults([]);
+                      }}
                       className="text-indigo-600 focus:ring-indigo-500"
                     />
                     <span className="text-xs font-bold text-slate-700">Fournisseur 1</span>
@@ -1617,7 +1620,10 @@ export function PhoneNumberPanel() {
                       name="searchProvider" 
                       value="telnyx"
                       checked={searchProvider === 'telnyx'}
-                      onChange={() => setSearchProvider('telnyx')}
+                      onChange={() => {
+                        setSearchProvider('telnyx');
+                        setSearchResults([]);
+                      }}
                       className="text-indigo-600 focus:ring-indigo-500"
                     />
                     <span className="text-xs font-bold text-slate-700">Fournisseur 2</span>
@@ -1676,7 +1682,7 @@ export function PhoneNumberPanel() {
                         </span>
                         <span className="text-sm font-black text-slate-900 tracking-tight tabular-nums truncate">{numberString}</span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
-                          {searchProvider === 'twilio' ? 'Fournisseur 1' : 'Fournisseur 2'}
+                          {resultNum.provider === 'twilio' ? 'Fournisseur 1' : 'Fournisseur 2'}
                         </span>
                       </div>
 
