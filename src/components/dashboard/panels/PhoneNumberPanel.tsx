@@ -208,6 +208,7 @@ export function PhoneNumberPanel() {
     error: string | null;
     groupId?: string;
     telnyxId?: string;
+    completedRequirements?: any[];
   }>({
     isChecking: false,
     hasRequirements: false,
@@ -255,7 +256,8 @@ export function PhoneNumberPanel() {
               isComplete: false,
               error: null,
               groupId: group._id,
-              telnyxId: group.telnyxId
+              telnyxId: group.telnyxId,
+              completedRequirements: []
             });
           } else {
             const detailedStatus = await requirementService.getDetailedGroupStatus(group._id);
@@ -265,7 +267,8 @@ export function PhoneNumberPanel() {
               isComplete: detailedStatus.isComplete,
               error: null,
               groupId: group._id,
-              telnyxId: group.telnyxId
+              telnyxId: group.telnyxId,
+              completedRequirements: detailedStatus.completedRequirements
             });
           }
         } else {
@@ -688,6 +691,40 @@ export function PhoneNumberPanel() {
     void doSearch(selectedGigIdForNumber);
   };
 
+  const handleDirectPurchase = async (numberToBuy: string, provider: 'twilio' | 'telnyx') => {
+    setPurchasing(numberToBuy);
+    try {
+      const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: numberToBuy,
+          provider: provider,
+          gigId: selectedGigIdForNumber,
+          companyId,
+          requirementGroupId: provider === 'telnyx' ? requirementStatus.telnyxId : undefined
+        })
+      });
+
+      if (!purchaseRes.ok) {
+        const err = await purchaseRes.json().catch(() => ({}));
+        throw new Error(err?.message || err?.error || t('phoneNumberPanel.toasts.purchaseFailed'));
+      }
+
+      toast.success(t('phoneNumberPanel.toasts.purchaseSuccessCard', { number: numberToBuy }));
+      setSearchResults(prev => prev.filter(n => n.phoneNumber !== numberToBuy));
+      fetchData(true);
+      if (selectedGigIdForNumber) {
+        markGigStepDone(selectedGigIdForNumber, 'telephony', true);
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || t('phoneNumberPanel.toasts.purchaseFailed'));
+    } finally {
+      setPurchasing(null);
+    }
+  };
+
   // Step 1 — open the payment modal (does NOT debit the wallet).
   const handlePurchaseNumber = (numberToBuy: string, provider: 'twilio' | 'telnyx') => {
     if (!selectedGigIdForNumber) {
@@ -700,7 +737,7 @@ export function PhoneNumberPanel() {
         toast.error('Veuillez patienter pendant la vérification des exigences réglementaires...');
         return;
       }
-      if (requirementStatus.hasRequirements && !requirementStatus.isComplete) {
+      if (requirementStatus.hasRequirements) {
         // Intercept purchase to show requirement modal
         setShowRequirementModal(true);
         // We temporarily store the number they wanted to buy so we can resume later
@@ -708,6 +745,12 @@ export function PhoneNumberPanel() {
         setCheckoutProvider(provider);
         return;
       }
+    }
+
+    // Bypass payment modal if requirements are not used (i.e. hasRequirements is false)
+    if (!requirementStatus.hasRequirements) {
+      void handleDirectPurchase(numberToBuy, provider);
+      return;
     }
 
     setCheckoutNumber(numberToBuy);
@@ -818,7 +861,8 @@ export function PhoneNumberPanel() {
           provider: checkoutProvider,
           gigId: selectedGigIdForNumber,
           companyId,
-          paymentId
+          paymentId,
+          requirementGroupId: checkoutProvider === 'telnyx' ? requirementStatus.telnyxId : undefined
         })
       });
 
@@ -827,7 +871,7 @@ export function PhoneNumberPanel() {
         throw new Error(err?.message || err?.error || t('phoneNumberPanel.toasts.purchaseFailed'));
       }
     },
-    [apiBaseUrl, checkoutNumber, companyId, selectedGigIdForNumber, t]
+    [apiBaseUrl, checkoutNumber, checkoutProvider, requirementStatus, companyId, selectedGigIdForNumber, t]
   );
 
   const finishSuccessfulPurchase = useCallback(
@@ -1917,7 +1961,35 @@ export function PhoneNumberPanel() {
           NOT linked to WalletCompany. Charges the company's external
           card or PayPal account for the phone line setup fee.
          =========================================================== */}
-      {checkoutNumber && createPortal(
+      {showRequirementModal && checkoutNumber && destZone && countryReq.requirements && (
+        <RequirementFormModal
+          isOpen={showRequirementModal}
+          onClose={() => {
+            setShowRequirementModal(false);
+            setCheckoutNumber(null);
+          }}
+          countryCode={destZone}
+          requirements={countryReq.requirements}
+          requirementGroupId={requirementStatus.groupId}
+          requirementStatus={requirementStatus as any}
+          existingValues={requirementStatus.completedRequirements?.map(req => ({
+            field: req.id,
+            status: req.status,
+            value: typeof req.value === 'object' ? JSON.stringify(req.value) : req.value
+          }))}
+          onSubmit={async (values) => {
+            setShowRequirementModal(false);
+            setRequirementStatus(prev => ({ ...prev, isComplete: true }));
+            
+            // Now proceed to the payment modal
+            setCheckoutMethod('stripe');
+            setCheckoutStep('select');
+            setCheckoutPaymentId(null);
+          }}
+        />
+      )}
+
+      {checkoutNumber && !showRequirementModal && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden border border-slate-200">
             {/* Header — indigo / violet / fuchsia gradient */}

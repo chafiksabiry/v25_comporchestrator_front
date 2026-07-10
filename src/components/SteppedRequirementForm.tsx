@@ -61,6 +61,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
   existingValues,
   requirementGroupId: initialGroupId,
   destinationZone,
+  onSubmit,
   onCancel
 }) => {
   // Créer une étape pour chaque requirement
@@ -425,8 +426,12 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
     const isValid = await validateStep();
     if (!isValid) return;
 
-    // Si valide, on ferme simplement le modal
-    onCancel();
+    // Si valide, on appelle onSubmit
+    if (onSubmit) {
+      await onSubmit(values);
+    } else {
+      onCancel();
+    }
   };
 
   const renderAddressFields = (req: RequirementType) => {
