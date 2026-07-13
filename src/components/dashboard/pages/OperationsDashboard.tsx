@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   Phone,
@@ -1583,6 +1583,7 @@ export default function OperationsDashboard() {
           leadStats={leadStats}
           repCoverage={repCoverage}
           callbacksStats={callbacksStats}
+          selectedGigId={selectedGigId}
         />
       ) : tab === 'wallet' ? (
         <WalletView
@@ -1704,14 +1705,25 @@ function LeadsView({
   leadStats,
   repCoverage,
   callbacksStats,
+  selectedGigId,
 }: {
   leadStats: LeadStatsProp | null;
   repCoverage:
     | { userId: string; name: string; current: number; target: number; pct: number }[]
     | null;
   callbacksStats: CallbacksStats | null;
+  selectedGigId: string;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const openLeadsWithFilter = (callFilter: 'contacted' | 'pipeline') => {
+    const params = new URLSearchParams({ callFilter });
+    if (selectedGigId && selectedGigId !== 'all') {
+      params.set('gigId', selectedGigId);
+    }
+    navigate(`/dashboard/leads?${params.toString()}`);
+  };
   // Strict company scope: when the company has no leads yet, show zeros
   // — never another company's mock numbers.
   const EMPTY_BUCKET = { count: 0, pct: 0 };
@@ -1911,6 +1923,7 @@ function LeadsView({
               label={t('opsDashboard.leads.kpi.contacted', 'Leads contactés')}
               value={contactedCount.toLocaleString('fr-FR')}
               sub={statusSub(contactedPct)}
+              onClick={() => openLeadsWithFilter('contacted')}
             />
           );
         })()}
@@ -1920,6 +1933,7 @@ function LeadsView({
           label={t('opsDashboard.leads.kpi.statusConverted', 'RDV & convertis')}
           value={convertedCount.toLocaleString('fr-FR')}
           sub={statusSub(convertedPct)}
+          onClick={() => openLeadsWithFilter('pipeline')}
         />
       </div>
 

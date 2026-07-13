@@ -1361,6 +1361,7 @@
       "contacted": "Contacted",
       "rdv": "Appointments",
       "converted": "Converted",
+      "pipeline": "Appointments & converted",
       "filterActive": "Active filter"
     },
     "list": {

@@ -108,7 +108,7 @@ type LeadQuickStats = {
   converted: number;
 };
 
-type LeadStatsFilter = 'all' | 'called' | 'contacted' | 'rdv' | 'converted';
+type LeadStatsFilter = 'all' | 'called' | 'contacted' | 'rdv' | 'converted' | 'pipeline';
 
 function LeadStatChip({
   label,
@@ -401,7 +401,23 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [leadStatsFilter, setLeadStatsFilter] = useState<LeadStatsFilter>('all');
+  const [leadStatsFilter, setLeadStatsFilter] = useState<LeadStatsFilter>(() => {
+    try {
+      const callFilter = new URLSearchParams(window.location.search).get('callFilter');
+      if (
+        callFilter === 'called' ||
+        callFilter === 'contacted' ||
+        callFilter === 'rdv' ||
+        callFilter === 'converted' ||
+        callFilter === 'pipeline'
+      ) {
+        return callFilter;
+      }
+    } catch {
+      // ignore malformed URL in non-browser environments
+    }
+    return 'all';
+  });
   const [callFilterGigId, setCallFilterGigId] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
