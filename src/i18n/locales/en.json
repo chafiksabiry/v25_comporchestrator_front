@@ -2112,6 +2112,17 @@
     "errors": {
       "config": "Calls API configuration is missing.",
       "load": "Unable to load calls."
+    },
+    "filters": {
+      "activeOutcome": "Active filter"
+    },
+    "outcome": {
+      "serious": "Serious",
+      "voicemail": "Voicemail",
+      "unreachable": "Unreachable",
+      "fraud": "Fraud detected",
+      "wrong_number": "Wrong number",
+      "too_short": "Immediate hang-up"
     }
   }
 }

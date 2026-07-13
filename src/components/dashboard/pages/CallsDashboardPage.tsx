@@ -15,7 +15,9 @@ import {
   isCallFraudDetected,
   isCallRejectedByAI,
   isCallVoicemail,
+  matchesCallOutcomeFilter,
   resolveUnvalidatedTransactionStatus,
+  type CallOutcomeFilter,
 } from '../../../utils/callStatusDisplay';
 import { callsApi } from '../services/api/calls';
 import { getCallsApiBase } from '../lib/callsApiBase';
@@ -25,6 +27,36 @@ import { refreshCompanyWalletAfterValidation } from '../../../lib/walletBalanceS
 import { CALL_ANALYSIS_HELP_EVENT, OPEN_CALL_DETAILS_EVENT, type OpenCallDetailsDetail } from '../../../lib/callAnalysisHelpNotification';
 import type { EscrowMessage } from '../../../lib/escrowSocket';
 
+const CALL_OUTCOME_FILTERS = new Set<CallOutcomeFilter>([
+  'all',
+  'serious',
+  'voicemail',
+  'unreachable',
+  'fraud',
+  'wrong_number',
+  'too_short',
+]);
+
+function readUrlOutcomeFilter(): CallOutcomeFilter {
+  try {
+    const value = new URLSearchParams(window.location.search).get('outcomeFilter');
+    if (value && CALL_OUTCOME_FILTERS.has(value as CallOutcomeFilter) && value !== 'all') {
+      return value as CallOutcomeFilter;
+    }
+  } catch {
+    // ignore malformed URL in non-browser environments
+  }
+  return 'all';
+}
+
+function readUrlGigFilter(): string {
+  try {
+    return new URLSearchParams(window.location.search).get('gigId') || 'all';
+  } catch {
+    return 'all';
+  }
+}
+
 export default function CallsDashboardPage() {
   const { t, i18n } = useTranslation();
   const [calls, setCalls] = useState<any[]>([]);
@@ -33,7 +65,8 @@ export default function CallsDashboardPage() {
   const [activeTab, setActiveTab] = useState<'transcript' | 'insights'>('transcript');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [gigFilter, setGigFilter] = useState<string>('all');
+  const [outcomeFilter, setOutcomeFilter] = useState<CallOutcomeFilter>(readUrlOutcomeFilter);
+  const [gigFilter, setGigFilter] = useState<string>(readUrlGigFilter);
   const [gigs, setGigs] = useState<Array<{ _id: string; title: string }>>([]);
   const [companyFraudStats, setCompanyFraudStats] = useState<CompanyFraudStatsApi | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<{ callId: string; type: 'validation' | 'transaction' } | null>(null);
@@ -162,6 +195,10 @@ export default function CallsDashboardPage() {
       const json = await res.json();
       const list = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];
       setGigs(list);
+      const urlGigId = new URLSearchParams(window.location.search).get('gigId');
+      if (urlGigId && list.some((g: { _id: string }) => g._id === urlGigId)) {
+        setGigFilter(urlGigId);
+      }
     } catch (error) {
       console.error('Error fetching gigs:', error);
     }
@@ -392,7 +429,8 @@ export default function CallsDashboardPage() {
       (statusFilter !== 'voicemail' &&
         String(call.status || '').toLowerCase() === statusFilter.toLowerCase());
     const matchesGig = gigFilter === 'all' || callGigId(call) === gigFilter;
-    return matchesSearch && matchesStatus && matchesGig;
+    const matchesOutcome = matchesCallOutcomeFilter(call, outcomeFilter);
+    return matchesSearch && matchesStatus && matchesGig && matchesOutcome;
   });
 
   const fraudCallCount = companyFraudStats?.totalFraudCount ?? calls.filter(isCallFraudDetected).length;
@@ -448,6 +486,17 @@ export default function CallsDashboardPage() {
           <p className="text-slate-500 font-medium mt-1">
             Analyze every interaction and AI-powered performance insights
           </p>
+          {outcomeFilter !== 'all' && (
+            <button
+              type="button"
+              onClick={() => setOutcomeFilter('all')}
+              className="mt-2 inline-flex items-center gap-2 rounded-full border border-harx-200 bg-harx-50 px-3 py-1 text-[11px] font-bold text-harx-700 hover:bg-harx-100"
+            >
+              {t('calls.filters.activeOutcome', 'Filtre actif')}:{' '}
+              {t(`calls.outcome.${outcomeFilter}`, outcomeFilter)}
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-4">

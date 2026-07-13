@@ -1600,6 +1600,7 @@ export default function OperationsDashboard() {
           mtd={mtd}
           series7d={series7dChart.length ? series7dChart : null}
           fmtDuration={fmtDuration}
+          selectedGigId={selectedGigId}
         />
       ) : tab === 'agents' ? (
         <TeamView reps={repsMonth} />
@@ -3869,6 +3870,7 @@ function CallsView({
   mtd,
   series7d,
   fmtDuration,
+  selectedGigId,
 }: {
   stats: {
     total: number;
@@ -3886,8 +3888,28 @@ function CallsView({
   mtd: { voicemail: number; unreachable: number; wrongNumber: number; callbacksToday: number };
   series7d: Array<{ date: string; total: number; transactions: number }> | null;
   fmtDuration: (sec: number) => string;
+  selectedGigId: string;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const openCallsWithFilter = (outcomeFilter: string) => {
+    const params = new URLSearchParams();
+    if (outcomeFilter !== 'all') {
+      params.set('outcomeFilter', outcomeFilter);
+    }
+    if (selectedGigId && selectedGigId !== 'all') {
+      params.set('gigId', selectedGigId);
+    }
+    const qs = params.toString();
+    navigate(`/dashboard/calls${qs ? `?${qs}` : ''}`);
+  };
+
+  const statusFilterKey = (key: string): string => {
+    if (key === 'wrong-number') return 'wrong_number';
+    if (key === 'hangup') return 'too_short';
+    return key;
+  };
 
   return (
     <>
@@ -3899,6 +3921,7 @@ function CallsView({
           label={t('opsDashboard.kpi.totalToday', 'Total aujourd\'hui')}
           value={stats.total.toLocaleString('fr-FR')}
           sub={t('opsDashboard.kpi.allStatus', 'tous statuts')}
+          onClick={() => openCallsWithFilter('all')}
         />
         <KpiCard
           tone="default"
@@ -3906,6 +3929,7 @@ function CallsView({
           label={t('opsDashboard.kpi.serious', 'Sérieux')}
           value={stats.serious.toLocaleString('fr-FR')}
           sub={`${stats.pctSerious.toFixed(1)}%`}
+          onClick={() => openCallsWithFilter('serious')}
         />
         <KpiCard
           tone="default"
@@ -3913,6 +3937,7 @@ function CallsView({
           label={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')}
           value={stats.voicemail.toLocaleString('fr-FR')}
           sub={`${stats.pctVoicemail.toFixed(1)}%`}
+          onClick={() => openCallsWithFilter('voicemail')}
         />
         <KpiCard
           tone="default"
@@ -3920,6 +3945,7 @@ function CallsView({
           label={t('opsDashboard.kpi.unreachable', 'Injoignables')}
           value={stats.unreachable.toLocaleString('fr-FR')}
           sub={`${stats.pctUnreachable.toFixed(1)}%`}
+          onClick={() => openCallsWithFilter('unreachable')}
         />
         <KpiCard
           tone="dark"
@@ -3928,6 +3954,7 @@ function CallsView({
           value={stats.fraud.toLocaleString('fr-FR')}
           sub={t('opsDashboard.kpi.toReview', 'à examiner')}
           subTone="rose"
+          onClick={() => openCallsWithFilter('fraud')}
         />
         <KpiCard
           tone="default"
@@ -3935,6 +3962,7 @@ function CallsView({
           label={t('opsDashboard.kpi.avgDuration', 'Durée moy.')}
           value={fmtDuration(stats.avgDurationSec)}
           sub={t('opsDashboard.kpi.seriousCalls', 'appels sérieux')}
+          onClick={() => openCallsWithFilter('serious')}
         />
       </div>
 
@@ -3953,7 +3981,12 @@ function CallsView({
 
           <div className="space-y-4">
             {statuses.map((s) => (
-              <div key={s.key}>
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => openCallsWithFilter(statusFilterKey(s.key))}
+                className="w-full rounded-xl text-left transition-colors hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/30 px-1 -mx-1"
+              >
                 <div className="mb-1 flex items-center justify-between">
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold ${s.pill}`}
@@ -3973,7 +4006,7 @@ function CallsView({
                     style={{ width: `${Math.max(0, Math.min(100, s.pct))}%` }}
                   />
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </section>
@@ -3984,7 +4017,11 @@ function CallsView({
               <PhoneCall size={14} className="text-harx-500" />
               {t('opsDashboard.recentCallsTitle', 'Appels récents')}
             </div>
-            <button className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
+            <button
+              type="button"
+              onClick={() => openCallsWithFilter('all')}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50"
+            >
               {t('opsDashboard.seeAll', 'Voir tout')}
               <ArrowUpRight size={12} />
             </button>

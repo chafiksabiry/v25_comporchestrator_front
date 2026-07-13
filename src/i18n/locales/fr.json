@@ -2112,6 +2112,17 @@
     "errors": {
       "config": "Configuration API appels manquante.",
       "load": "Impossible de charger les appels."
+    },
+    "filters": {
+      "activeOutcome": "Filtre actif"
+    },
+    "outcome": {
+      "serious": "Sérieux",
+      "voicemail": "Messagerie vocale",
+      "unreachable": "Injoignables",
+      "fraud": "Fraude détectée",
+      "wrong_number": "Faux numéro",
+      "too_short": "Raccrochage immédiat"
     }
   }
 }
