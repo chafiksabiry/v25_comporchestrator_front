@@ -17,7 +17,6 @@ import {
   ChevronRight,
   Database,
   CheckCircle2,
-  Hourglass,
   Repeat,
   ShieldCheck,
   ListChecks,
@@ -1603,7 +1602,7 @@ export default function OperationsDashboard() {
           selectedGigId={selectedGigId}
         />
       ) : tab === 'agents' ? (
-        <TeamView reps={repsMonth} />
+        <TeamView reps={repsMonth} selectedGigId={selectedGigId} />
       ) : (
         // ── "Vue globale" — top-level KPIs + coverage + outcomes donut. ───
         <OverviewView
@@ -2558,8 +2557,24 @@ const TEAM_PALETTE = [
   'bg-rose-500/15 text-rose-700',
 ];
 
-function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
+function TeamView({
+  reps: repsApi,
+  selectedGigId,
+}: {
+  reps: AnalyticsRep[] | null;
+  selectedGigId: string;
+}) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const openTeamDestination = (path: string) => {
+    const params = new URLSearchParams();
+    if (selectedGigId && selectedGigId !== 'all') {
+      params.set('gigId', selectedGigId);
+    }
+    const qs = params.toString();
+    navigate(`${path}${qs ? `?${qs}` : ''}`);
+  };
 
   const reps: RepLeaderboard[] = useMemo(() => {
     if (!repsApi?.length) return [];
@@ -2603,6 +2618,7 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')}
           value={teamKpis.enrolled.toLocaleString('fr-FR')}
           sub={t('opsDashboard.team.kpi.enrolledSub', 'reps avec appels')}
+          onClick={() => openTeamDestination('/dashboard/rep-matching')}
         />
         <KpiCard
           tone="default"
@@ -2614,6 +2630,7 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
               ? `${Math.round((teamKpis.active / teamKpis.enrolled) * 100)}%`
               : '—'
           }
+          onClick={() => openTeamDestination('/dashboard/calls')}
         />
         <KpiCard
           tone="default"
@@ -2629,6 +2646,7 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           value={teamKpis.atRisk.toLocaleString('fr-FR')}
           sub={t('opsDashboard.team.kpi.atRiskSub', 'score < 50')}
           subTone="rose"
+          onClick={() => openTeamDestination('/dashboard/rep-matching')}
         />
         <KpiCard
           tone="default"
@@ -2636,6 +2654,7 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           label={t('opsDashboard.team.kpi.avgScore', 'Score moyen')}
           value={`${teamKpis.avgScore}/100`}
           sub={t('opsDashboard.team.kpi.avgScoreSub', 'MTD')}
+          onClick={() => openTeamDestination('/dashboard/analytics')}
         />
         <KpiCard
           tone="default"
@@ -2643,6 +2662,7 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           label={t('opsDashboard.team.kpi.invitations', 'Invitations')}
           value="—"
           sub={t('opsDashboard.team.kpi.invitationsSub', 'en attente')}
+          onClick={() => openTeamDestination('/dashboard/rep-matching')}
         />
       </div>
 
@@ -4207,12 +4227,26 @@ function WalletView({
   periodRange: { from: string; to: string };
 }) {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+
+  const scrollToMovements = () => {
+    movementsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const openFullWallet = () => {
+    const params = new URLSearchParams();
+    if (selectedGigId && selectedGigId !== 'all') {
+      params.set('gigId', selectedGigId);
+    }
+    const qs = params.toString();
+    navigate(`/dashboard/wallet${qs ? `?${qs}` : ''}`);
+  };
 
   const [walletEntries, setWalletEntries] = useState<WalletEntryListItem[]>([]);
   const [repTransactions, setRepTransactions] = useState<RepTransactionRow[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(0);
-  const [escrowOnHold, setEscrowOnHold] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const movementsRef = useRef<HTMLDivElement>(null);
   const [detail, setDetail] = useState<
     | { kind: 'rep'; data: RepTransactionRow }
     | { kind: 'wallet'; data: WalletEntryListItem }
@@ -4260,23 +4294,16 @@ function WalletView({
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [walletRes, repTxRes, balRes, escrowRes] = await Promise.all([
+        const [walletRes, repTxRes, balRes] = await Promise.all([
           fetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
           fetch(`${walletApi}/escrow/company/rep-transactions/${companyId}${gigQs}`).catch(() => null),
           fetch(`${walletApi}/wallet-company/${companyId}`).catch(() => null),
-          fetch(`${walletApi}/escrow/wallet/${companyId}`).catch(() => null),
         ]);
 
         if (balRes?.ok) {
           const json = await balRes.json();
           if (json?.success && json?.data) {
             setWalletBalance(Number(json.data.balance) || 0);
-          }
-        }
-        if (escrowRes?.ok) {
-          const json = await escrowRes.json();
-          if (json?.success && json?.data) {
-            setEscrowOnHold(Number(json.data.escrow) || 0);
           }
         }
 
@@ -4433,20 +4460,14 @@ function WalletView({
                   : 'ce mois',
         });
         return (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <KpiCard
               tone="primary"
               icon={<Wallet size={14} />}
               label={t('opsDashboard.wallet.kpi.available', 'Disponible')}
               value={fmtMoney(walletBalance)}
               sub={daysLeftLabel}
-            />
-            <KpiCard
-              tone="default"
-              icon={<Hourglass size={14} className="text-slate-500" />}
-              label={t('opsDashboard.wallet.kpi.onHold', 'On hold')}
-              value={fmtMoney(escrowOnHold)}
-              sub={t('opsDashboard.wallet.kpi.onHoldSub', 'en validation')}
+              onClick={openFullWallet}
             />
             <KpiCard
               tone="default"
@@ -4454,6 +4475,7 @@ function WalletView({
               label={spentLabel}
               value={fmtMoney(spentInPeriod)}
               sub={spentSub}
+              onClick={scrollToMovements}
             />
             <KpiCard
               tone="dark"
@@ -4461,13 +4483,15 @@ function WalletView({
               label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')}
               value={fmtMoney(burnRatePerDay)}
               sub={t('opsDashboard.wallet.kpi.burnRateSub', 'par jour')}
+              onClick={scrollToMovements}
             />
           </div>
         );
       })()}
 
       {/* Mouvements du portefeuille — unified date-sorted ledger */}
-      <WalletMovements
+      <div ref={movementsRef}>
+        <WalletMovements
         loading={loading}
         movements={unifiedMovements}
         onConsult={(item) => setDetail(item)}
@@ -4478,6 +4502,7 @@ function WalletView({
         formatDate={formatDate}
         labelForWallet={labelForWallet}
       />
+      </div>
 
       {/* Detail modal */}
       {detail && (
