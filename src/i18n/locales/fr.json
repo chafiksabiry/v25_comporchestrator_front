@@ -1361,6 +1361,7 @@
       "contacted": "Contactés",
       "rdv": "RDV",
       "converted": "Convertis",
+      "pipeline": "RDV & convertis",
       "filterActive": "Filtre actif"
     },
     "list": {
