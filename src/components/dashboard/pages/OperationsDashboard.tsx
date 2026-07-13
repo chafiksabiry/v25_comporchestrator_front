@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
   Phone,
@@ -1582,7 +1582,6 @@ export default function OperationsDashboard() {
           leadStats={leadStats}
           repCoverage={repCoverage}
           callbacksStats={callbacksStats}
-          selectedGigId={selectedGigId}
         />
       ) : tab === 'wallet' ? (
         <WalletView
@@ -1599,10 +1598,9 @@ export default function OperationsDashboard() {
           mtd={mtd}
           series7d={series7dChart.length ? series7dChart : null}
           fmtDuration={fmtDuration}
-          selectedGigId={selectedGigId}
         />
       ) : tab === 'agents' ? (
-        <TeamView reps={repsMonth} selectedGigId={selectedGigId} />
+        <TeamView reps={repsMonth} />
       ) : (
         // ── "Vue globale" — top-level KPIs + coverage + outcomes donut. ───
         <OverviewView
@@ -1705,24 +1703,17 @@ function LeadsView({
   leadStats,
   repCoverage,
   callbacksStats,
-  selectedGigId,
 }: {
   leadStats: LeadStatsProp | null;
   repCoverage:
     | { userId: string; name: string; current: number; target: number; pct: number }[]
     | null;
   callbacksStats: CallbacksStats | null;
-  selectedGigId: string;
 }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-
-  const openLeadsWithFilter = (callFilter: 'contacted' | 'pipeline') => {
-    const params = new URLSearchParams({ callFilter });
-    if (selectedGigId && selectedGigId !== 'all') {
-      params.set('gigId', selectedGigId);
-    }
-    navigate(`/dashboard/leads?${params.toString()}`);
+  const [selectedKpi, setSelectedKpi] = useState<'total' | 'contacted' | 'converted' | null>(null);
+  const toggleKpi = (id: 'total' | 'contacted' | 'converted') => {
+    setSelectedKpi((prev) => (prev === id ? null : id));
   };
   // Strict company scope: when the company has no leads yet, show zeros
   // — never another company's mock numbers.
@@ -1761,6 +1752,12 @@ function LeadsView({
   const inProgressPct = status.inProgress.pct + status.other.pct;
   const convertedCount = status.appointment.count + status.won.count;
   const convertedPct = status.appointment.pct + status.won.pct;
+  const contactedCount = leadStats?.contacted ?? 0;
+  const contactedPct = baseCount > 0 ? (contactedCount / baseCount) * 100 : 0;
+  const calledCount = leadStats?.called ?? 0;
+  const calledPct = baseCount > 0 ? (calledCount / baseCount) * 100 : 0;
+  const fmtCount = (n: number) => n.toLocaleString('fr-FR');
+  const pctLabel = (pct: number) => statusSub(pct);
 
   // Base-quality buckets — strictly real company data, zeros if empty.
   const EMPTY_QUALITY = {
@@ -1912,30 +1909,63 @@ function LeadsView({
           label={t('opsDashboard.leads.kpi.totalBase', 'Base totale')}
           value={baseCount.toLocaleString('fr-FR')}
           sub={baseLabel}
+          selected={selectedKpi === 'total'}
+          onClick={() => toggleKpi('total')}
         />
-        {(() => {
-          const contactedCount = leadStats?.contacted ?? 0;
-          const contactedPct = baseCount > 0 ? (contactedCount / baseCount) * 100 : 0;
-          return (
-            <KpiCard
-              tone="default"
-              icon={<PhoneCall size={14} className="text-harx-500" />}
-              label={t('opsDashboard.leads.kpi.contacted', 'Leads contactés')}
-              value={contactedCount.toLocaleString('fr-FR')}
-              sub={statusSub(contactedPct)}
-              onClick={() => openLeadsWithFilter('contacted')}
-            />
-          );
-        })()}
+        <KpiCard
+          tone="default"
+          icon={<PhoneCall size={14} className="text-harx-500" />}
+          label={t('opsDashboard.leads.kpi.contacted', 'Leads contactés')}
+          value={contactedCount.toLocaleString('fr-FR')}
+          sub={statusSub(contactedPct)}
+          selected={selectedKpi === 'contacted'}
+          onClick={() => toggleKpi('contacted')}
+        />
         <KpiCard
           tone="default"
           icon={<CalendarClock size={14} className="text-emerald-500" />}
           label={t('opsDashboard.leads.kpi.statusConverted', 'RDV & convertis')}
           value={convertedCount.toLocaleString('fr-FR')}
           sub={statusSub(convertedPct)}
-          onClick={() => openLeadsWithFilter('pipeline')}
+          selected={selectedKpi === 'converted'}
+          onClick={() => toggleKpi('converted')}
         />
       </div>
+
+      {selectedKpi === 'total' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.leads.kpi.totalBase', 'Base totale')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.leads.kpi.totalBase', 'Base totale')} value={fmtCount(baseCount)} />
+          <DetailRow label={t('opsDashboard.overview.detail.leadsCalled', 'Appelés ≥ 1 fois')} value={`${fmtCount(calledCount)} (${pctLabel(calledPct)})`} />
+          <DetailRow label={t('opsDashboard.overview.detail.leadsContacted', 'Contactés')} value={`${fmtCount(contactedCount)} (${pctLabel(contactedPct)})`} />
+          <DetailRow label={t('opsDashboard.leads.kpi.statusConverted', 'RDV & convertis')} value={`${fmtCount(convertedCount)} (${pctLabel(convertedPct)})`} />
+          <DetailRow label={t('opsDashboard.leads.qualityTitle', 'Qualité de la base')} value={`${fmtPct(qualityScorePct)}%`} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'contacted' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.leads.kpi.contacted', 'Leads contactés')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.leads.kpi.contacted', 'Contactés')} value={fmtCount(contactedCount)} />
+          <DetailRow label={t('opsDashboard.leads.kpi.statusSub', { pct: fmtPct(contactedPct), defaultValue: '{{pct}}% de la base' })} value={pctLabel(contactedPct)} />
+          <DetailRow label={t('opsDashboard.overview.detail.leadsCalled', 'Appelés ≥ 1 fois')} value={`${fmtCount(calledCount)} (${pctLabel(calledPct)})`} />
+          <DetailRow label={t('opsDashboard.leads.kpi.totalBase', 'Base totale')} value={fmtCount(baseCount)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'converted' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.leads.kpi.statusConverted', 'RDV & convertis')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.overview.donut.appointment', 'RDV')} value={`${fmtCount(status.appointment.count)} (${pctLabel(status.appointment.pct)})`} />
+          <DetailRow label={t('opsDashboard.results.kpi.transactions', 'Convertis')} value={`${fmtCount(status.won.count)} (${pctLabel(status.won.pct)})`} />
+          <DetailRow label={t('opsDashboard.leads.kpi.statusConverted', 'Total RDV & convertis')} value={`${fmtCount(convertedCount)} (${pctLabel(convertedPct)})`} />
+          <DetailRow label={t('opsDashboard.leads.kpi.totalBase', 'Base totale')} value={fmtCount(baseCount)} />
+        </InlineKpiDetailPanel>
+      )}
 
       {/* ---------- Quality of base + Attempt distribution ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -2557,23 +2587,13 @@ const TEAM_PALETTE = [
   'bg-rose-500/15 text-rose-700',
 ];
 
-function TeamView({
-  reps: repsApi,
-  selectedGigId,
-}: {
-  reps: AnalyticsRep[] | null;
-  selectedGigId: string;
-}) {
+function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-
-  const openTeamDestination = (path: string) => {
-    const params = new URLSearchParams();
-    if (selectedGigId && selectedGigId !== 'all') {
-      params.set('gigId', selectedGigId);
-    }
-    const qs = params.toString();
-    navigate(`${path}${qs ? `?${qs}` : ''}`);
+  const [selectedKpi, setSelectedKpi] = useState<
+    'enrolled' | 'active' | 'atRisk' | 'avgScore' | 'invitations' | null
+  >(null);
+  const toggleKpi = (id: 'enrolled' | 'active' | 'atRisk' | 'avgScore' | 'invitations') => {
+    setSelectedKpi((prev) => (prev === id ? null : id));
   };
 
   const reps: RepLeaderboard[] = useMemo(() => {
@@ -2618,7 +2638,8 @@ function TeamView({
           label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')}
           value={teamKpis.enrolled.toLocaleString('fr-FR')}
           sub={t('opsDashboard.team.kpi.enrolledSub', 'reps avec appels')}
-          onClick={() => openTeamDestination('/dashboard/rep-matching')}
+          selected={selectedKpi === 'enrolled'}
+          onClick={() => toggleKpi('enrolled')}
         />
         <KpiCard
           tone="default"
@@ -2630,7 +2651,8 @@ function TeamView({
               ? `${Math.round((teamKpis.active / teamKpis.enrolled) * 100)}%`
               : '—'
           }
-          onClick={() => openTeamDestination('/dashboard/calls')}
+          selected={selectedKpi === 'active'}
+          onClick={() => toggleKpi('active')}
         />
         <KpiCard
           tone="default"
@@ -2646,7 +2668,8 @@ function TeamView({
           value={teamKpis.atRisk.toLocaleString('fr-FR')}
           sub={t('opsDashboard.team.kpi.atRiskSub', 'score < 50')}
           subTone="rose"
-          onClick={() => openTeamDestination('/dashboard/rep-matching')}
+          selected={selectedKpi === 'atRisk'}
+          onClick={() => toggleKpi('atRisk')}
         />
         <KpiCard
           tone="default"
@@ -2654,7 +2677,8 @@ function TeamView({
           label={t('opsDashboard.team.kpi.avgScore', 'Score moyen')}
           value={`${teamKpis.avgScore}/100`}
           sub={t('opsDashboard.team.kpi.avgScoreSub', 'MTD')}
-          onClick={() => openTeamDestination('/dashboard/analytics')}
+          selected={selectedKpi === 'avgScore'}
+          onClick={() => toggleKpi('avgScore')}
         />
         <KpiCard
           tone="default"
@@ -2662,9 +2686,66 @@ function TeamView({
           label={t('opsDashboard.team.kpi.invitations', 'Invitations')}
           value="—"
           sub={t('opsDashboard.team.kpi.invitationsSub', 'en attente')}
-          onClick={() => openTeamDestination('/dashboard/rep-matching')}
+          selected={selectedKpi === 'invitations'}
+          onClick={() => toggleKpi('invitations')}
         />
       </div>
+
+      {selectedKpi === 'enrolled' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.team.kpi.enrolled', 'Enrollés')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')} value={teamKpis.enrolled.toLocaleString('fr-FR')} />
+          <DetailRow label={t('opsDashboard.team.kpi.activeWeek', 'Actifs (MTD)')} value={teamKpis.active.toLocaleString('fr-FR')} />
+          <DetailRow label={t('opsDashboard.team.kpi.atRisk', 'À risque')} value={teamKpis.atRisk.toLocaleString('fr-FR')} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'active' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.team.kpi.activeWeek', 'Actifs (MTD)')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.team.kpi.activeWeek', 'Actifs')} value={teamKpis.active.toLocaleString('fr-FR')} />
+          <DetailRow
+            label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')}
+            value={teamKpis.enrolled.toLocaleString('fr-FR')}
+          />
+          <DetailRow
+            label={t('opsDashboard.overview.kpi.rate', 'Taux')}
+            value={teamKpis.enrolled > 0 ? `${Math.round((teamKpis.active / teamKpis.enrolled) * 100)}%` : '—'}
+          />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'atRisk' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.team.kpi.atRisk', 'À risque')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.team.kpi.atRisk', 'À risque')} value={teamKpis.atRisk.toLocaleString('fr-FR')} />
+          <DetailRow label={t('opsDashboard.team.kpi.atRiskSub', 'score < 50')} value={t('opsDashboard.team.kpi.atRiskSub', 'score < 50')} muted />
+          <DetailRow label={t('opsDashboard.team.kpi.avgScore', 'Score moyen')} value={`${teamKpis.avgScore}/100`} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'avgScore' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.team.kpi.avgScore', 'Score moyen')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.team.kpi.avgScore', 'Score moyen')} value={`${teamKpis.avgScore}/100`} />
+          <DetailRow label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')} value={teamKpis.enrolled.toLocaleString('fr-FR')} />
+          <DetailRow label={t('opsDashboard.team.kpi.atRisk', 'À risque')} value={teamKpis.atRisk.toLocaleString('fr-FR')} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'invitations' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.team.kpi.invitations', 'Invitations')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.team.kpi.invitations', 'Invitations')} value="—" />
+          <DetailRow label={t('opsDashboard.team.kpi.invitationsSub', 'en attente')} value={t('opsDashboard.team.kpi.lmsPending', 'bientôt')} muted />
+        </InlineKpiDetailPanel>
+      )}
 
       {/* Leaderboard */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -3833,6 +3914,37 @@ function DetailRow({
   );
 }
 
+function InlineKpiDetailPanel({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <section className="rounded-2xl border border-harx-200 bg-harx-50/40 p-4 shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
+      <header className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-black text-slate-900">{title}</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
+          aria-label={t('common.close', 'Fermer')}
+        >
+          <XCircle size={16} />
+        </button>
+      </header>
+      <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+        {children}
+      </div>
+    </section>
+  );
+}
+
 /** Horizontal coverage bar used in the "Couverture leads" card. */
 function CoverageRow({
   label,
@@ -3890,7 +4002,6 @@ function CallsView({
   mtd,
   series7d,
   fmtDuration,
-  selectedGigId,
 }: {
   stats: {
     total: number;
@@ -3908,28 +4019,35 @@ function CallsView({
   mtd: { voicemail: number; unreachable: number; wrongNumber: number; callbacksToday: number };
   series7d: Array<{ date: string; total: number; transactions: number }> | null;
   fmtDuration: (sec: number) => string;
-  selectedGigId: string;
 }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const [selectedKpi, setSelectedKpi] = useState<
+    | 'total'
+    | 'serious'
+    | 'voicemail'
+    | 'unreachable'
+    | 'fraud'
+    | 'avgDuration'
+    | 'wrong-number'
+    | 'hangup'
+    | null
+  >(null);
+  const recentCallsRef = useRef<HTMLElement>(null);
 
-  const openCallsWithFilter = (outcomeFilter: string) => {
-    const params = new URLSearchParams();
-    if (outcomeFilter !== 'all') {
-      params.set('outcomeFilter', outcomeFilter);
-    }
-    if (selectedGigId && selectedGigId !== 'all') {
-      params.set('gigId', selectedGigId);
-    }
-    const qs = params.toString();
-    navigate(`/dashboard/calls${qs ? `?${qs}` : ''}`);
+  const toggleKpi = (
+    id: 'total' | 'serious' | 'voicemail' | 'unreachable' | 'fraud' | 'avgDuration' | 'wrong-number' | 'hangup'
+  ) => {
+    setSelectedKpi((prev) => (prev === id ? null : id));
   };
 
-  const statusFilterKey = (key: string): string => {
-    if (key === 'wrong-number') return 'wrong_number';
-    if (key === 'hangup') return 'too_short';
-    return key;
+  const statusKpiId = (key: string) => {
+    if (key === 'wrong-number') return 'wrong-number' as const;
+    if (key === 'hangup') return 'hangup' as const;
+    return key as 'serious' | 'voicemail' | 'unreachable' | 'fraud';
   };
+
+  const fmtCount = (n: number) => n.toLocaleString('fr-FR');
+  const pctLabel = (pct: number) => `${pct.toFixed(1)}%`;
 
   return (
     <>
@@ -3941,7 +4059,8 @@ function CallsView({
           label={t('opsDashboard.kpi.totalToday', 'Total aujourd\'hui')}
           value={stats.total.toLocaleString('fr-FR')}
           sub={t('opsDashboard.kpi.allStatus', 'tous statuts')}
-          onClick={() => openCallsWithFilter('all')}
+          selected={selectedKpi === 'total'}
+          onClick={() => toggleKpi('total')}
         />
         <KpiCard
           tone="default"
@@ -3949,7 +4068,8 @@ function CallsView({
           label={t('opsDashboard.kpi.serious', 'Sérieux')}
           value={stats.serious.toLocaleString('fr-FR')}
           sub={`${stats.pctSerious.toFixed(1)}%`}
-          onClick={() => openCallsWithFilter('serious')}
+          selected={selectedKpi === 'serious'}
+          onClick={() => toggleKpi('serious')}
         />
         <KpiCard
           tone="default"
@@ -3957,7 +4077,8 @@ function CallsView({
           label={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')}
           value={stats.voicemail.toLocaleString('fr-FR')}
           sub={`${stats.pctVoicemail.toFixed(1)}%`}
-          onClick={() => openCallsWithFilter('voicemail')}
+          selected={selectedKpi === 'voicemail'}
+          onClick={() => toggleKpi('voicemail')}
         />
         <KpiCard
           tone="default"
@@ -3965,7 +4086,8 @@ function CallsView({
           label={t('opsDashboard.kpi.unreachable', 'Injoignables')}
           value={stats.unreachable.toLocaleString('fr-FR')}
           sub={`${stats.pctUnreachable.toFixed(1)}%`}
-          onClick={() => openCallsWithFilter('unreachable')}
+          selected={selectedKpi === 'unreachable'}
+          onClick={() => toggleKpi('unreachable')}
         />
         <KpiCard
           tone="dark"
@@ -3974,7 +4096,8 @@ function CallsView({
           value={stats.fraud.toLocaleString('fr-FR')}
           sub={t('opsDashboard.kpi.toReview', 'à examiner')}
           subTone="rose"
-          onClick={() => openCallsWithFilter('fraud')}
+          selected={selectedKpi === 'fraud'}
+          onClick={() => toggleKpi('fraud')}
         />
         <KpiCard
           tone="default"
@@ -3982,9 +4105,95 @@ function CallsView({
           label={t('opsDashboard.kpi.avgDuration', 'Durée moy.')}
           value={fmtDuration(stats.avgDurationSec)}
           sub={t('opsDashboard.kpi.seriousCalls', 'appels sérieux')}
-          onClick={() => openCallsWithFilter('serious')}
+          selected={selectedKpi === 'avgDuration'}
+          onClick={() => toggleKpi('avgDuration')}
         />
       </div>
+
+      {selectedKpi === 'total' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.totalToday', 'Total aujourd\'hui')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.totalToday', 'Total')} value={fmtCount(stats.total)} />
+          <DetailRow label={t('opsDashboard.kpi.serious', 'Sérieux')} value={`${fmtCount(stats.serious)} (${pctLabel(stats.pctSerious)})`} />
+          <DetailRow label={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')} value={`${fmtCount(stats.voicemail)} (${pctLabel(stats.pctVoicemail)})`} />
+          <DetailRow label={t('opsDashboard.kpi.unreachable', 'Injoignables')} value={`${fmtCount(stats.unreachable)} (${pctLabel(stats.pctUnreachable)})`} />
+          <DetailRow label={t('opsDashboard.kpi.fraud', 'Fraude détectée')} value={fmtCount(stats.fraud)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'serious' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.serious', 'Sérieux')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.serious', 'Sérieux')} value={fmtCount(stats.serious)} />
+          <DetailRow label={t('opsDashboard.overview.kpi.rate', 'Taux')} value={pctLabel(stats.pctSerious)} />
+          <DetailRow label={t('opsDashboard.kpi.avgDuration', 'Durée moy.')} value={fmtDuration(stats.avgDurationSec)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'voicemail' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')} value={fmtCount(stats.voicemail)} />
+          <DetailRow label={t('opsDashboard.overview.kpi.rate', 'Taux')} value={pctLabel(stats.pctVoicemail)} />
+          <DetailRow label={t('opsDashboard.mtd.voicemail', 'MSG VOCALE MTD')} value={fmtCount(mtd.voicemail)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'unreachable' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.unreachable', 'Injoignables')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.unreachable', 'Injoignables')} value={fmtCount(stats.unreachable)} />
+          <DetailRow label={t('opsDashboard.overview.kpi.rate', 'Taux')} value={pctLabel(stats.pctUnreachable)} />
+          <DetailRow label={t('opsDashboard.mtd.unreachable', 'INJOIGNABLES MTD')} value={fmtCount(mtd.unreachable)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'fraud' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.fraud', 'Fraude détectée')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.fraud', 'Fraude détectée')} value={fmtCount(stats.fraud)} />
+          <DetailRow label={t('opsDashboard.kpi.toReview', 'À examiner')} value={t('opsDashboard.kpi.toReview', 'à examiner')} muted />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'avgDuration' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.avgDuration', 'Durée moy.')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.avgDuration', 'Durée moyenne')} value={fmtDuration(stats.avgDurationSec)} />
+          <DetailRow label={t('opsDashboard.kpi.seriousCalls', 'Appels sérieux')} value={fmtCount(stats.serious)} />
+          <DetailRow label={t('opsDashboard.kpi.totalToday', 'Total du jour')} value={fmtCount(stats.total)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'wrong-number' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.statuses.wrongNumber', 'Faux numéro')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow
+            label={t('opsDashboard.statuses.wrongNumber', 'Faux numéro')}
+            value={fmtCount(statuses.find((s) => s.key === 'wrong-number')?.count ?? 0)}
+          />
+          <DetailRow label={t('opsDashboard.mtd.wrongNumbers', 'FAUX NUMÉROS MTD')} value={fmtCount(mtd.wrongNumber)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'hangup' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.statuses.hangup', 'Raccrochage immédiat')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow
+            label={t('opsDashboard.statuses.hangup', 'Raccrochage immédiat')}
+            value={fmtCount(statuses.find((s) => s.key === 'hangup')?.count ?? 0)}
+          />
+        </InlineKpiDetailPanel>
+      )}
 
       {/* ---------- Statuses + Recent calls ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -4004,8 +4213,10 @@ function CallsView({
               <button
                 key={s.key}
                 type="button"
-                onClick={() => openCallsWithFilter(statusFilterKey(s.key))}
-                className="w-full rounded-xl text-left transition-colors hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/30 px-1 -mx-1"
+                onClick={() => toggleKpi(statusKpiId(s.key))}
+                className={`w-full rounded-xl text-left transition-colors hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/30 px-1 -mx-1 ${
+                  selectedKpi === statusKpiId(s.key) ? 'bg-harx-50/60' : ''
+                }`}
               >
                 <div className="mb-1 flex items-center justify-between">
                   <span
@@ -4031,7 +4242,7 @@ function CallsView({
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section ref={recentCallsRef} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <header className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-black text-slate-900">
               <PhoneCall size={14} className="text-harx-500" />
@@ -4039,7 +4250,7 @@ function CallsView({
             </div>
             <button
               type="button"
-              onClick={() => openCallsWithFilter('all')}
+              onClick={() => recentCallsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
               className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50"
             >
               {t('opsDashboard.seeAll', 'Voir tout')}
@@ -4227,19 +4438,14 @@ function WalletView({
   periodRange: { from: string; to: string };
 }) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const [selectedKpi, setSelectedKpi] = useState<'available' | 'spent' | 'burnRate' | null>(null);
+
+  const toggleKpi = (id: 'available' | 'spent' | 'burnRate') => {
+    setSelectedKpi((prev) => (prev === id ? null : id));
+  };
 
   const scrollToMovements = () => {
     movementsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  const openFullWallet = () => {
-    const params = new URLSearchParams();
-    if (selectedGigId && selectedGigId !== 'all') {
-      params.set('gigId', selectedGigId);
-    }
-    const qs = params.toString();
-    navigate(`/dashboard/wallet${qs ? `?${qs}` : ''}`);
   };
 
   const [walletEntries, setWalletEntries] = useState<WalletEntryListItem[]>([]);
@@ -4460,6 +4666,7 @@ function WalletView({
                   : 'ce mois',
         });
         return (
+          <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <KpiCard
               tone="primary"
@@ -4467,7 +4674,8 @@ function WalletView({
               label={t('opsDashboard.wallet.kpi.available', 'Disponible')}
               value={fmtMoney(walletBalance)}
               sub={daysLeftLabel}
-              onClick={openFullWallet}
+              selected={selectedKpi === 'available'}
+              onClick={() => toggleKpi('available')}
             />
             <KpiCard
               tone="default"
@@ -4475,7 +4683,8 @@ function WalletView({
               label={spentLabel}
               value={fmtMoney(spentInPeriod)}
               sub={spentSub}
-              onClick={scrollToMovements}
+              selected={selectedKpi === 'spent'}
+              onClick={() => toggleKpi('spent')}
             />
             <KpiCard
               tone="dark"
@@ -4483,9 +4692,58 @@ function WalletView({
               label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')}
               value={fmtMoney(burnRatePerDay)}
               sub={t('opsDashboard.wallet.kpi.burnRateSub', 'par jour')}
-              onClick={scrollToMovements}
+              selected={selectedKpi === 'burnRate'}
+              onClick={() => toggleKpi('burnRate')}
             />
           </div>
+
+          {selectedKpi === 'available' && (
+            <InlineKpiDetailPanel
+              title={t('opsDashboard.wallet.kpi.available', 'Disponible')}
+              onClose={() => setSelectedKpi(null)}
+            >
+              <DetailRow label={t('opsDashboard.wallet.kpi.available', 'Solde disponible')} value={fmtMoney(walletBalance)} />
+              <DetailRow label={t('opsDashboard.wallet.kpi.availableSubDays', { days: daysLeft?.toFixed(1) ?? '—', defaultValue: '{{days}} jours' })} value={daysLeftLabel} />
+              <DetailRow label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')} value={`${fmtMoney(burnRatePerDay)} / jour`} />
+            </InlineKpiDetailPanel>
+          )}
+          {selectedKpi === 'spent' && (
+            <InlineKpiDetailPanel
+              title={spentLabel}
+              onClose={() => setSelectedKpi(null)}
+            >
+              <DetailRow label={spentLabel} value={fmtMoney(spentInPeriod)} />
+              <DetailRow label={spentSub} value={t('opsDashboard.wallet.kpi.spentPeriodSub.30d', { defaultValue: '30 jours' })} muted />
+              <DetailRow label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate (30j)')} value={`${fmtMoney(spent30d / 30)} / jour`} />
+              <button
+                type="button"
+                onClick={scrollToMovements}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-harx-600 hover:text-harx-700"
+              >
+                {t('opsDashboard.wallet.seeMovements', 'Voir les mouvements')}
+                <ChevronRight size={12} />
+              </button>
+            </InlineKpiDetailPanel>
+          )}
+          {selectedKpi === 'burnRate' && (
+            <InlineKpiDetailPanel
+              title={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')}
+              onClose={() => setSelectedKpi(null)}
+            >
+              <DetailRow label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')} value={`${fmtMoney(burnRatePerDay)} / jour`} />
+              <DetailRow label={t('opsDashboard.wallet.kpi.spentPeriod.30d', { defaultValue: 'Dépensé 30j' })} value={fmtMoney(spent30d)} />
+              <DetailRow label={t('opsDashboard.wallet.kpi.available', 'Solde disponible')} value={fmtMoney(walletBalance)} />
+              <button
+                type="button"
+                onClick={scrollToMovements}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-harx-600 hover:text-harx-700"
+              >
+                {t('opsDashboard.wallet.seeMovements', 'Voir les mouvements')}
+                <ChevronRight size={12} />
+              </button>
+            </InlineKpiDetailPanel>
+          )}
+          </>
         );
       })()}
 
