@@ -148,7 +148,7 @@ interface LanguagesResponse {
   message: string;
 }
 const ApprovalPublishing = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [expandedGig, setExpandedGig] = useState<string | null>(null);
   const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
   const [filter, setFilter] = useState('all');
@@ -389,10 +389,10 @@ const ApprovalPublishing = () => {
             category: gig.category,
             budget: gig.commission?.baseAmount && gig.commission.baseAmount !== '0' ? `$${gig.commission.baseAmount}` : null,
             companyId: gig.companyId,
-            companyName: gig.companyName || gig.company?.name || company?.name || 'Company',
+            companyName: gig.companyName || gig.company?.name || company?.name || t('approvalPublishing.fallback.company'),
             createdAt: gig.createdAt,
             updatedAt: gig.updatedAt,
-            submittedBy: gig.submittedBy || gig.companyName || gig.company?.name || company?.name || 'Company',
+            submittedBy: gig.submittedBy || gig.companyName || gig.company?.name || company?.name || t('approvalPublishing.fallback.company'),
             issues: gig.issues || [],
             setupSteps: gig.setupSteps || undefined,
           };
@@ -408,7 +408,7 @@ const ApprovalPublishing = () => {
       }
     } catch (err) {
       console.error('❌ Error fetching gigs:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch gigs');
+      setError(t('approvalPublishing.errors.fetchGigs'));
     } finally {
       
       setIsLoading(false);
@@ -462,7 +462,7 @@ const ApprovalPublishing = () => {
 
     if (!dateString) {
       
-      return 'Invalid date';
+      return t('approvalPublishing.dates.invalid');
     }
 
     try {
@@ -470,44 +470,43 @@ const ApprovalPublishing = () => {
 
       if (isNaN(date.getTime())) {
         
-        return 'Invalid date';
+        return t('approvalPublishing.dates.invalid');
       }
 
       const now = new Date();
       const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
       let result;
-      if (diffInHours < 1) result = 'Just now';
-      else if (diffInHours < 24) result = `${diffInHours} hours ago`;
+      if (diffInHours < 1) result = t('approvalPublishing.dates.justNow');
+      else if (diffInHours < 24) result = t('approvalPublishing.dates.hoursAgo', { count: diffInHours });
       else {
         const diffInDays = Math.floor(diffInHours / 24);
-        if (diffInDays === 1) result = '1 day ago';
-        else result = `${diffInDays} days ago`;
+        result = t('approvalPublishing.dates.daysAgo', { count: diffInDays });
       }
 
       
       return result;
     } catch (error) {
       console.error('📅 Error formatting date:', error);
-      return 'Error formatting date';
+      return t('approvalPublishing.dates.invalid');
     }
   };
 
   const formatStatus = (status: string) => {
     // Mapping des statuts pour l'affichage
     const statusMapping: { [key: string]: string } = {
-      'to_activate': 'To active',
-      'pending': 'Pending',
-      'draft': 'Draft',
-      'submitted': 'Submitted',
-      'approved': 'Approved',
-      'active': 'Active',
-      'published': 'Published',
-      'rejected': 'Rejected',
-      'declined': 'Declined',
-      'cancelled': 'Cancelled',
-      'inactive': 'Inactive',
-      'archived': 'Archived'
+      'to_activate': t('approvalPublishing.status.toActivate'),
+      'pending': t('approvalPublishing.status.pending'),
+      'draft': t('approvalPublishing.status.draft'),
+      'submitted': t('approvalPublishing.status.submitted'),
+      'approved': t('approvalPublishing.status.approved'),
+      'active': t('approvalPublishing.status.active'),
+      'published': t('approvalPublishing.status.published'),
+      'rejected': t('approvalPublishing.status.rejected'),
+      'declined': t('approvalPublishing.status.declined'),
+      'cancelled': t('approvalPublishing.status.cancelled'),
+      'inactive': t('approvalPublishing.status.inactive'),
+      'archived': t('approvalPublishing.status.archived')
     };
 
     // Si le statut n'est pas dans le mapping, formater en remplaçant les underscores
@@ -517,6 +516,33 @@ const ApprovalPublishing = () => {
 
     // Fallback: remplacer les underscores par des espaces et capitaliser
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const formatSeniority = (level?: string) => {
+    const normalized = level?.toLowerCase().replace(/[_\s-]/g, '');
+    const keyMap: Record<string, string> = {
+      entrylevel: 'entry',
+      midlevel: 'mid',
+      senior: 'senior',
+      expert: 'expert',
+    };
+    return normalized && keyMap[normalized]
+      ? t(`approvalPublishing.seniority.${keyMap[normalized]}`)
+      : level;
+  };
+
+  const formatUnit = (unit?: string) => {
+    const key = unit?.toLowerCase();
+    return key && ['calls', 'sales', 'transactions'].includes(key)
+      ? t(`approvalPublishing.units.${key}`)
+      : unit;
+  };
+
+  const formatPeriod = (period?: string) => {
+    const key = period?.toLowerCase();
+    return key && ['daily', 'weekly', 'monthly'].includes(key)
+      ? t(`approvalPublishing.periods.${key}`)
+      : period;
   };
 
   const checkCompanyBalance = async (): Promise<boolean> => {
@@ -554,7 +580,7 @@ const ApprovalPublishing = () => {
 
       const isBalanceSufficient = await checkCompanyBalance();
       if (!isBalanceSufficient) {
-        toast.error("Solde insuffisant. Vous devez alimenter votre compte pour activer ce gig.", {
+        toast.error(t('approvalPublishing.balance.singleError'), {
           duration: 5000,
           position: 'top-right',
           style: {
@@ -623,8 +649,8 @@ const ApprovalPublishing = () => {
       await markStep12AsCompleted();
     } catch (error) {
       console.error('❌ Error approving gig:', error);
-      setError(error instanceof Error ? error.message : 'Failed to approve gig');
-      toast.error(error instanceof Error ? error.message : 'Failed to approve gig', {
+      setError(t('approvalPublishing.errors.approveGig'));
+      toast.error(t('approvalPublishing.errors.approveGig'), {
         duration: 5000,
         position: 'top-right'
       });
@@ -716,7 +742,7 @@ const ApprovalPublishing = () => {
       await checkAndUpdateStep12Status();
     } catch (error) {
       console.error('❌ Error rejecting gig:', error);
-      setError(error instanceof Error ? error.message : 'Failed to reject gig');
+      setError(t('approvalPublishing.errors.rejectGig'));
     }
   };
 
@@ -1099,7 +1125,7 @@ const ApprovalPublishing = () => {
       await checkAndUpdateStep12Status();
     } catch (error) {
       console.error('❌ Error archiving gig:', error);
-      setError(error instanceof Error ? error.message : 'Failed to archive gig');
+      setError(t('approvalPublishing.errors.archiveGig'));
     }
   };
 
@@ -1153,7 +1179,7 @@ const ApprovalPublishing = () => {
       setCurrentView('preview');
     } catch (error) {
       console.error('❌ Error previewing gig:', error);
-      setError(error instanceof Error ? error.message : 'Failed to preview gig');
+      setError(t('approvalPublishing.errors.previewGig'));
     }
   };
 
@@ -1208,7 +1234,7 @@ const ApprovalPublishing = () => {
       setCurrentView('edit');
     } catch (error) {
       console.error('❌ Error editing gig:', error);
-      setError(error instanceof Error ? error.message : 'Failed to edit gig');
+      setError(t('approvalPublishing.errors.editGig'));
     }
   };
 
@@ -1227,7 +1253,7 @@ const ApprovalPublishing = () => {
 
     const isBalanceSufficient = await checkCompanyBalance();
     if (!isBalanceSufficient) {
-      toast.error("Solde insuffisant. Vous devez alimenter votre compte pour activer ces gigs.", {
+      toast.error(t('approvalPublishing.balance.bulkError'), {
         duration: 5000,
         position: 'top-right',
         style: {
@@ -1297,7 +1323,11 @@ const ApprovalPublishing = () => {
       days: [...selectedDays],
       startTime: workingHours.start,
       endTime: workingHours.end,
-      displayText: `${selectedDays.join(' et ')} de ${workingHours.start} jusqu'à ${workingHours.end}`
+      displayText: t('approvalPublishing.schedule.display', {
+        days: selectedDays.map((day) => t(`approvalPublishing.weekdays.${day.toLowerCase()}`)).join(', '),
+        start: workingHours.start,
+        end: workingHours.end,
+      })
     };
 
     setSchedules(prev => [...prev, newSchedule]);
@@ -1321,7 +1351,11 @@ const ApprovalPublishing = () => {
       days: [...selectedDays],
       startTime: workingHours.start,
       endTime: workingHours.end,
-      displayText: `${selectedDays.join(' et ')} de ${workingHours.start} jusqu'à ${workingHours.end}`
+      displayText: t('approvalPublishing.schedule.display', {
+        days: selectedDays.map((day) => t(`approvalPublishing.weekdays.${day.toLowerCase()}`)).join(', '),
+        start: workingHours.start,
+        end: workingHours.end,
+      })
     };
 
     setSchedules(prev => prev.map(s => s.id === editingSchedule.id ? updatedSchedule : s));
@@ -1337,10 +1371,11 @@ const ApprovalPublishing = () => {
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    return `${displayHour}:${minutes} ${ampm}`;
+    const date = new Date(2000, 0, 1, Number(hours), Number(minutes));
+    return date.toLocaleTimeString(i18n.resolvedLanguage || i18n.language, {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   const handleSaveChanges = async () => {
@@ -1404,13 +1439,13 @@ const ApprovalPublishing = () => {
       <div className="w-full py-2 space-y-4">
         <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 shadow-lg shadow-harx-500/20">
           <div className="relative z-10">
-            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Approval & Publishing</h1>
-            <p className="text-[14px] font-medium text-white/90">Loading your gigs...</p>
+            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">{t('approvalPublishing.title')}</h1>
+            <p className="text-[14px] font-medium text-white/90">{t('approvalPublishing.loading.subtitle')}</p>
           </div>
         </div>
         <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-12 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-harx-600 mx-auto"></div>
-          <p className="mt-4 text-gray-500 font-medium">Synchronizing data...</p>
+          <p className="mt-4 text-gray-500 font-medium">{t('approvalPublishing.loading.syncing')}</p>
         </div>
       </div>
     );
@@ -1421,8 +1456,8 @@ const ApprovalPublishing = () => {
       <div className="w-full py-2 space-y-4">
         <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 shadow-lg shadow-harx-500/20">
           <div className="relative z-10">
-            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Approval & Publishing</h1>
-            <p className="text-[14px] font-medium text-white/90">Error encountered</p>
+            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">{t('approvalPublishing.title')}</h1>
+            <p className="text-[14px] font-medium text-white/90">{t('approvalPublishing.error.subtitle')}</p>
           </div>
         </div>
         <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-12 text-center">
@@ -1434,7 +1469,7 @@ const ApprovalPublishing = () => {
             onClick={fetchGigs}
             className="px-6 py-2.5 bg-gradient-harx text-white font-black rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 uppercase tracking-widest text-[10px]"
           >
-            Retry Connection
+            {t('approvalPublishing.actions.retry')}
           </button>
         </div>
       </div>
@@ -1460,9 +1495,9 @@ const ApprovalPublishing = () => {
                 </button>
                 <div>
                   <h2 className="text-3xl font-black text-white uppercase tracking-tighter">
-                    Preview: {currentGigData.title}
+                    {t('approvalPublishing.preview.title', { title: currentGigData.title })}
                   </h2>
-                  <p className="text-[14px] font-medium text-white/90 italic">Review all specifications before going live</p>
+                  <p className="text-[14px] font-medium text-white/90 italic">{t('approvalPublishing.preview.subtitle')}</p>
                 </div>
               </div>
             </div>
@@ -1472,7 +1507,7 @@ const ApprovalPublishing = () => {
                 className="px-6 py-2.5 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2"
               >
                 <Edit className="h-4 w-4" />
-                Edit Details
+                {t('approvalPublishing.actions.editDetails')}
               </button>
             </div>
           </div>
@@ -1485,28 +1520,28 @@ const ApprovalPublishing = () => {
               <div className="p-2 bg-blue-100 rounded-lg">
                 <FileText className="h-6 w-6 text-blue-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.basicInfo')}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="bg-white rounded-lg p-4 border border-blue-100">
                   <div className="flex items-center gap-2 mb-2">
                     <Target className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm font-semibold text-gray-700">Title</span>
+                    <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.title')}</span>
                   </div>
                   <p className="text-sm text-gray-900 font-medium">{currentGigData.title}</p>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-blue-100">
                   <div className="flex items-center gap-2 mb-2">
                     <Award className="h-4 w-4 text-purple-500" />
-                    <span className="text-sm font-semibold text-gray-700">Category</span>
+                    <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.category')}</span>
                   </div>
-                  <p className="text-sm text-gray-900 font-medium">{currentGigData.category || 'Not specified'}</p>
+                  <p className="text-sm text-gray-900 font-medium">{currentGigData.category || t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-blue-100">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-semibold text-gray-700">Status</span>
+                    <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.status')}</span>
                   </div>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${currentGigData.status === 'active' || currentGigData.status === 'approved'
                     ? 'bg-green-100 text-green-800'
@@ -1514,16 +1549,16 @@ const ApprovalPublishing = () => {
                       ? 'bg-yellow-100 text-yellow-800'
                       : 'bg-red-100 text-red-800'
                     }`}>
-                    {currentGigData.status}
+                    {formatStatus(currentGigData.status)}
                   </span>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-blue-100">
                   <div className="flex items-center gap-2 mb-2">
                     <Globe className="h-4 w-4 text-indigo-500" />
-                    <span className="text-sm font-semibold text-gray-700">Destination Zone</span>
+                    <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.destinationZone')}</span>
                   </div>
                   <p className="text-sm text-gray-900 font-medium">
-                    {timezoneData[0]?.countryName || currentGigData.destination_zone || 'Not specified'}
+                    {timezoneData[0]?.countryName || currentGigData.destination_zone || t('approvalPublishing.fallback.notSpecified')}
                   </p>
                 </div>
               </div>
@@ -1531,26 +1566,26 @@ const ApprovalPublishing = () => {
                 <div className="bg-white rounded-lg p-4 border border-blue-100">
                   <div className="flex items-center gap-2 mb-2">
                     <Building className="h-4 w-4 text-orange-500" />
-                    <span className="text-sm font-semibold text-gray-700">Company</span>
+                    <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.company')}</span>
                   </div>
-                  <p className="text-sm text-gray-900 font-medium">{currentGigData.companyName || company?.name || 'Not specified'}</p>
+                  <p className="text-sm text-gray-900 font-medium">{currentGigData.companyName || company?.name || t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-blue-100">
                   <div className="flex items-center gap-2 mb-2">
                     <Calendar className="h-4 w-4 text-emerald-500" />
-                    <span className="text-sm font-semibold text-gray-700">Created</span>
+                    <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.created')}</span>
                   </div>
                   <p className="text-sm text-gray-900 font-medium">
-                    {currentGigData.createdAt ? formatDate(currentGigData.createdAt) : 'Not available'}
+                    {currentGigData.createdAt ? formatDate(currentGigData.createdAt) : t('approvalPublishing.fallback.notAvailable')}
                   </p>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-blue-100">
                   <div className="flex items-center gap-2 mb-2">
                     <ClockIcon className="h-4 w-4 text-cyan-500" />
-                    <span className="text-sm font-semibold text-gray-700">Updated</span>
+                    <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.updated')}</span>
                   </div>
                   <p className="text-sm text-gray-900 font-medium">
-                    {currentGigData.updatedAt ? formatDate(currentGigData.updatedAt) : 'Not available'}
+                    {currentGigData.updatedAt ? formatDate(currentGigData.updatedAt) : t('approvalPublishing.fallback.notAvailable')}
                   </p>
                 </div>
               </div>
@@ -1558,7 +1593,7 @@ const ApprovalPublishing = () => {
             <div className="mt-6 bg-white rounded-lg p-4 border border-blue-100">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="h-4 w-4 text-blue-500" />
-                <span className="text-sm font-semibold text-gray-700">Description</span>
+                <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.description')}</span>
               </div>
               <p className="text-sm text-gray-900 leading-relaxed">{currentGigData.description}</p>
             </div>
@@ -1570,26 +1605,26 @@ const ApprovalPublishing = () => {
               <div className="p-2 bg-green-100 rounded-lg">
                 <Target className="h-6 w-6 text-green-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Activities & Industries</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.activitiesIndustries')}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg p-4 border border-green-100">
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingUp className="h-4 w-4 text-green-500" />
-                  <span className="text-sm font-semibold text-gray-700">Activities</span>
+                  <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.activities')}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.activities?.map((activity: any, index: number) => (
                     <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200">
                       {activity?.name || getActivityName(activity)}
                     </span>
-                  )) || <span className="text-sm text-gray-500 italic">No activities specified</span>}
+                  )) || <span className="text-sm text-gray-500 italic">{t('approvalPublishing.empty.activities')}</span>}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-4 border border-green-100">
                 <div className="flex items-center gap-2 mb-3">
                   <Building className="h-4 w-4 text-emerald-500" />
-                  <span className="text-sm font-semibold text-gray-700">Industries</span>
+                  <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.industries')}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {(currentGigData.industries || []).map((industry: any, index: number) => (
@@ -1598,7 +1633,7 @@ const ApprovalPublishing = () => {
                     </span>
                   ))}
                   {(!currentGigData.industries || currentGigData.industries.length === 0) && (
-                    <span className="text-sm text-gray-500 italic">No industries specified</span>
+                    <span className="text-sm text-gray-500 italic">{t('approvalPublishing.empty.industries')}</span>
                   )}
                 </div>
               </div>
@@ -1611,25 +1646,25 @@ const ApprovalPublishing = () => {
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Award className="h-6 w-6 text-purple-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Seniority Requirements</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.seniority')}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg p-4 border border-purple-100">
                 <div className="flex items-center gap-2 mb-2">
                   <Target className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm font-semibold text-gray-700">Level</span>
+                  <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.level')}</span>
                 </div>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-violet-100 text-purple-800 border border-purple-200">
-                  {currentGigData.seniority?.level || 'Not specified'}
+                  {formatSeniority(currentGigData.seniority?.level) || t('approvalPublishing.fallback.notSpecified')}
                 </span>
               </div>
               <div className="bg-white rounded-lg p-4 border border-purple-100">
                 <div className="flex items-center gap-2 mb-2">
                   <ClockIcon className="h-4 w-4 text-violet-500" />
-                  <span className="text-sm font-semibold text-gray-700">Years of Experience</span>
+                  <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.yearsExperience')}</span>
                 </div>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-violet-100 to-purple-100 text-violet-800 border border-violet-200">
-                  {currentGigData.seniority?.yearsExperience || 'Not specified'}
+                  {currentGigData.seniority?.yearsExperience || t('approvalPublishing.fallback.notSpecified')}
                 </span>
               </div>
             </div>
@@ -1641,68 +1676,68 @@ const ApprovalPublishing = () => {
               <div className="p-2 bg-orange-100 rounded-lg">
                 <Award className="h-6 w-6 text-orange-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Skills & Languages</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.skillsLanguages')}</h2>
             </div>
             <div className="space-y-6">
               <div className="bg-white rounded-lg p-4 border border-orange-100">
                 <div className="flex items-center gap-2 mb-3">
                   <Target className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm font-semibold text-gray-700">Professional Skills</span>
+                  <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.professionalSkills')}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.professional?.map((skill: any, index: number) => {
-                    const skillName = skill?.skill?.name || (skillsData[skill?.skill?._id]?.name) || `Skill ${skill?.skill?._id || 'Unknown'}`;
+                    const skillName = skill?.skill?.name || (skillsData[skill?.skill?._id]?.name) || t('approvalPublishing.fallback.skill', { id: skill?.skill?._id || t('approvalPublishing.fallback.unknown') });
                     return (
                       <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-violet-100 text-purple-800 border border-purple-200">
-                        {skillName} (Level {skill?.level || 'N/A'})
+                        {skillName} ({t('approvalPublishing.fields.level')} {skill?.level || t('approvalPublishing.fallback.na')})
                       </span>
                     );
-                  }) || <span className="text-sm text-gray-500 italic">No professional skills specified</span>}
+                  }) || <span className="text-sm text-gray-500 italic">{t('approvalPublishing.empty.professionalSkills')}</span>}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-4 border border-orange-100">
                 <div className="flex items-center gap-2 mb-3">
                   <Settings className="h-4 w-4 text-orange-500" />
-                  <span className="text-sm font-semibold text-gray-700">Technical Skills</span>
+                  <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.technicalSkills')}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.technical?.map((skill: any, index: number) => {
-                    const skillName = skill?.skill?.name || (skillsData[skill?.skill?._id]?.name) || `Skill ${skill?.skill?._id || 'Unknown'}`;
+                    const skillName = skill?.skill?.name || (skillsData[skill?.skill?._id]?.name) || t('approvalPublishing.fallback.skill', { id: skill?.skill?._id || t('approvalPublishing.fallback.unknown') });
                     return (
                       <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200">
-                        {skillName} (Level {skill?.level || 'N/A'})
+                        {skillName} ({t('approvalPublishing.fields.level')} {skill?.level || t('approvalPublishing.fallback.na')})
                       </span>
                     );
-                  }) || <span className="text-sm text-gray-500 italic">No technical skills specified</span>}
+                  }) || <span className="text-sm text-gray-500 italic">{t('approvalPublishing.empty.technicalSkills')}</span>}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-4 border border-orange-100">
                 <div className="flex items-center gap-2 mb-3">
                   <Users className="h-4 w-4 text-pink-500" />
-                  <span className="text-sm font-semibold text-gray-700">Soft Skills</span>
+                  <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.softSkills')}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.soft?.map((skill: any, index: number) => {
-                    const skillName = skill?.skill?.name || (skillsData[skill?.skill?._id]?.name) || `Skill ${skill?.skill?._id || 'Unknown'}`;
+                    const skillName = skill?.skill?.name || (skillsData[skill?.skill?._id]?.name) || t('approvalPublishing.fallback.skill', { id: skill?.skill?._id || t('approvalPublishing.fallback.unknown') });
                     return (
                       <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-pink-100 to-rose-100 text-pink-800 border border-pink-200">
-                        {skillName} (Level {skill?.level || 'N/A'})
+                        {skillName} ({t('approvalPublishing.fields.level')} {skill?.level || t('approvalPublishing.fallback.na')})
                       </span>
                     );
-                  }) || <span className="text-sm text-gray-500 italic">No soft skills specified</span>}
+                  }) || <span className="text-sm text-gray-500 italic">{t('approvalPublishing.empty.softSkills')}</span>}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-4 border border-orange-100">
                 <div className="flex items-center gap-2 mb-3">
                   <Globe className="h-4 w-4 text-indigo-500" />
-                  <span className="text-sm font-semibold text-gray-700">Languages</span>
+                  <span className="text-sm font-semibold text-gray-700">{t('approvalPublishing.fields.languages')}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.languages?.map((lang: any, index: number) => (
                     <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-800 border border-indigo-200">
-                      {lang?.language?.name || getLanguageName(lang?.language)} ({lang?.proficiency || 'N/A'})
+                      {lang?.language?.name || getLanguageName(lang?.language)} ({lang?.proficiency || t('approvalPublishing.fallback.na')})
                     </span>
-                  )) || <span className="text-sm text-gray-500 italic">No languages specified</span>}
+                  )) || <span className="text-sm text-gray-500 italic">{t('approvalPublishing.empty.languages')}</span>}
                 </div>
               </div>
             </div>
@@ -1710,11 +1745,11 @@ const ApprovalPublishing = () => {
 
           {/* Schedule */}
           <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Schedule & Availability</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('approvalPublishing.sections.schedule')}</h2>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Time Zone:</span>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.timeZone')}:</span>
                   <p className="text-sm text-gray-900 mt-1">
                     {(() => {
                       const timezoneObj = currentGigData.availability?.time_zone;
@@ -1722,12 +1757,12 @@ const ApprovalPublishing = () => {
                         return `${timezoneObj.zoneName} (${timezoneObj.countryName})`;
                       }
                       const timezone = timezoneData[timezoneObj];
-                      return timezone ? `${timezone.zoneName} (${timezone.countryName})` : (timezoneObj || 'Not specified');
+                      return timezone ? `${timezone.zoneName} (${timezone.countryName})` : (timezoneObj || t('approvalPublishing.fallback.notSpecified'));
                     })()}
                   </p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Flexibility:</span>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.flexibility')}:</span>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {(currentGigData.availability?.flexibility || []).map((flex: string, index: number) => (
                       <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -1735,37 +1770,37 @@ const ApprovalPublishing = () => {
                       </span>
                     ))}
                     {(!currentGigData.availability?.flexibility || currentGigData.availability.flexibility.length === 0) && (
-                      <span className="text-sm text-gray-500">No flexibility options specified</span>
+                      <span className="text-sm text-gray-500">{t('approvalPublishing.empty.flexibility')}</span>
                     )}
                   </div>
                 </div>
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-500">Weekly Schedule:</span>
+                <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.weeklySchedule')}:</span>
                 <div className="mt-2 space-y-2">
                   {(currentGigData.availability?.schedule || []).map((day: any, index: number) => (
                     <div key={index} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
-                      <span className="text-sm font-medium text-gray-900">{day?.day || 'Unknown'}</span>
-                      <span className="text-sm text-gray-600">{day?.hours?.start || 'N/A'} - {day?.hours?.end || 'N/A'}</span>
+                      <span className="text-sm font-medium text-gray-900">{day?.day ? t(`approvalPublishing.weekdays.${String(day.day).toLowerCase()}`, day.day) : t('approvalPublishing.fallback.unknown')}</span>
+                      <span className="text-sm text-gray-600">{day?.hours?.start || t('approvalPublishing.fallback.na')} - {day?.hours?.end || t('approvalPublishing.fallback.na')}</span>
                     </div>
                   ))}
                   {(!currentGigData.availability?.schedule || currentGigData.availability.schedule.length === 0) && (
-                    <span className="text-sm text-gray-500">No schedule specified</span>
+                    <span className="text-sm text-gray-500">{t('approvalPublishing.empty.schedule')}</span>
                   )}
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Minimum Hours (Daily):</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.availability?.minimumHours?.daily || 'Not specified'}</p>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.minimumHoursDaily')}:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.availability?.minimumHours?.daily || t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Minimum Hours (Weekly):</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.availability?.minimumHours?.weekly || 'Not specified'}</p>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.minimumHoursWeekly')}:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.availability?.minimumHours?.weekly || t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Minimum Hours (Monthly):</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.availability?.minimumHours?.monthly || 'Not specified'}</p>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.minimumHoursMonthly')}:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.availability?.minimumHours?.monthly || t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
               </div>
             </div>
@@ -1773,43 +1808,43 @@ const ApprovalPublishing = () => {
 
           {/* Commission */}
           <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Commission & Compensation</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('approvalPublishing.sections.commission')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Base:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.base || 'Not specified'}</p>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.base')}:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.base || t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Base Amount:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.baseAmount ? `${currentGigData.commission.baseAmount} ${currentGigData.commission.currency?.symbol || '€'}` : 'Not specified'}</p>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.baseAmount')}:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.baseAmount ? `${currentGigData.commission.baseAmount} ${currentGigData.commission.currency?.symbol || '€'}` : t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Bonus:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.bonus || 'Not specified'}</p>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.bonus')}:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.bonus || t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Bonus Amount:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.bonusAmount ? `${currentGigData.commission.bonusAmount} ${currentGigData.commission.currency?.symbol || '€'}` : 'Not specified'}</p>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.bonusAmount')}:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.bonusAmount ? `${currentGigData.commission.bonusAmount} ${currentGigData.commission.currency?.symbol || '€'}` : t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
               </div>
               <div className="space-y-3">
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Transaction Commission:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.transactionCommission?.type || 'Not specified'}</p>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.transactionCommission')}:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.transactionCommission?.type || t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Commission Amount:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.transactionCommission?.amount ? `${currentGigData.commission.transactionCommission.amount} ${currentGigData.commission?.currency?.symbol || '€'}` : 'Not specified'}</p>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.commissionAmount')}:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.transactionCommission?.amount ? `${currentGigData.commission.transactionCommission.amount} ${currentGigData.commission?.currency?.symbol || '€'}` : t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Minimum Volume:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.minimumVolume?.amount ? `${currentGigData.commission.minimumVolume.amount} ${currentGigData.commission.minimumVolume.unit} ${currentGigData.commission.minimumVolume.period}` : 'Not specified'}</p>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.minimumVolume')}:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.minimumVolume?.amount ? `${currentGigData.commission.minimumVolume.amount} ${formatUnit(currentGigData.commission.minimumVolume.unit)} ${formatPeriod(currentGigData.commission.minimumVolume.period)}` : t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
               </div>
               {currentGigData.commission?.additionalDetails && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <span className="text-sm font-medium text-gray-500">Additional Details:</span>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.additionalDetails')}:</span>
                   <p className="text-sm text-gray-900 mt-1">{currentGigData.commission.additionalDetails}</p>
                 </div>
               )}
@@ -1818,15 +1853,15 @@ const ApprovalPublishing = () => {
 
           {/* Team */}
           <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Team Structure</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('approvalPublishing.sections.team')}</h2>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Team Size:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.team?.size || 'Not specified'}</p>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.teamSize')}:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.team?.size || t('approvalPublishing.fallback.notSpecified')}</p>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Territories:</span>
+                  <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.territories')}:</span>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {(currentGigData.team?.territories || []).map((territory: any, index: number) => (
                       <span key={index} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
@@ -1841,22 +1876,22 @@ const ApprovalPublishing = () => {
                       </span>
                     ))}
                     {(!currentGigData.team?.territories || currentGigData.team.territories.length === 0) && (
-                      <span className="text-sm text-gray-500">No territories specified</span>
+                      <span className="text-sm text-gray-500">{t('approvalPublishing.empty.territories')}</span>
                     )}
                   </div>
                 </div>
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-500">Team Structure:</span>
+                <span className="text-sm font-medium text-gray-500">{t('approvalPublishing.fields.teamStructure')}:</span>
                 <div className="mt-2 space-y-2">
                   {(currentGigData.team?.structure || []).map((role: any, index: number) => (
                     <div key={index} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
-                      <span className="text-sm font-medium text-gray-900">{role?.roleId || 'Unknown'} ({role?.count || 0})</span>
-                      <span className="text-sm text-gray-600">{role?.seniority?.level || 'N/A'} - {role?.seniority?.yearsExperience || 'N/A'} years</span>
+                      <span className="text-sm font-medium text-gray-900">{role?.roleId || t('approvalPublishing.fallback.unknown')} ({role?.count || 0})</span>
+                      <span className="text-sm text-gray-600">{formatSeniority(role?.seniority?.level) || t('approvalPublishing.fallback.na')} - {t('approvalPublishing.yearsCount', { count: role?.seniority?.yearsExperience || 0 })}</span>
                     </div>
                   ))}
                   {(!currentGigData.team?.structure || currentGigData.team.structure.length === 0) && (
-                    <span className="text-sm text-gray-500">No team structure specified</span>
+                    <span className="text-sm text-gray-500">{t('approvalPublishing.empty.teamStructure')}</span>
                   )}
                 </div>
               </div>
@@ -1866,7 +1901,7 @@ const ApprovalPublishing = () => {
           {/* Issues */}
           {currentGigData.issues && currentGigData.issues.length > 0 && (
             <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-6">
-              <h2 className="text-lg font-semibold text-yellow-800 mb-4">Issues Requiring Attention</h2>
+              <h2 className="text-lg font-semibold text-yellow-800 mb-4">{t('approvalPublishing.issues.title')}</h2>
               <ul className="list-disc space-y-1 pl-5 text-sm text-yellow-700">
                 {currentGigData.issues.map((issue: string, index: number) => (
                   <li key={index}>{issue}</li>
@@ -1896,9 +1931,9 @@ const ApprovalPublishing = () => {
                 </button>
                 <div>
                   <h2 className="text-3xl font-black text-white uppercase tracking-tighter">
-                    Edit: {currentGigData.title}
+                    {t('approvalPublishing.edit.title', { title: currentGigData.title })}
                   </h2>
-                  <p className="text-[14px] font-medium text-white/90 italic">Refine your gig specifications</p>
+                  <p className="text-[14px] font-medium text-white/90 italic">{t('approvalPublishing.edit.subtitle')}</p>
                 </div>
               </div>
             </div>
@@ -1912,14 +1947,14 @@ const ApprovalPublishing = () => {
               <div className="p-2 bg-blue-100 rounded-lg">
                 <FileText className="h-6 w-6 text-blue-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.basicInfo')}</h2>
             </div>
             <div className="space-y-6">
               <div className="bg-white rounded-lg p-4 border border-blue-100">
                 <div className="flex items-center gap-2 mb-3">
                   <Target className="h-4 w-4 text-blue-500" />
                   <label htmlFor="title" className="text-sm font-semibold text-gray-700">
-                    Gig Title
+                    {t('approvalPublishing.fields.gigTitle')}
                   </label>
                 </div>
                 <input
@@ -1927,7 +1962,7 @@ const ApprovalPublishing = () => {
                   id="title"
                   defaultValue={currentGigData.title}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter gig title"
+                  placeholder={t('approvalPublishing.placeholders.gigTitle')}
                 />
               </div>
 
@@ -1935,7 +1970,7 @@ const ApprovalPublishing = () => {
                 <div className="flex items-center gap-2 mb-3">
                   <FileText className="h-4 w-4 text-blue-500" />
                   <label htmlFor="description" className="text-sm font-semibold text-gray-700">
-                    Description
+                    {t('approvalPublishing.fields.description')}
                   </label>
                 </div>
                 <textarea
@@ -1943,7 +1978,7 @@ const ApprovalPublishing = () => {
                   rows={4}
                   defaultValue={currentGigData.description}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter gig description"
+                  placeholder={t('approvalPublishing.placeholders.description')}
                 />
               </div>
 
@@ -1952,7 +1987,7 @@ const ApprovalPublishing = () => {
                   <div className="flex items-center gap-2 mb-3">
                     <Award className="h-4 w-4 text-purple-500" />
                     <label htmlFor="category" className="text-sm font-semibold text-gray-700">
-                      Category
+                      {t('approvalPublishing.fields.category')}
                     </label>
                   </div>
                   <input
@@ -1960,7 +1995,7 @@ const ApprovalPublishing = () => {
                     id="category"
                     defaultValue={currentGigData.category}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter category"
+                    placeholder={t('approvalPublishing.placeholders.category')}
                   />
                 </div>
 
@@ -1968,7 +2003,7 @@ const ApprovalPublishing = () => {
                   <div className="flex items-center gap-2 mb-3">
                     <Globe className="h-4 w-4 text-indigo-500" />
                     <label htmlFor="destination_zone" className="text-sm font-semibold text-gray-700">
-                      Destination Zone
+                      {t('approvalPublishing.fields.destinationZone')}
                     </label>
                   </div>
                   <input
@@ -1976,11 +2011,11 @@ const ApprovalPublishing = () => {
                     id="destination_zone"
                     defaultValue={currentGigData.destination_zone}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter destination zone"
+                    placeholder={t('approvalPublishing.placeholders.destinationZone')}
                   />
                   {timezoneData[0] && (
                     <p className="mt-2 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                      Country: {timezoneData[0].countryName}
+                      {t('approvalPublishing.fields.country')}: {timezoneData[0].countryName}
                     </p>
                   )}
                 </div>
@@ -1994,14 +2029,14 @@ const ApprovalPublishing = () => {
               <div className="p-2 bg-green-100 rounded-lg">
                 <Target className="h-6 w-6 text-green-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Activities & Industries</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.activitiesIndustries')}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg p-4 border border-green-100">
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingUp className="h-4 w-4 text-green-500" />
                   <label htmlFor="activities" className="text-sm font-semibold text-gray-700">
-                    Activities
+                    {t('approvalPublishing.fields.activities')}
                   </label>
                 </div>
                 <select
@@ -2016,13 +2051,13 @@ const ApprovalPublishing = () => {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple activities</p>
+                <p className="text-xs text-gray-500 mt-1">{t('approvalPublishing.edit.multiSelectActivities')}</p>
               </div>
               <div className="bg-white rounded-lg p-4 border border-green-100">
                 <div className="flex items-center gap-2 mb-3">
                   <Building className="h-4 w-4 text-emerald-500" />
                   <label htmlFor="industries" className="text-sm font-semibold text-gray-700">
-                    Industries
+                    {t('approvalPublishing.fields.industries')}
                   </label>
                 </div>
                 <select
@@ -2037,7 +2072,7 @@ const ApprovalPublishing = () => {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple industries</p>
+                <p className="text-xs text-gray-500 mt-1">{t('approvalPublishing.edit.multiSelectIndustries')}</p>
               </div>
             </div>
           </div>
@@ -2048,14 +2083,14 @@ const ApprovalPublishing = () => {
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Award className="h-6 w-6 text-purple-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Seniority Requirements</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.seniority')}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg p-4 border border-purple-100">
                 <div className="flex items-center gap-2 mb-3">
                   <Target className="h-4 w-4 text-purple-500" />
                   <label htmlFor="seniority_level" className="text-sm font-semibold text-gray-700">
-                    Seniority Level
+                    {t('approvalPublishing.fields.seniorityLevel')}
                   </label>
                 </div>
                 <select
@@ -2063,18 +2098,18 @@ const ApprovalPublishing = () => {
                   defaultValue={currentGigData.seniority?.level}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 >
-                  <option value="">Select level</option>
-                  <option value="Entry-Level">Entry-Level</option>
-                  <option value="Mid-Level">Mid-Level</option>
-                  <option value="Senior">Senior</option>
-                  <option value="Expert">Expert</option>
+                  <option value="">{t('approvalPublishing.select.level')}</option>
+                  <option value="Entry-Level">{t('approvalPublishing.seniority.entry')}</option>
+                  <option value="Mid-Level">{t('approvalPublishing.seniority.mid')}</option>
+                  <option value="Senior">{t('approvalPublishing.seniority.senior')}</option>
+                  <option value="Expert">{t('approvalPublishing.seniority.expert')}</option>
                 </select>
               </div>
               <div className="bg-white rounded-lg p-4 border border-purple-100">
                 <div className="flex items-center gap-2 mb-3">
                   <ClockIcon className="h-4 w-4 text-violet-500" />
                   <label htmlFor="years_experience" className="text-sm font-semibold text-gray-700">
-                    Years of Experience
+                    {t('approvalPublishing.fields.yearsExperience')}
                   </label>
                 </div>
                 <input
@@ -2082,7 +2117,7 @@ const ApprovalPublishing = () => {
                   id="years_experience"
                   defaultValue={currentGigData.seniority?.yearsExperience}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="Enter years of experience"
+                  placeholder={t('approvalPublishing.placeholders.yearsExperience')}
                 />
               </div>
             </div>
@@ -2097,15 +2132,15 @@ const ApprovalPublishing = () => {
                   <DollarSign className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Base Commission</h2>
-                  <p className="text-sm text-gray-600">Set the fixed base rate and requirements</p>
+                  <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.baseCommission')}</h2>
+                  <p className="text-sm text-gray-600">{t('approvalPublishing.edit.baseCommissionHint')}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-6">
                 <div>
                   <label htmlFor="commission_per_call" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Per call compensation
+                    {t('approvalPublishing.fields.perCallCompensation')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -2117,7 +2152,7 @@ const ApprovalPublishing = () => {
                       step="0.01"
                       defaultValue={currentGigData.commission?.commission_per_call}
                       className="w-full pl-8 pr-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter amount per call"
+                      placeholder={t('approvalPublishing.placeholders.amountPerCall')}
                     />
                   </div>
                 </div>
@@ -2127,49 +2162,49 @@ const ApprovalPublishing = () => {
               <div className="mt-6 bg-white rounded-lg p-4 border border-blue-100">
                 <div className="flex items-center gap-2 mb-4">
                   <Target className="h-4 w-4 text-blue-500" />
-                  <h3 className="text-sm font-semibold text-gray-700">Minimum Requirements</h3>
+                  <h3 className="text-sm font-semibold text-gray-700">{t('approvalPublishing.sections.minimumRequirements')}</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label htmlFor="target_amount" className="block text-xs font-medium text-gray-500 mb-1">
-                      Target Amount
+                      {t('approvalPublishing.fields.targetAmount')}
                     </label>
                     <input
                       type="number"
                       id="target_amount"
                       defaultValue={currentGigData.commission?.minimumVolume?.amount}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter target"
+                      placeholder={t('approvalPublishing.placeholders.target')}
                     />
                   </div>
                   <div>
                     <label htmlFor="unit_type" className="block text-xs font-medium text-gray-500 mb-1">
-                      Unit
+                      {t('approvalPublishing.fields.unit')}
                     </label>
                     <select
                       id="unit_type"
                       defaultValue={currentGigData.commission?.minimumVolume?.unit}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="">Select unit</option>
-                      <option value="Calls">Calls</option>
-                      <option value="Sales">Sales</option>
-                      <option value="Transactions">Transactions</option>
+                      <option value="">{t('approvalPublishing.select.unit')}</option>
+                      <option value="Calls">{t('approvalPublishing.units.calls')}</option>
+                      <option value="Sales">{t('approvalPublishing.units.sales')}</option>
+                      <option value="Transactions">{t('approvalPublishing.units.transactions')}</option>
                     </select>
                   </div>
                   <div>
                     <label htmlFor="period" className="block text-xs font-medium text-gray-500 mb-1">
-                      Period
+                      {t('approvalPublishing.fields.period')}
                     </label>
                     <select
                       id="period"
                       defaultValue={currentGigData.commission?.minimumVolume?.period}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="">Select period</option>
-                      <option value="Daily">Daily</option>
-                      <option value="Weekly">Weekly</option>
-                      <option value="Monthly">Monthly</option>
+                      <option value="">{t('approvalPublishing.select.period')}</option>
+                      <option value="Daily">{t('approvalPublishing.periods.daily')}</option>
+                      <option value="Weekly">{t('approvalPublishing.periods.weekly')}</option>
+                      <option value="Monthly">{t('approvalPublishing.periods.monthly')}</option>
                     </select>
                   </div>
                 </div>
@@ -2183,15 +2218,15 @@ const ApprovalPublishing = () => {
                   <TrendingUp className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Transaction Commission</h2>
-                  <p className="text-sm text-gray-600">Define per-transaction rewards</p>
+                  <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.transactionCommission')}</h2>
+                  <p className="text-sm text-gray-600">{t('approvalPublishing.edit.transactionCommissionHint')}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-6">
                 <div>
                   <label htmlFor="transaction_commission" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Commission Amount
+                    {t('approvalPublishing.fields.commissionAmount')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -2203,7 +2238,7 @@ const ApprovalPublishing = () => {
                       step="0.01"
                       defaultValue={currentGigData.commission?.transactionCommission}
                       className="w-full pl-8 pr-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="Enter amount"
+                      placeholder={t('approvalPublishing.placeholders.amount')}
                     />
                   </div>
                 </div>
@@ -2217,15 +2252,15 @@ const ApprovalPublishing = () => {
                   <Award className="h-6 w-6 text-amber-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Performance Bonus</h2>
-                  <p className="text-sm text-gray-600">Set additional performance-based rewards</p>
+                  <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.performanceBonus')}</h2>
+                  <p className="text-sm text-gray-600">{t('approvalPublishing.edit.performanceBonusHint')}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-6">
                 <div>
                   <label htmlFor="bonus_amount" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Bonus Amount
+                    {t('approvalPublishing.fields.bonusAmount')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -2236,7 +2271,7 @@ const ApprovalPublishing = () => {
                       id="bonus_amount"
                       defaultValue={currentGigData.commission?.bonusAmount}
                       className="w-full pl-8 pr-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                      placeholder="Enter bonus amount"
+                      placeholder={t('approvalPublishing.placeholders.bonusAmount')}
                     />
                   </div>
                 </div>
@@ -2250,21 +2285,21 @@ const ApprovalPublishing = () => {
                   <Globe className="h-6 w-6 text-gray-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Currency Settings</h2>
-                  <p className="text-sm text-gray-600">Select the currency for all commission calculations</p>
+                  <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.currency')}</h2>
+                  <p className="text-sm text-gray-600">{t('approvalPublishing.edit.currencyHint')}</p>
                 </div>
               </div>
 
               <div className="max-w-md">
                 <label htmlFor="currency" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Currency
+                  {t('approvalPublishing.fields.currency')}
                 </label>
                 <select
                   id="currency"
                   defaultValue={currentGigData.commission?.currency?.$oid || ""}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                 >
-                  <option value="">Select currency</option>
+                  <option value="">{t('approvalPublishing.select.currency')}</option>
                   <option value="EUR">EUR (€)</option>
                   <option value="USD">USD ($)</option>
                   <option value="GBP">GBP (£)</option>
@@ -2281,14 +2316,14 @@ const ApprovalPublishing = () => {
               <div className="p-2 bg-pink-100 rounded-lg">
                 <Users className="h-6 w-6 text-pink-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Team Structure</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.team')}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg p-4 border border-pink-100">
                 <div className="flex items-center gap-2 mb-3">
                   <Users className="h-4 w-4 text-pink-500" />
                   <label htmlFor="team_size" className="text-sm font-semibold text-gray-700">
-                    Team Size
+                    {t('approvalPublishing.fields.teamSize')}
                   </label>
                 </div>
                 <input
@@ -2296,14 +2331,14 @@ const ApprovalPublishing = () => {
                   id="team_size"
                   defaultValue={currentGigData.team?.size}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                  placeholder="Enter team size"
+                  placeholder={t('approvalPublishing.placeholders.teamSize')}
                 />
               </div>
               <div className="bg-white rounded-lg p-4 border border-pink-100">
                 <div className="flex items-center gap-2 mb-3">
                   <MapPin className="h-4 w-4 text-rose-500" />
                   <label htmlFor="territories" className="text-sm font-semibold text-gray-700">
-                    Territories
+                    {t('approvalPublishing.fields.territories')}
                   </label>
                 </div>
                 <input
@@ -2311,7 +2346,7 @@ const ApprovalPublishing = () => {
                   id="territories"
                   defaultValue={(currentGigData.team?.territories || []).map((territory: any) => territory?.name?.common || territory).join(', ')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                  placeholder="Enter territories (comma separated)"
+                  placeholder={t('approvalPublishing.placeholders.territories')}
                 />
               </div>
             </div>
@@ -2323,7 +2358,7 @@ const ApprovalPublishing = () => {
               <div className="p-2 bg-cyan-100 rounded-lg">
                 <ClockIcon className="h-6 w-6 text-cyan-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Schedule & Availability</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('approvalPublishing.sections.schedule')}</h2>
             </div>
 
             {/* Time Zone and Flexibility */}
@@ -2332,7 +2367,7 @@ const ApprovalPublishing = () => {
                 <div className="flex items-center gap-2 mb-3">
                   <Globe className="h-4 w-4 text-cyan-500" />
                   <label htmlFor="timezone" className="text-sm font-semibold text-gray-700">
-                    Time Zone
+                    {t('approvalPublishing.fields.timeZone')}
                   </label>
                 </div>
                 <input
@@ -2344,14 +2379,14 @@ const ApprovalPublishing = () => {
                     ''
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  placeholder="Enter timezone"
+                  placeholder={t('approvalPublishing.placeholders.timeZone')}
                 />
               </div>
               <div className="bg-white rounded-lg p-4 border border-cyan-100">
                 <div className="flex items-center gap-2 mb-3">
                   <Settings className="h-4 w-4 text-blue-500" />
                   <label htmlFor="flexibility" className="text-sm font-semibold text-gray-700">
-                    Flexibility
+                    {t('approvalPublishing.fields.flexibility')}
                   </label>
                 </div>
                 <input
@@ -2359,14 +2394,14 @@ const ApprovalPublishing = () => {
                   id="flexibility"
                   defaultValue={currentGigData.availability?.flexibility?.join(', ')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  placeholder="Enter flexibility options (comma separated)"
+                  placeholder={t('approvalPublishing.placeholders.flexibility')}
                 />
               </div>
             </div>
 
             {/* Working Days and Hours */}
             <div className="bg-white rounded-lg p-6 border border-cyan-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Working Days</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('approvalPublishing.schedule.workingDays')}</h3>
               <div className="flex flex-wrap gap-2 mb-6">
                 {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
                   <button
@@ -2377,7 +2412,7 @@ const ApprovalPublishing = () => {
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                   >
-                    {day}
+                    {t(`approvalPublishing.weekdays.${day.toLowerCase()}`)}
                   </button>
                 ))}
               </div>
@@ -2385,14 +2420,14 @@ const ApprovalPublishing = () => {
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-4">
                   <ClockIcon className="h-4 w-4 text-blue-500" />
-                  <h4 className="text-sm font-semibold text-gray-700">Working Hours</h4>
+                  <h4 className="text-sm font-semibold text-gray-700">{t('approvalPublishing.schedule.workingHours')}</h4>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Building className="h-4 w-4 text-orange-500" />
-                      <label className="text-xs font-medium text-gray-500">Start Time</label>
+                      <label className="text-xs font-medium text-gray-500">{t('approvalPublishing.schedule.startTime')}</label>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold text-gray-900">{workingHours.start}</span>
@@ -2402,7 +2437,7 @@ const ApprovalPublishing = () => {
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Building className="h-4 w-4 text-purple-500" />
-                      <label className="text-xs font-medium text-gray-500">End Time</label>
+                      <label className="text-xs font-medium text-gray-500">{t('approvalPublishing.schedule.endTime')}</label>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold text-gray-900">{workingHours.end}</span>
@@ -2412,7 +2447,7 @@ const ApprovalPublishing = () => {
                 </div>
 
                 <div className="bg-gray-100 rounded-lg px-3 py-2 flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Working Hours:</span>
+                  <span className="text-sm font-medium text-gray-700">{t('approvalPublishing.schedule.workingHours')}:</span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-gray-900">
                       {formatTime(workingHours.start)} - {formatTime(workingHours.end)}
@@ -2434,21 +2469,21 @@ const ApprovalPublishing = () => {
                     className="flex flex-col items-center p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
                   >
                     <Sunrise className="h-5 w-5 text-blue-500 mb-1" />
-                    <span className="text-xs font-medium text-gray-700">Early</span>
+                    <span className="text-xs font-medium text-gray-700">{t('approvalPublishing.schedule.presets.early')}</span>
                   </button>
                   <button
                     onClick={() => setPresetHours('late')}
                     className="flex flex-col items-center p-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors"
                   >
                     <ClockIcon className="h-5 w-5 text-purple-500 mb-1" />
-                    <span className="text-xs font-medium text-gray-700">Late</span>
+                    <span className="text-xs font-medium text-gray-700">{t('approvalPublishing.schedule.presets.late')}</span>
                   </button>
                   <button
                     onClick={() => setPresetHours('evening')}
                     className="flex flex-col items-center p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
                   >
                     <Moon className="h-5 w-5 text-blue-600 mb-1" />
-                    <span className="text-xs font-medium text-gray-700">Evening</span>
+                    <span className="text-xs font-medium text-gray-700">{t('approvalPublishing.schedule.presets.evening')}</span>
                   </button>
                 </div>
 
@@ -2459,7 +2494,7 @@ const ApprovalPublishing = () => {
                         onClick={updateSchedule}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                       >
-                        Update Schedule
+                        {t('approvalPublishing.actions.updateSchedule')}
                       </button>
                       <button
                         onClick={() => {
@@ -2470,7 +2505,7 @@ const ApprovalPublishing = () => {
                         }}
                         className="px-4 py-2 bg-gray-500 text-white rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors"
                       >
-                        Cancel
+                        {t('approvalPublishing.actions.cancel')}
                       </button>
                     </>
                   ) : (
@@ -2478,7 +2513,7 @@ const ApprovalPublishing = () => {
                       onClick={addSchedule}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
                     >
-                      Add Schedule
+                      {t('approvalPublishing.actions.addSchedule')}
                     </button>
                   )}
                 </div>
@@ -2488,7 +2523,7 @@ const ApprovalPublishing = () => {
             {/* Existing Schedules */}
             {schedules.length > 0 && (
               <div className="mt-6 bg-white rounded-lg p-4 border border-cyan-100">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Schedules</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('approvalPublishing.schedule.current')}</h3>
                 <div className="space-y-3">
                   {schedules.map((schedule) => (
                     <div key={schedule.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -2520,43 +2555,43 @@ const ApprovalPublishing = () => {
             <div className="mt-6 bg-white rounded-lg p-4 border border-cyan-100">
               <div className="flex items-center gap-2 mb-4">
                 <ClockIcon className="h-4 w-4 text-cyan-500" />
-                <h3 className="text-sm font-semibold text-gray-700">Minimum Hours</h3>
+                <h3 className="text-sm font-semibold text-gray-700">{t('approvalPublishing.schedule.minimumHours')}</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="min_hours_daily" className="block text-xs font-medium text-gray-500 mb-1">
-                    Daily
+                    {t('approvalPublishing.periods.daily')}
                   </label>
                   <input
                     type="number"
                     id="min_hours_daily"
                     defaultValue={currentGigData.availability?.minimumHours?.daily}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    placeholder="Hours"
+                    placeholder={t('approvalPublishing.placeholders.hours')}
                   />
                 </div>
                 <div>
                   <label htmlFor="min_hours_weekly" className="block text-xs font-medium text-gray-500 mb-1">
-                    Weekly
+                    {t('approvalPublishing.periods.weekly')}
                   </label>
                   <input
                     type="number"
                     id="min_hours_weekly"
                     defaultValue={currentGigData.availability?.minimumHours?.weekly}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    placeholder="Hours"
+                    placeholder={t('approvalPublishing.placeholders.hours')}
                   />
                 </div>
                 <div>
                   <label htmlFor="min_hours_monthly" className="block text-xs font-medium text-gray-500 mb-1">
-                    Monthly
+                    {t('approvalPublishing.periods.monthly')}
                   </label>
                   <input
                     type="number"
                     id="min_hours_monthly"
                     defaultValue={currentGigData.availability?.minimumHours?.monthly}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    placeholder="Hours"
+                    placeholder={t('approvalPublishing.placeholders.hours')}
                   />
                 </div>
               </div>
@@ -2569,14 +2604,14 @@ const ApprovalPublishing = () => {
               onClick={backToMain}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
             >
-              Cancel
+              {t('approvalPublishing.actions.cancel')}
             </button>
             <button
               type="button"
               onClick={handleSaveChanges}
               className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
             >
-              Save Changes
+              {t('approvalPublishing.actions.saveChanges')}
             </button>
           </div>
         </div>
@@ -2603,7 +2638,7 @@ const ApprovalPublishing = () => {
         disabled={!ready}
         title={
           hasInsufficientBalance
-            ? 'Solde insuffisant — alimentez votre portefeuille pour activer ce gig'
+            ? t('approvalPublishing.balance.singleTooltip')
             : !setupComplete
             ? t('gigActivation.activateDisabledHint', { count: missingCount })
             : undefined
@@ -2616,7 +2651,7 @@ const ApprovalPublishing = () => {
         }`}
       >
         <CheckCircle className="mr-2 h-4 w-4" />
-        Active
+        {t('approvalPublishing.actions.activate')}
       </button>
     );
   };
@@ -2634,9 +2669,9 @@ const ApprovalPublishing = () => {
               </div>
               <div>
                 <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none">
-                  Approval & Publishing
+                  {t('approvalPublishing.title')}
                 </h2>
-                <p className="text-[14px] font-medium text-white/90 mt-1 italic">Activate your gigs and start receiving applications</p>
+                <p className="text-[14px] font-medium text-white/90 mt-1 italic">{t('approvalPublishing.subtitle')}</p>
               </div>
             </div>
           </div>
@@ -2650,7 +2685,7 @@ const ApprovalPublishing = () => {
               disabled={selectedGigs.length === 0 || selectedHasIncompleteSetup || hasInsufficientBalance}
               title={
                 hasInsufficientBalance
-                  ? 'Solde insuffisant — alimentez votre portefeuille pour activer vos gigs'
+                  ? t('approvalPublishing.balance.bulkTooltip')
                   : selectedHasIncompleteSetup
                   ? t('gigActivation.bulkActivateDisabled')
                   : undefined
@@ -2658,7 +2693,7 @@ const ApprovalPublishing = () => {
               onClick={approveSelectedGigs}
             >
               <CheckCircle className="h-4 w-4" />
-              Approve
+              {t('approvalPublishing.actions.approve')}
             </button>
             <button
               className={`px-6 py-2.5 font-black rounded-2xl shadow-xl transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2 ${selectedGigs.length > 0
@@ -2669,7 +2704,7 @@ const ApprovalPublishing = () => {
               onClick={rejectSelectedGigs}
             >
               <XCircle className="h-4 w-4" />
-              Reject
+              {t('approvalPublishing.actions.reject')}
             </button>
           </div>
         </div>
@@ -2686,17 +2721,17 @@ const ApprovalPublishing = () => {
             </div>
             <div>
               <h4 className="text-base font-black text-amber-900 uppercase tracking-tight">
-                Attention : Solde insuffisant ({balance.toLocaleString('fr-FR')} €)
+                {t('approvalPublishing.balance.warningTitle', { balance: balance.toLocaleString() })}
               </h4>
               <p className="text-sm font-medium text-amber-700 mt-1 leading-relaxed max-w-3xl">
-                Votre solde actuel est de <strong>{balance.toLocaleString('fr-FR')} €</strong>. Vous devez alimenter votre compte afin de pouvoir activer ou approuver des gigs. Sans cela, vos reps ne pourront pas commencer à travailler.
+                {t('approvalPublishing.balance.warningBody', { balance: balance.toLocaleString() })}
               </p>
               <div className="mt-4">
                 <button
                   onClick={() => { setShowDepositModal(true); }}
                   className="px-5 py-2 bg-gradient-harx text-white font-black rounded-xl shadow-md hover:shadow-lg hover:brightness-110 active:scale-95 transition-all uppercase tracking-widest text-[10px] flex items-center gap-2 border border-harx-500/20"
                 >
-                  Alimenter mon compte
+                  {t('approvalPublishing.balance.topUp')}
                 </button>
               </div>
             </div>
@@ -2704,7 +2739,7 @@ const ApprovalPublishing = () => {
           <button
             onClick={() => setShowBalanceWarning(false)}
             className="p-1.5 rounded-lg text-amber-400 hover:text-amber-700 hover:bg-amber-100 transition-colors flex-shrink-0 absolute top-4 right-4"
-            aria-label="Fermer"
+            aria-label={t('approvalPublishing.actions.close')}
           >
             <XCircle className="h-5 w-5" />
           </button>
@@ -2721,7 +2756,7 @@ const ApprovalPublishing = () => {
             setFilter('all');
           }}
         >
-          All Gigs
+          {t('approvalPublishing.filters.all')}
         </button>
         <button
           className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${filter === 'approved' ? 'bg-harx-50 text-harx-600' : 'text-gray-500 hover:bg-gray-50'
@@ -2731,7 +2766,7 @@ const ApprovalPublishing = () => {
             setFilter('approved');
           }}
         >
-          Active
+          {t('approvalPublishing.status.active')}
         </button>
         <button
           className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${filter === 'rejected' ? 'bg-harx-50 text-harx-600' : 'text-gray-500 hover:bg-gray-50'
@@ -2741,7 +2776,7 @@ const ApprovalPublishing = () => {
             setFilter('rejected');
           }}
         >
-          Inactive
+          {t('approvalPublishing.status.inactive')}
         </button>
         <button
           className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${filter === 'archived' ? 'bg-harx-50 text-harx-600' : 'text-gray-500 hover:bg-gray-50'
@@ -2751,7 +2786,7 @@ const ApprovalPublishing = () => {
             setFilter('archived');
           }}
         >
-          Archived
+          {t('approvalPublishing.status.archived')}
         </button>
       </div>
 
@@ -2767,17 +2802,17 @@ const ApprovalPublishing = () => {
               )}
             </button>
             <span className="text-sm font-bold text-gray-700">
-              {selectedGigs.length} of {filteredGigs.length} selected
+              {t('approvalPublishing.selection.selected', { selected: selectedGigs.length, total: filteredGigs.length })}
             </span>
           </div>
           <div className="text-[11px] font-black uppercase tracking-wider text-harx-500 bg-harx-50 px-2 py-1 rounded-md">
-            {filteredGigs.filter(g => g.status === 'pending').length} pending approval
+            {t('approvalPublishing.selection.pending', { count: filteredGigs.filter(g => g.status === 'pending').length })}
           </div>
         </div>
 
         {filteredGigs.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-gray-500">No gigs found matching the current filter.</p>
+            <p className="text-gray-500">{t('approvalPublishing.empty.filtered')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
@@ -2804,7 +2839,7 @@ const ApprovalPublishing = () => {
                       <div>
                         <h3 className="text-base font-medium text-gray-900">{gig.title}</h3>
                         <p className="text-sm text-gray-500">
-                          {gig.category || 'No category'}
+                          {gig.category || t('approvalPublishing.fallback.noCategory')}
                           {gig.budget && ` • ${gig.budget}`}
                         </p>
                         {!isGigSetupComplete(gig) &&
@@ -2825,7 +2860,7 @@ const ApprovalPublishing = () => {
                       {(gig.status === 'pending' || gig.status === 'to_activate' || gig.status === 'draft' || gig.status === 'submitted') && (
                         <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
                           <Clock className="mr-1 h-3 w-3" />
-                          {gig.status === 'to_activate' ? 'To active' : formatStatus(gig.status)}
+                          {formatStatus(gig.status)}
                         </span>
                       )}
                       {(gig.status === 'approved' || gig.status === 'active' || gig.status === 'published') && (
@@ -2859,22 +2894,22 @@ const ApprovalPublishing = () => {
                   <div className="border-t border-gray-100 bg-gray-50 p-4">
                     <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                       <div>
-                        <p className="text-xs font-medium text-gray-500">Company</p>
-                        <p className="text-sm font-medium text-gray-900">{company?.name || gig.submittedBy || 'Company'}</p>
+                        <p className="text-xs font-medium text-gray-500">{t('approvalPublishing.fields.company')}</p>
+                        <p className="text-sm font-medium text-gray-900">{company?.name || gig.submittedBy || t('approvalPublishing.fallback.company')}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-medium text-gray-500">Created</p>
+                        <p className="text-xs font-medium text-gray-500">{t('approvalPublishing.fields.created')}</p>
                         <p className="text-sm font-medium text-gray-900">{formatDate(gig.createdAt)}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-medium text-gray-500">Status</p>
-                        <p className="text-sm font-medium text-gray-900 capitalize">{gig.status}</p>
+                        <p className="text-xs font-medium text-gray-500">{t('approvalPublishing.fields.status')}</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{formatStatus(gig.status)}</p>
                       </div>
                     </div>
 
                     {gig.description && (
                       <div className="mb-4">
-                        <p className="text-xs font-medium text-gray-500">Description</p>
+                        <p className="text-xs font-medium text-gray-500">{t('approvalPublishing.fields.description')}</p>
                         <p className="text-sm text-gray-900 mt-1">{gig.description}</p>
                       </div>
                     )}
@@ -2906,7 +2941,7 @@ const ApprovalPublishing = () => {
                             <AlertTriangle className="h-5 w-5 text-yellow-400" />
                           </div>
                           <div className="ml-3">
-                            <h3 className="text-sm font-medium text-yellow-800">Issues Requiring Attention</h3>
+                            <h3 className="text-sm font-medium text-yellow-800">{t('approvalPublishing.issues.title')}</h3>
                             <div className="mt-2 text-sm text-yellow-700">
                               <ul className="list-disc space-y-1 pl-5">
                                 {gig.issues.map((issue, index) => (
@@ -2931,14 +2966,14 @@ const ApprovalPublishing = () => {
                             className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
                           >
                             <XCircle className="mr-2 h-4 w-4" />
-                            Inactive
+                            {t('approvalPublishing.actions.deactivate')}
                           </button>
                           <button
                             onClick={() => archiveGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
                           >
                             <Clock className="mr-2 h-4 w-4" />
-                            Archived
+                            {t('approvalPublishing.actions.archive')}
                           </button>
                         </>
                       )}
@@ -2950,14 +2985,14 @@ const ApprovalPublishing = () => {
                             className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
                           >
                             <XCircle className="mr-2 h-4 w-4" />
-                            Inactive
+                            {t('approvalPublishing.actions.deactivate')}
                           </button>
                           <button
                             onClick={() => archiveGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
                           >
                             <Clock className="mr-2 h-4 w-4" />
-                            Archived
+                            {t('approvalPublishing.actions.archive')}
                           </button>
                         </>
                       )}
@@ -2970,7 +3005,7 @@ const ApprovalPublishing = () => {
                             className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
                           >
                             <Clock className="mr-2 h-4 w-4" />
-                            Archived
+                            {t('approvalPublishing.actions.archive')}
                           </button>
                         </>
                       )}
@@ -2983,7 +3018,7 @@ const ApprovalPublishing = () => {
                             className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
                           >
                             <XCircle className="mr-2 h-4 w-4" />
-                            Inactive
+                            {t('approvalPublishing.actions.deactivate')}
                           </button>
                         </>
                       )}

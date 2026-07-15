@@ -129,7 +129,7 @@ export default function CallsDashboardPage() {
 
       const alert = {
         requestedAt: data.requestedAt || new Date().toISOString(),
-        repName: data.repName || 'Rep',
+        repName: data.repName || t('calls.fallback.rep'),
         message: data.message || '',
         requestCount: data.requestCount || 1,
       };
@@ -338,19 +338,19 @@ export default function CallsDashboardPage() {
           return prev;
         });
         if (status === true) {
-          toast.success('Transaction validée par votre entreprise');
+          toast.success(t('calls.transaction.validationSuccess'));
         } else if (status === false) {
-          toast.success('Transaction refusée');
+          toast.success(t('calls.transaction.rejectionSuccess'));
         } else {
-          toast.success('Validation transaction annulée');
+          toast.success(t('calls.transaction.validationCancelled'));
         }
         void refreshCompanyWalletAfterValidation(companyId || undefined);
       } else {
-        toast.error('Impossible de mettre à jour la validation');
+        toast.error(t('calls.transaction.updateError'));
       }
     } catch (error) {
       console.error('Error updating transaction validation:', error);
-      toast.error('Erreur lors de la validation');
+      toast.error(t('calls.transaction.validationError'));
     }
   };
 
@@ -386,7 +386,7 @@ export default function CallsDashboardPage() {
       const n = `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim();
       if (n) return n;
     }
-    return 'Lead';
+    return t('calls.fallback.lead');
   };
 
   const callAgentName = (call: any): string => {
@@ -401,7 +401,7 @@ export default function CallsDashboardPage() {
       if (n) return n;
     }
     if (typeof agent === 'string' && agent.length < 30) return agent;
-    return 'Agent';
+    return t('calls.fallback.agent');
   };
 
   const callAgentId = (call: any): string => {
@@ -481,10 +481,10 @@ export default function CallsDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase tracking-widest">
-            Calls History
+            {t('calls.title')}
           </h1>
           <p className="text-slate-500 font-medium mt-1">
-            Analyze every interaction and AI-powered performance insights
+            {t('calls.subtitle')}
           </p>
           {outcomeFilter !== 'all' && (
             <button
@@ -704,7 +704,7 @@ export default function CallsDashboardPage() {
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
                         <div
-                          title={isInbound ? 'Appel entrant' : 'Appel sortant'}
+                          title={isInbound ? t('calls.direction.inbound') : t('calls.direction.outbound')}
                           className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform flex-shrink-0 ${
                             isInbound
                               ? 'bg-blue-50 text-blue-600'
@@ -721,7 +721,7 @@ export default function CallsDashboardPage() {
                               {toName}
                               {(call.validByAI === true || call.valid === true) && (
                                 <span
-                                  title="Appel validé par l'IA"
+                                  title={t('calls.callValidatedByAi')}
                                   className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"
                                 >
                                   <BadgeCheck className="w-2.5 h-2.5" />
@@ -731,18 +731,18 @@ export default function CallsDashboardPage() {
                           </div>
                           <div className="flex flex-wrap items-center gap-3 mt-1.5">
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm border ${call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 'bg-rose-50 text-rose-600 border-rose-100/50'}`}>
-                              {call.status}
+                              {t(`calls.status.${String(call.status || '').toLowerCase()}`, call.status)}
                             </span>
                             {isCallVoicemail(call) && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-slate-50 text-slate-600 border border-slate-200">
                                 <Phone className="w-3 h-3" />
-                                {i18n.language.startsWith('en') ? 'Voicemail' : 'Messagerie'}
+                                {t('calls.status.voicemail')}
                               </span>
                             )}
                             {isCallFraudDetected(call) && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-50 text-rose-700 border border-rose-200">
                                 <ShieldAlert className="w-3 h-3" />
-                                {i18n.language.startsWith('en') ? 'Fraud' : 'Fraude'}
+                                {t('calls.status.fraud')}
                               </span>
                             )}
                             {call.analysisCompanyAlert?.requestedAt && (
@@ -755,16 +755,19 @@ export default function CallsDashboardPage() {
                                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-50 text-amber-700 border border-amber-200 animate-pulse hover:bg-amber-100 transition-colors"
                               >
                                 <BellRing className="w-3 h-3" />
-                                Rep demande analyse
+                                {t('calls.analysis.requestedByRep')}
                               </button>
                             )}
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 text-slate-500 border border-slate-100 px-2 py-0.5 rounded-full">
-                              Durée: {Math.floor((call.duration || 0) / 60)}m {(call.duration || 0) % 60}s
+                              {t('calls.duration', {
+                                minutes: Math.floor((call.duration || 0) / 60),
+                                seconds: (call.duration || 0) % 60,
+                              })}
                             </span>
                           </div>
                           <div className="text-[10px] font-bold text-slate-400/90 mt-2 flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5 text-slate-300" />
-                            <span>{new Date(call.createdAt || call.date).toLocaleString()}</span>
+                            <span>{new Date(call.createdAt || call.date).toLocaleString(i18n.resolvedLanguage || i18n.language)}</span>
                           </div>
                           {isCallFraudDetected(call) && (
                             <p className="text-[10px] font-semibold text-rose-700 mt-2 leading-snug max-w-xl">
@@ -775,7 +778,7 @@ export default function CallsDashboardPage() {
                             </p>
                           )}
                           <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-1 flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                            <span>ID: {typeof call._id === 'object' ? (call._id as any).$oid : call._id}</span>
+                            <span>{t('calls.callId')}: {typeof call._id === 'object' ? (call._id as any).$oid : call._id}</span>
                           </div>
                         </div>
                       </div>
@@ -794,21 +797,21 @@ export default function CallsDashboardPage() {
 
                             {/* Validation de l'Appel AI */}
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Appel</span>
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">{t('calls.modal.call')}</span>
                               {isCallApprovedByAI(call) ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
-                                  Validé par AI (-{(call.lead?.gigId?.commission?.commission_per_call || call.lead?.gigId?.rewardPerCall || 4).toFixed(2)}€)
+                                  {t('calls.ai.approvedWithAmount', { amount: (call.lead?.gigId?.commission?.commission_per_call || call.lead?.gigId?.rewardPerCall || 4).toFixed(2) })}
                                 </span>
                               ) : isCallRejectedByAI(call) ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
                                   <X className="w-3.5 h-3.5" />
-                                  Refusé AI
+                                  {t('calls.ai.rejected')}
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 border border-slate-200/40 shadow-sm w-32 whitespace-nowrap">
                                   <Clock className="w-3.5 h-3.5 animate-pulse" />
-                                  Pending analyse
+                                  {t('calls.ai.pendingAnalysis')}
                                 </span>
                               )}
                             </div>
@@ -817,11 +820,11 @@ export default function CallsDashboardPage() {
 
                             {/* Validation de la Transaction AI */}
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Transaction </span>
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">{t('calls.modal.transaction')}</span>
                               {call.transaction?.validByCompany === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
-                                  Signé (-{(call.lead?.gigId?.commission?.transactionCommission || call.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€)
+                                  {t('calls.transaction.signedWithAmount', { amount: (call.lead?.gigId?.commission?.transactionCommission || call.lead?.gigId?.rewardPerSale || 30).toFixed(2) })}
                                 </span>
                               ) : isCallRejectedByAI(call) ? (
                                 (() => {
@@ -859,10 +862,10 @@ export default function CallsDashboardPage() {
                                         handleUpdateTransactionValidation(callId, call.transaction?.validByCompany ?? null, true);
                                       }}
                                       className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 transition-all text-[9px] font-black uppercase tracking-widest"
-                                      title="Valider la transaction"
+                                      title={t('calls.actions.validateTransaction')}
                                     >
                                       <Check className="w-3 h-3" />
-                                      Valider
+                                      {t('calls.actions.validate')}
                                     </button>
                                     <button
                                       type="button"
@@ -871,10 +874,10 @@ export default function CallsDashboardPage() {
                                         handleUpdateTransactionValidation(callId, call.transaction?.validByCompany ?? null, false);
                                       }}
                                       className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition-all text-[9px] font-black uppercase tracking-widest"
-                                      title="Marquer comme non signé"
+                                      title={t('calls.actions.markNotSigned')}
                                     >
                                       <X className="w-3 h-3" />
-                                      Non signé
+                                      {t('calls.actions.notSigned')}
                                     </button>
                                   </div>
                                 </div>
@@ -900,7 +903,7 @@ export default function CallsDashboardPage() {
                                 openCallDetails(call, 'insights');
                               }}
                               className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100 transition-all"
-                              title="View Details"
+                              title={t('calls.actions.viewDetails')}
                             >
                               <Brain className="w-5 h-5" />
                             </button>
@@ -922,7 +925,7 @@ export default function CallsDashboardPage() {
           id: typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id,
           leadName: selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name
             ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim()
-            : 'Call Details',
+            : t('calls.modal.title'),
           agentName: callAgentName(selectedCall),
           status: selectedCall.status,
           createdAt: selectedCall.createdAt || selectedCall.date || '',
@@ -964,14 +967,14 @@ export default function CallsDashboardPage() {
               <div className="flex justify-between items-start md:items-center w-full md:w-auto flex-1">
                 <div>
                   <h2 className="text-sm md:text-base font-black text-slate-900 uppercase tracking-widest leading-snug">
-                    {selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim() : 'Call Details'}
+                    {selectedCall.lead?.First_Name || selectedCall.lead?.Last_Name ? `${selectedCall.lead?.First_Name || ''} ${selectedCall.lead?.Last_Name || ''}`.trim() : t('calls.modal.title')}
                   </h2>
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
-                    {new Date(selectedCall.createdAt || selectedCall.date).toLocaleString()}
+                    {new Date(selectedCall.createdAt || selectedCall.date).toLocaleString(i18n.resolvedLanguage || i18n.language)}
                   </p>
                   <div className="flex items-center gap-1.5 mt-1 opacity-60">
                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md">
-                      Call ID: {typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id}
+                      {t('calls.callId')}: {typeof selectedCall._id === 'object' ? (selectedCall._id as any).$oid : selectedCall._id}
                     </span>
                   </div>
                 </div>
@@ -989,7 +992,7 @@ export default function CallsDashboardPage() {
               <div className="w-full md:w-auto md:flex-1 max-w-full md:max-w-md shrink-0">
                 {(() => {
                   const recordingUrl = selectedCall.recording_url_cloudinary || selectedCall.recording_url;
-                  if (!recordingUrl) return <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">No recording</div>;
+                  if (!recordingUrl) return <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">{t('calls.modal.noRecording')}</div>;
                   const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
                   return <PremiumAudioPlayer url={finalUrl} />;
                 })()}
@@ -1014,38 +1017,38 @@ export default function CallsDashboardPage() {
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'transcript' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
                 >
                   <MessageSquare className="w-4 h-4" />
-                  Transcript
+                  {t('calls.modal.tabs.transcript')}
                 </button>
                 <button
                   onClick={() => setActiveTab('insights')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'insights' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
                 >
                   <ActivityIcon className="w-4 h-4" />
-                  AI Insights
+                  {t('calls.modal.tabs.insights')}
                 </button>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
                 {/* Section Décision de l'IA */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest sm:min-w-[100px]">Décision de l'IA:</span>
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest sm:min-w-[100px]">{t('calls.modal.aiDecision')}:</span>
                   
                   {/* Appel */}
                   <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100">
-                    <div className="flex items-center gap-1 text-slate-400" title="Appel">
+                    <div className="flex items-center gap-1 text-slate-400" title={t('calls.modal.call')}>
                       <Phone className="w-3.5 h-3.5" />
-                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Appel</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t('calls.modal.call')}</span>
                     </div>
                     {selectedCall.validByAI === true ? (
-                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100" title="Validé par AI">
+                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100" title={t('calls.ai.approved')}>
                         <Check className="w-3 h-3" />
                       </span>
                     ) : selectedCall.validByAI === false ? (
-                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title="Refusé par AI">
+                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title={t('calls.ai.rejected')}>
                         <X className="w-3 h-3" />
                       </span>
                     ) : (
-                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-slate-50 text-slate-400 border border-slate-100" title="En cours">
+                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-slate-50 text-slate-400 border border-slate-100" title={t('calls.status.processing')}>
                         <Clock className="w-3 h-3 animate-pulse" />
                       </span>
                     )}
@@ -1053,9 +1056,9 @@ export default function CallsDashboardPage() {
 
                   {/* Transaction (IA part) */}
                   <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100">
-                    <div className="flex items-center gap-1 text-slate-400" title="Transaction">
+                    <div className="flex items-center gap-1 text-slate-400" title={t('calls.modal.transaction')}>
                       <CreditCard className="w-3.5 h-3.5" />
-                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Trans.</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t('calls.modal.transactionShort')}</span>
                     </div>
                     {selectedCall.transaction?.validByCompany === true ? (
                       <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">
@@ -1063,18 +1066,18 @@ export default function CallsDashboardPage() {
                         -{(selectedCall.lead?.gigId?.commission?.transactionCommission || selectedCall.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€
                       </span>
                     ) : selectedCall.transaction?.validByCompany === false ? (
-                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title="Refusé">
+                      <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title={t('calls.status.rejected')}>
                         <X className="w-3 h-3" />
                       </span>
                     ) : (
                       <div className="flex items-center gap-1.5">
                         {selectedCall.validByAI !== null && selectedCall.validByAI !== undefined && selectedCall.transaction?.validByAI === false && (
-                          <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title="Refusé AI">
+                          <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title={t('calls.ai.rejected')}>
                             <X className="w-3 h-3" />
                           </span>
                         )}
                         {selectedCall.validByAI !== null && selectedCall.validByAI !== undefined && selectedCall.transaction?.validByAI === true && (
-                          <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100" title="Wait for Validation">
+                          <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100" title={t('calls.transaction.awaitingValidation')}>
                             <Clock className="w-3 h-3 animate-pulse" />
                           </span>
                         )}
@@ -1086,19 +1089,19 @@ export default function CallsDashboardPage() {
                 {/* Section Votre Décision */}
                 {selectedCall.transaction?.validByCompany === null && (
                   <div className="flex items-center gap-3">
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest sm:min-w-[80px]">Votre choix:</span>
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest sm:min-w-[80px]">{t('calls.modal.yourChoice')}:</span>
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, true)}
                         className="p-1.5 rounded-xl transition-all flex items-center justify-center shadow-sm bg-blue-50/50 text-blue-600 border border-blue-100/40 hover:bg-blue-100/60"
-                        title="Valider"
+                        title={t('calls.actions.validate')}
                       >
                         <Check className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleUpdateTransactionValidation(selectedCall._id, selectedCall.transaction?.validByCompany ?? null, false)}
                         className="p-1.5 rounded-xl transition-all flex items-center justify-center shadow-sm bg-rose-50/50 text-rose-600 border border-rose-100/40 hover:bg-rose-100/60"
-                        title="Refuser"
+                        title={t('calls.actions.reject')}
                       >
   
                         <X className="w-3.5 h-3.5" />
@@ -1133,14 +1136,14 @@ export default function CallsDashboardPage() {
                   ) : (
                     <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                       {renderAnalysisErrorBanner()}
-                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Transcript not available for this call</p>
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">{t('calls.modal.transcriptUnavailable')}</p>
                       <button
                         onClick={() => handleAnalyzeCall(selectedCall._id)}
                         disabled={analyzingCallId === selectedCall._id}
                         className="flex items-center gap-2 px-6 py-3 bg-harx-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-harx-600 transition-all shadow-lg shadow-harx-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Brain className={`w-4 h-4 ${analyzingCallId === selectedCall._id ? 'animate-spin' : ''}`} />
-                        {analyzingCallId === selectedCall._id ? 'Analyse...' : 'Analyze & Transcribe'}
+                        {analyzingCallId === selectedCall._id ? t('calls.actions.analyzing') : t('calls.actions.analyzeTranscribe')}
                       </button>
                     </div>
                   )}
@@ -1150,14 +1153,14 @@ export default function CallsDashboardPage() {
                   {(!selectedCall.ai_call_score || !selectedCall.ai_call_score.overall?.score) ? (
                     <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                       {renderAnalysisErrorBanner()}
-                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">No analysis available for this call</p>
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">{t('calls.modal.analysisUnavailable')}</p>
                       <button
                         onClick={() => handleAnalyzeCall(selectedCall._id)}
                         disabled={analyzingCallId === selectedCall._id}
                         className="flex items-center gap-2 px-6 py-3 bg-harx-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-harx-600 transition-all shadow-lg shadow-harx-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Brain className={`w-4 h-4 ${analyzingCallId === selectedCall._id ? 'animate-spin' : ''}`} />
-                        {analyzingCallId === selectedCall._id ? 'Analyse...' : 'Analyze & Transcribe'}
+                        {analyzingCallId === selectedCall._id ? t('calls.actions.analyzing') : t('calls.actions.analyzeTranscribe')}
                       </button>
                     </div>
                   ) : (
@@ -1202,7 +1205,7 @@ export default function CallsDashboardPage() {
                                     </div>
                                     <div className="text-right">
                                       <span className={`text-base sm:text-lg font-black ${theme.text}`}>{score}%</span>
-                                      <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Score</p>
+                                      <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{t('calls.modal.score')}</p>
                                     </div>
                                   </div>
                                   <h5 className="text-[11px] sm:text-[12px] font-black text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -1216,7 +1219,7 @@ export default function CallsDashboardPage() {
                                       i % 2 === 1 ? (
                                         <span key={i} className="bg-amber-100/50 text-amber-900 font-bold px-1 rounded border-b border-amber-200 not-italic">&quot;{part}&quot;</span>
                                       ) : part
-                                    ) : (i18n.language === 'en' ? 'Detailed analysis completed.' : 'Analyse détaillée terminée.')}
+                                    ) : t('calls.modal.analysisCompleted')}
                                   </div>
                                 </div>
                               </div>
@@ -1229,7 +1232,7 @@ export default function CallsDashboardPage() {
                       <div className="space-y-4">
                         <div className="flex items-center gap-4 px-4 pt-2">
                           <div className="h-px flex-1 bg-slate-200/60"></div>
-                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">Statuts & Réponses Prospect</h5>
+                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">{t('calls.modal.prospectResponses')}</h5>
                           <div className="h-px flex-1 bg-slate-200/60"></div>
                         </div>
 
@@ -1244,11 +1247,11 @@ export default function CallsDashboardPage() {
                             };
 
                             return [
-                              { label: 'Pas intéressé', key: "PAS INTÉRESSÉS", icon: ShieldAlert, color: 'rose' },
-                              { label: 'Pas au courant', key: "PAS AU COURANT", icon: Globe, color: 'blue' },
-                              { label: 'Déjà équipé / Fourni', key: "DÉJÀ ÉQUIPÉS", icon: ShieldCheck, color: 'indigo' },
-                              { label: 'Prise de RDV', key: "RDV", icon: Calendar, color: 'emerald' },
-                              { label: 'À plus tard / Rappel', key: "A plus tard", icon: Clock, color: 'amber' }
+                              { label: t('calls.prospectMetrics.notInterested'), key: "PAS INTÉRESSÉS", icon: ShieldAlert, color: 'rose' },
+                              { label: t('calls.prospectMetrics.notAware'), key: "PAS AU COURANT", icon: Globe, color: 'blue' },
+                              { label: t('calls.prospectMetrics.alreadyEquipped'), key: "DÉJÀ ÉQUIPÉS", icon: ShieldCheck, color: 'indigo' },
+                              { label: t('calls.prospectMetrics.appointment'), key: "RDV", icon: Calendar, color: 'emerald' },
+                              { label: t('calls.prospectMetrics.callback'), key: "A plus tard", icon: Clock, color: 'amber' }
                             ].map((metric, mIdx) => {
                               const metricData = selectedCall.ai_call_score?.[metric.key];
                               if (!metricData) return null;
@@ -1267,9 +1270,9 @@ export default function CallsDashboardPage() {
                                       </div>
                                       <div className="text-right">
                                         <span className={`text-xs sm:text-sm font-black ${scoreColorClass} px-2.5 py-1 rounded-xl shadow-sm border border-transparent`}>
-                                          {passed ? 'Oui' : 'Non'} ({score}%)
+                                          {passed ? t('calls.common.yes') : t('calls.common.no')} ({score}%)
                                         </span>
-                                        <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Détecté</p>
+                                        <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{t('calls.modal.detected')}</p>
                                       </div>
                                     </div>
                                     <h5 className="text-[11px] sm:text-[12px] font-black text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -1283,7 +1286,7 @@ export default function CallsDashboardPage() {
                                         i % 2 === 1 ? (
                                           <span key={i} className="bg-amber-100/50 text-amber-900 font-bold px-1 rounded border-b border-amber-200 not-italic">&quot;{part}&quot;</span>
                                         ) : part
-                                      ) : (i18n.language === 'en' ? 'No quote detected.' : 'Aucune citation détectée.')}
+                                      ) : t('calls.modal.noQuote')}
                                     </div>
                                   </div>
                                 </div>
@@ -1305,8 +1308,8 @@ export default function CallsDashboardPage() {
                                 <Star className="w-6 h-6 sm:w-8 sm:h-8" />
                               </div>
                               <div>
-                                <h4 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-widest">Executive Summary</h4>
-                                <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">Overall AI Evaluation</p>
+                                <h4 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-widest">{t('calls.executiveSummary')}</h4>
+                                <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">{t('calls.modal.overallAiEvaluation')}</p>
                               </div>
                             </div>
 
@@ -1314,8 +1317,8 @@ export default function CallsDashboardPage() {
                               <p className="text-base sm:text-xl font-bold text-slate-800 leading-relaxed italic relative">
                                 <span className="absolute -left-2 -top-4 sm:-left-4 sm:-top-4 text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50">&quot;</span>
                                 {i18n.language === 'en'
-                                  ? (selectedCall.ai_summary_en || selectedCall.ai_call_score?.overall?.feedback_en || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || 'The agent demonstrated standard performance.')
-                                  : (selectedCall.ai_summary_fr || selectedCall.ai_call_score?.overall?.feedback_fr || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || 'L\'agent a fait preuve de performances standards.')}
+                                  ? (selectedCall.ai_summary_en || selectedCall.ai_call_score?.overall?.feedback_en || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || t('calls.modal.standardPerformance'))
+                                  : (selectedCall.ai_summary_fr || selectedCall.ai_call_score?.overall?.feedback_fr || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || t('calls.modal.standardPerformance'))}
                                 <span className="text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50 ml-1 leading-none align-bottom">&quot;</span>
                               </p>
                             </div>
@@ -1334,7 +1337,7 @@ export default function CallsDashboardPage() {
                 onClick={() => setSelectedCall(null)}
                 className="px-6 py-2.5 sm:px-8 sm:py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 shrink-0"
               >
-                Close Details
+                {t('calls.actions.closeDetails')}
               </button>
             </div>
           </div>
