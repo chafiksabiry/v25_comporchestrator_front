@@ -192,6 +192,7 @@ export function PhoneNumberPanel() {
   const [myNumbersSearch, setMyNumbersSearch] = useState('');
   const [myNumbersGigFilter, setMyNumbersGigFilter] = useState('');
   const [isGigFilterOpen, setIsGigFilterOpen] = useState(false);
+  const [isBuyGigOpen, setIsBuyGigOpen] = useState(false);
   const [selectedPhoneLine, setSelectedPhoneLine] = useState<string | null>(null);
   const [searchProvider, setSearchProvider] = useState<'twilio' | 'telnyx'>('telnyx');
 
@@ -1312,21 +1313,21 @@ export function PhoneNumberPanel() {
                   aria-expanded={isGigFilterOpen}
                   aria-haspopup="listbox"
                   aria-label={t('phoneNumberPanel.myNumbers.filters.gigLabel')}
-                  className={`w-full px-4 py-2.5 bg-indigo-50/40 border rounded-xl font-bold text-sm text-slate-900 transition-all flex items-center justify-between gap-2 ${
+                  className={`w-full px-4 py-2.5 bg-white border rounded-xl font-bold text-sm text-harx-ink transition-all flex items-center justify-between gap-2 shadow-harx ${
                     isGigFilterOpen
-                      ? 'border-indigo-500 bg-white ring-2 ring-indigo-500/20'
-                      : 'border-indigo-100 hover:border-indigo-300 hover:bg-white'
+                      ? 'border-slate-400 ring-1 ring-slate-900/10'
+                      : 'border-harx-border hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   <span className="flex items-center gap-2 min-w-0">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-harx-ink text-white">
                       <Briefcase size={13} />
                     </span>
                     <span className="truncate text-left">{selectedGigFilterLabel}</span>
                   </span>
                   <ChevronDown
                     size={16}
-                    className={`shrink-0 text-indigo-400 transition-transform duration-200 ${
+                    className={`shrink-0 text-slate-400 transition-transform duration-200 ${
                       isGigFilterOpen ? 'rotate-180' : ''
                     }`}
                   />
@@ -1342,10 +1343,10 @@ export function PhoneNumberPanel() {
                     />
                     <div
                       role="listbox"
-                      className="absolute z-50 top-full left-0 right-0 mt-2 overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-[0_20px_50px_-12px_rgba(79,70,229,0.25)] animate-in fade-in slide-in-from-top-1 duration-200"
+                      className="absolute z-50 top-full left-0 right-0 mt-2 overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-1 duration-200"
                     >
-                      <div className="px-3 py-2 border-b border-indigo-50 bg-gradient-to-r from-indigo-50/80 to-violet-50/80">
-                        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-indigo-600">
+                      <div className="px-3 py-2 border-b border-slate-100">
+                        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">
                           {t('phoneNumberPanel.myNumbers.filters.gigLabel')}
                         </span>
                       </div>
@@ -1358,18 +1359,18 @@ export function PhoneNumberPanel() {
                             setMyNumbersGigFilter('');
                             setIsGigFilterOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-all ${
+                          className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-colors ${
                             !myNumbersGigFilter
-                              ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
-                              : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-700'
+                              ? 'bg-slate-100 text-harx-ink'
+                              : 'text-slate-700 hover:bg-slate-50'
                           }`}
                         >
                           <span className="flex items-center gap-2 min-w-0">
                             <span
                               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
                                 !myNumbersGigFilter
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                                  ? 'bg-harx-ink text-white'
+                                  : 'bg-slate-100 text-slate-500 border border-harx-border'
                               }`}
                             >
                               <Radio size={13} />
@@ -1381,7 +1382,7 @@ export function PhoneNumberPanel() {
                           <span
                             className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                               !myNumbersGigFilter
-                                ? 'bg-white/20 text-white'
+                                ? 'bg-white text-slate-600 border border-harx-border'
                                 : 'bg-slate-100 text-slate-500'
                             }`}
                           >
@@ -1398,22 +1399,23 @@ export function PhoneNumberPanel() {
                               type="button"
                               role="option"
                               aria-selected={isActive}
+                              title={g.title}
                               onClick={() => {
                                 setMyNumbersGigFilter(g.gigId);
                                 setIsGigFilterOpen(false);
                               }}
-                              className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-all ${
+                              className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-colors ${
                                 isActive
-                                  ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
-                                  : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-700'
+                                  ? 'bg-slate-100 text-harx-ink'
+                                  : 'text-slate-700 hover:bg-slate-50'
                               }`}
                             >
                               <span className="flex items-center gap-2 min-w-0">
                                 <span
                                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
                                     isActive
-                                      ? 'bg-white/20 text-white'
-                                      : 'bg-violet-50 text-violet-600 border border-violet-100'
+                                      ? 'bg-harx-ink text-white'
+                                      : 'bg-slate-100 text-slate-500 border border-harx-border'
                                   }`}
                                 >
                                   <Briefcase size={13} />
@@ -1424,7 +1426,7 @@ export function PhoneNumberPanel() {
                                 <span
                                   className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                                     isActive
-                                      ? 'bg-white/20 text-white'
+                                      ? 'bg-white text-slate-600 border border-harx-border'
                                       : lineCount > 0
                                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
                                         : 'bg-slate-100 text-slate-400'
@@ -1432,7 +1434,7 @@ export function PhoneNumberPanel() {
                                 >
                                   {t('phoneNumberPanel.myNumbers.filters.linesCount', { count: lineCount })}
                                 </span>
-                                {isActive && <Check size={14} className="text-white" />}
+                                {isActive && <Check size={14} className="text-harx-ink" />}
                               </span>
                             </button>
                           );
@@ -1445,14 +1447,14 @@ export function PhoneNumberPanel() {
               <div className="relative flex-1 min-w-0">
                 <Search
                   size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
                 />
                 <input
                   type="search"
                   value={myNumbersSearch}
                   onChange={(e) => setMyNumbersSearch(e.target.value)}
                   placeholder={t('phoneNumberPanel.myNumbers.filters.searchPlaceholder')}
-                  className="w-full pl-10 pr-4 py-2.5 bg-indigo-50/40 border border-indigo-100 rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-harx-border rounded-xl text-sm font-semibold text-harx-ink placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-900/10 transition-colors shadow-harx"
                 />
               </div>
             </div>
@@ -1677,27 +1679,94 @@ export function PhoneNumberPanel() {
             <form onSubmit={handleSearchNumbers} className="space-y-4">
 
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block mb-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                   {t('phoneNumberPanel.buy.search.assignLabel')}
                 </label>
-                <select
-                  value={selectedGigIdForNumber}
-                  onChange={(e) => setSelectedGigIdForNumber(e.target.value)}
-                  className="w-full px-4 py-3 bg-indigo-50/40 border border-indigo-100 rounded-xl font-bold text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
-                >
-                  {gigsAndReps.map((g) => (
-                    <option key={g.gigId} value={g.gigId}>{g.title}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsBuyGigOpen((open) => !open)}
+                    aria-expanded={isBuyGigOpen}
+                    aria-haspopup="listbox"
+                    className={`w-full px-4 py-3 bg-white border rounded-xl font-bold text-sm text-harx-ink transition-all flex items-center justify-between gap-2 shadow-harx ${
+                      isBuyGigOpen
+                        ? 'border-slate-400 ring-1 ring-slate-900/10'
+                        : 'border-harx-border hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-harx-ink text-white">
+                        <Briefcase size={13} />
+                      </span>
+                      <span className="truncate text-left">
+                        {gigsAndReps.find((g) => g.gigId === selectedGigIdForNumber)?.title
+                          || t('phoneNumberPanel.buy.search.assignLabel')}
+                      </span>
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      className={`shrink-0 text-slate-400 transition-transform duration-200 ${
+                        isBuyGigOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {isBuyGigOpen && (
+                    <>
+                      <button
+                        type="button"
+                        aria-label="close"
+                        className="fixed inset-0 z-40 cursor-default"
+                        onClick={() => setIsBuyGigOpen(false)}
+                      />
+                      <div
+                        role="listbox"
+                        className="absolute z-50 top-full left-0 right-0 mt-2 overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-1 duration-200"
+                      >
+                        <div className="px-3 py-2 border-b border-slate-100">
+                          <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">
+                            {t('phoneNumberPanel.buy.search.assignLabel')}
+                          </span>
+                        </div>
+                        <div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
+                          {gigsAndReps.map((g) => {
+                            const isActive = selectedGigIdForNumber === g.gigId;
+                            return (
+                              <button
+                                key={g.gigId}
+                                type="button"
+                                role="option"
+                                aria-selected={isActive}
+                                title={g.title}
+                                onClick={() => {
+                                  setSelectedGigIdForNumber(g.gigId);
+                                  setIsBuyGigOpen(false);
+                                }}
+                                className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-colors ${
+                                  isActive
+                                    ? 'bg-slate-100 text-harx-ink'
+                                    : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                <span className="text-[13px] font-bold truncate">{g.title}</span>
+                                {isActive && <Check size={14} className="shrink-0 text-harx-ink" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
                 {selectedGigIdForNumber && (
                   <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-harx-border text-[10px] font-bold uppercase tracking-wider">
                       <Phone size={10} />
                       {numbersForSelectedGig.length > 1
                         ? t('phoneNumberPanel.buy.search.chipActiveLinesPlural', { count: numbersForSelectedGig.length })
                         : t('phoneNumberPanel.buy.search.chipActiveLinesSingular', { count: numbersForSelectedGig.length })}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-100 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-harx-border text-[10px] font-bold uppercase tracking-wider">
                       <Users size={10} />
                       {selectedGigRepsCount > 1
                         ? t('phoneNumberPanel.buy.search.chipRepsPlural', { count: selectedGigRepsCount })
