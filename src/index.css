@@ -2,11 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --harx-bg: #F4F6F8;
+  --harx-card: #FFFFFF;
+  --harx-ink: #0F172A;
+  --harx-muted: #64748B;
+  --harx-border: #E2E8F0;
+  --harx-sidebar: #0B0B0F;
+  --harx-chip: #1A1A1F;
+  --harx-chip-border: #2A2A32;
+  --harx-red: #ED1C24;
+  --harx-magenta: #E6188D;
+  --harx-orange: #F7941E;
+  --harx-gradient: linear-gradient(90deg, #F7941E 0%, #E6188D 55%, #ED1C24 100%);
+  --harx-radius: 14px;
+  --harx-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
 body {
-  background-color: #F8FAFC;
-  /* antigravity-bg (Slate-50) */
-  color: #0F172A;
-  /* antigravity-text (Slate-900) */
+  background-color: var(--harx-bg);
+  color: var(--harx-ink);
+}
+
+@layer components {
+  .harx-nav-chip {
+    @apply relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl
+      bg-harx-chip border border-harx-chip-border
+      text-xs font-bold text-white/90
+      hover:border-white/20 hover:bg-[#222228]
+      transition-all duration-200 cursor-pointer shrink-0;
+  }
+
+  .harx-nav-chip-icon {
+    @apply flex h-7 w-7 items-center justify-center rounded-lg shrink-0;
+  }
+
+  .harx-card-surface {
+    @apply rounded-harx border border-harx-border bg-white shadow-harx;
+  }
+
+  .harx-alert-soft {
+    @apply rounded-harx border border-harx-orange-500/40 bg-harx-orange-50;
+  }
 }
 
 /* Global custom scrollbar styles with HARX branding */
@@ -16,29 +53,29 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f8fafc;
+  background: #F4F6F8;
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #ff4d4d 0%, #ec4899 100%);
+  background: linear-gradient(180deg, #ED1C24 0%, #E6188D 100%);
   border-radius: 5px;
-  border: 2px solid #f8fafc;
+  border: 2px solid #F4F6F8;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #ff3333 0%, #db2777 100%);
+  background: linear-gradient(180deg, #D11920 0%, #DB2777 100%);
 }
 
 /* Firefox support */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #ff4d4d #f8fafc;
+  scrollbar-color: #ED1C24 #F4F6F8;
 }
 
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: #ff4d4d #f8fafc;
+  scrollbar-color: #ED1C24 #F4F6F8;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -51,7 +88,7 @@ body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #ff4d4d 0%, #ec4899 100%);
+  background: linear-gradient(180deg, #ED1C24 0%, #E6188D 100%);
   border-radius: 3px;
 }
 @keyframes float {
