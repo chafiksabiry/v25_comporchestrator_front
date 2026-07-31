@@ -217,6 +217,7 @@ const ScriptGenerator: React.FC = () => {
   const [activeToolkitView, setActiveToolkitView] = useState<'chat' | 'expert'>('chat');
   const [activeInteractiveStages, setActiveInteractiveStages] = useState<InteractiveStage[] | null>(null);
   const [activeInteractiveTitle, setActiveInteractiveTitle] = useState<string>('');
+  const [interactiveStageIdx, setInteractiveStageIdx] = useState(0);
   const [relatedTrainings, setRelatedTrainings] = useState<any[]>([]);
   const [relatedTrainingTitle, setRelatedTrainingTitle] = useState<string>('');
   const [isLoadingTrainings, setIsLoadingTrainings] = useState(false);
@@ -691,6 +692,10 @@ const ScriptGenerator: React.FC = () => {
   const handleRefineInteractiveScript = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!input.trim() || !selectedGig) return;
+    if (!activeInteractiveStages || activeInteractiveStages.length === 0) {
+      setError("Générez d'abord un script interactif avant de l'ajuster.");
+      return;
+    }
     const promptText = input.trim();
     setInput('');
     setIsSending(true);
@@ -716,6 +721,11 @@ const ScriptGenerator: React.FC = () => {
         }
       }
 
+      const safeIdx = Math.min(
+        Math.max(0, interactiveStageIdx),
+        activeInteractiveStages.length - 1
+      );
+
       const payload = {
         companyId,
         gig: selectedGig,
@@ -723,7 +733,10 @@ const ScriptGenerator: React.FC = () => {
         langueTon: 'professionnel et direct',
         contexte: promptText,
         trainings: currentTrainings,
-        isInteractiveRequest: true
+        isInteractiveRequest: true,
+        editMode: 'targeted',
+        targetStageIndex: safeIdx,
+        currentStages: activeInteractiveStages,
       };
 
       const { data } = await apiClient.post('/rag/generate-script', payload);
@@ -1610,6 +1623,7 @@ const ScriptGenerator: React.FC = () => {
                       isInline={true}
                       onValidate={handleSaveAndValidateInteractiveScript}
                       isValidating={isSending}
+                      onStageIndexChange={setInteractiveStageIdx}
                     />
 
                     {/* Beautiful glassmorphic loading overlay over the cockpit when updating */}
@@ -1695,7 +1709,7 @@ const ScriptGenerator: React.FC = () => {
                       type="text"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder={activeInteractiveStages ? "Ajuster ce script interactif (ex: 'Rendre l'étape d'accroche plus chaleureuse', 'Ajouter une objection prix')..." : "Saisir des consignes spécifiques pour la génération du script interactif..."}
+                      placeholder={activeInteractiveStages ? "Ajuster l'étape affichée (ex: 'rendre plus chaleureux', 'ajouter une objection prix')..." : "Saisir des consignes spécifiques pour la génération du script interactif..."}
                       disabled={isSending || !selectedGig}
                       className="w-full pl-3.5 pr-10 py-2.5 bg-[#fcfcfc] border border-slate-200 focus:border-red-600 text-xs font-semibold text-slate-800 placeholder-slate-400 rounded-xl outline-none transition-all shadow-sm disabled:opacity-60"
                     />
