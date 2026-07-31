@@ -793,7 +793,7 @@ function AppContent() {
   return (
     <StripeContainer>
       <Toaster position="top-right" />
-      <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
+      <div className="flex h-screen bg-harx-bg overflow-hidden">
         {/* Mobile backdrop: closes the off-canvas sidebar when tapped. */}
         {mobileSidebarOpen && (
           <div
@@ -826,9 +826,9 @@ function AppContent() {
           />
         </div>
 
-        <div className="flex flex-1 flex-col overflow-hidden relative bg-black">
+        <div className="flex flex-1 flex-col overflow-hidden relative bg-harx-sidebar">
           {/* Top Navigation / Navbar */}
-          <header className={`bg-black h-16 flex items-center shrink-0 px-5 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
+          <header className={`bg-harx-sidebar h-16 flex items-center shrink-0 px-5 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-6">
                 {/* Mobile-only hamburger to open the sidebar drawer. */}
@@ -849,22 +849,18 @@ function AppContent() {
               </div>
 
               {/* Credits, Balance, and Upgrade Widgets */}
-              <div className="absolute left-1/2 -translate-x-1/2 hidden lg:flex items-center gap-1.5">
+              <div className="absolute left-1/2 -translate-x-1/2 hidden lg:flex items-center gap-2">
                 {/* Balance Widget (My Wallet) — hidden in orchestrator until Activation phase */}
                 {showActivationNavbarWidgets && (
                   <div
                     onClick={handleBalanceClick}
-                    className="relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-br from-emerald-500/20 via-slate-950/90 to-[#064e3b]/30 border border-emerald-500/40 text-xs font-bold text-emerald-50/90 shadow-[0_0_20px_-5px_rgba(16,185,129,0.5)] hover:border-emerald-300/80 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_0_28px_-2px_rgba(16,185,129,0.7)] transition-all duration-300 cursor-pointer group backdrop-blur-md overflow-hidden shrink-0"
+                    className="harx-nav-chip group"
                   >
-                    <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-                      <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-escrow-shine" />
-                    </span>
-
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)] group-hover:scale-110 transition-all duration-300 shrink-0">
-                      <Coins size={14} className="text-white drop-shadow-md animate-pulse-subtle" />
+                    <div className="harx-nav-chip-icon bg-emerald-500/15 border border-emerald-500/25">
+                      <Coins size={14} className="text-emerald-400" />
                     </div>
-                    <div className="flex flex-col leading-tight relative z-10">
-                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-emerald-400 group-hover:text-emerald-300 transition-colors">{t('navbar.myWallet')}</span>
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.myWallet')}</span>
                       <span className="text-sm font-black text-white tabular-nums tracking-tight">{balance.toLocaleString('en-US')} €</span>
                     </div>
                   </div>
@@ -877,13 +873,13 @@ function AppContent() {
                 {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
                   <div
                     onClick={handleMinutesClick}
-                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-br from-blue-500/15 via-blue-500/5 to-transparent border border-blue-500/25 text-xs font-bold text-blue-100/80 shadow-[0_0_18px_-6px_rgba(59,130,246,0.4)] hover:border-blue-400/50 hover:from-blue-500/25 hover:text-white hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group backdrop-blur-sm shrink-0"
+                    className="harx-nav-chip group"
                   >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/20 border border-blue-400/30 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
-                      <Clock size={13} className="text-blue-400 group-hover:text-blue-300" />
+                    <div className="harx-nav-chip-icon bg-blue-500/15 border border-blue-500/25">
+                      <Clock size={13} className="text-blue-400" />
                     </div>
                     <div className="flex flex-col leading-tight">
-                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-400/70">{t('navbar.minutes')}</span>
+                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.minutes')}</span>
                       <span className="text-sm font-black text-white tabular-nums">{formatWalletMinutesBalance(minutes)}</span>
                     </div>
                   </div>
@@ -894,16 +890,13 @@ function AppContent() {
                     {/* Escrow/Séquestre Widget (Telephony Lines) */}
                     <div
                       onClick={handleTelephonyClick}
-                      className="relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-escrow border border-amber-400/40 text-xs font-bold text-amber-100/90 animate-escrow-glow hover:border-amber-300/60 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group overflow-hidden backdrop-blur-md shrink-0"
+                      className="harx-nav-chip group"
                     >
-                      <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-                        <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/15 to-transparent animate-escrow-shine" />
-                      </span>
-                      <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-escrow-icon text-white shadow-md shadow-amber-500/30 ring-1 ring-amber-400/20 group-hover:scale-110 transition-all duration-300 shrink-0">
-                        <Phone size={13} className="drop-shadow-sm" strokeWidth={2.5} />
+                      <div className="harx-nav-chip-icon bg-harx-orange/15 border border-harx-orange/30">
+                        <Phone size={13} className="text-harx-orange" strokeWidth={2.5} />
                       </div>
-                      <div className="relative flex flex-col leading-tight">
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-amber-300/90">{t('navbar.phoneLines')}</span>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.phoneLines')}</span>
                         <span className="text-sm font-black text-white tabular-nums tracking-tight">{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
                       </div>
                     </div>
@@ -920,13 +913,9 @@ function AppContent() {
                       setActiveProject('dashboard');
                       navigate('/dashboard/subscription');
                     }}
-                    className="relative flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#EC4899] via-[#F43F5E] to-[#8B5CF6] text-white font-black text-[11px] uppercase tracking-[0.12em] shadow-[0_0_25px_rgba(236,72,153,0.55)] hover:shadow-[0_0_40px_rgba(236,72,153,0.8)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 overflow-hidden group/upgrade shrink-0"
+                    className="relative flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-harx text-white font-black text-[11px] uppercase tracking-[0.12em] hover:opacity-95 active:scale-[0.98] transition-all duration-200 overflow-hidden shrink-0"
                   >
-                    <span className="absolute inset-0 bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#F43F5E] opacity-0 group-hover/upgrade:opacity-100 transition-opacity duration-500" />
-                    <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-                      <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover/upgrade:animate-escrow-shine" />
-                    </span>
-                    <Sparkles size={13} className="animate-pulse text-white shrink-0 relative z-10" />
+                    <Sparkles size={13} className="text-white shrink-0 relative z-10" />
                     <span className="whitespace-nowrap relative z-10">{t('navbar.upgrade')}</span>
                   </button>
                 )}
@@ -1000,7 +989,7 @@ function AppContent() {
           </header>
 
           {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full bg-white shadow-2xl shadow-black/5">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full bg-harx-bg">
             <ProjectViewSwitch
               activeView={activeProject}
               dashboard={<DashboardApp />}

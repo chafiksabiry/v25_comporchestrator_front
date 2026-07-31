@@ -1565,11 +1565,11 @@ export default function OperationsDashboard() {
               onClick={() => setTab(tabItem.id)}
               className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all ${
                 active
-                  ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                  ? 'border-harx-ink bg-harx-ink text-white shadow-harx'
+                  : 'border-harx-border bg-white text-slate-600 hover:border-slate-300 hover:bg-white'
               }`}
             >
-              <span className={active ? 'text-white' : 'text-slate-500'}>{tabItem.icon}</span>
+              <span className={active ? 'text-white' : 'text-slate-400'}>{tabItem.icon}</span>
               {tabItem.label}
             </button>
           );
@@ -1970,7 +1970,7 @@ function LeadsView({
       {/* ---------- Quality of base + Attempt distribution ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Qualité de la base */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-black text-slate-900">
               <ShieldCheck size={14} className="text-harx-500" />
@@ -2026,7 +2026,7 @@ function LeadsView({
         </section>
 
         {/* Distribution tentatives + Rappels programmés */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
             <ListChecks size={14} className="text-harx-500" />
             {t('opsDashboard.leads.attemptsTitle', 'Distribution tentatives')}
@@ -2099,7 +2099,7 @@ function LeadsView({
       </div>
 
       {/* ---------- Coverage progression per rep ---------- */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
           <Trophy size={14} className="text-harx-500" />
           {t('opsDashboard.leads.coverageTitle', 'Progression de couverture — par rep')}
@@ -2345,7 +2345,7 @@ function ResultsView({
       {/* Issues + visual breakdown */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Issues des appels sérieux */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-black text-slate-900">
               <BarChart3 size={14} className="text-harx-500" />
@@ -2377,7 +2377,7 @@ function ResultsView({
         </section>
 
         {/* Répartition visuelle */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
             <PieChart size={14} className="text-harx-500" />
             {t('opsDashboard.results.distributionTitle', 'Répartition visuelle')}
@@ -2420,7 +2420,7 @@ function ResultsView({
       </div>
 
       {/* Issues par rep — table */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-black text-slate-900">
             <Users size={14} className="text-harx-500" />
@@ -2748,7 +2748,7 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
       )}
 
       {/* Leaderboard */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
           <Trophy size={14} className="text-harx-500" />
           {t('opsDashboard.team.leaderboardTitle', 'Leaderboard — transactions ce mois')}
@@ -3197,10 +3197,10 @@ function OverviewView({
       {/* ---------- Couverture leads + Résultats d'appels (donut) ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Couverture leads */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-5 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
-              <Users size={14} className="text-rose-500" />
+            <div className="flex items-center gap-2 text-sm font-black text-harx-ink">
+              <Users size={14} className="text-harx-500" />
               {t('opsDashboard.overview.coverage.title', 'Couverture leads')}
             </div>
             <button
@@ -3243,10 +3243,10 @@ function OverviewView({
         </section>
 
         {/* Résultats d'appels (aujourd'hui) */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-5 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-black text-slate-900">
-              <PieChart size={14} className="text-rose-500" />
+              <PieChart size={14} className="text-harx-500" />
               {outcomesTitle}
             </div>
           </header>
@@ -3285,7 +3285,7 @@ function OverviewView({
       </div>
 
       {/* ---------- Agents (aperçu) ---------- */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-black text-slate-900">
             <UserCheck size={14} className="text-harx-500" />
@@ -3426,7 +3426,7 @@ function OverviewResourcesSection({
     });
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
+    <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx space-y-5">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="flex items-center gap-2 text-sm font-black text-slate-900">
@@ -4197,7 +4197,7 @@ function CallsView({
 
       {/* ---------- Statuses + Recent calls ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-black text-slate-900">
               <span className="inline-flex h-5 w-1.5 rounded-sm bg-harx-500" />
@@ -4242,7 +4242,7 @@ function CallsView({
           </div>
         </section>
 
-        <section ref={recentCallsRef} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section ref={recentCallsRef} className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-black text-slate-900">
               <PhoneCall size={14} className="text-harx-500" />
@@ -4298,7 +4298,7 @@ function CallsView({
       <Performance7Days series={series7d} />
 
       {/* ---------- Voicemail & non-aboutis analysis ---------- */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-black text-slate-900">
             {t('opsDashboard.analysisTitle', 'Messagerie vocale & non aboutis — analyse')}
@@ -4811,7 +4811,7 @@ function WalletMovements({
   labelForWallet,
 }: WalletMovementsProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section className="rounded-harx border border-harx-border bg-white shadow-harx">
       {/* Header */}
       <header className="flex flex-col gap-3 border-b border-slate-100 p-5 md:flex-row md:items-start md:justify-between">
         <div>
@@ -5196,23 +5196,23 @@ function KpiCard({
 }) {
   const baseTone =
     tone === 'primary'
-      ? 'border-harx-500 bg-harx-500/10 ring-1 ring-harx-500/20'
+      ? 'border-[1.5px] border-harx-500 bg-harx-50'
       : tone === 'dark'
-      ? 'border-slate-900 bg-slate-900 text-white'
-      : 'border-slate-200 bg-white';
+      ? 'border-harx-ink bg-harx-ink text-white'
+      : 'border-harx-border bg-white';
 
   const selectedTone = selected
-    ? 'ring-2 ring-harx-500 border-harx-400 shadow-md'
+    ? 'ring-2 ring-harx-500/40 border-harx-500 shadow-harx-md'
     : '';
 
   const labelColor =
     tone === 'dark' ? 'text-slate-300' : tone === 'primary' ? 'text-harx-700' : 'text-slate-500';
-  const valueColor = tone === 'dark' ? 'text-white' : 'text-slate-900';
+  const valueColor = tone === 'dark' ? 'text-white' : 'text-harx-ink';
   const iconBg =
     tone === 'dark'
       ? 'bg-white/10 text-white'
       : tone === 'primary'
-      ? 'bg-harx-500/15 text-harx-600'
+      ? 'bg-harx-500/10 text-harx-600'
       : 'bg-slate-100 text-slate-500';
   const subColor =
     subTone === 'rose'
@@ -5222,7 +5222,7 @@ function KpiCard({
       : 'text-slate-400';
 
   const interactiveClass = onClick
-    ? 'cursor-pointer text-left hover:shadow-md hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/40 active:translate-y-0'
+    ? 'cursor-pointer text-left hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/40'
     : '';
 
   const content = (
@@ -5248,7 +5248,7 @@ function KpiCard({
         type="button"
         onClick={onClick}
         aria-pressed={selected}
-        className={`relative flex w-full flex-col gap-2 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 ${baseTone} ${selectedTone} ${interactiveClass}`}
+        className={`relative flex w-full flex-col gap-2 rounded-harx border p-3.5 shadow-harx transition-all ${baseTone} ${selectedTone} ${interactiveClass}`}
       >
         {content}
       </button>
@@ -5257,7 +5257,7 @@ function KpiCard({
 
   return (
     <div
-      className={`relative flex flex-col gap-2 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 ${baseTone} ${selectedTone}`}
+      className={`relative flex flex-col gap-2 rounded-harx border p-3.5 shadow-harx transition-all ${baseTone} ${selectedTone}`}
     >
       {content}
     </div>
@@ -5549,7 +5549,7 @@ function Performance7Days({
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
       <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
         <TrendingUp size={14} className="text-harx-500" />
         {t('opsDashboard.perf.title', 'Performance 7 jours')}
