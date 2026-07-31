@@ -828,29 +828,20 @@ function AppContent() {
 
         <div className="flex flex-1 flex-col overflow-hidden relative bg-harx-sidebar">
           {/* Top Navigation / Navbar */}
-          <header className={`bg-harx-sidebar h-16 flex items-center shrink-0 px-5 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
-            <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-6">
-                {/* Mobile-only hamburger to open the sidebar drawer. */}
-                <button
-                  type="button"
-                  onClick={() => setMobileSidebarOpen(true)}
-                  className="md:hidden flex items-center justify-center h-10 w-10 rounded-xl text-white bg-white/10 hover:bg-white/20 transition-colors shrink-0"
-                  aria-label="Open menu"
-                >
-                  <Menu size={20} />
-                </button>
-                {/* The legacy "Back to onboarding" pill that used to live here
-                    has been moved out of the navbar. We now show a floating
-                    "Next step · Back to onboarding" button at the bottom-right
-                    of every orchestrator step page — see the
-                    <NextStepFloatingButton /> right above the closing tags of
-                    this component. */}
-              </div>
+          <header className={`bg-harx-sidebar h-16 flex items-center shrink-0 px-4 md:px-5 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
+            <div className="flex w-full items-center gap-3 min-w-0">
+              {/* Mobile-only hamburger to open the sidebar drawer. */}
+              <button
+                type="button"
+                onClick={() => setMobileSidebarOpen(true)}
+                className="md:hidden flex items-center justify-center h-10 w-10 rounded-xl text-white bg-white/10 hover:bg-white/20 transition-colors shrink-0"
+                aria-label="Open menu"
+              >
+                <Menu size={20} />
+              </button>
 
-              {/* Credits, Balance, and Upgrade Widgets */}
-              <div className="absolute left-1/2 -translate-x-1/2 hidden lg:flex items-center gap-2">
-                {/* Balance Widget (My Wallet) — hidden in orchestrator until Activation phase */}
+              {/* Credits, Balance, Upgrade, language, profile — single right-aligned row (no absolute center overlap). */}
+              <div className="ml-auto flex items-center gap-2 min-w-0 overflow-x-auto scrollbar-none">
                 {showActivationNavbarWidgets && (
                   <div
                     onClick={handleBalanceClick}
@@ -861,15 +852,11 @@ function AppContent() {
                     </div>
                     <div className="flex flex-col leading-tight">
                       <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.myWallet')}</span>
-                      <span className="text-sm font-black text-white tabular-nums tracking-tight">{balance.toLocaleString('en-US')} €</span>
+                      <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{balance.toLocaleString('en-US')} €</span>
                     </div>
                   </div>
                 )}
 
-                {/* Minutes widget — hidden inside the orchestrator: minutes
-                    only become relevant once gigs are activated, and the
-                    onboarding flow already exposes the wallet for any
-                    pre-flight top-up. */}
                 {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
                   <div
                     onClick={handleMinutesClick}
@@ -880,55 +867,48 @@ function AppContent() {
                     </div>
                     <div className="flex flex-col leading-tight">
                       <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.minutes')}</span>
-                      <span className="text-sm font-black text-white tabular-nums">{formatWalletMinutesBalance(minutes)}</span>
+                      <span className="text-sm font-black text-white tabular-nums whitespace-nowrap">{formatWalletMinutesBalance(minutes)}</span>
                     </div>
                   </div>
                 )}
 
                 {activeProject !== 'comporchestrator' && (
-                  <>
-                    {/* Escrow/Séquestre Widget (Telephony Lines) */}
-                    <div
-                      onClick={handleTelephonyClick}
-                      className="harx-nav-chip group"
-                    >
-                      <div className="harx-nav-chip-icon bg-harx-orange/15 border border-harx-orange/30">
-                        <Phone size={13} className="text-harx-orange" strokeWidth={2.5} />
-                      </div>
-                      <div className="flex flex-col leading-tight">
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.phoneLines')}</span>
-                        <span className="text-sm font-black text-white tabular-nums tracking-tight">{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
-                      </div>
+                  <div
+                    onClick={handleTelephonyClick}
+                    className="harx-nav-chip group"
+                  >
+                    <div className="harx-nav-chip-icon bg-harx-orange/15 border border-harx-orange/30">
+                      <Phone size={13} className="text-harx-orange" strokeWidth={2.5} />
                     </div>
-                  </>
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.phoneLines')}</span>
+                      <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
+                    </div>
+                  </div>
                 )}
 
-                {/* Upgrade Button — only shown outside the orchestrator. The
-                    Subscription Plan is itself one of the orchestrator steps,
-                    so surfacing the Upgrade CTA while the user is still
-                    inside that flow would be redundant. */}
                 {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
                   <button
+                    type="button"
                     onClick={() => {
                       setActiveProject('dashboard');
                       navigate('/dashboard/subscription');
                     }}
-                    className="relative flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-harx text-white font-black text-[11px] uppercase tracking-[0.12em] hover:opacity-95 active:scale-[0.98] transition-all duration-200 overflow-hidden shrink-0"
+                    className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-gradient-harx text-white font-black text-[11px] uppercase tracking-[0.12em] hover:opacity-95 active:scale-[0.98] transition-all duration-200 shrink-0"
                   >
-                    <Sparkles size={13} className="text-white shrink-0 relative z-10" />
-                    <span className="whitespace-nowrap relative z-10">{t('navbar.upgrade')}</span>
+                    <Sparkles size={13} className="text-white shrink-0" />
+                    <span className="whitespace-nowrap">{t('navbar.upgrade')}</span>
                   </button>
                 )}
-              </div>
 
-              <div className="flex items-center gap-2 ml-auto">
                 <LanguageSwitcher />
-                <div className="relative" ref={profileDropdownRef}>
+
+                <div className="relative shrink-0" ref={profileDropdownRef}>
                   <div
                     onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                    className="flex items-center gap-2 bg-white/5 p-1 pr-3 rounded-xl border border-white/10 shadow-sm cursor-pointer hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-2 bg-harx-chip p-1 pr-3 rounded-xl border border-harx-chip-border cursor-pointer hover:border-white/20 hover:bg-[#222228] transition-colors"
                   >
-                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-white text-sm font-black shadow-md overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-white text-sm font-black overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
                       {companyLogo && !logoError ? (
                         <img
                           src={companyLogo}
@@ -940,11 +920,11 @@ function AppContent() {
                         userFullName.charAt(0).toUpperCase()
                       )}
                     </div>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col min-w-0">
                       <span className="text-xs font-black text-white leading-tight truncate max-w-[120px]">{companyName || userFullName}</span>
-                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{t('navbar.company')}</span>
+                      <span className="text-[9px] text-white/45 font-bold uppercase tracking-wider">{t('navbar.company')}</span>
                     </div>
-                    <ChevronDown size={12} className={`text-gray-400 transition-transform duration-300 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={12} className={`text-white/45 transition-transform duration-300 shrink-0 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
 
                   {isProfileDropdownOpen && (

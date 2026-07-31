@@ -1338,8 +1338,8 @@ export default function OperationsDashboard() {
           <div ref={gigDropdownRef} className="relative">
             <button
               onClick={() => setGigDropdownOpen((v) => !v)}
-              className={`flex items-center gap-2 rounded-xl border bg-white px-4 py-2 text-[12px] font-bold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 ${
-                gigDropdownOpen ? 'border-harx-500 ring-1 ring-harx-500/20' : 'border-slate-200'
+              className={`flex items-center gap-2 rounded-xl border bg-white px-4 py-2 text-[12px] font-bold text-slate-800 shadow-harx transition-colors hover:bg-slate-50 ${
+                gigDropdownOpen ? 'border-slate-400 ring-1 ring-slate-900/10' : 'border-harx-border'
               }`}
               aria-haspopup="listbox"
               aria-expanded={gigDropdownOpen}
@@ -1354,7 +1354,7 @@ export default function OperationsDashboard() {
             </button>
 
             {gigDropdownOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {t('opsDashboard.header.pickGig', 'Sélectionner un gig')}
                 </div>
@@ -1363,14 +1363,14 @@ export default function OperationsDashboard() {
                     <button
                       onClick={() => handlePickGig('all')}
                       className={`flex w-full items-center justify-between px-3 py-2 text-left text-[12px] font-bold transition-colors hover:bg-slate-50 ${
-                        selectedGigId === 'all' ? 'bg-harx-500/10 text-harx-700' : 'text-slate-700'
+                        selectedGigId === 'all' ? 'bg-slate-100 text-harx-ink' : 'text-slate-700'
                       }`}
                       role="option"
                       aria-selected={selectedGigId === 'all'}
                     >
                       <span>{t('opsDashboard.header.allGigs', 'Tous les gigs')}</span>
                       {selectedGigId === 'all' && (
-                        <CheckCircle2 size={14} className="text-harx-500" />
+                        <CheckCircle2 size={14} className="text-harx-ink" />
                       )}
                     </button>
                   </li>
@@ -1384,7 +1384,7 @@ export default function OperationsDashboard() {
                         <button
                           onClick={() => handlePickGig(g._id)}
                           className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[12px] font-bold transition-colors hover:bg-slate-50 ${
-                            selectedGigId === g._id ? 'bg-harx-500/10 text-harx-700' : 'text-slate-700'
+                            selectedGigId === g._id ? 'bg-slate-100 text-harx-ink' : 'text-slate-700'
                           }`}
                           role="option"
                           aria-selected={selectedGigId === g._id}
@@ -1392,7 +1392,7 @@ export default function OperationsDashboard() {
                         >
                           <span className="truncate">{g.title}</span>
                           {selectedGigId === g._id && (
-                            <CheckCircle2 size={14} className="shrink-0 text-harx-500" />
+                            <CheckCircle2 size={14} className="shrink-0 text-harx-ink" />
                           )}
                         </button>
                       </li>
@@ -1407,8 +1407,8 @@ export default function OperationsDashboard() {
             <button
               type="button"
               onClick={() => setPeriodDropdownOpen((v) => !v)}
-              className={`flex items-center gap-2 rounded-xl border bg-white px-4 py-2 text-[12px] font-bold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 ${
-                periodDropdownOpen ? 'border-harx-500 ring-1 ring-harx-500/20' : 'border-slate-200'
+              className={`flex items-center gap-2 rounded-xl border bg-white px-4 py-2 text-[12px] font-bold text-slate-800 shadow-harx transition-colors hover:bg-slate-50 ${
+                periodDropdownOpen ? 'border-slate-400 ring-1 ring-slate-900/10' : 'border-harx-border'
               }`}
               aria-haspopup="listbox"
               aria-expanded={periodDropdownOpen}
@@ -1424,7 +1424,7 @@ export default function OperationsDashboard() {
             </button>
 
             {periodDropdownOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {t('opsDashboard.header.pickPeriod', 'Période')}
                 </div>
@@ -1435,7 +1435,7 @@ export default function OperationsDashboard() {
                         type="button"
                         onClick={() => handlePickPeriod(periodId)}
                         className={`flex w-full items-center justify-between px-3 py-2 text-left text-[12px] font-bold transition-colors hover:bg-slate-50 ${
-                          selectedPeriodId === periodId ? 'bg-harx-500/10 text-harx-700' : 'text-slate-700'
+                          selectedPeriodId === periodId ? 'bg-slate-100 text-harx-ink' : 'text-slate-700'
                         }`}
                         role="option"
                         aria-selected={selectedPeriodId === periodId}
@@ -1453,7 +1453,7 @@ export default function OperationsDashboard() {
                           })}
                         </span>
                         {selectedPeriodId === periodId && (
-                          <CheckCircle2 size={14} className="shrink-0 text-harx-500" />
+                          <CheckCircle2 size={14} className="shrink-0 text-harx-ink" />
                         )}
                       </button>
                     </li>
@@ -1476,7 +1476,7 @@ export default function OperationsDashboard() {
                         onChange={(e) =>
                           setCustomPeriodDraft((prev) => ({ ...prev, from: e.target.value }))
                         }
-                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-800 focus:border-harx-500 focus:outline-none focus:ring-1 focus:ring-harx-500/30"
+                        className="w-full rounded-lg border border-harx-border bg-white px-2 py-1.5 text-[11px] font-bold text-slate-800 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900/10"
                       />
                     </label>
                     <label className="block">
@@ -1490,7 +1490,7 @@ export default function OperationsDashboard() {
                         onChange={(e) =>
                           setCustomPeriodDraft((prev) => ({ ...prev, to: e.target.value }))
                         }
-                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-800 focus:border-harx-500 focus:outline-none focus:ring-1 focus:ring-harx-500/30"
+                        className="w-full rounded-lg border border-harx-border bg-white px-2 py-1.5 text-[11px] font-bold text-slate-800 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900/10"
                       />
                     </label>
                   </div>

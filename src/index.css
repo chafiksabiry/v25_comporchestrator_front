@@ -26,7 +26,7 @@ body {
 
 @layer components {
   .harx-nav-chip {
-    @apply relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl
+    @apply relative flex items-center gap-2 h-10 pl-2 pr-3 rounded-xl
       bg-harx-chip border border-harx-chip-border
       text-xs font-bold text-white/90
       hover:border-white/20 hover:bg-[#222228]
