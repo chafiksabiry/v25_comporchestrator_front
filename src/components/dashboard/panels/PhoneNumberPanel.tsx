@@ -283,8 +283,10 @@ export function PhoneNumberPanel() {
           name: 'HARX AI Voice',
           voice: 'alloy',
           gigTitle,
-          greeting:
-            'Bonjour, je suis l’assistant vocal HARX. Je vous appelle au sujet de votre dossier.',
+          // Opening line comes from the gig call script at dial time.
+          greeting: '',
+          systemPrompt:
+            'Respecte strictement le script actif du gig (phases / playbook). Ne invente pas un pitch générique.',
         }),
       });
       const data = await res.json().catch(() => ({}));
