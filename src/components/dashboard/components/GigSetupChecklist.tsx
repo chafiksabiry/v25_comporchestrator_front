@@ -500,20 +500,20 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
     return (
       <div
         role="status"
-        className="relative overflow-hidden rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 via-white to-amber-50/40 px-4 py-3 shadow-sm shadow-amber-100/40 animate-in slide-in-from-top-2 fade-in duration-300"
+        className="relative overflow-hidden rounded-harx border border-harx-orange-500/35 bg-harx-orange-50 px-4 py-3 shadow-harx animate-in slide-in-from-top-2 fade-in duration-300"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow shadow-amber-500/30">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-harx-orange text-white">
             <StepIcon className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] font-black uppercase tracking-wider text-amber-900">
+            <div className="text-[11px] font-black uppercase tracking-wider text-amber-950">
               {t('gigDetails.setupBanner.stepWarningTitle', {
                 step: stepDef.label,
                 defaultValue: 'Action required: {{step}}',
               })}
             </div>
-            <div className="mt-0.5 text-[10px] font-bold leading-snug text-amber-800/80">
+            <div className="mt-0.5 text-[10px] font-bold leading-snug text-amber-900/70">
               {t('gigDetails.setupBanner.stepWarningBody', {
                 count: gigsMissingThisStep.length,
                 step: stepDef.label,
@@ -527,7 +527,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
               {gigsMissingThisStep.slice(0, 4).map((g) => (
                 <span
                   key={g._id}
-                  className="inline-flex items-center rounded-md border border-amber-200 bg-white/80 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-700"
+                  className="inline-flex items-center rounded-md border border-harx-orange-500/25 bg-white px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-800"
                   title={g.title}
                 >
                   <span className="max-w-[160px] truncate">
@@ -536,7 +536,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                 </span>
               ))}
               {gigsMissingThisStep.length > 4 && (
-                <span className="inline-flex items-center rounded-md border border-amber-200 bg-white/80 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-700">
+                <span className="inline-flex items-center rounded-md border border-harx-orange-500/25 bg-white px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-800">
                   +{gigsMissingThisStep.length - 4}
                 </span>
               )}
@@ -558,7 +558,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                   )
                 )
               }
-              className="hidden shrink-0 items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:from-amber-600 hover:to-orange-600 active:scale-95 sm:inline-flex"
+              className="hidden shrink-0 items-center gap-1 rounded-lg bg-harx-orange px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-white transition-all hover:bg-harx-orange-600 active:scale-95 sm:inline-flex"
               title={t('gigDetails.setupBanner.continue', {
                 label: stepDef.label,
               })}
@@ -570,7 +570,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
           <button
             type="button"
             onClick={() => navigate('/dashboard/gigs')}
-            className="hidden shrink-0 items-center gap-1 rounded-lg border border-amber-200 bg-white px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-700 transition-colors hover:bg-amber-50 sm:inline-flex"
+            className="hidden shrink-0 items-center gap-1 rounded-lg border border-harx-orange-500/30 bg-white px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-800 transition-colors hover:bg-harx-orange-50 sm:inline-flex"
             title={t('gigDetails.setupBanner.viewAll', {
               defaultValue: 'View all',
             })}
@@ -581,7 +581,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
           <button
             type="button"
             onClick={handleDismiss}
-            className="shrink-0 rounded-lg border border-amber-200 bg-white/70 p-1 text-amber-700 transition-colors hover:bg-white hover:text-amber-900"
+            className="shrink-0 rounded-lg border border-harx-orange-500/30 bg-white/70 p-1 text-amber-800 transition-colors hover:bg-white hover:text-amber-950"
             aria-label={t('gigDetails.setupBanner.dismiss', {
               defaultValue: 'Dismiss',
             })}
@@ -599,18 +599,18 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
   return (
     <div
       role="status"
-      className="relative overflow-hidden rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-white to-amber-50/40 px-4 py-3 shadow-sm shadow-amber-100/40 animate-in slide-in-from-bottom-2 fade-in duration-500"
+      className="relative overflow-hidden rounded-harx border border-harx-orange-500/35 bg-harx-orange-50 px-4 py-3 shadow-harx animate-in slide-in-from-bottom-2 fade-in duration-500"
     >
       {/* Banner header — compact: icon + one-line title + dismiss */}
       <div className="relative z-10 flex items-center gap-2.5">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow shadow-amber-500/30">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-harx-orange text-white">
           <AlertCircle className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-[11px] font-black uppercase tracking-wider text-amber-900">
+          <h2 className="text-[11px] font-black uppercase tracking-wider text-amber-950">
             {t('gigDetails.setupBanner.title')}
           </h2>
-          <p className="text-[10px] font-bold leading-snug text-amber-800/70">
+          <p className="text-[10px] font-bold leading-snug text-amber-900/70">
             {t('opsDashboard.setupChecklist.pendingGigs', {
               count: pendingGigs.length,
               defaultValue:
@@ -623,7 +623,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
         <button
           type="button"
           onClick={handleDismiss}
-          className="shrink-0 rounded-lg border border-amber-200 bg-white/70 p-1 text-amber-700 transition-colors hover:bg-white hover:text-amber-900"
+          className="shrink-0 rounded-lg border border-harx-orange-500/30 bg-white/70 p-1 text-amber-800 transition-colors hover:bg-white hover:text-amber-950"
           aria-label={t('gigDetails.setupBanner.dismiss', {
             defaultValue: 'Dismiss',
           })}
@@ -660,25 +660,25 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
           return (
             <div
               key={gig._id}
-              className="rounded-xl border border-amber-200/70 bg-white px-3 py-2 shadow-sm"
+              className="rounded-xl border border-harx-orange-500/25 bg-white px-3 py-2 shadow-harx"
             >
               {/* Single-line gig row: status pill · title · progress · next-step
                   shortcut · expand/collapse chevron. Everything stays on one
                   row at sm+ so the banner footprint is tiny by default. */}
               <div className="flex items-center gap-2">
                 <span
-                  className="inline-flex shrink-0 items-center rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-amber-700"
+                  className="inline-flex shrink-0 items-center rounded-md border border-harx-orange-500/25 bg-harx-orange-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest text-amber-800"
                   title={normalizeGigStatus(gig.status)}
                 >
                   {normalizeGigStatus(gig.status)}
                 </span>
                 <h3
-                  className="truncate text-[12px] font-black text-slate-800"
+                  className="truncate text-[12px] font-black text-harx-ink"
                   title={gig.title}
                 >
                   {gig.title || gig._id}
                 </h3>
-                <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-700">
+                <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-800">
                   <span className="hidden sm:inline">
                     {isProbing
                       ? t('opsDashboard.setupChecklist.checking', {
@@ -686,9 +686,9 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                         })
                       : `${completedCount}/${checklist.length}`}
                   </span>
-                  <span className="h-1 w-16 overflow-hidden rounded-full bg-amber-100">
+                  <span className="h-1 w-16 overflow-hidden rounded-full bg-harx-orange-100">
                     <span
-                      className="block h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-700 ease-out"
+                      className="block h-full rounded-full bg-harx-orange transition-all duration-700 ease-out"
                       style={{ width: isProbing ? '15%' : `${progressPct}%` }}
                     />
                   </span>
@@ -700,7 +700,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                     onClick={() =>
                       navigate(getContinueTarget(nextStep.id, gig._id))
                     }
-                    className="hidden shrink-0 items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:from-amber-600 hover:to-orange-600 active:scale-95 sm:inline-flex"
+                    className="hidden shrink-0 items-center gap-1 rounded-lg bg-harx-orange px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white transition-all hover:bg-harx-orange-600 active:scale-95 sm:inline-flex"
                     title={t('gigDetails.setupBanner.continue', {
                       label: nextStep.label,
                     })}
@@ -712,7 +712,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                 <button
                   type="button"
                   onClick={() => toggleCollapse(gig._id)}
-                  className="shrink-0 rounded-lg border border-slate-200 bg-white p-1 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800"
+                  className="shrink-0 rounded-lg border border-harx-border bg-white p-1 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800"
                   aria-label={isCollapsed ? 'Expand' : 'Collapse'}
                 >
                   {isCollapsed ? (
@@ -741,7 +741,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                           done
                             ? 'border-emerald-100 bg-emerald-50/80'
                             : isNext
-                            ? 'border-amber-300 bg-amber-50/70 shadow-sm shadow-amber-200/40 ring-1 ring-amber-200'
+                            ? 'border-harx-orange-500/40 bg-harx-orange-50 ring-1 ring-harx-orange-500/20'
                             : 'border-slate-100 bg-slate-50/50 opacity-70'
                         }`}
                       >
@@ -798,7 +798,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                           <button
                             type="button"
                             onClick={() => navigate(targetPath)}
-                            className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white shadow-sm shadow-amber-500/30 transition-all hover:from-amber-600 hover:to-orange-600 active:scale-95"
+                            className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-lg bg-harx-orange px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white transition-all hover:bg-harx-orange-600 active:scale-95"
                             title={t('gigDetails.setupBanner.continue', {
                               label: step.label,
                             })}

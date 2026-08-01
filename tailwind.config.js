@@ -5,31 +5,52 @@ export default {
     extend: {
       colors: {
         'harx': {
-          50: '#fff5f5',
-          100: '#ffe0e0',
-          200: '#ffc2c2',
-          300: '#ff9494',
-          400: '#ff6b6b',
-          500: '#ff4d4d', // Primary HARX red-orange
-          600: '#ff3333',
-          700: '#ff1a1a',
-          800: '#ff0000',
-          900: '#cc0000',
-          950: '#990000',
+          50: '#FEF2F2',
+          100: '#FEE2E2',
+          200: '#FECACA',
+          300: '#FCA5A5',
+          400: '#F87171',
+          500: '#ED1C24', // Primary HARX red
+          600: '#D11920',
+          700: '#B91C1C',
+          800: '#991B1B',
+          900: '#7F1D1D',
+          950: '#450A0A',
         },
         'harx-alt': {
-          50: '#fdf2f8',
-          100: '#fce7f3',
-          200: '#fbcfe8',
-          300: '#f9a8d4',
-          400: '#f472b6',
-          500: '#ec4899', // Secondary HARX pink
-          600: '#db2777',
-          700: '#be185d',
-          800: '#9d174d',
+          50: '#FDF2F8',
+          100: '#FCE7F3',
+          200: '#FBCFE8',
+          300: '#F9A8D4',
+          400: '#F472B6',
+          500: '#E6188D', // Secondary HARX magenta
+          600: '#DB2777',
+          700: '#BE185D',
+          800: '#9D174D',
           900: '#831843',
           950: '#500724',
         },
+        'harx-orange': {
+          DEFAULT: '#F7941E',
+          50: '#FFF7ED',
+          100: '#FFEDD5',
+          500: '#F7941E',
+          600: '#D9821A',
+        },
+        'harx-ink': '#0F172A',
+        'harx-muted': '#64748B',
+        'harx-border': '#E2E8F0',
+        'harx-bg': '#F4F6F8',
+        'harx-sidebar': '#0B0B0F',
+        'harx-chip': '#1A1A1F',
+        'harx-chip-border': '#2A2A32',
+      },
+      borderRadius: {
+        harx: '14px',
+      },
+      boxShadow: {
+        harx: '0 1px 2px rgba(15, 23, 42, 0.04)',
+        'harx-md': '0 4px 12px rgba(15, 23, 42, 0.06)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',
@@ -62,7 +83,8 @@ export default {
         },
       },
       backgroundImage: {
-        'gradient-harx': 'linear-gradient(to right, #ff4d4d, #ec4899)',
+        'gradient-harx': 'linear-gradient(90deg, #F7941E 0%, #E6188D 55%, #ED1C24 100%)',
+        'gradient-harx-soft': 'linear-gradient(90deg, #F7941E 0%, #E6188D 100%)',
         'gradient-rep-accent': 'linear-gradient(135deg, #6366f1 0%, #818cf8 55%, #4f46e5 100%)',
         'gradient-rep-header': 'linear-gradient(135deg, #eef2ff 0%, #ffffff 50%, #f8fafc 100%)',
         'gradient-rep-page': 'radial-gradient(ellipse at top left, #eef2ff 0%, #f8fafc 40%, #ffffff 100%)',
@@ -81,4 +103,3 @@ export default {
   },
   plugins: [],
 };
-

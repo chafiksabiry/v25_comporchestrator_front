@@ -217,6 +217,7 @@ const ScriptGenerator: React.FC = () => {
   const [activeToolkitView, setActiveToolkitView] = useState<'chat' | 'expert'>('chat');
   const [activeInteractiveStages, setActiveInteractiveStages] = useState<InteractiveStage[] | null>(null);
   const [activeInteractiveTitle, setActiveInteractiveTitle] = useState<string>('');
+  const [interactiveStageIdx, setInteractiveStageIdx] = useState(0);
   const [relatedTrainings, setRelatedTrainings] = useState<any[]>([]);
   const [relatedTrainingTitle, setRelatedTrainingTitle] = useState<string>('');
   const [isLoadingTrainings, setIsLoadingTrainings] = useState(false);
@@ -691,6 +692,10 @@ const ScriptGenerator: React.FC = () => {
   const handleRefineInteractiveScript = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!input.trim() || !selectedGig) return;
+    if (!activeInteractiveStages || activeInteractiveStages.length === 0) {
+      setError("Générez d'abord un script interactif avant de l'ajuster.");
+      return;
+    }
     const promptText = input.trim();
     setInput('');
     setIsSending(true);
@@ -716,6 +721,11 @@ const ScriptGenerator: React.FC = () => {
         }
       }
 
+      const safeIdx = Math.min(
+        Math.max(0, interactiveStageIdx),
+        activeInteractiveStages.length - 1
+      );
+
       const payload = {
         companyId,
         gig: selectedGig,
@@ -723,7 +733,10 @@ const ScriptGenerator: React.FC = () => {
         langueTon: 'professionnel et direct',
         contexte: promptText,
         trainings: currentTrainings,
-        isInteractiveRequest: true
+        isInteractiveRequest: true,
+        editMode: 'targeted',
+        targetStageIndex: safeIdx,
+        currentStages: activeInteractiveStages,
       };
 
       const { data } = await apiClient.post('/rag/generate-script', payload);
@@ -1269,16 +1282,16 @@ const ScriptGenerator: React.FC = () => {
             <div className="lg:col-span-4 h-full flex flex-col overflow-hidden min-h-0">
 
               {/* Cohesive Sidebar Card */}
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-lg p-4 flex flex-col h-full min-h-0 overflow-hidden">
+              <div className="bg-white rounded-harx border border-harx-border shadow-harx p-4 flex flex-col h-full min-h-0 overflow-hidden">
 
                 {/* Header selector group */}
                 <div className="space-y-3 shrink-0">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-lg bg-harx-ink text-white flex items-center justify-center">
                       <Compass className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-wider">Mission Active</h3>
+                      <h3 className="text-[11px] font-black text-harx-ink uppercase tracking-wider">Mission Active</h3>
                     </div>
                   </div>
 
@@ -1286,34 +1299,55 @@ const ScriptGenerator: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsGigSelectorOpen(!isGigSelectorOpen)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl font-extrabold text-slate-700 bg-slate-50/50 hover:bg-slate-100/50 focus:border-red-600 transition-all text-xs flex items-center justify-between cursor-pointer"
+                      className={`w-full px-3 py-2.5 rounded-xl font-extrabold text-harx-ink bg-white transition-all text-xs flex items-center justify-between cursor-pointer border shadow-harx ${
+                        isGigSelectorOpen
+                          ? 'border-slate-400 ring-1 ring-slate-900/10'
+                          : 'border-harx-border hover:border-slate-300 hover:bg-slate-50'
+                      }`}
                       disabled={isLoadingGigs}
+                      aria-haspopup="listbox"
+                      aria-expanded={isGigSelectorOpen}
                     >
-                      <span className="truncate">{selectedGig?.title || 'Sélectionnez un Gig...'}</span>
+                      <span className="truncate text-left">{selectedGig?.title || 'Sélectionnez un Gig...'}</span>
                       <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ml-2 ${isGigSelectorOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {isGigSelectorOpen && (
                       <>
                         <div className="fixed inset-0 z-[100]" onClick={() => setIsGigSelectorOpen(false)} />
-                        <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-100 rounded-xl shadow-2xl p-1 z-[110] max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-1.5 duration-150">
-                          {gigs.map((gig) => (
-                            <button
-                              key={gig._id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedGig(gig);
-                                setIsGigSelectorOpen(false);
-                              }}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-between gap-2 ${selectedGig?._id === gig._id
-                                ? 'bg-red-50 text-red-600'
-                                : 'text-slate-700 hover:bg-slate-50'
-                                }`}
-                            >
-                              <span className="truncate">{gig.title}</span>
-                              {selectedGig?._id === gig._id && <Check className="w-3.5 h-3.5 shrink-0 text-red-600" />}
-                            </button>
-                          ))}
+                        <div
+                          className="absolute left-0 right-0 mt-1.5 bg-white border border-harx-border rounded-harx shadow-harx-md overflow-hidden z-[110] max-h-52 animate-in fade-in slide-in-from-top-1.5 duration-150"
+                          role="listbox"
+                        >
+                          <div className="border-b border-slate-100 px-3 py-2 text-[9px] font-black uppercase tracking-wider text-slate-400">
+                            Sélectionner une mission
+                          </div>
+                          <div className="p-1 max-h-40 overflow-y-auto">
+                            {gigs.map((gig) => {
+                              const active = selectedGig?._id === gig._id;
+                              return (
+                                <button
+                                  key={gig._id}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={active}
+                                  title={gig.title}
+                                  onClick={() => {
+                                    setSelectedGig(gig);
+                                    setIsGigSelectorOpen(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-between gap-2 ${
+                                    active
+                                      ? 'bg-slate-100 text-harx-ink'
+                                      : 'text-slate-700 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <span className="truncate">{gig.title}</span>
+                                  {active && <Check className="w-3.5 h-3.5 shrink-0 text-harx-ink" />}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </>
                     )}
@@ -1321,7 +1355,7 @@ const ScriptGenerator: React.FC = () => {
 
                   {isLoadingGigs && (
                     <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5">
-                      <Loader2 className="w-3 h-3 animate-spin text-red-600" /> Chargement...
+                      <Loader2 className="w-3 h-3 animate-spin text-harx-ink" /> Chargement...
                     </p>
                   )}
                   {gigsError && <p className="text-[10px] font-bold text-red-500">{gigsError}</p>}
@@ -1335,18 +1369,18 @@ const ScriptGenerator: React.FC = () => {
 
                   {/* Category & Status */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="px-2.5 py-1 bg-red-50 text-red-600 rounded-lg text-[9px] font-black uppercase tracking-wider border border-red-100">
+                    <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-[9px] font-black uppercase tracking-wider border border-harx-border">
                       {selectedGig.category || 'Général'}
                     </span>
                     <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       Sélectionné
                     </span>
                   </div>
 
                   {/* Title and context */}
                   <div className="space-y-0.5">
-                    <h4 className="text-sm font-black text-slate-900 leading-snug">{selectedGig.title}</h4>
+                    <h4 className="text-sm font-black text-harx-ink leading-snug">{selectedGig.title}</h4>
                     <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
                       <Briefcase className="w-3 h-3 text-slate-400" /> Détails de la mission
                     </p>
@@ -1358,7 +1392,7 @@ const ScriptGenerator: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <h5 className="text-[9px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                        <FileText className="w-3 h-3 text-red-600" />
+                        <FileText className="w-3 h-3 text-harx-ink" />
                         {t('scriptGenerator.gigScripts.title', 'Scripts de la mission')}
                       </h5>
                       <span className="text-[8px] font-black text-slate-400 uppercase">
@@ -1374,7 +1408,7 @@ const ScriptGenerator: React.FC = () => {
 
                     {isLoadingSavedScripts ? (
                       <div className="flex items-center gap-1.5 py-2 text-[10px] text-slate-400 font-bold">
-                        <Loader2 className="w-3 h-3 animate-spin text-red-600" />
+                        <Loader2 className="w-3 h-3 animate-spin text-harx-ink" />
                         {t('scriptGenerator.gigScripts.loading', 'Chargement...')}
                       </div>
                     ) : savedScripts.length === 0 ? (
@@ -1387,7 +1421,13 @@ const ScriptGenerator: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setIsGigScriptsDropdownOpen((open) => !open)}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl font-extrabold text-slate-700 bg-slate-50/50 hover:bg-slate-100/50 focus:border-red-600 transition-all text-[10px] flex items-center justify-between cursor-pointer"
+                            className={`w-full px-3 py-2.5 rounded-xl font-extrabold text-harx-ink bg-white transition-all text-[10px] flex items-center justify-between cursor-pointer border shadow-harx ${
+                              isGigScriptsDropdownOpen
+                                ? 'border-slate-400 ring-1 ring-slate-900/10'
+                                : 'border-harx-border hover:border-slate-300 hover:bg-slate-50'
+                            }`}
+                            aria-haspopup="listbox"
+                            aria-expanded={isGigScriptsDropdownOpen}
                           >
                             <span className="truncate text-left">
                               {selectedGigScript
@@ -1410,29 +1450,44 @@ const ScriptGenerator: React.FC = () => {
                                 className="fixed inset-0 z-[100]"
                                 onClick={() => setIsGigScriptsDropdownOpen(false)}
                               />
-                              <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-100 rounded-xl shadow-2xl p-1 z-[110] max-h-40 overflow-y-auto animate-in fade-in slide-in-from-top-1.5 duration-150">
-                                {sortedGigScripts.map((item, idx) => (
-                                  <button
-                                    key={item._id}
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedGigScriptId(item._id);
-                                      setIsGigScriptsDropdownOpen(false);
-                                    }}
-                                    className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold transition-all flex items-center justify-between gap-2 ${
-                                      selectedGigScript?._id === item._id
-                                        ? 'bg-red-50 text-red-600'
-                                        : 'text-slate-700 hover:bg-slate-50'
-                                    }`}
-                                  >
-                                    <span className="truncate">{formatGigScriptLabel(item, idx)}</span>
-                                    {item.isActive && (
-                                      <span className="shrink-0 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[7px] font-extrabold uppercase">
-                                        {t('scriptGenerator.gigScripts.active', 'Actif')}
-                                      </span>
-                                    )}
-                                  </button>
-                                ))}
+                              <div
+                                className="absolute left-0 right-0 mt-1.5 bg-white border border-harx-border rounded-harx shadow-harx-md overflow-hidden z-[110] max-h-44 animate-in fade-in slide-in-from-top-1.5 duration-150"
+                                role="listbox"
+                              >
+                                <div className="border-b border-slate-100 px-3 py-2 text-[9px] font-black uppercase tracking-wider text-slate-400">
+                                  {t('scriptGenerator.gigScripts.select', 'Choisir un script')}
+                                </div>
+                                <div className="p-1 max-h-36 overflow-y-auto">
+                                  {sortedGigScripts.map((item, idx) => {
+                                    const active = selectedGigScript?._id === item._id;
+                                    return (
+                                      <button
+                                        key={item._id}
+                                        type="button"
+                                        role="option"
+                                        aria-selected={active}
+                                        onClick={() => {
+                                          setSelectedGigScriptId(item._id);
+                                          setIsGigScriptsDropdownOpen(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-[10px] font-bold transition-colors flex items-center justify-between gap-2 ${
+                                          active
+                                            ? 'bg-slate-100 text-harx-ink'
+                                            : 'text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                      >
+                                        <span className="truncate">{formatGigScriptLabel(item, idx)}</span>
+                                        {item.isActive ? (
+                                          <span className="shrink-0 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[7px] font-extrabold uppercase">
+                                            {t('scriptGenerator.gigScripts.active', 'Actif')}
+                                          </span>
+                                        ) : active ? (
+                                          <Check className="w-3.5 h-3.5 shrink-0 text-harx-ink" />
+                                        ) : null}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
                               </div>
                             </>
                           )}
@@ -1472,7 +1527,7 @@ const ScriptGenerator: React.FC = () => {
                                   pendingOpenScriptRef.current = selectedGigScript;
                                   openSavedScript(selectedGigScript);
                                 }}
-                                className="flex-1 py-1.5 text-[8px] font-black uppercase tracking-wider rounded-md bg-white border border-slate-200 text-slate-600 hover:border-red-400 hover:text-red-600 transition-colors"
+                                className="flex-1 py-1.5 text-[8px] font-black uppercase tracking-wider rounded-md bg-white border border-harx-border text-slate-600 hover:border-slate-400 hover:text-harx-ink transition-colors"
                               >
                                 {t('scriptGenerator.listPanel.openScript', 'Ouvrir')}
                               </button>
@@ -1598,7 +1653,7 @@ const ScriptGenerator: React.FC = () => {
             </div>
 
             {/* Right Column: Always Active Interactive Script Cockpit and Chat Input */}
-            <div className="lg:col-span-8 h-full flex flex-col overflow-hidden min-h-0 bg-white rounded-2xl border border-slate-100 shadow-md relative">
+            <div className="lg:col-span-8 h-full flex flex-col overflow-hidden min-h-0 bg-white rounded-harx border border-harx-border shadow-harx relative">
 
               {/* Working Panel */}
               <div className="flex-1 overflow-hidden min-h-0 relative flex flex-col">
@@ -1610,6 +1665,7 @@ const ScriptGenerator: React.FC = () => {
                       isInline={true}
                       onValidate={handleSaveAndValidateInteractiveScript}
                       isValidating={isSending}
+                      onStageIndexChange={setInteractiveStageIdx}
                     />
 
                     {/* Beautiful glassmorphic loading overlay over the cockpit when updating */}
@@ -1695,9 +1751,9 @@ const ScriptGenerator: React.FC = () => {
                       type="text"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder={activeInteractiveStages ? "Ajuster ce script interactif (ex: 'Rendre l'étape d'accroche plus chaleureuse', 'Ajouter une objection prix')..." : "Saisir des consignes spécifiques pour la génération du script interactif..."}
+                      placeholder={activeInteractiveStages ? "Ajuster l'étape affichée (ex: 'rendre plus chaleureux', 'ajouter une objection prix')..." : "Saisir des consignes spécifiques pour la génération du script interactif..."}
                       disabled={isSending || !selectedGig}
-                      className="w-full pl-3.5 pr-10 py-2.5 bg-[#fcfcfc] border border-slate-200 focus:border-red-600 text-xs font-semibold text-slate-800 placeholder-slate-400 rounded-xl outline-none transition-all shadow-sm disabled:opacity-60"
+                      className="w-full pl-3.5 pr-10 py-2.5 bg-white border border-harx-border focus:border-slate-400 focus:ring-1 focus:ring-slate-900/10 text-xs font-semibold text-slate-800 placeholder-slate-400 rounded-xl outline-none transition-all shadow-harx disabled:opacity-60"
                     />
                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-slate-400">
                       <Sparkles className="w-3.5 h-3.5 text-red-500/60 animate-pulse" />

@@ -1361,6 +1361,7 @@
       "contacted": "Contacted",
       "rdv": "Appointments",
       "converted": "Converted",
+      "pipeline": "Appointments & converted",
       "filterActive": "Active filter"
     },
     "list": {
@@ -2100,6 +2101,32 @@
     }
   },
   "calls": {
+    "title": "Call History",
+    "subtitle": "Analyze every interaction and AI-powered performance insight",
+    "callId": "Call ID",
+    "callValidatedByAi": "Call validated by AI",
+    "duration": "Duration: {{minutes}}m {{seconds}}s",
+    "alreadyAnalyzed": "Analysis already completed. Use “Re-run analysis” to recalculate.",
+    "reanalyzeStarted": "Analysis restarted — update in progress.",
+    "executiveSummary": "Executive Summary",
+    "globalAudit": "Overall Performance Audit",
+    "common": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "fallback": {
+      "lead": "Lead",
+      "agent": "Agent",
+      "rep": "Rep"
+    },
+    "direction": {
+      "inbound": "Inbound call",
+      "outbound": "Outbound call"
+    },
+    "search": {
+      "placeholder": "Search by lead, gig, or ID…",
+      "label": "Search calls"
+    },
     "empty": {
       "noCompany": "Company not identified",
       "noCompanyHint": "Sign in again or select a company to view call history.",
@@ -2111,6 +2138,331 @@
     "errors": {
       "config": "Calls API configuration is missing.",
       "load": "Unable to load calls."
+    },
+    "filters": {
+      "activeOutcome": "Active filter",
+      "gig": "Filter by gig",
+      "allGigs": "All gigs",
+      "status": "Filter by status",
+      "allStatus": "All statuses"
+    },
+    "status": {
+      "completed": "Completed",
+      "missed": "Missed",
+      "failed": "Failed",
+      "voicemail": "Voicemail",
+      "fraud": "Fraud",
+      "processing": "In progress",
+      "rejected": "Rejected"
+    },
+    "outcome": {
+      "serious": "Serious",
+      "voicemail": "Voicemail",
+      "unreachable": "Unreachable",
+      "fraud": "Fraud detected",
+      "wrong_number": "Wrong number",
+      "too_short": "Immediate hang-up"
+    },
+    "analysis": {
+      "requestedByRep": "Rep requested analysis"
+    },
+    "ai": {
+      "approved": "Validated by AI",
+      "approvedWithAmount": "Validated by AI (-€{{amount}})",
+      "rejected": "Rejected by AI",
+      "pendingAnalysis": "Analysis pending"
+    },
+    "transaction": {
+      "validationSuccess": "Transaction validated by your company",
+      "rejectionSuccess": "Transaction rejected",
+      "validationCancelled": "Transaction validation cancelled",
+      "updateError": "Unable to update validation",
+      "validationError": "An error occurred during validation",
+      "validatedByCompany": "Validated by the company",
+      "awaitingValidation": "Awaiting validation",
+      "signedWithAmount": "Signed (-€{{amount}})"
+    },
+    "actions": {
+      "validate": "Validate",
+      "reject": "Reject",
+      "notSigned": "Not signed",
+      "validateTransaction": "Validate transaction",
+      "markNotSigned": "Mark as not signed",
+      "viewDetails": "View details",
+      "analyzing": "Analyzing…",
+      "analyzeTranscribe": "Analyze & transcribe",
+      "reanalyzing": "Re-analyzing…",
+      "reanalyze": "Re-run analysis",
+      "closeDetails": "Close details"
+    },
+    "metrics": {
+      "fluency": "Agent Fluency",
+      "sentiment": "Sentiment Analysis",
+      "fraud": "Fraud Detection",
+      "coherence": "Script Coherence",
+      "argumentation": "Argumentation Quality",
+      "transaction": "Transaction Analysis"
+    },
+    "prospectMetrics": {
+      "notInterested": "Not interested",
+      "notAware": "Not aware",
+      "alreadyEquipped": "Already equipped / supplied",
+      "appointment": "Appointment booked",
+      "callback": "Later / callback"
+    },
+    "modal": {
+      "title": "Call Details",
+      "noRecording": "No recording",
+      "tabs": {
+        "transcript": "Transcript",
+        "insights": "AI Insights"
+      },
+      "aiDecision": "AI decision",
+      "call": "Call",
+      "transaction": "Transaction",
+      "transactionShort": "Trans.",
+      "yourChoice": "Your choice",
+      "transcriptUnavailable": "Transcript not available for this call",
+      "analysisUnavailable": "No analysis available for this call",
+      "overallScore": "Overall Score",
+      "score": "Score",
+      "analysisCompleted": "Detailed analysis completed.",
+      "prospectResponses": "Lead Statuses & Responses",
+      "detected": "Detected",
+      "noQuote": "No quote detected.",
+      "standardPerformance": "The agent demonstrated standard performance.",
+      "overallAiEvaluation": "Overall AI Evaluation"
     }
+  },
+  "approvalPublishing": {
+    "title": "Approval & Publishing",
+    "subtitle": "Activate your gigs and start receiving applications",
+    "loading": {
+      "subtitle": "Loading your gigs…",
+      "syncing": "Synchronizing data…"
+    },
+    "error": {
+      "subtitle": "An error occurred"
+    },
+    "errors": {
+      "fetchGigs": "Unable to load gigs.",
+      "approveGig": "Unable to activate the gig.",
+      "rejectGig": "Unable to deactivate the gig.",
+      "archiveGig": "Unable to archive the gig.",
+      "previewGig": "Unable to open the gig preview.",
+      "editGig": "Unable to open the gig editor."
+    },
+    "preview": {
+      "title": "Preview: {{title}}",
+      "subtitle": "Review all specifications before going live"
+    },
+    "edit": {
+      "title": "Edit: {{title}}",
+      "subtitle": "Refine your gig specifications",
+      "multiSelectActivities": "Hold Ctrl/Cmd to select multiple activities",
+      "multiSelectIndustries": "Hold Ctrl/Cmd to select multiple industries",
+      "baseCommissionHint": "Set the fixed base rate and requirements",
+      "transactionCommissionHint": "Define per-transaction rewards",
+      "performanceBonusHint": "Set additional performance-based rewards",
+      "currencyHint": "Select the currency for all commission calculations"
+    },
+    "sections": {
+      "basicInfo": "Basic Information",
+      "activitiesIndustries": "Activities & Industries",
+      "seniority": "Seniority Requirements",
+      "skillsLanguages": "Skills & Languages",
+      "schedule": "Schedule & Availability",
+      "commission": "Commission & Compensation",
+      "team": "Team Structure",
+      "baseCommission": "Base Commission",
+      "minimumRequirements": "Minimum Requirements",
+      "transactionCommission": "Transaction Commission",
+      "performanceBonus": "Performance Bonus",
+      "currency": "Currency Settings"
+    },
+    "fields": {
+      "title": "Title",
+      "gigTitle": "Gig Title",
+      "category": "Category",
+      "status": "Status",
+      "destinationZone": "Destination Zone",
+      "company": "Company",
+      "created": "Created",
+      "updated": "Updated",
+      "description": "Description",
+      "activities": "Activities",
+      "industries": "Industries",
+      "level": "Level",
+      "seniorityLevel": "Seniority Level",
+      "yearsExperience": "Years of Experience",
+      "professionalSkills": "Professional Skills",
+      "technicalSkills": "Technical Skills",
+      "softSkills": "Soft Skills",
+      "languages": "Languages",
+      "timeZone": "Time Zone",
+      "flexibility": "Flexibility",
+      "weeklySchedule": "Weekly Schedule",
+      "minimumHoursDaily": "Minimum Hours (Daily)",
+      "minimumHoursWeekly": "Minimum Hours (Weekly)",
+      "minimumHoursMonthly": "Minimum Hours (Monthly)",
+      "base": "Base",
+      "baseAmount": "Base Amount",
+      "bonus": "Bonus",
+      "bonusAmount": "Bonus Amount",
+      "transactionCommission": "Transaction Commission",
+      "commissionAmount": "Commission Amount",
+      "minimumVolume": "Minimum Volume",
+      "additionalDetails": "Additional Details",
+      "teamSize": "Team Size",
+      "territories": "Territories",
+      "teamStructure": "Team Structure",
+      "country": "Country",
+      "perCallCompensation": "Per-call compensation",
+      "targetAmount": "Target Amount",
+      "unit": "Unit",
+      "period": "Period",
+      "currency": "Currency"
+    },
+    "empty": {
+      "activities": "No activities specified",
+      "industries": "No industries specified",
+      "professionalSkills": "No professional skills specified",
+      "technicalSkills": "No technical skills specified",
+      "softSkills": "No soft skills specified",
+      "languages": "No languages specified",
+      "flexibility": "No flexibility options specified",
+      "schedule": "No schedule specified",
+      "territories": "No territories specified",
+      "teamStructure": "No team structure specified",
+      "filtered": "No gigs match the current filter."
+    },
+    "fallback": {
+      "notSpecified": "Not specified",
+      "notAvailable": "Not available",
+      "unknown": "Unknown",
+      "na": "N/A",
+      "company": "Company",
+      "noCategory": "No category",
+      "skill": "Skill {{id}}"
+    },
+    "dates": {
+      "invalid": "Invalid date",
+      "justNow": "Just now",
+      "hoursAgo_one": "{{count}} hour ago",
+      "hoursAgo_other": "{{count}} hours ago",
+      "daysAgo_one": "{{count}} day ago",
+      "daysAgo_other": "{{count}} days ago"
+    },
+    "status": {
+      "toActivate": "To activate",
+      "pending": "Pending",
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "approved": "Approved",
+      "active": "Active",
+      "published": "Published",
+      "rejected": "Rejected",
+      "declined": "Declined",
+      "cancelled": "Cancelled",
+      "inactive": "Inactive",
+      "archived": "Archived"
+    },
+    "actions": {
+      "retry": "Retry connection",
+      "editDetails": "Edit details",
+      "cancel": "Cancel",
+      "saveChanges": "Save changes",
+      "updateSchedule": "Update schedule",
+      "addSchedule": "Add schedule",
+      "activate": "Activate",
+      "approve": "Approve",
+      "reject": "Reject",
+      "deactivate": "Deactivate",
+      "archive": "Archive",
+      "close": "Close"
+    },
+    "placeholders": {
+      "gigTitle": "Enter gig title",
+      "description": "Enter gig description",
+      "category": "Enter category",
+      "destinationZone": "Enter destination zone",
+      "yearsExperience": "Enter years of experience",
+      "amountPerCall": "Enter amount per call",
+      "target": "Enter target",
+      "amount": "Enter amount",
+      "bonusAmount": "Enter bonus amount",
+      "teamSize": "Enter team size",
+      "territories": "Enter territories (comma separated)",
+      "timeZone": "Enter time zone",
+      "flexibility": "Enter flexibility options (comma separated)",
+      "hours": "Hours"
+    },
+    "select": {
+      "level": "Select level",
+      "unit": "Select unit",
+      "period": "Select period",
+      "currency": "Select currency"
+    },
+    "seniority": {
+      "entry": "Entry-Level",
+      "mid": "Mid-Level",
+      "senior": "Senior",
+      "expert": "Expert"
+    },
+    "units": {
+      "calls": "Calls",
+      "sales": "Sales",
+      "transactions": "Transactions"
+    },
+    "periods": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "weekdays": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    },
+    "schedule": {
+      "workingDays": "Working Days",
+      "workingHours": "Working Hours",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "current": "Current Schedules",
+      "minimumHours": "Minimum Hours",
+      "display": "{{days}}, from {{start}} to {{end}}",
+      "presets": {
+        "early": "Early",
+        "late": "Late",
+        "evening": "Evening"
+      }
+    },
+    "filters": {
+      "all": "All Gigs"
+    },
+    "selection": {
+      "selected": "{{selected}} of {{total}} selected",
+      "pending_one": "{{count}} pending approval",
+      "pending_other": "{{count}} pending approvals"
+    },
+    "issues": {
+      "title": "Issues Requiring Attention"
+    },
+    "balance": {
+      "singleError": "Insufficient balance. Add funds to your account to activate this gig.",
+      "bulkError": "Insufficient balance. Add funds to your account to activate these gigs.",
+      "singleTooltip": "Insufficient balance — add funds to activate this gig",
+      "bulkTooltip": "Insufficient balance — add funds to activate your gigs",
+      "warningTitle": "Warning: insufficient balance (€{{balance}})",
+      "warningBody": "Your current balance is €{{balance}}. Add funds to activate or approve gigs. Until then, your reps will not be able to start working.",
+      "topUp": "Add funds"
+    },
+    "yearsCount_one": "{{count}} year",
+    "yearsCount_other": "{{count}} years"
   }
 }

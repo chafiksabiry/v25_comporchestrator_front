@@ -1361,6 +1361,7 @@
       "contacted": "Contactés",
       "rdv": "RDV",
       "converted": "Convertis",
+      "pipeline": "RDV & convertis",
       "filterActive": "Filtre actif"
     },
     "list": {
@@ -2100,6 +2101,32 @@
     }
   },
   "calls": {
+    "title": "Historique des appels",
+    "subtitle": "Analysez chaque interaction et les performances évaluées par l’IA",
+    "callId": "ID de l’appel",
+    "callValidatedByAi": "Appel validé par l’IA",
+    "duration": "Durée : {{minutes}} min {{seconds}} s",
+    "alreadyAnalyzed": "Analyse déjà effectuée. Utilisez « Relancer l’analyse » pour recalculer.",
+    "reanalyzeStarted": "Analyse relancée — mise à jour en cours.",
+    "executiveSummary": "Synthèse",
+    "globalAudit": "Audit global des performances",
+    "common": {
+      "yes": "Oui",
+      "no": "Non"
+    },
+    "fallback": {
+      "lead": "Prospect",
+      "agent": "Agent",
+      "rep": "Rep"
+    },
+    "direction": {
+      "inbound": "Appel entrant",
+      "outbound": "Appel sortant"
+    },
+    "search": {
+      "placeholder": "Rechercher par prospect, gig ou ID…",
+      "label": "Rechercher des appels"
+    },
     "empty": {
       "noCompany": "Entreprise non identifiée",
       "noCompanyHint": "Reconnectez-vous ou sélectionnez une entreprise pour afficher l'historique des appels.",
@@ -2111,6 +2138,331 @@
     "errors": {
       "config": "Configuration API appels manquante.",
       "load": "Impossible de charger les appels."
+    },
+    "filters": {
+      "activeOutcome": "Filtre actif",
+      "gig": "Filtrer par gig",
+      "allGigs": "Tous les gigs",
+      "status": "Filtrer par statut",
+      "allStatus": "Tous les statuts"
+    },
+    "status": {
+      "completed": "Terminé",
+      "missed": "Manqué",
+      "failed": "Échoué",
+      "voicemail": "Messagerie vocale",
+      "fraud": "Fraude",
+      "processing": "En cours",
+      "rejected": "Refusé"
+    },
+    "outcome": {
+      "serious": "Sérieux",
+      "voicemail": "Messagerie vocale",
+      "unreachable": "Injoignables",
+      "fraud": "Fraude détectée",
+      "wrong_number": "Faux numéro",
+      "too_short": "Raccrochage immédiat"
+    },
+    "analysis": {
+      "requestedByRep": "Analyse demandée par le rep"
+    },
+    "ai": {
+      "approved": "Validé par l’IA",
+      "approvedWithAmount": "Validé par l’IA (-{{amount}} €)",
+      "rejected": "Refusé par l’IA",
+      "pendingAnalysis": "Analyse en attente"
+    },
+    "transaction": {
+      "validationSuccess": "Transaction validée par votre entreprise",
+      "rejectionSuccess": "Transaction refusée",
+      "validationCancelled": "Validation de la transaction annulée",
+      "updateError": "Impossible de mettre à jour la validation",
+      "validationError": "Erreur lors de la validation",
+      "validatedByCompany": "Validée par l’entreprise",
+      "awaitingValidation": "En attente de validation",
+      "signedWithAmount": "Signée (-{{amount}} €)"
+    },
+    "actions": {
+      "validate": "Valider",
+      "reject": "Refuser",
+      "notSigned": "Non signée",
+      "validateTransaction": "Valider la transaction",
+      "markNotSigned": "Marquer comme non signée",
+      "viewDetails": "Voir les détails",
+      "analyzing": "Analyse…",
+      "analyzeTranscribe": "Analyser et transcrire",
+      "reanalyzing": "Nouvelle analyse…",
+      "reanalyze": "Relancer l’analyse",
+      "closeDetails": "Fermer les détails"
+    },
+    "metrics": {
+      "fluency": "Aisance de l’agent",
+      "sentiment": "Analyse du sentiment",
+      "fraud": "Détection de fraude",
+      "coherence": "Respect du script",
+      "argumentation": "Qualité de l’argumentation",
+      "transaction": "Analyse de la transaction"
+    },
+    "prospectMetrics": {
+      "notInterested": "Pas intéressé",
+      "notAware": "Pas au courant",
+      "alreadyEquipped": "Déjà équipé / fourni",
+      "appointment": "Prise de rendez-vous",
+      "callback": "Plus tard / rappel"
+    },
+    "modal": {
+      "title": "Détails de l’appel",
+      "noRecording": "Aucun enregistrement",
+      "tabs": {
+        "transcript": "Transcription",
+        "insights": "Analyse IA"
+      },
+      "aiDecision": "Décision de l’IA",
+      "call": "Appel",
+      "transaction": "Transaction",
+      "transactionShort": "Trans.",
+      "yourChoice": "Votre choix",
+      "transcriptUnavailable": "Transcription indisponible pour cet appel",
+      "analysisUnavailable": "Aucune analyse disponible pour cet appel",
+      "overallScore": "Score global",
+      "score": "Score",
+      "analysisCompleted": "Analyse détaillée terminée.",
+      "prospectResponses": "Statuts et réponses du prospect",
+      "detected": "Détecté",
+      "noQuote": "Aucune citation détectée.",
+      "standardPerformance": "L’agent a fourni une performance standard.",
+      "overallAiEvaluation": "Évaluation globale par l’IA"
     }
+  },
+  "approvalPublishing": {
+    "title": "Validation et publication",
+    "subtitle": "Activez vos gigs et commencez à recevoir des candidatures",
+    "loading": {
+      "subtitle": "Chargement de vos gigs…",
+      "syncing": "Synchronisation des données…"
+    },
+    "error": {
+      "subtitle": "Une erreur est survenue"
+    },
+    "errors": {
+      "fetchGigs": "Impossible de charger les gigs.",
+      "approveGig": "Impossible d’activer le gig.",
+      "rejectGig": "Impossible de désactiver le gig.",
+      "archiveGig": "Impossible d’archiver le gig.",
+      "previewGig": "Impossible d’ouvrir l’aperçu du gig.",
+      "editGig": "Impossible d’ouvrir l’éditeur du gig."
+    },
+    "preview": {
+      "title": "Aperçu : {{title}}",
+      "subtitle": "Vérifiez toutes les informations avant la mise en ligne"
+    },
+    "edit": {
+      "title": "Modifier : {{title}}",
+      "subtitle": "Affinez les caractéristiques de votre gig",
+      "multiSelectActivities": "Maintenez Ctrl/Cmd pour sélectionner plusieurs activités",
+      "multiSelectIndustries": "Maintenez Ctrl/Cmd pour sélectionner plusieurs secteurs",
+      "baseCommissionHint": "Définissez le tarif fixe et ses conditions",
+      "transactionCommissionHint": "Définissez la rémunération par transaction",
+      "performanceBonusHint": "Définissez les primes liées aux performances",
+      "currencyHint": "Sélectionnez la devise de toutes les commissions"
+    },
+    "sections": {
+      "basicInfo": "Informations générales",
+      "activitiesIndustries": "Activités et secteurs",
+      "seniority": "Expérience requise",
+      "skillsLanguages": "Compétences et langues",
+      "schedule": "Horaires et disponibilités",
+      "commission": "Commission et rémunération",
+      "team": "Structure de l’équipe",
+      "baseCommission": "Commission de base",
+      "minimumRequirements": "Conditions minimales",
+      "transactionCommission": "Commission par transaction",
+      "performanceBonus": "Prime de performance",
+      "currency": "Paramètres de devise"
+    },
+    "fields": {
+      "title": "Titre",
+      "gigTitle": "Titre du gig",
+      "category": "Catégorie",
+      "status": "Statut",
+      "destinationZone": "Zone de destination",
+      "company": "Entreprise",
+      "created": "Créé",
+      "updated": "Mis à jour",
+      "description": "Description",
+      "activities": "Activités",
+      "industries": "Secteurs",
+      "level": "Niveau",
+      "seniorityLevel": "Niveau d’expérience",
+      "yearsExperience": "Années d’expérience",
+      "professionalSkills": "Compétences professionnelles",
+      "technicalSkills": "Compétences techniques",
+      "softSkills": "Compétences comportementales",
+      "languages": "Langues",
+      "timeZone": "Fuseau horaire",
+      "flexibility": "Flexibilité",
+      "weeklySchedule": "Planning hebdomadaire",
+      "minimumHoursDaily": "Heures minimales (par jour)",
+      "minimumHoursWeekly": "Heures minimales (par semaine)",
+      "minimumHoursMonthly": "Heures minimales (par mois)",
+      "base": "Base",
+      "baseAmount": "Montant de base",
+      "bonus": "Prime",
+      "bonusAmount": "Montant de la prime",
+      "transactionCommission": "Commission par transaction",
+      "commissionAmount": "Montant de la commission",
+      "minimumVolume": "Volume minimum",
+      "additionalDetails": "Informations complémentaires",
+      "teamSize": "Taille de l’équipe",
+      "territories": "Territoires",
+      "teamStructure": "Structure de l’équipe",
+      "country": "Pays",
+      "perCallCompensation": "Rémunération par appel",
+      "targetAmount": "Objectif",
+      "unit": "Unité",
+      "period": "Période",
+      "currency": "Devise"
+    },
+    "empty": {
+      "activities": "Aucune activité renseignée",
+      "industries": "Aucun secteur renseigné",
+      "professionalSkills": "Aucune compétence professionnelle renseignée",
+      "technicalSkills": "Aucune compétence technique renseignée",
+      "softSkills": "Aucune compétence comportementale renseignée",
+      "languages": "Aucune langue renseignée",
+      "flexibility": "Aucune option de flexibilité renseignée",
+      "schedule": "Aucun planning renseigné",
+      "territories": "Aucun territoire renseigné",
+      "teamStructure": "Aucune structure d’équipe renseignée",
+      "filtered": "Aucun gig ne correspond au filtre actuel."
+    },
+    "fallback": {
+      "notSpecified": "Non renseigné",
+      "notAvailable": "Indisponible",
+      "unknown": "Inconnu",
+      "na": "N/D",
+      "company": "Entreprise",
+      "noCategory": "Aucune catégorie",
+      "skill": "Compétence {{id}}"
+    },
+    "dates": {
+      "invalid": "Date invalide",
+      "justNow": "À l’instant",
+      "hoursAgo_one": "Il y a {{count}} heure",
+      "hoursAgo_other": "Il y a {{count}} heures",
+      "daysAgo_one": "Il y a {{count}} jour",
+      "daysAgo_other": "Il y a {{count}} jours"
+    },
+    "status": {
+      "toActivate": "À activer",
+      "pending": "En attente",
+      "draft": "Brouillon",
+      "submitted": "Soumis",
+      "approved": "Approuvé",
+      "active": "Actif",
+      "published": "Publié",
+      "rejected": "Rejeté",
+      "declined": "Refusé",
+      "cancelled": "Annulé",
+      "inactive": "Inactif",
+      "archived": "Archivé"
+    },
+    "actions": {
+      "retry": "Réessayer",
+      "editDetails": "Modifier les détails",
+      "cancel": "Annuler",
+      "saveChanges": "Enregistrer les modifications",
+      "updateSchedule": "Mettre à jour le planning",
+      "addSchedule": "Ajouter un planning",
+      "activate": "Activer",
+      "approve": "Approuver",
+      "reject": "Rejeter",
+      "deactivate": "Désactiver",
+      "archive": "Archiver",
+      "close": "Fermer"
+    },
+    "placeholders": {
+      "gigTitle": "Saisissez le titre du gig",
+      "description": "Saisissez la description du gig",
+      "category": "Saisissez une catégorie",
+      "destinationZone": "Saisissez la zone de destination",
+      "yearsExperience": "Saisissez le nombre d’années d’expérience",
+      "amountPerCall": "Saisissez le montant par appel",
+      "target": "Saisissez l’objectif",
+      "amount": "Saisissez le montant",
+      "bonusAmount": "Saisissez le montant de la prime",
+      "teamSize": "Saisissez la taille de l’équipe",
+      "territories": "Saisissez les territoires (séparés par des virgules)",
+      "timeZone": "Saisissez le fuseau horaire",
+      "flexibility": "Saisissez les options de flexibilité (séparées par des virgules)",
+      "hours": "Heures"
+    },
+    "select": {
+      "level": "Sélectionnez un niveau",
+      "unit": "Sélectionnez une unité",
+      "period": "Sélectionnez une période",
+      "currency": "Sélectionnez une devise"
+    },
+    "seniority": {
+      "entry": "Débutant",
+      "mid": "Intermédiaire",
+      "senior": "Confirmé",
+      "expert": "Expert"
+    },
+    "units": {
+      "calls": "Appels",
+      "sales": "Ventes",
+      "transactions": "Transactions"
+    },
+    "periods": {
+      "daily": "Quotidien",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuel"
+    },
+    "weekdays": {
+      "monday": "Lundi",
+      "tuesday": "Mardi",
+      "wednesday": "Mercredi",
+      "thursday": "Jeudi",
+      "friday": "Vendredi",
+      "saturday": "Samedi",
+      "sunday": "Dimanche"
+    },
+    "schedule": {
+      "workingDays": "Jours travaillés",
+      "workingHours": "Horaires de travail",
+      "startTime": "Heure de début",
+      "endTime": "Heure de fin",
+      "current": "Plannings actuels",
+      "minimumHours": "Heures minimales",
+      "display": "{{days}}, de {{start}} à {{end}}",
+      "presets": {
+        "early": "Tôt",
+        "late": "Tard",
+        "evening": "Soir"
+      }
+    },
+    "filters": {
+      "all": "Tous les gigs"
+    },
+    "selection": {
+      "selected": "{{selected}} sur {{total}} sélectionné(s)",
+      "pending_one": "{{count}} approbation en attente",
+      "pending_other": "{{count}} approbations en attente"
+    },
+    "issues": {
+      "title": "Points à vérifier"
+    },
+    "balance": {
+      "singleError": "Solde insuffisant. Alimentez votre compte pour activer ce gig.",
+      "bulkError": "Solde insuffisant. Alimentez votre compte pour activer ces gigs.",
+      "singleTooltip": "Solde insuffisant — alimentez votre compte pour activer ce gig",
+      "bulkTooltip": "Solde insuffisant — alimentez votre compte pour activer vos gigs",
+      "warningTitle": "Attention : solde insuffisant ({{balance}} €)",
+      "warningBody": "Votre solde actuel est de {{balance}} €. Alimentez votre compte pour activer ou approuver des gigs. Dans le cas contraire, vos reps ne pourront pas commencer à travailler.",
+      "topUp": "Alimenter mon compte"
+    },
+    "yearsCount_one": "{{count}} an",
+    "yearsCount_other": "{{count}} ans"
   }
 }

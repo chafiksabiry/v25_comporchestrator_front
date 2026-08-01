@@ -17,7 +17,6 @@ import {
   ChevronRight,
   Database,
   CheckCircle2,
-  Hourglass,
   Repeat,
   ShieldCheck,
   ListChecks,
@@ -1339,8 +1338,8 @@ export default function OperationsDashboard() {
           <div ref={gigDropdownRef} className="relative">
             <button
               onClick={() => setGigDropdownOpen((v) => !v)}
-              className={`flex items-center gap-2 rounded-xl border bg-white px-4 py-2 text-[12px] font-bold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 ${
-                gigDropdownOpen ? 'border-harx-500 ring-1 ring-harx-500/20' : 'border-slate-200'
+              className={`flex items-center gap-2 rounded-xl border bg-white px-4 py-2 text-[12px] font-bold text-slate-800 shadow-harx transition-colors hover:bg-slate-50 ${
+                gigDropdownOpen ? 'border-slate-400 ring-1 ring-slate-900/10' : 'border-harx-border'
               }`}
               aria-haspopup="listbox"
               aria-expanded={gigDropdownOpen}
@@ -1355,7 +1354,7 @@ export default function OperationsDashboard() {
             </button>
 
             {gigDropdownOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {t('opsDashboard.header.pickGig', 'Sélectionner un gig')}
                 </div>
@@ -1364,14 +1363,14 @@ export default function OperationsDashboard() {
                     <button
                       onClick={() => handlePickGig('all')}
                       className={`flex w-full items-center justify-between px-3 py-2 text-left text-[12px] font-bold transition-colors hover:bg-slate-50 ${
-                        selectedGigId === 'all' ? 'bg-harx-500/10 text-harx-700' : 'text-slate-700'
+                        selectedGigId === 'all' ? 'bg-slate-100 text-harx-ink' : 'text-slate-700'
                       }`}
                       role="option"
                       aria-selected={selectedGigId === 'all'}
                     >
                       <span>{t('opsDashboard.header.allGigs', 'Tous les gigs')}</span>
                       {selectedGigId === 'all' && (
-                        <CheckCircle2 size={14} className="text-harx-500" />
+                        <CheckCircle2 size={14} className="text-harx-ink" />
                       )}
                     </button>
                   </li>
@@ -1385,7 +1384,7 @@ export default function OperationsDashboard() {
                         <button
                           onClick={() => handlePickGig(g._id)}
                           className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[12px] font-bold transition-colors hover:bg-slate-50 ${
-                            selectedGigId === g._id ? 'bg-harx-500/10 text-harx-700' : 'text-slate-700'
+                            selectedGigId === g._id ? 'bg-slate-100 text-harx-ink' : 'text-slate-700'
                           }`}
                           role="option"
                           aria-selected={selectedGigId === g._id}
@@ -1393,7 +1392,7 @@ export default function OperationsDashboard() {
                         >
                           <span className="truncate">{g.title}</span>
                           {selectedGigId === g._id && (
-                            <CheckCircle2 size={14} className="shrink-0 text-harx-500" />
+                            <CheckCircle2 size={14} className="shrink-0 text-harx-ink" />
                           )}
                         </button>
                       </li>
@@ -1408,8 +1407,8 @@ export default function OperationsDashboard() {
             <button
               type="button"
               onClick={() => setPeriodDropdownOpen((v) => !v)}
-              className={`flex items-center gap-2 rounded-xl border bg-white px-4 py-2 text-[12px] font-bold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 ${
-                periodDropdownOpen ? 'border-harx-500 ring-1 ring-harx-500/20' : 'border-slate-200'
+              className={`flex items-center gap-2 rounded-xl border bg-white px-4 py-2 text-[12px] font-bold text-slate-800 shadow-harx transition-colors hover:bg-slate-50 ${
+                periodDropdownOpen ? 'border-slate-400 ring-1 ring-slate-900/10' : 'border-harx-border'
               }`}
               aria-haspopup="listbox"
               aria-expanded={periodDropdownOpen}
@@ -1425,7 +1424,7 @@ export default function OperationsDashboard() {
             </button>
 
             {periodDropdownOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {t('opsDashboard.header.pickPeriod', 'Période')}
                 </div>
@@ -1436,7 +1435,7 @@ export default function OperationsDashboard() {
                         type="button"
                         onClick={() => handlePickPeriod(periodId)}
                         className={`flex w-full items-center justify-between px-3 py-2 text-left text-[12px] font-bold transition-colors hover:bg-slate-50 ${
-                          selectedPeriodId === periodId ? 'bg-harx-500/10 text-harx-700' : 'text-slate-700'
+                          selectedPeriodId === periodId ? 'bg-slate-100 text-harx-ink' : 'text-slate-700'
                         }`}
                         role="option"
                         aria-selected={selectedPeriodId === periodId}
@@ -1454,7 +1453,7 @@ export default function OperationsDashboard() {
                           })}
                         </span>
                         {selectedPeriodId === periodId && (
-                          <CheckCircle2 size={14} className="shrink-0 text-harx-500" />
+                          <CheckCircle2 size={14} className="shrink-0 text-harx-ink" />
                         )}
                       </button>
                     </li>
@@ -1477,7 +1476,7 @@ export default function OperationsDashboard() {
                         onChange={(e) =>
                           setCustomPeriodDraft((prev) => ({ ...prev, from: e.target.value }))
                         }
-                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-800 focus:border-harx-500 focus:outline-none focus:ring-1 focus:ring-harx-500/30"
+                        className="w-full rounded-lg border border-harx-border bg-white px-2 py-1.5 text-[11px] font-bold text-slate-800 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900/10"
                       />
                     </label>
                     <label className="block">
@@ -1491,7 +1490,7 @@ export default function OperationsDashboard() {
                         onChange={(e) =>
                           setCustomPeriodDraft((prev) => ({ ...prev, to: e.target.value }))
                         }
-                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-800 focus:border-harx-500 focus:outline-none focus:ring-1 focus:ring-harx-500/30"
+                        className="w-full rounded-lg border border-harx-border bg-white px-2 py-1.5 text-[11px] font-bold text-slate-800 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900/10"
                       />
                     </label>
                   </div>
@@ -1566,11 +1565,11 @@ export default function OperationsDashboard() {
               onClick={() => setTab(tabItem.id)}
               className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all ${
                 active
-                  ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                  ? 'border-harx-ink bg-harx-ink text-white shadow-harx'
+                  : 'border-harx-border bg-white text-slate-600 hover:border-slate-300 hover:bg-white'
               }`}
             >
-              <span className={active ? 'text-white' : 'text-slate-500'}>{tabItem.icon}</span>
+              <span className={active ? 'text-white' : 'text-slate-400'}>{tabItem.icon}</span>
               {tabItem.label}
             </button>
           );
@@ -1712,6 +1711,10 @@ function LeadsView({
   callbacksStats: CallbacksStats | null;
 }) {
   const { t } = useTranslation();
+  const [selectedKpi, setSelectedKpi] = useState<'total' | 'contacted' | 'converted' | null>(null);
+  const toggleKpi = (id: 'total' | 'contacted' | 'converted') => {
+    setSelectedKpi((prev) => (prev === id ? null : id));
+  };
   // Strict company scope: when the company has no leads yet, show zeros
   // — never another company's mock numbers.
   const EMPTY_BUCKET = { count: 0, pct: 0 };
@@ -1749,6 +1752,12 @@ function LeadsView({
   const inProgressPct = status.inProgress.pct + status.other.pct;
   const convertedCount = status.appointment.count + status.won.count;
   const convertedPct = status.appointment.pct + status.won.pct;
+  const contactedCount = leadStats?.contacted ?? 0;
+  const contactedPct = baseCount > 0 ? (contactedCount / baseCount) * 100 : 0;
+  const calledCount = leadStats?.called ?? 0;
+  const calledPct = baseCount > 0 ? (calledCount / baseCount) * 100 : 0;
+  const fmtCount = (n: number) => n.toLocaleString('fr-FR');
+  const pctLabel = (pct: number) => statusSub(pct);
 
   // Base-quality buckets — strictly real company data, zeros if empty.
   const EMPTY_QUALITY = {
@@ -1900,33 +1909,68 @@ function LeadsView({
           label={t('opsDashboard.leads.kpi.totalBase', 'Base totale')}
           value={baseCount.toLocaleString('fr-FR')}
           sub={baseLabel}
+          selected={selectedKpi === 'total'}
+          onClick={() => toggleKpi('total')}
         />
-        {(() => {
-          const contactedCount = leadStats?.contacted ?? 0;
-          const contactedPct = baseCount > 0 ? (contactedCount / baseCount) * 100 : 0;
-          return (
-            <KpiCard
-              tone="default"
-              icon={<PhoneCall size={14} className="text-harx-500" />}
-              label={t('opsDashboard.leads.kpi.contacted', 'Leads contactés')}
-              value={contactedCount.toLocaleString('fr-FR')}
-              sub={statusSub(contactedPct)}
-            />
-          );
-        })()}
+        <KpiCard
+          tone="default"
+          icon={<PhoneCall size={14} className="text-harx-500" />}
+          label={t('opsDashboard.leads.kpi.contacted', 'Leads contactés')}
+          value={contactedCount.toLocaleString('fr-FR')}
+          sub={statusSub(contactedPct)}
+          selected={selectedKpi === 'contacted'}
+          onClick={() => toggleKpi('contacted')}
+        />
         <KpiCard
           tone="default"
           icon={<CalendarClock size={14} className="text-emerald-500" />}
           label={t('opsDashboard.leads.kpi.statusConverted', 'RDV & convertis')}
           value={convertedCount.toLocaleString('fr-FR')}
           sub={statusSub(convertedPct)}
+          selected={selectedKpi === 'converted'}
+          onClick={() => toggleKpi('converted')}
         />
       </div>
+
+      {selectedKpi === 'total' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.leads.kpi.totalBase', 'Base totale')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.leads.kpi.totalBase', 'Base totale')} value={fmtCount(baseCount)} />
+          <DetailRow label={t('opsDashboard.overview.detail.leadsCalled', 'Appelés ≥ 1 fois')} value={`${fmtCount(calledCount)} (${pctLabel(calledPct)})`} />
+          <DetailRow label={t('opsDashboard.overview.detail.leadsContacted', 'Contactés')} value={`${fmtCount(contactedCount)} (${pctLabel(contactedPct)})`} />
+          <DetailRow label={t('opsDashboard.leads.kpi.statusConverted', 'RDV & convertis')} value={`${fmtCount(convertedCount)} (${pctLabel(convertedPct)})`} />
+          <DetailRow label={t('opsDashboard.leads.qualityTitle', 'Qualité de la base')} value={`${fmtPct(qualityScorePct)}%`} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'contacted' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.leads.kpi.contacted', 'Leads contactés')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.leads.kpi.contacted', 'Contactés')} value={fmtCount(contactedCount)} />
+          <DetailRow label={t('opsDashboard.leads.kpi.statusSub', { pct: fmtPct(contactedPct), defaultValue: '{{pct}}% de la base' })} value={pctLabel(contactedPct)} />
+          <DetailRow label={t('opsDashboard.overview.detail.leadsCalled', 'Appelés ≥ 1 fois')} value={`${fmtCount(calledCount)} (${pctLabel(calledPct)})`} />
+          <DetailRow label={t('opsDashboard.leads.kpi.totalBase', 'Base totale')} value={fmtCount(baseCount)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'converted' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.leads.kpi.statusConverted', 'RDV & convertis')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.overview.donut.appointment', 'RDV')} value={`${fmtCount(status.appointment.count)} (${pctLabel(status.appointment.pct)})`} />
+          <DetailRow label={t('opsDashboard.results.kpi.transactions', 'Convertis')} value={`${fmtCount(status.won.count)} (${pctLabel(status.won.pct)})`} />
+          <DetailRow label={t('opsDashboard.leads.kpi.statusConverted', 'Total RDV & convertis')} value={`${fmtCount(convertedCount)} (${pctLabel(convertedPct)})`} />
+          <DetailRow label={t('opsDashboard.leads.kpi.totalBase', 'Base totale')} value={fmtCount(baseCount)} />
+        </InlineKpiDetailPanel>
+      )}
 
       {/* ---------- Quality of base + Attempt distribution ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Qualité de la base */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-black text-slate-900">
               <ShieldCheck size={14} className="text-harx-500" />
@@ -1982,7 +2026,7 @@ function LeadsView({
         </section>
 
         {/* Distribution tentatives + Rappels programmés */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
             <ListChecks size={14} className="text-harx-500" />
             {t('opsDashboard.leads.attemptsTitle', 'Distribution tentatives')}
@@ -2055,7 +2099,7 @@ function LeadsView({
       </div>
 
       {/* ---------- Coverage progression per rep ---------- */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
           <Trophy size={14} className="text-harx-500" />
           {t('opsDashboard.leads.coverageTitle', 'Progression de couverture — par rep')}
@@ -2301,7 +2345,7 @@ function ResultsView({
       {/* Issues + visual breakdown */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Issues des appels sérieux */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-black text-slate-900">
               <BarChart3 size={14} className="text-harx-500" />
@@ -2333,7 +2377,7 @@ function ResultsView({
         </section>
 
         {/* Répartition visuelle */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
             <PieChart size={14} className="text-harx-500" />
             {t('opsDashboard.results.distributionTitle', 'Répartition visuelle')}
@@ -2376,7 +2420,7 @@ function ResultsView({
       </div>
 
       {/* Issues par rep — table */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-black text-slate-900">
             <Users size={14} className="text-harx-500" />
@@ -2545,6 +2589,12 @@ const TEAM_PALETTE = [
 
 function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
   const { t } = useTranslation();
+  const [selectedKpi, setSelectedKpi] = useState<
+    'enrolled' | 'active' | 'atRisk' | 'avgScore' | 'invitations' | null
+  >(null);
+  const toggleKpi = (id: 'enrolled' | 'active' | 'atRisk' | 'avgScore' | 'invitations') => {
+    setSelectedKpi((prev) => (prev === id ? null : id));
+  };
 
   const reps: RepLeaderboard[] = useMemo(() => {
     if (!repsApi?.length) return [];
@@ -2588,6 +2638,8 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')}
           value={teamKpis.enrolled.toLocaleString('fr-FR')}
           sub={t('opsDashboard.team.kpi.enrolledSub', 'reps avec appels')}
+          selected={selectedKpi === 'enrolled'}
+          onClick={() => toggleKpi('enrolled')}
         />
         <KpiCard
           tone="default"
@@ -2599,6 +2651,8 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
               ? `${Math.round((teamKpis.active / teamKpis.enrolled) * 100)}%`
               : '—'
           }
+          selected={selectedKpi === 'active'}
+          onClick={() => toggleKpi('active')}
         />
         <KpiCard
           tone="default"
@@ -2614,6 +2668,8 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           value={teamKpis.atRisk.toLocaleString('fr-FR')}
           sub={t('opsDashboard.team.kpi.atRiskSub', 'score < 50')}
           subTone="rose"
+          selected={selectedKpi === 'atRisk'}
+          onClick={() => toggleKpi('atRisk')}
         />
         <KpiCard
           tone="default"
@@ -2621,6 +2677,8 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           label={t('opsDashboard.team.kpi.avgScore', 'Score moyen')}
           value={`${teamKpis.avgScore}/100`}
           sub={t('opsDashboard.team.kpi.avgScoreSub', 'MTD')}
+          selected={selectedKpi === 'avgScore'}
+          onClick={() => toggleKpi('avgScore')}
         />
         <KpiCard
           tone="default"
@@ -2628,11 +2686,69 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           label={t('opsDashboard.team.kpi.invitations', 'Invitations')}
           value="—"
           sub={t('opsDashboard.team.kpi.invitationsSub', 'en attente')}
+          selected={selectedKpi === 'invitations'}
+          onClick={() => toggleKpi('invitations')}
         />
       </div>
 
+      {selectedKpi === 'enrolled' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.team.kpi.enrolled', 'Enrollés')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')} value={teamKpis.enrolled.toLocaleString('fr-FR')} />
+          <DetailRow label={t('opsDashboard.team.kpi.activeWeek', 'Actifs (MTD)')} value={teamKpis.active.toLocaleString('fr-FR')} />
+          <DetailRow label={t('opsDashboard.team.kpi.atRisk', 'À risque')} value={teamKpis.atRisk.toLocaleString('fr-FR')} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'active' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.team.kpi.activeWeek', 'Actifs (MTD)')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.team.kpi.activeWeek', 'Actifs')} value={teamKpis.active.toLocaleString('fr-FR')} />
+          <DetailRow
+            label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')}
+            value={teamKpis.enrolled.toLocaleString('fr-FR')}
+          />
+          <DetailRow
+            label={t('opsDashboard.overview.kpi.rate', 'Taux')}
+            value={teamKpis.enrolled > 0 ? `${Math.round((teamKpis.active / teamKpis.enrolled) * 100)}%` : '—'}
+          />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'atRisk' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.team.kpi.atRisk', 'À risque')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.team.kpi.atRisk', 'À risque')} value={teamKpis.atRisk.toLocaleString('fr-FR')} />
+          <DetailRow label={t('opsDashboard.team.kpi.atRiskSub', 'score < 50')} value={t('opsDashboard.team.kpi.atRiskSub', 'score < 50')} muted />
+          <DetailRow label={t('opsDashboard.team.kpi.avgScore', 'Score moyen')} value={`${teamKpis.avgScore}/100`} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'avgScore' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.team.kpi.avgScore', 'Score moyen')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.team.kpi.avgScore', 'Score moyen')} value={`${teamKpis.avgScore}/100`} />
+          <DetailRow label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')} value={teamKpis.enrolled.toLocaleString('fr-FR')} />
+          <DetailRow label={t('opsDashboard.team.kpi.atRisk', 'À risque')} value={teamKpis.atRisk.toLocaleString('fr-FR')} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'invitations' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.team.kpi.invitations', 'Invitations')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.team.kpi.invitations', 'Invitations')} value="—" />
+          <DetailRow label={t('opsDashboard.team.kpi.invitationsSub', 'en attente')} value={t('opsDashboard.team.kpi.lmsPending', 'bientôt')} muted />
+        </InlineKpiDetailPanel>
+      )}
+
       {/* Leaderboard */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
           <Trophy size={14} className="text-harx-500" />
           {t('opsDashboard.team.leaderboardTitle', 'Leaderboard — transactions ce mois')}
@@ -3081,10 +3197,10 @@ function OverviewView({
       {/* ---------- Couverture leads + Résultats d'appels (donut) ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Couverture leads */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-5 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
-              <Users size={14} className="text-rose-500" />
+            <div className="flex items-center gap-2 text-sm font-black text-harx-ink">
+              <Users size={14} className="text-harx-500" />
               {t('opsDashboard.overview.coverage.title', 'Couverture leads')}
             </div>
             <button
@@ -3127,10 +3243,10 @@ function OverviewView({
         </section>
 
         {/* Résultats d'appels (aujourd'hui) */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-5 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-black text-slate-900">
-              <PieChart size={14} className="text-rose-500" />
+              <PieChart size={14} className="text-harx-500" />
               {outcomesTitle}
             </div>
           </header>
@@ -3169,7 +3285,7 @@ function OverviewView({
       </div>
 
       {/* ---------- Agents (aperçu) ---------- */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-black text-slate-900">
             <UserCheck size={14} className="text-harx-500" />
@@ -3310,7 +3426,7 @@ function OverviewResourcesSection({
     });
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
+    <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx space-y-5">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="flex items-center gap-2 text-sm font-black text-slate-900">
@@ -3798,6 +3914,37 @@ function DetailRow({
   );
 }
 
+function InlineKpiDetailPanel({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <section className="rounded-2xl border border-harx-200 bg-harx-50/40 p-4 shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
+      <header className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-black text-slate-900">{title}</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
+          aria-label={t('common.close', 'Fermer')}
+        >
+          <XCircle size={16} />
+        </button>
+      </header>
+      <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+        {children}
+      </div>
+    </section>
+  );
+}
+
 /** Horizontal coverage bar used in the "Couverture leads" card. */
 function CoverageRow({
   label,
@@ -3874,6 +4021,33 @@ function CallsView({
   fmtDuration: (sec: number) => string;
 }) {
   const { t } = useTranslation();
+  const [selectedKpi, setSelectedKpi] = useState<
+    | 'total'
+    | 'serious'
+    | 'voicemail'
+    | 'unreachable'
+    | 'fraud'
+    | 'avgDuration'
+    | 'wrong-number'
+    | 'hangup'
+    | null
+  >(null);
+  const recentCallsRef = useRef<HTMLElement>(null);
+
+  const toggleKpi = (
+    id: 'total' | 'serious' | 'voicemail' | 'unreachable' | 'fraud' | 'avgDuration' | 'wrong-number' | 'hangup'
+  ) => {
+    setSelectedKpi((prev) => (prev === id ? null : id));
+  };
+
+  const statusKpiId = (key: string) => {
+    if (key === 'wrong-number') return 'wrong-number' as const;
+    if (key === 'hangup') return 'hangup' as const;
+    return key as 'serious' | 'voicemail' | 'unreachable' | 'fraud';
+  };
+
+  const fmtCount = (n: number) => n.toLocaleString('fr-FR');
+  const pctLabel = (pct: number) => `${pct.toFixed(1)}%`;
 
   return (
     <>
@@ -3885,6 +4059,8 @@ function CallsView({
           label={t('opsDashboard.kpi.totalToday', 'Total aujourd\'hui')}
           value={stats.total.toLocaleString('fr-FR')}
           sub={t('opsDashboard.kpi.allStatus', 'tous statuts')}
+          selected={selectedKpi === 'total'}
+          onClick={() => toggleKpi('total')}
         />
         <KpiCard
           tone="default"
@@ -3892,6 +4068,8 @@ function CallsView({
           label={t('opsDashboard.kpi.serious', 'Sérieux')}
           value={stats.serious.toLocaleString('fr-FR')}
           sub={`${stats.pctSerious.toFixed(1)}%`}
+          selected={selectedKpi === 'serious'}
+          onClick={() => toggleKpi('serious')}
         />
         <KpiCard
           tone="default"
@@ -3899,6 +4077,8 @@ function CallsView({
           label={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')}
           value={stats.voicemail.toLocaleString('fr-FR')}
           sub={`${stats.pctVoicemail.toFixed(1)}%`}
+          selected={selectedKpi === 'voicemail'}
+          onClick={() => toggleKpi('voicemail')}
         />
         <KpiCard
           tone="default"
@@ -3906,6 +4086,8 @@ function CallsView({
           label={t('opsDashboard.kpi.unreachable', 'Injoignables')}
           value={stats.unreachable.toLocaleString('fr-FR')}
           sub={`${stats.pctUnreachable.toFixed(1)}%`}
+          selected={selectedKpi === 'unreachable'}
+          onClick={() => toggleKpi('unreachable')}
         />
         <KpiCard
           tone="dark"
@@ -3914,6 +4096,8 @@ function CallsView({
           value={stats.fraud.toLocaleString('fr-FR')}
           sub={t('opsDashboard.kpi.toReview', 'à examiner')}
           subTone="rose"
+          selected={selectedKpi === 'fraud'}
+          onClick={() => toggleKpi('fraud')}
         />
         <KpiCard
           tone="default"
@@ -3921,12 +4105,99 @@ function CallsView({
           label={t('opsDashboard.kpi.avgDuration', 'Durée moy.')}
           value={fmtDuration(stats.avgDurationSec)}
           sub={t('opsDashboard.kpi.seriousCalls', 'appels sérieux')}
+          selected={selectedKpi === 'avgDuration'}
+          onClick={() => toggleKpi('avgDuration')}
         />
       </div>
 
+      {selectedKpi === 'total' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.totalToday', 'Total aujourd\'hui')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.totalToday', 'Total')} value={fmtCount(stats.total)} />
+          <DetailRow label={t('opsDashboard.kpi.serious', 'Sérieux')} value={`${fmtCount(stats.serious)} (${pctLabel(stats.pctSerious)})`} />
+          <DetailRow label={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')} value={`${fmtCount(stats.voicemail)} (${pctLabel(stats.pctVoicemail)})`} />
+          <DetailRow label={t('opsDashboard.kpi.unreachable', 'Injoignables')} value={`${fmtCount(stats.unreachable)} (${pctLabel(stats.pctUnreachable)})`} />
+          <DetailRow label={t('opsDashboard.kpi.fraud', 'Fraude détectée')} value={fmtCount(stats.fraud)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'serious' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.serious', 'Sérieux')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.serious', 'Sérieux')} value={fmtCount(stats.serious)} />
+          <DetailRow label={t('opsDashboard.overview.kpi.rate', 'Taux')} value={pctLabel(stats.pctSerious)} />
+          <DetailRow label={t('opsDashboard.kpi.avgDuration', 'Durée moy.')} value={fmtDuration(stats.avgDurationSec)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'voicemail' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.voicemail', 'Messagerie vocale')} value={fmtCount(stats.voicemail)} />
+          <DetailRow label={t('opsDashboard.overview.kpi.rate', 'Taux')} value={pctLabel(stats.pctVoicemail)} />
+          <DetailRow label={t('opsDashboard.mtd.voicemail', 'MSG VOCALE MTD')} value={fmtCount(mtd.voicemail)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'unreachable' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.unreachable', 'Injoignables')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.unreachable', 'Injoignables')} value={fmtCount(stats.unreachable)} />
+          <DetailRow label={t('opsDashboard.overview.kpi.rate', 'Taux')} value={pctLabel(stats.pctUnreachable)} />
+          <DetailRow label={t('opsDashboard.mtd.unreachable', 'INJOIGNABLES MTD')} value={fmtCount(mtd.unreachable)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'fraud' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.fraud', 'Fraude détectée')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.fraud', 'Fraude détectée')} value={fmtCount(stats.fraud)} />
+          <DetailRow label={t('opsDashboard.kpi.toReview', 'À examiner')} value={t('opsDashboard.kpi.toReview', 'à examiner')} muted />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'avgDuration' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.kpi.avgDuration', 'Durée moy.')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow label={t('opsDashboard.kpi.avgDuration', 'Durée moyenne')} value={fmtDuration(stats.avgDurationSec)} />
+          <DetailRow label={t('opsDashboard.kpi.seriousCalls', 'Appels sérieux')} value={fmtCount(stats.serious)} />
+          <DetailRow label={t('opsDashboard.kpi.totalToday', 'Total du jour')} value={fmtCount(stats.total)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'wrong-number' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.statuses.wrongNumber', 'Faux numéro')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow
+            label={t('opsDashboard.statuses.wrongNumber', 'Faux numéro')}
+            value={fmtCount(statuses.find((s) => s.key === 'wrong-number')?.count ?? 0)}
+          />
+          <DetailRow label={t('opsDashboard.mtd.wrongNumbers', 'FAUX NUMÉROS MTD')} value={fmtCount(mtd.wrongNumber)} />
+        </InlineKpiDetailPanel>
+      )}
+      {selectedKpi === 'hangup' && (
+        <InlineKpiDetailPanel
+          title={t('opsDashboard.statuses.hangup', 'Raccrochage immédiat')}
+          onClose={() => setSelectedKpi(null)}
+        >
+          <DetailRow
+            label={t('opsDashboard.statuses.hangup', 'Raccrochage immédiat')}
+            value={fmtCount(statuses.find((s) => s.key === 'hangup')?.count ?? 0)}
+          />
+        </InlineKpiDetailPanel>
+      )}
+
       {/* ---------- Statuses + Recent calls ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-black text-slate-900">
               <span className="inline-flex h-5 w-1.5 rounded-sm bg-harx-500" />
@@ -3939,7 +4210,14 @@ function CallsView({
 
           <div className="space-y-4">
             {statuses.map((s) => (
-              <div key={s.key}>
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => toggleKpi(statusKpiId(s.key))}
+                className={`w-full rounded-xl text-left transition-colors hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/30 px-1 -mx-1 ${
+                  selectedKpi === statusKpiId(s.key) ? 'bg-harx-50/60' : ''
+                }`}
+              >
                 <div className="mb-1 flex items-center justify-between">
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold ${s.pill}`}
@@ -3959,18 +4237,22 @@ function CallsView({
                     style={{ width: `${Math.max(0, Math.min(100, s.pct))}%` }}
                   />
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section ref={recentCallsRef} className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
           <header className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-black text-slate-900">
               <PhoneCall size={14} className="text-harx-500" />
               {t('opsDashboard.recentCallsTitle', 'Appels récents')}
             </div>
-            <button className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
+            <button
+              type="button"
+              onClick={() => recentCallsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50"
+            >
               {t('opsDashboard.seeAll', 'Voir tout')}
               <ArrowUpRight size={12} />
             </button>
@@ -4016,7 +4298,7 @@ function CallsView({
       <Performance7Days series={series7d} />
 
       {/* ---------- Voicemail & non-aboutis analysis ---------- */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-black text-slate-900">
             {t('opsDashboard.analysisTitle', 'Messagerie vocale & non aboutis — analyse')}
@@ -4156,12 +4438,21 @@ function WalletView({
   periodRange: { from: string; to: string };
 }) {
   const { t, i18n } = useTranslation();
+  const [selectedKpi, setSelectedKpi] = useState<'available' | 'spent' | 'burnRate' | null>(null);
+
+  const toggleKpi = (id: 'available' | 'spent' | 'burnRate') => {
+    setSelectedKpi((prev) => (prev === id ? null : id));
+  };
+
+  const scrollToMovements = () => {
+    movementsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const [walletEntries, setWalletEntries] = useState<WalletEntryListItem[]>([]);
   const [repTransactions, setRepTransactions] = useState<RepTransactionRow[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(0);
-  const [escrowOnHold, setEscrowOnHold] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const movementsRef = useRef<HTMLDivElement>(null);
   const [detail, setDetail] = useState<
     | { kind: 'rep'; data: RepTransactionRow }
     | { kind: 'wallet'; data: WalletEntryListItem }
@@ -4209,23 +4500,16 @@ function WalletView({
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [walletRes, repTxRes, balRes, escrowRes] = await Promise.all([
+        const [walletRes, repTxRes, balRes] = await Promise.all([
           fetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
           fetch(`${walletApi}/escrow/company/rep-transactions/${companyId}${gigQs}`).catch(() => null),
           fetch(`${walletApi}/wallet-company/${companyId}`).catch(() => null),
-          fetch(`${walletApi}/escrow/wallet/${companyId}`).catch(() => null),
         ]);
 
         if (balRes?.ok) {
           const json = await balRes.json();
           if (json?.success && json?.data) {
             setWalletBalance(Number(json.data.balance) || 0);
-          }
-        }
-        if (escrowRes?.ok) {
-          const json = await escrowRes.json();
-          if (json?.success && json?.data) {
-            setEscrowOnHold(Number(json.data.escrow) || 0);
           }
         }
 
@@ -4382,20 +4666,16 @@ function WalletView({
                   : 'ce mois',
         });
         return (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <KpiCard
               tone="primary"
               icon={<Wallet size={14} />}
               label={t('opsDashboard.wallet.kpi.available', 'Disponible')}
               value={fmtMoney(walletBalance)}
               sub={daysLeftLabel}
-            />
-            <KpiCard
-              tone="default"
-              icon={<Hourglass size={14} className="text-slate-500" />}
-              label={t('opsDashboard.wallet.kpi.onHold', 'On hold')}
-              value={fmtMoney(escrowOnHold)}
-              sub={t('opsDashboard.wallet.kpi.onHoldSub', 'en validation')}
+              selected={selectedKpi === 'available'}
+              onClick={() => toggleKpi('available')}
             />
             <KpiCard
               tone="default"
@@ -4403,6 +4683,8 @@ function WalletView({
               label={spentLabel}
               value={fmtMoney(spentInPeriod)}
               sub={spentSub}
+              selected={selectedKpi === 'spent'}
+              onClick={() => toggleKpi('spent')}
             />
             <KpiCard
               tone="dark"
@@ -4410,13 +4692,64 @@ function WalletView({
               label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')}
               value={fmtMoney(burnRatePerDay)}
               sub={t('opsDashboard.wallet.kpi.burnRateSub', 'par jour')}
+              selected={selectedKpi === 'burnRate'}
+              onClick={() => toggleKpi('burnRate')}
             />
           </div>
+
+          {selectedKpi === 'available' && (
+            <InlineKpiDetailPanel
+              title={t('opsDashboard.wallet.kpi.available', 'Disponible')}
+              onClose={() => setSelectedKpi(null)}
+            >
+              <DetailRow label={t('opsDashboard.wallet.kpi.available', 'Solde disponible')} value={fmtMoney(walletBalance)} />
+              <DetailRow label={t('opsDashboard.wallet.kpi.availableSubDays', { days: daysLeft?.toFixed(1) ?? '—', defaultValue: '{{days}} jours' })} value={daysLeftLabel} />
+              <DetailRow label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')} value={`${fmtMoney(burnRatePerDay)} / jour`} />
+            </InlineKpiDetailPanel>
+          )}
+          {selectedKpi === 'spent' && (
+            <InlineKpiDetailPanel
+              title={spentLabel}
+              onClose={() => setSelectedKpi(null)}
+            >
+              <DetailRow label={spentLabel} value={fmtMoney(spentInPeriod)} />
+              <DetailRow label={spentSub} value={t('opsDashboard.wallet.kpi.spentPeriodSub.30d', { defaultValue: '30 jours' })} muted />
+              <DetailRow label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate (30j)')} value={`${fmtMoney(spent30d / 30)} / jour`} />
+              <button
+                type="button"
+                onClick={scrollToMovements}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-harx-600 hover:text-harx-700"
+              >
+                {t('opsDashboard.wallet.seeMovements', 'Voir les mouvements')}
+                <ChevronRight size={12} />
+              </button>
+            </InlineKpiDetailPanel>
+          )}
+          {selectedKpi === 'burnRate' && (
+            <InlineKpiDetailPanel
+              title={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')}
+              onClose={() => setSelectedKpi(null)}
+            >
+              <DetailRow label={t('opsDashboard.wallet.kpi.burnRate', 'Burn rate')} value={`${fmtMoney(burnRatePerDay)} / jour`} />
+              <DetailRow label={t('opsDashboard.wallet.kpi.spentPeriod.30d', { defaultValue: 'Dépensé 30j' })} value={fmtMoney(spent30d)} />
+              <DetailRow label={t('opsDashboard.wallet.kpi.available', 'Solde disponible')} value={fmtMoney(walletBalance)} />
+              <button
+                type="button"
+                onClick={scrollToMovements}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-harx-600 hover:text-harx-700"
+              >
+                {t('opsDashboard.wallet.seeMovements', 'Voir les mouvements')}
+                <ChevronRight size={12} />
+              </button>
+            </InlineKpiDetailPanel>
+          )}
+          </>
         );
       })()}
 
       {/* Mouvements du portefeuille — unified date-sorted ledger */}
-      <WalletMovements
+      <div ref={movementsRef}>
+        <WalletMovements
         loading={loading}
         movements={unifiedMovements}
         onConsult={(item) => setDetail(item)}
@@ -4427,6 +4760,7 @@ function WalletView({
         formatDate={formatDate}
         labelForWallet={labelForWallet}
       />
+      </div>
 
       {/* Detail modal */}
       {detail && (
@@ -4477,7 +4811,7 @@ function WalletMovements({
   labelForWallet,
 }: WalletMovementsProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section className="rounded-harx border border-harx-border bg-white shadow-harx">
       {/* Header */}
       <header className="flex flex-col gap-3 border-b border-slate-100 p-5 md:flex-row md:items-start md:justify-between">
         <div>
@@ -4862,23 +5196,23 @@ function KpiCard({
 }) {
   const baseTone =
     tone === 'primary'
-      ? 'border-harx-500 bg-harx-500/10 ring-1 ring-harx-500/20'
+      ? 'border-[1.5px] border-harx-500 bg-harx-50'
       : tone === 'dark'
-      ? 'border-slate-900 bg-slate-900 text-white'
-      : 'border-slate-200 bg-white';
+      ? 'border-harx-ink bg-harx-ink text-white'
+      : 'border-harx-border bg-white';
 
   const selectedTone = selected
-    ? 'ring-2 ring-harx-500 border-harx-400 shadow-md'
+    ? 'ring-2 ring-harx-500/40 border-harx-500 shadow-harx-md'
     : '';
 
   const labelColor =
     tone === 'dark' ? 'text-slate-300' : tone === 'primary' ? 'text-harx-700' : 'text-slate-500';
-  const valueColor = tone === 'dark' ? 'text-white' : 'text-slate-900';
+  const valueColor = tone === 'dark' ? 'text-white' : 'text-harx-ink';
   const iconBg =
     tone === 'dark'
       ? 'bg-white/10 text-white'
       : tone === 'primary'
-      ? 'bg-harx-500/15 text-harx-600'
+      ? 'bg-harx-500/10 text-harx-600'
       : 'bg-slate-100 text-slate-500';
   const subColor =
     subTone === 'rose'
@@ -4888,7 +5222,7 @@ function KpiCard({
       : 'text-slate-400';
 
   const interactiveClass = onClick
-    ? 'cursor-pointer text-left hover:shadow-md hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/40 active:translate-y-0'
+    ? 'cursor-pointer text-left hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/40'
     : '';
 
   const content = (
@@ -4914,7 +5248,7 @@ function KpiCard({
         type="button"
         onClick={onClick}
         aria-pressed={selected}
-        className={`relative flex w-full flex-col gap-2 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 ${baseTone} ${selectedTone} ${interactiveClass}`}
+        className={`relative flex w-full flex-col gap-2 rounded-harx border p-3.5 shadow-harx transition-all ${baseTone} ${selectedTone} ${interactiveClass}`}
       >
         {content}
       </button>
@@ -4923,7 +5257,7 @@ function KpiCard({
 
   return (
     <div
-      className={`relative flex flex-col gap-2 rounded-2xl border p-3.5 shadow-sm transition-all hover:-translate-y-0.5 ${baseTone} ${selectedTone}`}
+      className={`relative flex flex-col gap-2 rounded-harx border p-3.5 shadow-harx transition-all ${baseTone} ${selectedTone}`}
     >
       {content}
     </div>
@@ -5215,7 +5549,7 @@ function Performance7Days({
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
       <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
         <TrendingUp size={14} className="text-harx-500" />
         {t('opsDashboard.perf.title', 'Performance 7 jours')}
