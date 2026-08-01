@@ -103,7 +103,8 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
     try {
       const base = getDashCallsApiBase();
       const companyId = Cookies.get('companyId');
-      const gigId = resolveGigId(lead) || Cookies.get('gigId') || undefined;
+      // Only send the lead's own gig — never a stale cookie gigId.
+      const gigId = resolveGigId(lead) || undefined;
       const res = await fetch(`${base}/calls/ai-outbound`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

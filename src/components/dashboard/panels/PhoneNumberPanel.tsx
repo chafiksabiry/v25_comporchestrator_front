@@ -1386,9 +1386,12 @@ export function PhoneNumberPanel() {
                   <p className="text-[11px] text-slate-600">
                     {t(
                       'aiVoice.panelHint',
-                      'Activez l’assistant sur un gig pour pouvoir appeler un lead depuis la liste Contacts.'
+                      'Activez l’assistant sur le même gig que vos leads (celui lié à la ligne Telnyx).'
                     )}
                   </p>
+                  {aiGigId && (
+                    <p className="text-[10px] font-mono text-slate-400 mt-0.5">gigId: {aiGigId}</p>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
