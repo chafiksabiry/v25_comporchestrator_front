@@ -22,9 +22,12 @@ import {
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
+import { TelnyxRTC } from '@telnyx/webrtc';
 import { gigsApi } from '../services/api/endpoints';
 import { waitForStripePopup, getOrchestratorApiBase } from '../../../lib/paypalCheckout';
 import { markGigStepDone } from '../../../services/gigSetupSync';
+import { requirementService } from '../../../services/requirementService';
+import { RequirementFormModal } from '../../RequirementFormModal';
 
 type CheckoutStep = 'select' | 'paypal' | 'processing' | 'success';
 
@@ -146,6 +149,7 @@ interface GigAndReps {
 export function PhoneNumberPanel() {
   const { t } = useTranslation();
   const location = useLocation();
+  const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   const [phoneNumbers, setPhoneNumbers] = useState<PurchasedNumber[]>([]);
   const [gigsAndReps, setGigsAndReps] = useState<GigAndReps[]>([]);
   /** gigId → required team size (from gig.team.size) */
@@ -178,6 +182,7 @@ export function PhoneNumberPanel() {
 
   // Checkout / payment state for the new Stripe-or-PayPal flow
   const [checkoutNumber, setCheckoutNumber] = useState<string | null>(null);
+  const [checkoutProvider, setCheckoutProvider] = useState<'twilio' | 'telnyx'>('telnyx');
   const [checkoutMethod, setCheckoutMethod] = useState<'stripe' | 'paypal'>('stripe');
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('select');
   const [checkoutPaymentId, setCheckoutPaymentId] = useState<string | null>(null);
@@ -187,9 +192,206 @@ export function PhoneNumberPanel() {
   const [myNumbersSearch, setMyNumbersSearch] = useState('');
   const [myNumbersGigFilter, setMyNumbersGigFilter] = useState('');
   const [isGigFilterOpen, setIsGigFilterOpen] = useState(false);
+  const [isBuyGigOpen, setIsBuyGigOpen] = useState(false);
   const [selectedPhoneLine, setSelectedPhoneLine] = useState<string | null>(null);
+  const [searchProvider, setSearchProvider] = useState<'twilio' | 'telnyx'>('telnyx');
 
-  const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
+  const [showRequirementModal, setShowRequirementModal] = useState(false);
+  const [countryReq, setCountryReq] = useState<{
+    hasRequirements: boolean;
+    requirements?: any[];
+  }>({ hasRequirements: false });
+
+  const [requirementStatus, setRequirementStatus] = useState<{
+    isChecking: boolean;
+    hasRequirements: boolean;
+    isComplete: boolean;
+    error: string | null;
+    groupId?: string;
+    telnyxId?: string;
+    completedRequirements?: any[];
+  }>({
+    isChecking: false,
+    hasRequirements: false,
+    isComplete: false,
+    error: null
+  });
+
+  const [testNumber, setTestNumber] = useState('');
+  const [testFromNumber, setTestFromNumber] = useState('+33423330953');
+  const [testingCall, setTestingCall] = useState(false);
+  const [rtcClient, setRtcClient] = useState<any>(null);
+  const [rtcState, setRtcState] = useState<'idle' | 'connecting' | 'connected' | 'ringing' | 'active'>('idle');
+  const [activeCall, setActiveCall] = useState<any>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showSoftphone, setShowSoftphone] = useState(false);
+
+  // Gérer la fin d'un appel WebRTC
+  const handleWebRTCHangup = useCallback(() => {
+    if (activeCall) {
+      activeCall.hangup();
+    }
+    setActiveCall(null);
+    setRtcState(rtcClient ? 'connected' : 'idle');
+    setShowSoftphone(false);
+  }, [activeCall, rtcClient]);
+
+  const selectedGigForSearch = useMemo(() => gigsAndReps.find(g => g.gigId === selectedGigIdForNumber), [gigsAndReps, selectedGigIdForNumber]);
+  const destZone = selectedGigForSearch?.destinationCountry;
+
+  useEffect(() => {
+    if (!destZone || searchProvider !== 'telnyx' || !companyId) return;
+
+    const checkRequirements = async () => {
+      try {
+        setRequirementStatus(prev => ({ ...prev, isChecking: true }));
+        const response = await requirementService.checkCountryRequirements(destZone);
+        setCountryReq(response);
+
+        if (response.hasRequirements) {
+          const { group, isNew } = await requirementService.getOrCreateGroup(companyId, destZone);
+          if (isNew) {
+            setRequirementStatus({
+              isChecking: false,
+              hasRequirements: true,
+              isComplete: false,
+              error: null,
+              groupId: group._id,
+              telnyxId: group.telnyxId,
+              completedRequirements: []
+            });
+          } else {
+            const detailedStatus = await requirementService.getDetailedGroupStatus(group._id);
+            setRequirementStatus({
+              isChecking: false,
+              hasRequirements: true,
+              isComplete: detailedStatus.isComplete,
+              error: null,
+              groupId: group._id,
+              telnyxId: group.telnyxId,
+              completedRequirements: detailedStatus.completedRequirements
+            });
+          }
+        } else {
+          setRequirementStatus({
+            isChecking: false,
+            hasRequirements: false,
+            isComplete: true,
+            error: null
+          });
+        }
+      } catch (error) {
+        console.error('Error checking telnyx requirements:', error);
+        setRequirementStatus(prev => ({ ...prev, isChecking: false, error: 'Failed to check requirements' }));
+      }
+    };
+    checkRequirements();
+  }, [destZone, searchProvider, companyId]);
+
+  // Initialiser TelnyxRTC
+  const initTelnyxRTC = useCallback(async () => {
+    const sipUser = import.meta.env.VITE_TELNYX_SIP_USER;
+    const sipPassword = import.meta.env.VITE_TELNYX_SIP_PASSWORD;
+
+    if (!sipUser || !sipPassword) {
+      toast.error('Les identifiants SIP (VITE_TELNYX_SIP_USER / PASSWORD) ne sont pas configurés.');
+      return null;
+    }
+
+    try {
+      const client = new TelnyxRTC({
+        login: sipUser,
+        password: sipPassword,
+      });
+
+      client.on('telnyx.ready', () => {
+        console.log('TelnyxRTC Ready');
+        setRtcState('connected');
+      });
+
+      client.on('telnyx.error', (error: any) => {
+        console.error('TelnyxRTC Error:', error);
+        toast.error('Erreur de connexion WebRTC.');
+        setRtcState('idle');
+      });
+
+      client.on('telnyx.notification', (notification: any) => {
+        if (notification.type === 'callUpdate') {
+          const call = notification.call;
+          if (call.state === 'ringing') {
+            setRtcState('ringing');
+            setActiveCall(call);
+          } else if (call.state === 'active') {
+            setRtcState('active');
+            setActiveCall(call);
+            // Attacher le flux audio distant à l'élément <audio>
+            const remoteAudio = document.getElementById('remoteMedia') as HTMLAudioElement;
+            if (remoteAudio && call.remoteStream) {
+              remoteAudio.srcObject = call.remoteStream;
+            }
+          } else if (call.state === 'destroy') {
+            setRtcState('connected');
+            setActiveCall(null);
+            setShowSoftphone(false);
+          }
+        }
+      });
+
+      await client.connect();
+      setRtcClient(client);
+      return client;
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Impossible d\'initialiser le softphone.');
+      setRtcState('idle');
+      return null;
+    }
+  }, []);
+
+  const handleTestCallWithMic = async () => {
+    if (!testNumber) {
+      toast.error('Veuillez entrer un numéro de destination.');
+      return;
+    }
+
+    setShowSoftphone(true);
+    setRtcState('connecting');
+
+    let client = rtcClient;
+    if (!client) {
+      client = await initTelnyxRTC();
+    }
+
+    if (!client) {
+      setShowSoftphone(false);
+      return;
+    }
+
+    // Demander l'accès au micro
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      toast.error('Accès au microphone refusé.');
+      setShowSoftphone(false);
+      setRtcState(client ? 'connected' : 'idle');
+      return;
+    }
+
+    try {
+      client.newCall({
+        destinationNumber: testNumber,
+        callerNumber: testFromNumber || '+33423330953', // Utilise le numéro renseigné dans l'input
+        audio: true,
+        video: false
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erreur lors de l\'appel sortant.');
+      setShowSoftphone(false);
+      setRtcState('connected');
+    }
+  };
+
   // In production we MUST resolve to the live orchestrator backend; the old
   // localhost default would silently break checkout for every deployed user.
   const apiBaseUrl = getOrchestratorApiBase();
@@ -316,6 +518,30 @@ export function PhoneNumberPanel() {
     }
   };
 
+  const handleTestCall = async () => {
+    setTestingCall(true);
+    try {
+      const res = await fetch(`${apiBaseUrl}/phone-numbers/test-call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromNumber: testFromNumber || '+33423330953',
+          toNumber: testNumber
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Test call failed');
+      }
+      toast.success(t('phoneNumberPanel.toasts.testCallSuccess', { defaultValue: "Appel de test lancé avec succès !" }));
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || t('phoneNumberPanel.toasts.testCallFailed', { defaultValue: "Erreur lors du test d'appel" }));
+    } finally {
+      setTestingCall(false);
+    }
+  };
+
   const fetchData = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     try {
@@ -409,7 +635,9 @@ export function PhoneNumberPanel() {
         return;
       }
 
-      const endpoint = `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${targetCountry}&limit=${searchLimit}`;
+      const endpoint = searchProvider === 'twilio' 
+        ? `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${targetCountry}&limit=${searchLimit}`
+        : `${apiBaseUrl}/phone-numbers/search?countryCode=${targetCountry}&limit=${searchLimit}`;
       console.log('[handleSearchNumbers] Fetching telephony search endpoint:', endpoint);
       const res = await fetch(endpoint);
       if (res.ok) {
@@ -426,17 +654,18 @@ export function PhoneNumberPanel() {
           );
           return;
         }
+        const injectProvider = (items: any[]) => items.map(item => ({ ...item, provider: searchProvider }));
         if (Array.isArray(data)) {
-          setSearchResults(data);
+          setSearchResults(injectProvider(data));
           if (data.length === 0) {
             toast.error(t('phoneNumberPanel.toasts.noNumbersFound'));
           } else {
             toast.success(t('phoneNumberPanel.toasts.numbersFound', { count: data.length }));
           }
         } else if (data.data && Array.isArray(data.data)) {
-          setSearchResults(data.data);
+          setSearchResults(injectProvider(data.data));
         } else if (Array.isArray(data.numbers)) {
-          setSearchResults(data.numbers);
+          setSearchResults(injectProvider(data.numbers));
           if (data.numbers.length === 0) {
             toast.error(t('phoneNumberPanel.toasts.noNumbersFound'));
           } else {
@@ -463,13 +692,70 @@ export function PhoneNumberPanel() {
     void doSearch(selectedGigIdForNumber);
   };
 
+  const handleDirectPurchase = async (numberToBuy: string, provider: 'twilio' | 'telnyx') => {
+    setPurchasing(numberToBuy);
+    try {
+      const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: numberToBuy,
+          provider: provider,
+          gigId: selectedGigIdForNumber,
+          companyId,
+          requirementGroupId: provider === 'telnyx' ? requirementStatus.telnyxId : undefined
+        })
+      });
+
+      if (!purchaseRes.ok) {
+        const err = await purchaseRes.json().catch(() => ({}));
+        throw new Error(err?.message || err?.error || t('phoneNumberPanel.toasts.purchaseFailed'));
+      }
+
+      toast.success(t('phoneNumberPanel.toasts.purchaseSuccessCard', { number: numberToBuy }));
+      setSearchResults(prev => prev.filter(n => n.phoneNumber !== numberToBuy));
+      fetchData(true);
+      if (selectedGigIdForNumber) {
+        markGigStepDone(selectedGigIdForNumber, 'telephony', true);
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || t('phoneNumberPanel.toasts.purchaseFailed'));
+    } finally {
+      setPurchasing(null);
+    }
+  };
+
   // Step 1 — open the payment modal (does NOT debit the wallet).
-  const handlePurchaseNumber = (numberToBuy: string) => {
+  const handlePurchaseNumber = (numberToBuy: string, provider: 'twilio' | 'telnyx') => {
     if (!selectedGigIdForNumber) {
       toast.error(t('phoneNumberPanel.toasts.selectGigFirst'));
       return;
     }
+
+    if (provider === 'telnyx') {
+      if (requirementStatus.isChecking) {
+        toast.error('Veuillez patienter pendant la vérification des exigences réglementaires...');
+        return;
+      }
+      if (requirementStatus.hasRequirements) {
+        // Intercept purchase to show requirement modal
+        setShowRequirementModal(true);
+        // We temporarily store the number they wanted to buy so we can resume later
+        setCheckoutNumber(numberToBuy);
+        setCheckoutProvider(provider);
+        return;
+      }
+    }
+
+    // Bypass payment modal if requirements are not used (i.e. hasRequirements is false)
+    if (!requirementStatus.hasRequirements) {
+      void handleDirectPurchase(numberToBuy, provider);
+      return;
+    }
+
     setCheckoutNumber(numberToBuy);
+    setCheckoutProvider(provider);
     setCheckoutMethod('stripe');
     setCheckoutStep('select');
     setCheckoutPaymentId(null);
@@ -478,6 +764,7 @@ export function PhoneNumberPanel() {
   const closeCheckoutModal = () => {
     if (checkoutStep === 'processing') return;
     setCheckoutNumber(null);
+    setCheckoutProvider('telnyx');
     setCheckoutPaymentId(null);
     setCheckoutStep('select');
   };
@@ -567,14 +854,16 @@ export function PhoneNumberPanel() {
     async (paymentId: string) => {
       if (!checkoutNumber || !selectedGigIdForNumber) return;
 
-      const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase/twilio`, {
+      const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: checkoutNumber,
+          provider: checkoutProvider,
           gigId: selectedGigIdForNumber,
           companyId,
-          paymentId
+          paymentId,
+          requirementGroupId: checkoutProvider === 'telnyx' ? requirementStatus.telnyxId : undefined
         })
       });
 
@@ -583,7 +872,7 @@ export function PhoneNumberPanel() {
         throw new Error(err?.message || err?.error || t('phoneNumberPanel.toasts.purchaseFailed'));
       }
     },
-    [apiBaseUrl, checkoutNumber, companyId, selectedGigIdForNumber, t]
+    [apiBaseUrl, checkoutNumber, checkoutProvider, requirementStatus, companyId, selectedGigIdForNumber, t]
   );
 
   const finishSuccessfulPurchase = useCallback(
@@ -804,6 +1093,7 @@ export function PhoneNumberPanel() {
 
       {/* Header section */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 min-w-0">
+        <audio id="remoteMedia" autoPlay className="hidden" />
         <div className="min-w-0">
           <div className="flex items-center gap-3 mb-1">
             <span className="p-2.5 rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 text-white">
@@ -1023,21 +1313,21 @@ export function PhoneNumberPanel() {
                   aria-expanded={isGigFilterOpen}
                   aria-haspopup="listbox"
                   aria-label={t('phoneNumberPanel.myNumbers.filters.gigLabel')}
-                  className={`w-full px-4 py-2.5 bg-indigo-50/40 border rounded-xl font-bold text-sm text-slate-900 transition-all flex items-center justify-between gap-2 ${
+                  className={`w-full px-4 py-2.5 bg-white border rounded-xl font-bold text-sm text-harx-ink transition-all flex items-center justify-between gap-2 shadow-harx ${
                     isGigFilterOpen
-                      ? 'border-indigo-500 bg-white ring-2 ring-indigo-500/20'
-                      : 'border-indigo-100 hover:border-indigo-300 hover:bg-white'
+                      ? 'border-slate-400 ring-1 ring-slate-900/10'
+                      : 'border-harx-border hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   <span className="flex items-center gap-2 min-w-0">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-harx-ink text-white">
                       <Briefcase size={13} />
                     </span>
                     <span className="truncate text-left">{selectedGigFilterLabel}</span>
                   </span>
                   <ChevronDown
                     size={16}
-                    className={`shrink-0 text-indigo-400 transition-transform duration-200 ${
+                    className={`shrink-0 text-slate-400 transition-transform duration-200 ${
                       isGigFilterOpen ? 'rotate-180' : ''
                     }`}
                   />
@@ -1053,10 +1343,10 @@ export function PhoneNumberPanel() {
                     />
                     <div
                       role="listbox"
-                      className="absolute z-50 top-full left-0 right-0 mt-2 overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-[0_20px_50px_-12px_rgba(79,70,229,0.25)] animate-in fade-in slide-in-from-top-1 duration-200"
+                      className="absolute z-50 top-full left-0 right-0 mt-2 overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-1 duration-200"
                     >
-                      <div className="px-3 py-2 border-b border-indigo-50 bg-gradient-to-r from-indigo-50/80 to-violet-50/80">
-                        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-indigo-600">
+                      <div className="px-3 py-2 border-b border-slate-100">
+                        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">
                           {t('phoneNumberPanel.myNumbers.filters.gigLabel')}
                         </span>
                       </div>
@@ -1069,18 +1359,18 @@ export function PhoneNumberPanel() {
                             setMyNumbersGigFilter('');
                             setIsGigFilterOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-all ${
+                          className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-colors ${
                             !myNumbersGigFilter
-                              ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
-                              : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-700'
+                              ? 'bg-slate-100 text-harx-ink'
+                              : 'text-slate-700 hover:bg-slate-50'
                           }`}
                         >
                           <span className="flex items-center gap-2 min-w-0">
                             <span
                               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
                                 !myNumbersGigFilter
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                                  ? 'bg-harx-ink text-white'
+                                  : 'bg-slate-100 text-slate-500 border border-harx-border'
                               }`}
                             >
                               <Radio size={13} />
@@ -1092,7 +1382,7 @@ export function PhoneNumberPanel() {
                           <span
                             className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                               !myNumbersGigFilter
-                                ? 'bg-white/20 text-white'
+                                ? 'bg-white text-slate-600 border border-harx-border'
                                 : 'bg-slate-100 text-slate-500'
                             }`}
                           >
@@ -1109,22 +1399,23 @@ export function PhoneNumberPanel() {
                               type="button"
                               role="option"
                               aria-selected={isActive}
+                              title={g.title}
                               onClick={() => {
                                 setMyNumbersGigFilter(g.gigId);
                                 setIsGigFilterOpen(false);
                               }}
-                              className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-all ${
+                              className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-colors ${
                                 isActive
-                                  ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
-                                  : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-700'
+                                  ? 'bg-slate-100 text-harx-ink'
+                                  : 'text-slate-700 hover:bg-slate-50'
                               }`}
                             >
                               <span className="flex items-center gap-2 min-w-0">
                                 <span
                                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
                                     isActive
-                                      ? 'bg-white/20 text-white'
-                                      : 'bg-violet-50 text-violet-600 border border-violet-100'
+                                      ? 'bg-harx-ink text-white'
+                                      : 'bg-slate-100 text-slate-500 border border-harx-border'
                                   }`}
                                 >
                                   <Briefcase size={13} />
@@ -1135,7 +1426,7 @@ export function PhoneNumberPanel() {
                                 <span
                                   className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                                     isActive
-                                      ? 'bg-white/20 text-white'
+                                      ? 'bg-white text-slate-600 border border-harx-border'
                                       : lineCount > 0
                                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
                                         : 'bg-slate-100 text-slate-400'
@@ -1143,7 +1434,7 @@ export function PhoneNumberPanel() {
                                 >
                                   {t('phoneNumberPanel.myNumbers.filters.linesCount', { count: lineCount })}
                                 </span>
-                                {isActive && <Check size={14} className="text-white" />}
+                                {isActive && <Check size={14} className="text-harx-ink" />}
                               </span>
                             </button>
                           );
@@ -1156,14 +1447,14 @@ export function PhoneNumberPanel() {
               <div className="relative flex-1 min-w-0">
                 <Search
                   size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
                 />
                 <input
                   type="search"
                   value={myNumbersSearch}
                   onChange={(e) => setMyNumbersSearch(e.target.value)}
                   placeholder={t('phoneNumberPanel.myNumbers.filters.searchPlaceholder')}
-                  className="w-full pl-10 pr-4 py-2.5 bg-indigo-50/40 border border-indigo-100 rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-harx-border rounded-xl text-sm font-semibold text-harx-ink placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-900/10 transition-colors shadow-harx"
                 />
               </div>
             </div>
@@ -1191,8 +1482,9 @@ export function PhoneNumberPanel() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 border-b border-indigo-100">
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.number')}</th>
@@ -1225,6 +1517,9 @@ export function PhoneNumberPanel() {
                               <Hash size={14} />
                             </span>
                             <span>{num.phoneNumber}</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
+                              {num.provider === 'twilio' ? 'Fournisseur 1' : 'Fournisseur 2'}
+                            </span>
                           </div>
                         </td>
                         <td className="py-4 px-4 font-bold text-slate-700">
@@ -1283,6 +1578,88 @@ export function PhoneNumberPanel() {
                 </tfoot>
               </table>
             </div>
+            
+            <div className="mt-4 p-4 border border-indigo-100 rounded-2xl bg-indigo-50/30">
+              <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700 mb-2">Tester l'appel</p>
+              <div className="flex gap-2 max-w-xl">
+                <input 
+                  type="text" 
+                  value={testFromNumber}
+                  onChange={(e) => setTestFromNumber(e.target.value)}
+                  placeholder="Numéro Appelant (ex: +33...)"
+                  className="flex-1 px-4 py-2.5 bg-white border border-indigo-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                />
+                <input 
+                  type="text" 
+                  value={testNumber}
+                  onChange={(e) => setTestNumber(e.target.value)}
+                  placeholder="Numéro Appelé (ex: +212...)"
+                  className="flex-1 px-4 py-2.5 bg-white border border-indigo-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={handleTestCall}
+                  disabled={testingCall}
+                  className="px-5 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-50"
+                  title="Lancer l'appel de test par API"
+                >
+                  {testingCall ? <RefreshCw size={14} className="animate-spin" /> : <Phone size={14} />}
+                  <span>Tester (API)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTestCallWithMic}
+                  disabled={rtcState === 'connecting' || rtcState === 'ringing' || rtcState === 'active'}
+                  className="px-5 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-50"
+                  title="Tester l'appel avec votre microphone via WebRTC"
+                >
+                  {rtcState === 'connecting' ? <RefreshCw size={14} className="animate-spin" /> : <Radio size={14} />}
+                  <span>Tester (Micro)</span>
+                </button>
+              </div>
+
+              {/* Softphone UI Modal / Inline */}
+              {showSoftphone && (
+                <div className="mt-4 p-5 border border-violet-200 rounded-2xl bg-white shadow-lg flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className={`p-4 rounded-full ${rtcState === 'active' ? 'bg-emerald-100 text-emerald-600 animate-pulse' : rtcState === 'ringing' ? 'bg-amber-100 text-amber-600 animate-bounce' : 'bg-violet-100 text-violet-600'}`}>
+                      <Phone size={24} />
+                    </div>
+                    <p className="font-black text-slate-900 mt-2">{testNumber}</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                      {rtcState === 'connecting' && 'Connexion...'}
+                      {rtcState === 'ringing' && 'Sonnerie en cours...'}
+                      {rtcState === 'active' && 'Appel en cours'}
+                    </p>
+                  </div>
+
+                  {rtcState === 'active' && (
+                    <div className="flex gap-4">
+                      <button
+                        onClick={() => {
+                          if (activeCall) {
+                            if (isMuted) activeCall.unmuteAudio();
+                            else activeCall.muteAudio();
+                            setIsMuted(!isMuted);
+                          }
+                        }}
+                        className={`px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors ${isMuted ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                      >
+                        {isMuted ? 'Désactiver Mute' : 'Mute'}
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleWebRTCHangup}
+                    className="px-6 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider transition-colors shadow-md shadow-red-500/20"
+                  >
+                    Raccrocher
+                  </button>
+                </div>
+              )}
+            </div>
+            </>
           )}
         </div>
       ) : (
@@ -1302,27 +1679,94 @@ export function PhoneNumberPanel() {
             <form onSubmit={handleSearchNumbers} className="space-y-4">
 
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block mb-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                   {t('phoneNumberPanel.buy.search.assignLabel')}
                 </label>
-                <select
-                  value={selectedGigIdForNumber}
-                  onChange={(e) => setSelectedGigIdForNumber(e.target.value)}
-                  className="w-full px-4 py-3 bg-indigo-50/40 border border-indigo-100 rounded-xl font-bold text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
-                >
-                  {gigsAndReps.map((g) => (
-                    <option key={g.gigId} value={g.gigId}>{g.title}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsBuyGigOpen((open) => !open)}
+                    aria-expanded={isBuyGigOpen}
+                    aria-haspopup="listbox"
+                    className={`w-full px-4 py-3 bg-white border rounded-xl font-bold text-sm text-harx-ink transition-all flex items-center justify-between gap-2 shadow-harx ${
+                      isBuyGigOpen
+                        ? 'border-slate-400 ring-1 ring-slate-900/10'
+                        : 'border-harx-border hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-harx-ink text-white">
+                        <Briefcase size={13} />
+                      </span>
+                      <span className="truncate text-left">
+                        {gigsAndReps.find((g) => g.gigId === selectedGigIdForNumber)?.title
+                          || t('phoneNumberPanel.buy.search.assignLabel')}
+                      </span>
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      className={`shrink-0 text-slate-400 transition-transform duration-200 ${
+                        isBuyGigOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {isBuyGigOpen && (
+                    <>
+                      <button
+                        type="button"
+                        aria-label="close"
+                        className="fixed inset-0 z-40 cursor-default"
+                        onClick={() => setIsBuyGigOpen(false)}
+                      />
+                      <div
+                        role="listbox"
+                        className="absolute z-50 top-full left-0 right-0 mt-2 overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-1 duration-200"
+                      >
+                        <div className="px-3 py-2 border-b border-slate-100">
+                          <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">
+                            {t('phoneNumberPanel.buy.search.assignLabel')}
+                          </span>
+                        </div>
+                        <div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
+                          {gigsAndReps.map((g) => {
+                            const isActive = selectedGigIdForNumber === g.gigId;
+                            return (
+                              <button
+                                key={g.gigId}
+                                type="button"
+                                role="option"
+                                aria-selected={isActive}
+                                title={g.title}
+                                onClick={() => {
+                                  setSelectedGigIdForNumber(g.gigId);
+                                  setIsBuyGigOpen(false);
+                                }}
+                                className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left transition-colors ${
+                                  isActive
+                                    ? 'bg-slate-100 text-harx-ink'
+                                    : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                <span className="text-[13px] font-bold truncate">{g.title}</span>
+                                {isActive && <Check size={14} className="shrink-0 text-harx-ink" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
                 {selectedGigIdForNumber && (
                   <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-harx-border text-[10px] font-bold uppercase tracking-wider">
                       <Phone size={10} />
                       {numbersForSelectedGig.length > 1
                         ? t('phoneNumberPanel.buy.search.chipActiveLinesPlural', { count: numbersForSelectedGig.length })
                         : t('phoneNumberPanel.buy.search.chipActiveLinesSingular', { count: numbersForSelectedGig.length })}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-100 text-[10px] font-bold uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-harx-border text-[10px] font-bold uppercase tracking-wider">
                       <Users size={10} />
                       {selectedGigRepsCount > 1
                         ? t('phoneNumberPanel.buy.search.chipRepsPlural', { count: selectedGigRepsCount })
@@ -1359,6 +1803,42 @@ export function PhoneNumberPanel() {
                   </div>
                 </div>
               )}
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block mb-1">
+                  Fournisseur
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="searchProvider" 
+                      value="twilio"
+                      checked={searchProvider === 'twilio'}
+                      onChange={() => {
+                        setSearchProvider('twilio');
+                        setSearchResults([]);
+                      }}
+                      className="text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-xs font-bold text-slate-700">Fournisseur 1</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="searchProvider" 
+                      value="telnyx"
+                      checked={searchProvider === 'telnyx'}
+                      onChange={() => {
+                        setSearchProvider('telnyx');
+                        setSearchResults([]);
+                      }}
+                      className="text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-xs font-bold text-slate-700">Fournisseur 2</span>
+                  </label>
+                </div>
+              </div>
 
               <button
                 type="submit"
@@ -1398,22 +1878,25 @@ export function PhoneNumberPanel() {
               </div>
             ) : (
               <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin">
-                {searchResults.map((resultNum: any) => {
-                  const numberString = resultNum.phoneNumber || resultNum.nationalFormat || resultNum;
+                {searchResults.map((resultNum: any, idx: number) => {
+                  const numberString = typeof resultNum === 'string' ? resultNum : (resultNum.phoneNumber || resultNum.phone_number || resultNum.nationalFormat || `number-${idx}`);
                   return (
                     <div
                       key={numberString}
                       className="group p-4 bg-gradient-to-r from-cyan-50/50 via-white to-indigo-50/50 rounded-2xl border border-slate-100 hover:border-indigo-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0 transition-colors duration-200"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-50 to-teal-50 border border-cyan-100 text-cyan-700">
                           <Hash size={15} />
                         </span>
                         <span className="text-sm font-black text-slate-900 tracking-tight tabular-nums truncate">{numberString}</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
+                          {resultNum.provider === 'twilio' ? 'Fournisseur 1' : 'Fournisseur 2'}
+                        </span>
                       </div>
 
                       <button
-                        onClick={() => handlePurchaseNumber(numberString)}
+                        onClick={() => handlePurchaseNumber(numberString, resultNum.provider || searchProvider)}
                         disabled={purchasing !== null}
                         className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-colors duration-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
                         title={t('phoneNumberPanel.buy.results.buyTooltip')}
@@ -1471,6 +1954,9 @@ export function PhoneNumberPanel() {
                       {t('phoneNumberPanel.myNumbers.table.freeTrial')}
                     </span>
                   )}
+                  <span className="inline-block mt-2 ml-2 px-2 py-0.5 rounded-lg bg-white/20 text-white border border-white/30 text-[9px] font-black uppercase tracking-wider">
+                    {selectedPhoneLineData.provider === 'twilio' ? 'Fournisseur 1' : 'Fournisseur 2'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1544,7 +2030,35 @@ export function PhoneNumberPanel() {
           NOT linked to WalletCompany. Charges the company's external
           card or PayPal account for the phone line setup fee.
          =========================================================== */}
-      {checkoutNumber && createPortal(
+      {showRequirementModal && checkoutNumber && destZone && countryReq.requirements && (
+        <RequirementFormModal
+          isOpen={showRequirementModal}
+          onClose={() => {
+            setShowRequirementModal(false);
+            setCheckoutNumber(null);
+          }}
+          countryCode={destZone}
+          requirements={countryReq.requirements}
+          requirementGroupId={requirementStatus.groupId}
+          requirementStatus={requirementStatus as any}
+          existingValues={requirementStatus.completedRequirements?.map(req => ({
+            field: req.id,
+            status: req.status,
+            value: typeof req.value === 'object' ? JSON.stringify(req.value) : req.value
+          }))}
+          onSubmit={async (values) => {
+            setShowRequirementModal(false);
+            setRequirementStatus(prev => ({ ...prev, isComplete: true }));
+            
+            // Now proceed to the payment modal
+            setCheckoutMethod('stripe');
+            setCheckoutStep('select');
+            setCheckoutPaymentId(null);
+          }}
+        />
+      )}
+
+      {checkoutNumber && !showRequirementModal && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden border border-slate-200">
             {/* Header — indigo / violet / fuchsia gradient */}

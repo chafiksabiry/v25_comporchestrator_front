@@ -139,6 +139,45 @@ export function isCallFraudDetected(call: CallLike & { flags?: { fraud?: boolean
   return typeof fraudScore === 'number' && fraudScore < 50;
 }
 
+/** Matches operations-dashboard "serious" calls (flags.serious or validByAI). */
+export function isCallSerious(
+  call: CallLike & { flags?: { serious?: boolean }; validByAI?: boolean | null }
+): boolean {
+  if (call.flags?.serious === true) return true;
+  return call.validByAI === true;
+}
+
+const UNREACHABLE_OUTCOMES = new Set(['no_answer', 'busy', 'voicemail', 'wrong_number']);
+
+/** Matches operations-dashboard "unreachable" bucket. */
+export function isCallUnreachable(call: CallLike): boolean {
+  const outcome = call.callOutcome;
+  return Boolean(outcome && UNREACHABLE_OUTCOMES.has(outcome));
+}
+
+export type CallOutcomeFilter =
+  | 'all'
+  | 'serious'
+  | 'voicemail'
+  | 'unreachable'
+  | 'fraud'
+  | 'wrong_number'
+  | 'too_short';
+
+export function matchesCallOutcomeFilter(
+  call: CallLike & { flags?: { fraud?: boolean; selfCall?: boolean; serious?: boolean } },
+  filter: CallOutcomeFilter
+): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'serious') return isCallSerious(call);
+  if (filter === 'voicemail') return isCallVoicemail(call);
+  if (filter === 'unreachable') return isCallUnreachable(call);
+  if (filter === 'fraud') return isCallFraudDetected(call);
+  if (filter === 'wrong_number') return call.callOutcome === 'wrong_number';
+  if (filter === 'too_short') return call.callOutcome === 'too_short';
+  return true;
+}
+
 /** Messagerie or fraud — hide per-rubric cards; executive summary still shown. */
 export function isNonEvaluableCall(call: CallLike): boolean {
   return isCallVoicemail(call) || isCallFraudDetected(call);

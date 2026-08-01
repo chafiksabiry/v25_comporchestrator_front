@@ -31,9 +31,8 @@ import {
 import { getHiddenSections } from '../dashboard/config/sections';
 import Cookies from 'js-cookie';
 import { useAuth } from '../dashboard/contexts/AuthContext';
-import type { ProjectView } from '../../App';
+import type { ProjectView } from '../ProjectViewSwitch';
 import { useTranslation } from 'react-i18next';
-import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { goToCompanyOnboardingTab } from '../../hooks/useOnboardingGlobalBack';
 
 interface MasterSidebarProps {
@@ -193,7 +192,7 @@ export function MasterSidebar({
   };
 
   return (
-    <div className={`${isCollapsed ? 'w-20' : 'w-64'} shrink-0 bg-black h-screen relative text-white flex flex-col shadow-2xl z-50 overflow-x-hidden transition-all duration-300`}>
+    <div className={`${isCollapsed ? 'w-20' : 'w-64'} shrink-0 bg-harx-sidebar h-screen relative text-white flex flex-col z-50 overflow-x-hidden transition-all duration-300`}>
       {/* Sidebar Header */}
       <div className={`flex items-center relative group cursor-pointer transition-all duration-300 ${isCollapsed ? 'px-4 justify-center mt-8 mb-10' : 'px-0 mt-4 mb-6'}`}>
         {activeProject === 'comporchestrator' ? (
@@ -229,8 +228,8 @@ export function MasterSidebar({
                       setActiveTab(item.key);
                       goToCompanyOnboardingTab();
                     }}
-                    className={`flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isActive
-                      ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
+                    className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition-all duration-200 relative group overflow-hidden ${isActive
+                      ? "bg-gradient-harx text-white z-10"
                       : "text-slate-400 hover:text-white hover:bg-white/5"
                       }`}
                   >
@@ -259,7 +258,7 @@ export function MasterSidebar({
                     {!isCollapsed && (
                       <button
                         onClick={() => toggleGroup(group.id)}
-                        className="flex items-center justify-between w-full text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-4 hover:text-white transition-colors group"
+                        className="flex items-center justify-between w-full text-[10px] font-semibold text-slate-500 uppercase tracking-[0.2em] mb-3 px-3 hover:text-slate-300 transition-colors group"
                       >
                         <span>{group.label}</span>
                         {(group.id === 2 || group.id === 3) && (
@@ -280,8 +279,8 @@ export function MasterSidebar({
                               const prefix = (item as { activePathPrefix?: string }).activePathPrefix;
                               const isReallyActive = isActive || (prefix && location.pathname.startsWith(prefix));
 
-                              return `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isReallyActive
-                                ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
+                              return `flex items-center gap-3.5 w-full p-3 rounded-xl transition-all duration-200 relative group overflow-hidden ${isReallyActive
+                                ? "bg-gradient-harx text-white z-10"
                                 : "text-slate-400 hover:text-white hover:bg-white/5"
                                 }`;
                             }}

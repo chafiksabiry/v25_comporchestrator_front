@@ -47,6 +47,8 @@ interface InteractiveScriptCockpitProps {
   onValidate?: () => void;
   isValidating?: boolean;
   isInline?: boolean;
+  /** Notifies parent when the visible stage index changes (for targeted AI edits). */
+  onStageIndexChange?: (index: number) => void;
 }
 
 const cleanTrainingText = (text: string): string => {
@@ -60,7 +62,8 @@ export function InteractiveScriptCockpit({
   onClose,
   onValidate,
   isValidating = false,
-  isInline = false
+  isInline = false,
+  onStageIndexChange,
 }: InteractiveScriptCockpitProps) {
   useTranslation();
   
@@ -79,6 +82,18 @@ export function InteractiveScriptCockpit({
   // Scoring Simulation States
   const [showScoringSimulation, setShowScoringSimulation] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
+
+  useEffect(() => {
+    onStageIndexChange?.(currentStageIdx);
+  }, [currentStageIdx, onStageIndexChange]);
+
+  // Keep index in range when stages are replaced after a targeted refine
+  useEffect(() => {
+    if (stages.length === 0) return;
+    if (currentStageIdx >= stages.length) {
+      setCurrentStageIdx(stages.length - 1);
+    }
+  }, [stages, currentStageIdx]);
 
   const handleSimulateScoring = () => {
     setIsSimulating(true);

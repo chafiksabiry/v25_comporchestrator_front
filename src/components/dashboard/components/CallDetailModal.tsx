@@ -83,11 +83,11 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
   ];
 
   const prospectMetrics = [
-    { label: 'Pas intéressé',           key: 'PAS INTÉRESSÉS', icon: ShieldAlert, color: 'rose'   },
-    { label: 'Pas au courant',           key: 'PAS AU COURANT', icon: Globe,       color: 'blue'   },
-    { label: 'Déjà équipé / Fourni',     key: 'DÉJÀ ÉQUIPÉS',  icon: ShieldCheck, color: 'indigo' },
-    { label: 'Prise de RDV',             key: 'RDV',            icon: Calendar,    color: 'emerald'},
-    { label: 'À plus tard / Rappel',     key: 'A plus tard',    icon: Clock,       color: 'amber'  },
+    { label: t('calls.prospectMetrics.notInterested'), key: 'PAS INTÉRESSÉS', icon: ShieldAlert, color: 'rose' },
+    { label: t('calls.prospectMetrics.notAware'), key: 'PAS AU COURANT', icon: Globe, color: 'blue' },
+    { label: t('calls.prospectMetrics.alreadyEquipped'), key: 'DÉJÀ ÉQUIPÉS', icon: ShieldCheck, color: 'indigo' },
+    { label: t('calls.prospectMetrics.appointment'), key: 'RDV', icon: Calendar, color: 'emerald' },
+    { label: t('calls.prospectMetrics.callback'), key: 'A plus tard', icon: Clock, color: 'amber' },
   ];
 
   const renderAnalysisErrorBanner = () =>
@@ -111,8 +111,8 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
       >
         <RefreshCw className={`w-4 h-4 ${analyzingCallId === call.id ? 'animate-spin' : ''}`} />
         {analyzingCallId === call.id
-          ? (i18n.language === 'en' ? 'Re-analyzing...' : 'Analyse...')
-          : (i18n.language === 'en' ? 'Re-run analysis' : 'Relancer l\'analyse')}
+          ? t('calls.actions.reanalyzing')
+          : t('calls.actions.reanalyze')}
       </button>
     ) : null;
 
@@ -133,7 +133,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
           <div className="flex justify-between items-start md:items-center w-full md:w-auto flex-1">
             <div>
               <h2 className="text-sm md:text-base font-black text-slate-900 uppercase tracking-widest leading-snug">
-                {call.leadName || 'Call Details'}
+                {call.leadName || t('calls.modal.title')}
               </h2>
               {call.agentName && (
                 <p className="text-[10px] font-bold text-harx-500 uppercase tracking-widest mt-0.5">
@@ -141,7 +141,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                 </p>
               )}
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 italic">
-                {new Date(call.createdAt).toLocaleString()}
+                {new Date(call.createdAt).toLocaleString(i18n.resolvedLanguage || i18n.language)}
               </p>
               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md mt-1 inline-block">
                 Call ID: {call.id}
@@ -159,7 +159,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
           <div className="w-full md:w-auto md:flex-1 max-w-full md:max-w-md shrink-0">
             {finalUrl
               ? <PremiumAudioPlayer url={finalUrl} />
-              : <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">No recording</div>
+              : <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">{t('calls.modal.noRecording')}</div>
             }
           </div>
 
@@ -202,25 +202,25 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'transcript' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
             >
               <MessageSquare className="w-4 h-4" />
-              Transcript
+              {t('calls.modal.tabs.transcript')}
             </button>
             <button
               onClick={() => setActiveTab('insights')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'insights' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
             >
               <ActivityIcon className="w-4 h-4" />
-              AI Insights
+              {t('calls.modal.tabs.insights')}
             </button>
           </div>
 
           {/* AI Decision badges */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Décision de l'IA:</span>
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{t('calls.modal.aiDecision')}:</span>
 
               <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100">
                 <Phone className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Appel</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t('calls.modal.call')}</span>
                 {call.validByAI === true
                   ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100"><Check className="w-3 h-3" /></span>
                   : call.validByAI === false
@@ -231,9 +231,9 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
 
               <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100">
                 <CreditCard className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Trans.</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t('calls.modal.transactionShort')}</span>
                 {call.transaction?.validByCompany === true
-                  ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100" title="Validé par l'entreprise"><Check className="w-3 h-3" /></span>
+                  ? <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100" title={t('calls.transaction.validatedByCompany')}><Check className="w-3 h-3" /></span>
                   : (() => {
                     const status = resolveUnvalidatedTransactionStatus(call);
                     return (
@@ -251,7 +251,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
 
             {onValidateTransaction && companyTransactionCanValidate(call, call.transaction) && (
               <div className="flex items-center gap-3">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Votre choix:</span>
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{t('calls.modal.yourChoice')}:</span>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
@@ -259,7 +259,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100/60 hover:bg-emerald-100/60 transition-all shadow-sm text-[9px] font-black uppercase tracking-widest"
                   >
                     <Check className="w-3.5 h-3.5" />
-                    Valider
+                    {t('calls.actions.validate')}
                   </button>
                   <button
                     type="button"
@@ -267,7 +267,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-50 text-slate-600 border border-slate-200/60 hover:bg-slate-100/60 transition-all shadow-sm text-[9px] font-black uppercase tracking-widest"
                   >
                     <X className="w-3.5 h-3.5" />
-                    Non signé
+                    {t('calls.actions.notSigned')}
                   </button>
                 </div>
               </div>
@@ -313,7 +313,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                 : (
                   <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                     {renderAnalysisErrorBanner()}
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Transcript not available for this call</p>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">{t('calls.modal.transcriptUnavailable')}</p>
                     {onAnalyze && (
                       <button
                         onClick={() => onAnalyze(call.id)}
@@ -321,7 +321,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                         className="flex items-center gap-2 px-6 py-3 bg-harx-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-harx-600 transition-all shadow-lg shadow-harx-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Brain className={`w-4 h-4 ${analyzingCallId === call.id ? 'animate-spin' : ''}`} />
-                        {analyzingCallId === call.id ? 'Analyse...' : 'Analyze & Transcribe'}
+                        {analyzingCallId === call.id ? t('calls.actions.analyzing') : t('calls.actions.analyzeTranscribe')}
                       </button>
                     )}
                   </div>
@@ -333,7 +333,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
               {(!call.ai_call_score || !hasAiCallAnalysis(call)) ? (
                 <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                   {renderAnalysisErrorBanner()}
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">No analysis available for this call</p>
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">{t('calls.modal.analysisUnavailable')}</p>
                   {onAnalyze && (
                     <button
                       onClick={() => onAnalyze(call.id)}
@@ -341,7 +341,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                       className="flex items-center gap-2 px-6 py-3 bg-harx-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-harx-600 transition-all shadow-lg shadow-harx-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Brain className={`w-4 h-4 ${analyzingCallId === call.id ? 'animate-spin' : ''}`} />
-                      {analyzingCallId === call.id ? 'Analyse...' : 'Analyze & Transcribe'}
+                      {analyzingCallId === call.id ? t('calls.actions.analyzing') : t('calls.actions.analyzeTranscribe')}
                     </button>
                   )}
                 </div>
@@ -365,7 +365,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                           </div>
                           <div className="flex items-center gap-4 bg-slate-50/80 px-4 py-3 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm self-start sm:self-auto">
                             <div className="text-right">
-                              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Score Global</p>
+                              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{t('calls.modal.overallScore')}</p>
                               <div className="text-2xl sm:text-4xl font-black text-slate-900 leading-none">
                                 {getExecutiveSummaryScore(call)}<span className="text-base sm:text-xl text-slate-400">%</span>
                               </div>
@@ -378,7 +378,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                         <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-inner">
                           <p className="text-base sm:text-xl font-bold text-slate-800 leading-relaxed italic relative">
                             <span className="absolute -left-2 -top-4 sm:-left-4 sm:-top-4 text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50">&quot;</span>
-                            {getExecutiveSummaryText(call, i18n.language) || (i18n.language === 'en' ? 'The agent demonstrated standard performance.' : "L'agent a fait preuve de performances standards.")}
+                            {getExecutiveSummaryText(call, i18n.language) || t('calls.modal.standardPerformance')}
                             <span className="text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50 ml-1 leading-none align-bottom">&quot;</span>
                           </p>
                         </div>
@@ -408,7 +408,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                               </div>
                               <div className="text-right">
                                 <span className={`text-base sm:text-lg font-black ${theme.text}`}>{score}%</span>
-                                <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Score</p>
+                                <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{t('calls.modal.score')}</p>
                               </div>
                             </div>
                             <h5 className="text-[11px] sm:text-[12px] font-black text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -424,7 +424,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                                     ? <span key={i} className="bg-amber-100/50 text-amber-900 font-bold px-1 rounded border-b border-amber-200 not-italic">&quot;{part}&quot;</span>
                                     : part
                                 )
-                                : (i18n.language === 'en' ? 'Detailed analysis completed.' : 'Analyse détaillée terminée.')}
+                                : t('calls.modal.analysisCompleted')}
                             </div>
                           </div>
                         </div>
@@ -436,7 +436,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                   <div className="space-y-4">
                     <div className="flex items-center gap-4 px-4 pt-2">
                       <div className="h-px flex-1 bg-slate-200/60" />
-                      <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">Statuts & Réponses Prospect</h5>
+                      <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">{t('calls.modal.prospectResponses')}</h5>
                       <div className="h-px flex-1 bg-slate-200/60" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -455,9 +455,9 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                                 </div>
                                 <div className="text-right">
                                   <span className={`text-xs sm:text-sm font-black px-2.5 py-1 rounded-xl shadow-sm border border-transparent ${score >= 50 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50'}`}>
-                                    {passed ? 'Oui' : 'Non'} ({score}%)
+                                    {passed ? t('calls.common.yes') : t('calls.common.no')} ({score}%)
                                   </span>
-                                  <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Détecté</p>
+                                  <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{t('calls.modal.detected')}</p>
                                 </div>
                               </div>
                               <h5 className="text-[11px] sm:text-[12px] font-black text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -473,7 +473,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                                       ? <span key={i} className="bg-amber-100/50 text-amber-900 font-bold px-1 rounded border-b border-amber-200 not-italic">&quot;{part}&quot;</span>
                                       : part
                                   )
-                                  : (i18n.language === 'en' ? 'No quote detected.' : 'Aucune citation détectée.')}
+                                  : t('calls.modal.noQuote')}
                               </div>
                             </div>
                           </div>
@@ -496,7 +496,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
             onClick={onClose}
             className="px-6 py-2.5 sm:px-8 sm:py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 shrink-0"
           >
-            Close Details
+            {t('calls.actions.closeDetails')}
           </button>
         </div>
       </div>
