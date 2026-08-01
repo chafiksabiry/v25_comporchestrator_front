@@ -18,7 +18,8 @@ import {
   X,
   ChevronDown,
   Check,
-  ChevronRight
+  ChevronRight,
+  Bot,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -28,6 +29,7 @@ import { waitForStripePopup, getOrchestratorApiBase } from '../../../lib/paypalC
 import { markGigStepDone } from '../../../services/gigSetupSync';
 import { requirementService } from '../../../services/requirementService';
 import { RequirementFormModal } from '../../RequirementFormModal';
+import { getDashCallsApiBase } from '../lib/callsApiBase';
 
 type CheckoutStep = 'select' | 'paypal' | 'processing' | 'success';
 
@@ -220,6 +222,10 @@ export function PhoneNumberPanel() {
   const [testNumber, setTestNumber] = useState('');
   const [testFromNumber, setTestFromNumber] = useState('+33423330953');
   const [testingCall, setTestingCall] = useState(false);
+  const [aiGigId, setAiGigId] = useState('');
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiSaving, setAiSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [rtcClient, setRtcClient] = useState<any>(null);
   const [rtcState, setRtcState] = useState<'idle' | 'connecting' | 'connected' | 'ringing' | 'active'>('idle');
   const [activeCall, setActiveCall] = useState<any>(null);
@@ -235,6 +241,66 @@ export function PhoneNumberPanel() {
     setRtcState(rtcClient ? 'connected' : 'idle');
     setShowSoftphone(false);
   }, [activeCall, rtcClient]);
+
+  useEffect(() => {
+    if (!aiGigId) {
+      setAiEnabled(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setAiLoading(true);
+      try {
+        const res = await fetch(`${getDashCallsApiBase()}/gigs/${aiGigId}/voice-assistant`);
+        const data = await res.json().catch(() => ({}));
+        if (!cancelled) {
+          setAiEnabled(Boolean(data?.data?.voiceAssistant?.enabled));
+        }
+      } catch {
+        if (!cancelled) setAiEnabled(false);
+      } finally {
+        if (!cancelled) setAiLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [aiGigId]);
+
+  const saveAiVoiceAssistant = async (enabled: boolean) => {
+    if (!aiGigId) {
+      toast.error(t('aiVoice.selectGig', 'Sélectionnez un gig.'));
+      return;
+    }
+    setAiSaving(true);
+    try {
+      const gigTitle = gigsAndReps.find((g) => g.gigId === aiGigId)?.title;
+      const res = await fetch(`${getDashCallsApiBase()}/gigs/${aiGigId}/voice-assistant`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enabled,
+          name: 'HARX AI Voice',
+          voice: 'alloy',
+          gigTitle,
+          greeting:
+            'Bonjour, je suis l’assistant vocal HARX. Je vous appelle au sujet de votre dossier.',
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
+      setAiEnabled(enabled);
+      toast.success(
+        enabled
+          ? t('aiVoice.enabled', 'Assistant vocal activé pour ce gig.')
+          : t('aiVoice.disabled', 'Assistant vocal désactivé.')
+      );
+    } catch (err: any) {
+      toast.error(err?.message || t('aiVoice.saveFailed', 'Impossible d’enregistrer l’assistant.'));
+    } finally {
+      setAiSaving(false);
+    }
+  };
 
   const selectedGigForSearch = useMemo(() => gigsAndReps.find(g => g.gigId === selectedGigIdForNumber), [gigsAndReps, selectedGigIdForNumber]);
   const destZone = selectedGigForSearch?.destinationCountry;
@@ -563,6 +629,9 @@ export function PhoneNumberPanel() {
         const gigsResult = await gigsRes.json();
         if (gigsResult.success && gigsResult.data) {
           setGigsAndReps(gigsResult.data);
+          if (gigsResult.data.length > 0 && !aiGigId) {
+            setAiGigId(gigsResult.data[0].gigId);
+          }
           if (gigsResult.data.length > 0 && !selectedGigIdForNumber) {
             // Prefer `?gigId=<id>` from the URL (set by the gig-setup
             // warning's Continue button) so the rep lands directly on
@@ -1303,6 +1372,56 @@ export function PhoneNumberPanel() {
                 : t('phoneNumberPanel.myNumbers.activeSingular', { count: filteredPhoneNumbers.length })}
             </span>
           </div>
+
+          {gigsAndReps.length > 0 && (
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-emerald-600 text-white">
+                  <Bot size={12} />
+                </span>
+                <div>
+                  <p className="text-sm font-black text-slate-900">
+                    {t('aiVoice.panelTitle', 'Assistant vocal IA')}
+                  </p>
+                  <p className="text-[11px] text-slate-600">
+                    {t(
+                      'aiVoice.panelHint',
+                      'Activez l’assistant sur un gig pour pouvoir appeler un lead depuis la liste Contacts.'
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <select
+                  value={aiGigId}
+                  onChange={(e) => setAiGigId(e.target.value)}
+                  className="flex-1 px-3 py-2 text-sm font-semibold rounded-xl border border-slate-200 bg-white"
+                >
+                  {gigsAndReps.map((g) => (
+                    <option key={g.gigId} value={g.gigId}>
+                      {g.title}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={!aiGigId || aiSaving || aiLoading}
+                  onClick={() => saveAiVoiceAssistant(!aiEnabled)}
+                  className={`px-4 py-2 text-xs font-black rounded-xl border transition-all disabled:opacity-50 ${
+                    aiEnabled
+                      ? 'bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50'
+                      : 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
+                  }`}
+                >
+                  {aiSaving || aiLoading
+                    ? '…'
+                    : aiEnabled
+                      ? t('aiVoice.disable', 'Désactiver')
+                      : t('aiVoice.enable', 'Activer l’assistant')}
+                </button>
+              </div>
+            </div>
+          )}
 
           {phoneNumbers.length > 0 && (
             <div className="flex flex-col sm:flex-row gap-3">

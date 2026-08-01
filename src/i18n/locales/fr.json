@@ -1,4 +1,20 @@
 {
+  "aiVoice": {
+    "callWithAssistant": "Appeler avec l'assistant",
+    "callWithAssistantHint": "Appel sortant via OpenAI Realtime + Telnyx",
+    "calling": "Appel…",
+    "callStarted": "Appel IA lancé vers {{phone}}",
+    "callFailed": "Impossible de lancer l'appel IA.",
+    "noPhone": "Ce lead n'a pas de numéro de téléphone.",
+    "panelTitle": "Assistant vocal IA",
+    "panelHint": "Activez l'assistant sur un gig pour pouvoir appeler un lead depuis la liste Contacts.",
+    "enable": "Activer l'assistant",
+    "disable": "Désactiver",
+    "enabled": "Assistant vocal activé pour ce gig.",
+    "disabled": "Assistant vocal désactivé.",
+    "saveFailed": "Impossible d'enregistrer l'assistant.",
+    "selectGig": "Sélectionnez un gig."
+  },
   "userMenu": {
     "profile": "Profil",
     "settings": "Paramètres",
