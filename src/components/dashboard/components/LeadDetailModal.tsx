@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  X, Mail, Phone, MapPin, Calendar, User, Edit, Globe, Hash,
+  X, Mail, Phone, MapPin, Calendar, User, Edit, Globe, Hash, Bot,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
+import Cookies from 'js-cookie';
+import { getDashCallsApiBase } from '../lib/callsApiBase';
 
 export interface LeadDetail {
   _id: string;
@@ -19,6 +22,7 @@ export interface LeadDetail {
   Stage?: string;
   Pipeline?: string;
   updatedAt?: string;
+  gigId?: string | { $oid?: string };
 }
 
 interface Props {
@@ -47,6 +51,14 @@ function formatDate(value?: string): string {
   } catch {
     return value;
   }
+}
+
+function resolveGigId(lead: LeadDetail): string | null {
+  const raw = lead.gigId;
+  if (!raw) return null;
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object' && raw.$oid) return raw.$oid;
+  return null;
 }
 
 function DetailRow({
@@ -79,6 +91,43 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
   const { t } = useTranslation();
   const initials = getInitials(lead);
   const fullName = getFullName(lead);
+  const [callingAi, setCallingAi] = useState(false);
+
+  const startAiCall = async () => {
+    if (!lead._id) return;
+    if (!lead.Phone) {
+      toast.error(t('aiVoice.noPhone', 'Ce lead n’a pas de numéro de téléphone.'));
+      return;
+    }
+    setCallingAi(true);
+    try {
+      const base = getDashCallsApiBase();
+      const companyId = Cookies.get('companyId');
+      const gigId = resolveGigId(lead) || Cookies.get('gigId') || undefined;
+      const res = await fetch(`${base}/calls/ai-outbound`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId: lead._id,
+          gigId,
+          companyId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || data.error || `HTTP ${res.status}`);
+      }
+      toast.success(
+        t('aiVoice.callStarted', 'Appel IA lancé vers {{phone}}', {
+          phone: lead.Phone,
+        })
+      );
+    } catch (err: any) {
+      toast.error(err?.message || t('aiVoice.callFailed', 'Impossible de lancer l’appel IA.'));
+    } finally {
+      setCallingAi(false);
+    }
+  };
 
   return createPortal(
     <div
@@ -168,13 +217,25 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 px-4 pb-4 pt-1 border-t border-slate-100">
+        <div className="flex flex-wrap justify-end gap-2 px-4 pb-4 pt-1 border-t border-slate-100">
           <button
             type="button"
             onClick={onClose}
             className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors"
           >
             {t('uploadContacts.list.details.close')}
+          </button>
+          <button
+            type="button"
+            onClick={startAiCall}
+            disabled={callingAi || !lead.Phone}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            title={t('aiVoice.callWithAssistantHint', 'Appel sortant via OpenAI Realtime + Telnyx')}
+          >
+            <Bot className="w-3.5 h-3.5" />
+            {callingAi
+              ? t('aiVoice.calling', 'Appel…')
+              : t('aiVoice.callWithAssistant', 'Appeler avec l’assistant')}
           </button>
           {onEdit && (
             <button

@@ -1,4 +1,20 @@
 {
+  "aiVoice": {
+    "callWithAssistant": "Call with assistant",
+    "callWithAssistantHint": "Outbound call via OpenAI Realtime + Telnyx",
+    "calling": "Calling…",
+    "callStarted": "AI call started to {{phone}}",
+    "callFailed": "Could not start the AI call.",
+    "noPhone": "This lead has no phone number.",
+    "panelTitle": "AI voice assistant",
+    "panelHint": "Enable the assistant on a gig to call a lead from the Contacts list.",
+    "enable": "Enable assistant",
+    "disable": "Disable",
+    "enabled": "Voice assistant enabled for this gig.",
+    "disabled": "Voice assistant disabled.",
+    "saveFailed": "Could not save the assistant.",
+    "selectGig": "Select a gig."
+  },
   "userMenu": {
     "profile": "Profile",
     "settings": "Settings",
