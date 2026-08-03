@@ -27,6 +27,7 @@ import { Provider } from 'react-redux';
 import { store } from './components/dashboard/store';
 import { AuthProvider } from './components/dashboard/contexts/AuthContext';
 import Cookies from 'js-cookie';
+import { broadcastAuthChanged } from './lib/authSync';
 import { formatWalletMinutesBalance } from './utils/billingMinutes';
 import ProfileCreation from './components/ProfileCreation';
 import GigGeneration from './components/GigGeneration';
@@ -743,7 +744,8 @@ function AppContent() {
       try { localStorage.setItem(k, v); } catch { /* ignore quota */ }
     });
 
-    window.location.replace('/auth/signin');
+    broadcastAuthChanged({ token: null, userId: null, source: 'company' });
+    window.location.replace('/');
   };
 
   const renderContent = () => {
