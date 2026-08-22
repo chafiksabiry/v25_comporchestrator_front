@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  X, Mail, Phone, MapPin, Calendar, User, Edit, Globe, Hash, Bot,
+  X, Mail, Phone, MapPin, Calendar, User, Edit, Globe, Hash, Bot, PhoneOff,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -29,6 +29,11 @@ interface Props {
   lead: LeadDetail;
   onClose: () => void;
   onEdit?: () => void;
+}
+
+interface ActiveAiCall {
+  callId?: string;
+  callControlId: string;
 }
 
 function getInitials(lead: LeadDetail): string {
@@ -92,6 +97,8 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
   const initials = getInitials(lead);
   const fullName = getFullName(lead);
   const [callingAi, setCallingAi] = useState(false);
+  const [endingAi, setEndingAi] = useState(false);
+  const [activeAiCall, setActiveAiCall] = useState<ActiveAiCall | null>(null);
 
   const startAiCall = async () => {
     if (!lead._id) return;
@@ -118,6 +125,12 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
       if (!res.ok) {
         throw new Error(data.message || data.error || `HTTP ${res.status}`);
       }
+      if (data.callControlId) {
+        setActiveAiCall({
+          callControlId: String(data.callControlId),
+          callId: data.callId ? String(data.callId) : undefined,
+        });
+      }
       toast.success(
         t('aiVoice.callStarted', 'Appel IA lancé vers {{phone}}', {
           phone: lead.Phone,
@@ -127,6 +140,32 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
       toast.error(err?.message || t('aiVoice.callFailed', 'Impossible de lancer l’appel IA.'));
     } finally {
       setCallingAi(false);
+    }
+  };
+
+  const endAiCall = async () => {
+    if (!activeAiCall?.callControlId && !activeAiCall?.callId) return;
+    setEndingAi(true);
+    try {
+      const base = getDashCallsApiBase();
+      const res = await fetch(`${base}/calls/ai-outbound/hangup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          callControlId: activeAiCall.callControlId,
+          callId: activeAiCall.callId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || data.error || `HTTP ${res.status}`);
+      }
+      setActiveAiCall(null);
+      toast.success(t('aiVoice.callEnded', 'Appel terminé.'));
+    } catch (err: any) {
+      toast.error(err?.message || t('aiVoice.endCallFailed', 'Impossible de terminer l’appel.'));
+    } finally {
+      setEndingAi(false);
     }
   };
 
@@ -226,18 +265,33 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
           >
             {t('uploadContacts.list.details.close')}
           </button>
-          <button
-            type="button"
-            onClick={startAiCall}
-            disabled={callingAi || !lead.Phone}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            title={t('aiVoice.callWithAssistantHint', 'Appel sortant via OpenAI Realtime + Telnyx')}
-          >
-            <Bot className="w-3.5 h-3.5" />
-            {callingAi
-              ? t('aiVoice.calling', 'Appel…')
-              : t('aiVoice.callWithAssistant', 'Appeler avec l’assistant')}
-          </button>
+          {activeAiCall ? (
+            <button
+              type="button"
+              onClick={endAiCall}
+              disabled={endingAi}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-black text-white bg-red-600 border border-red-700 rounded-xl hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-red-500/20"
+              title={t('aiVoice.endCall', 'Terminer l’appel')}
+            >
+              <PhoneOff className="w-3.5 h-3.5" />
+              {endingAi
+                ? t('aiVoice.endingCall', 'Fin d’appel…')
+                : t('aiVoice.endCall', 'Terminer l’appel')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={startAiCall}
+              disabled={callingAi || !lead.Phone}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              title={t('aiVoice.callWithAssistantHint', 'Appel sortant via OpenAI Realtime + Telnyx')}
+            >
+              <Bot className="w-3.5 h-3.5" />
+              {callingAi
+                ? t('aiVoice.calling', 'Appel…')
+                : t('aiVoice.callWithAssistant', 'Appeler avec l’assistant')}
+            </button>
+          )}
           {onEdit && (
             <button
               type="button"
