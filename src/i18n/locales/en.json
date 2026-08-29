@@ -17,7 +17,14 @@
     "enabled": "Voice assistant enabled for this gig.",
     "disabled": "Voice assistant disabled.",
     "saveFailed": "Could not save the assistant.",
-    "selectGig": "Select a gig."
+    "selectGig": "Select a gig.",
+    "pageTitle": "Voice assistant",
+    "pageSub": "The AI dials and follows the gig script. A Telnyx line and an active script are required.",
+    "leadsTitle": "Leads to call",
+    "noLeads": "No leads for this gig.",
+    "ready": "Assistant is on — pick a lead below.",
+    "notReady": "Enable the assistant before placing a call.",
+    "openPage": "Place calls"
   },
   "userMenu": {
     "profile": "Profile",
@@ -43,6 +50,7 @@
     "scriptGenerator": "Script Generator",
     "training": "Training",
     "knowledgeBase": "Knowledge Base",
+    "voiceAssistant": "Voice assistant",
     "activeGuide": "Active Guide",
     "interactiveStep": "Interactive Step",
     "logout": "Logout",
