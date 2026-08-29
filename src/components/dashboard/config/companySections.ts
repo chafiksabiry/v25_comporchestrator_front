@@ -44,6 +44,7 @@ const COMPANY_DASHBOARD_TITLES: Array<{ test: (path: string) => boolean; label: 
   { test: (p) => p.startsWith('/dashboard/knowledge-base'), label: 'Base de connaissances' },
   { test: (p) => p.startsWith('/dashboard/kb-insight'), label: 'Insights KB' },
   { test: (p) => p.startsWith('/dashboard/telephony'), label: 'Lignes téléphone' },
+  { test: (p) => p.startsWith('/dashboard/voice-assistant'), label: 'Assistant vocal' },
   { test: (p) => p.startsWith('/dashboard/gig-activation'), label: 'Activation gig' },
   { test: (p) => p.startsWith('/dashboard/quality-assurance'), label: 'Assurance qualité' },
   { test: (p) => p.startsWith('/dashboard/operations'), label: 'Opérations' },
