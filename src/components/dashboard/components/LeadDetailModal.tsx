@@ -6,7 +6,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Cookies from 'js-cookie';
-import { getDashCallsApiBase } from '../lib/callsApiBase';
+import { hangupAiOutboundCall, startAiOutboundCall } from '../lib/aiVoiceApi';
 
 export interface LeadDetail {
   _id: string;
@@ -108,29 +108,14 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
     }
     setCallingAi(true);
     try {
-      const base = getDashCallsApiBase();
       const companyId = Cookies.get('companyId');
-      // Only send the lead's own gig — never a stale cookie gigId.
       const gigId = resolveGigId(lead) || undefined;
-      const res = await fetch(`${base}/calls/ai-outbound`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: lead._id,
-          gigId,
-          companyId,
-        }),
+      const session = await startAiOutboundCall({
+        leadId: lead._id,
+        gigId,
+        companyId: companyId || undefined,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.message || data.error || `HTTP ${res.status}`);
-      }
-      if (data.callControlId) {
-        setActiveAiCall({
-          callControlId: String(data.callControlId),
-          callId: data.callId ? String(data.callId) : undefined,
-        });
-      }
+      setActiveAiCall(session);
       toast.success(
         t('aiVoice.callStarted', 'Appel IA lancé vers {{phone}}', {
           phone: lead.Phone,
@@ -147,19 +132,7 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
     if (!activeAiCall?.callControlId && !activeAiCall?.callId) return;
     setEndingAi(true);
     try {
-      const base = getDashCallsApiBase();
-      const res = await fetch(`${base}/calls/ai-outbound/hangup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          callControlId: activeAiCall.callControlId,
-          callId: activeAiCall.callId,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.message || data.error || `HTTP ${res.status}`);
-      }
+      await hangupAiOutboundCall(activeAiCall);
       setActiveAiCall(null);
       toast.success(t('aiVoice.callEnded', 'Appel terminé.'));
     } catch (err: any) {
