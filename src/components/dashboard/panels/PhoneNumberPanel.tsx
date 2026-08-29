@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Phone,
   Search,
@@ -151,6 +151,7 @@ interface GigAndReps {
 export function PhoneNumberPanel() {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   const [phoneNumbers, setPhoneNumbers] = useState<PurchasedNumber[]>([]);
   const [gigsAndReps, setGigsAndReps] = useState<GigAndReps[]>([]);
@@ -1423,6 +1424,13 @@ export function PhoneNumberPanel() {
                     : aiEnabled
                       ? t('aiVoice.disable', 'Désactiver')
                       : t('aiVoice.enable', 'Activer l’assistant')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard/voice-assistant')}
+                  className="px-4 py-2 text-xs font-black rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                >
+                  {t('aiVoice.openPage', 'Lancer des appels')}
                 </button>
               </div>
             </div>
