@@ -17,7 +17,14 @@
     "enabled": "Assistant vocal activé pour ce gig.",
     "disabled": "Assistant vocal désactivé.",
     "saveFailed": "Impossible d'enregistrer l'assistant.",
-    "selectGig": "Sélectionnez un gig."
+    "selectGig": "Sélectionnez un gig.",
+    "pageTitle": "Assistant vocal",
+    "pageSub": "L’IA compose et suit le script du gig. Une ligne Telnyx et un script actif sont requis.",
+    "leadsTitle": "Leads à appeler",
+    "noLeads": "Aucun lead pour ce gig.",
+    "ready": "Assistant actif — choisissez un lead ci-dessous.",
+    "notReady": "Activez l’assistant avant de lancer un appel.",
+    "openPage": "Lancer des appels"
   },
   "userMenu": {
     "profile": "Profil",
@@ -43,6 +50,7 @@
     "scriptGenerator": "Script d'Appel",
     "training": "Formation",
     "knowledgeBase": "Base de Connaissances",
+    "voiceAssistant": "Assistant vocal",
     "activeGuide": "Guide Actif",
     "interactiveStep": "Étape Interactive",
     "logout": "Déconnexion",
