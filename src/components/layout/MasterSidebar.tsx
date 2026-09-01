@@ -140,6 +140,7 @@ export function MasterSidebar({
 
     // Group 2
     { icon: <Phone size={20} />, label: t('sidebar.calls'), path: '/dashboard/calls', key: 'calls', alwaysShow: true, groupId: 2 },
+    { icon: <Bot size={20} />, label: t('sidebar.voiceAssistant', 'Assistant vocal'), path: '/dashboard/voice-assistant', key: 'voice-assistant', alwaysShow: true, groupId: 2 },
     { icon: <UserPlus size={20} />, label: t('sidebar.leads'), path: '/dashboard/leads', key: 'leads', requiresLeads: true, groupId: 2 },
     { icon: <Users size={20} />, label: t('sidebar.repMatching'), path: '/dashboard/rep-matching', key: 'rep-matching', requiresRepMatching: true, groupId: 2 },
     { icon: <BookOpen size={20} />, label: t('sidebar.training'), path: '/dashboard/training', key: 'training', alwaysShow: true, groupId: 2 },
@@ -152,7 +153,6 @@ export function MasterSidebar({
     { icon: <ScrollText size={20} />, label: t('sidebar.scriptGenerator'), path: '/dashboard/script-generator', key: 'script-generator', alwaysShow: true, groupId: 3 },
     { icon: <Book size={20} />, label: t('sidebar.knowledgeBase'), path: '/dashboard/knowledge-base', key: 'knowledge-base', alwaysShow: true, groupId: 3 },
     { icon: <PhoneCall size={20} />, label: t('sidebar.telephony', 'Telephony'), path: '/dashboard/telephony', key: 'telephony', alwaysShow: true, groupId: 3 },
-    { icon: <Bot size={20} />, label: t('sidebar.voiceAssistant', 'Assistant vocal'), path: '/dashboard/voice-assistant', key: 'voice-assistant', alwaysShow: true, groupId: 3 },
     { icon: <Plug size={20} />, label: 'Gig Activation', path: '/dashboard/gig-activation', key: 'integrations', alwaysShow: true, groupId: 3 },
     { icon: <ClipboardCheck size={20} />, label: t('sidebar.qualityAssurance'), path: '/dashboard/quality-assurance', key: 'quality-assurance', requiresRepMatching: true, groupId: 3 },
     { icon: <ScrollText size={20} />, label: t('sidebar.operations'), path: '/dashboard/operations', key: 'operations', requiresRepMatching: true, groupId: 3 },

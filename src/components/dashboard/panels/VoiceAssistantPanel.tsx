@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Bot, PhoneOff, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
@@ -35,6 +36,8 @@ function leadName(lead: LeadRow): string {
 
 export function VoiceAssistantPanel() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const queryGigId = searchParams.get('gigId') || '';
   const companyId = Cookies.get('companyId') || '';
 
   const [gigs, setGigs] = useState<GigRow[]>([]);
@@ -61,14 +64,17 @@ export function VoiceAssistantPanel() {
       const json = await res.json().catch(() => ({}));
       const rows: GigRow[] = Array.isArray(json?.data) ? json.data : [];
       setGigs(rows);
-      setGigId((prev) => prev || rows[0]?.gigId || '');
+      setGigId((prev) => {
+        if (queryGigId && rows.some((r) => r.gigId === queryGigId)) return queryGigId;
+        return prev || rows[0]?.gigId || '';
+      });
     } catch (err) {
       console.error('[VoiceAssistant] gigs', err);
       toast.error(t('aiVoice.saveFailed', 'Impossible de charger les gigs.'));
     } finally {
       setLoading(false);
     }
-  }, [companyId, t]);
+  }, [companyId, queryGigId, t]);
 
   useEffect(() => {
     void loadGigs();
