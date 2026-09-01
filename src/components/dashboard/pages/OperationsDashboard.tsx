@@ -60,6 +60,7 @@ import { computeMinutesPurchaseCents } from '../../../utils/minutesPricing';
 // ignore VITE_API_URL_CALL (which targets the CRUD dashboard backend)
 // so swapping the CRUD provider never breaks the charts.
 import { getDashCallsApiBase } from '../lib/callsApiBase';
+import { VoiceAssistantOverviewCard } from '../components/VoiceAssistantOverviewCard';
 
 // Idempotent: other dashboards already register the same scales, registering
 // again is a no-op so it's safe to keep it co-located with the chart.
@@ -1623,6 +1624,8 @@ export default function OperationsDashboard() {
           onSeeLeads={() => setTab('leads')}
           onSeeAgents={() => setTab('agents')}
           onSeeWallet={() => setTab('wallet')}
+          selectedGigId={selectedGigId}
+          gigs={gigs}
         />
       )}
     </div>
@@ -2890,6 +2893,8 @@ function OverviewView({
   onSeeLeads,
   onSeeAgents,
   onSeeWallet,
+  selectedGigId,
+  gigs,
 }: {
   stats: OverviewKpiStats;
   leadStats: OverviewLeadStatsFull | null;
@@ -2910,6 +2915,8 @@ function OverviewView({
   onSeeLeads: () => void;
   onSeeAgents: () => void;
   onSeeWallet: () => void;
+  selectedGigId: string;
+  gigs: Array<{ _id: string; title: string }>;
 }) {
   const { t, i18n } = useTranslation();
   const [selectedKpi, setSelectedKpi] = useState<OverviewKpiId | null>(null);
@@ -3193,6 +3200,8 @@ function OverviewView({
           onClose={() => setSelectedKpi(null)}
         />
       )}
+
+      <VoiceAssistantOverviewCard selectedGigId={selectedGigId} gigs={gigs} />
 
       {/* ---------- Couverture leads + Résultats d'appels (donut) ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

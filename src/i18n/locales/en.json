@@ -381,6 +381,17 @@
           "mtd": "this month"
         }
       },
+      "voiceCard": {
+        "title": "Voice assistant",
+        "statusPick": "Pick a gig",
+        "statusReady": "Ready",
+        "statusOff": "Off",
+        "readySub": "The AI can dial and follow the script for {{gig}}.",
+        "offSub": "Enable the assistant so the AI can call on {{gig}}.",
+        "allGigsSub": "The AI dials and talks. Select a gig to see its status.",
+        "pipeline": "Telnyx → Script → Assistant",
+        "open": "Open"
+      },
       "coverage": {
         "title": "Lead coverage",
         "calledAtLeastOnce": "Called at least once",

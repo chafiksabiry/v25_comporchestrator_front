@@ -381,6 +381,17 @@
           "mtd": "ce mois"
         }
       },
+      "voiceCard": {
+        "title": "Assistant vocal",
+        "statusPick": "Choisir un gig",
+        "statusReady": "Prêt",
+        "statusOff": "Inactif",
+        "readySub": "L’IA peut composer et suivre le script de {{gig}}.",
+        "offSub": "Activez l’assistant pour que l’IA appelle sur {{gig}}.",
+        "allGigsSub": "L’IA compose et parle. Sélectionnez un gig pour voir le statut.",
+        "pipeline": "Telnyx → Script → Assistant",
+        "open": "Ouvrir"
+      },
       "coverage": {
         "title": "Couverture leads",
         "calledAtLeastOnce": "Appelés au moins 1x",
