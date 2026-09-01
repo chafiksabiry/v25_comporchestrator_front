@@ -59,7 +59,6 @@ export async function startAiOutboundCall(body: {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(body.companyId ? { 'x-company-id': body.companyId } : {}),
     },
     body: JSON.stringify(body),
   });
