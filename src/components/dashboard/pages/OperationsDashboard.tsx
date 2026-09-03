@@ -226,6 +226,7 @@ type RecentCallApi = {
   score?: number | null;
   repName?: string | null;
   leadName?: string | null;
+  aiVoiceEnabled?: boolean;
 };
 
 type CallbacksStats = { today: number; week: number; appointmentsConfirmed: number };
@@ -1204,11 +1205,16 @@ export default function OperationsDashboard() {
         billedMin > 0
           ? `${billedMin} min${c.score != null ? ` · ${Math.round(c.score)}%` : ''}`
           : '';
+      const isVoicebot = Boolean(c.aiVoiceEnabled);
       return {
         score: c.score ?? null,
-        agent: c.repName || t('opsDashboard.recent.unknownRep', 'Rep'),
+        agent: isVoicebot
+          ? t('calls.voicebot', 'Assistant vocal IA')
+          : c.repName || t('opsDashboard.recent.unknownRep', 'Rep'),
         lead: (c.leadName || '').trim() || t('opsDashboard.recent.unknownLead', 'Lead'),
-        meta,
+        meta: isVoicebot
+          ? [t('calls.voicebotBadge', 'Voicebot'), meta].filter(Boolean).join(' · ')
+          : meta,
         tag: outcomeTag(c.outcome, t),
         when: timeAgo(c.createdAt),
       };
@@ -1354,7 +1360,7 @@ export default function OperationsDashboard() {
             </button>
 
             {gigDropdownOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 z-[200] mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {t('opsDashboard.header.pickGig', 'Sélectionner un gig')}
                 </div>
@@ -1424,7 +1430,7 @@ export default function OperationsDashboard() {
             </button>
 
             {periodDropdownOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 z-[200] mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {t('opsDashboard.header.pickPeriod', 'Période')}
                 </div>
