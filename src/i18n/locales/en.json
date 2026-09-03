@@ -1,7 +1,7 @@
 {
   "aiVoice": {
     "callWithAssistant": "Call with assistant",
-    "callWithAssistantHint": "Outbound call via OpenAI Realtime + Telnyx",
+    "callWithAssistantHint": "Outbound AI call via Telnyx or Twilio",
     "calling": "Calling…",
     "callStarted": "AI call started to {{phone}}",
     "callFailed": "Could not start the AI call.",
@@ -11,7 +11,7 @@
     "endCallFailed": "Could not end the call.",
     "noPhone": "This lead has no phone number.",
     "panelTitle": "AI voice assistant",
-    "panelHint": "Enable the assistant on a gig to call a lead from the Contacts list.",
+    "panelHint": "Enable the assistant on a gig to call a lead: live spoken dialogue, guided by the script.",
     "enable": "Enable assistant",
     "disable": "Disable",
     "enabled": "Voice assistant enabled for this gig.",
@@ -19,7 +19,7 @@
     "saveFailed": "Could not save the assistant.",
     "selectGig": "Select a gig.",
     "pageTitle": "Voice assistant",
-    "pageSub": "The AI dials and follows the gig script. A Telnyx line and an active script are required.",
+    "pageSub": "The AI dials, talks with the lead, and follows the gig script one turn at a time. A Telnyx or Twilio line and an active script are required.",
     "leadsTitle": "Leads to call",
     "noLeads": "No leads for this gig.",
     "ready": "Assistant is on — pick a lead below.",
@@ -380,6 +380,17 @@
           "30d": "over 30 days",
           "mtd": "this month"
         }
+      },
+      "voiceCard": {
+        "title": "Voice assistant",
+        "statusPick": "Pick a gig",
+        "statusReady": "Ready",
+        "statusOff": "Off",
+        "readySub": "The AI can dial and follow the script for {{gig}}.",
+        "offSub": "Enable the assistant so the AI can call on {{gig}}.",
+        "allGigsSub": "The AI dials and talks. Select a gig to see its status.",
+        "pipeline": "Telnyx/Twilio → Script → Assistant",
+        "open": "Open"
       },
       "coverage": {
         "title": "Lead coverage",
@@ -2147,6 +2158,8 @@
       "agent": "Agent",
       "rep": "Rep"
     },
+    "voicebot": "AI voice assistant",
+    "voicebotBadge": "Voicebot",
     "direction": {
       "inbound": "Inbound call",
       "outbound": "Outbound call"

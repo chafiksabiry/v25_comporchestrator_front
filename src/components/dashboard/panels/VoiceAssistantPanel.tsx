@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Bot, PhoneOff, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
@@ -35,6 +36,8 @@ function leadName(lead: LeadRow): string {
 
 export function VoiceAssistantPanel() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const queryGigId = searchParams.get('gigId') || '';
   const companyId = Cookies.get('companyId') || '';
 
   const [gigs, setGigs] = useState<GigRow[]>([]);
@@ -61,14 +64,17 @@ export function VoiceAssistantPanel() {
       const json = await res.json().catch(() => ({}));
       const rows: GigRow[] = Array.isArray(json?.data) ? json.data : [];
       setGigs(rows);
-      setGigId((prev) => prev || rows[0]?.gigId || '');
+      setGigId((prev) => {
+        if (queryGigId && rows.some((r) => r.gigId === queryGigId)) return queryGigId;
+        return prev || rows[0]?.gigId || '';
+      });
     } catch (err) {
       console.error('[VoiceAssistant] gigs', err);
       toast.error(t('aiVoice.saveFailed', 'Impossible de charger les gigs.'));
     } finally {
       setLoading(false);
     }
-  }, [companyId, t]);
+  }, [companyId, queryGigId, t]);
 
   useEffect(() => {
     void loadGigs();
@@ -213,7 +219,7 @@ export function VoiceAssistantPanel() {
             <p className="text-sm text-slate-500 mt-0.5">
               {t(
                 'aiVoice.pageSub',
-                'L’IA compose et suit le script du gig. Une ligne Telnyx et un script actif sont requis.'
+                'L’IA compose et suit le script du gig. Une ligne Telnyx ou Twilio et un script actif sont requis.'
               )}
             </p>
           </div>
@@ -235,7 +241,7 @@ export function VoiceAssistantPanel() {
         <p className="text-[11px] text-slate-600">
           {t(
             'aiVoice.panelHint',
-            'Activez l’assistant sur le même gig que vos leads (celui lié à la ligne Telnyx).'
+            'Activez l’assistant sur le même gig que vos leads (celui lié à la ligne Telnyx ou Twilio).'
           )}
         </p>
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
@@ -334,7 +340,7 @@ export function VoiceAssistantPanel() {
                       onClick={() => void onCall(lead)}
                       title={t(
                         'aiVoice.callWithAssistantHint',
-                        'Appel sortant via OpenAI Realtime + Telnyx'
+                        'Appel sortant IA via Telnyx ou Twilio'
                       )}
                       className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-black text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 disabled:opacity-50"
                     >
