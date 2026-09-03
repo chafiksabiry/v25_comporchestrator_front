@@ -24,7 +24,7 @@ function validateTerritories(territories: string[], timezoneId?: string): string
 
 export async function transcribeGigAudio(
   blob: Blob,
-  options?: { language?: string; filename?: string }
+  options?: { language?: string; filename?: string; signal?: AbortSignal }
 ): Promise<string> {
   const form = new FormData();
   const ext = blob.type.includes('mp4')
@@ -42,6 +42,7 @@ export async function transcribeGigAudio(
   const response = await fetch(`${API_BASE_URL}/ai/transcribe-audio`, {
     method: 'POST',
     body: form,
+    signal: options?.signal,
   });
 
   const data = await response.json().catch(() => ({}));
