@@ -6,7 +6,7 @@ import {
   Pause,
   Play,
   Square,
-  Trash2,
+  X,
   VolumeX,
 } from 'lucide-react';
 import { transcribeGigAudio } from '../lib/ai';
@@ -25,6 +25,8 @@ interface AudioBriefRecorderProps {
   maxSeconds?: number;
   /** Called with Whisper transcript — parent only fills the input (no auto-generate). */
   onTranscript: (text: string) => void;
+  /** Called when user cancels recording / transcription (parent can clear input). */
+  onCancel?: () => void;
   onError?: (message: string) => void;
 }
 
@@ -54,6 +56,7 @@ export function AudioBriefRecorder({
   language = 'fr',
   maxSeconds = 120,
   onTranscript,
+  onCancel,
   onError,
 }: AudioBriefRecorderProps) {
   const [status, setStatus] = useState<RecorderStatus>('idle');
@@ -70,7 +73,7 @@ export function AudioBriefRecorder({
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const mimeRef = useRef('audio/webm');
   const discardRef = useRef(false);
-
+  const abortRef = useRef<AbortController | null>(null);
   const previewUrlRef = useRef<string | null>(null);
 
   const cleanupStream = () => {
@@ -98,8 +101,23 @@ export function AudioBriefRecorder({
     }
   };
 
+  const resetIdle = () => {
+    clearTimer();
+    cleanupStream();
+    revokePreview();
+    chunksRef.current = [];
+    mediaRecorderRef.current = null;
+    abortRef.current = null;
+    elapsedRef.current = 0;
+    setElapsed(0);
+    setMuted(false);
+    setStatus('idle');
+  };
+
   useEffect(() => {
     return () => {
+      discardRef.current = true;
+      abortRef.current?.abort();
       clearTimer();
       cleanupStream();
       revokePreview();
@@ -221,27 +239,26 @@ export function AudioBriefRecorder({
     }
   };
 
-  const cancelRecording = () => {
-    const recorder = mediaRecorderRef.current;
+  /** Cancel at any stage: recording, paused, or transcribing. */
+  const cancelAudio = () => {
     discardRef.current = true;
+    abortRef.current?.abort();
+    abortRef.current = null;
     clearTimer();
     revokePreview();
     chunksRef.current = [];
+
+    const recorder = mediaRecorderRef.current;
     if (recorder && recorder.state !== 'inactive') {
       try {
         recorder.stop();
       } catch {
-        cleanupStream();
-        mediaRecorderRef.current = null;
-        setStatus('idle');
+        resetIdle();
+        onCancel?.();
       }
     } else {
-      cleanupStream();
-      mediaRecorderRef.current = null;
-      setStatus('idle');
-      setElapsed(0);
-      elapsedRef.current = 0;
-      setMuted(false);
+      resetIdle();
+      onCancel?.();
     }
   };
 
@@ -251,11 +268,8 @@ export function AudioBriefRecorder({
     mediaRecorderRef.current = null;
 
     if (discardRef.current) {
-      chunksRef.current = [];
-      setElapsed(0);
-      elapsedRef.current = 0;
-      setMuted(false);
-      setStatus('idle');
+      resetIdle();
+      onCancel?.();
       return;
     }
 
@@ -272,16 +286,33 @@ export function AudioBriefRecorder({
     previewUrlRef.current = url;
     setPreviewUrl(url);
 
+    const abort = new AbortController();
+    abortRef.current = abort;
     setStatus('transcribing');
+
     try {
-      const text = await transcribeGigAudio(blob, { language });
+      const text = await transcribeGigAudio(blob, {
+        language,
+        signal: abort.signal,
+      });
+      if (discardRef.current || abort.signal.aborted) {
+        resetIdle();
+        onCancel?.();
+        return;
+      }
       revokePreview();
+      abortRef.current = null;
       setStatus('idle');
       setElapsed(0);
       elapsedRef.current = 0;
       setMuted(false);
       onTranscript(text);
     } catch (err) {
+      if (discardRef.current || (err instanceof DOMException && err.name === 'AbortError')) {
+        resetIdle();
+        onCancel?.();
+        return;
+      }
       const msg =
         err instanceof Error ? err.message : 'Échec de la transcription audio.';
       setStatus('error');
@@ -311,8 +342,9 @@ export function AudioBriefRecorder({
   const active = status === 'recording' || status === 'paused';
   const remaining = Math.max(0, maxSeconds - elapsed);
   const nearMax = remaining <= 10 && active;
+  const showBar = active || status === 'transcribing';
 
-  if (!active && status !== 'transcribing') {
+  if (!showBar) {
     return (
       <button
         type="button"
@@ -330,10 +362,22 @@ export function AudioBriefRecorder({
   return (
     <div className="absolute bottom-3 right-20 left-4 sm:left-auto sm:right-20 flex flex-wrap items-center justify-end gap-1.5 rounded-2xl border border-rose-100 bg-white/95 px-2 py-1.5 shadow-xl backdrop-blur-sm">
       {status === 'transcribing' ? (
-        <div className="flex items-center gap-2 px-2 py-1.5 text-xs font-bold text-harx-700">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Transcription…
-        </div>
+        <>
+          <div className="flex items-center gap-2 px-2 py-1.5 text-xs font-bold text-harx-700">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Transcription…
+          </div>
+          <button
+            type="button"
+            onClick={cancelAudio}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-black text-slate-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+            title="Annuler la transcription"
+            aria-label="Annuler la transcription"
+          >
+            <X className="h-3.5 w-3.5" />
+            Annuler
+          </button>
+        </>
       ) : (
         <>
           <span
@@ -411,12 +455,13 @@ export function AudioBriefRecorder({
 
           <button
             type="button"
-            onClick={cancelRecording}
-            className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-rose-600"
-            title="Annuler"
+            onClick={cancelAudio}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-black text-slate-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+            title="Annuler l’enregistrement"
             aria-label="Annuler l’enregistrement"
           >
-            <Trash2 className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
+            Annuler
           </button>
         </>
       )}
