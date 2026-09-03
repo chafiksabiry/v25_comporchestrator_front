@@ -18,15 +18,32 @@ const removeReactRefreshScript = () => {
   };
 };
 
-export default defineConfig(() => {
+/** Absolute public base for qiankun host to load this MF's assets. */
+function resolvePublicBase(command: 'build' | 'serve'): string {
+  if (command === 'serve') {
+    return 'http://localhost:5183/';
+  }
+  // Netlify injects URL = this site's canonical origin at build time.
+  const fromEnv = (
+    process.env.VITE_MF_BASE_URL ||
+    process.env.URL ||
+    process.env.DEPLOY_PRIME_URL ||
+    'https://harx26comporchestratorfront-dev.netlify.app'
+  ).replace(/\/+$/, '');
+  return `${fromEnv}/`;
+}
+
+export default defineConfig(({ command }) => {
+  const isServe = command === 'serve';
+
   return {
-    base: 'https://harx26comporchestratorfront-dev.netlify.app/',
+    base: resolvePublicBase(command),
     plugins: [
       react({
         jsxRuntime: 'classic',
       }),
       qiankun('company', {
-        useDevMode: true,
+        useDevMode: isServe,
       }),
       removeReactRefreshScript(),
     ],
