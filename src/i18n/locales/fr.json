@@ -1,7 +1,7 @@
 {
   "aiVoice": {
     "callWithAssistant": "Appeler avec l'assistant",
-    "callWithAssistantHint": "Appel sortant via OpenAI Realtime + Telnyx",
+    "callWithAssistantHint": "Appel sortant IA via Telnyx ou Twilio",
     "calling": "Appel…",
     "callStarted": "Appel IA lancé vers {{phone}}",
     "callFailed": "Impossible de lancer l'appel IA.",
@@ -11,7 +11,7 @@
     "endCallFailed": "Impossible de terminer l'appel.",
     "noPhone": "Ce lead n'a pas de numéro de téléphone.",
     "panelTitle": "Assistant vocal IA",
-    "panelHint": "Activez l'assistant sur un gig pour pouvoir appeler un lead depuis la liste Contacts.",
+    "panelHint": "Activez l'assistant sur un gig pour appeler un lead : vrai échange vocal, guidé par le script.",
     "enable": "Activer l'assistant",
     "disable": "Désactiver",
     "enabled": "Assistant vocal activé pour ce gig.",
@@ -19,7 +19,7 @@
     "saveFailed": "Impossible d'enregistrer l'assistant.",
     "selectGig": "Sélectionnez un gig.",
     "pageTitle": "Assistant vocal",
-    "pageSub": "L’IA compose et suit le script du gig. Une ligne Telnyx et un script actif sont requis.",
+    "pageSub": "L’IA compose, dialogue avec le lead et s’appuie sur le script (une réplique à la fois). Une ligne Telnyx ou Twilio et un script actif sont requis.",
     "leadsTitle": "Leads à appeler",
     "noLeads": "Aucun lead pour ce gig.",
     "ready": "Assistant actif — choisissez un lead ci-dessous.",
@@ -380,6 +380,17 @@
           "30d": "sur 30 jours",
           "mtd": "ce mois"
         }
+      },
+      "voiceCard": {
+        "title": "Assistant vocal",
+        "statusPick": "Choisir un gig",
+        "statusReady": "Prêt",
+        "statusOff": "Inactif",
+        "readySub": "L’IA peut composer et suivre le script de {{gig}}.",
+        "offSub": "Activez l’assistant pour que l’IA appelle sur {{gig}}.",
+        "allGigsSub": "L’IA compose et parle. Sélectionnez un gig pour voir le statut.",
+        "pipeline": "Telnyx/Twilio → Script → Assistant",
+        "open": "Ouvrir"
       },
       "coverage": {
         "title": "Couverture leads",
@@ -2147,6 +2158,8 @@
       "agent": "Agent",
       "rep": "Rep"
     },
+    "voicebot": "Assistant vocal IA",
+    "voicebotBadge": "Voicebot",
     "direction": {
       "inbound": "Appel entrant",
       "outbound": "Appel sortant"
