@@ -465,11 +465,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
 
   const handleAudioTranscript = (text: string) => {
     setInput(text);
-    toast.success('Audio transcrit — génération du gig…');
-    // Wait a tick so Suggestions mounts with the transcribed input
-    window.setTimeout(() => {
-      handleGenerateSuggestions();
-    }, 80);
+    toast.success('Audio transcrit — vérifiez le texte puis envoyez.');
   };
 
   const handleConfirmSuggestions = (suggestions: GigSuggestion) => {
@@ -732,6 +728,14 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   id="description"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (input.trim() && !isAnalyzing) {
+                        handleGenerateSuggestions();
+                      }
+                    }
+                  }}
                   rows={1}
                   placeholder="Example: I need a sales campaign targeting Spanish-speaking customers in Europe, with a focus on insurance products... — or record your brief with the mic."
                   className="w-full min-h-[120px] max-h-[220px] pl-6 pr-28 py-5 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none shadow-sm overflow-y-auto"
@@ -739,6 +743,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 <AudioBriefRecorder
                   disabled={isAnalyzing}
                   language="fr"
+                  maxSeconds={120}
                   onTranscript={handleAudioTranscript}
                   onError={(message) => toast.error(message)}
                 />
@@ -751,7 +756,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 </button>
               </div>
               <p className="mt-3 text-xs font-medium text-gray-500">
-                Écrivez votre besoin ou appuyez sur le micro pour dicter — l’IA génère le gig (titre, description, skills…).
+                Écrivez ou dictez (micro · pause · mute · max 2 min). Le texte apparaît dans le champ — Entrée ou Envoyer pour générer. (Shift+Entrée = nouvelle ligne)
               </p>
             </div>
           </form>
