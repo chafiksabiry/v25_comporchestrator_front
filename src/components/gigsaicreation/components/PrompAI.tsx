@@ -35,9 +35,12 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   const backToOnboarding = onBackToOnboarding ?? onBack;
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-  /** Survives mic focus loss so we can replace a selection after dictation. */
+  /** Last caret/selection while the textarea is focused. */
   const selectionRef = React.useRef({ start: 0, end: 0 });
+  /** Frozen range for the current take — used to replace after Whisper returns. */
+  const lockedSelectionRef = React.useRef<{ start: number; end: number } | null>(null);
   const [input, setInput] = useState("");
+  const [audioReplaceSnippet, setAudioReplaceSnippet] = useState<string | null>(null);
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -467,11 +470,32 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
 
   const saveSelection = () => {
     const el = textareaRef.current;
-    if (!el) return;
+    // Only capture while focused — after blur browsers often collapse the range to 0.
+    if (!el || document.activeElement !== el) return;
     selectionRef.current = {
       start: el.selectionStart ?? 0,
       end: el.selectionEnd ?? 0,
     };
+  };
+
+  /** Call from mic mousedown (before focus leaves the textarea). */
+  const lockSelectionForAudio = () => {
+    const el = textareaRef.current;
+    let start = selectionRef.current.start;
+    let end = selectionRef.current.end;
+    if (el && document.activeElement === el) {
+      start = el.selectionStart ?? 0;
+      end = el.selectionEnd ?? 0;
+      selectionRef.current = { start, end };
+    }
+    start = Math.max(0, Math.min(start, input.length));
+    end = Math.max(start, Math.min(end, input.length));
+    lockedSelectionRef.current = { start, end };
+    if (start !== end) {
+      setAudioReplaceSnippet(input.slice(start, end));
+    } else {
+      setAudioReplaceSnippet(null);
+    }
   };
 
   const handleAudioTranscript = (text: string) => {
@@ -479,18 +503,17 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     if (!piece) return;
 
     const current = input;
-    // Prefer live selection; fall back to last saved (before mic stole focus).
-    const el = textareaRef.current;
-    let start = selectionRef.current.start;
-    let end = selectionRef.current.end;
-    if (el && document.activeElement === el) {
-      start = el.selectionStart;
-      end = el.selectionEnd;
-    }
+    const locked = lockedSelectionRef.current;
+    lockedSelectionRef.current = null;
+    setAudioReplaceSnippet(null);
+
+    let start = locked?.start ?? selectionRef.current.start;
+    let end = locked?.end ?? selectionRef.current.end;
     start = Math.max(0, Math.min(start, current.length));
     end = Math.max(start, Math.min(end, current.length));
     const hasSelection = start !== end;
 
+    // Selection → replace that span. No selection → insert at caret.
     let insert = piece;
     if (!hasSelection && start > 0 && !/\s$/.test(current.slice(0, start))) {
       insert = ` ${piece}`;
@@ -512,12 +535,14 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
 
     toast.success(
       hasSelection
-        ? 'Sélection remplacée — corrigez encore ou envoyez.'
+        ? 'Passage sélectionné remplacé par l’audio.'
         : 'Texte ajouté — corrigez ou continuez à dicter, puis envoyez.'
     );
   };
 
   const handleAudioCancel = () => {
+    lockedSelectionRef.current = null;
+    setAudioReplaceSnippet(null);
     toast('Enregistrement annulé');
   };
 
@@ -791,8 +816,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   }}
                   onSelect={saveSelection}
                   onKeyUp={saveSelection}
+                  onMouseUp={saveSelection}
                   onClick={saveSelection}
-                  onBlur={saveSelection}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -809,10 +834,11 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   disabled={isAnalyzing}
                   language="fr"
                   maxSeconds={120}
+                  replaceSnippet={audioReplaceSnippet}
                   onTranscript={handleAudioTranscript}
                   onCancel={handleAudioCancel}
                   onError={(message) => toast.error(message)}
-                  onBeforeStart={saveSelection}
+                  onBeforeStart={lockSelectionForAudio}
                 />
                 <button
                   type="submit"
@@ -822,8 +848,17 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   <ArrowUp className="w-7 h-7 stroke-[3]" />
                 </button>
               </div>
+              {audioReplaceSnippet ? (
+                <p className="mt-2 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                  Remplacement audio : «{' '}
+                  {audioReplaceSnippet.length > 80
+                    ? `${audioReplaceSnippet.slice(0, 80)}…`
+                    : audioReplaceSnippet}{' '}
+                  »
+                </p>
+              ) : null}
               <p className="mt-3 text-xs font-medium text-gray-500">
-                Écrivez, corrigez à la main, ou dictez à nouveau. Sélectionnez un passage puis dictez pour le remplacer ; sinon le texte s’ajoute au curseur. Entrée / Envoyer pour générer (Shift+Entrée = nouvelle ligne).
+                Sélectionnez un passage puis dictez pour le remplacer. Sans sélection, le texte s’ajoute au curseur. Entrée / Envoyer pour générer.
               </p>
             </div>
           </form>
