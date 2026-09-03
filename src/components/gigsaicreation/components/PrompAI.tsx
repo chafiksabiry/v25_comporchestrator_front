@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, ArrowUp } from 'lucide-react';
+import { HelpCircle, PlusCircle, ArrowUp } from 'lucide-react';
 import { Suggestions } from './Suggestions';
 import { SectionContent } from './SectionContent';
 import { AudioBriefRecorder } from './AudioBriefRecorder';
@@ -534,16 +534,6 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     toast('Enregistrement annulé');
   };
 
-  const dictationModeHint = (() => {
-    if (selection.start !== selection.end) {
-      return 'Sélection active → la prochaine dictée remplacera ce passage.';
-    }
-    if (!input.trim()) {
-      return 'Dictez votre brief, puis corrigez le texte avant d’envoyer.';
-    }
-    return 'Placez le curseur pour ajouter, ou sélectionnez un passage pour le corriger.';
-  })();
-
   const handleConfirmSuggestions = (suggestions: GigSuggestion) => {
     setConfirmedSuggestions(suggestions);
     setShowSuggestions(false);
@@ -755,118 +745,94 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-3xl -translate-y-6 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_20px_60px_-28px_rgba(15,23,42,0.35)] sm:p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
-                  Création de gig
-                </p>
-                <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
-                  Décrivez votre besoin
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Écrivez, dictez, sélectionnez un passage pour le corriger, puis envoyez.
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowGuidance(!showGuidance)}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800"
+        <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 p-8 transform -translate-y-12">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium text-gray-700"
                 >
-                  <HelpCircle className="h-4 w-4" />
-                  Conseils
-                </button>
+                  Describe your needs naturally
+                </label>
+                <div className="flex items-center space-x-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowGuidance(!showGuidance)}
+                    className="text-harx-500 hover:text-harx-600 flex items-center text-sm font-bold"
+                  >
+                    <HelpCircle className="w-4 h-4 mr-1" />
+                    Writing Tips
+                  </button>
+                  <button
+                    type="button"
+                    disabled
+                    className="text-gray-400 flex items-center text-sm cursor-not-allowed"
+                  >
+                    <PlusCircle className="w-5 h-5 mr-1 text-gray-400" />
+                    <span>Create Manually</span>
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {showGuidance && (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <ul className="space-y-1.5 text-sm text-slate-600">
-                  <li>• Audience, zone géographique et langue</li>
-                  <li>• Compétences et expérience attendues</li>
-                  <li>• Planning / disponibilités</li>
-                  <li>• Commission ou objectifs si connus</li>
-                </ul>
-              </div>
-            )}
+              {showGuidance && (
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="text-sm font-medium text-blue-800 mb-2">Writing Tips</h3>
+                  <ul className="text-sm text-blue-600 space-y-2">
+                    <li>• Be specific about your target audience and location</li>
+                    <li>• Mention key requirements and qualifications</li>
+                    <li>• Include details about schedule and availability</li>
+                    <li>• Specify any technical requirements or tools needed</li>
+                    <li>• Describe the compensation structure if possible</li>
+                  </ul>
+                </div>
+              )}
 
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/40 focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-900/5">
-              <textarea
-                ref={textareaRef}
-                id="description"
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  setAudioFromDictation(false);
-                }}
-                onSelect={captureSelection}
-                onKeyUp={captureSelection}
-                onClick={captureSelection}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (input.trim() && !isAnalyzing) {
-                      handleGenerateSuggestions();
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  id="description"
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    setAudioFromDictation(false);
+                  }}
+                  onSelect={captureSelection}
+                  onKeyUp={captureSelection}
+                  onClick={captureSelection}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (input.trim() && !isAnalyzing) {
+                        handleGenerateSuggestions();
+                      }
                     }
-                  }
-                }}
-                rows={5}
-                placeholder="Ex. : Campagne télévente assurance santé, francophones en France, bonus au closing…"
-                className="w-full resize-none border-0 bg-transparent px-5 pb-3 pt-5 text-[16px] leading-relaxed text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 sm:text-[17px]"
-              />
-
-              <div className="flex flex-col gap-3 border-t border-slate-200/80 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  }}
+                  rows={1}
+                  placeholder="Example: I need a sales campaign targeting Spanish-speaking customers in Europe, with a focus on insurance products... — or record your brief with the mic."
+                  className="w-full min-h-[120px] max-h-[220px] pl-6 pr-28 py-5 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none shadow-sm overflow-y-auto"
+                />
                 <AudioBriefRecorder
                   disabled={isAnalyzing}
                   language="fr"
                   maxSeconds={120}
-                  modeHint={dictationModeHint}
                   onTranscript={handleAudioTranscript}
                   onCancel={handleAudioCancel}
                   onError={(message) => toast.error(message)}
                 />
-
-                <div className="flex items-center justify-end gap-2">
-                  {input.trim() ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setInput('');
-                        setAudioFromDictation(false);
-                        setSelection({ start: 0, end: 0 });
-                        textareaRef.current?.focus();
-                      }}
-                      className="rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-                    >
-                      Effacer
-                    </button>
-                  ) : null}
-                  <button
-                    type="submit"
-                    disabled={!input.trim() || isAnalyzing}
-                    className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-                  >
-                    {isAnalyzing ? 'Analyse…' : 'Générer'}
-                    <ArrowUp className="h-4 w-4 stroke-[2.5]" />
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isAnalyzing}
+                  className="absolute bottom-4 right-4 p-4 bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-gray-200 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-harx-500/20"
+                >
+                  <ArrowUp className="w-7 h-7 stroke-[3]" />
+                </button>
               </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-slate-500">
-              {audioFromDictation ? (
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-800">
-                  Dictée prête — éditez librement
-                </span>
-              ) : null}
-              {selection.start !== selection.end ? (
-                <span className="rounded-full bg-amber-50 px-2.5 py-1 font-semibold text-amber-800">
-                  Sélection · dictée = correction
-                </span>
-              ) : null}
-              <span>Entrée = générer · Shift+Entrée = nouvelle ligne · max dictée 2 min</span>
+              <p className="mt-3 text-xs font-medium text-gray-500">
+                {selection.start !== selection.end
+                  ? 'Sélection active : la prochaine dictée corrigera ce passage. Sinon le texte s’ajoute au curseur. Entrée = générer · max 2 min.'
+                  : 'Écrivez ou dictez (pause · mute · Annuler · max 2 min). Sélectionnez un passage pour le corriger. Entrée = générer · Shift+Entrée = nouvelle ligne.'}
+              </p>
             </div>
           </form>
         </div>
