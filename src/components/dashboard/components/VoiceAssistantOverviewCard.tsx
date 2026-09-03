@@ -121,7 +121,7 @@ export function VoiceAssistantOverviewCard({
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               {t(
                 'opsDashboard.overview.voiceCard.pipeline',
-                'Telnyx → Script → Assistant'
+                'Telnyx/Twilio → Script → Assistant'
               )}
             </p>
           </div>

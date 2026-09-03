@@ -219,7 +219,7 @@ export function VoiceAssistantPanel() {
             <p className="text-sm text-slate-500 mt-0.5">
               {t(
                 'aiVoice.pageSub',
-                'L’IA compose et suit le script du gig. Une ligne Telnyx et un script actif sont requis.'
+                'L’IA compose et suit le script du gig. Une ligne Telnyx ou Twilio et un script actif sont requis.'
               )}
             </p>
           </div>
@@ -241,7 +241,7 @@ export function VoiceAssistantPanel() {
         <p className="text-[11px] text-slate-600">
           {t(
             'aiVoice.panelHint',
-            'Activez l’assistant sur le même gig que vos leads (celui lié à la ligne Telnyx).'
+            'Activez l’assistant sur le même gig que vos leads (celui lié à la ligne Telnyx ou Twilio).'
           )}
         </p>
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
@@ -340,7 +340,7 @@ export function VoiceAssistantPanel() {
                       onClick={() => void onCall(lead)}
                       title={t(
                         'aiVoice.callWithAssistantHint',
-                        'Appel sortant via OpenAI Realtime + Telnyx'
+                        'Appel sortant IA via Telnyx ou Twilio'
                       )}
                       className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-black text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 disabled:opacity-50"
                     >
