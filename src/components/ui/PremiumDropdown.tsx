@@ -70,7 +70,7 @@ export function PremiumDropdown({
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="absolute left-0 top-full z-[200] w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent p-2">
                         {safeOptions.length === 0 ? (
                             <div className="px-6 py-4 text-gray-400 text-sm italic">No options available</div>
