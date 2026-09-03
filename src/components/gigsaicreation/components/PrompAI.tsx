@@ -35,6 +35,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   const backToOnboarding = onBackToOnboarding ?? onBack;
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const [audioPanelHost, setAudioPanelHost] = useState<HTMLDivElement | null>(null);
   /** Last caret/selection while the textarea is focused. */
   const selectionRef = React.useRef({ start: 0, end: 0 });
   /** Frozen range for the current take — used to replace after Whisper returns. */
@@ -854,7 +855,6 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   value={input}
                   onChange={(e) => {
                     setInput(e.target.value);
-                    // Keep caret after typed edits
                     const ta = e.target;
                     selectionRef.current = {
                       start: ta.selectionStart,
@@ -874,29 +874,40 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                     }
                   }}
                   rows={1}
-                  placeholder="Example: I need a sales campaign targeting Spanish-speaking customers in Europe, with a focus on insurance products... — or record your brief with the mic."
-                  className="w-full min-h-[120px] max-h-[220px] pl-6 pr-28 py-5 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none shadow-sm overflow-y-auto"
+                  placeholder="Décrivez votre besoin, ou dictez avec le micro…"
+                  className={`w-full min-h-[120px] max-h-[220px] pl-6 py-5 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none shadow-sm overflow-y-auto ${
+                    isLiveDictating ? 'pr-6' : 'pr-28'
+                  }`}
                 />
                 <AudioBriefRecorder
                   disabled={isAnalyzing}
                   language="fr"
                   maxSeconds={120}
                   replaceSnippet={audioReplaceSnippet}
+                  panelHost={audioPanelHost}
+                  onActiveChange={setIsLiveDictating}
                   onLiveTranscript={handleLiveTranscript}
                   onTranscript={handleAudioTranscript}
                   onCancel={handleAudioCancel}
                   onError={(message) => toast.error(message)}
                   onBeforeStart={lockSelectionForAudio}
                 />
-                <button
-                  type="submit"
-                  disabled={!input.trim() || isAnalyzing || isLiveDictating}
-                  className="absolute bottom-4 right-4 p-4 bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-gray-200 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-harx-500/20"
-                >
-                  <ArrowUp className="w-7 h-7 stroke-[3]" />
-                </button>
+                {!isLiveDictating ? (
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || isAnalyzing}
+                    title="Envoyer pour générer le gig"
+                    aria-label="Envoyer pour générer le gig"
+                    className="absolute bottom-4 right-4 p-4 bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-gray-200 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-harx-500/20"
+                  >
+                    <ArrowUp className="w-7 h-7 stroke-[3]" />
+                  </button>
+                ) : null}
               </div>
-              {audioReplaceSnippet ? (
+
+              <div ref={setAudioPanelHost} />
+
+              {audioReplaceSnippet && !isLiveDictating ? (
                 <p className="mt-2 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                   Remplacement audio : «{' '}
                   {audioReplaceSnippet.length > 80
@@ -906,7 +917,9 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 </p>
               ) : null}
               <p className="mt-3 text-xs font-medium text-gray-500">
-                Transcription live pendant la dictée (Chrome/Edge). Sélectionnez un passage pour le remplacer. Stop pour valider — Entrée / Envoyer pour générer.
+                {isLiveDictating
+                  ? 'Parlez clairement — les ondes et le texte live confirment la prise. Valider pour garder, Annuler pour jeter.'
+                  : 'Écrivez, sélectionnez un passage puis dictez pour le remplacer, ou dictez à la suite. Entrée / Envoyer pour générer.'}
               </p>
             </div>
           </form>
