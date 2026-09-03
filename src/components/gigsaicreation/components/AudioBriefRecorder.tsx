@@ -23,6 +23,8 @@ interface AudioBriefRecorderProps {
   language?: string;
   /** Max recording length in seconds (default 120 = 2 min). */
   maxSeconds?: number;
+  /** Snippet currently locked for audio replace (UI hint). */
+  replaceSnippet?: string | null;
   /** Called with Whisper transcript — parent only fills the input (no auto-generate). */
   onTranscript: (text: string) => void;
   /** Called when user cancels recording / transcription (parent can clear input). */
@@ -57,6 +59,7 @@ export function AudioBriefRecorder({
   disabled,
   language = 'fr',
   maxSeconds = 120,
+  replaceSnippet = null,
   onTranscript,
   onCancel,
   onBeforeStart,
@@ -156,7 +159,8 @@ export function AudioBriefRecorder({
     if (disabled || status === 'recording' || status === 'paused' || status === 'transcribing') {
       return;
     }
-    onBeforeStart?.();
+    // Selection is locked on mic mousedown — do not call onBeforeStart here
+    // (textarea already blurred; would overwrite the locked range with 0,0).
     if (typeof MediaRecorder === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       const msg = 'Enregistrement audio non supporté sur ce navigateur.';
       setStatus('error');
@@ -374,7 +378,7 @@ export function AudioBriefRecorder({
         <>
           <div className="flex items-center gap-2 px-2 py-1.5 text-xs font-bold text-harx-700">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Transcription…
+            {replaceSnippet ? 'Remplacement…' : 'Transcription…'}
           </div>
           <button
             type="button"
@@ -389,6 +393,15 @@ export function AudioBriefRecorder({
         </>
       ) : (
         <>
+          {replaceSnippet ? (
+            <span
+              className="max-w-[140px] truncate rounded-xl bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-800"
+              title={`Remplacera : ${replaceSnippet}`}
+            >
+              Remplace « {replaceSnippet.length > 24 ? `${replaceSnippet.slice(0, 24)}…` : replaceSnippet} »
+            </span>
+          ) : null}
+
           <span
             className={`inline-flex items-center gap-1.5 rounded-xl px-2 py-1 text-[11px] font-black tabular-nums ${
               nearMax ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-700'
