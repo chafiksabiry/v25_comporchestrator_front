@@ -468,6 +468,10 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     toast.success('Audio transcrit — vérifiez le texte puis envoyez.');
   };
 
+  const handleAudioCancel = () => {
+    toast('Enregistrement annulé');
+  };
+
   const handleConfirmSuggestions = (suggestions: GigSuggestion) => {
     setConfirmedSuggestions(suggestions);
     setShowSuggestions(false);
@@ -745,6 +749,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   language="fr"
                   maxSeconds={120}
                   onTranscript={handleAudioTranscript}
+                  onCancel={handleAudioCancel}
                   onError={(message) => toast.error(message)}
                 />
                 <button
@@ -756,7 +761,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 </button>
               </div>
               <p className="mt-3 text-xs font-medium text-gray-500">
-                Écrivez ou dictez (micro · pause · mute · max 2 min). Le texte apparaît dans le champ — Entrée ou Envoyer pour générer. (Shift+Entrée = nouvelle ligne)
+                Écrivez ou dictez (micro · pause · mute · Annuler · max 2 min). Le texte apparaît dans le champ — Entrée ou Envoyer pour générer. (Shift+Entrée = nouvelle ligne)
               </p>
             </div>
           </form>
