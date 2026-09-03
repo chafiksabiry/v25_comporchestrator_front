@@ -830,8 +830,9 @@ function AppContent() {
 
         <div className="flex flex-1 flex-col overflow-hidden relative bg-harx-sidebar">
           {/* Top Navigation / Navbar */}
-          <header className={`bg-harx-sidebar h-16 flex items-center shrink-0 px-4 md:px-5 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
-            <div className="flex w-full items-center gap-3 min-w-0">
+          {/* z-40 keeps header menus above main; overflow-visible so absolute menus are not clipped */}
+          <header className={`bg-harx-sidebar h-16 flex items-center shrink-0 px-4 md:px-5 relative z-40 overflow-visible ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
+            <div className="flex w-full items-center gap-3 min-w-0 overflow-visible">
               {/* Mobile-only hamburger to open the sidebar drawer. */}
               <button
                 type="button"
@@ -842,70 +843,72 @@ function AppContent() {
                 <Menu size={20} />
               </button>
 
-              {/* Credits, Balance, Upgrade, language, profile — single right-aligned row (no absolute center overlap). */}
-              <div className="ml-auto flex items-center gap-2 min-w-0 overflow-x-auto scrollbar-none">
-                {showActivationNavbarWidgets && (
-                  <div
-                    onClick={handleBalanceClick}
-                    className="harx-nav-chip group"
-                  >
-                    <div className="harx-nav-chip-icon bg-emerald-500/15 border border-emerald-500/25">
-                      <Coins size={14} className="text-emerald-400" />
+              {/* Right cluster: scrollable chips stay separate from dropdowns (overflow-x clips absolute menus). */}
+              <div className="ml-auto flex items-center gap-2 min-w-0 overflow-visible">
+                <div className="flex items-center gap-2 min-w-0 overflow-x-auto scrollbar-none">
+                  {showActivationNavbarWidgets && (
+                    <div
+                      onClick={handleBalanceClick}
+                      className="harx-nav-chip group"
+                    >
+                      <div className="harx-nav-chip-icon bg-emerald-500/15 border border-emerald-500/25">
+                        <Coins size={14} className="text-emerald-400" />
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.myWallet')}</span>
+                        <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{balance.toLocaleString('en-US')} €</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.myWallet')}</span>
-                      <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{balance.toLocaleString('en-US')} €</span>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
-                  <div
-                    onClick={handleMinutesClick}
-                    className="harx-nav-chip group"
-                  >
-                    <div className="harx-nav-chip-icon bg-blue-500/15 border border-blue-500/25">
-                      <Clock size={13} className="text-blue-400" />
+                  {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
+                    <div
+                      onClick={handleMinutesClick}
+                      className="harx-nav-chip group"
+                    >
+                      <div className="harx-nav-chip-icon bg-blue-500/15 border border-blue-500/25">
+                        <Clock size={13} className="text-blue-400" />
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.minutes')}</span>
+                        <span className="text-sm font-black text-white tabular-nums whitespace-nowrap">{formatWalletMinutesBalance(minutes)}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.minutes')}</span>
-                      <span className="text-sm font-black text-white tabular-nums whitespace-nowrap">{formatWalletMinutesBalance(minutes)}</span>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {activeProject !== 'comporchestrator' && (
-                  <div
-                    onClick={handleTelephonyClick}
-                    className="harx-nav-chip group"
-                  >
-                    <div className="harx-nav-chip-icon bg-harx-orange/15 border border-harx-orange/30">
-                      <Phone size={13} className="text-harx-orange" strokeWidth={2.5} />
+                  {activeProject !== 'comporchestrator' && (
+                    <div
+                      onClick={handleTelephonyClick}
+                      className="harx-nav-chip group"
+                    >
+                      <div className="harx-nav-chip-icon bg-harx-orange/15 border border-harx-orange/30">
+                        <Phone size={13} className="text-harx-orange" strokeWidth={2.5} />
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.phoneLines')}</span>
+                        <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.phoneLines')}</span>
-                      <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveProject('dashboard');
-                      navigate('/dashboard/subscription');
-                    }}
-                    className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-gradient-harx text-white font-black text-[11px] uppercase tracking-[0.12em] hover:opacity-95 active:scale-[0.98] transition-all duration-200 shrink-0"
-                  >
-                    <Sparkles size={13} className="text-white shrink-0" />
-                    <span className="whitespace-nowrap">{t('navbar.upgrade')}</span>
-                  </button>
-                )}
+                  {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveProject('dashboard');
+                        navigate('/dashboard/subscription');
+                      }}
+                      className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-gradient-harx text-white font-black text-[11px] uppercase tracking-[0.12em] hover:opacity-95 active:scale-[0.98] transition-all duration-200 shrink-0"
+                    >
+                      <Sparkles size={13} className="text-white shrink-0" />
+                      <span className="whitespace-nowrap">{t('navbar.upgrade')}</span>
+                    </button>
+                  )}
+                </div>
 
                 <LanguageSwitcher />
 
-                <div className="relative shrink-0" ref={profileDropdownRef}>
+                <div className="relative shrink-0 overflow-visible" ref={profileDropdownRef}>
                   <div
                     onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                     className="flex items-center gap-2 bg-harx-chip p-1 pr-3 rounded-xl border border-harx-chip-border cursor-pointer hover:border-white/20 hover:bg-[#222228] transition-colors"
@@ -930,7 +933,7 @@ function AppContent() {
                   </div>
 
                   {isProfileDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-[#0B0F19] border border-white/10 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-[#0B0F19] border border-white/10 rounded-2xl shadow-xl z-[200] overflow-hidden animate-fade-in">
                       <button
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
