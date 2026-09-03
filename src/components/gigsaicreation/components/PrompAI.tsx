@@ -39,8 +39,15 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   const selectionRef = React.useRef({ start: 0, end: 0 });
   /** Frozen range for the current take — used to replace after Whisper returns. */
   const lockedSelectionRef = React.useRef<{ start: number; end: number } | null>(null);
+  /** Snapshot of the field when recording starts (for live preview + cancel restore). */
+  const audioSessionRef = React.useRef<{
+    before: string;
+    after: string;
+    original: string;
+  } | null>(null);
   const [input, setInput] = useState("");
   const [audioReplaceSnippet, setAudioReplaceSnippet] = useState<string | null>(null);
+  const [isLiveDictating, setIsLiveDictating] = useState(false);
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -491,58 +498,98 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     start = Math.max(0, Math.min(start, input.length));
     end = Math.max(start, Math.min(end, input.length));
     lockedSelectionRef.current = { start, end };
+    audioSessionRef.current = {
+      before: input.slice(0, start),
+      after: input.slice(end),
+      original: input,
+    };
     if (start !== end) {
       setAudioReplaceSnippet(input.slice(start, end));
     } else {
       setAudioReplaceSnippet(null);
     }
+    setIsLiveDictating(true);
+  };
+
+  const handleLiveTranscript = (payload: { finals: string; interim: string }) => {
+    const session = audioSessionRef.current;
+    if (!session) return;
+    const live = `${payload.finals}${payload.interim ? ` ${payload.interim}` : ''}`.trim();
+    // Keep spacing when inserting into existing text without a selection.
+    const locked = lockedSelectionRef.current;
+    const hasSelection = Boolean(locked && locked.start !== locked.end);
+    let middle = live;
+    if (!hasSelection && session.before && live && !/\s$/.test(session.before)) {
+      middle = ` ${live}`;
+    }
+    setInput(session.before + middle + session.after);
   };
 
   const handleAudioTranscript = (text: string) => {
     const piece = text.trim();
-    if (!piece) return;
-
-    const current = input;
-    const locked = lockedSelectionRef.current;
-    lockedSelectionRef.current = null;
+    const session = audioSessionRef.current;
+    audioSessionRef.current = null;
+    setIsLiveDictating(false);
     setAudioReplaceSnippet(null);
 
-    let start = locked?.start ?? selectionRef.current.start;
-    let end = locked?.end ?? selectionRef.current.end;
+    if (!piece) {
+      lockedSelectionRef.current = null;
+      return;
+    }
+
+    // Prefer session snapshot (stable during live updates).
+    if (session) {
+      const locked = lockedSelectionRef.current;
+      lockedSelectionRef.current = null;
+      const hasSelection = Boolean(locked && locked.start !== locked.end);
+      let insert = piece;
+      if (!hasSelection && session.before && !/\s$/.test(session.before)) {
+        insert = ` ${piece}`;
+      }
+      const next = session.before + insert + session.after;
+      setInput(next);
+      const cursor = session.before.length + insert.length;
+      selectionRef.current = { start: cursor, end: cursor };
+      window.requestAnimationFrame(() => {
+        const ta = textareaRef.current;
+        if (!ta) return;
+        ta.focus();
+        ta.setSelectionRange(cursor, cursor);
+        ta.style.height = 'auto';
+        ta.style.height = `${ta.scrollHeight}px`;
+      });
+      toast.success(
+        hasSelection
+          ? 'Passage sélectionné remplacé par l’audio.'
+          : 'Dictée terminée — corrigez ou envoyez.'
+      );
+      return;
+    }
+
+    // Fallback if session missing
+    const current = input;
+    let start = lockedSelectionRef.current?.start ?? selectionRef.current.start;
+    let end = lockedSelectionRef.current?.end ?? selectionRef.current.end;
+    lockedSelectionRef.current = null;
     start = Math.max(0, Math.min(start, current.length));
     end = Math.max(start, Math.min(end, current.length));
     const hasSelection = start !== end;
-
-    // Selection → replace that span. No selection → insert at caret.
     let insert = piece;
     if (!hasSelection && start > 0 && !/\s$/.test(current.slice(0, start))) {
       insert = ` ${piece}`;
     }
-
     const next = current.slice(0, start) + insert + current.slice(end);
     setInput(next);
-
-    const cursor = start + insert.length;
-    selectionRef.current = { start: cursor, end: cursor };
-    window.requestAnimationFrame(() => {
-      const ta = textareaRef.current;
-      if (!ta) return;
-      ta.focus();
-      ta.setSelectionRange(cursor, cursor);
-      ta.style.height = 'auto';
-      ta.style.height = `${ta.scrollHeight}px`;
-    });
-
-    toast.success(
-      hasSelection
-        ? 'Passage sélectionné remplacé par l’audio.'
-        : 'Texte ajouté — corrigez ou continuez à dicter, puis envoyez.'
-    );
+    toast.success('Dictée terminée — corrigez ou envoyez.');
   };
 
   const handleAudioCancel = () => {
+    const session = audioSessionRef.current;
+    if (session) setInput(session.original);
+    audioSessionRef.current = null;
     lockedSelectionRef.current = null;
     setAudioReplaceSnippet(null);
+    setIsLiveDictating(false);
     toast('Enregistrement annulé');
   };
 
@@ -821,7 +868,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      if (input.trim() && !isAnalyzing) {
+                      if (input.trim() && !isAnalyzing && !isLiveDictating) {
                         handleGenerateSuggestions();
                       }
                     }
@@ -835,6 +882,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   language="fr"
                   maxSeconds={120}
                   replaceSnippet={audioReplaceSnippet}
+                  onLiveTranscript={handleLiveTranscript}
                   onTranscript={handleAudioTranscript}
                   onCancel={handleAudioCancel}
                   onError={(message) => toast.error(message)}
@@ -842,7 +890,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 />
                 <button
                   type="submit"
-                  disabled={!input.trim() || isAnalyzing}
+                  disabled={!input.trim() || isAnalyzing || isLiveDictating}
                   className="absolute bottom-4 right-4 p-4 bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-gray-200 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-harx-500/20"
                 >
                   <ArrowUp className="w-7 h-7 stroke-[3]" />
@@ -858,7 +906,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 </p>
               ) : null}
               <p className="mt-3 text-xs font-medium text-gray-500">
-                Sélectionnez un passage puis dictez pour le remplacer. Sans sélection, le texte s’ajoute au curseur. Entrée / Envoyer pour générer.
+                Transcription live pendant la dictée (Chrome/Edge). Sélectionnez un passage pour le remplacer. Stop pour valider — Entrée / Envoyer pour générer.
               </p>
             </div>
           </form>
