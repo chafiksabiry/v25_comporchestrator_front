@@ -1,13 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, Mic, Square } from 'lucide-react';
+import {
+  Loader2,
+  Mic,
+  MicOff,
+  Pause,
+  Play,
+  Square,
+  Trash2,
+  VolumeX,
+} from 'lucide-react';
 import { transcribeGigAudio } from '../lib/ai';
 
-type RecorderStatus = 'idle' | 'recording' | 'transcribing' | 'error';
+type RecorderStatus =
+  | 'idle'
+  | 'recording'
+  | 'paused'
+  | 'transcribing'
+  | 'error';
 
 interface AudioBriefRecorderProps {
   disabled?: boolean;
   language?: string;
-  /** Called with Whisper transcript; parent fills the prompt and can auto-generate. */
+  /** Max recording length in seconds (default 120 = 2 min). */
+  maxSeconds?: number;
+  /** Called with Whisper transcript — parent only fills the input (no auto-generate). */
   onTranscript: (text: string) => void;
   onError?: (message: string) => void;
 }
@@ -31,20 +47,31 @@ function formatElapsed(sec: number): string {
 
 /**
  * Mic control for the gig-creation prompt screen.
- * Record → stop → Whisper transcription → parent receives text.
+ * Record / pause / mute / cancel / max duration → Whisper → fill input only.
  */
 export function AudioBriefRecorder({
   disabled,
   language = 'fr',
+  maxSeconds = 120,
   onTranscript,
   onError,
 }: AudioBriefRecorderProps) {
   const [status, setStatus] = useState<RecorderStatus>('idle');
   const [elapsed, setElapsed] = useState(0);
+  const [muted, setMuted] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
+  const elapsedRef = useRef(0);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const mimeRef = useRef('audio/webm');
+  const discardRef = useRef(false);
+
+  const previewUrlRef = useRef<string | null>(null);
 
   const cleanupStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -58,26 +85,65 @@ export function AudioBriefRecorder({
     }
   };
 
+  const revokePreview = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setPreviewUrl(null);
+    setPreviewPlaying(false);
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+    }
+  };
+
   useEffect(() => {
     return () => {
       clearTimer();
       cleanupStream();
+      revokePreview();
       try {
         mediaRecorderRef.current?.stop();
       } catch {
         /* ignore */
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const applyMute = (next: boolean) => {
+    setMuted(next);
+    streamRef.current?.getAudioTracks().forEach((track) => {
+      track.enabled = !next;
+    });
+  };
+
+  const startTimer = () => {
+    clearTimer();
+    timerRef.current = window.setInterval(() => {
+      elapsedRef.current += 1;
+      const next = elapsedRef.current;
+      setElapsed(next);
+      if (next >= maxSeconds) {
+        stopRecording();
+      }
+    }, 1000);
+  };
+
   const startRecording = async () => {
-    if (disabled || status === 'recording' || status === 'transcribing') return;
+    if (disabled || status === 'recording' || status === 'paused' || status === 'transcribing') {
+      return;
+    }
     if (typeof MediaRecorder === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       const msg = 'Enregistrement audio non supporté sur ce navigateur.';
       setStatus('error');
       onError?.(msg);
       return;
     }
+
+    revokePreview();
+    discardRef.current = false;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -87,22 +153,22 @@ export function AudioBriefRecorder({
         ? new MediaRecorder(stream, { mimeType })
         : new MediaRecorder(stream);
 
+      mimeRef.current = recorder.mimeType || mimeType || 'audio/webm';
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
-        void handleStop();
+        void handleRecorderStopped();
       };
 
       mediaRecorderRef.current = recorder;
       recorder.start(250);
+      elapsedRef.current = 0;
       setElapsed(0);
+      setMuted(false);
       setStatus('recording');
-      clearTimer();
-      timerRef.current = window.setInterval(() => {
-        setElapsed((v) => v + 1);
-      }, 1000);
+      startTimer();
     } catch (err) {
       cleanupStream();
       const msg =
@@ -114,9 +180,38 @@ export function AudioBriefRecorder({
     }
   };
 
+  const pauseRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state !== 'recording') return;
+    try {
+      recorder.pause();
+      clearTimer();
+      setStatus('paused');
+    } catch {
+      onError?.('Pause non supportée sur ce navigateur.');
+    }
+  };
+
+  const resumeRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state !== 'paused') return;
+    if (elapsedRef.current >= maxSeconds) {
+      stopRecording();
+      return;
+    }
+    try {
+      recorder.resume();
+      setStatus('recording');
+      startTimer();
+    } catch {
+      onError?.('Impossible de reprendre l’enregistrement.');
+    }
+  };
+
   const stopRecording = () => {
     const recorder = mediaRecorderRef.current;
     if (!recorder || recorder.state === 'inactive') return;
+    discardRef.current = false;
     clearTimer();
     try {
       recorder.stop();
@@ -126,16 +221,45 @@ export function AudioBriefRecorder({
     }
   };
 
-  const handleStop = async () => {
+  const cancelRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    discardRef.current = true;
+    clearTimer();
+    revokePreview();
+    chunksRef.current = [];
+    if (recorder && recorder.state !== 'inactive') {
+      try {
+        recorder.stop();
+      } catch {
+        cleanupStream();
+        mediaRecorderRef.current = null;
+        setStatus('idle');
+      }
+    } else {
+      cleanupStream();
+      mediaRecorderRef.current = null;
+      setStatus('idle');
+      setElapsed(0);
+      elapsedRef.current = 0;
+      setMuted(false);
+    }
+  };
+
+  const handleRecorderStopped = async () => {
     clearTimer();
     cleanupStream();
-    const mime =
-      mediaRecorderRef.current?.mimeType ||
-      pickMimeType() ||
-      'audio/webm';
     mediaRecorderRef.current = null;
 
-    const blob = new Blob(chunksRef.current, { type: mime });
+    if (discardRef.current) {
+      chunksRef.current = [];
+      setElapsed(0);
+      elapsedRef.current = 0;
+      setMuted(false);
+      setStatus('idle');
+      return;
+    }
+
+    const blob = new Blob(chunksRef.current, { type: mimeRef.current });
     chunksRef.current = [];
 
     if (!blob.size) {
@@ -144,10 +268,18 @@ export function AudioBriefRecorder({
       return;
     }
 
+    const url = URL.createObjectURL(blob);
+    previewUrlRef.current = url;
+    setPreviewUrl(url);
+
     setStatus('transcribing');
     try {
       const text = await transcribeGigAudio(blob, { language });
+      revokePreview();
       setStatus('idle');
+      setElapsed(0);
+      elapsedRef.current = 0;
+      setMuted(false);
       onTranscript(text);
     } catch (err) {
       const msg =
@@ -157,41 +289,137 @@ export function AudioBriefRecorder({
     }
   };
 
-  const busy = status === 'transcribing' || disabled;
+  const togglePreview = () => {
+    if (!previewUrl) return;
+    if (!previewAudioRef.current) {
+      const audio = new Audio(previewUrl);
+      audio.onended = () => setPreviewPlaying(false);
+      previewAudioRef.current = audio;
+    }
+    const audio = previewAudioRef.current;
+    if (previewPlaying) {
+      audio.pause();
+      setPreviewPlaying(false);
+    } else {
+      void audio.play().then(() => setPreviewPlaying(true)).catch(() => {
+        onError?.('Lecture audio impossible.');
+      });
+    }
+  };
 
-  if (status === 'recording') {
+  const busy = status === 'transcribing' || disabled;
+  const active = status === 'recording' || status === 'paused';
+  const remaining = Math.max(0, maxSeconds - elapsed);
+  const nearMax = remaining <= 10 && active;
+
+  if (!active && status !== 'transcribing') {
     return (
       <button
         type="button"
-        onClick={stopRecording}
-        className="absolute bottom-4 right-20 flex items-center gap-2 px-3 py-3 bg-rose-600 text-white rounded-2xl hover:bg-rose-700 transition-all duration-300 shadow-xl shadow-rose-500/25"
-        title="Arrêter l'enregistrement"
-        aria-label="Arrêter l'enregistrement"
+        disabled={busy}
+        onClick={() => void startRecording()}
+        className="absolute bottom-4 right-20 p-4 bg-white text-harx-600 border border-harx-100 rounded-2xl hover:bg-harx-50 hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
+        title={`Enregistrer un brief audio (max ${formatElapsed(maxSeconds)})`}
+        aria-label="Enregistrer un brief audio"
       >
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-70" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
-        </span>
-        <Square className="w-5 h-5 fill-current" />
-        <span className="text-xs font-black tabular-nums">{formatElapsed(elapsed)}</span>
+        <Mic className="w-6 h-6" />
       </button>
     );
   }
 
   return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={() => void startRecording()}
-      className="absolute bottom-4 right-20 p-4 bg-white text-harx-600 border border-harx-100 rounded-2xl hover:bg-harx-50 hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
-      title="Enregistrer un brief audio"
-      aria-label="Enregistrer un brief audio"
-    >
+    <div className="absolute bottom-3 right-20 left-4 sm:left-auto sm:right-20 flex flex-wrap items-center justify-end gap-1.5 rounded-2xl border border-rose-100 bg-white/95 px-2 py-1.5 shadow-xl backdrop-blur-sm">
       {status === 'transcribing' ? (
-        <Loader2 className="w-6 h-6 animate-spin" />
+        <div className="flex items-center gap-2 px-2 py-1.5 text-xs font-bold text-harx-700">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Transcription…
+        </div>
       ) : (
-        <Mic className="w-6 h-6" />
+        <>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-xl px-2 py-1 text-[11px] font-black tabular-nums ${
+              nearMax ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-700'
+            }`}
+            title={`Maximum ${formatElapsed(maxSeconds)}`}
+          >
+            {status === 'recording' && (
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-70" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
+              </span>
+            )}
+            {formatElapsed(elapsed)}
+            <span className="font-semibold text-slate-400">/ {formatElapsed(maxSeconds)}</span>
+          </span>
+
+          {status === 'recording' ? (
+            <button
+              type="button"
+              onClick={pauseRecording}
+              className="rounded-xl p-2 text-slate-700 hover:bg-slate-100"
+              title="Pause"
+              aria-label="Pause"
+            >
+              <Pause className="h-4 w-4" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={resumeRecording}
+              className="rounded-xl p-2 text-emerald-700 hover:bg-emerald-50"
+              title="Reprendre"
+              aria-label="Reprendre"
+            >
+              <Play className="h-4 w-4" />
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => applyMute(!muted)}
+            className={`rounded-xl p-2 hover:bg-slate-100 ${
+              muted ? 'text-amber-700 bg-amber-50' : 'text-slate-700'
+            }`}
+            title={muted ? 'Réactiver le micro' : 'Couper le micro'}
+            aria-label={muted ? 'Réactiver le micro' : 'Couper le micro'}
+          >
+            {muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </button>
+
+          {previewUrl ? (
+            <button
+              type="button"
+              onClick={togglePreview}
+              className="rounded-xl p-2 text-slate-700 hover:bg-slate-100"
+              title={previewPlaying ? 'Pause lecture' : 'Écouter l’aperçu'}
+              aria-label={previewPlaying ? 'Pause lecture' : 'Écouter l’aperçu'}
+            >
+              {previewPlaying ? <VolumeX className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={stopRecording}
+            className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-2.5 py-2 text-[11px] font-black text-white hover:bg-rose-700"
+            title="Terminer et transcrire"
+            aria-label="Terminer et transcrire"
+          >
+            <Square className="h-3.5 w-3.5 fill-current" />
+            Stop
+          </button>
+
+          <button
+            type="button"
+            onClick={cancelRecording}
+            className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-rose-600"
+            title="Annuler"
+            aria-label="Annuler l’enregistrement"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </>
       )}
-    </button>
+    </div>
   );
 }
