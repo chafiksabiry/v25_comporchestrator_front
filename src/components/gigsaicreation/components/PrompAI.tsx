@@ -41,7 +41,6 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showGuidance, setShowGuidance] = useState(false);
-  const [audioFromDictation, setAudioFromDictation] = useState(false);
   const [confirmedSuggestions, setConfirmedSuggestions] = useState<GigSuggestion | null>(null);
   const [currentSection, setCurrentSection] = useState<string>("basic");
   const [showReview, setShowReview] = useState(false);
@@ -498,7 +497,6 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     }
 
     setInput(next);
-    setAudioFromDictation(true);
     window.setTimeout(() => {
       const node = textareaRef.current;
       if (!node) return;
@@ -795,7 +793,6 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   value={input}
                   onChange={(e) => {
                     setInput(e.target.value);
-                    setAudioFromDictation(false);
                   }}
                   onSelect={captureSelection}
                   onKeyUp={captureSelection}
