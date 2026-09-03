@@ -22,6 +22,42 @@ function validateTerritories(territories: string[], timezoneId?: string): string
   });
 }
 
+export async function transcribeGigAudio(
+  blob: Blob,
+  options?: { language?: string; filename?: string }
+): Promise<string> {
+  const form = new FormData();
+  const ext = blob.type.includes('mp4')
+    ? 'mp4'
+    : blob.type.includes('wav')
+      ? 'wav'
+      : blob.type.includes('mpeg') || blob.type.includes('mp3')
+        ? 'mp3'
+        : 'webm';
+  form.append('audio', blob, options?.filename || `gig-brief.${ext}`);
+  if (options?.language) {
+    form.append('language', options.language);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/ai/transcribe-audio`, {
+    method: 'POST',
+    body: form,
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      String(data.message || data.error || `Transcription failed (${response.status})`)
+    );
+  }
+
+  const transcript = String(data.transcript || '').trim();
+  if (!transcript) {
+    throw new Error('Empty transcription');
+  }
+  return transcript;
+}
+
 export async function generateGigSuggestions(description: string): Promise<GigSuggestion> {
   if (!description) {
     throw new Error('Description is required');

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Brain, HelpCircle, PlusCircle, ArrowUp } from 'lucide-react';
 import { Suggestions } from './Suggestions';
 import { SectionContent } from './SectionContent';
+import { AudioBriefRecorder } from './AudioBriefRecorder';
 import { GigData, GigSuggestion } from '../types';
 import { predefinedOptions } from '../lib/guidance';
 import { mapGeneratedDataToGigData } from '../lib/ai';
@@ -14,7 +15,7 @@ import {
   Award,
   ClipboardList
 } from "lucide-react";
-
+import toast from 'react-hot-toast';
 const sections = [
   { id: 'basic', label: 'Basic Information', icon: Briefcase },
   { id: 'schedule', label: 'Schedule', icon: Calendar },
@@ -462,6 +463,15 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     }, 1500);
   };
 
+  const handleAudioTranscript = (text: string) => {
+    setInput(text);
+    toast.success('Audio transcrit — génération du gig…');
+    // Wait a tick so Suggestions mounts with the transcribed input
+    window.setTimeout(() => {
+      handleGenerateSuggestions();
+    }, 80);
+  };
+
   const handleConfirmSuggestions = (suggestions: GigSuggestion) => {
     setConfirmedSuggestions(suggestions);
     setShowSuggestions(false);
@@ -723,17 +733,26 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   rows={1}
-                  placeholder="Example: I need a sales campaign targeting Spanish-speaking customers in Europe, with a focus on insurance products..."
-                  className="w-full min-h-[120px] max-h-[220px] pl-6 pr-14 py-5 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none shadow-sm overflow-y-auto"
+                  placeholder="Example: I need a sales campaign targeting Spanish-speaking customers in Europe, with a focus on insurance products... — or record your brief with the mic."
+                  className="w-full min-h-[120px] max-h-[220px] pl-6 pr-28 py-5 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none shadow-sm overflow-y-auto"
+                />
+                <AudioBriefRecorder
+                  disabled={isAnalyzing}
+                  language="fr"
+                  onTranscript={handleAudioTranscript}
+                  onError={(message) => toast.error(message)}
                 />
                 <button
                   type="submit"
-                  disabled={!input.trim()}
+                  disabled={!input.trim() || isAnalyzing}
                   className="absolute bottom-4 right-4 p-4 bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-gray-200 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-harx-500/20"
                 >
                   <ArrowUp className="w-7 h-7 stroke-[3]" />
                 </button>
               </div>
+              <p className="mt-3 text-xs font-medium text-gray-500">
+                Écrivez votre besoin ou appuyez sur le micro pour dicter — l’IA génère le gig (titre, description, skills…).
+              </p>
             </div>
           </form>
         </div>
