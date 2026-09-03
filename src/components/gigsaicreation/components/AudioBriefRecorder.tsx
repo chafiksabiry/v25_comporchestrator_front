@@ -7,6 +7,7 @@ import {
   Play,
   Square,
   X,
+  VolumeX,
 } from 'lucide-react';
 import { transcribeGigAudio } from '../lib/ai';
 
@@ -20,9 +21,14 @@ type RecorderStatus =
 interface AudioBriefRecorderProps {
   disabled?: boolean;
   language?: string;
+  /** Max recording length in seconds (default 120 = 2 min). */
   maxSeconds?: number;
+  /** Called with Whisper transcript — parent only fills the input (no auto-generate). */
   onTranscript: (text: string) => void;
+  /** Called when user cancels recording / transcription (parent can clear input). */
   onCancel?: () => void;
+  /** Capture textarea selection before the mic steals focus. */
+  onBeforeStart?: () => void;
   onError?: (message: string) => void;
 }
 
@@ -44,8 +50,8 @@ function formatElapsed(sec: number): string {
 }
 
 /**
- * Mic control for the original PrompAI composer layout
- * (absolute next to the send button). Adds pause / mute / cancel / max.
+ * Mic control for the gig-creation prompt screen.
+ * Record / pause / mute / cancel / max duration → Whisper → fill input only.
  */
 export function AudioBriefRecorder({
   disabled,
@@ -53,20 +59,25 @@ export function AudioBriefRecorder({
   maxSeconds = 120,
   onTranscript,
   onCancel,
+  onBeforeStart,
   onError,
 }: AudioBriefRecorderProps) {
   const [status, setStatus] = useState<RecorderStatus>('idle');
   const [elapsed, setElapsed] = useState(0);
   const [muted, setMuted] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
   const elapsedRef = useRef(0);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const mimeRef = useRef('audio/webm');
   const discardRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
 
   const cleanupStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -80,9 +91,23 @@ export function AudioBriefRecorder({
     }
   };
 
+  const revokePreview = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setPreviewUrl(null);
+    setPreviewPlaying(false);
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+    }
+  };
+
   const resetIdle = () => {
     clearTimer();
     cleanupStream();
+    revokePreview();
     chunksRef.current = [];
     mediaRecorderRef.current = null;
     abortRef.current = null;
@@ -98,12 +123,14 @@ export function AudioBriefRecorder({
       abortRef.current?.abort();
       clearTimer();
       cleanupStream();
+      revokePreview();
       try {
         mediaRecorderRef.current?.stop();
       } catch {
         /* ignore */
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const applyMute = (next: boolean) => {
@@ -119,7 +146,9 @@ export function AudioBriefRecorder({
       elapsedRef.current += 1;
       const next = elapsedRef.current;
       setElapsed(next);
-      if (next >= maxSeconds) stopRecording();
+      if (next >= maxSeconds) {
+        stopRecording();
+      }
     }, 1000);
   };
 
@@ -127,13 +156,17 @@ export function AudioBriefRecorder({
     if (disabled || status === 'recording' || status === 'paused' || status === 'transcribing') {
       return;
     }
+    onBeforeStart?.();
     if (typeof MediaRecorder === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      onError?.('Enregistrement audio non supporté sur ce navigateur.');
+      const msg = 'Enregistrement audio non supporté sur ce navigateur.';
       setStatus('error');
+      onError?.(msg);
       return;
     }
 
+    revokePreview();
     discardRef.current = false;
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -160,12 +193,12 @@ export function AudioBriefRecorder({
       startTimer();
     } catch (err) {
       cleanupStream();
-      onError?.(
+      const msg =
         err instanceof Error
           ? err.message
-          : "Impossible d'accéder au micro. Vérifiez les permissions."
-      );
+          : "Impossible d'accéder au micro. Vérifiez les permissions.";
       setStatus('error');
+      onError?.(msg);
     }
   };
 
@@ -210,11 +243,13 @@ export function AudioBriefRecorder({
     }
   };
 
+  /** Cancel at any stage: recording, paused, or transcribing. */
   const cancelAudio = () => {
     discardRef.current = true;
     abortRef.current?.abort();
     abortRef.current = null;
     clearTimer();
+    revokePreview();
     chunksRef.current = [];
 
     const recorder = mediaRecorderRef.current;
@@ -244,23 +279,32 @@ export function AudioBriefRecorder({
 
     const blob = new Blob(chunksRef.current, { type: mimeRef.current });
     chunksRef.current = [];
+
     if (!blob.size) {
       setStatus('error');
       onError?.('Enregistrement vide — réessayez.');
       return;
     }
 
+    const url = URL.createObjectURL(blob);
+    previewUrlRef.current = url;
+    setPreviewUrl(url);
+
     const abort = new AbortController();
     abortRef.current = abort;
     setStatus('transcribing');
 
     try {
-      const text = await transcribeGigAudio(blob, { language, signal: abort.signal });
+      const text = await transcribeGigAudio(blob, {
+        language,
+        signal: abort.signal,
+      });
       if (discardRef.current || abort.signal.aborted) {
         resetIdle();
         onCancel?.();
         return;
       }
+      revokePreview();
       abortRef.current = null;
       setStatus('idle');
       setElapsed(0);
@@ -273,8 +317,28 @@ export function AudioBriefRecorder({
         onCancel?.();
         return;
       }
+      const msg =
+        err instanceof Error ? err.message : 'Échec de la transcription audio.';
       setStatus('error');
-      onError?.(err instanceof Error ? err.message : 'Échec de la transcription audio.');
+      onError?.(msg);
+    }
+  };
+
+  const togglePreview = () => {
+    if (!previewUrl) return;
+    if (!previewAudioRef.current) {
+      const audio = new Audio(previewUrl);
+      audio.onended = () => setPreviewPlaying(false);
+      previewAudioRef.current = audio;
+    }
+    const audio = previewAudioRef.current;
+    if (previewPlaying) {
+      audio.pause();
+      setPreviewPlaying(false);
+    } else {
+      void audio.play().then(() => setPreviewPlaying(true)).catch(() => {
+        onError?.('Lecture audio impossible.');
+      });
     }
   };
 
@@ -282,15 +346,21 @@ export function AudioBriefRecorder({
   const active = status === 'recording' || status === 'paused';
   const remaining = Math.max(0, maxSeconds - elapsed);
   const nearMax = remaining <= 10 && active;
+  const showBar = active || status === 'transcribing';
 
-  if (!active && status !== 'transcribing') {
+  if (!showBar) {
     return (
       <button
         type="button"
         disabled={busy}
+        onMouseDown={(e) => {
+          // Keep textarea selection when focusing the mic
+          e.preventDefault();
+          onBeforeStart?.();
+        }}
         onClick={() => void startRecording()}
         className="absolute bottom-4 right-20 p-4 bg-white text-harx-600 border border-harx-100 rounded-2xl hover:bg-harx-50 hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
-        title={`Enregistrer (max ${formatElapsed(maxSeconds)})`}
+        title={`Enregistrer un brief audio (max ${formatElapsed(maxSeconds)})`}
         aria-label="Enregistrer un brief audio"
       >
         <Mic className="w-6 h-6" />
@@ -299,17 +369,19 @@ export function AudioBriefRecorder({
   }
 
   return (
-    <div className="absolute bottom-3 left-3 right-20 flex flex-wrap items-center gap-1.5 rounded-2xl border border-harx-100 bg-white/95 px-2 py-1.5 shadow-lg backdrop-blur-sm">
+    <div className="absolute bottom-3 right-20 left-4 sm:left-auto sm:right-20 flex flex-wrap items-center justify-end gap-1.5 rounded-2xl border border-rose-100 bg-white/95 px-2 py-1.5 shadow-xl backdrop-blur-sm">
       {status === 'transcribing' ? (
         <>
-          <span className="inline-flex items-center gap-2 px-2 py-1.5 text-xs font-bold text-harx-700">
+          <div className="flex items-center gap-2 px-2 py-1.5 text-xs font-bold text-harx-700">
             <Loader2 className="h-4 w-4 animate-spin" />
             Transcription…
-          </span>
+          </div>
           <button
             type="button"
             onClick={cancelAudio}
-            className="ml-auto inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-black text-slate-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-black text-slate-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+            title="Annuler la transcription"
+            aria-label="Annuler la transcription"
           >
             <X className="h-3.5 w-3.5" />
             Annuler
@@ -321,6 +393,7 @@ export function AudioBriefRecorder({
             className={`inline-flex items-center gap-1.5 rounded-xl px-2 py-1 text-[11px] font-black tabular-nums ${
               nearMax ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-700'
             }`}
+            title={`Maximum ${formatElapsed(maxSeconds)}`}
           >
             {status === 'recording' && (
               <span className="relative flex h-2 w-2">
@@ -338,6 +411,7 @@ export function AudioBriefRecorder({
               onClick={pauseRecording}
               className="rounded-xl p-2 text-slate-700 hover:bg-slate-100"
               title="Pause"
+              aria-label="Pause"
             >
               <Pause className="h-4 w-4" />
             </button>
@@ -347,6 +421,7 @@ export function AudioBriefRecorder({
               onClick={resumeRecording}
               className="rounded-xl p-2 text-emerald-700 hover:bg-emerald-50"
               title="Reprendre"
+              aria-label="Reprendre"
             >
               <Play className="h-4 w-4" />
             </button>
@@ -355,19 +430,33 @@ export function AudioBriefRecorder({
           <button
             type="button"
             onClick={() => applyMute(!muted)}
-            className={`rounded-xl p-2 ${
-              muted ? 'bg-amber-50 text-amber-700' : 'text-slate-700 hover:bg-slate-100'
+            className={`rounded-xl p-2 hover:bg-slate-100 ${
+              muted ? 'text-amber-700 bg-amber-50' : 'text-slate-700'
             }`}
             title={muted ? 'Réactiver le micro' : 'Couper le micro'}
+            aria-label={muted ? 'Réactiver le micro' : 'Couper le micro'}
           >
             {muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           </button>
+
+          {previewUrl ? (
+            <button
+              type="button"
+              onClick={togglePreview}
+              className="rounded-xl p-2 text-slate-700 hover:bg-slate-100"
+              title={previewPlaying ? 'Pause lecture' : 'Écouter l’aperçu'}
+              aria-label={previewPlaying ? 'Pause lecture' : 'Écouter l’aperçu'}
+            >
+              {previewPlaying ? <VolumeX className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </button>
+          ) : null}
 
           <button
             type="button"
             onClick={stopRecording}
             className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-2.5 py-2 text-[11px] font-black text-white hover:bg-rose-700"
             title="Terminer et transcrire"
+            aria-label="Terminer et transcrire"
           >
             <Square className="h-3.5 w-3.5 fill-current" />
             Stop
@@ -376,8 +465,9 @@ export function AudioBriefRecorder({
           <button
             type="button"
             onClick={cancelAudio}
-            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-black text-slate-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
-            title="Annuler"
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-black text-slate-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+            title="Annuler l’enregistrement"
+            aria-label="Annuler l’enregistrement"
           >
             <X className="h-3.5 w-3.5" />
             Annuler
