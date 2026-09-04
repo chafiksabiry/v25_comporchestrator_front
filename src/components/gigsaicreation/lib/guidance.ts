@@ -32,6 +32,7 @@ export const aiPrompts = {
 export const predefinedOptions = {
   basic: {
     categories: [
+      'Call Center',
       'Inbound Sales',
       'Outbound Sales',
       'Customer Service',
@@ -59,6 +60,7 @@ export const predefinedOptions = {
       'Multilingual Support'
     ],
     seniorityLevels: [
+      'Call Center',
       'Agent Senior',
       'Agent',
       'Agent Junior',
@@ -175,6 +177,11 @@ export const predefinedOptions = {
   },
   team: {
     roles: [
+      {
+        id: 'Call Center',
+        name: 'Call Center',
+        description: 'Call-center agent handling inbound/outbound customer interactions'
+      },
       {
         id: 'Agent Senior',
         name: 'Agent Senior',

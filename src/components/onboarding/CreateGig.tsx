@@ -133,7 +133,7 @@ const CreateGig = () => {
   };
 
   const hasBasicInfo = () => {
-    const hasInfo = gigTitle && department && jobDescription;
+    const hasInfo = Boolean(gigTitle?.trim());
     
     return hasInfo;
   };
@@ -296,6 +296,7 @@ const CreateGig = () => {
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
             >
+              <option>Call Center</option>
               <option>Customer Support</option>
               <option>Sales</option>
               <option>Technical Support</option>

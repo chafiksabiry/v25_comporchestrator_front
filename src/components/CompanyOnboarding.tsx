@@ -925,12 +925,11 @@ const CompanyOnboarding = () => {
         }
       }
 
-      // Helper function to check if a phase is completed
+      // Helper — profile (1) + gig (3) gate progression; other steps optional
       const isPhaseFullyCompleted = (phaseId: number) => {
-        const phase = phases[phaseId - 1];
-        if (!phase) return false;
-        const nonDisabledSteps = phase.steps.filter((step) => !step.disabled);
-        return nonDisabledSteps.every((step) => completedStepsState.includes(step.id));
+        if (phaseId === 1) return completedStepsState.includes(1);
+        if (phaseId === 2) return completedStepsState.includes(3);
+        return true;
       };
 
       // Determine valid phase based on dependencies
@@ -1389,109 +1388,96 @@ const CompanyOnboarding = () => {
   const handlePhaseChange = async (newPhase: number) => {
     if (!companyId) return;
 
-    // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
-    const isPhaseFullyCompleted = (phaseId: number) => {
-      const phase = phases[phaseId - 1];
-      if (!phase) return false;
+    // Phases after Create Gig are optional — free navigation.
+    setDisplayedPhase(newPhase);
 
-      const nonDisabledSteps = phase.steps.filter((step) => !step.disabled);
-      return nonDisabledSteps.every((step) => completedSteps.includes(step.id));
-    };
-
-    // Vérifier si on peut accéder à la nouvelle phase
-    let canAccessPhase = true;
-
-    if (newPhase > 1) {
-      // Vérifier que toutes les phases précédentes sont complétées
-      for (let phaseId = 1; phaseId < newPhase; phaseId++) {
-        if (!isPhaseFullyCompleted(phaseId)) {
-          
-          canAccessPhase = false;
-          break;
-        }
+    if (
+      isPhaseAccessible(newPhase) &&
+      newPhase <= currentPhase &&
+      !isPhaseCompleted(newPhase)
+    ) {
+      try {
+        await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
+          { phase: newPhase }
+        );
+        setCurrentPhase(newPhase);
+      } catch (error) {
+        console.error("Error updating phase:", error);
       }
-    }
-
-    if (canAccessPhase) {
-      // Mettre à jour seulement la phase affichée
-      setDisplayedPhase(newPhase);
-
-      // On ne met à jour l'API que si:
-      // 1. La nouvelle phase est accessible
-      // 2. La nouvelle phase est inférieure ou égale à la phase actuelle
-      // 3. La phase n'est pas déjà complétée (currentPhase > newPhase)
-      if (
-        isPhaseAccessible(newPhase) &&
-        newPhase <= currentPhase &&
-        !isPhaseCompleted(newPhase)
-      ) {
-        try {
-          await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
-            { phase: newPhase }
-          );
-          setCurrentPhase(newPhase);
-          
-        } catch (error) {
-          console.error("Error updating phase:", error);
-        }
-      }
-    } else {
-      
-      // Suppressed popup as requested by user
-      
     }
   };
 
   const isPhaseCompleted = (phaseId: number) => {
     const phase = phases[phaseId - 1];
-    return phase.steps
-      .filter((step) => !step.disabled)
-      .every((step) => completedSteps.includes(step.id));
+    if (!phase) return false;
+    // Align with backend: phase 1 = profile, phase 2 = gig only, 3–4 optional
+    if (phaseId === 1) return completedSteps.includes(1);
+    if (phaseId === 2) return completedSteps.includes(3);
+    return true;
+  };
+
+  const markOptionalStepsSkipped = async (phaseId: number) => {
+    if (!companyId) return;
+    const phase = phases[phaseId - 1];
+    if (!phase) return;
+
+    const requiredIds =
+      phaseId === 1 ? [1] : phaseId === 2 ? [3] : []; // nothing required in 3–4
+
+    const toSkip = phase.steps.filter(
+      (step) =>
+        !step.disabled &&
+        !requiredIds.includes(step.id) &&
+        !completedSteps.includes(step.id)
+    );
+
+    for (const step of toSkip) {
+      try {
+        await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${step.id}`,
+          { status: 'completed' }
+        );
+        setCompletedSteps((prev) =>
+          prev.includes(step.id) ? prev : [...prev, step.id]
+        );
+      } catch (err) {
+        console.warn('[Onboarding] skip step failed', step.id, err);
+      }
+    }
   };
 
   const handlePreviousPhase = () => {
     const newPhase = Math.max(1, displayedPhase - 1);
-    // Pour Previous, on met juste à jour la phase affichée
     setDisplayedPhase(newPhase);
   };
 
-  const handleNextPhase = () => {
-    const newPhase = Math.min(4, displayedPhase + 1);
-
-    // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
-    const isPhaseFullyCompleted = (phaseId: number) => {
-      const phase = phases[phaseId - 1];
-      if (!phase) return false;
-
-      const nonDisabledSteps = phase.steps.filter((step) => !step.disabled);
-      return nonDisabledSteps.every((step) => completedSteps.includes(step.id));
-    };
-
-    // Vérifier si la phase actuelle est complétée avant d'avancer
-    if (displayedPhase < 4) {
-      if (isPhaseFullyCompleted(displayedPhase)) {
-        
-        handlePhaseChange(newPhase);
-      } else {
-        
-        
-        return;
-      }
-    } else if (displayedPhase === 4) {
-      // Company dashboard (KPI / opérations), not orchestrator onboarding nor profile settings.
+  const handleNextPhase = async () => {
+    if (displayedPhase === 4) {
       window.dispatchEvent(new CustomEvent('openCompanyDashboard'));
+      return;
+    }
+
+    // Allow skipping incomplete optional steps in the current phase
+    await markOptionalStepsSkipped(displayedPhase);
+
+    const newPhase = Math.min(4, displayedPhase + 1);
+    setDisplayedPhase(newPhase);
+
+    if (newPhase > currentPhase) {
+      try {
+        await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
+          { phase: newPhase }
+        );
+        setCurrentPhase(newPhase);
+      } catch (error) {
+        console.error('Error updating phase:', error);
+      }
     }
   };
 
-  const isPhaseAccessible = (phaseId: number) => {
-    if (phaseId === 1) return true;
-
-    const previousPhase = phases[phaseId - 2];
-    return previousPhase.steps
-      .filter((step) => !step.disabled)
-      .every((step) => completedSteps.includes(step.id));
-  };
+  const isPhaseAccessible = (_phaseId: number) => true;
 
 
   const getStepIcon = (step: any) => {
@@ -2052,8 +2038,8 @@ const CompanyOnboarding = () => {
                 )
                 .every((s) => s.disabled || completedSteps.includes(s.id));
 
-            // A step is accessible if phase is accessible AND (it's completed OR it's the current step)
-            const canAccessStep = canAccessPhase && (isCompleted || isCurrentStep);
+            // Optional steps: any non-disabled step in an accessible phase can be opened.
+            const canAccessStep = canAccessPhase && !step.disabled;
             const tourAttr = stepIndex === 0 ? 'tour-step-first' : stepIndex === 1 ? 'tour-step-second' : undefined;
 
             return (
@@ -2164,7 +2150,7 @@ const CompanyOnboarding = () => {
             disabled={false}
             onClick={handleNextPhase}
           >
-            {displayedPhase === 4 ? t('companyOnboarding.ui.goToDashboard') : t('companyOnboarding.ui.nextPhase')}
+            {displayedPhase === 4 ? t('companyOnboarding.ui.goToDashboard') : t('companyOnboarding.ui.nextPhase', 'Next phase (skip optional)')}
             <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
