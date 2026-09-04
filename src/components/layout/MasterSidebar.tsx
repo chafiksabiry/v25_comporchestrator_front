@@ -223,7 +223,7 @@ export function MasterSidebar({
         <div className="px-4 -mt-2 mb-4">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider">
             <PhoneCall className="w-3 h-3" />
-            Call Center
+            {t('sidebar.callCenterBadge', 'Call Center')}
           </span>
         </div>
       ) : null}
