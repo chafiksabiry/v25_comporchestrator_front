@@ -68,6 +68,9 @@ export function MasterSidebar({
   const [hasRepMatching, setHasRepMatching] = useState(false);
   const [openGroups, setOpenGroups] = useState<number[]>([1, 2, 3]); // All open by default
   const { t } = useTranslation();
+  const isCallCenterWorkspace =
+    localStorage.getItem('userType') === 'call-center' ||
+    window.location.pathname.startsWith('/call-center');
 
   const hiddenSections = getHiddenSections();
 
@@ -215,6 +218,15 @@ export function MasterSidebar({
           </div>
         )}
       </div>
+
+      {isCallCenterWorkspace && !isCollapsed ? (
+        <div className="px-4 -mt-2 mb-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider">
+            <PhoneCall className="w-3 h-3" />
+            Call Center
+          </span>
+        </div>
+      ) : null}
 
       {/* Navigation */}
       <div className={`flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent pr-1 transition-all duration-300 ${isCollapsed ? 'px-3' : 'px-4'}`}>
