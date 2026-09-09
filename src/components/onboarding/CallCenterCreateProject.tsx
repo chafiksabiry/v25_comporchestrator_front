@@ -129,7 +129,7 @@ export default function CallCenterCreateProject({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto py-8 px-4">
+    <div className="w-full max-w-xl mx-auto py-10 px-4">
       <button
         type="button"
         onClick={onBack}
@@ -139,60 +139,56 @@ export default function CallCenterCreateProject({
         {t('companyOnboarding.ui.backToOnboarding', 'Back to onboarding')}
       </button>
 
-      <div className="rounded-3xl border border-gray-100 bg-white shadow-xl overflow-hidden">
-        <div className="bg-gradient-harx px-6 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20">
-              <Briefcase className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-white">
-                {t('companyOnboarding.ui.callCenterProjectTitle', 'Project title')}
-              </h2>
-              <p className="text-sm text-white/85 font-medium">
-                {t(
-                  'companyOnboarding.ui.callCenterProjectHint',
-                  'Only the project title is required for call-center onboarding.'
-                )}
-              </p>
-            </div>
+      <div className="rounded-3xl border border-gray-100 bg-white shadow-xl p-8 space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-harx text-white">
+            <Briefcase className="h-6 w-6" />
           </div>
-        </div>
-
-        <div className="p-6 space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {t('companyOnboarding.ui.callCenterProjectLabel', 'Title')}{' '}
-              <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void handleCreate();
-              }}
-              className="w-full px-4 py-3 border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400"
-              placeholder={t(
-                'companyOnboarding.ui.callCenterProjectPlaceholder',
-                'e.g. Outbound sales campaign Q2'
+            <h2 className="text-2xl font-black text-gray-900">
+              {t('companyOnboarding.ui.callCenterProjectTitle', 'Project title')}
+            </h2>
+            <p className="text-sm text-gray-500 font-medium">
+              {t(
+                'companyOnboarding.ui.callCenterProjectHint',
+                'Only the project title is required.'
               )}
-              autoFocus
-            />
+            </p>
           </div>
-
-          {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
-
-          <button
-            type="button"
-            onClick={() => void handleCreate()}
-            disabled={!titleOk || saving}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gray-900 px-6 py-3.5 text-sm font-black text-white hover:bg-black disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {t('companyOnboarding.ui.callCenterProjectCta', 'Create project')}
-          </button>
         </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            {t('companyOnboarding.ui.callCenterProjectLabel', 'Title')}{' '}
+            <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void handleCreate();
+            }}
+            className="w-full px-4 py-3 border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400"
+            placeholder={t(
+              'companyOnboarding.ui.callCenterProjectPlaceholder',
+              'e.g. Outbound sales campaign Q2'
+            )}
+            autoFocus
+          />
+        </div>
+
+        {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+
+        <button
+          type="button"
+          onClick={() => void handleCreate()}
+          disabled={!titleOk || saving}
+          className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-harx px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {t('companyOnboarding.ui.callCenterProjectCta', 'Save')}
+        </button>
       </div>
     </div>
   );
