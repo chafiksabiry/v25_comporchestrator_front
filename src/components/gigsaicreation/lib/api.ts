@@ -624,7 +624,42 @@ export async function saveGigData(gigData: GigData): Promise<{ data: any; error?
     })();
 
     // Remove the schedule field and other fields that shouldn't be sent to backend
-    const { schedule, time_zone, destinationZones, ...cleanGigData } = fixedGigData;
+    const { schedule, time_zone, destinationZones, destination_zone, ...cleanGigData } = fixedGigData as GigData & {
+      time_zone?: string;
+    };
+
+    // Strip invalid ObjectId refs from availability (e.g. "UTC" string)
+    if (formattedAvailability) {
+      const tz = formattedAvailability.time_zone;
+      if (
+        !tz ||
+        typeof tz !== 'string' ||
+        tz.length !== 24 ||
+        !/^[a-f0-9]{24}$/i.test(tz)
+      ) {
+        delete (formattedAvailability as any).time_zone;
+      }
+      if (Array.isArray(formattedAvailability.timeZones)) {
+        formattedAvailability.timeZones = formattedAvailability.timeZones.filter(
+          (z: unknown) =>
+            typeof z === 'string' && z.length === 24 && /^[a-f0-9]{24}$/i.test(z)
+        );
+      }
+    }
+
+    // Omit invalid currency ObjectId (title-only / partial creates)
+    let safeCommission = formattedCommission;
+    if (safeCommission) {
+      const currencyValue = safeCommission.currency as any;
+      const currencyOk =
+        typeof currencyValue === 'string' &&
+        currencyValue.length === 24 &&
+        /^[a-f0-9]{24}$/i.test(currencyValue);
+      if (!currencyOk) {
+        const { currency: _c, ...rest } = safeCommission as any;
+        safeCommission = rest;
+      }
+    }
 
     const gigDataWithIds = {
       ...cleanGigData,
@@ -633,7 +668,7 @@ export async function saveGigData(gigData: GigData): Promise<{ data: any; error?
       skills: formattedSkills,
       availability: formattedAvailability,
       ...(formattedDestinationZone && { destination_zone: formattedDestinationZone }),
-      ...(formattedCommission && { commission: formattedCommission })
+      ...(safeCommission && { commission: safeCommission })
     };
 
     const response = await fetch(`${API_URL}/gigs`, {
