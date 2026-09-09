@@ -34,6 +34,7 @@ import KnowledgeBase from "./KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
 import PrompAI from "./gigsaicreation/components/PrompAI";
+import CallCenterCreateProject from "./onboarding/CallCenterCreateProject";
 import { useTranslation } from "react-i18next";
 import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
 import {
@@ -222,7 +223,17 @@ function getOnboardingPhases(isCallCenter: boolean): Phase[] {
   if (!isCallCenter) return BASE_ONBOARDING_PHASES;
   return BASE_ONBOARDING_PHASES.map((phase) => ({
     ...phase,
-    steps: phase.steps.filter((step) => !CALL_CENTER_HIDDEN_STEP_IDS.has(step.id)),
+    steps: phase.steps
+      .filter((step) => !CALL_CENTER_HIDDEN_STEP_IDS.has(step.id))
+      .map((step) =>
+        step.id === 3
+          ? {
+              ...step,
+              title: 'Create Project',
+              description: 'Enter the project title only — other gig details are optional later',
+            }
+          : step
+      ),
   }));
 }
 
@@ -1813,7 +1824,15 @@ const CompanyOnboarding = () => {
       />
     );
   } else if (showGigCreation) {
-    activeComponent = (
+    activeComponent = isCallCenter ? (
+      <CallCenterCreateProject
+        onBack={handleBackToOnboarding}
+        onSuccess={() => {
+          setHasGigs(true);
+          setCompletedSteps((prev) => (prev.includes(3) ? prev : [...prev, 3]));
+        }}
+      />
+    ) : (
       <PrompAI
         onBack={handleBackToOnboarding}
         onBackToGigs={
@@ -2139,7 +2158,9 @@ const CompanyOnboarding = () => {
                         {...(stepIndex === 1 ? { 'data-tour': 'tour-step-second-title' } : {})}
                         className="text-sm font-medium text-gray-900"
                       >
-                        {t(`companyOnboarding.phases.${displayedPhase}.steps.${step.id}.title`, step.title)}
+                        {isCallCenter && step.id === 3
+                          ? t('companyOnboarding.ui.callCenterCreateProjectStep', step.title)
+                          : t(`companyOnboarding.phases.${displayedPhase}.steps.${step.id}.title`, step.title)}
                       </h3>
                       {!canAccessPhase ? (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
@@ -2166,7 +2187,15 @@ const CompanyOnboarding = () => {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
-                      {t(`companyOnboarding.phases.${displayedPhase}.steps.${step.id}.description`, step.description)}
+                      {isCallCenter && step.id === 3
+                        ? t(
+                            'companyOnboarding.ui.callCenterCreateProjectStepDesc',
+                            step.description
+                          )
+                        : t(
+                            `companyOnboarding.phases.${displayedPhase}.steps.${step.id}.description`,
+                            step.description
+                          )}
                     </p>
                     {isClickable && !step.disabled && canAccessStep && (
                       <button

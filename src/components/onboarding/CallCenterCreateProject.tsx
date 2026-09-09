@@ -1,0 +1,199 @@
+import React, { useState } from 'react';
+import Cookies from 'js-cookie';
+import axios from 'axios';
+import { Briefcase, ArrowLeft, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { saveGigData } from '../gigsaicreation/lib/api';
+import type { GigData } from '../gigsaicreation/types';
+
+type CallCenterCreateProjectProps = {
+  onBack: () => void;
+  onSuccess?: () => void;
+};
+
+function buildTitleOnlyGig(title: string): GigData {
+  const userId = Cookies.get('userId') || '';
+  const companyId = Cookies.get('companyId') || '';
+  return {
+    documentation: {},
+    userId,
+    companyId,
+    title: title.trim(),
+    description: '',
+    category: '',
+    destination_zone: '',
+    destinationZones: [],
+    callTypes: [],
+    highlights: [],
+    industries: [],
+    status: 'to_activate',
+    requirements: { essential: [], preferred: [] },
+    benefits: [],
+    schedule: {
+      schedules: [],
+      timeZones: [],
+      flexibility: [],
+      minimumHours: {},
+    },
+    commission: {
+      commission_per_call: 0,
+      bonusAmount: 0,
+      currency: '',
+      minimumVolume: { amount: 0, period: '', unit: '' },
+      transactionCommission: 0,
+      additionalDetails: '',
+    },
+    leads: {
+      types: [],
+      sources: [],
+      distribution: { method: '', rules: [] },
+      qualificationCriteria: [],
+    },
+    skills: { languages: [], soft: [], professional: [], technical: [] },
+    seniority: { level: '', yearsExperience: 0 },
+    team: {
+      size: 0,
+      structure: [],
+      territories: [],
+      reporting: { to: '', frequency: '' },
+      collaboration: [],
+    },
+    activities: [],
+    availability: {
+      time_zone: 'UTC',
+      timeZones: ['UTC'],
+      schedule: [],
+      flexibility: [],
+      minimumHours: {},
+    },
+  } as GigData;
+}
+
+/**
+ * Call-center onboarding gig step: create project by title only (no full PrompAI wizard).
+ */
+export default function CallCenterCreateProject({
+  onBack,
+  onSuccess,
+}: CallCenterCreateProjectProps) {
+  const { t } = useTranslation();
+  const [title, setTitle] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const titleOk = Boolean(title.trim());
+
+  const handleCreate = async () => {
+    if (!titleOk || saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const { data, error: saveError } = await saveGigData(buildTitleOnlyGig(title));
+      if (saveError || !data) {
+        throw saveError || new Error('Failed to create project');
+      }
+
+      const companyId = Cookies.get('companyId');
+      if (companyId) {
+        const userType = localStorage.getItem('userType') || 'call-center';
+        try {
+          await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/3`,
+            { status: 'completed' },
+            { params: { userType } }
+          );
+        } catch (onboardingErr) {
+          console.warn('[CallCenterCreateProject] step 3 mark failed', onboardingErr);
+        }
+      }
+
+      Cookies.set('createGigStepCompleted', 'true');
+      window.dispatchEvent(
+        new CustomEvent('stepCompleted', { detail: { stepId: 3, phaseId: 2 } })
+      );
+
+      onSuccess?.();
+      onBack();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : t(
+              'companyOnboarding.ui.callCenterProjectCreateError',
+              'Could not create the project. Please try again.'
+            )
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-2xl mx-auto py-8 px-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        {t('companyOnboarding.ui.backToOnboarding', 'Back to onboarding')}
+      </button>
+
+      <div className="rounded-3xl border border-gray-100 bg-white shadow-xl overflow-hidden">
+        <div className="bg-gradient-harx px-6 py-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20">
+              <Briefcase className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">
+                {t('companyOnboarding.ui.callCenterProjectTitle', 'Project title')}
+              </h2>
+              <p className="text-sm text-white/85 font-medium">
+                {t(
+                  'companyOnboarding.ui.callCenterProjectHint',
+                  'Only the project title is required for call-center onboarding.'
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              {t('companyOnboarding.ui.callCenterProjectLabel', 'Title')}{' '}
+              <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleCreate();
+              }}
+              className="w-full px-4 py-3 border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400"
+              placeholder={t(
+                'companyOnboarding.ui.callCenterProjectPlaceholder',
+                'e.g. Outbound sales campaign Q2'
+              )}
+              autoFocus
+            />
+          </div>
+
+          {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+
+          <button
+            type="button"
+            onClick={() => void handleCreate()}
+            disabled={!titleOk || saving}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gray-900 px-6 py-3.5 text-sm font-black text-white hover:bg-black disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {t('companyOnboarding.ui.callCenterProjectCta', 'Create project')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
