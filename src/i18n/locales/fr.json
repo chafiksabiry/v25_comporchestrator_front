@@ -1179,7 +1179,7 @@
       "callCenterProjectHint": "Seul le titre du projet est requis pour l'onboarding call center.",
       "callCenterProjectLabel": "Titre",
       "callCenterProjectPlaceholder": "ex. Campagne ventes sortantes T2",
-      "callCenterProjectCta": "Créer le projet",
+      "callCenterProjectCta": "Enregistrer",
       "callCenterProjectCreateError": "Impossible de créer le projet. Réessayez.",
       "callCenterCreateProjectStep": "Créer le projet",
       "callCenterCreateProjectStepDesc": "Saisir uniquement le titre du projet — le reste peut venir plus tard",

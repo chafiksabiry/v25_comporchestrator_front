@@ -796,13 +796,19 @@ const CompanyOnboarding = () => {
   }, [companyId, gigsApiBase]);
 
   const openGigsStepView = useCallback(async () => {
-    const gigsExist = await resolveCompanyHasGigs();
-
     setShowTelephonySetup(false);
     setShowKnowledgeBase(false);
     setShowUploadContacts(false);
     setActiveStep(null);
 
+    // Call-center: always open the title-only project form (1 input + Save).
+    if (isCallCenterWorkspace()) {
+      setShowGigDetails(false);
+      setShowGigCreation(true);
+      return;
+    }
+
+    const gigsExist = await resolveCompanyHasGigs();
     if (gigsExist) {
       setShowGigCreation(false);
       setShowGigDetails(true);

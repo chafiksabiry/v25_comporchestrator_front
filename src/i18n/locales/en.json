@@ -1179,7 +1179,7 @@
       "callCenterProjectHint": "Only the project title is required for call-center onboarding.",
       "callCenterProjectLabel": "Title",
       "callCenterProjectPlaceholder": "e.g. Outbound sales campaign Q2",
-      "callCenterProjectCta": "Create project",
+      "callCenterProjectCta": "Save",
       "callCenterProjectCreateError": "Could not create the project. Please try again.",
       "callCenterCreateProjectStep": "Create Project",
       "callCenterCreateProjectStepDesc": "Enter the project title only — other details can come later",
