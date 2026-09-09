@@ -35,6 +35,7 @@ import { useAuth } from '../dashboard/contexts/AuthContext';
 import type { ProjectView } from '../ProjectViewSwitch';
 import { useTranslation } from 'react-i18next';
 import { goToCompanyOnboardingTab } from '../../hooks/useOnboardingGlobalBack';
+import { isCallCenterWorkspace } from '../../utils/callCenterWorkspace';
 
 interface MasterSidebarProps {
   isCollapsed: boolean;
@@ -68,9 +69,7 @@ export function MasterSidebar({
   const [hasRepMatching, setHasRepMatching] = useState(false);
   const [openGroups, setOpenGroups] = useState<number[]>([1, 2, 3]); // All open by default
   const { t } = useTranslation();
-  const isCallCenterWorkspace =
-    localStorage.getItem('userType') === 'call-center' ||
-    window.location.pathname.startsWith('/call-center');
+  const isCallCenter = isCallCenterWorkspace();
 
   const hiddenSections = getHiddenSections();
 
@@ -168,6 +167,8 @@ export function MasterSidebar({
 
   const filteredDashboardItems = dashboardItems.filter(item => {
     if (hiddenSections.includes(item.key)) return false;
+    // Call-center: same dashboard, but nav is not gated by mandatory onboarding steps.
+    if (isCallCenter) return true;
     if (item.alwaysShow) return true;
     if ((item as any).requiresGigs && !hasGigs) return false;
     if ((item as any).requiresLeads && !hasLeads) return false;
@@ -219,7 +220,7 @@ export function MasterSidebar({
         )}
       </div>
 
-      {isCallCenterWorkspace && !isCollapsed ? (
+      {isCallCenter && !isCollapsed ? (
         <div className="px-4 -mt-2 mb-4">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider">
             <PhoneCall className="w-3 h-3" />

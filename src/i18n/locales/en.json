@@ -1174,6 +1174,7 @@
       "goToDashboard": "Go to Dashboard",
       "nextPhase": "Next Phase",
       "accessibleDesc": "Follow the sequence to complete your company setup and unlock premium features.",
+      "callCenterAccessibleDesc": "Same setup as companies — every step is optional. Skip ahead or open the dashboard anytime.",
       "lockedDesc": "This phase is currently locked. Please complete the previous phase to continue.",
       "viewGuide": "View Guide",
       "allPhasesCompleted": "All steps in this phase are completed. Congratulations, all onboarding phases are now successfully completed! 👏🎺🎊",
