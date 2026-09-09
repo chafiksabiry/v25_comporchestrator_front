@@ -85,7 +85,7 @@ interface Phase {
   steps: Step[];
 }
 
-const phases: Phase[] = [
+const BASE_ONBOARDING_PHASES: Phase[] = [
   {
     id: 1,
     title: "Company Account Setup & Identity",
@@ -215,6 +215,17 @@ const phases: Phase[] = [
   },
 ];
 
+/** Steps hidden from call-center onboarding (same wizard, different scope). */
+const CALL_CENTER_HIDDEN_STEP_IDS = new Set([13]); // MATCH HARX REPS
+
+function getOnboardingPhases(isCallCenter: boolean): Phase[] {
+  if (!isCallCenter) return BASE_ONBOARDING_PHASES;
+  return BASE_ONBOARDING_PHASES.map((phase) => ({
+    ...phase,
+    steps: phase.steps.filter((step) => !CALL_CENTER_HIDDEN_STEP_IDS.has(step.id)),
+  }));
+}
+
 interface OnboardingProgressResponse {
   currentPhase: number;
   completedSteps: number[];
@@ -264,6 +275,8 @@ interface GigResponse {
 
 const CompanyOnboarding = () => {
   const { t } = useTranslation();
+  const isCallCenter = isCallCenterWorkspace();
+  const phases = getOnboardingPhases(isCallCenter);
   // Remove early return - we need to render the component to show onboarding interface
 
   // Read the last known progress from cookie/localStorage so navigation back
@@ -951,11 +964,17 @@ const CompanyOnboarding = () => {
         }
       }
 
-      // Manual overrides for step completions
-      if (completedStepsState.includes(9) && validPhase < 3 && isPhaseFullyCompleted(2)) validPhase = 3;
-      if (completedStepsState.includes(10) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
-      if (completedStepsState.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
-      if (completedStepsState.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+      // Manual overrides for step completions (matching step 13 is company-only)
+      if (!isCallCenterWorkspace()) {
+        if (completedStepsState.includes(9) && validPhase < 3 && isPhaseFullyCompleted(2)) validPhase = 3;
+        if (completedStepsState.includes(10) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+        if (completedStepsState.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+        if (completedStepsState.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+      } else {
+        if (completedStepsState.includes(9) && validPhase < 3) validPhase = 3;
+        if (completedStepsState.includes(10) && validPhase < 4) validPhase = 4;
+        if (completedStepsState.includes(12) && validPhase < 4) validPhase = 4;
+      }
 
       setCurrentPhase(validPhase);
       setDisplayedPhase(validPhase);
