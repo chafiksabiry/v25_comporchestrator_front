@@ -19,7 +19,7 @@ function buildTitleOnlyGig(title: string): GigData {
     userId,
     companyId,
     title: title.trim(),
-    description: '',
+    description: title.trim(),
     category: '',
     destination_zone: '',
     destinationZones: [],
