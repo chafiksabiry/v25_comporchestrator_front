@@ -20,7 +20,13 @@ export default function PremiumDashboardPage() {
 
   const companyName = localStorage.getItem('companyName');
   const userRole = localStorage.getItem('role') || localStorage.getItem('userType');
-  const userType = userRole === 'company' || userRole === 'admin' || (Cookies.get('companyId') && !Cookies.get('agentId')) ? 'company' : 'rep';
+  const userType =
+    userRole === 'company' ||
+    userRole === 'call-center' ||
+    userRole === 'admin' ||
+    (Cookies.get('companyId') && !Cookies.get('agentId'))
+      ? 'company'
+      : 'rep';
   const companyId = Cookies.get('companyId');
   const userId = Cookies.get('userId');
 
