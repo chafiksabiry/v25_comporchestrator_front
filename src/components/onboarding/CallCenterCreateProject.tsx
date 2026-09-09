@@ -3,74 +3,15 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import { Briefcase, ArrowLeft, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { saveGigData } from '../gigsaicreation/lib/api';
-import type { GigData } from '../gigsaicreation/types';
 
 type CallCenterCreateProjectProps = {
   onBack: () => void;
   onSuccess?: () => void;
 };
 
-function buildTitleOnlyGig(title: string): GigData {
-  const userId = Cookies.get('userId') || '';
-  const companyId = Cookies.get('companyId') || '';
-  return {
-    documentation: {},
-    userId,
-    companyId,
-    title: title.trim(),
-    description: title.trim(),
-    category: '',
-    destination_zone: '',
-    destinationZones: [],
-    callTypes: [],
-    highlights: [],
-    industries: [],
-    status: 'to_activate',
-    requirements: { essential: [], preferred: [] },
-    benefits: [],
-    schedule: {
-      schedules: [],
-      timeZones: [],
-      flexibility: [],
-      minimumHours: {},
-    },
-    commission: {
-      commission_per_call: 0,
-      bonusAmount: 0,
-      currency: '',
-      minimumVolume: { amount: 0, period: '', unit: '' },
-      transactionCommission: 0,
-      additionalDetails: '',
-    },
-    leads: {
-      types: [],
-      sources: [],
-      distribution: { method: '', rules: [] },
-      qualificationCriteria: [],
-    },
-    skills: { languages: [], soft: [], professional: [], technical: [] },
-    seniority: { level: '', yearsExperience: 0 },
-    team: {
-      size: 0,
-      structure: [],
-      territories: [],
-      reporting: { to: '', frequency: '' },
-      collaboration: [],
-    },
-    activities: [],
-    availability: {
-      time_zone: 'UTC',
-      timeZones: ['UTC'],
-      schedule: [],
-      flexibility: [],
-      minimumHours: {},
-    },
-  } as GigData;
-}
-
 /**
- * Call-center onboarding gig step: create project by title only (no full PrompAI wizard).
+ * Call-center onboarding gig step: create project by title only.
+ * Posts a minimal payload — never send empty/invalid ObjectId fields.
  */
 export default function CallCenterCreateProject({
   onBack,
@@ -88,23 +29,51 @@ export default function CallCenterCreateProject({
     setSaving(true);
     setError(null);
     try {
-      const { data, error: saveError } = await saveGigData(buildTitleOnlyGig(title));
-      if (saveError || !data) {
-        throw saveError || new Error('Failed to create project');
+      const userId = Cookies.get('userId');
+      const companyId = Cookies.get('companyId');
+      if (!userId || !companyId) {
+        throw new Error('Missing user or company. Please refresh and try again.');
       }
 
-      const companyId = Cookies.get('companyId');
-      if (companyId) {
-        const userType = localStorage.getItem('userType') || 'call-center';
+      const apiUrl =
+        import.meta.env.VITE_API_URL_GIGS ||
+        import.meta.env.VITE_GIGS_API ||
+        'http://localhost:3000';
+
+      const trimmed = title.trim();
+      const response = await fetch(`${apiUrl}/gigs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          companyId,
+          title: trimmed,
+          description: trimmed,
+          status: 'to_activate',
+        }),
+      });
+
+      const responseText = await response.text();
+      if (!response.ok) {
+        let message = 'Failed to create project';
         try {
-          await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/3`,
-            { status: 'completed' },
-            { params: { userType } }
-          );
-        } catch (onboardingErr) {
-          console.warn('[CallCenterCreateProject] step 3 mark failed', onboardingErr);
+          const parsed = JSON.parse(responseText);
+          message = parsed.message || message;
+        } catch {
+          message = responseText || message;
         }
+        throw new Error(message);
+      }
+
+      const userType = localStorage.getItem('userType') || 'call-center';
+      try {
+        await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/3`,
+          { status: 'completed' },
+          { params: { userType } }
+        );
+      } catch (onboardingErr) {
+        console.warn('[CallCenterCreateProject] step 3 mark failed', onboardingErr);
       }
 
       Cookies.set('createGigStepCompleted', 'true');
