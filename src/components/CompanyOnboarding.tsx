@@ -953,38 +953,35 @@ const CompanyOnboarding = () => {
         }
       }
 
-      // Helper — company: profile (1) + gig (3); call-center: all optional
+      // Helper — company: profile (1) + gig (3); call-center is handled separately.
       const isPhaseFullyCompleted = (phaseId: number) => {
-        if (isCallCenterWorkspace()) return true;
         if (phaseId === 1) return completedStepsState.includes(1);
         if (phaseId === 2) return completedStepsState.includes(3);
         return true;
       };
 
-      // Determine valid phase based on dependencies
       let validPhase = 1;
-      for (let pId = 1; pId <= 4; pId++) {
-        if (pId === 1) {
-          validPhase = 1;
-        } else {
-          if (isPhaseFullyCompleted(pId - 1)) {
+      if (isCallCenterWorkspace()) {
+        // IMPORTANT: call-center must land on phase 2 right after step 1 (company created),
+        // never auto-jump to phase 4 on progress reload.
+        validPhase = completedStepsState.includes(1) ? 2 : 1;
+      } else {
+        // Determine valid phase based on dependencies
+        for (let pId = 1; pId <= 4; pId++) {
+          if (pId === 1) {
+            validPhase = 1;
+          } else if (isPhaseFullyCompleted(pId - 1)) {
             validPhase = pId;
           } else {
             break;
           }
         }
-      }
 
-      // Manual overrides for step completions (matching step 13 is company-only)
-      if (!isCallCenterWorkspace()) {
+        // Manual overrides for step completions (matching step 13 is company-only)
         if (completedStepsState.includes(9) && validPhase < 3 && isPhaseFullyCompleted(2)) validPhase = 3;
         if (completedStepsState.includes(10) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
         if (completedStepsState.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
         if (completedStepsState.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
-      } else {
-        if (completedStepsState.includes(9) && validPhase < 3) validPhase = 3;
-        if (completedStepsState.includes(10) && validPhase < 4) validPhase = 4;
-        if (completedStepsState.includes(12) && validPhase < 4) validPhase = 4;
       }
 
       setCurrentPhase(validPhase);
