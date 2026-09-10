@@ -15,8 +15,20 @@ function countryLabel(country: Country): string {
   return country.name?.common || country.name?.official || country.cca2 || country._id;
 }
 
+function countryDbId(country: Country): string {
+  // Always persist the MongoDB Country._id from the countries collection.
+  const raw = (country as any)?._id ?? (country as any)?.id;
+  if (raw && typeof raw === 'object' && typeof raw.$oid === 'string') return raw.$oid;
+  return String(raw || '');
+}
+
+function isMongoObjectId(value: string): boolean {
+  return /^[a-f0-9]{24}$/i.test(value);
+}
+
 /**
- * Call-center onboarding: create project with title + destination zone only.
+ * Call-center onboarding: create project with title + destination zone.
+ * destination_zone is always the Country document _id from the database.
  */
 export default function CallCenterCreateProject({
   onBack,
@@ -24,7 +36,8 @@ export default function CallCenterCreateProject({
 }: CallCenterCreateProjectProps) {
   const { t } = useTranslation();
   const [title, setTitle] = useState('');
-  const [destinationZone, setDestinationZone] = useState('');
+  /** MongoDB Country._id selected from /countries */
+  const [destinationCountryId, setDestinationCountryId] = useState('');
   const [countries, setCountries] = useState<Country[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
   const [countryQuery, setCountryQuery] = useState('');
@@ -57,9 +70,11 @@ export default function CallCenterCreateProject({
   }, [t]);
 
   const sortedCountries = useMemo(() => {
-    return [...countries].sort((a, b) =>
-      countryLabel(a).localeCompare(countryLabel(b), undefined, { sensitivity: 'base' })
-    );
+    return [...countries]
+      .filter((c) => isMongoObjectId(countryDbId(c)))
+      .sort((a, b) =>
+        countryLabel(a).localeCompare(countryLabel(b), undefined, { sensitivity: 'base' })
+      );
   }, [countries]);
 
   const filteredCountries = useMemo(() => {
@@ -72,13 +87,19 @@ export default function CallCenterCreateProject({
     });
   }, [sortedCountries, countryQuery]);
 
-  const selectedCountry = sortedCountries.find((c) => c._id === destinationZone);
+  const selectedCountry = sortedCountries.find(
+    (c) => countryDbId(c) === destinationCountryId
+  );
   const titleOk = Boolean(title.trim());
-  const zoneOk = Boolean(destinationZone && /^[a-f0-9]{24}$/i.test(destinationZone));
+  const zoneOk = Boolean(
+    destinationCountryId &&
+      isMongoObjectId(destinationCountryId) &&
+      selectedCountry
+  );
   const canSave = titleOk && zoneOk && !saving && !countriesLoading;
 
   const handleCreate = async () => {
-    if (!canSave) return;
+    if (!canSave || !selectedCountry) return;
     setSaving(true);
     setError(null);
     try {
@@ -86,6 +107,12 @@ export default function CallCenterCreateProject({
       const companyId = Cookies.get('companyId');
       if (!userId || !companyId) {
         throw new Error('Missing user or company. Please refresh and try again.');
+      }
+
+      // Country MongoDB _id from database — never send name / cca2.
+      const countryId = countryDbId(selectedCountry);
+      if (!isMongoObjectId(countryId)) {
+        throw new Error('Invalid destination country id from database.');
       }
 
       const apiUrl =
@@ -102,7 +129,8 @@ export default function CallCenterCreateProject({
           companyId,
           title: trimmed,
           description: trimmed,
-          destination_zone: destinationZone,
+          destination_zone: countryId,
+          destinationZones: [countryId],
           status: 'to_activate',
         }),
       });
@@ -218,8 +246,8 @@ export default function CallCenterCreateProject({
             />
           </div>
           <select
-            value={destinationZone}
-            onChange={(e) => setDestinationZone(e.target.value)}
+            value={destinationCountryId}
+            onChange={(e) => setDestinationCountryId(e.target.value)}
             disabled={countriesLoading}
             className="w-full px-4 py-3 border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 disabled:opacity-50 bg-white"
           >
@@ -228,12 +256,15 @@ export default function CallCenterCreateProject({
                 ? t('companyOnboarding.ui.callCenterDestinationLoading', 'Loading countries…')
                 : t('companyOnboarding.ui.callCenterDestinationPlaceholder', 'Select a country')}
             </option>
-            {filteredCountries.map((country) => (
-              <option key={country._id} value={country._id}>
-                {countryLabel(country)}
-                {country.cca2 ? ` (${country.cca2})` : ''}
-              </option>
-            ))}
+            {filteredCountries.map((country) => {
+              const id = countryDbId(country);
+              return (
+                <option key={id} value={id}>
+                  {countryLabel(country)}
+                  {country.cca2 ? ` (${country.cca2})` : ''}
+                </option>
+              );
+            })}
           </select>
           {selectedCountry ? (
             <p className="mt-2 text-xs text-gray-500 font-medium">
