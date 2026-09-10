@@ -230,7 +230,7 @@ function getOnboardingPhases(isCallCenter: boolean): Phase[] {
           ? {
               ...step,
               title: 'Create Project',
-              description: 'Enter the project title only — other gig details are optional later',
+              description: 'Enter the project title and destination zone',
             }
           : step
       ),
