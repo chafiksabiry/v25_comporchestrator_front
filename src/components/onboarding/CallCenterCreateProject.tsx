@@ -1,17 +1,22 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Cookies from 'js-cookie';
 import axios from 'axios';
-import { Briefcase, ArrowLeft, Loader2 } from 'lucide-react';
+import { Briefcase, ArrowLeft, Loader2, Globe2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { fetchAllCountries, type Country } from '../gigsaicreation/lib/api';
 
 type CallCenterCreateProjectProps = {
   onBack: () => void;
   onSuccess?: () => void;
 };
 
+function countryLabel(country: Country): string {
+  if (typeof country.name === 'string') return country.name;
+  return country.name?.common || country.name?.official || country.cca2 || country._id;
+}
+
 /**
- * Call-center onboarding gig step: create project by title only.
- * Posts a minimal payload — never send empty/invalid ObjectId fields.
+ * Call-center onboarding: create project with title + destination zone only.
  */
 export default function CallCenterCreateProject({
   onBack,
@@ -19,13 +24,61 @@ export default function CallCenterCreateProject({
 }: CallCenterCreateProjectProps) {
   const { t } = useTranslation();
   const [title, setTitle] = useState('');
+  const [destinationZone, setDestinationZone] = useState('');
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
+  const [countryQuery, setCountryQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await fetchAllCountries();
+        if (!cancelled) setCountries(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error('[CallCenterCreateProject] countries load failed', err);
+        if (!cancelled) {
+          setError(
+            t(
+              'companyOnboarding.ui.callCenterDestinationLoadError',
+              'Could not load destination zones. Please refresh.'
+            )
+          );
+        }
+      } finally {
+        if (!cancelled) setCountriesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
+
+  const sortedCountries = useMemo(() => {
+    return [...countries].sort((a, b) =>
+      countryLabel(a).localeCompare(countryLabel(b), undefined, { sensitivity: 'base' })
+    );
+  }, [countries]);
+
+  const filteredCountries = useMemo(() => {
+    const q = countryQuery.trim().toLowerCase();
+    if (!q) return sortedCountries;
+    return sortedCountries.filter((c) => {
+      const label = countryLabel(c).toLowerCase();
+      const code = (c.cca2 || '').toLowerCase();
+      return label.includes(q) || code.includes(q);
+    });
+  }, [sortedCountries, countryQuery]);
+
+  const selectedCountry = sortedCountries.find((c) => c._id === destinationZone);
   const titleOk = Boolean(title.trim());
+  const zoneOk = Boolean(destinationZone && /^[a-f0-9]{24}$/i.test(destinationZone));
+  const canSave = titleOk && zoneOk && !saving && !countriesLoading;
 
   const handleCreate = async () => {
-    if (!titleOk || saving) return;
+    if (!canSave) return;
     setSaving(true);
     setError(null);
     try {
@@ -49,6 +102,7 @@ export default function CallCenterCreateProject({
           companyId,
           title: trimmed,
           description: trimmed,
+          destination_zone: destinationZone,
           status: 'to_activate',
         }),
       });
@@ -115,12 +169,12 @@ export default function CallCenterCreateProject({
           </div>
           <div>
             <h2 className="text-2xl font-black text-gray-900">
-              {t('companyOnboarding.ui.callCenterProjectTitle', 'Project title')}
+              {t('companyOnboarding.ui.callCenterProjectTitle', 'Create project')}
             </h2>
             <p className="text-sm text-gray-500 font-medium">
               {t(
                 'companyOnboarding.ui.callCenterProjectHint',
-                'Only the project title is required.'
+                'Enter the project title and destination zone.'
               )}
             </p>
           </div>
@@ -135,9 +189,6 @@ export default function CallCenterCreateProject({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void handleCreate();
-            }}
             className="w-full px-4 py-3 border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400"
             placeholder={t(
               'companyOnboarding.ui.callCenterProjectPlaceholder',
@@ -147,12 +198,57 @@ export default function CallCenterCreateProject({
           />
         </div>
 
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            {t('companyOnboarding.ui.callCenterDestinationLabel', 'Destination zone')}{' '}
+            <span className="text-red-500">*</span>
+          </label>
+          <div className="relative mb-2">
+            <Globe2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="search"
+              value={countryQuery}
+              onChange={(e) => setCountryQuery(e.target.value)}
+              disabled={countriesLoading}
+              className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 disabled:opacity-50"
+              placeholder={t(
+                'companyOnboarding.ui.callCenterDestinationSearch',
+                'Search country…'
+              )}
+            />
+          </div>
+          <select
+            value={destinationZone}
+            onChange={(e) => setDestinationZone(e.target.value)}
+            disabled={countriesLoading}
+            className="w-full px-4 py-3 border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 disabled:opacity-50 bg-white"
+          >
+            <option value="">
+              {countriesLoading
+                ? t('companyOnboarding.ui.callCenterDestinationLoading', 'Loading countries…')
+                : t('companyOnboarding.ui.callCenterDestinationPlaceholder', 'Select a country')}
+            </option>
+            {filteredCountries.map((country) => (
+              <option key={country._id} value={country._id}>
+                {countryLabel(country)}
+                {country.cca2 ? ` (${country.cca2})` : ''}
+              </option>
+            ))}
+          </select>
+          {selectedCountry ? (
+            <p className="mt-2 text-xs text-gray-500 font-medium">
+              {t('companyOnboarding.ui.callCenterDestinationSelected', 'Selected')}:{' '}
+              {countryLabel(selectedCountry)}
+            </p>
+          ) : null}
+        </div>
+
         {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
 
         <button
           type="button"
           onClick={() => void handleCreate()}
-          disabled={!titleOk || saving}
+          disabled={!canSave}
           className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-harx px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
