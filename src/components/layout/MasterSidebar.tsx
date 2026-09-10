@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
   ScrollText,
   UserPlus,
+  UserCheck,
   Building2,
   Calendar,
   Book,
@@ -143,12 +144,13 @@ export function MasterSidebar({
     // Group 2
     { icon: <Phone size={20} />, label: t('sidebar.calls'), path: '/dashboard/calls', key: 'calls', alwaysShow: true, groupId: 2 },
     { icon: <Bot size={20} />, label: t('sidebar.voiceAssistant', 'Assistant vocal'), path: '/dashboard/voice-assistant', key: 'voice-assistant', alwaysShow: true, groupId: 2 },
+    { icon: <UserCheck size={20} />, label: t('sidebar.agents', 'Agents'), path: '/dashboard/agents', key: 'cc-agents', callCenterOnly: true, alwaysShow: true, groupId: 2 },
     { icon: <UserPlus size={20} />, label: t('sidebar.leads'), path: '/dashboard/leads', key: 'leads', requiresLeads: true, groupId: 2 },
-    { icon: <Users size={20} />, label: t('sidebar.repMatching'), path: '/dashboard/rep-matching', key: 'rep-matching', requiresRepMatching: true, groupId: 2 },
+    { icon: <Users size={20} />, label: t('sidebar.repMatching'), path: '/dashboard/rep-matching', key: 'rep-matching', requiresRepMatching: true, hideForCallCenter: true, groupId: 2 },
     { icon: <BookOpen size={20} />, label: t('sidebar.training'), path: '/dashboard/training', key: 'training', alwaysShow: true, groupId: 2 },
-    { icon: <Calendar size={20} />, label: t('sidebar.scheduler'), path: '/dashboard/scheduler', key: 'scheduler', requiresRepMatching: true, groupId: 2 },
-    { icon: <Mail size={20} />, label: t('sidebar.emails'), path: '/dashboard/emails', key: 'emails', requiresRepMatching: true, groupId: 2 },
-    { icon: <MessageSquare size={20} />, label: t('sidebar.liveChat'), path: '/dashboard/chat', key: 'live-chat', requiresRepMatching: true, groupId: 2 },
+    { icon: <Calendar size={20} />, label: t('sidebar.scheduler'), path: '/dashboard/scheduler', key: 'scheduler', requiresRepMatching: true, hideForCallCenter: true, groupId: 2 },
+    { icon: <Mail size={20} />, label: t('sidebar.emails'), path: '/dashboard/emails', key: 'emails', requiresRepMatching: true, hideForCallCenter: true, groupId: 2 },
+    { icon: <MessageSquare size={20} />, label: t('sidebar.liveChat'), path: '/dashboard/chat', key: 'live-chat', requiresRepMatching: true, hideForCallCenter: true, groupId: 2 },
 
     // Group 3
     { icon: <Briefcase size={20} />, label: 'Gigs', path: '/dashboard/gigs', key: 'gigs', requiresGigs: true, groupId: 3 },
@@ -156,9 +158,9 @@ export function MasterSidebar({
     { icon: <Book size={20} />, label: t('sidebar.knowledgeBase'), path: '/dashboard/knowledge-base', key: 'knowledge-base', alwaysShow: true, groupId: 3 },
     { icon: <PhoneCall size={20} />, label: t('sidebar.telephony', 'Telephony'), path: '/dashboard/telephony', key: 'telephony', alwaysShow: true, groupId: 3 },
     { icon: <Plug size={20} />, label: 'Gig Activation', path: '/dashboard/gig-activation', key: 'integrations', alwaysShow: true, groupId: 3 },
-    { icon: <ClipboardCheck size={20} />, label: t('sidebar.qualityAssurance'), path: '/dashboard/quality-assurance', key: 'quality-assurance', requiresRepMatching: true, groupId: 3 },
-    { icon: <ScrollText size={20} />, label: t('sidebar.operations'), path: '/dashboard/operations', key: 'operations', requiresRepMatching: true, groupId: 3 },
-    { icon: <TrendingUp size={20} />, label: t('sidebar.analytics'), path: '/dashboard/analytics', key: 'analytics', requiresRepMatching: true, groupId: 3 },
+    { icon: <ClipboardCheck size={20} />, label: t('sidebar.qualityAssurance'), path: '/dashboard/quality-assurance', key: 'quality-assurance', requiresRepMatching: true, hideForCallCenter: true, groupId: 3 },
+    { icon: <ScrollText size={20} />, label: t('sidebar.operations'), path: '/dashboard/operations', key: 'operations', requiresRepMatching: true, hideForCallCenter: true, groupId: 3 },
+    { icon: <TrendingUp size={20} />, label: t('sidebar.analytics'), path: '/dashboard/analytics', key: 'analytics', requiresRepMatching: true, hideForCallCenter: true, groupId: 3 },
   ];
 
   const orchestratorItems = [
@@ -167,7 +169,9 @@ export function MasterSidebar({
 
   const filteredDashboardItems = dashboardItems.filter(item => {
     if (hiddenSections.includes(item.key)) return false;
-    // Call-center: same dashboard, but nav is not gated by mandatory onboarding steps.
+    if ((item as any).callCenterOnly && !isCallCenter) return false;
+    if ((item as any).hideForCallCenter && isCallCenter) return false;
+    // Call-center: nav is not gated by mandatory onboarding steps (except matching, already hidden).
     if (isCallCenter) return true;
     if (item.alwaysShow) return true;
     if ((item as any).requiresGigs && !hasGigs) return false;
