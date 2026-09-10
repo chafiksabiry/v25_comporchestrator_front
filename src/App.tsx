@@ -800,10 +800,12 @@ function AppContent() {
     );
   }
 
+  const isOpsConsole = isCallCenterWorkspace();
+
   return (
     <StripeContainer>
       <Toaster position="top-right" />
-      <div className="flex h-screen bg-harx-bg overflow-hidden">
+      <div className={`flex h-screen overflow-hidden ${isOpsConsole ? 'ops-console bg-slate-100' : 'bg-harx-bg'}`}>
         {/* Mobile backdrop: closes the off-canvas sidebar when tapped. */}
         {mobileSidebarOpen && (
           <div
@@ -836,20 +838,45 @@ function AppContent() {
           />
         </div>
 
-        <div className="flex flex-1 flex-col overflow-hidden relative bg-harx-sidebar">
+        <div
+          className={`flex flex-1 flex-col overflow-hidden relative ${
+            isOpsConsole ? 'bg-slate-100' : 'bg-harx-sidebar'
+          }`}
+        >
           {/* Top Navigation / Navbar */}
           {/* z-40 keeps header menus above main; overflow-visible so absolute menus are not clipped */}
-          <header className={`bg-harx-sidebar h-16 flex items-center shrink-0 px-4 md:px-5 relative z-40 overflow-visible ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
+          <header
+            className={`h-14 md:h-16 flex items-center shrink-0 px-4 md:px-5 relative z-40 overflow-visible ${
+              isOpsConsole
+                ? 'bg-white border-b border-slate-200'
+                : `bg-harx-sidebar ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`
+            }`}
+          >
             <div className="flex w-full items-center gap-3 min-w-0 overflow-visible">
               {/* Mobile-only hamburger to open the sidebar drawer. */}
               <button
                 type="button"
                 onClick={() => setMobileSidebarOpen(true)}
-                className="md:hidden flex items-center justify-center h-10 w-10 rounded-xl text-white bg-white/10 hover:bg-white/20 transition-colors shrink-0"
+                className={`md:hidden flex items-center justify-center h-10 w-10 rounded-xl transition-colors shrink-0 ${
+                  isOpsConsole
+                    ? 'text-slate-700 bg-slate-100 hover:bg-slate-200'
+                    : 'text-white bg-white/10 hover:bg-white/20'
+                }`}
                 aria-label="Open menu"
               >
                 <Menu size={20} />
               </button>
+
+              {isOpsConsole ? (
+                <div className="hidden sm:flex flex-col min-w-0">
+                  <span className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">
+                    {t('sidebar.callCenterBadge', 'Call Center')}
+                  </span>
+                  <span className="text-sm font-black text-slate-900 truncate">
+                    {t('sidebar.callCenterOps', 'Operations console')}
+                  </span>
+                </div>
+              ) : null}
 
               {/* Right cluster: scrollable chips stay separate from dropdowns (overflow-x clips absolute menus). */}
               <div className="ml-auto flex items-center gap-2 min-w-0 overflow-visible">
@@ -860,11 +887,11 @@ function AppContent() {
                       className="harx-nav-chip group"
                     >
                       <div className="harx-nav-chip-icon bg-emerald-500/15 border border-emerald-500/25">
-                        <Coins size={14} className="text-emerald-400" />
+                        <Coins size={14} className={isOpsConsole ? 'text-emerald-600' : 'text-emerald-400'} />
                       </div>
                       <div className="flex flex-col leading-tight">
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.myWallet')}</span>
-                        <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{balance.toLocaleString('en-US')} €</span>
+                        <span className={`text-[8px] font-black uppercase tracking-[0.15em] ${isOpsConsole ? 'text-slate-400' : 'text-white/45'}`}>{t('navbar.myWallet')}</span>
+                        <span className={`text-sm font-black tabular-nums tracking-tight whitespace-nowrap ${isOpsConsole ? 'text-slate-900' : 'text-white'}`}>{balance.toLocaleString('en-US')} €</span>
                       </div>
                     </div>
                   )}
@@ -875,11 +902,11 @@ function AppContent() {
                       className="harx-nav-chip group"
                     >
                       <div className="harx-nav-chip-icon bg-blue-500/15 border border-blue-500/25">
-                        <Clock size={13} className="text-blue-400" />
+                        <Clock size={13} className={isOpsConsole ? 'text-blue-600' : 'text-blue-400'} />
                       </div>
                       <div className="flex flex-col leading-tight">
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.minutes')}</span>
-                        <span className="text-sm font-black text-white tabular-nums whitespace-nowrap">{formatWalletMinutesBalance(minutes)}</span>
+                        <span className={`text-[8px] font-black uppercase tracking-[0.15em] ${isOpsConsole ? 'text-slate-400' : 'text-white/45'}`}>{t('navbar.minutes')}</span>
+                        <span className={`text-sm font-black tabular-nums whitespace-nowrap ${isOpsConsole ? 'text-slate-900' : 'text-white'}`}>{formatWalletMinutesBalance(minutes)}</span>
                       </div>
                     </div>
                   )}
@@ -889,12 +916,12 @@ function AppContent() {
                       onClick={handleTelephonyClick}
                       className="harx-nav-chip group"
                     >
-                      <div className="harx-nav-chip-icon bg-harx-orange/15 border border-harx-orange/30">
-                        <Phone size={13} className="text-harx-orange" strokeWidth={2.5} />
+                      <div className={`harx-nav-chip-icon ${isOpsConsole ? 'bg-emerald-500/15 border border-emerald-500/30' : 'bg-harx-orange/15 border border-harx-orange/30'}`}>
+                        <Phone size={13} className={isOpsConsole ? 'text-emerald-600' : 'text-harx-orange'} strokeWidth={2.5} />
                       </div>
                       <div className="flex flex-col leading-tight">
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.phoneLines')}</span>
-                        <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
+                        <span className={`text-[8px] font-black uppercase tracking-[0.15em] ${isOpsConsole ? 'text-slate-400' : 'text-white/45'}`}>{t('navbar.phoneLines')}</span>
+                        <span className={`text-sm font-black tabular-nums tracking-tight whitespace-nowrap ${isOpsConsole ? 'text-slate-900' : 'text-white'}`}>{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
                       </div>
                     </div>
                   )}
@@ -906,7 +933,9 @@ function AppContent() {
                         setActiveProject('dashboard');
                         navigate('/dashboard/subscription');
                       }}
-                      className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-gradient-harx text-white font-black text-[11px] uppercase tracking-[0.12em] hover:opacity-95 active:scale-[0.98] transition-all duration-200 shrink-0"
+                      className={`inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl text-white font-black text-[11px] uppercase tracking-[0.12em] hover:opacity-95 active:scale-[0.98] transition-all duration-200 shrink-0 ${
+                        isOpsConsole ? 'bg-emerald-600' : 'bg-gradient-harx'
+                      }`}
                     >
                       <Sparkles size={13} className="text-white shrink-0" />
                       <span className="whitespace-nowrap">{t('navbar.upgrade')}</span>
@@ -919,9 +948,13 @@ function AppContent() {
                 <div className="relative shrink-0 overflow-visible" ref={profileDropdownRef}>
                   <div
                     onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                    className="flex items-center gap-2 bg-harx-chip p-1 pr-3 rounded-xl border border-harx-chip-border cursor-pointer hover:border-white/20 hover:bg-[#222228] transition-colors"
+                    className={`flex items-center gap-2 p-1 pr-3 rounded-xl border cursor-pointer transition-colors ${
+                      isOpsConsole
+                        ? 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        : 'bg-harx-chip border-harx-chip-border hover:border-white/20 hover:bg-[#222228]'
+                    }`}
                   >
-                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-white text-sm font-black overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-white text-sm font-black overflow-hidden ${companyLogo && !logoError ? 'bg-white' : isOpsConsole ? 'bg-emerald-600' : 'bg-gradient-harx'}`}>
                       {companyLogo && !logoError ? (
                         <img
                           src={companyLogo}
@@ -934,21 +967,31 @@ function AppContent() {
                       )}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-black text-white leading-tight truncate max-w-[120px]">{companyName || userFullName}</span>
-                      <span className="text-[9px] text-white/45 font-bold uppercase tracking-wider">{t('navbar.company')}</span>
+                      <span className={`text-xs font-black leading-tight truncate max-w-[120px] ${isOpsConsole ? 'text-slate-900' : 'text-white'}`}>{companyName || userFullName}</span>
+                      <span className={`text-[9px] font-bold uppercase tracking-wider ${isOpsConsole ? 'text-slate-400' : 'text-white/45'}`}>{t('navbar.company')}</span>
                     </div>
-                    <ChevronDown size={12} className={`text-white/45 transition-transform duration-300 shrink-0 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={12} className={`transition-transform duration-300 shrink-0 ${isOpsConsole ? 'text-slate-400' : 'text-white/45'} ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
 
                   {isProfileDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-[#0B0F19] border border-white/10 rounded-2xl shadow-xl z-[200] overflow-hidden animate-fade-in">
+                    <div
+                      className={`absolute right-0 top-full mt-2 w-56 rounded-2xl shadow-xl z-[200] overflow-hidden animate-fade-in ${
+                        isOpsConsole
+                          ? 'bg-white border border-slate-200'
+                          : 'bg-[#0B0F19] border border-white/10'
+                      }`}
+                    >
                       <button
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
                           setActiveProject('dashboard');
                           navigate('/dashboard/profile');
                         }}
-                        className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
+                        className={`flex items-center gap-3 w-full p-4 text-left text-sm transition-colors border-b ${
+                          isOpsConsole
+                            ? 'text-slate-800 hover:bg-slate-50 border-slate-100'
+                            : 'text-white hover:bg-white/5 border-white/5'
+                        }`}
                       >
                         <Building2 size={16} className="text-gray-400" />
                         <span className="font-bold">{t('userMenu.profile')}</span>
@@ -959,7 +1002,11 @@ function AppContent() {
                           setActiveProject('dashboard');
                           navigate('/dashboard/account-settings');
                         }}
-                        className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
+                        className={`flex items-center gap-3 w-full p-4 text-left text-sm transition-colors border-b ${
+                          isOpsConsole
+                            ? 'text-slate-800 hover:bg-slate-50 border-slate-100'
+                            : 'text-white hover:bg-white/5 border-white/5'
+                        }`}
                       >
                         <Settings size={16} className="text-gray-400" />
                         <span className="font-bold">{t('userMenu.settings')}</span>
@@ -969,7 +1016,9 @@ function AppContent() {
                           setIsProfileDropdownOpen(false);
                           handleLogout();
                         }}
-                        className="flex items-center gap-3 w-full p-4 text-left text-sm text-rose-400 hover:bg-white/5 transition-colors"
+                        className={`flex items-center gap-3 w-full p-4 text-left text-sm text-rose-500 transition-colors ${
+                          isOpsConsole ? 'hover:bg-rose-50' : 'hover:bg-white/5'
+                        }`}
                       >
                         <LogOut size={16} className="text-rose-400" />
                         <span className="font-bold">{t('userMenu.logout')}</span>
@@ -982,7 +1031,11 @@ function AppContent() {
           </header>
 
           {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full bg-harx-bg">
+          <main
+            className={`flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full ${
+              isOpsConsole ? 'bg-slate-100' : 'bg-harx-bg'
+            }`}
+          >
             <ProjectViewSwitch
               activeView={activeProject}
               dashboard={<DashboardApp />}

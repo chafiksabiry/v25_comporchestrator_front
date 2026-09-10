@@ -3,8 +3,10 @@ import PremiumDashboard from '../../training/components/Dashboard/PremiumDashboa
 import { getActiveAgentsForCompany } from '../../../api/matching';
 import OperationsDashboard from './OperationsDashboard';
 import Cookies from 'js-cookie';
+import { isCallCenterWorkspace } from '../../../utils/callCenterWorkspace';
 
 export default function PremiumDashboardPage() {
+  const isOpsConsole = isCallCenterWorkspace();
   const [profileData, setProfileData] = useState<any>(null);
 
   useEffect(() => {
@@ -167,14 +169,14 @@ export default function PremiumDashboardPage() {
 
   if (userType === 'company') {
     return (
-      <div className="p-8">
+      <div className={isOpsConsole ? 'ops-console-board p-4 md:p-5' : 'p-8'}>
         <OperationsDashboard />
       </div>
     );
   }
 
   return (
-    <div className="p-8">
+    <div className={isOpsConsole ? 'ops-console-board p-4 md:p-5' : 'p-8'}>
       <PremiumDashboard 
         profile={profileData} 
         companyName={companyName} 
