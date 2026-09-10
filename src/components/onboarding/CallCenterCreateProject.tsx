@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import {
@@ -11,6 +11,7 @@ import {
   Trash2,
   Eye,
   MapPin,
+  ChevronDown,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { fetchAllCountries, type Country } from '../gigsaicreation/lib/api';
@@ -91,8 +92,10 @@ export default function CallCenterCreateProject({
   const [countries, setCountries] = useState<Country[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
   const [countryQuery, setCountryQuery] = useState('');
+  const [countryMenuOpen, setCountryMenuOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const countryBoxRef = useRef<HTMLDivElement | null>(null);
 
   const companyId = Cookies.get('companyId') || '';
 
@@ -146,19 +149,39 @@ export default function CallCenterCreateProject({
       );
   }, [countries]);
 
+  const selectedCountry = sortedCountries.find(
+    (c) => countryDbId(c) === destinationCountryId
+  );
+  const selectedCountryLabel = selectedCountry
+    ? `${countryLabel(selectedCountry)}${selectedCountry.cca2 ? ` (${selectedCountry.cca2})` : ''}`
+    : '';
+
   const filteredCountries = useMemo(() => {
     const q = countryQuery.trim().toLowerCase();
-    if (!q) return sortedCountries;
+    // If input still shows the selected label, list all countries for easier re-pick.
+    if (!q || (selectedCountryLabel && q === selectedCountryLabel.toLowerCase())) {
+      return sortedCountries;
+    }
     return sortedCountries.filter((c) => {
       const label = countryLabel(c).toLowerCase();
       const code = (c.cca2 || '').toLowerCase();
       return label.includes(q) || code.includes(q);
     });
-  }, [sortedCountries, countryQuery]);
+  }, [sortedCountries, countryQuery, selectedCountryLabel]);
 
-  const selectedCountry = sortedCountries.find(
-    (c) => countryDbId(c) === destinationCountryId
-  );
+  useEffect(() => {
+    if (!countryMenuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!countryBoxRef.current?.contains(event.target as Node)) {
+        setCountryMenuOpen(false);
+        if (selectedCountryLabel) setCountryQuery(selectedCountryLabel);
+        else setCountryQuery('');
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [countryMenuOpen, selectedCountryLabel]);
+
   const titleOk = Boolean(title.trim());
   const zoneOk = Boolean(
     destinationCountryId && isMongoObjectId(destinationCountryId) && selectedCountry
@@ -169,8 +192,17 @@ export default function CallCenterCreateProject({
     setTitle('');
     setDestinationCountryId('');
     setCountryQuery('');
+    setCountryMenuOpen(false);
     setActiveProject(null);
     setError(null);
+  };
+
+  const pickCountry = (country: Country) => {
+    const id = countryDbId(country);
+    const label = `${countryLabel(country)}${country.cca2 ? ` (${country.cca2})` : ''}`;
+    setDestinationCountryId(id);
+    setCountryQuery(label);
+    setCountryMenuOpen(false);
   };
 
   const openCreate = () => {
@@ -181,8 +213,15 @@ export default function CallCenterCreateProject({
   const openEdit = (project: ProjectRow) => {
     setActiveProject(project);
     setTitle(project.title || '');
-    setDestinationCountryId(resolveDestinationId(project.destination_zone));
-    setCountryQuery('');
+    const zoneId = resolveDestinationId(project.destination_zone);
+    setDestinationCountryId(zoneId);
+    const match = sortedCountries.find((c) => countryDbId(c) === zoneId);
+    setCountryQuery(
+      match
+        ? `${countryLabel(match)}${match.cca2 ? ` (${match.cca2})` : ''}`
+        : resolveDestinationLabel(project.destination_zone, sortedCountries)
+    );
+    setCountryMenuOpen(false);
     setError(null);
     setMode('edit');
   };
@@ -554,41 +593,68 @@ export default function CallCenterCreateProject({
             {t('companyOnboarding.ui.callCenterDestinationLabel', 'Destination zone')}{' '}
             <span className="text-red-500">*</span>
           </label>
-          <div className="relative mb-2">
-            <Globe2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="relative" ref={countryBoxRef}>
+            <Globe2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10 pointer-events-none" />
             <input
-              type="search"
+              type="text"
+              role="combobox"
+              aria-expanded={countryMenuOpen}
+              aria-autocomplete="list"
               value={countryQuery}
-              onChange={(e) => setCountryQuery(e.target.value)}
               disabled={countriesLoading}
-              className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 disabled:opacity-50"
-              placeholder={t(
-                'companyOnboarding.ui.callCenterDestinationSearch',
-                'Search country…'
-              )}
+              onFocus={() => setCountryMenuOpen(true)}
+              onClick={() => setCountryMenuOpen(true)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setCountryQuery(value);
+                setCountryMenuOpen(true);
+                // Typing means user is searching — clear previous selection until they pick again.
+                if (selectedCountryLabel && value !== selectedCountryLabel) {
+                  setDestinationCountryId('');
+                }
+              }}
+              className="w-full pl-10 pr-10 py-3 border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 disabled:opacity-50 bg-white"
+              placeholder={
+                countriesLoading
+                  ? t('companyOnboarding.ui.callCenterDestinationLoading', 'Loading countries…')
+                  : t(
+                      'companyOnboarding.ui.callCenterDestinationPlaceholder',
+                      'Search and select a country'
+                    )
+              }
             />
+            {countryMenuOpen && !countriesLoading ? (
+              <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl">
+                {filteredCountries.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-gray-500">
+                    {t('companyOnboarding.ui.callCenterDestinationNoResults', 'No countries found')}
+                  </p>
+                ) : (
+                  filteredCountries.map((country) => {
+                    const id = countryDbId(country);
+                    const active = id === destinationCountryId;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => pickCountry(country)}
+                        className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                          active
+                            ? 'bg-harx-50 text-harx-800'
+                            : 'text-gray-800 hover:bg-gray-50'
+                        }`}
+                      >
+                        {countryLabel(country)}
+                        {country.cca2 ? ` (${country.cca2})` : ''}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            ) : null}
           </div>
-          <select
-            value={destinationCountryId}
-            onChange={(e) => setDestinationCountryId(e.target.value)}
-            disabled={countriesLoading}
-            className="w-full px-4 py-3 border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 disabled:opacity-50 bg-white"
-          >
-            <option value="">
-              {countriesLoading
-                ? t('companyOnboarding.ui.callCenterDestinationLoading', 'Loading countries…')
-                : t('companyOnboarding.ui.callCenterDestinationPlaceholder', 'Select a country')}
-            </option>
-            {filteredCountries.map((country) => {
-              const id = countryDbId(country);
-              return (
-                <option key={id} value={id}>
-                  {countryLabel(country)}
-                  {country.cca2 ? ` (${country.cca2})` : ''}
-                </option>
-              );
-            })}
-          </select>
         </div>
 
         {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
