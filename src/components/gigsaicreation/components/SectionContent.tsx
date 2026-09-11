@@ -369,8 +369,13 @@ export function SectionContent({
                     : new Error(String(result.error));
                 }
 
+                const payload = result.data;
                 const id =
-                  (result.data && (result.data._id || result.data.id)) ||
+                  (payload &&
+                    (payload._id ||
+                      payload.id ||
+                      payload.data?._id ||
+                      payload.data?.id)) ||
                   editGigId ||
                   null;
                 return id ? String(id) : null;

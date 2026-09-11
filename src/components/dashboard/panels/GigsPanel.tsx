@@ -16,12 +16,17 @@ export default function GigsPanel() {
   };
 
   const handlePublishSuccess = (gigId?: string) => {
-    if (gigId) {
-      rememberCreatedGigId(gigId);
-      window.location.hash = `#${getPostCreateGigRoute(gigId)}`;
-      return;
-    }
-    handleBackFromCreation();
+    const id =
+      gigId ||
+      (typeof localStorage !== 'undefined'
+        ? localStorage.getItem('selectedGigId') || localStorage.getItem('gigId')
+        : null) ||
+      '';
+    if (id) rememberCreatedGigId(id);
+    // Always continue funnel (telephony) — never dump back on the gigs list.
+    window.location.hash = id
+      ? `#${getPostCreateGigRoute(id)}`
+      : '#/dashboard/telephony?action=buy';
   };
 
   if (showGigCreation) {

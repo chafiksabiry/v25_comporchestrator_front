@@ -1559,6 +1559,11 @@ const CompanyOnboarding = () => {
     setShowGigDetails(false);
     setActiveStep(null);
     setShowTelephonySetup(true);
+    // Also deep-link the dashboard telephony route (works when user
+    // created the gig from /dashboard/gigs rather than the checklist).
+    if (gigId) {
+      window.location.hash = `#/dashboard/telephony?action=buy&gigId=${encodeURIComponent(gigId)}`;
+    }
     window.dispatchEvent(new CustomEvent('refreshOnboardingProgress'));
   }, []);
 
