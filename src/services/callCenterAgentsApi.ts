@@ -9,11 +9,26 @@ function registrationBase(): string {
   return String(raw).replace(/\/$/, '');
 }
 
+function sessionUserId(): string {
+  return (
+    Cookies.get('userId') ||
+    localStorage.getItem('userId') ||
+    ''
+  );
+}
+
 function authHeaders(): HeadersInit {
-  const token = localStorage.getItem('token') || Cookies.get('token') || '';
+  const token =
+    localStorage.getItem('token') ||
+    localStorage.getItem('auth_token') ||
+    Cookies.get('token') ||
+    Cookies.get('auth_token') ||
+    '';
+  const userId = sessionUserId();
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(userId ? { 'X-User-Id': userId } : {}),
   };
 }
 
@@ -39,8 +54,11 @@ export type CreateAgentPayload = {
 };
 
 export async function listCallCenterAgents(companyId: string): Promise<CallCenterAgent[]> {
+  const userId = sessionUserId();
+  const qs = new URLSearchParams({ companyId });
+  if (userId) qs.set('userId', userId);
   const res = await fetch(
-    `${registrationBase()}/api/call-center/agents?companyId=${encodeURIComponent(companyId)}`,
+    `${registrationBase()}/api/call-center/agents?${qs.toString()}`,
     { headers: authHeaders() }
   );
   const json = await res.json().catch(() => ({}));
