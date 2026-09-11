@@ -1,7 +1,7 @@
 {
   "aiVoice": {
     "callWithAssistant": "Call with assistant",
-    "callWithAssistantHint": "Outbound AI call via Telnyx or Twilio",
+    "callWithAssistantHint": "Outbound AI call via the phone line",
     "calling": "Calling…",
     "callStarted": "AI call started to {{phone}}",
     "callFailed": "Could not start the AI call.",
@@ -19,7 +19,7 @@
     "saveFailed": "Could not save the assistant.",
     "selectGig": "Select a gig.",
     "pageTitle": "Voice assistant",
-    "pageSub": "The AI dials, talks with the lead, and follows the gig script one turn at a time. A Telnyx or Twilio line and an active script are required.",
+    "pageSub": "The AI dials, talks with the lead, and follows the gig script one turn at a time. A phone line and an active script are required.",
     "leadsTitle": "Leads to call",
     "noLeads": "No leads for this gig.",
     "ready": "Assistant is on — pick a lead below.",
@@ -392,7 +392,7 @@
         "readySub": "The AI can dial and follow the script for {{gig}}.",
         "offSub": "Enable the assistant so the AI can call on {{gig}}.",
         "allGigsSub": "The AI dials and talks. Select a gig to see its status.",
-        "pipeline": "Telnyx/Twilio → Script → Assistant",
+        "pipeline": "Line → Script → Assistant",
         "open": "Open"
       },
       "coverage": {
