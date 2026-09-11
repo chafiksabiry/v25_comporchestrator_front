@@ -34,6 +34,7 @@ import KnowledgeBase from "./KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
 import PrompAI from "./gigsaicreation/components/PrompAI";
+import { rememberCreatedGigId } from "../services/gigSetupSync";
 import { useTranslation } from "react-i18next";
 import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
 import {
@@ -1549,6 +1550,18 @@ const CompanyOnboarding = () => {
     [loadCompanyProgress]
   );
 
+  /** After gig create: jump straight to telephony (next funnel step). */
+  const handleGigPublishSuccess = useCallback(async (gigId?: string) => {
+    if (gigId) rememberCreatedGigId(gigId);
+    setHasGigs(true);
+    setCompletedSteps((prev) => (prev.includes(3) ? prev : [...prev, 3]));
+    setShowGigCreation(false);
+    setShowGigDetails(false);
+    setActiveStep(null);
+    setShowTelephonySetup(true);
+    window.dispatchEvent(new CustomEvent('refreshOnboardingProgress'));
+  }, []);
+
   const handleBackToOnboarding = async () => {
     // If UploadContacts is showing, cancel processing and return immediately
     if (showUploadContacts) {
@@ -1794,6 +1807,7 @@ const CompanyOnboarding = () => {
             : undefined
         }
         onBackToOnboarding={handleBackToOnboarding}
+        onPublishSuccess={handleGigPublishSuccess}
       />
     );
   } else if (showTelephonySetup) {

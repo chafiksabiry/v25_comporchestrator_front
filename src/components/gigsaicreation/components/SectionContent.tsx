@@ -20,7 +20,7 @@ interface SectionContentProps {
   isAIMode?: boolean;
   isEditMode?: boolean;
   editGigId?: string | null;
-  onPublishSuccess?: () => void | Promise<void>;
+  onPublishSuccess?: (gigId?: string) => void | Promise<void>;
 }
 
 export function SectionContent({
@@ -170,7 +170,8 @@ export function SectionContent({
               // Si onSectionChange est appelé avec 'suggestions', cela indique qu'on veut revenir aux suggestions
               onSectionChange?.('suggestions');
             }}
-            onNext={() => onSectionChange?.('schedule')}
+            onNext={() => onSectionChange?.('review')}
+            onSectionChange={onSectionChange}
             onSave={() => { }}
             onAIAssist={() => { }}
             currentSection={section}
@@ -363,10 +364,19 @@ export function SectionContent({
 
                 if (result.error) {
                   console.error('Error saving/updating gig:', result.error);
-                  return;
+                  throw result.error instanceof Error
+                    ? result.error
+                    : new Error(String(result.error));
                 }
+
+                const id =
+                  (result.data && (result.data._id || result.data.id)) ||
+                  editGigId ||
+                  null;
+                return id ? String(id) : null;
               } catch (error) {
                 console.error('Error in gig submission:', error);
+                throw error;
               }
             }}
             isEditMode={isEditMode}
