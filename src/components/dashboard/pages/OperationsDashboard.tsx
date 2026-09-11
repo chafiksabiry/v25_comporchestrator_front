@@ -1329,15 +1329,26 @@ export default function OperationsDashboard() {
   return (
     <div
       className={`max-w-7xl mx-auto animate-in fade-in duration-500 ${
-        isOpsConsole ? 'space-y-4 pb-10' : 'space-y-5 pb-12'
+        isOpsConsole ? 'space-y-5 pb-10' : 'space-y-5 pb-12'
       }`}
     >
       {/* ---------- Brand header ---------- */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col">
+      <div
+        className={`flex items-center justify-between gap-4 ${
+          isOpsConsole
+            ? 'rounded-2xl border border-harx-border bg-white px-5 py-4 shadow-harx'
+            : ''
+        }`}
+      >
+        <div className="flex flex-col min-w-0">
+          {isOpsConsole ? (
+            <span className="mb-1 text-[10px] font-black uppercase tracking-[0.18em] text-harx-orange">
+              {t('opsDashboard.header.callCenterBoard', 'Call center board')}
+            </span>
+          ) : null}
           <h1
             className={`font-black tracking-tight text-slate-900 ${
-              isOpsConsole ? 'text-xl' : 'text-2xl'
+              isOpsConsole ? 'text-2xl' : 'text-2xl'
             }`}
           >
             {t('opsDashboard.header.welcome', { name: userName, defaultValue: 'Welcome, {{name}}' })}
@@ -1347,9 +1358,7 @@ export default function OperationsDashboard() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            {isOpsConsole
-              ? t('opsDashboard.header.opsLive', 'Ops · Live')
-              : t('opsDashboard.header.live', 'Live')}
+            {t('opsDashboard.header.live', 'Live')}
           </span>
         </div>
 
@@ -1575,26 +1584,20 @@ export default function OperationsDashboard() {
         )}
 
       {/* ---------- Section tabs ---------- */}
-      <div className={`flex flex-wrap ${isOpsConsole ? 'gap-1.5' : 'gap-2'}`}>
+      <div className={`flex flex-wrap ${isOpsConsole ? 'gap-2' : 'gap-2'}`}>
         {tabs.map((tabItem) => {
           const active = tab === tabItem.id;
           return (
             <button
               key={tabItem.id}
               onClick={() => setTab(tabItem.id)}
-              className={`inline-flex items-center gap-2 border text-sm font-bold transition-all ${
-                isOpsConsole
-                  ? active
-                    ? 'rounded-lg border-emerald-600 bg-emerald-600 px-3 py-1.5 text-white shadow-sm'
-                    : 'rounded-lg border-slate-200 bg-white px-3 py-1.5 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/60'
-                  : active
-                    ? 'rounded-xl border-harx-ink bg-harx-ink px-4 py-2 text-white shadow-harx'
-                    : 'rounded-xl border-harx-border bg-white px-4 py-2 text-slate-600 hover:border-slate-300 hover:bg-white'
+              className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all ${
+                active
+                  ? 'border-harx-ink bg-harx-ink text-white shadow-harx'
+                  : 'border-harx-border bg-white text-slate-600 hover:border-slate-300 hover:bg-white'
               }`}
             >
-              <span className={active ? 'text-white' : isOpsConsole ? 'text-emerald-600/70' : 'text-slate-400'}>
-                {tabItem.icon}
-              </span>
+              <span className={active ? 'text-white' : 'text-slate-400'}>{tabItem.icon}</span>
               {tabItem.label}
             </button>
           );
