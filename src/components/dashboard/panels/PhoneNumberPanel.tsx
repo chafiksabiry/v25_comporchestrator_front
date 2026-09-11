@@ -1898,25 +1898,6 @@ export function PhoneNumberPanel() {
                     </>
                   )}
                 </div>
-                {selectedGigIdForNumber && (
-                  <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-harx-border text-[10px] font-bold uppercase tracking-wider">
-                      <Phone size={10} />
-                      {numbersForSelectedGig.length > 1
-                        ? t('phoneNumberPanel.buy.search.chipActiveLinesPlural', { count: numbersForSelectedGig.length })
-                        : t('phoneNumberPanel.buy.search.chipActiveLinesSingular', { count: numbersForSelectedGig.length })}
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-harx-border text-[10px] font-bold uppercase tracking-wider">
-                      <Users size={10} />
-                      {selectedGigRepsCount > 1
-                        ? t('phoneNumberPanel.buy.search.chipRepsPlural', { count: selectedGigRepsCount })
-                        : t('phoneNumberPanel.buy.search.chipRepsSingular', { count: selectedGigRepsCount })}
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold uppercase tracking-wider">
-                      {t('phoneNumberPanel.buy.search.chipMinQuota', { count: minRequiredForSelectedGig })}
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* Warning: minimum reached — extra numbers must be paid */}
