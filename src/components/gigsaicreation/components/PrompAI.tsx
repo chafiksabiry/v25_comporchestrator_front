@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import toast from 'react-hot-toast';
 import { getPostCreateGigRoute, rememberCreatedGigId } from '../../../services/gigSetupSync';
+import { scrollPageToTop } from '../../../utils/scrollPageToTop';
 const sections = [
   { id: 'basic', label: 'Basic Information', icon: Briefcase },
   { id: 'schedule', label: 'Schedule', icon: Calendar },
@@ -158,10 +159,10 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     }
   });
 
-  // Scroll to top when section changes
+  // Scroll to top when section changes (dashboard uses <main overflow-y-auto>)
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [currentSection]);
+    scrollPageToTop();
+  }, [currentSection, showReview, confirmedSuggestions, isManualMode]);
 
   // Check for edit mode parameters on component mount
   // Auto-resize textarea
@@ -633,10 +634,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   };
 
   const handleSectionChange = (sectionId: string) => {
-    
-    
-    
     setCurrentSection(sectionId);
+    scrollPageToTop();
   };
 
   const handleGigDataChange = (newData: GigData) => {

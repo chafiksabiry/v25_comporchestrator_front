@@ -792,7 +792,7 @@ function AppContent() {
       <StripeContainer>
         <div className="flex h-screen bg-gray-50">
           <Toaster position="top-right" />
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto" data-harx-scroll-root>
             {renderContent()}
           </main>
         </div>
@@ -982,7 +982,10 @@ function AppContent() {
           </header>
 
           {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full bg-harx-bg">
+          <main
+            className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full bg-harx-bg"
+            data-harx-scroll-root
+          >
             <ProjectViewSwitch
               activeView={activeProject}
               dashboard={<DashboardApp />}

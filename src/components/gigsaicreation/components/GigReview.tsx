@@ -32,6 +32,7 @@ import {
   getLanguageNameById
 } from '../lib/activitiesIndustries';
 import { getPostCreateGigRoute, rememberCreatedGigId } from '../../../services/gigSetupSync';
+import { scrollPageToTop } from '../../../utils/scrollPageToTop';
 
 interface GigReviewProps {
   data: GigData;
@@ -140,7 +141,7 @@ export function GigReview({
 
   // Scroll to top when component mounts
   useEffect(() => {
-    window.scrollTo(0, 0);
+    scrollPageToTop();
   }, []);
 
   // Fetch all timezones and companies on mount
