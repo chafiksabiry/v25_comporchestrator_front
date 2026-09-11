@@ -7,8 +7,8 @@ import {
   listCallCenterAgents,
   resendCallCenterAgentInvite,
   type CallCenterAgent,
-} from '../../services/callCenterAgentsApi';
-import { isCallCenterWorkspace } from '../../utils/callCenterWorkspace';
+} from '../../../services/callCenterAgentsApi';
+import { isCallCenterWorkspace } from '../../../utils/callCenterWorkspace';
 
 function statusLabel(
   status: string,
