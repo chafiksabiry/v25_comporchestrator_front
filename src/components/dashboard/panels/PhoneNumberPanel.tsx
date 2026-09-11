@@ -1400,7 +1400,7 @@ export function PhoneNumberPanel() {
                   <p className="text-[11px] text-slate-600">
                     {t(
                       'aiVoice.panelHint',
-                      'Activez l’assistant sur le même gig que vos leads (celui lié à la ligne Telnyx).'
+                      'Activez l’assistant sur le même gig que vos leads (celui lié à la ligne téléphonique).'
                     )}
                   </p>
                   {aiGigId && (
