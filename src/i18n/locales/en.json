@@ -990,7 +990,7 @@
       },
       "uploadsGate": {
         "title": "Upload your documents",
-        "subtitle": "We analyze your files first, then use the selected gig as secondary context to generate the plan and training content.",
+        "subtitle": "We analyze your uploaded files only, then generate the training plan and content from them (no gig context).",
         "uploadCta": "Upload files",
         "generatePlan": "Generate plan",
         "needFiles": "Add at least one analyzed file to continue.",
