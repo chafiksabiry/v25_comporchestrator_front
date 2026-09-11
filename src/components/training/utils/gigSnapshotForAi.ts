@@ -98,3 +98,33 @@ export function buildGigSnapshotForAi(gig: unknown): Record<string, unknown> | n
       : undefined,
   };
 }
+
+/**
+ * Infer plan/content output language from gig title + description only.
+ * Used even when gig business context is excluded (uploads_only).
+ */
+export function detectOutputLanguageFromGigText(
+  title?: string | null,
+  description?: string | null
+): 'fr' | 'en' {
+  const sample = `${String(title || '').trim()} ${String(description || '').trim()}`.toLowerCase();
+  if (!sample.trim()) return 'fr';
+
+  const frHits = (
+    sample.match(
+      /\b(le|la|les|des|une|un|et|pour|avec|dans|sur|formation|vendeur|assurance|client|objectif|compétence|expérience)\b/gi
+    ) || []
+  ).length;
+  const enHits = (
+    sample.match(
+      /\b(the|and|for|with|from|training|sales|insurance|customer|objective|skill|experience|senior|junior)\b/gi
+    ) || []
+  ).length;
+
+  // Accented French characters are a strong signal
+  const hasFrAccents = /[àâäéèêëïîôùûüçœæ]/i.test(sample);
+  if (hasFrAccents && frHits >= enHits) return 'fr';
+  if (enHits > frHits) return 'en';
+  if (frHits > enHits) return 'fr';
+  return hasFrAccents ? 'fr' : 'en';
+}
