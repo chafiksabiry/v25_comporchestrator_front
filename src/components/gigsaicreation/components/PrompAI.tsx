@@ -16,6 +16,7 @@ import {
   ClipboardList
 } from "lucide-react";
 import toast from 'react-hot-toast';
+import { getPostCreateGigRoute, rememberCreatedGigId } from '../../../services/gigSetupSync';
 const sections = [
   { id: 'basic', label: 'Basic Information', icon: Briefcase },
   { id: 'schedule', label: 'Schedule', icon: Calendar },
@@ -29,10 +30,22 @@ interface PrompAIProps {
   onBack?: () => void; // Existing back (Back to AI Assistant or original onBack)
   onBackToGigs?: () => void;
   onBackToOnboarding?: () => void;
+  /** After create: continue funnel (receives new gigId). */
+  onPublishSuccess?: (gigId?: string) => void | Promise<void>;
 }
 
-const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboarding }) => {
+const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboarding, onPublishSuccess }) => {
   const backToOnboarding = onBackToOnboarding ?? onBack;
+  const handlePublishSuccess =
+    onPublishSuccess ??
+    ((gigId?: string) => {
+      if (gigId) {
+        rememberCreatedGigId(gigId);
+        window.location.hash = `#${getPostCreateGigRoute(gigId)}`;
+        return;
+      }
+      backToOnboarding?.();
+    });
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [audioPanelHost, setAudioPanelHost] = useState<HTMLDivElement | null>(null);
@@ -689,7 +702,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   isAIMode={!!confirmedSuggestions}
                   isEditMode={isEditMode}
                   editGigId={editGigId}
-                  onPublishSuccess={onBackToOnboarding}
+                  onPublishSuccess={handlePublishSuccess}
                 />
               </div>
             </div>
@@ -776,7 +789,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 isAIMode={!!confirmedSuggestions}
                 isEditMode={isEditMode}
                 editGigId={editGigId}
-                onPublishSuccess={onBackToOnboarding}
+                onPublishSuccess={handlePublishSuccess}
               />
             </div>
           </div>

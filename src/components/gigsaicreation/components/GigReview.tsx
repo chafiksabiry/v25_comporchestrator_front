@@ -31,17 +31,18 @@ import {
   loadLanguages,
   getLanguageNameById
 } from '../lib/activitiesIndustries';
+import { getPostCreateGigRoute, rememberCreatedGigId } from '../../../services/gigSetupSync';
 
 interface GigReviewProps {
   data: GigData;
   onEdit: (section: string) => void;
-  onSubmit: () => Promise<void>;
+  onSubmit: () => Promise<string | void | null>;
   isSubmitting: boolean;
   onBack: () => void;
   isEditMode?: boolean;
   editGigId?: string | null;
   /** When set (e.g. embedded in Company Onboarding), called instead of full page navigation to /#/orchestrator */
-  onPublishSuccess?: () => void | Promise<void>;
+  onPublishSuccess?: (gigId?: string) => void | Promise<void>;
   isReadOnly?: boolean;
   /**
    * If provided, a small Edit pencil button is rendered next to each section
@@ -292,7 +293,11 @@ export function GigReview({
     try {
 
       // Let onSubmit handle the saving (it already calls saveGigData)
-      await onSubmit();
+      const createdGigId = await onSubmit();
+      const gigId =
+        (typeof createdGigId === 'string' && createdGigId) ||
+        editGigId ||
+        undefined;
 
       // Mark Step 3 (Create Gigs - Phase 2) as completed in onboarding progress
       if (!isEditMode) {
@@ -333,7 +338,12 @@ export function GigReview({
         
         window.location.hash = gigUrl;
       } else if (onPublishSuccess) {
-        await onPublishSuccess();
+        if (gigId) rememberCreatedGigId(gigId);
+        await onPublishSuccess(gigId);
+      } else if (gigId) {
+        // Default: continue funnel on telephony (next required step)
+        rememberCreatedGigId(gigId);
+        window.location.hash = `#${getPostCreateGigRoute(gigId)}`;
       } else {
         // Fallback without full page refresh: switch to onboarding tab
         // and let listeners decide how to refresh progress/state.
