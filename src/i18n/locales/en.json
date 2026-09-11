@@ -987,6 +987,20 @@
             "reference": "Quick reference sheet format"
           }
         }
+      },
+      "uploadsGate": {
+        "title": "Upload your documents",
+        "subtitle": "We will analyze your files, then generate the training plan from them.",
+        "uploadCta": "Upload files",
+        "generatePlan": "Generate plan",
+        "needFiles": "Add at least one analyzed file to continue.",
+        "analyzing": "Analyzing documents…",
+        "readyCount": "{{count}} file(s) analyzed and ready.",
+        "missingForPlan": "Upload and wait for analysis before generating a plan from your files.",
+        "statusAnalyzed": "Analyzed",
+        "statusError": "Error",
+        "statusUploading": "Uploading…",
+        "statusAnalyzing": "Analyzing…"
       }
     }
   },

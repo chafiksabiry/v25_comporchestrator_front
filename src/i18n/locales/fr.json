@@ -987,6 +987,20 @@
             "reference": "Fiche de référence rapide"
           }
         }
+      },
+      "uploadsGate": {
+        "title": "Téléversez vos documents",
+        "subtitle": "Nous analysons vos fichiers, puis générons le plan de formation à partir d’eux.",
+        "uploadCta": "Téléverser des fichiers",
+        "generatePlan": "Générer le plan",
+        "needFiles": "Ajoutez au moins un fichier analysé pour continuer.",
+        "analyzing": "Analyse des documents…",
+        "readyCount": "{{count}} fichier(s) analysé(s) et prêt(s).",
+        "missingForPlan": "Téléversez et attendez l’analyse avant de générer un plan à partir de vos fichiers.",
+        "statusAnalyzed": "Analysé",
+        "statusError": "Erreur",
+        "statusUploading": "Téléversement…",
+        "statusAnalyzing": "Analyse…"
       }
     }
   },
