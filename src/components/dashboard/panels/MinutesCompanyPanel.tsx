@@ -499,6 +499,28 @@ export function MinutesCompanyPanel() {
                   Surconsommation — rechargez vos minutes
                 </span>
               )}
+              <div className="mt-4 flex flex-wrap items-end gap-6">
+                <div>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
+                    Minutes achetées
+                  </span>
+                  <span className="text-2xl font-black tracking-tight text-white tabular-nums">
+                    {formatWalletMinutesBalance(minutesWallet?.purchasedMinutes ?? 0)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
+                    Montant investi
+                  </span>
+                  <span className="text-2xl font-black tracking-tight text-blue-300 tabular-nums">
+                    {(computeMinutesPurchaseCents(minutesWallet?.purchasedMinutes ?? 0) / 100).toLocaleString('fr-FR', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{' '}
+                    €
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
