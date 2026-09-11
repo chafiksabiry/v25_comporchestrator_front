@@ -170,7 +170,7 @@ export function SectionContent({
               // Si onSectionChange est appelé avec 'suggestions', cela indique qu'on veut revenir aux suggestions
               onSectionChange?.('suggestions');
             }}
-            onNext={() => onSectionChange?.('review')}
+            onNext={() => onSectionChange?.('schedule')}
             onSectionChange={onSectionChange}
             onSave={() => { }}
             onAIAssist={() => { }}
