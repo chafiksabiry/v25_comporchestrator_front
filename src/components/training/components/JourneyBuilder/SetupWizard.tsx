@@ -12,6 +12,7 @@ import GigSelector from '../Dashboard/GigSelector';
 import TrainingDetailsForm, { VISION_DURATIONS } from './TrainingDetailsForm';
 import { scrollJourneyMainToTop } from './journeyScroll';
 import { cloudinaryService } from '../../lib/cloudinaryService';
+import { detectOutputLanguageFromGigText } from '../../utils/gigSnapshotForAi';
 
 interface SetupWizardProps {
   onComplete: (company: Company, journey: TrainingJourney, methodology?: TrainingMethodology, gigId?: string) => void;
@@ -373,12 +374,25 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
 
       const trainingBackendUrl = getTrainingBackendUrl();
       const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
+      const gigTitle = String(selectedGig.title || '').trim();
+      const gigDescription = String(selectedGig.description || '').trim();
+      const outputLanguage = detectOutputLanguageFromGigText(gigTitle, gigDescription);
+      const languageLabel = outputLanguage === 'fr' ? 'French' : 'English';
       const response = await axios.post(`${baseUrl}/training_journeys/suggest-vision`, {
         target,
         currentTitle: visionName,
         currentDescription: visionDesc,
         industry: industries.find(i => i._id === company.industry)?.name || String(company.industry || ''),
-        gig: selectedGig
+        gig: selectedGig,
+        outputLanguage,
+        contentLanguage: outputLanguage,
+        languageFromGig: {
+          source: 'gig_title_description',
+          titleSample: gigTitle.slice(0, 180) || null,
+          descriptionSample: gigDescription.slice(0, 280) || null,
+          detected: outputLanguage,
+        },
+        languageInstruction: `Write the training ${isTitle ? 'title' : 'description'} in ${languageLabel} only. Match the language of the gig title and description. Do not mix languages.`,
       });
       const data = (response?.data as any)?.data || {};
       if (isTitle) {

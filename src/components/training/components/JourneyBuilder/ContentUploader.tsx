@@ -3940,10 +3940,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 primary: 'uploaded_files',
                 secondary: null,
                 instruction:
-                  `Generate the training plan AND all training module content ONLY from analyzed uploaded documents (topics, objectives, summaries, file content). Do NOT use the gig snapshot, product offer, or audience from the gig. Do not use knowledge-base documents. Write the entire plan and all training content in ${outputLanguage === 'fr' ? 'French' : 'English'} — match the language of the gig title and description (languageFromGig). If information is missing, infer only from the uploaded files.`,
+                  `Generate the training plan AND all training module content ONLY from analyzed uploaded documents (topics, objectives, summaries, file content). Do NOT use the gig snapshot, product offer, or audience from the gig. Do not use knowledge-base documents. Write the entire plan, all training content, and any training title/description in ${outputLanguage === 'fr' ? 'French' : 'English'} — match the language of the gig title and description (languageFromGig / outputLanguage). If information is missing, infer only from the uploaded files.`,
               }
             : {
-                instruction: `Write the training plan and all training content in ${outputLanguage === 'fr' ? 'French' : 'English'}, matching the language of the selected gig title and description (languageFromGig / outputLanguage).`,
+                instruction: `Write the training title, training description, training plan, and all training content in ${outputLanguage === 'fr' ? 'French' : 'English'}, matching the language of the selected gig title and description (languageFromGig / outputLanguage).`,
               },
           knowledgeBaseDocumentsCount: kbDocsSummary.length,
           knowledgeBaseDocuments: kbDocsSummary,
@@ -3965,6 +3965,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           requestedOutput,
           requestedModuleReference: requestedModuleReference || null,
           trainingJourneyId: linkedTrainingJourneyMongoId() || null,
+          setupTrainingMustMatchOutputLanguage: true,
           setupTrainingTitle: setupTitleForContext || null,
           setupTrainingDescription: setupDescriptionForContext || null,
           setupTrainingLogo: setupTrainingLogoForContext,
