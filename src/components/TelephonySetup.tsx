@@ -85,7 +85,7 @@ const TelephonySetup = ({
   companyId?: string | null;
 }): JSX.Element => {
   const { t } = useTranslation();
-  // Provider follows gig destination: FR → Twilio, otherwise Telnyx (USA…).
+  // Provider follows gig destination (hidden from UI).
   const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(propCompanyId || null);
