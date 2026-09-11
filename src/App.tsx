@@ -29,6 +29,11 @@ import { AuthProvider } from './components/dashboard/contexts/AuthContext';
 import Cookies from 'js-cookie';
 import { broadcastAuthChanged } from './lib/authSync';
 import { formatWalletMinutesBalance } from './utils/billingMinutes';
+import {
+  isCallCenterWorkspace,
+  isCompanyLikeWorkspace,
+  setPreferCallCenterDashboard,
+} from './utils/callCenterWorkspace';
 import ProfileCreation from './components/ProfileCreation';
 import GigGeneration from './components/GigGeneration';
 import Matching from './components/Matching';
@@ -510,6 +515,9 @@ function AppContent() {
     };
 
     const openCompanyDashboard = () => {
+      if (isCallCenterWorkspace()) {
+        setPreferCallCenterDashboard(true);
+      }
       setActiveProject('dashboard');
       navigate('/dashboard/main');
     };
@@ -759,7 +767,7 @@ function AppContent() {
             <PremiumDashboard
               profile={{ personalInfo: { name: userFullName }, fullName: userFullName }}
               companyName={companyName}
-              userType={localStorage.getItem('role') === 'company' ? 'company' : 'rep'}
+              userType={isCompanyLikeWorkspace() ? 'company' : 'rep'}
               trainingStats={{ completed: 12, inProgress: 5, pending: 3, totalModules: 20, overallProgress: 65 }}
               companyStats={{ gigs: 8, calls: 142, gigsEnrolled: 12, activeLeads: 45, agentsEnrolled: 0, conversionRate: 0 }}
             />
@@ -784,7 +792,7 @@ function AppContent() {
       <StripeContainer>
         <div className="flex h-screen bg-gray-50">
           <Toaster position="top-right" />
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto" data-harx-scroll-root>
             {renderContent()}
           </main>
         </div>
@@ -974,7 +982,10 @@ function AppContent() {
           </header>
 
           {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full bg-harx-bg">
+          <main
+            className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full bg-harx-bg"
+            data-harx-scroll-root
+          >
             <ProjectViewSwitch
               activeView={activeProject}
               dashboard={<DashboardApp />}

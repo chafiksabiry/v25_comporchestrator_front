@@ -47,6 +47,7 @@ import {
 import Logo from "./Logo";
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
+import { scrollPageToTop } from '../../../utils/scrollPageToTop';
 
 type ScheduleEntry = {
   day: string;
@@ -1418,6 +1419,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       };
 
       props.onConfirm(suggestionsWithSelectedTitle);
+      // Next step mounts in the dashboard <main> scrollport — scroll it up.
+      scrollPageToTop();
     }
   };
 
