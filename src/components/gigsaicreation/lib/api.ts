@@ -5,6 +5,16 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL_GIGS || 'http://localhost:3000';
 
+/** Backend often returns `{ message, data: gig }`; accept flat gig too. */
+function unwrapGigPayload(payload: any): any {
+  if (!payload || typeof payload !== 'object') return payload;
+  const nested = payload.data;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested) && (nested._id || nested.id)) {
+    return nested;
+  }
+  return payload;
+}
+
 // Types for countries API
 export interface Country {
   _id: string;
@@ -507,7 +517,7 @@ export async function updateGigData(gigId: string, gigData: GigData): Promise<{ 
     }
 
     try {
-      const data = JSON.parse(responseText);
+      const data = unwrapGigPayload(JSON.parse(responseText));
       return { data, error: undefined };
     } catch (parseError) {
       console.error('Error parsing success response:', parseError);
@@ -692,13 +702,7 @@ export async function saveGigData(gigData: GigData): Promise<{ data: any; error?
     }
 
     try {
-      const data = JSON.parse(responseText);
-
-      // Save gig ID using the new utility function
-      if (data && data._id) {
-        // Gig ID saved successfully
-      }
-
+      const data = unwrapGigPayload(JSON.parse(responseText));
       return { data, error: undefined };
     } catch (parseError) {
       console.error('Error parsing success response:', parseError);
