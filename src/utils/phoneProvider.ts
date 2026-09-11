@@ -1,6 +1,7 @@
 /**
  * Map a gig destination (ISO cca2) to the phone-number provider.
- * France → Twilio; USA (and other markets) → Telnyx.
+ * France → provider A; other markets (e.g. US) → provider B.
+ * Brand names are intentionally not exposed in the UI.
  */
 export type PhoneLineProvider = 'twilio' | 'telnyx';
 
@@ -12,8 +13,4 @@ export function providerForDestinationCountry(
     .toUpperCase();
   if (code === 'FR') return 'twilio';
   return 'telnyx';
-}
-
-export function providerDisplayName(provider?: string | null): string {
-  return provider === 'twilio' ? 'Twilio' : 'Telnyx';
 }
