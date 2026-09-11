@@ -1,7 +1,11 @@
 /**
- * Registration API base URL.
- * Dev Netlify sometimes points at registrationbackend-development, but shell
- * logins (and databases.txt) use production users — remap so Agents/settings work.
+ * Registration API base URL used by company MF (Agents, account settings).
+ *
+ * Shell login lives at:
+ *   https://harx26harxconnection-dev.netlify.app/auth/signin
+ * Auth MF (harx26register-dev) calls production registration API, so when
+ * company Netlify still points at registrationbackend-development we remap
+ * to production to match the same user store as sign-in.
  */
 export function getRegistrationBackendBase(): string {
   let raw =
