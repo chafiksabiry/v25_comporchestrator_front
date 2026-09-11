@@ -1,7 +1,7 @@
 {
   "aiVoice": {
     "callWithAssistant": "Appeler avec l'assistant",
-    "callWithAssistantHint": "Appel sortant IA via Telnyx ou Twilio",
+    "callWithAssistantHint": "Appel sortant IA via la ligne téléphonique",
     "calling": "Appel…",
     "callStarted": "Appel IA lancé vers {{phone}}",
     "callFailed": "Impossible de lancer l'appel IA.",
@@ -19,7 +19,7 @@
     "saveFailed": "Impossible d'enregistrer l'assistant.",
     "selectGig": "Sélectionnez un gig.",
     "pageTitle": "Assistant vocal",
-    "pageSub": "L’IA compose, dialogue avec le lead et s’appuie sur le script (une réplique à la fois). Une ligne Telnyx ou Twilio et un script actif sont requis.",
+    "pageSub": "L’IA compose, dialogue avec le lead et s’appuie sur le script (une réplique à la fois). Une ligne téléphonique et un script actif sont requis.",
     "leadsTitle": "Leads à appeler",
     "noLeads": "Aucun lead pour ce gig.",
     "ready": "Assistant actif — choisissez un lead ci-dessous.",
@@ -392,7 +392,7 @@
         "readySub": "L’IA peut composer et suivre le script de {{gig}}.",
         "offSub": "Activez l’assistant pour que l’IA appelle sur {{gig}}.",
         "allGigsSub": "L’IA compose et parle. Sélectionnez un gig pour voir le statut.",
-        "pipeline": "Telnyx/Twilio → Script → Assistant",
+        "pipeline": "Ligne → Script → Assistant",
         "open": "Ouvrir"
       },
       "coverage": {
