@@ -3897,10 +3897,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const isUploadsPrimaryMode = effectiveGenerationMode === 'uploads_only';
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
-          selectedGigId: activeChatGigId || '',
-          selectedGigTitle: activeChatGigTitle,
-          gigSnapshot: chatGigSnapshot,
-          // uploads_only: gig is secondary context only — do not hard-anchor on the gig
+          selectedGigId: isUploadsPrimaryMode ? '' : activeChatGigId || '',
+          selectedGigTitle: isUploadsPrimaryMode ? '' : activeChatGigTitle,
+          // uploads_only: documents only — do not inject gig context
+          gigSnapshot: isUploadsPrimaryMode ? null : chatGigSnapshot,
           gigAnchoringRequired: isUploadsPrimaryMode ? false : !!activeChatGigId,
           chatStyle: 'free_chat',
           generationMode: effectiveGenerationMode,
@@ -3908,9 +3908,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
           analyzedUploads: uploadsForChat,
           useKnowledgeBase: usesKbForChat,
           useUploadedDocuments: usesUploadsForChat,
-          useGigAsSecondaryContext: isUploadsPrimaryMode && !!chatGigSnapshot,
+          useGigAsSecondaryContext: false,
           sourcePriority: isUploadsPrimaryMode
-            ? ['uploaded_files', 'gig']
+            ? ['uploaded_files']
             : effectiveGenerationMode === 'kb_and_uploads'
               ? ['knowledge_base', 'uploaded_files', 'gig']
               : effectiveGenerationMode === 'kb_only'
@@ -3919,9 +3919,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
           sourcePriorityRules: isUploadsPrimaryMode
             ? {
                 primary: 'uploaded_files',
-                secondary: 'gig',
+                secondary: null,
                 instruction:
-                  'Generate the training plan AND all training module content primarily from analyzed uploaded documents (topics, objectives, summaries). Use the selected gig snapshot only as secondary context (product, offer, audience, constraints). Never let the gig override or replace upload-derived topics when uploads are present. Do not use knowledge-base documents in this mode.',
+                  'Generate the training plan AND all training module content ONLY from analyzed uploaded documents (topics, objectives, summaries, file content). Do NOT use the gig snapshot, gig title, product offer, or audience from the gig. Do not use knowledge-base documents. If information is missing, infer only from the uploaded files.',
               }
             : null,
           knowledgeBaseDocumentsCount: kbDocsSummary.length,
@@ -3976,7 +3976,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
             )
           );
         }, {
-          gigId: activeChatGigId ? String(activeChatGigId) : undefined,
+          gigId: isUploadsPrimaryMode
+            ? undefined
+            : activeChatGigId
+              ? String(activeChatGigId)
+              : undefined,
           companyId,
           sessionId: activeChatSessionId || undefined,
           signal: abortController.signal,
@@ -7007,7 +7011,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         <p className="mb-2 text-xs leading-snug text-slate-600">
                           {t(
                             'training.chat.uploadsGate.subtitle',
-                            'Nous analysons d’abord vos fichiers, puis utilisons le gig sélectionné en second pour générer le plan et le contenu de formation.'
+                            'Nous analysons uniquement vos fichiers téléversés, puis générons le plan et le contenu de formation à partir d’eux (sans contexte gig).'
                           )}
                         </p>
                         {uploads.length > 0 ? (
