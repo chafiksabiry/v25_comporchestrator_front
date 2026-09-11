@@ -515,7 +515,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       ? 'Identify your learners'
       : 'Welcome to your training journey';
   const headerSubtitle = isVisionStep
-    ? 'Name & description — generated from your gig'
+    ? 'Name & description — same language as gig title/description'
     : currentStep === 3
       ? 'Role-based paths · Skill assessments · Personalization'
       : 'Smart defaults · Compliance';
