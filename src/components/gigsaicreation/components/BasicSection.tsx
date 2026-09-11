@@ -16,8 +16,8 @@ interface BasicSectionProps {
 }
 
 /**
- * Onboarding / create-gig basics: title only.
- * Schedule, commission, skills, team remain optional in later sections.
+ * Onboarding / create-gig basics: title required.
+ * Next continues the wizard (schedule → …); Skip to review remains available.
  */
 const BasicSection: React.FC<BasicSectionProps> = ({
   data,
@@ -29,9 +29,13 @@ const BasicSection: React.FC<BasicSectionProps> = ({
 }) => {
   const titleOk = Boolean(String(data.title || '').trim());
 
-  const goNextOrReview = () => {
+  const goNext = () => {
     if (!titleOk) return;
-    // Prefer jumping to review so optional sections are easy to skip.
+    onNext?.();
+  };
+
+  const goSkipToReview = () => {
+    if (!titleOk) return;
     if (onSectionChange) {
       onSectionChange('review');
       return;
@@ -43,8 +47,8 @@ const BasicSection: React.FC<BasicSectionProps> = ({
     <div className="w-full bg-white py-6">
       <div className="space-y-8">
         <InfoText>
-          Give your gig a clear title. Other details (schedule, commission, skills…) are optional —
-          you can skip them and complete later.
+          Give your gig a clear title, then continue through the next steps. You can still skip optional
+          sections later with “Skip to review”.
         </InfoText>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -79,7 +83,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
               )}
             </div>
             <p className="text-xs text-gray-500">
-              Tip: Schedule, Commission, Skills and Team are optional — use “Skip to review” to publish with just a title.
+              Tip: use “Skip to review” if you only want to publish with a title for now.
             </p>
           </div>
         </div>
@@ -97,7 +101,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={goNextOrReview}
+              onClick={goSkipToReview}
               disabled={!titleOk}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
@@ -106,7 +110,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
             </button>
             <button
               type="button"
-              onClick={onNext}
+              onClick={goNext}
               disabled={!titleOk}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-harx-500 text-white hover:bg-harx-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
