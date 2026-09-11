@@ -27,6 +27,10 @@ import { TelnyxRTC } from '@telnyx/webrtc';
 import { gigsApi } from '../services/api/endpoints';
 import { waitForStripePopup, getOrchestratorApiBase } from '../../../lib/paypalCheckout';
 import { markGigStepDone } from '../../../services/gigSetupSync';
+import {
+  providerDisplayName,
+  providerForDestinationCountry,
+} from '../../../utils/phoneProvider';
 import { requirementService } from '../../../services/requirementService';
 import { RequirementFormModal } from '../../RequirementFormModal';
 import { getDashCallsApiBase } from '../lib/callsApiBase';
@@ -307,6 +311,16 @@ export function PhoneNumberPanel() {
 
   const selectedGigForSearch = useMemo(() => gigsAndReps.find(g => g.gigId === selectedGigIdForNumber), [gigsAndReps, selectedGigIdForNumber]);
   const destZone = selectedGigForSearch?.destinationCountry;
+
+  // FR → Twilio, US (and other destinations) → Telnyx — no manual radio.
+  useEffect(() => {
+    const next = providerForDestinationCountry(destZone);
+    setSearchProvider((prev) => {
+      if (prev === next) return prev;
+      setSearchResults([]);
+      return next;
+    });
+  }, [destZone]);
 
   useEffect(() => {
     if (!destZone || searchProvider !== 'telnyx' || !companyId) return;
@@ -1650,7 +1664,7 @@ export function PhoneNumberPanel() {
                             </span>
                             <span>{num.phoneNumber}</span>
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
-                              {num.provider === 'twilio' ? 'Fournisseur 1' : 'Fournisseur 2'}
+                              {providerDisplayName(num.provider)}
                             </span>
                           </div>
                         </td>
@@ -1940,35 +1954,17 @@ export function PhoneNumberPanel() {
                 <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block mb-1">
                   Fournisseur
                 </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="searchProvider" 
-                      value="twilio"
-                      checked={searchProvider === 'twilio'}
-                      onChange={() => {
-                        setSearchProvider('twilio');
-                        setSearchResults([]);
-                      }}
-                      className="text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="text-xs font-bold text-slate-700">Fournisseur 1</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="searchProvider" 
-                      value="telnyx"
-                      checked={searchProvider === 'telnyx'}
-                      onChange={() => {
-                        setSearchProvider('telnyx');
-                        setSearchResults([]);
-                      }}
-                      className="text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="text-xs font-bold text-slate-700">Fournisseur 2</span>
-                  </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    {providerDisplayName(searchProvider)}
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    {destZone
+                      ? String(destZone).toUpperCase() === 'FR'
+                        ? 'France → Twilio'
+                        : `${String(destZone).toUpperCase()} → Telnyx`
+                      : 'Basé sur la destination du gig (FR → Twilio, sinon Telnyx)'}
+                  </span>
                 </div>
               </div>
 
@@ -2023,7 +2019,7 @@ export function PhoneNumberPanel() {
                         </span>
                         <span className="text-sm font-black text-slate-900 tracking-tight tabular-nums truncate">{numberString}</span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
-                          {resultNum.provider === 'twilio' ? 'Fournisseur 1' : 'Fournisseur 2'}
+                          {providerDisplayName(resultNum.provider || searchProvider)}
                         </span>
                       </div>
 
@@ -2087,7 +2083,7 @@ export function PhoneNumberPanel() {
                     </span>
                   )}
                   <span className="inline-block mt-2 ml-2 px-2 py-0.5 rounded-lg bg-white/20 text-white border border-white/30 text-[9px] font-black uppercase tracking-wider">
-                    {selectedPhoneLineData.provider === 'twilio' ? 'Fournisseur 1' : 'Fournisseur 2'}
+                    {providerDisplayName(selectedPhoneLineData.provider)}
                   </span>
                 </div>
               </div>

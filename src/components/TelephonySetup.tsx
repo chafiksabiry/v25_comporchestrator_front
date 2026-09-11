@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
 import { phoneNumberService, BASE_URL } from '../services/api';
 import { markGigStepDone } from '../services/gigSetupSync';
+import { providerForDestinationCountry } from '../utils/phoneProvider';
 import { requirementService, RequirementDetail } from '../services/requirementService';
 import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
@@ -84,8 +85,8 @@ const TelephonySetup = ({
   companyId?: string | null;
 }): JSX.Element => {
   const { t } = useTranslation();
-  // Provider is enforced to Twilio (UI selector intentionally hidden).
-  const [provider] = useState<'telnyx' | 'twilio'>('twilio');
+  // Provider follows gig destination: FR → Twilio, otherwise Telnyx (USA…).
+  const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(propCompanyId || null);
   const [cookieError, setCookieError] = useState<string | null>(null);
@@ -305,13 +306,14 @@ const TelephonySetup = ({
     }
   }, [selectedGigId]);
 
-  // Mettre à jour la destination zone quand un gig est sélectionné
+  // Mettre à jour la destination zone + provider quand un gig est sélectionné
   useEffect(() => {
     if (selectedGigId && Array.isArray(gigs) && gigs.length > 0) {
       const selectedGig = gigs.find((gig: Gig) => gig._id === selectedGigId);
       if (selectedGig?.destination_zone?.cca2) {
-
-        setDestinationZone(selectedGig.destination_zone.cca2);
+        const cca2 = selectedGig.destination_zone.cca2;
+        setDestinationZone(cca2);
+        setProvider(providerForDestinationCountry(cca2));
       }
     } else {
       setDestinationZone('');
