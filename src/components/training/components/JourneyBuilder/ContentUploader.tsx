@@ -694,7 +694,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [chatKbDocuments, setChatKbDocuments] = useState<
     Array<{ _id: string; name: string; fileType?: string; summary?: string; keyTerms?: string[]; createdAt?: string }>
   >([]);
-  const [chatUploadedSources, setChatUploadedSources] = useState<Array<{ keyTopics: string[]; objectives: string[] }>>([]);
+  const [chatUploadedSources, setChatUploadedSources] = useState<
+    Array<{
+      fileName?: string;
+      fileType?: string;
+      keyTopics: string[];
+      objectives: string[];
+      summary?: string;
+    }>
+  >([]);
   /** Fichiers déjà envoyés au chat REP (les `uploads` sont vidés après envoi — on garde les noms pour titres podcast/images). */
   const [repSessionAnalyzedFileNames, setRepSessionAnalyzedFileNames] = useState<string[]>([]);
   const [isChatKbLoading, setIsChatKbLoading] = useState(false);
@@ -3681,15 +3689,34 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const analyzedUploads = uploads
           .filter((u) => u.status === 'analyzed')
           .map((u) => ({
+            fileName: u.name,
+            fileType: u.type,
             keyTopics: u.aiAnalysis?.keyTopics || [],
             objectives: u.aiAnalysis?.learningObjectives || [],
+            summary: String((u.aiAnalysis as any)?.summary || '').trim() || undefined,
           }));
         const mergeUploadSources = (
-          prev: Array<{ keyTopics: string[]; objectives: string[] }>,
-          next: Array<{ keyTopics: string[]; objectives: string[] }>
+          prev: Array<{
+            fileName?: string;
+            fileType?: string;
+            keyTopics: string[];
+            objectives: string[];
+            summary?: string;
+          }>,
+          next: Array<{
+            fileName?: string;
+            fileType?: string;
+            keyTopics: string[];
+            objectives: string[];
+            summary?: string;
+          }>
         ) => {
-          const fingerprint = (entry: { keyTopics: string[]; objectives: string[] }) =>
-            `${(entry.keyTopics || []).join('|')}::${(entry.objectives || []).join('|')}`;
+          const fingerprint = (entry: {
+            fileName?: string;
+            keyTopics: string[];
+            objectives: string[];
+          }) =>
+            `${entry.fileName || ''}::${(entry.keyTopics || []).join('|')}::${(entry.objectives || []).join('|')}`;
           const out = [...prev];
           const seen = new Set(prev.map(fingerprint));
           next.forEach((entry) => {
@@ -3867,18 +3894,36 @@ export default function ContentUploader(props: ContentUploaderProps) {
             ? setupJourneyForContext.trainingLogo
             : null;
 
+        const isUploadsPrimaryMode = effectiveGenerationMode === 'uploads_only';
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
           selectedGigId: activeChatGigId || '',
           selectedGigTitle: activeChatGigTitle,
           gigSnapshot: chatGigSnapshot,
-          gigAnchoringRequired: !!activeChatGigId,
+          // uploads_only: gig is secondary context only — do not hard-anchor on the gig
+          gigAnchoringRequired: isUploadsPrimaryMode ? false : !!activeChatGigId,
           chatStyle: 'free_chat',
           generationMode: effectiveGenerationMode,
           analyzedUploadsCount: uploadsForChat.length,
           analyzedUploads: uploadsForChat,
           useKnowledgeBase: usesKbForChat,
           useUploadedDocuments: usesUploadsForChat,
+          useGigAsSecondaryContext: isUploadsPrimaryMode && !!chatGigSnapshot,
+          sourcePriority: isUploadsPrimaryMode
+            ? ['uploaded_files', 'gig']
+            : effectiveGenerationMode === 'kb_and_uploads'
+              ? ['knowledge_base', 'uploaded_files', 'gig']
+              : effectiveGenerationMode === 'kb_only'
+                ? ['knowledge_base', 'gig']
+                : ['gig'],
+          sourcePriorityRules: isUploadsPrimaryMode
+            ? {
+                primary: 'uploaded_files',
+                secondary: 'gig',
+                instruction:
+                  'Generate the training plan AND all training module content primarily from analyzed uploaded documents (topics, objectives, summaries). Use the selected gig snapshot only as secondary context (product, offer, audience, constraints). Never let the gig override or replace upload-derived topics when uploads are present. Do not use knowledge-base documents in this mode.',
+              }
+            : null,
           knowledgeBaseDocumentsCount: kbDocsSummary.length,
           knowledgeBaseDocuments: kbDocsSummary,
           selectedDuration: generationPreferences.selectedDuration,
@@ -3892,9 +3937,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
             format: personalizationForContext.format || null,
           },
           bootstrapTrainingPlanFromGig:
-            isPostPersonalizationSummary && effectiveGenerationMode !== 'uploads_only',
+            isPostPersonalizationSummary && !isUploadsPrimaryMode,
           bootstrapTrainingPlanFromUploads:
-            isPostPersonalizationSummary && effectiveGenerationMode === 'uploads_only',
+            isPostPersonalizationSummary && isUploadsPrimaryMode,
           sourceModeRequested: requestedMode || null,
           requestedOutput,
           requestedModuleReference: requestedModuleReference || null,
@@ -5345,17 +5390,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
           }}
           className="hidden"
         />
-        {uploads.length > 0 && (
+        {uploads.length > 0 && !awaitingUploadsForPlan && (
           <div className="mb-3 flex flex-wrap gap-2">
             {uploads.map((upload) => {
               const statusLabel =
                 upload.status === 'analyzed'
-                  ? 'Analyzed'
+                  ? t('training.chat.uploadsGate.statusAnalyzed', 'Analyzed')
                   : upload.status === 'error'
-                    ? 'Error'
+                    ? t('training.chat.uploadsGate.statusError', 'Error')
                     : upload.status === 'uploading'
-                      ? 'Uploading...'
-                      : 'Analyzing...';
+                      ? t('training.chat.uploadsGate.statusUploading', 'Uploading…')
+                      : t('training.chat.uploadsGate.statusAnalyzing', 'Analyzing…');
               return (
                 <div
                   key={`inline-${upload.id}`}
@@ -6962,7 +7007,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         <p className="mb-2 text-xs leading-snug text-slate-600">
                           {t(
                             'training.chat.uploadsGate.subtitle',
-                            'We will analyze your files, then generate the training plan from them.'
+                            'Nous analysons d’abord vos fichiers, puis utilisons le gig sélectionné en second pour générer le plan et le contenu de formation.'
                           )}
                         </p>
                         {uploads.length > 0 ? (
