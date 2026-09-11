@@ -47,6 +47,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const [visionTitleGenerating, setVisionTitleGenerating] = useState(false);
   const [visionDescriptionGenerating, setVisionDescriptionGenerating] = useState(false);
   const autoRolesSuggestionKeyRef = useRef('');
+  /** Avoid re-running AI vision suggest for the same gig. */
+  const visionAutoSuggestKeyRef = useRef('');
 
   const getDraftStorageKey = useCallback((companyId?: string) => {
     const cid = String(companyId || OnboardingService.getCompanyId() || '').trim();
@@ -190,7 +192,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
     } else if (currentStep === 3) {
       setCurrentStep(4);
     } else if (currentStep === 2) {
-      setCurrentStep(3);
+      // Duration + Team are skipped after Vision name/description.
+      setCurrentStep(4);
     } else if (currentStep === 1) {
       setCurrentStep(2);
     } else if (currentStep < steps.length) {
@@ -291,7 +294,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   }, [forceNew, getDraftStorageKey]);
 
   const visionContinueDisabled =
-    visionSubStep === 0 ? !visionName.trim() : !visionDuration;
+    visionSubStep === 0
+      ? !visionName.trim() || visionTitleGenerating || visionDescriptionGenerating
+      : !visionDuration;
   const visionContinueLabel = 'Continue';
 
   const handleVisionFooterBack = () => {
@@ -299,24 +304,41 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
     else setCurrentStep(1);
   };
 
+  /** Persist vision + skip duration (Quick Start) and Team → Methodology. */
+  const commitVisionAndSkipToMethodology = () => {
+    const cleanVisionName = String(visionName || '').trim();
+    if (!cleanVisionName) return;
+    const cleanVisionDesc = String(visionDesc || '').trim();
+    const duration =
+      visionDuration && VISION_DURATIONS.some((d) => d.value === visionDuration)
+        ? visionDuration
+        : VISION_DURATIONS[0].value; // Quick Start
+    const defaultRoles =
+      journey.targetRoles && journey.targetRoles.length > 0
+        ? journey.targetRoles
+        : ['Sales Representatives'];
+
+    setVisionDuration(duration);
+    setTrainingDetails({
+      trainingName: cleanVisionName,
+      trainingDescription: cleanVisionDesc,
+      estimatedDuration: duration,
+    });
+    setJourney((prev) => ({
+      ...prev,
+      name: cleanVisionName || prev.name,
+      description: cleanVisionDesc || prev.description || '',
+      estimatedDuration: duration || prev.estimatedDuration,
+      targetRoles: defaultRoles,
+    }));
+    setCurrentStep(4);
+  };
+
   const handleVisionFooterContinue = () => {
     if (visionSubStep === 0) {
-      if (visionName.trim()) setVisionSubStep(1);
+      commitVisionAndSkipToMethodology();
     } else if (visionDuration) {
-      const cleanVisionName = String(visionName || '').trim();
-      const cleanVisionDesc = String(visionDesc || '').trim();
-      setTrainingDetails({
-        trainingName: cleanVisionName,
-        trainingDescription: cleanVisionDesc,
-        estimatedDuration: visionDuration,
-      });
-      setJourney((prev) => ({
-        ...prev,
-        name: cleanVisionName || prev.name,
-        description: cleanVisionDesc || prev.description || '',
-        estimatedDuration: visionDuration || prev.estimatedDuration,
-      }));
-      setCurrentStep(3);
+      commitVisionAndSkipToMethodology();
     }
   };
 
@@ -377,6 +399,24 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       else setVisionDescriptionGenerating(false);
     }
   };
+
+  // Auto-fill Vision title + description when landing on the step (no brain click).
+  useEffect(() => {
+    if (currentStep !== 2 || visionSubStep !== 0 || !selectedGig) return;
+    const gigKey = String(selectedGig._id || selectedGig.title || '').trim();
+    if (!gigKey) return;
+    if (visionAutoSuggestKeyRef.current === gigKey) return;
+    if (String(visionName || '').trim() && String(visionDesc || '').trim()) {
+      visionAutoSuggestKeyRef.current = gigKey;
+      return;
+    }
+    visionAutoSuggestKeyRef.current = gigKey;
+    void Promise.all([
+      handleSuggestVision('title'),
+      handleSuggestVision('description'),
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per gig when entering Vision
+  }, [currentStep, visionSubStep, selectedGig?._id, selectedGig?.title]);
 
   const roleOptions = [
     { role: 'Customer Success Representatives', dept: 'Customer Success', icon: '🎯' },
@@ -461,9 +501,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       ? 'Identify your learners'
       : 'Welcome to your training journey';
   const headerSubtitle = isVisionStep
-    ? (visionSubStep === 0
-      ? 'Step 1 of 2 — Name & description'
-      : 'Step 2 of 2 — How long should it run?')
+    ? 'Name & description — generated from your gig'
     : currentStep === 3
       ? 'Role-based paths · Skill assessments · Personalization'
       : 'Smart defaults · Compliance';
@@ -934,7 +972,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 <ArrowLeft style={{ width: 14, height: 14 }} />
                 Back
               </button>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {visionSubStep + 1}/2 · Step 3 of 5</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>
+                {visionTitleGenerating || visionDescriptionGenerating ? 'Generating…' : 'Vision · next: Methodology'}
+              </span>
               <button
                 type="button"
                 onClick={handleVisionFooterContinue}
@@ -955,8 +995,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
             <>
               <button
                 type="button"
-                onClick={() => { if (currentStep === 5) setCurrentStep(4); else if (currentStep > 1) setCurrentStep(currentStep - 1); }}
-                disabled={currentStep === 1}
+                  onClick={() => { if (currentStep === 5) setCurrentStep(4); else if (currentStep === 4) setCurrentStep(2); else if (currentStep > 1) setCurrentStep(currentStep - 1); }}
+                  disabled={currentStep === 1}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 5,
                   padding: '8px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
