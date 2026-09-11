@@ -18,7 +18,7 @@ import { fetchAllCountries, type Country } from '../gigsaicreation/lib/api';
 
 type CallCenterCreateProjectProps = {
   onBack: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (gigId?: string) => void;
 };
 
 type ProjectMode = 'list' | 'create' | 'edit' | 'view';
@@ -253,7 +253,6 @@ export default function CallCenterCreateProject({
     window.dispatchEvent(
       new CustomEvent('stepCompleted', { detail: { stepId: 3, phaseId: 2 } })
     );
-    onSuccess?.();
   };
 
   const handleSave = async () => {
@@ -315,8 +314,23 @@ export default function CallCenterCreateProject({
       }
 
       await markStepComplete();
-      await loadProjects();
-      backToList();
+      let savedId: string | undefined;
+      try {
+        const parsed = JSON.parse(responseText);
+        savedId = String(parsed?._id || parsed?.data?._id || activeProject?._id || '');
+        if (!savedId) savedId = undefined;
+      } catch {
+        savedId = activeProject?._id ? String(activeProject._id) : undefined;
+      }
+
+      if (mode === 'edit') {
+        await loadProjects();
+        backToList();
+        onSuccess?.(savedId);
+      } else {
+        // Continue funnel: parent opens next step (telephony)
+        onSuccess?.(savedId);
+      }
     } catch (err) {
       setError(
         err instanceof Error

@@ -64,6 +64,22 @@ export const STEP_FIELD_TO_ROUTE: Record<SetupStepField, string> = {
   gigActivation: '/dashboard/gig-activation',
 };
 
+/** After creating a gig, land on telephony so the user continues the funnel. */
+export function getPostCreateGigRoute(gigId: string): string {
+  const id = encodeURIComponent(gigId);
+  return `/dashboard/telephony?action=buy&gigId=${id}`;
+}
+
+/** Persist selected gig for in-flow onboarding steps (telephony, etc.). */
+export function rememberCreatedGigId(gigId: string) {
+  try {
+    localStorage.setItem('selectedGigId', gigId);
+    localStorage.setItem('gigId', gigId);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Returns the dashboard route the rep should land on after completing
  *  the given step. Falls back to the gigs list once every step is done. */
 export function getNextStepRoute(
