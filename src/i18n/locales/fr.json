@@ -990,7 +990,7 @@
       },
       "uploadsGate": {
         "title": "Téléversez vos documents",
-        "subtitle": "Nous analysons vos fichiers, puis générons le plan de formation à partir d’eux.",
+        "subtitle": "Nous analysons d’abord vos fichiers, puis utilisons le gig sélectionné en second pour générer le plan et le contenu de formation.",
         "uploadCta": "Téléverser des fichiers",
         "generatePlan": "Générer le plan",
         "needFiles": "Ajoutez au moins un fichier analysé pour continuer.",
