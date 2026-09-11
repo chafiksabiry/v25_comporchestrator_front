@@ -1,12 +1,8 @@
 import Cookies from 'js-cookie';
+import { getRegistrationBackendBase } from '../utils/registrationBackend';
 
 function registrationBase(): string {
-  const raw =
-    import.meta.env.VITE_REGISTRATION_BACKEND_URL ||
-    import.meta.env.VITE_REGISTRATION_BACK_URL ||
-    import.meta.env.VITE_REGISTRATION_API_URL ||
-    '';
-  return String(raw).replace(/\/$/, '');
+  return getRegistrationBackendBase();
 }
 
 function sessionUserId(): string {
