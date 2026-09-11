@@ -162,7 +162,7 @@ export default function CallCenterAgentsPage() {
           <button
             type="button"
             onClick={() => setShowForm((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-sm font-bold text-white hover:opacity-95"
           >
             <Plus size={14} />
             {t('callCenterAgents.add', 'Add agent')}
@@ -186,7 +186,7 @@ export default function CallCenterAgentsPage() {
           onSubmit={onSubmit}
           className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3"
         >
-          <div className="flex items-center gap-2 text-emerald-700">
+          <div className="flex items-center gap-2 text-harx-orange">
             <UserPlus size={16} />
             <h2 className="text-sm font-black uppercase tracking-wide">
               {t('callCenterAgents.formTitle', 'New agent')}
@@ -242,7 +242,7 @@ export default function CallCenterAgentsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-sm font-bold text-white hover:opacity-95 disabled:opacity-60"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
               {t('callCenterAgents.createInvite', 'Create & invite')}

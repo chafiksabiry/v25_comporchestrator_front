@@ -169,14 +169,14 @@ export default function PremiumDashboardPage() {
 
   if (userType === 'company') {
     return (
-      <div className={isOpsConsole ? 'ops-console-board p-4 md:p-5' : 'p-8'}>
+      <div className={isOpsConsole ? 'ops-console-board p-6 md:p-8' : 'p-8'}>
         <OperationsDashboard />
       </div>
     );
   }
 
   return (
-    <div className={isOpsConsole ? 'ops-console-board p-4 md:p-5' : 'p-8'}>
+    <div className={isOpsConsole ? 'ops-console-board p-6 md:p-8' : 'p-8'}>
       <PremiumDashboard 
         profile={profileData} 
         companyName={companyName} 
