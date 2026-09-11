@@ -710,6 +710,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
     objective?: string;
     format?: string;
   }>({});
+  /** Option B: after personalization with uploads_only, wait for analyzed files before generating the plan. */
+  const [awaitingUploadsForPlan, setAwaitingUploadsForPlan] = useState(false);
+  const [pendingPersonalizationSnapshot, setPendingPersonalizationSnapshot] = useState<{
+    source?: string;
+    level?: string;
+    objective?: string;
+    format?: string;
+  }>({});
   const [chatHistorySessions, setChatHistorySessions] = useState<ChatHistoryItem[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -2766,9 +2774,37 @@ export default function ContentUploader(props: ContentUploaderProps) {
       },
     ];
     const currentPersonalizationQuestion = personalizationQuestions[personalizationStep];
+    const isUploadsOnlySource = (source?: string) => {
+      const selectedSource = String(source || '').toLowerCase();
+      return (
+        selectedSource.includes('uploaded') ||
+        selectedSource.includes('docs only') ||
+        selectedSource.includes('téléversés seuls') ||
+        selectedSource.includes('fichiers téléversés')
+      );
+    };
+    const buildPersonalizationSummary = (answers: {
+      source?: string;
+      level?: string;
+      objective?: string;
+      format?: string;
+    }) =>
+      [
+        'A few questions to personalize your training',
+        'Q: What source should we use for this training?',
+        `R : ${answers.source}`,
+        'Q: What is your current level?',
+        `R : ${answers.level}`,
+        'Q: What is your main objective?',
+        `R : ${answers.objective}`,
+        'Q: Which format do you prefer?',
+        `R : ${answers.format}`,
+      ].join('\n');
     const handleSelectKbMode = (mode: KbGenerationMode) => {
       setShowRepSourcePopup(false);
       setKbGenerationChoice(mode);
+      setAwaitingUploadsForPlan(false);
+      setPendingPersonalizationSnapshot({});
       setShowPersonalizationCard(true);
       setPersonalizationStep(0);
       setPersonalizationAnswers({
@@ -2799,25 +2835,49 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
       if (personalizationStep >= personalizationQuestions.length - 1) {
         if (nextAnswers.source && nextAnswers.level && nextAnswers.objective && nextAnswers.format) {
-          const summary = [
-            'A few questions to personalize your training',
-            'Q: What source should we use for this training?',
-            `R : ${nextAnswers.source}`,
-            'Q: What is your current level?',
-            `R : ${nextAnswers.level}`,
-            'Q: What is your main objective?',
-            `R : ${nextAnswers.objective}`,
-            'Q: Which format do you prefer?',
-            `R : ${nextAnswers.format}`,
-          ].join('\n');
           setShowPersonalizationCard(false);
           setPersonalizationStep(0);
-          void sendChatMessage(summary, { personalizationProfileSnapshot: nextAnswers });
+          const uploadsOnly =
+            isUploadsOnlySource(nextAnswers.source) || kbGenerationChoice === 'uploads_only';
+          if (uploadsOnly) {
+            setKbGenerationChoice('uploads_only');
+            setPendingPersonalizationSnapshot(nextAnswers);
+            setAwaitingUploadsForPlan(true);
+            return;
+          }
+          void sendChatMessage(buildPersonalizationSummary(nextAnswers), {
+            personalizationProfileSnapshot: nextAnswers,
+          });
         }
         return;
       }
       const nextStep = personalizationStep + 1;
       setPersonalizationStep(nextStep);
+    };
+    const handleGeneratePlanFromUploads = () => {
+      const answers =
+        pendingPersonalizationSnapshot.source || pendingPersonalizationSnapshot.level
+          ? pendingPersonalizationSnapshot
+          : personalizationAnswers;
+      const analyzedAttachments = uploads
+        .filter((u) => u.status === 'analyzed')
+        .map((u) => ({
+          id: u.id,
+          name: u.name,
+          type: u.type,
+          size: (u as any).size,
+        }));
+      if (analyzedAttachments.length === 0 || isChatLoading) return;
+      if (uploads.some((u) => u.status === 'uploading' || u.status === 'processing')) return;
+      setKbGenerationChoice('uploads_only');
+      setAwaitingUploadsForPlan(false);
+      void sendChatMessage(buildPersonalizationSummary(answers), {
+        personalizationProfileSnapshot: {
+          ...answers,
+          source: answers.source || 'Uploaded files only',
+        },
+        attachments: analyzedAttachments,
+      });
     };
     const appendChatMessage = (
       role: 'user' | 'assistant',
@@ -2874,6 +2934,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setKbGenerationChoice(null);
       setChatKbDocuments([]);
       setShowPersonalizationCard(false);
+      setAwaitingUploadsForPlan(false);
+      setPendingPersonalizationSnapshot({});
       repPersonalizationBootstrapRef.current = false;
       setPersonalizationStep(0);
       setPersonalizationAnswers({});
@@ -2927,6 +2989,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
         );
         if (hasSavedPlanAck) setIsPlanSavedForChat(true);
         setActiveChatSessionId(session._id || sessionId);
+        setAwaitingUploadsForPlan(false);
+        setPendingPersonalizationSnapshot({});
         const sidPlan = (session as { modulePlan?: unknown[] })?.modulePlan;
         syncChatSessionModulePlan(
           Array.isArray(sidPlan) && sidPlan.length > 0 ? (sidPlan as Array<Record<string, unknown>>) : []
@@ -3666,8 +3730,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ? 'uploads_only'
                 : 'none';
         const effectiveGenerationMode: KbGenerationMode = requestedMode || autoMode;
-        const usesKbForChat = effectiveGenerationMode === 'kb_only' || effectiveGenerationMode === 'kb_and_uploads';
-        const usesUploadsForChat = effectiveGenerationMode === 'uploads_only' || effectiveGenerationMode === 'kb_and_uploads';
+        const usesKbForChat =
+          effectiveGenerationMode === 'kb_only' || effectiveGenerationMode === 'kb_and_uploads';
+        const usesUploadsForChat =
+          effectiveGenerationMode === 'uploads_only' || effectiveGenerationMode === 'kb_and_uploads';
         const uploadsForChat = usesUploadsForChat ? effectiveAnalyzedUploads : [];
 
         const sourceHistory = (options?.historyMessages || chatMessages).filter(
@@ -3727,6 +3793,35 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   : isFullTrainingIntentByText
                     ? 'full_training_content'
                     : 'general_chat';
+
+        // uploads_only: refuse plan generation until at least one file is analyzed
+        if (
+          effectiveGenerationMode === 'uploads_only' &&
+          (requestedOutput === 'training_plan' || isPostPersonalizationSummary) &&
+          uploadsForChat.length === 0
+        ) {
+          setAwaitingUploadsForPlan(true);
+          if (!pendingPersonalizationSnapshot.source && personalizationForContext.source) {
+            setPendingPersonalizationSnapshot(personalizationForContext);
+          }
+          const missingMsg = t(
+            'training.chat.uploadsGate.missingForPlan',
+            'Upload and wait for analysis before generating a plan from your files.'
+          );
+          if (options?.replaceAssistantId) {
+            setChatMessages((prev) =>
+              prev.map((m) =>
+                m.id === options.replaceAssistantId
+                  ? { ...m, text: missingMsg, isStreaming: false }
+                  : m
+              )
+            );
+          } else {
+            appendChatMessage('assistant', missingMsg);
+          }
+          return { ok: false, error: 'uploads_required' };
+        }
+
         const requestedModuleReference =
           requestedOutput === 'module_content'
             ? (cleanMessage.match(/module\s+\d+/i)?.[0] || cleanMessage.match(/module\s*[:\-]\s*([^\n]+)/i)?.[1] || '').trim()
@@ -3796,7 +3891,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
             objective: personalizationForContext.objective || null,
             format: personalizationForContext.format || null,
           },
-          bootstrapTrainingPlanFromGig: isPostPersonalizationSummary,
+          bootstrapTrainingPlanFromGig:
+            isPostPersonalizationSummary && effectiveGenerationMode !== 'uploads_only',
+          bootstrapTrainingPlanFromUploads:
+            isPostPersonalizationSummary && effectiveGenerationMode === 'uploads_only',
           sourceModeRequested: requestedMode || null,
           requestedOutput,
           requestedModuleReference: requestedModuleReference || null,
@@ -6829,12 +6927,138 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               setShowPersonalizationCard(false);
                               setPersonalizationStep(0);
                               setPersonalizationAnswers({});
+                              setAwaitingUploadsForPlan(false);
+                              setPendingPersonalizationSnapshot({});
                             }}
                             className="rounded-md border border-harx-100 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                           >
                             {t('training.chat.skip', 'Skip')}
                           </button>
                         </div>
+                      </div>
+                    </div>
+                  )}
+                  {awaitingUploadsForPlan && (
+                    <div className="flex justify-start">
+                      <div className="w-full rounded-2xl border border-harx-100 bg-white p-2.5 shadow-md shadow-harx-500/10 sm:p-3">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <div
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm shadow-harx-500/20"
+                              aria-hidden
+                            >
+                              <Bot className="h-3.5 w-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">HARX</span>
+                              <span className="ml-1.5 text-[11px] font-medium text-slate-400">Assistant</span>
+                            </div>
+                          </div>
+                          <Upload className="h-4 w-4 shrink-0 text-harx-500" aria-hidden />
+                        </div>
+                        <p className="mb-1 text-sm font-semibold leading-snug text-slate-900 sm:text-base">
+                          {t('training.chat.uploadsGate.title', 'Upload your documents')}
+                        </p>
+                        <p className="mb-2 text-xs leading-snug text-slate-600">
+                          {t(
+                            'training.chat.uploadsGate.subtitle',
+                            'We will analyze your files, then generate the training plan from them.'
+                          )}
+                        </p>
+                        {uploads.length > 0 ? (
+                          <div className="mb-2 flex flex-wrap gap-2">
+                            {uploads.map((upload) => {
+                              const statusLabel =
+                                upload.status === 'analyzed'
+                                  ? t('training.chat.uploadsGate.statusAnalyzed', 'Analyzed')
+                                  : upload.status === 'error'
+                                    ? t('training.chat.uploadsGate.statusError', 'Error')
+                                    : upload.status === 'uploading'
+                                      ? t('training.chat.uploadsGate.statusUploading', 'Uploading…')
+                                      : t('training.chat.uploadsGate.statusAnalyzing', 'Analyzing…');
+                              return (
+                                <div
+                                  key={`gate-upload-${upload.id}`}
+                                  className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-1.5"
+                                >
+                                  {getFileIcon(upload.type, true)}
+                                  <div className="min-w-0">
+                                    <div className="max-w-[210px] truncate text-[11px] font-semibold text-slate-800">
+                                      {upload.name}
+                                    </div>
+                                    <div className="text-[10px] text-slate-600">{statusLabel}</div>
+                                  </div>
+                                  {upload.status === 'uploading' || upload.status === 'processing' ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-harx-500" />
+                                  ) : upload.status === 'analyzed' ? (
+                                    <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                                  ) : null}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeUpload(upload.id)}
+                                    className="rounded p-0.5 text-slate-500 hover:bg-slate-200/80"
+                                    aria-label={t('training.chat.removeFile', 'Remove file')}
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="mb-2 text-[11px] text-slate-500">
+                            {t(
+                              'training.chat.uploadsGate.needFiles',
+                              'Add at least one analyzed file to continue.'
+                            )}
+                          </p>
+                        )}
+                        {(() => {
+                          const analyzedCount = uploads.filter((u) => u.status === 'analyzed').length;
+                          const pendingCount = uploads.filter(
+                            (u) => u.status === 'uploading' || u.status === 'processing'
+                          ).length;
+                          const canGenerate = analyzedCount > 0 && pendingCount === 0 && !isChatLoading;
+                          return (
+                            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                              <div className="min-h-[14px] text-[10px] leading-tight text-slate-600">
+                                {pendingCount > 0 ? (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Loader2 className="h-3 w-3 animate-spin text-harx-500" />
+                                    {t('training.chat.uploadsGate.analyzing', 'Analyzing documents…')}
+                                  </span>
+                                ) : analyzedCount > 0 ? (
+                                  <span>
+                                    {t('training.chat.uploadsGate.readyCount', {
+                                      count: analyzedCount,
+                                      defaultValue: `${analyzedCount} file(s) analyzed and ready.`,
+                                    })}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => chatFileInputRef.current?.click()}
+                                  disabled={isChatLoading}
+                                  className="inline-flex items-center gap-1.5 rounded-md border border-harx-100 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                                >
+                                  <Upload className="h-3.5 w-3.5" />
+                                  {t('training.chat.uploadsGate.uploadCta', 'Upload files')}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleGeneratePlanFromUploads()}
+                                  disabled={!canGenerate}
+                                  className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-harx-500 to-harx-alt-500 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm shadow-harx-500/20 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  <Sparkles className="h-3.5 w-3.5" />
+                                  {t('training.chat.uploadsGate.generatePlan', 'Generate plan')}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
