@@ -27,10 +27,7 @@ import { TelnyxRTC } from '@telnyx/webrtc';
 import { gigsApi } from '../services/api/endpoints';
 import { waitForStripePopup, getOrchestratorApiBase } from '../../../lib/paypalCheckout';
 import { markGigStepDone } from '../../../services/gigSetupSync';
-import {
-  providerDisplayName,
-  providerForDestinationCountry,
-} from '../../../utils/phoneProvider';
+import { providerForDestinationCountry } from '../../../utils/phoneProvider';
 import { requirementService } from '../../../services/requirementService';
 import { RequirementFormModal } from '../../RequirementFormModal';
 import { getDashCallsApiBase } from '../lib/callsApiBase';
@@ -312,7 +309,7 @@ export function PhoneNumberPanel() {
   const selectedGigForSearch = useMemo(() => gigsAndReps.find(g => g.gigId === selectedGigIdForNumber), [gigsAndReps, selectedGigIdForNumber]);
   const destZone = selectedGigForSearch?.destinationCountry;
 
-  // FR → Twilio, US (and other destinations) → Telnyx — no manual radio.
+  // FR → provider A; other destinations → provider B (names not shown in UI).
   useEffect(() => {
     const next = providerForDestinationCountry(destZone);
     setSearchProvider((prev) => {
@@ -1663,9 +1660,6 @@ export function PhoneNumberPanel() {
                               <Hash size={14} />
                             </span>
                             <span>{num.phoneNumber}</span>
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
-                              {providerDisplayName(num.provider)}
-                            </span>
                           </div>
                         </td>
                         <td className="py-4 px-4 font-bold text-slate-700">
@@ -1950,24 +1944,6 @@ export function PhoneNumberPanel() {
                 </div>
               )}
 
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block mb-1">
-                  Fournisseur
-                </label>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-100">
-                    {providerDisplayName(searchProvider)}
-                  </span>
-                  <span className="text-[11px] text-slate-500">
-                    {destZone
-                      ? String(destZone).toUpperCase() === 'FR'
-                        ? 'France → Twilio'
-                        : `${String(destZone).toUpperCase()} → Telnyx`
-                      : 'Basé sur la destination du gig (FR → Twilio, sinon Telnyx)'}
-                  </span>
-                </div>
-              </div>
-
               <button
                 type="submit"
                 disabled={searching}
@@ -2018,9 +1994,6 @@ export function PhoneNumberPanel() {
                           <Hash size={15} />
                         </span>
                         <span className="text-sm font-black text-slate-900 tracking-tight tabular-nums truncate">{numberString}</span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
-                          {providerDisplayName(resultNum.provider || searchProvider)}
-                        </span>
                       </div>
 
                       <button
@@ -2082,9 +2055,6 @@ export function PhoneNumberPanel() {
                       {t('phoneNumberPanel.myNumbers.table.freeTrial')}
                     </span>
                   )}
-                  <span className="inline-block mt-2 ml-2 px-2 py-0.5 rounded-lg bg-white/20 text-white border border-white/30 text-[9px] font-black uppercase tracking-wider">
-                    {providerDisplayName(selectedPhoneLineData.provider)}
-                  </span>
                 </div>
               </div>
             </div>
