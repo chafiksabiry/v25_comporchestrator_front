@@ -32,7 +32,7 @@ import { scrollJourneyMainToTop } from './journeyScroll';
 
 import type { TrainingMethodology } from '../../types/methodology';
 
-import { buildGigSnapshotForAi } from '../../utils/gigSnapshotForAi';
+import { buildGigSnapshotForAi, detectOutputLanguageFromGigText } from '../../utils/gigSnapshotForAi';
 import type { TrainingViewerTheme } from '../../utils/trainingViewerTheme';
 import {getModuleColorStyles, getViewerThemeTokens, resolveRepViewerTheme} from '../../utils/trainingViewerTheme';
 
@@ -3895,11 +3895,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
             : null;
 
         const isUploadsPrimaryMode = effectiveGenerationMode === 'uploads_only';
+        const gigTitleForLanguage = String(
+          (chatGigSnapshot as any)?.title || activeChatGigTitle || ''
+        ).trim();
+        const gigDescriptionForLanguage = String(
+          (chatGigSnapshot as any)?.description || ''
+        ).trim();
+        const outputLanguage = detectOutputLanguageFromGigText(
+          gigTitleForLanguage,
+          gigDescriptionForLanguage
+        );
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
           selectedGigId: isUploadsPrimaryMode ? '' : activeChatGigId || '',
           selectedGigTitle: isUploadsPrimaryMode ? '' : activeChatGigTitle,
-          // uploads_only: documents only — do not inject gig context
+          // uploads_only: documents only — do not inject gig business context
           gigSnapshot: isUploadsPrimaryMode ? null : chatGigSnapshot,
           gigAnchoringRequired: isUploadsPrimaryMode ? false : !!activeChatGigId,
           chatStyle: 'free_chat',
@@ -3909,6 +3919,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
           useKnowledgeBase: usesKbForChat,
           useUploadedDocuments: usesUploadsForChat,
           useGigAsSecondaryContext: false,
+          // Language of plan + content follows gig title/description (even in uploads_only)
+          outputLanguage,
+          contentLanguage: outputLanguage,
+          languageFromGig: {
+            source: 'gig_title_description',
+            titleSample: gigTitleForLanguage.slice(0, 180) || null,
+            descriptionSample: gigDescriptionForLanguage.slice(0, 280) || null,
+            detected: outputLanguage,
+          },
           sourcePriority: isUploadsPrimaryMode
             ? ['uploaded_files']
             : effectiveGenerationMode === 'kb_and_uploads'
@@ -3921,9 +3940,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 primary: 'uploaded_files',
                 secondary: null,
                 instruction:
-                  'Generate the training plan AND all training module content ONLY from analyzed uploaded documents (topics, objectives, summaries, file content). Do NOT use the gig snapshot, gig title, product offer, or audience from the gig. Do not use knowledge-base documents. If information is missing, infer only from the uploaded files.',
+                  `Generate the training plan AND all training module content ONLY from analyzed uploaded documents (topics, objectives, summaries, file content). Do NOT use the gig snapshot, product offer, or audience from the gig. Do not use knowledge-base documents. Write the entire plan and all training content in ${outputLanguage === 'fr' ? 'French' : 'English'} — match the language of the gig title and description (languageFromGig). If information is missing, infer only from the uploaded files.`,
               }
-            : null,
+            : {
+                instruction: `Write the training plan and all training content in ${outputLanguage === 'fr' ? 'French' : 'English'}, matching the language of the selected gig title and description (languageFromGig / outputLanguage).`,
+              },
           knowledgeBaseDocumentsCount: kbDocsSummary.length,
           knowledgeBaseDocuments: kbDocsSummary,
           selectedDuration: generationPreferences.selectedDuration,
