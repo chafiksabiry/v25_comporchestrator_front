@@ -13,6 +13,7 @@ import {
   assertCompanyHasAiTokens,
   chargeCompanyAiUsage,
   estimateTokensFromText,
+  applyBackendAiUsage,
 } from '../lib/aiTokensUsage';
 
 interface Gig {
@@ -685,22 +686,25 @@ const ScriptGenerator: React.FC = () => {
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
         setActiveInteractiveStages(generatedStages);
         setActiveInteractiveTitle(selectedGig.title || "Script Interactif");
-        void chargeCompanyAiUsage({
-          usageId: `script-interactive-${selectedGig._id}-${Date.now()}`,
-          tokensUsed: Math.max(
-            2000,
-            estimateTokensFromText(JSON.stringify(payload), JSON.stringify(generatedStages))
-          ),
-          tool: 'script.generate_interactive',
-          companyId,
-        }).catch(() => undefined);
+        const backendBilled = applyBackendAiUsage(data?.usage, companyId);
+        if (!backendBilled) {
+          void chargeCompanyAiUsage({
+            usageId: `script-interactive-${selectedGig._id}-${Date.now()}`,
+            tokensUsed: Math.max(
+              2000,
+              estimateTokensFromText(JSON.stringify(payload), JSON.stringify(generatedStages))
+            ),
+            tool: 'script.generate_interactive',
+            companyId,
+          }).catch(() => undefined);
+        }
       } else {
         throw new Error("Format de script généré incompatible. Veuillez réessayer.");
       }
     } catch (err: any) {
       setError(
-        err?.code === 'insufficient_tokens'
-          ? err.message
+        err?.code === 'insufficient_tokens' || err?.response?.data?.error === 'insufficient_tokens'
+          ? err?.response?.data?.message || err.message
           : err?.response?.data?.error || err?.message || 'Échec de la génération du script'
       );
     } finally {
@@ -764,22 +768,25 @@ const ScriptGenerator: React.FC = () => {
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
         setActiveInteractiveStages(generatedStages);
         setActiveInteractiveTitle(selectedGig.title || "Script Interactif");
-        void chargeCompanyAiUsage({
-          usageId: `script-refine-${selectedGig._id}-${safeIdx}-${Date.now()}`,
-          tokensUsed: Math.max(
-            1200,
-            estimateTokensFromText(JSON.stringify(payload), JSON.stringify(generatedStages))
-          ),
-          tool: 'script.refine_stage',
-          companyId,
-        }).catch(() => undefined);
+        const backendBilled = applyBackendAiUsage(data?.usage, companyId);
+        if (!backendBilled) {
+          void chargeCompanyAiUsage({
+            usageId: `script-refine-${selectedGig._id}-${safeIdx}-${Date.now()}`,
+            tokensUsed: Math.max(
+              1200,
+              estimateTokensFromText(JSON.stringify(payload), JSON.stringify(generatedStages))
+            ),
+            tool: 'script.refine_stage',
+            companyId,
+          }).catch(() => undefined);
+        }
       } else {
         throw new Error("Format de script généré incompatible. Veuillez réessayer.");
       }
     } catch (err: any) {
       setError(
-        err?.code === 'insufficient_tokens'
-          ? err.message
+        err?.code === 'insufficient_tokens' || err?.response?.data?.error === 'insufficient_tokens'
+          ? err?.response?.data?.message || err.message
           : err?.response?.data?.error || err?.message || 'Échec du raffinement du script'
       );
     } finally {
@@ -988,15 +995,18 @@ const ScriptGenerator: React.FC = () => {
       const normalizedText = normalizeScriptText(assistantText);
       const assistantTextSafe = normalizedText || 'Je n’ai pas pu générer de réponse.';
 
-      void chargeCompanyAiUsage({
-        usageId: `script-chat-${selectedGig?._id || 'gig'}-${Date.now()}`,
-        tokensUsed: Math.max(
-          1500,
-          estimateTokensFromText(JSON.stringify(scriptPayload), assistantTextSafe)
-        ),
-        tool: 'script.generate_chat',
-        companyId,
-      }).catch(() => undefined);
+      const backendBilled = applyBackendAiUsage(body?.usage, companyId);
+      if (!backendBilled) {
+        void chargeCompanyAiUsage({
+          usageId: `script-chat-${selectedGig?._id || 'gig'}-${Date.now()}`,
+          tokensUsed: Math.max(
+            1500,
+            estimateTokensFromText(JSON.stringify(scriptPayload), assistantTextSafe)
+          ),
+          tool: 'script.generate_chat',
+          companyId,
+        }).catch(() => undefined);
+      }
 
       const generatedMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -1013,8 +1023,8 @@ const ScriptGenerator: React.FC = () => {
       setActiveScriptMessage(generatedMessage);
     } catch (err: any) {
       setError(
-        err?.code === 'insufficient_tokens'
-          ? err.message
+        err?.code === 'insufficient_tokens' || err?.response?.data?.error === 'insufficient_tokens'
+          ? err?.response?.data?.message || err.message
           : err?.response?.data?.error || err?.message || 'Failed to generate response'
       );
     } finally {
