@@ -91,11 +91,12 @@ export const openCenteredPopup = (url: string, title: string, w = 520, h = 720):
   );
 };
 
-export type PaymentPurpose = 'wallet_deposit' | 'minutes_purchase';
+export type PaymentPurpose = 'wallet_deposit' | 'minutes_purchase' | 'tokens_purchase';
 
 export type CheckoutInitBody =
   | { companyId: string; purpose: 'wallet_deposit'; provider: 'stripe' | 'paypal'; amountEuros: number }
-  | { companyId: string; purpose: 'minutes_purchase'; provider: 'stripe' | 'paypal'; minutes: number };
+  | { companyId: string; purpose: 'minutes_purchase'; provider: 'stripe' | 'paypal'; minutes: number }
+  | { companyId: string; purpose: 'tokens_purchase'; provider: 'stripe' | 'paypal'; tokens: number };
 
 export async function initCompanyCheckout(apiBaseUrl: string, body: CheckoutInitBody) {
   const res = await fetch(`${apiBaseUrl}/payments/checkout/init`, {
@@ -419,15 +420,31 @@ export async function fetchPaymentConfig(apiBaseUrl: string) {
     const res = await fetch(`${apiBaseUrl}/payments/checkout/config`);
     const cfg = await safeParseJson(res);
     if (!res.ok || !cfg) {
-      return { paypalEnabled: false, stripeEnabled: false, minutePacks: [], minutesCustomRateCents: 0 };
+      return {
+        paypalEnabled: false,
+        stripeEnabled: false,
+        minutePacks: [],
+        minutesCustomRateCents: 0,
+        tokenPacks: [],
+        tokensCustomRateCents: 0,
+      };
     }
     return {
       paypalEnabled: Boolean(cfg.paypal?.enabled),
       stripeEnabled: Boolean(cfg.stripe?.enabled),
       minutePacks: Array.isArray(cfg.pricing?.minutePacks) ? cfg.pricing.minutePacks : [],
       minutesCustomRateCents: Number(cfg.pricing?.minutesCustomRateCents || 0),
+      tokenPacks: Array.isArray(cfg.pricing?.tokenPacks) ? cfg.pricing.tokenPacks : [],
+      tokensCustomRateCents: Number(cfg.pricing?.tokensCustomRateCents || 0),
     };
   } catch {
-    return { paypalEnabled: false, stripeEnabled: false, minutePacks: [], minutesCustomRateCents: 0 };
+    return {
+      paypalEnabled: false,
+      stripeEnabled: false,
+      minutePacks: [],
+      minutesCustomRateCents: 0,
+      tokenPacks: [],
+      tokensCustomRateCents: 0,
+    };
   }
 }

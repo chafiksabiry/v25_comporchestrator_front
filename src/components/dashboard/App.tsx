@@ -28,6 +28,7 @@ import CallCenterAgentsPage from './pages/CallCenterAgentsPage';
 import { CompanyPerformanceDashboard } from './pages/CompanyPerformanceDashboard';
 import { WalletCompanyPanel } from './panels/WalletCompanyPanel';
 import { MinutesCompanyPanel } from './panels/MinutesCompanyPanel';
+import { TokensCompanyPanel } from './panels/TokensCompanyPanel';
 import { PhoneNumberPanel } from './panels/PhoneNumberPanel';
 import { VoiceAssistantPanel } from './panels/VoiceAssistantPanel';
 import { SubscriptionPanel } from './panels/SubscriptionPanel';
@@ -45,6 +46,7 @@ function App() {
         <Route path="/dashboard" element={<CompanyDashboardPage />} />
         <Route path="/dashboard/wallet" element={<WalletCompanyPanel />} />
         <Route path="/dashboard/minutes" element={<MinutesCompanyPanel />} />
+        <Route path="/dashboard/tokens" element={<TokensCompanyPanel />} />
         <Route path="/dashboard/telephony" element={<PhoneNumberPanel />} />
         <Route path="/dashboard/voice-assistant" element={<VoiceAssistantPanel />} />
         <Route path="/dashboard/subscription" element={<SubscriptionPanel />} />
