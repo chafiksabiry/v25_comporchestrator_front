@@ -16,6 +16,7 @@ import {
   ArrowRight,
   RotateCcw,
 } from 'lucide-react';
+import { getRegistrationBackendBase } from '../../../utils/registrationBackend';
 
 interface ApiUserResponse {
   success?: boolean;
@@ -67,11 +68,7 @@ function AccountSettingsPanel() {
   const [phoneOtp, setPhoneOtp] = useState('');
   const [phoneLoading, setPhoneLoading] = useState(false);
 
-  const backendUrl = (
-    import.meta.env.VITE_REGISTRATION_BACKEND_URL ||
-    import.meta.env.VITE_REGISTRATION_BACK_URL ||
-    'http://localhost:3001'
-  ).replace(/\/$/, '');
+  const backendUrl = getRegistrationBackendBase();
 
   const userId = Cookies.get('userId') || '';
 

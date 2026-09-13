@@ -17,6 +17,7 @@ import {
   LogOut,
   Settings,
   Menu,
+  Cpu,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
@@ -29,6 +30,7 @@ import { AuthProvider } from './components/dashboard/contexts/AuthContext';
 import Cookies from 'js-cookie';
 import { broadcastAuthChanged } from './lib/authSync';
 import { formatWalletMinutesBalance } from './utils/billingMinutes';
+import { formatAiTokensBalance } from './lib/aiTokensUsage';
 import {
   isCallCenterWorkspace,
   isCompanyLikeWorkspace,
@@ -170,6 +172,7 @@ function AppContent() {
   const [completedStepIds, setCompletedStepIds] = useState<number[]>(() => getCompletedStepsFromStorage());
   const [balance, setBalance] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
+  const [aiTokens, setAiTokens] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -192,9 +195,10 @@ function AppContent() {
     if (!compId) return;
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
     try {
-      const [walletRes, minutesRes, phoneRes] = await Promise.all([
+      const [walletRes, minutesRes, tokensRes, phoneRes] = await Promise.all([
         fetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
         fetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
+        fetch(`${apiBaseUrl}/tokens-company/${compId}`).catch(() => null),
         fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
       ]);
 
@@ -211,6 +215,14 @@ function AppContent() {
         const mins = minutesJson?.data?.minutes ?? minutesJson?.minutes;
         if (typeof mins === 'number') {
           setMinutes(mins);
+        }
+      }
+
+      if (tokensRes?.ok) {
+        const tokensJson = await tokensRes.json();
+        const toks = tokensJson?.data?.tokens ?? tokensJson?.tokens;
+        if (typeof toks === 'number') {
+          setAiTokens(toks);
         }
       }
 
@@ -241,6 +253,9 @@ function AppContent() {
         }
         if (typeof customEvent.detail.minutes === 'number') {
           setMinutes(customEvent.detail.minutes);
+        }
+        if (typeof customEvent.detail.tokens === 'number') {
+          setAiTokens(customEvent.detail.tokens);
         }
         if (typeof customEvent.detail.escrow === 'number') {
           setEscrow(customEvent.detail.escrow);
@@ -309,6 +324,11 @@ function AppContent() {
   const handleMinutesClick = () => {
     setActiveProject('dashboard');
     navigate('/dashboard/minutes');
+  };
+
+  const handleTokensClick = () => {
+    setActiveProject('dashboard');
+    navigate('/dashboard/tokens');
   };
 
   const handleTelephonyClick = () => {
@@ -880,6 +900,21 @@ function AppContent() {
                       <div className="flex flex-col leading-tight">
                         <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.minutes')}</span>
                         <span className="text-sm font-black text-white tabular-nums whitespace-nowrap">{formatWalletMinutesBalance(minutes)}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
+                    <div
+                      onClick={handleTokensClick}
+                      className="harx-nav-chip group"
+                    >
+                      <div className="harx-nav-chip-icon bg-violet-500/15 border border-violet-500/25">
+                        <Cpu size={13} className="text-violet-400" />
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.aiTokens')}</span>
+                        <span className="text-sm font-black text-white tabular-nums whitespace-nowrap">{formatAiTokensBalance(aiTokens)}</span>
                       </div>
                     </div>
                   )}
