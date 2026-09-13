@@ -34,9 +34,14 @@ import KnowledgeBase from "./KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
 import PrompAI from "./gigsaicreation/components/PrompAI";
+import CallCenterCreateProject from "./onboarding/CallCenterCreateProject";
 import { rememberCreatedGigId } from "../services/gigSetupSync";
 import { useTranslation } from "react-i18next";
 import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
+import {
+  isCallCenterWorkspace,
+  setPreferCallCenterDashboard,
+} from "../utils/callCenterWorkspace";
 import {
   buildCompanyPageTitle,
   resolveCompanyOnboardingFocusTitle,
@@ -82,7 +87,7 @@ interface Phase {
   steps: Step[];
 }
 
-const phases: Phase[] = [
+const BASE_ONBOARDING_PHASES: Phase[] = [
   {
     id: 1,
     title: "Company Account Setup & Identity",
@@ -212,6 +217,27 @@ const phases: Phase[] = [
   },
 ];
 
+/** Steps hidden from call-center onboarding (same wizard, different scope). */
+const CALL_CENTER_HIDDEN_STEP_IDS = new Set([13]); // MATCH HARX REPS
+
+function getOnboardingPhases(isCallCenter: boolean): Phase[] {
+  if (!isCallCenter) return BASE_ONBOARDING_PHASES;
+  return BASE_ONBOARDING_PHASES.map((phase) => ({
+    ...phase,
+    steps: phase.steps
+      .filter((step) => !CALL_CENTER_HIDDEN_STEP_IDS.has(step.id))
+      .map((step) =>
+        step.id === 3
+          ? {
+              ...step,
+              title: 'Create Project',
+              description: 'Enter the project title and destination zone',
+            }
+          : step
+      ),
+  }));
+}
+
 interface OnboardingProgressResponse {
   currentPhase: number;
   completedSteps: number[];
@@ -261,6 +287,8 @@ interface GigResponse {
 
 const CompanyOnboarding = () => {
   const { t } = useTranslation();
+  const isCallCenter = isCallCenterWorkspace();
+  const phases = getOnboardingPhases(isCallCenter);
   // Remove early return - we need to render the component to show onboarding interface
 
   // Read the last known progress from cookie/localStorage so navigation back
@@ -769,13 +797,19 @@ const CompanyOnboarding = () => {
   }, [companyId, gigsApiBase]);
 
   const openGigsStepView = useCallback(async () => {
-    const gigsExist = await resolveCompanyHasGigs();
-
     setShowTelephonySetup(false);
     setShowKnowledgeBase(false);
     setShowUploadContacts(false);
     setActiveStep(null);
 
+    // Call-center: always open the title-only project form (1 input + Save).
+    if (isCallCenterWorkspace()) {
+      setShowGigDetails(false);
+      setShowGigCreation(true);
+      return;
+    }
+
+    const gigsExist = await resolveCompanyHasGigs();
     if (gigsExist) {
       setShowGigCreation(false);
       setShowGigDetails(true);
@@ -926,33 +960,36 @@ const CompanyOnboarding = () => {
         }
       }
 
-      // Helper function to check if a phase is completed
+      // Helper — company: profile (1) + gig (3); call-center is handled separately.
       const isPhaseFullyCompleted = (phaseId: number) => {
-        const phase = phases[phaseId - 1];
-        if (!phase) return false;
-        const nonDisabledSteps = phase.steps.filter((step) => !step.disabled);
-        return nonDisabledSteps.every((step) => completedStepsState.includes(step.id));
+        if (phaseId === 1) return completedStepsState.includes(1);
+        if (phaseId === 2) return completedStepsState.includes(3);
+        return true;
       };
 
-      // Determine valid phase based on dependencies
       let validPhase = 1;
-      for (let pId = 1; pId <= 4; pId++) {
-        if (pId === 1) {
-          validPhase = 1;
-        } else {
-          if (isPhaseFullyCompleted(pId - 1)) {
+      if (isCallCenterWorkspace()) {
+        // IMPORTANT: call-center must land on phase 2 right after step 1 (company created),
+        // never auto-jump to phase 4 on progress reload.
+        validPhase = completedStepsState.includes(1) ? 2 : 1;
+      } else {
+        // Determine valid phase based on dependencies
+        for (let pId = 1; pId <= 4; pId++) {
+          if (pId === 1) {
+            validPhase = 1;
+          } else if (isPhaseFullyCompleted(pId - 1)) {
             validPhase = pId;
           } else {
             break;
           }
         }
-      }
 
-      // Manual overrides for step completions
-      if (completedStepsState.includes(9) && validPhase < 3 && isPhaseFullyCompleted(2)) validPhase = 3;
-      if (completedStepsState.includes(10) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
-      if (completedStepsState.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
-      if (completedStepsState.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+        // Manual overrides for step completions (matching step 13 is company-only)
+        if (completedStepsState.includes(9) && validPhase < 3 && isPhaseFullyCompleted(2)) validPhase = 3;
+        if (completedStepsState.includes(10) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+        if (completedStepsState.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+        if (completedStepsState.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+      }
 
       setCurrentPhase(validPhase);
       setDisplayedPhase(validPhase);
@@ -1390,109 +1427,115 @@ const CompanyOnboarding = () => {
   const handlePhaseChange = async (newPhase: number) => {
     if (!companyId) return;
 
-    // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
-    const isPhaseFullyCompleted = (phaseId: number) => {
-      const phase = phases[phaseId - 1];
-      if (!phase) return false;
+    // Phases after Create Gig are optional — free navigation.
+    setDisplayedPhase(newPhase);
 
-      const nonDisabledSteps = phase.steps.filter((step) => !step.disabled);
-      return nonDisabledSteps.every((step) => completedSteps.includes(step.id));
-    };
-
-    // Vérifier si on peut accéder à la nouvelle phase
-    let canAccessPhase = true;
-
-    if (newPhase > 1) {
-      // Vérifier que toutes les phases précédentes sont complétées
-      for (let phaseId = 1; phaseId < newPhase; phaseId++) {
-        if (!isPhaseFullyCompleted(phaseId)) {
-          
-          canAccessPhase = false;
-          break;
-        }
+    if (
+      isPhaseAccessible(newPhase) &&
+      newPhase <= currentPhase &&
+      !isPhaseCompleted(newPhase)
+    ) {
+      try {
+        await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
+          { phase: newPhase }
+        );
+        setCurrentPhase(newPhase);
+      } catch (error) {
+        console.error("Error updating phase:", error);
       }
-    }
-
-    if (canAccessPhase) {
-      // Mettre à jour seulement la phase affichée
-      setDisplayedPhase(newPhase);
-
-      // On ne met à jour l'API que si:
-      // 1. La nouvelle phase est accessible
-      // 2. La nouvelle phase est inférieure ou égale à la phase actuelle
-      // 3. La phase n'est pas déjà complétée (currentPhase > newPhase)
-      if (
-        isPhaseAccessible(newPhase) &&
-        newPhase <= currentPhase &&
-        !isPhaseCompleted(newPhase)
-      ) {
-        try {
-          await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
-            { phase: newPhase }
-          );
-          setCurrentPhase(newPhase);
-          
-        } catch (error) {
-          console.error("Error updating phase:", error);
-        }
-      }
-    } else {
-      
-      // Suppressed popup as requested by user
-      
     }
   };
 
   const isPhaseCompleted = (phaseId: number) => {
+    // Call-center: same wizard, but no phase is mandatory.
+    if (isCallCenterWorkspace()) return true;
     const phase = phases[phaseId - 1];
-    return phase.steps
-      .filter((step) => !step.disabled)
-      .every((step) => completedSteps.includes(step.id));
+    if (!phase) return false;
+    // Align with backend: phase 1 = profile, phase 2 = gig only, 3–4 optional
+    if (phaseId === 1) return completedSteps.includes(1);
+    if (phaseId === 2) return completedSteps.includes(3);
+    return true;
+  };
+
+  const markOptionalStepsSkipped = async (phaseId: number) => {
+    if (!companyId) return;
+    const phase = phases[phaseId - 1];
+    if (!phase) return;
+
+    const requiredIds = isCallCenterWorkspace()
+      ? []
+      : phaseId === 1
+        ? [1]
+        : phaseId === 2
+          ? [3]
+          : []; // nothing required in 3–4
+
+    const toSkip = phase.steps.filter(
+      (step) =>
+        !step.disabled &&
+        !requiredIds.includes(step.id) &&
+        !completedSteps.includes(step.id)
+    );
+
+    const userType = localStorage.getItem('userType') || undefined;
+
+    for (const step of toSkip) {
+      try {
+        await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${step.id}`,
+          { status: 'completed' },
+          { params: userType ? { userType } : undefined }
+        );
+        setCompletedSteps((prev) =>
+          prev.includes(step.id) ? prev : [...prev, step.id]
+        );
+      } catch (err) {
+        console.warn('[Onboarding] skip step failed', step.id, err);
+      }
+    }
   };
 
   const handlePreviousPhase = () => {
     const newPhase = Math.max(1, displayedPhase - 1);
-    // Pour Previous, on met juste à jour la phase affichée
     setDisplayedPhase(newPhase);
   };
 
-  const handleNextPhase = () => {
+  const goToCompanyDashboard = () => {
+    if (isCallCenterWorkspace()) {
+      setPreferCallCenterDashboard(true);
+    }
+    window.dispatchEvent(new CustomEvent('openCompanyDashboard'));
+  };
+
+  const handleNextPhase = async () => {
+    if (displayedPhase === 4) {
+      goToCompanyDashboard();
+      return;
+    }
+
+    // Allow skipping incomplete optional steps in the current phase
+    await markOptionalStepsSkipped(displayedPhase);
+
     const newPhase = Math.min(4, displayedPhase + 1);
+    setDisplayedPhase(newPhase);
 
-    // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
-    const isPhaseFullyCompleted = (phaseId: number) => {
-      const phase = phases[phaseId - 1];
-      if (!phase) return false;
-
-      const nonDisabledSteps = phase.steps.filter((step) => !step.disabled);
-      return nonDisabledSteps.every((step) => completedSteps.includes(step.id));
-    };
-
-    // Vérifier si la phase actuelle est complétée avant d'avancer
-    if (displayedPhase < 4) {
-      if (isPhaseFullyCompleted(displayedPhase)) {
-        
-        handlePhaseChange(newPhase);
-      } else {
-        
-        
-        return;
+    if (newPhase > currentPhase && companyId) {
+      try {
+        const userType = localStorage.getItem('userType') || undefined;
+        await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
+          { phase: newPhase },
+          { params: userType ? { userType } : undefined }
+        );
+        setCurrentPhase(newPhase);
+      } catch (error) {
+        console.error('Error updating phase:', error);
       }
-    } else if (displayedPhase === 4) {
-      // Company dashboard (KPI / opérations), not orchestrator onboarding nor profile settings.
-      window.dispatchEvent(new CustomEvent('openCompanyDashboard'));
     }
   };
 
-  const isPhaseAccessible = (phaseId: number) => {
-    if (phaseId === 1) return true;
-
-    const previousPhase = phases[phaseId - 2];
-    return previousPhase.steps
-      .filter((step) => !step.disabled)
-      .every((step) => completedSteps.includes(step.id));
-  };
+  const isPhaseAccessible = (_phaseId: number) => true;
 
 
   const getStepIcon = (step: any) => {
@@ -1698,10 +1741,12 @@ const CompanyOnboarding = () => {
     const stepIndex = currentPhaseSteps.findIndex((s) => s.id === stepId);
     const previousSteps = currentPhaseSteps.slice(0, stepIndex);
 
-    // Vérifier si tous les steps précédents sont complétés
-    const allPreviousCompleted = previousSteps.every(
-      (s) => s.disabled || completedSteps.includes(s.id)
-    );
+    // Call-center: any active step is openable without prior completions.
+    const allPreviousCompleted = isCallCenterWorkspace()
+      ? true
+      : previousSteps.every(
+          (s) => s.disabled || completedSteps.includes(s.id)
+        );
 
     // Redirection spéciale pour Create Gigs
     if (stepId === 3) {
@@ -1800,7 +1845,14 @@ const CompanyOnboarding = () => {
       />
     );
   } else if (showGigCreation) {
-    activeComponent = (
+    activeComponent = isCallCenter ? (
+      <CallCenterCreateProject
+        onBack={handleBackToOnboarding}
+        onSuccess={(gigId?: string) => {
+          void handleGigPublishSuccess(gigId);
+        }}
+      />
+    ) : (
       <PrompAI
         onBack={handleBackToOnboarding}
         onBackToGigs={
@@ -2026,9 +2078,14 @@ const CompanyOnboarding = () => {
                 {t('companyOnboarding.ui.phaseLabel')} {displayedPhase}: <span className={`text-transparent bg-clip-text ${isPhaseCompleted(displayedPhase) ? "bg-green-600" : "bg-gradient-harx"}`}>{t(`companyOnboarding.phases.${displayedPhase}.title`, phases[displayedPhase - 1]?.title)}</span>
               </h2>
               <p className="text-gray-500 mt-2 font-medium max-w-2xl">
-                {isPhaseAccessible(displayedPhaseData.id)
-                  ? t('companyOnboarding.ui.accessibleDesc')
-                  : t('companyOnboarding.ui.lockedDesc')}
+                {isCallCenterWorkspace()
+                  ? t(
+                      'companyOnboarding.ui.callCenterAccessibleDesc',
+                      'Same setup as companies — every step is optional. Skip ahead or open the dashboard anytime.'
+                    )
+                  : isPhaseAccessible(displayedPhaseData.id)
+                    ? t('companyOnboarding.ui.accessibleDesc')
+                    : t('companyOnboarding.ui.lockedDesc')}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -2062,24 +2119,26 @@ const CompanyOnboarding = () => {
             const isCompleted = completedSteps.includes(step.id);
             const canAccessPhase = isPhaseAccessible(displayedPhaseData.id);
             const isCurrentStep =
-              !isCompleted &&
-              !step.disabled &&
-              displayedPhaseData.steps
-                .slice(
-                  0,
-                  displayedPhaseData.steps.findIndex((s) => s.id === step.id)
-                )
-                .every((s) => s.disabled || completedSteps.includes(s.id));
+              isCallCenterWorkspace()
+                ? !isCompleted && !step.disabled
+                : !isCompleted &&
+                  !step.disabled &&
+                  displayedPhaseData.steps
+                    .slice(
+                      0,
+                      displayedPhaseData.steps.findIndex((s) => s.id === step.id)
+                    )
+                    .every((s) => s.disabled || completedSteps.includes(s.id));
 
-            // A step is accessible if phase is accessible AND (it's completed OR it's the current step)
-            const canAccessStep = canAccessPhase && (isCompleted || isCurrentStep);
+            // Optional steps: any non-disabled step in an accessible phase can be opened.
+            const canAccessStep = canAccessPhase && !step.disabled;
             const tourAttr = stepIndex === 0 ? 'tour-step-first' : stepIndex === 1 ? 'tour-step-second' : undefined;
 
             return (
               <div
                 key={step.id}
                 {...(tourAttr ? { 'data-tour': tourAttr } : {})}
-                className={`rounded-3xl border-2 p-4 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
+                className={`rounded-3xl border-2 p-4 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled && !isCallCenterWorkspace())
                   ? "opacity-50 grayscale border-gray-100 bg-gray-50/50"
                   : step.disabled
                     ? "opacity-60 border-gray-100 bg-gray-50/20"
@@ -2120,7 +2179,9 @@ const CompanyOnboarding = () => {
                         {...(stepIndex === 1 ? { 'data-tour': 'tour-step-second-title' } : {})}
                         className="text-sm font-medium text-gray-900"
                       >
-                        {t(`companyOnboarding.phases.${displayedPhase}.steps.${step.id}.title`, step.title)}
+                        {isCallCenter && step.id === 3
+                          ? t('companyOnboarding.ui.callCenterCreateProjectStep', step.title)
+                          : t(`companyOnboarding.phases.${displayedPhase}.steps.${step.id}.title`, step.title)}
                       </h3>
                       {!canAccessPhase ? (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
@@ -2147,7 +2208,15 @@ const CompanyOnboarding = () => {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
-                      {t(`companyOnboarding.phases.${displayedPhase}.steps.${step.id}.description`, step.description)}
+                      {isCallCenter && step.id === 3
+                        ? t(
+                            'companyOnboarding.ui.callCenterCreateProjectStepDesc',
+                            step.description
+                          )
+                        : t(
+                            `companyOnboarding.phases.${displayedPhase}.steps.${step.id}.description`,
+                            step.description
+                          )}
                     </p>
                     {isClickable && !step.disabled && canAccessStep && (
                       <button
@@ -2169,7 +2238,7 @@ const CompanyOnboarding = () => {
           })}
         </div>
 
-        <div className="mt-10 flex justify-between items-center relative z-10" data-tour="tour-phase-nav">
+        <div className="mt-10 flex justify-between items-center relative z-10 gap-3 flex-wrap" data-tour="tour-phase-nav">
           <button
             className="px-8 py-4 rounded-2xl border-2 border-gray-100 bg-white text-sm font-black text-gray-600 hover:bg-gray-50 hover:border-gray-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             disabled={displayedPhase === 1}
@@ -2177,15 +2246,26 @@ const CompanyOnboarding = () => {
           >
             {t('companyOnboarding.ui.previousPhase')}
           </button>
-          <button
-            data-tour="tour-phase-nav-next"
-            className="px-10 py-4 rounded-2xl bg-gray-900 text-sm font-black text-white shadow-xl hover:bg-black transition-all group flex items-center gap-3"
-            disabled={false}
-            onClick={handleNextPhase}
-          >
-            {displayedPhase === 4 ? t('companyOnboarding.ui.goToDashboard') : t('companyOnboarding.ui.nextPhase')}
-            <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-          </button>
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            {isCallCenterWorkspace() && displayedPhase < 4 ? (
+              <button
+                type="button"
+                className="px-8 py-4 rounded-2xl border-2 border-emerald-200 bg-emerald-50 text-sm font-black text-emerald-800 hover:bg-emerald-100 transition-all"
+                onClick={goToCompanyDashboard}
+              >
+                {t('companyOnboarding.ui.goToDashboard')}
+              </button>
+            ) : null}
+            <button
+              data-tour="tour-phase-nav-next"
+              className="px-10 py-4 rounded-2xl bg-gray-900 text-sm font-black text-white shadow-xl hover:bg-black transition-all group flex items-center gap-3"
+              disabled={false}
+              onClick={handleNextPhase}
+            >
+              {displayedPhase === 4 ? t('companyOnboarding.ui.goToDashboard') : t('companyOnboarding.ui.nextPhase', 'Next phase (skip optional)')}
+              <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

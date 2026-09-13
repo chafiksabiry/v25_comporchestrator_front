@@ -1,4 +1,9 @@
 import { ApiClient } from '../../lib/api';
+import {
+  assertCompanyHasAiTokens,
+  chargeCompanyAiUsage,
+  estimateTokensFromText,
+} from '../../../../lib/aiTokensUsage';
 import type { RepDeckSlide } from '../../utils/buildRepInteractivePresentationHtml';
 import {
   buildFormationDigestForRepPresentation,
@@ -306,6 +311,8 @@ export class AIService {
     metadata?: { gigId?: string; companyId?: string }
   ): Promise<DocumentAnalysis> {
     try {
+      await assertCompanyHasAiTokens(1, metadata?.companyId);
+
       const formData = new FormData();
       formData.append('file', file);
       if (metadata?.gigId) formData.append('gigId', metadata.gigId);
@@ -336,6 +343,21 @@ export class AIService {
         improvementSuggestions: analysis.improvementSuggestions || [],
         mediaRecommendations: analysis.mediaRecommendations || []
       };
+
+      const usageId = `analyze-doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const estimated = estimateTokensFromText(
+        file.name,
+        JSON.stringify(safeAnalysis.keyTopics || []),
+        JSON.stringify(safeAnalysis.learningObjectives || []),
+        String((safeAnalysis as any).summary || '')
+      );
+      void chargeCompanyAiUsage({
+        usageId,
+        tokensUsed: Math.max(800, estimated),
+        tool: 'training.analyze_document',
+        companyId: metadata?.companyId,
+        meta: { fileName: file.name },
+      }).catch((e) => console.warn('[tokens] analyzeDocument charge failed', e));
 
       return safeAnalysis;
     } catch (error: any) {
@@ -526,6 +548,7 @@ export class AIService {
     context: string = '',
     extras?: { maxTokens?: number; purpose?: string }
   ): Promise<string> {
+    await assertCompanyHasAiTokens(1);
     const payload: Record<string, unknown> = { message, context };
     if (extras?.maxTokens != null && Number.isFinite(extras.maxTokens)) {
       payload.maxTokens = extras.maxTokens;
@@ -539,7 +562,15 @@ export class AIService {
       throw new Error(response.data.error || 'Chat failed');
     }
 
-    return response.data.response || '';
+    const text = response.data.response || '';
+    const usageId = `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    void chargeCompanyAiUsage({
+      usageId,
+      tokensUsed: estimateTokensFromText(message, context, text),
+      tool: extras?.purpose || 'training.chat',
+    }).catch((e) => console.warn('[tokens] chat charge failed', e));
+
+    return text;
   }
 
   /**
@@ -1194,6 +1225,8 @@ ${scopeJson}`;
     onChunk: (chunk: string) => void,
     options?: { gigId?: string; companyId?: string; sessionId?: string; signal?: AbortSignal }
   ): Promise<{ text: string; sessionId?: string; planSaved?: boolean; journeyId?: string }> {
+    await assertCompanyHasAiTokens(1, options?.companyId);
+
     const token = ApiClient.getToken();
     const apiUrl =
       import.meta.env.VITE_API_TRAINING_URL ||
@@ -1239,6 +1272,18 @@ ${scopeJson}`;
       fullText += chunk;
       onChunk(chunk);
     }
+
+    const usageId =
+      sessionId
+        ? `chat-stream-${sessionId}-${Date.now()}`
+        : `chat-stream-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    void chargeCompanyAiUsage({
+      usageId,
+      tokensUsed: estimateTokensFromText(message, context, fullText),
+      tool: 'training.chat_stream',
+      companyId: options?.companyId,
+      meta: { sessionId: sessionId || null },
+    }).catch((e) => console.warn('[tokens] chatStream charge failed', e));
 
     return { text: fullText, sessionId, planSaved, journeyId };
   }

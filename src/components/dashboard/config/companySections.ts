@@ -51,6 +51,7 @@ const COMPANY_DASHBOARD_TITLES: Array<{ test: (path: string) => boolean; label: 
   { test: (p) => p.startsWith('/dashboard/analytics'), label: 'Analyses' },
   { test: (p) => p.startsWith('/dashboard/wallet'), label: 'Portefeuille' },
   { test: (p) => p.startsWith('/dashboard/minutes'), label: 'Minutes' },
+  { test: (p) => p.startsWith('/dashboard/tokens'), label: 'Tokens AI' },
   { test: (p) => p.startsWith('/dashboard/subscription'), label: 'Abonnement' },
   { test: (p) => p.startsWith('/dashboard/upgrade'), label: 'Mise à niveau' },
   { test: (p) => p.startsWith('/dashboard/profile'), label: 'Profil entreprise' },

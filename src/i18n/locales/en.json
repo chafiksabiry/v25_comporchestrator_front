@@ -74,6 +74,7 @@
     "upgrade": "Upgrade",
     "myWallet": "My Wallet",
     "minutes": "Minutes",
+    "aiTokens": "AI Tokens",
     "phoneLines": "Phone Lines",
     "lineSingular": "Line",
     "linePlural": "Lines",
@@ -85,6 +86,30 @@
     "title": "Change language",
     "en": "English",
     "fr": "French"
+  },
+  "tokensPanel": {
+    "loading": "Loading AI token balance…",
+    "title": "AI Tokens",
+    "subtitle": "Top up prepaid tokens for AI tools (training, scripts, analysis).",
+    "refresh": "Refresh",
+    "buy": "Buy tokens",
+    "cards": {
+      "balance": "Available balance",
+      "purchased": "Tokens purchased",
+      "consumed": "Tokens consumed"
+    },
+    "modal": {
+      "title": "Buy AI tokens",
+      "customQty": "Custom quantity",
+      "total": "Total",
+      "processing": "Processing…",
+      "confirm": "Pay"
+    },
+    "toasts": {
+      "loadFailed": "Unable to load AI tokens.",
+      "invalidQty": "Please enter a valid quantity.",
+      "buySuccess": "Purchase of {{count}} tokens successful!"
+    }
   },
   "phoneNumberPanel": {
     "loading": "Loading telephony...",

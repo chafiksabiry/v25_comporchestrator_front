@@ -49,6 +49,7 @@ import {
 import { Chart, Doughnut } from 'react-chartjs-2';
 import Cookies from 'js-cookie';
 import { useTranslation } from 'react-i18next';
+import { isCallCenterWorkspace } from '../../../utils/callCenterWorkspace';
 import type { TFunction } from 'i18next';
 import {
   billedMinutesFromSeconds,
@@ -361,6 +362,7 @@ interface RecentCall {
  *  6 KPI tiles + statuses panel + recent calls panel + MTD analysis grid. */
 export default function OperationsDashboard() {
   const { t, i18n } = useTranslation();
+  const isOpsConsole = isCallCenterWorkspace();
   const [tab, setTab] = useState<TabId>('overview');
   // Friendly greeting: use the user's first name if we can find one. Falls
   // back to "there" when nothing is stored yet (e.g. a fresh login).
@@ -1325,11 +1327,30 @@ export default function OperationsDashboard() {
   const fmtDuration = (sec: number) => formatBilledMinutesFromSeconds(sec);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5 pb-12 animate-in fade-in duration-500">
+    <div
+      className={`max-w-7xl mx-auto animate-in fade-in duration-500 ${
+        isOpsConsole ? 'space-y-5 pb-10' : 'space-y-5 pb-12'
+      }`}
+    >
       {/* ---------- Brand header ---------- */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">
+      <div
+        className={`flex items-center justify-between gap-4 ${
+          isOpsConsole
+            ? 'rounded-2xl border border-harx-border bg-white px-5 py-4 shadow-harx'
+            : ''
+        }`}
+      >
+        <div className="flex flex-col min-w-0">
+          {isOpsConsole ? (
+            <span className="mb-1 text-[10px] font-black uppercase tracking-[0.18em] text-harx-orange">
+              {t('opsDashboard.header.callCenterBoard', 'Call center board')}
+            </span>
+          ) : null}
+          <h1
+            className={`font-black tracking-tight text-slate-900 ${
+              isOpsConsole ? 'text-2xl' : 'text-2xl'
+            }`}
+          >
             {t('opsDashboard.header.welcome', { name: userName, defaultValue: 'Welcome, {{name}}' })}
           </h1>
           <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
@@ -1563,7 +1584,7 @@ export default function OperationsDashboard() {
         )}
 
       {/* ---------- Section tabs ---------- */}
-      <div className="flex flex-wrap gap-2">
+      <div className={`flex flex-wrap ${isOpsConsole ? 'gap-2' : 'gap-2'}`}>
         {tabs.map((tabItem) => {
           const active = tab === tabItem.id;
           return (

@@ -74,6 +74,7 @@
     "upgrade": "Upgrade",
     "myWallet": "Mon Portefeuille",
     "minutes": "Minutes",
+    "aiTokens": "Tokens AI",
     "phoneLines": "Lignes Tél.",
     "lineSingular": "Ligne",
     "linePlural": "Lignes",
@@ -85,6 +86,30 @@
     "title": "Changer de langue",
     "en": "Anglais",
     "fr": "Français"
+  },
+  "tokensPanel": {
+    "loading": "Chargement du solde tokens…",
+    "title": "Tokens AI",
+    "subtitle": "Rechargez des tokens prépayés pour les outils AI (formation, scripts, analyses).",
+    "refresh": "Actualiser",
+    "buy": "Acheter des tokens",
+    "cards": {
+      "balance": "Solde disponible",
+      "purchased": "Tokens achetés",
+      "consumed": "Tokens consommés"
+    },
+    "modal": {
+      "title": "Acheter des tokens AI",
+      "customQty": "Quantité personnalisée",
+      "total": "Total",
+      "processing": "Traitement…",
+      "confirm": "Payer"
+    },
+    "toasts": {
+      "loadFailed": "Impossible de charger les tokens AI.",
+      "invalidQty": "Veuillez entrer un volume valide.",
+      "buySuccess": "Achat de {{count}} tokens réussi !"
+    }
   },
   "phoneNumberPanel": {
     "loading": "Chargement de la téléphonie...",
