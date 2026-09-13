@@ -52,7 +52,12 @@ export async function chargeCompanyAiUsage(opts: {
   tool: string;
   meta?: Record<string, unknown>;
   companyId?: string;
+  /** Skip when backend already billed this request. */
+  skipIfBackendBilled?: boolean;
 }): Promise<{ tokens: number; charged: boolean }> {
+  if (opts.skipIfBackendBilled) {
+    return { tokens: await fetchCompanyAiTokens(opts.companyId), charged: false };
+  }
   const id = opts.companyId || Cookies.get('companyId');
   if (!id) return { tokens: 0, charged: false };
   const used = Math.max(0, Math.round(Number(opts.tokensUsed) || 0));
@@ -91,4 +96,20 @@ export async function chargeCompanyAiUsage(opts: {
     })
   );
   return { tokens: next, charged: Boolean(json?.charged) };
+}
+
+/** Prefer backend-reported usage; refresh navbar when backend billed. */
+export function applyBackendAiUsage(usage: any, companyId?: string): boolean {
+  const billed = Boolean(usage?.billed);
+  if (billed) {
+    const balance = typeof usage?.balance === 'number' ? usage.balance : undefined;
+    if (typeof balance === 'number') {
+      window.dispatchEvent(new CustomEvent('balanceUpdated', { detail: { tokens: balance } }));
+    } else {
+      void fetchCompanyAiTokens(companyId).then((tokens) => {
+        window.dispatchEvent(new CustomEvent('balanceUpdated', { detail: { tokens } }));
+      });
+    }
+  }
+  return billed;
 }

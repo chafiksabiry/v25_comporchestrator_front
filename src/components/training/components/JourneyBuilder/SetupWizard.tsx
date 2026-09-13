@@ -17,6 +17,7 @@ import {
   assertCompanyHasAiTokens,
   chargeCompanyAiUsage,
   estimateTokensFromText,
+  applyBackendAiUsage,
 } from '../../../../lib/aiTokensUsage';
 
 interface SetupWizardProps {
@@ -390,6 +391,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
         currentTitle: visionName,
         currentDescription: visionDesc,
         industry: industries.find(i => i._id === company.industry)?.name || String(company.industry || ''),
+        companyId: company?.id || company?._id || undefined,
         gig: selectedGig,
         outputLanguage,
         contentLanguage: outputLanguage,
@@ -402,27 +404,32 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
         languageInstruction: `Write the training ${isTitle ? 'title' : 'description'} in ${languageLabel} only. Match the language of the gig title and description. Do not mix languages.`,
       });
       const data = (response?.data as any)?.data || {};
+      const backendBilled = applyBackendAiUsage((response?.data as any)?.usage);
       if (isTitle) {
         const suggestedTitle = String(data.title || '').trim();
         if (suggestedTitle) setVisionName(suggestedTitle);
-        void chargeCompanyAiUsage({
-          usageId: `suggest-vision-title-${selectedGig._id || 'gig'}-${Date.now()}`,
-          tokensUsed: estimateTokensFromText(gigTitle, gigDescription, suggestedTitle),
-          tool: 'training.suggest_vision_title',
-        }).catch(() => undefined);
+        if (!backendBilled) {
+          void chargeCompanyAiUsage({
+            usageId: `suggest-vision-title-${selectedGig._id || 'gig'}-${Date.now()}`,
+            tokensUsed: estimateTokensFromText(gigTitle, gigDescription, suggestedTitle),
+            tool: 'training.suggest_vision_title',
+          }).catch(() => undefined);
+        }
       } else {
         const suggestedDescription = String(data.description || '').trim();
         if (suggestedDescription) setVisionDesc(suggestedDescription);
-        void chargeCompanyAiUsage({
-          usageId: `suggest-vision-desc-${selectedGig._id || 'gig'}-${Date.now()}`,
-          tokensUsed: Math.max(200, estimateTokensFromText(gigTitle, gigDescription, suggestedDescription)),
-          tool: 'training.suggest_vision_description',
-        }).catch(() => undefined);
+        if (!backendBilled) {
+          void chargeCompanyAiUsage({
+            usageId: `suggest-vision-desc-${selectedGig._id || 'gig'}-${Date.now()}`,
+            tokensUsed: Math.max(200, estimateTokensFromText(gigTitle, gigDescription, suggestedDescription)),
+            tool: 'training.suggest_vision_description',
+          }).catch(() => undefined);
+        }
       }
     } catch (error: any) {
       const backendMessage =
-        error?.code === 'insufficient_tokens'
-          ? error.message
+        error?.code === 'insufficient_tokens' || error?.response?.data?.error === 'insufficient_tokens'
+          ? error?.response?.data?.message || error.message
           : error?.response?.data?.error ||
             error?.response?.data?.message ||
             error?.message;
