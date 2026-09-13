@@ -93,6 +93,8 @@
     "subtitle": "Top up prepaid tokens for AI tools (training, scripts, analysis).",
     "refresh": "Refresh",
     "buy": "Buy tokens",
+    "usageTitle": "Usage",
+    "usageHint": "Tokens are charged after each successful generation (training, scripts, analysis).",
     "cards": {
       "balance": "Available balance",
       "purchased": "Tokens purchased",
@@ -100,7 +102,10 @@
     },
     "modal": {
       "title": "Buy AI tokens",
+      "subtitle": "Choose a pack or custom quantity, then pay by card or PayPal.",
       "customQty": "Custom quantity",
+      "paymentMethod": "Payment method",
+      "secureNote": "Secure payment. Tokens are credited once payment is confirmed.",
       "total": "Total",
       "processing": "Processing…",
       "confirm": "Pay"

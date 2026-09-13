@@ -93,6 +93,8 @@
     "subtitle": "Rechargez des tokens prépayés pour les outils AI (formation, scripts, analyses).",
     "refresh": "Actualiser",
     "buy": "Acheter des tokens",
+    "usageTitle": "Utilisation",
+    "usageHint": "Les tokens sont débités après chaque génération réussie (formation, scripts, analyses).",
     "cards": {
       "balance": "Solde disponible",
       "purchased": "Tokens achetés",
@@ -100,7 +102,10 @@
     },
     "modal": {
       "title": "Acheter des tokens AI",
+      "subtitle": "Choisissez un pack ou une quantité, puis payez par carte ou PayPal.",
       "customQty": "Quantité personnalisée",
+      "paymentMethod": "Méthode de paiement",
+      "secureNote": "Paiement sécurisé. Les tokens sont crédités dès confirmation du paiement.",
       "total": "Total",
       "processing": "Traitement…",
       "confirm": "Payer"
