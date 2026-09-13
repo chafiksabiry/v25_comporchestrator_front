@@ -9,6 +9,11 @@ import { markGigStepDone } from '../services/gigSetupSync';
 import { useTranslation } from 'react-i18next';
 import { InteractiveScriptCockpit, InteractiveStage } from './script-generator/InteractiveScriptCockpit';
 import { JourneyService } from './training/infrastructure/services/JourneyService';
+import {
+  assertCompanyHasAiTokens,
+  chargeCompanyAiUsage,
+  estimateTokensFromText,
+} from '../lib/aiTokensUsage';
 
 interface Gig {
   _id: string;
@@ -674,16 +679,30 @@ const ScriptGenerator: React.FC = () => {
         isInteractiveRequest: true
       };
 
+      await assertCompanyHasAiTokens(1, companyId);
       const { data } = await apiClient.post('/rag/generate-script', payload);
       const generatedStages = data?.stages || data?.data?.stages;
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
         setActiveInteractiveStages(generatedStages);
         setActiveInteractiveTitle(selectedGig.title || "Script Interactif");
+        void chargeCompanyAiUsage({
+          usageId: `script-interactive-${selectedGig._id}-${Date.now()}`,
+          tokensUsed: Math.max(
+            2000,
+            estimateTokensFromText(JSON.stringify(payload), JSON.stringify(generatedStages))
+          ),
+          tool: 'script.generate_interactive',
+          companyId,
+        }).catch(() => undefined);
       } else {
         throw new Error("Format de script généré incompatible. Veuillez réessayer.");
       }
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Échec de la génération du script');
+      setError(
+        err?.code === 'insufficient_tokens'
+          ? err.message
+          : err?.response?.data?.error || err?.message || 'Échec de la génération du script'
+      );
     } finally {
       setIsSending(false);
     }
@@ -739,16 +758,30 @@ const ScriptGenerator: React.FC = () => {
         currentStages: activeInteractiveStages,
       };
 
+      await assertCompanyHasAiTokens(1, companyId);
       const { data } = await apiClient.post('/rag/generate-script', payload);
       const generatedStages = data?.stages || data?.data?.stages;
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
         setActiveInteractiveStages(generatedStages);
         setActiveInteractiveTitle(selectedGig.title || "Script Interactif");
+        void chargeCompanyAiUsage({
+          usageId: `script-refine-${selectedGig._id}-${safeIdx}-${Date.now()}`,
+          tokensUsed: Math.max(
+            1200,
+            estimateTokensFromText(JSON.stringify(payload), JSON.stringify(generatedStages))
+          ),
+          tool: 'script.refine_stage',
+          companyId,
+        }).catch(() => undefined);
       } else {
         throw new Error("Format de script généré incompatible. Veuillez réessayer.");
       }
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Échec du raffinement du script');
+      setError(
+        err?.code === 'insufficient_tokens'
+          ? err.message
+          : err?.response?.data?.error || err?.message || 'Échec du raffinement du script'
+      );
     } finally {
       setIsSending(false);
     }
@@ -947,12 +980,23 @@ const ScriptGenerator: React.FC = () => {
           .filter((m) => m.content),
       };
 
+      await assertCompanyHasAiTokens(1, companyId);
       const { data: body } = (await apiClient.post('/rag/generate-script', scriptPayload)) as { data: any };
       const assistantText =
         body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
       const generatedPlaybook = body?.data?.playbook;
       const normalizedText = normalizeScriptText(assistantText);
       const assistantTextSafe = normalizedText || 'Je n’ai pas pu générer de réponse.';
+
+      void chargeCompanyAiUsage({
+        usageId: `script-chat-${selectedGig?._id || 'gig'}-${Date.now()}`,
+        tokensUsed: Math.max(
+          1500,
+          estimateTokensFromText(JSON.stringify(scriptPayload), assistantTextSafe)
+        ),
+        tool: 'script.generate_chat',
+        companyId,
+      }).catch(() => undefined);
 
       const generatedMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -968,7 +1012,11 @@ const ScriptGenerator: React.FC = () => {
 
       setActiveScriptMessage(generatedMessage);
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Failed to generate response');
+      setError(
+        err?.code === 'insufficient_tokens'
+          ? err.message
+          : err?.response?.data?.error || err?.message || 'Failed to generate response'
+      );
     } finally {
       setIsSending(false);
     }

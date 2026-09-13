@@ -13,6 +13,11 @@ import TrainingDetailsForm, { VISION_DURATIONS } from './TrainingDetailsForm';
 import { scrollJourneyMainToTop } from './journeyScroll';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 import { detectOutputLanguageFromGigText } from '../../utils/gigSnapshotForAi';
+import {
+  assertCompanyHasAiTokens,
+  chargeCompanyAiUsage,
+  estimateTokensFromText,
+} from '../../../../lib/aiTokensUsage';
 
 interface SetupWizardProps {
   onComplete: (company: Company, journey: TrainingJourney, methodology?: TrainingMethodology, gigId?: string) => void;
@@ -372,6 +377,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       if (isTitle) setVisionTitleGenerating(true);
       else setVisionDescriptionGenerating(true);
 
+      await assertCompanyHasAiTokens(1);
+
       const trainingBackendUrl = getTrainingBackendUrl();
       const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
       const gigTitle = String(selectedGig.title || '').trim();
@@ -398,15 +405,27 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       if (isTitle) {
         const suggestedTitle = String(data.title || '').trim();
         if (suggestedTitle) setVisionName(suggestedTitle);
+        void chargeCompanyAiUsage({
+          usageId: `suggest-vision-title-${selectedGig._id || 'gig'}-${Date.now()}`,
+          tokensUsed: estimateTokensFromText(gigTitle, gigDescription, suggestedTitle),
+          tool: 'training.suggest_vision_title',
+        }).catch(() => undefined);
       } else {
         const suggestedDescription = String(data.description || '').trim();
         if (suggestedDescription) setVisionDesc(suggestedDescription);
+        void chargeCompanyAiUsage({
+          usageId: `suggest-vision-desc-${selectedGig._id || 'gig'}-${Date.now()}`,
+          tokensUsed: Math.max(200, estimateTokensFromText(gigTitle, gigDescription, suggestedDescription)),
+          tool: 'training.suggest_vision_description',
+        }).catch(() => undefined);
       }
     } catch (error: any) {
       const backendMessage =
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        error?.message;
+        error?.code === 'insufficient_tokens'
+          ? error.message
+          : error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            error?.message;
       alert(backendMessage || 'Could not generate vision suggestion.');
     } finally {
       if (isTitle) setVisionTitleGenerating(false);
