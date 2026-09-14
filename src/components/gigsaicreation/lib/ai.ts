@@ -64,6 +64,8 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
     throw new Error('Description is required');
   }
 
+  // PRODUCT: gig AI draft (Review & Refine) must NOT charge company AI tokens.
+
   // Si le mode mock est activé, utiliser les données mockées
   if (USE_MOCK_DATA) {
     
