@@ -95,6 +95,16 @@
     "buy": "Buy tokens",
     "usageTitle": "Usage",
     "usageHint": "Tokens are charged after each successful generation (training, scripts, analysis).",
+    "usage": {
+      "byGigTitle": "Usage by gig",
+      "noGig": "No gig / unassigned",
+      "empty": "No AI usage recorded yet.",
+      "emptyHint": "Once an AI tool (training, script, analysis) runs on a gig, details show up here.",
+      "colGig": "Gig",
+      "colTokens": "Tokens",
+      "colRequests": "Requests",
+      "colLast": "Last used"
+    },
     "cards": {
       "balance": "Available balance",
       "purchased": "Tokens purchased",
