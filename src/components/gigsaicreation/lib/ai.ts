@@ -1,10 +1,27 @@
+import Cookies from 'js-cookie';
 import { GigData, GigSuggestion } from '../types';
+import { applyBackendAiUsage } from '../../../lib/aiTokensUsage';
 import { generateMockGigSuggestions } from './mockData';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
 
 // Configuration pour activer/désactiver le mode mock
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true' || false;
+
+function getCompanyId(): string | undefined {
+  const id = Cookies.get('companyId');
+  return id ? String(id).trim() : undefined;
+}
+
+function throwInsufficientTokens(data: any, status?: number): never {
+  const err = new Error(
+    String(data?.message || data?.error || 'Solde de tokens AI insuffisant. Rechargez pour continuer.')
+  ) as Error & { code?: string; tokens?: number };
+  err.code = 'insufficient_tokens';
+  err.tokens = data?.data?.tokens ?? 0;
+  if (status) (err as any).status = status;
+  throw err;
+}
 
 // Helper function to validate and clean territory IDs
 // Removes timezone IDs that might have been incorrectly included in territories
@@ -24,7 +41,7 @@ function validateTerritories(territories: string[], timezoneId?: string): string
 
 export async function transcribeGigAudio(
   blob: Blob,
-  options?: { language?: string; filename?: string; signal?: AbortSignal }
+  options?: { language?: string; filename?: string; signal?: AbortSignal; companyId?: string }
 ): Promise<string> {
   const form = new FormData();
   const ext = blob.type.includes('mp4')
@@ -38,6 +55,10 @@ export async function transcribeGigAudio(
   if (options?.language) {
     form.append('language', options.language);
   }
+  const companyId = options?.companyId || getCompanyId();
+  if (companyId) {
+    form.append('companyId', companyId);
+  }
 
   const response = await fetch(`${API_BASE_URL}/ai/transcribe-audio`, {
     method: 'POST',
@@ -46,11 +67,16 @@ export async function transcribeGigAudio(
   });
 
   const data = await response.json().catch(() => ({}));
+  if (response.status === 402 || data?.error === 'insufficient_tokens') {
+    throwInsufficientTokens(data, response.status);
+  }
   if (!response.ok) {
     throw new Error(
       String(data.message || data.error || `Transcription failed (${response.status})`)
     );
   }
+
+  applyBackendAiUsage(data?.usage, companyId);
 
   const transcript = String(data.transcript || '').trim();
   if (!transcript) {
@@ -73,22 +99,31 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
   }
 
   try {
-    
+    const companyId = getCompanyId();
     const response = await fetch(`${API_BASE_URL}/ai/generate-gig-suggestions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        description: description
+        description,
+        companyId: companyId || undefined,
       })
     });
 
-    if (!response.ok) {
-      throw new Error(`Backend API error: ${response.statusText}`);
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 402 || data?.error === 'insufficient_tokens') {
+      throwInsufficientTokens(data, response.status);
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        String(data?.message || data?.error || `Backend API error: ${response.statusText}`)
+      );
+    }
+
+    applyBackendAiUsage(data?.usage, companyId);
 
     // Log the backend response for debugging
     
