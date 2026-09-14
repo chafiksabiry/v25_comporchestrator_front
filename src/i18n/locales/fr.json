@@ -95,6 +95,16 @@
     "buy": "Acheter des tokens",
     "usageTitle": "Utilisation",
     "usageHint": "Les tokens sont débités après chaque génération réussie (formation, scripts, analyses).",
+    "usage": {
+      "byGigTitle": "Consommation par gig",
+      "noGig": "Hors gig / non attribué",
+      "empty": "Aucune consommation AI enregistrée pour l’instant.",
+      "emptyHint": "Dès qu’un outil AI (formation, script, analyse) est utilisé sur un gig, le détail apparaît ici.",
+      "colGig": "Gig",
+      "colTokens": "Tokens",
+      "colRequests": "Requêtes",
+      "colLast": "Dernier usage"
+    },
     "cards": {
       "balance": "Solde disponible",
       "purchased": "Tokens achetés",
