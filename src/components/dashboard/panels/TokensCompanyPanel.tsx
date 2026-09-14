@@ -10,6 +10,7 @@ import {
   DollarSign,
   Info,
   Activity,
+  Briefcase,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +22,7 @@ import {
   runStripeCheckoutFlow,
 } from '../../../lib/paypalCheckout';
 import { formatAiTokensBalance } from '../../../lib/aiTokensUsage';
+import { getGigsByCompanyId } from '../../../api/matching';
 
 type TokensState = {
   companyId: string;
@@ -30,6 +32,14 @@ type TokensState = {
 };
 
 type DisplayTokenPack = { label: string; tokens: number; priceCents: number };
+
+type GigUsageRow = {
+  gigId: string | null;
+  tokensUsed: number;
+  requests: number;
+  lastUsedAt: string | null;
+  title?: string;
+};
 
 const defaultDisplayPacks: DisplayTokenPack[] = [
   { label: 'Starter', tokens: 50000, priceCents: 900 },
@@ -69,6 +79,7 @@ export function TokensCompanyPanel() {
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [displayPacks, setDisplayPacks] = useState<DisplayTokenPack[]>(defaultDisplayPacks);
   const [customRateCents, setCustomRateCents] = useState(0.02);
+  const [gigUsage, setGigUsage] = useState<GigUsageRow[]>([]);
 
   const companyId = Cookies.get('companyId') || '';
   const apiBaseUrl = getOrchestratorApiBase();
@@ -80,9 +91,14 @@ export function TokensCompanyPanel() {
     }
     if (!isSilent) setLoading(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/tokens-company/${companyId}`);
-      if (res.ok) {
-        const json = await res.json();
+      const [walletRes, usageRes, gigs] = await Promise.all([
+        fetch(`${apiBaseUrl}/tokens-company/${companyId}`),
+        fetch(`${apiBaseUrl}/tokens-company/${companyId}/usage-by-gig`),
+        getGigsByCompanyId(companyId).catch(() => [] as any[]),
+      ]);
+
+      if (walletRes.ok) {
+        const json = await walletRes.json();
         if (json.success && json.data) {
           const data = json.data;
           const safe: TokensState = {
@@ -96,6 +112,28 @@ export function TokensCompanyPanel() {
             new CustomEvent('balanceUpdated', { detail: { tokens: safe.tokens } })
           );
         }
+      }
+
+      if (usageRes.ok) {
+        const usageJson = await usageRes.json();
+        const titleById = new Map<string, string>();
+        (Array.isArray(gigs) ? gigs : []).forEach((g: any) => {
+          const id = String(g?._id || g?.id || '');
+          const title = String(g?.title || g?.name || '').trim();
+          if (id) titleById.set(id, title || id);
+        });
+        const rows: GigUsageRow[] = Array.isArray(usageJson?.data)
+          ? usageJson.data.map((row: any) => ({
+              gigId: row.gigId ? String(row.gigId) : null,
+              tokensUsed: Number(row.tokensUsed) || 0,
+              requests: Number(row.requests) || 0,
+              lastUsedAt: row.lastUsedAt || null,
+              title: row.gigId
+                ? titleById.get(String(row.gigId)) || `Gig ${String(row.gigId).slice(-6)}`
+                : t('tokensPanel.usage.noGig', 'Hors gig / non attribué'),
+            }))
+          : [];
+        setGigUsage(rows);
       }
     } catch (err) {
       console.error('Error loading Tokens Company data:', err);
@@ -335,6 +373,73 @@ export function TokensCompanyPanel() {
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Briefcase size={16} className="text-slate-500" />
+            <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+              {t('tokensPanel.usage.byGigTitle', 'Consommation par gig')}
+            </h2>
+          </div>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+            {gigUsage.length} gig{gigUsage.length > 1 ? 's' : ''}
+          </span>
+        </div>
+
+        {gigUsage.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center">
+            <p className="text-sm font-medium text-slate-500">
+              {t('tokensPanel.usage.empty', 'Aucune consommation AI enregistrée pour l’instant.')}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {t(
+                'tokensPanel.usage.emptyHint',
+                'Dès qu’un outil AI (formation, script, analyse) est utilisé sur un gig, le détail apparaît ici.'
+              )}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-auto rounded-2xl border border-slate-100">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-slate-100 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <th className="px-4 py-3">{t('tokensPanel.usage.colGig', 'Gig')}</th>
+                  <th className="px-4 py-3">{t('tokensPanel.usage.colTokens', 'Tokens')}</th>
+                  <th className="px-4 py-3">{t('tokensPanel.usage.colRequests', 'Requêtes')}</th>
+                  <th className="px-4 py-3 text-right">
+                    {t('tokensPanel.usage.colLast', 'Dernier usage')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 text-sm">
+                {gigUsage.map((row) => (
+                  <tr key={row.gigId || 'none'} className="hover:bg-slate-50/80">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-900">{row.title}</div>
+                      {row.gigId && (
+                        <div className="mt-0.5 font-mono text-[10px] text-slate-400">{row.gigId}</div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-semibold tabular-nums text-slate-900">
+                      {formatAiTokensBalance(row.tokensUsed)}
+                      <span className="ml-1 text-[10px] font-normal text-slate-400">
+                        ({row.tokensUsed.toLocaleString('fr-FR')})
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-slate-600">{row.requests}</td>
+                    <td className="px-4 py-3 text-right text-xs text-slate-500">
+                      {row.lastUsedAt
+                        ? new Date(row.lastUsedAt).toLocaleString('fr-FR')
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {showBuyModal &&
