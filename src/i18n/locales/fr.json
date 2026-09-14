@@ -24,7 +24,8 @@
     "noLeads": "Aucun lead pour ce gig.",
     "ready": "Assistant actif — choisissez un lead ci-dessous.",
     "notReady": "Activez l’assistant avant de lancer un appel.",
-    "openPage": "Lancer des appels"
+    "openPage": "Lancer des appels",
+    "comingSoonBody": "Cette fonctionnalité sera bientôt disponible pour les entreprises."
   },
   "userMenu": {
     "profile": "Profil",
@@ -51,6 +52,8 @@
     "training": "Formation",
     "knowledgeBase": "Base de Connaissances",
     "voiceAssistant": "Assistant vocal",
+    "comingSoon": "Bientôt disponible",
+    "comingSoonShort": "Bientôt",
     "callCenterBadge": "Centre d'appels",
     "callCenterOps": "Console opérations",
     "agents": "Agents",

@@ -143,7 +143,15 @@ export function MasterSidebar({
 
     // Group 2
     { icon: <Phone size={20} />, label: t('sidebar.calls'), path: '/dashboard/calls', key: 'calls', alwaysShow: true, groupId: 2 },
-    { icon: <Bot size={20} />, label: t('sidebar.voiceAssistant', 'Assistant vocal'), path: '/dashboard/voice-assistant', key: 'voice-assistant', alwaysShow: true, groupId: 2 },
+    {
+      icon: <Bot size={20} />,
+      label: t('sidebar.voiceAssistant', 'Assistant vocal'),
+      path: '/dashboard/voice-assistant',
+      key: 'voice-assistant',
+      alwaysShow: true,
+      groupId: 2,
+      disabled: true,
+    },
     { icon: <UserCheck size={20} />, label: t('sidebar.agents', 'Agents'), path: '/dashboard/agents', key: 'cc-agents', callCenterOnly: true, alwaysShow: true, groupId: 2 },
     { icon: <UserPlus size={20} />, label: t('sidebar.leads'), path: '/dashboard/leads', key: 'leads', requiresLeads: true, groupId: 2 },
     { icon: <Users size={20} />, label: t('sidebar.repMatching'), path: '/dashboard/rep-matching', key: 'rep-matching', requiresRepMatching: true, hideForCallCenter: true, groupId: 2 },
@@ -301,28 +309,59 @@ export function MasterSidebar({
                     )}
                     <div className={`grid transition-all duration-300 ${(isOpen || isCollapsed || group.id === 1) ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                       <div className="overflow-hidden space-y-0.5">
-                        {group.items.map((item) => (
-                          <NavLink
-                            key={item.label}
-                            to={item.path}
-                            end={item.key === 'overview'}
-                            className={({ isActive }) => {
-                              const prefix = (item as { activePathPrefix?: string }).activePathPrefix;
-                              const isReallyActive = isActive || (prefix && location.pathname.startsWith(prefix));
-                              return `flex items-center gap-3 w-full px-3 py-2.5 transition-all duration-200 relative group overflow-hidden ${navActive(!!isReallyActive)}`;
-                            }}
-                          >
-                            <div className="shrink-0">{item.icon}</div>
-                            {!isCollapsed && (
-                              <span className="font-semibold whitespace-nowrap overflow-hidden text-[13px]">{item.label}</span>
-                            )}
-                            {isCollapsed && (
-                              <div className="absolute left-16 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border bg-slate-900 text-white border-white/10 shadow-xl">
-                                {item.label}
+                        {group.items.map((item) => {
+                          const isDisabled = Boolean((item as { disabled?: boolean }).disabled);
+                          if (isDisabled) {
+                            return (
+                              <div
+                                key={item.label}
+                                aria-disabled="true"
+                                title={t('sidebar.comingSoon', 'Bientôt disponible')}
+                                className="flex items-center gap-3 w-full px-3 py-2.5 relative group overflow-hidden rounded-xl text-slate-500/70 cursor-not-allowed opacity-50 select-none"
+                              >
+                                <div className="shrink-0 text-slate-500">{item.icon}</div>
+                                {!isCollapsed && (
+                                  <span className="font-semibold whitespace-nowrap overflow-hidden text-[13px] flex-1 min-w-0">
+                                    {item.label}
+                                  </span>
+                                )}
+                                {!isCollapsed && (
+                                  <span className="shrink-0 text-[9px] font-black uppercase tracking-wider text-slate-500 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md">
+                                    {t('sidebar.comingSoonShort', 'Bientôt')}
+                                  </span>
+                                )}
+                                {isCollapsed && (
+                                  <div className="absolute left-16 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border bg-slate-900 text-white border-white/10 shadow-xl">
+                                    {item.label} — {t('sidebar.comingSoonShort', 'Bientôt')}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </NavLink>
-                        ))}
+                            );
+                          }
+
+                          return (
+                            <NavLink
+                              key={item.label}
+                              to={item.path}
+                              end={item.key === 'overview'}
+                              className={({ isActive }) => {
+                                const prefix = (item as { activePathPrefix?: string }).activePathPrefix;
+                                const isReallyActive = isActive || (prefix && location.pathname.startsWith(prefix));
+                                return `flex items-center gap-3 w-full px-3 py-2.5 transition-all duration-200 relative group overflow-hidden ${navActive(!!isReallyActive)}`;
+                              }}
+                            >
+                              <div className="shrink-0">{item.icon}</div>
+                              {!isCollapsed && (
+                                <span className="font-semibold whitespace-nowrap overflow-hidden text-[13px]">{item.label}</span>
+                              )}
+                              {isCollapsed && (
+                                <div className="absolute left-16 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border bg-slate-900 text-white border-white/10 shadow-xl">
+                                  {item.label}
+                                </div>
+                              )}
+                            </NavLink>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
