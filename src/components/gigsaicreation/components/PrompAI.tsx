@@ -18,6 +18,7 @@ import {
 import toast from 'react-hot-toast';
 import { getPostCreateGigRoute, rememberCreatedGigId } from '../../../services/gigSetupSync';
 import { scrollPageToTop } from '../../../utils/scrollPageToTop';
+import { assertCompanyHasAiTokens } from '../../../lib/aiTokensUsage';
 const sections = [
   { id: 'basic', label: 'Basic Information', icon: Briefcase },
   { id: 'schedule', label: 'Schedule', icon: Calendar },
@@ -480,7 +481,17 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     }
   };
 
-  const handleGenerateSuggestions = () => {
+  const handleGenerateSuggestions = async () => {
+    try {
+      await assertCompanyHasAiTokens(1);
+    } catch (err: any) {
+      window.alert(
+        err?.code === 'insufficient_tokens'
+          ? err.message || 'Solde de tokens AI insuffisant. Rechargez pour continuer.'
+          : err?.message || 'Impossible de vérifier le solde de tokens AI.'
+      );
+      return;
+    }
     setIsAnalyzing(true);
     setShowAIDialog(false);
     // Simuler le temps d'analyse

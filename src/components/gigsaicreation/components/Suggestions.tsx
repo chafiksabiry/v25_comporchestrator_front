@@ -31,6 +31,7 @@ import i18n from "i18n-iso-countries";
 import fr from "i18n-iso-countries/langs/fr.json";
 import en from "i18n-iso-countries/langs/en.json";
 import { generateGigSuggestions } from "../lib/ai";
+import { assertCompanyHasAiTokens } from "../../../lib/aiTokensUsage";
 import { fetchSoftSkills, fetchTechnicalSkills, fetchProfessionalSkills, fetchAllCountries, Country, getCountryNameById, fetchAllCurrencies, Currency, fetchAllTimezones } from "../lib/api";
 import { predefinedOptions } from "../lib/guidance";
 import {
@@ -958,6 +959,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         lastProcessedInputRef.current = props.input.trim();
         setLoading(true);
         setError(null);
+        await assertCompanyHasAiTokens(1);
         const result = await generateGigSuggestions(props.input);
 
         // Convert schedules from days array to individual day objects
@@ -1173,9 +1175,18 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         setSuggestions(result);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to generate suggestions"
-        );
+        const msg =
+          err && typeof err === "object" && (err as any).code === "insufficient_tokens"
+            ? (err as Error).message ||
+              "Solde de tokens AI insuffisant. Rechargez pour continuer."
+            : err instanceof Error
+              ? err.message
+              : "Failed to generate suggestions";
+        setError(msg);
+        // Allow retry after token top-up
+        if (err && typeof err === "object" && (err as any).code === "insufficient_tokens") {
+          lastProcessedInputRef.current = "";
+        }
       } finally {
         setLoading(false);
         isGeneratingRef.current = false;
