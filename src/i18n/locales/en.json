@@ -24,7 +24,8 @@
     "noLeads": "No leads for this gig.",
     "ready": "Assistant is on — pick a lead below.",
     "notReady": "Enable the assistant before placing a call.",
-    "openPage": "Place calls"
+    "openPage": "Place calls",
+    "comingSoonBody": "This feature will be available soon for companies."
   },
   "userMenu": {
     "profile": "Profile",
@@ -51,6 +52,8 @@
     "training": "Training",
     "knowledgeBase": "Knowledge Base",
     "voiceAssistant": "Voice assistant",
+    "comingSoon": "Coming soon",
+    "comingSoonShort": "Soon",
     "callCenterBadge": "Call Center",
     "callCenterOps": "Operations console",
     "agents": "Agents",

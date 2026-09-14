@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   Phone,
   Search,
@@ -30,7 +30,6 @@ import { markGigStepDone } from '../../../services/gigSetupSync';
 import { providerForDestinationCountry } from '../../../utils/phoneProvider';
 import { requirementService } from '../../../services/requirementService';
 import { RequirementFormModal } from '../../RequirementFormModal';
-import { getDashCallsApiBase } from '../lib/callsApiBase';
 
 type CheckoutStep = 'select' | 'paypal' | 'processing' | 'success';
 
@@ -152,7 +151,6 @@ interface GigAndReps {
 export function PhoneNumberPanel() {
   const { t } = useTranslation();
   const location = useLocation();
-  const navigate = useNavigate();
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   const [phoneNumbers, setPhoneNumbers] = useState<PurchasedNumber[]>([]);
   const [gigsAndReps, setGigsAndReps] = useState<GigAndReps[]>([]);
@@ -224,10 +222,6 @@ export function PhoneNumberPanel() {
   const [testNumber, setTestNumber] = useState('');
   const [testFromNumber, setTestFromNumber] = useState('+33423330953');
   const [testingCall, setTestingCall] = useState(false);
-  const [aiGigId, setAiGigId] = useState('');
-  const [aiEnabled, setAiEnabled] = useState(false);
-  const [aiSaving, setAiSaving] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
   const [rtcClient, setRtcClient] = useState<any>(null);
   const [rtcState, setRtcState] = useState<'idle' | 'connecting' | 'connected' | 'ringing' | 'active'>('idle');
   const [activeCall, setActiveCall] = useState<any>(null);
@@ -243,68 +237,6 @@ export function PhoneNumberPanel() {
     setRtcState(rtcClient ? 'connected' : 'idle');
     setShowSoftphone(false);
   }, [activeCall, rtcClient]);
-
-  useEffect(() => {
-    if (!aiGigId) {
-      setAiEnabled(false);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      setAiLoading(true);
-      try {
-        const res = await fetch(`${getDashCallsApiBase()}/gigs/${aiGigId}/voice-assistant`);
-        const data = await res.json().catch(() => ({}));
-        if (!cancelled) {
-          setAiEnabled(Boolean(data?.data?.voiceAssistant?.enabled));
-        }
-      } catch {
-        if (!cancelled) setAiEnabled(false);
-      } finally {
-        if (!cancelled) setAiLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [aiGigId]);
-
-  const saveAiVoiceAssistant = async (enabled: boolean) => {
-    if (!aiGigId) {
-      toast.error(t('aiVoice.selectGig', 'Sélectionnez un gig.'));
-      return;
-    }
-    setAiSaving(true);
-    try {
-      const gigTitle = gigsAndReps.find((g) => g.gigId === aiGigId)?.title;
-      const res = await fetch(`${getDashCallsApiBase()}/gigs/${aiGigId}/voice-assistant`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          enabled,
-          name: 'HARX AI Voice',
-          voice: 'alloy',
-          gigTitle,
-          // Opening line comes from the gig call script at dial time.
-          greeting: '',
-          systemPrompt:
-            'Respecte strictement le script actif du gig (phases / playbook). Ne invente pas un pitch générique.',
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
-      setAiEnabled(enabled);
-      toast.success(
-        enabled
-          ? t('aiVoice.enabled', 'Assistant vocal activé pour ce gig.')
-          : t('aiVoice.disabled', 'Assistant vocal désactivé.')
-      );
-    } catch (err: any) {
-      toast.error(err?.message || t('aiVoice.saveFailed', 'Impossible d’enregistrer l’assistant.'));
-    } finally {
-      setAiSaving(false);
-    }
-  };
 
   const selectedGigForSearch = useMemo(() => gigsAndReps.find(g => g.gigId === selectedGigIdForNumber), [gigsAndReps, selectedGigIdForNumber]);
   const destZone = selectedGigForSearch?.destinationCountry;
@@ -643,9 +575,6 @@ export function PhoneNumberPanel() {
         const gigsResult = await gigsRes.json();
         if (gigsResult.success && gigsResult.data) {
           setGigsAndReps(gigsResult.data);
-          if (gigsResult.data.length > 0 && !aiGigId) {
-            setAiGigId(gigsResult.data[0].gigId);
-          }
           if (gigsResult.data.length > 0 && !selectedGigIdForNumber) {
             // Prefer `?gigId=<id>` from the URL (set by the gig-setup
             // warning's Continue button) so the rep lands directly on
@@ -1388,61 +1317,30 @@ export function PhoneNumberPanel() {
           </div>
 
           {gigsAndReps.length > 0 && (
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-emerald-600 text-white">
+            <div
+              aria-disabled="true"
+              className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3 opacity-55 grayscale cursor-not-allowed select-none"
+            >
+              <div className="flex items-center gap-2 pointer-events-none">
+                <span className="p-1.5 rounded-lg bg-slate-300 text-slate-600">
                   <Bot size={12} />
                 </span>
-                <div>
-                  <p className="text-sm font-black text-slate-900">
-                    {t('aiVoice.panelTitle', 'Assistant vocal IA')}
-                  </p>
-                  <p className="text-[11px] text-slate-600">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-black text-slate-600">
+                      {t('aiVoice.panelTitle', 'Assistant vocal IA')}
+                    </p>
+                    <span className="inline-flex items-center rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-500">
+                      {t('sidebar.comingSoonShort', 'Bientôt')}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
                     {t(
-                      'aiVoice.panelHint',
-                      'Activez l’assistant sur le même gig que vos leads (celui lié à la ligne téléphonique).'
+                      'aiVoice.comingSoonBody',
+                      'Cette fonctionnalité sera bientôt disponible pour les entreprises.'
                     )}
                   </p>
-                  {aiGigId && (
-                    <p className="text-[10px] font-mono text-slate-400 mt-0.5">gigId: {aiGigId}</p>
-                  )}
                 </div>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                <select
-                  value={aiGigId}
-                  onChange={(e) => setAiGigId(e.target.value)}
-                  className="flex-1 px-3 py-2 text-sm font-semibold rounded-xl border border-slate-200 bg-white"
-                >
-                  {gigsAndReps.map((g) => (
-                    <option key={g.gigId} value={g.gigId}>
-                      {g.title}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  disabled={!aiGigId || aiSaving || aiLoading}
-                  onClick={() => saveAiVoiceAssistant(!aiEnabled)}
-                  className={`px-4 py-2 text-xs font-black rounded-xl border transition-all disabled:opacity-50 ${
-                    aiEnabled
-                      ? 'bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50'
-                      : 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
-                  }`}
-                >
-                  {aiSaving || aiLoading
-                    ? '…'
-                    : aiEnabled
-                      ? t('aiVoice.disable', 'Désactiver')
-                      : t('aiVoice.enable', 'Activer l’assistant')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/dashboard/voice-assistant')}
-                  className="px-4 py-2 text-xs font-black rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                >
-                  {t('aiVoice.openPage', 'Lancer des appels')}
-                </button>
               </div>
             </div>
           )}
