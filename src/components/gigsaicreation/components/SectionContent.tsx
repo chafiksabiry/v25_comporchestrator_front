@@ -74,19 +74,22 @@ export function SectionContent({
 
   // Ensure seniority object is properly initialized
   const initializedData = React.useMemo(() => {
-    // Merge both source arrays before cleaning so we don't drop entries that
-    // only live in one of them (e.g. Sat/Sun groups added after the AI
-    // initially populated only schedule.schedules).
-    const mergedSources = [
-      ...(Array.isArray(data.schedule?.schedules) ? data.schedule.schedules : []),
-      ...(Array.isArray((data as any).availability?.schedule) ? (data as any).availability.schedule : []),
-    ];
-    const cleanedSchedules = cleanSchedules(mergedSources);
+    // schedule.schedules is the editor source of truth. Never union-merge with
+    // availability.schedule — a stale availability copy (e.g. after deleting a
+    // plage in Suggestions) would resurrect removed ranges in Schedule Groups.
+    const primary = Array.isArray(data.schedule?.schedules)
+      ? data.schedule.schedules
+      : null;
+    const fallback = Array.isArray((data as any).availability?.schedule)
+      ? (data as any).availability.schedule
+      : [];
+    const cleanedSchedules = cleanSchedules(
+      primary !== null ? primary : fallback
+    );
 
     return {
       ...data,
-      // Keep availability.schedule mirrored to the cleaned, merged list so the
-      // save path can never read a stale partial copy.
+      // Keep availability.schedule mirrored so the save path never reads a stale copy.
       availability: {
         ...(data as any).availability,
         schedule: cleanedSchedules,
