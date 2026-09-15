@@ -232,16 +232,68 @@ export class ProgressService {
   }
 
   /**
-   * Update or create progress for a rep
+   * Update or create progress for a rep (live contract: POST /rep-progress).
+   * When sectionId is set, also calls section/start or section/complete.
    */
   static async updateProgress(request: UpdateProgressRequest): Promise<RepProgress | null> {
     try {
-      const response = await ApiClient.post(`${this.BASE_URL}/rep-progress/update`, request);
+      const statusRaw = String(request.status || '').toLowerCase().replace(/_/g, '-');
+      const sectionCompleted =
+        request.completed === true ||
+        statusRaw === 'completed' ||
+        statusRaw === 'finished' ||
+        (typeof request.progress === 'number' && request.progress >= 100);
+
+      if (request.sectionId) {
+        const sectionPath = sectionCompleted ? 'section/complete' : 'section/start';
+        await ApiClient.post(`${this.BASE_URL}/${sectionPath}`, {
+          repId: request.repId,
+          courseId: request.journeyId,
+          journeyId: request.journeyId,
+          moduleId: request.moduleId,
+          sectionId: request.sectionId,
+        });
+      }
+
+      const quizUpdate =
+        request.quizz && typeof request.quizz === 'object'
+          ? Object.values(request.quizz)[0]
+          : undefined;
+
+      const response = await ApiClient.post(`${this.BASE_URL}/rep-progress`, {
+        repId: request.repId,
+        journeyId: request.journeyId,
+        moduleId: request.moduleId,
+        progress: request.progress,
+        status:
+          statusRaw === 'finished' || statusRaw === 'completed'
+            ? 'completed'
+            : statusRaw === 'not-started'
+              ? 'not_started'
+              : 'in_progress',
+        engagementScore: request.engagementScore,
+        durationMs:
+          typeof request.timeSpent === 'number' && request.timeSpent > 0
+            ? Math.round(request.timeSpent * 60_000)
+            : undefined,
+        ...(quizUpdate
+          ? {
+              quizUpdate: {
+                quizKey: String((quizUpdate as QuizResult).quizId || ''),
+                quizMongoId: String((quizUpdate as QuizResult).quizId || ''),
+                score: (quizUpdate as QuizResult).score,
+                passed: (quizUpdate as QuizResult).passed,
+                attempts: (quizUpdate as QuizResult).attempts,
+                status: (quizUpdate as QuizResult).passed ? 'passed' : 'failed',
+              },
+            }
+          : {}),
+      });
 
       if (response.data.success && response.data.data) {
         return response.data.data;
       }
-      return null;
+      return response.data?.data ?? response.data ?? null;
     } catch (error) {
       console.error('Error updating progress:', error);
       return null;
@@ -253,15 +305,17 @@ export class ProgressService {
    */
   static async initializeRepProgress(repId: string, journeyId: string): Promise<RepProgress | null> {
     try {
-      const response = await ApiClient.post(`${this.BASE_URL}/rep-progress/start`, {
+      const response = await ApiClient.post(`${this.BASE_URL}/rep-progress`, {
         repId,
-        journeyId
+        journeyId,
+        status: 'in_progress',
+        progress: 0,
       });
 
       if (response.data.success && response.data.data) {
         return response.data.data;
       }
-      return null;
+      return response.data?.data ?? response.data ?? null;
     } catch (error) {
       console.error('Error initializing rep progress:', error);
       return null;
