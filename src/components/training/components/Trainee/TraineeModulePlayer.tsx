@@ -94,6 +94,9 @@ export default function TraineeModulePlayer({
   const [allQuizzesPassed, setAllQuizzesPassed] = useState(false);
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [showPresentation, setShowPresentation] = useState(!!fileTrainingUrl);
+  const [completedSectionIndexes, setCompletedSectionIndexes] = useState<Set<number>>(new Set());
+  const [isMarkingSection, setIsMarkingSection] = useState(false);
+  const [isAdvancingSection, setIsAdvancingSection] = useState(false);
 
   // Apply visual theme via CSS variables
   useEffect(() => {
@@ -331,46 +334,80 @@ export default function TraineeModulePlayer({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSectionComplete = async () => {
-    handleInteraction();
-    const maxSection = Math.max(sections.length, sectionTitles.length) - 1;
-
-    // Persist current section as completed before advancing (await to avoid races).
-    if (journeyId && trainee.id) {
-      const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
-      const sectionRow = sections[currentSection];
-      const sectionId =
-        extractObjectId(sectionRow?._id) ||
-        extractObjectId(sectionRow?.id) ||
-        extractObjectId(sectionRow?.sectionId);
-      if (moduleId && /^[0-9a-fA-F]{24}$/.test(moduleId) && sectionId && /^[0-9a-fA-F]{24}$/.test(sectionId)) {
-        try {
-          await ProgressService.updateProgress({
-            repId: trainee.id,
-            journeyId,
-            moduleId,
-            sectionId,
-            progress: Math.round(((currentSection + 1) / Math.max(sections.length, 1)) * 100),
-            status: 'completed',
-            completed: true,
-            timeSpent: Math.floor(currentTime / 60),
-            engagementScore,
-          });
-        } catch (err) {
-          console.error('[TraineeModulePlayer] Error completing section:', err);
-        }
-      }
+  const persistCurrentSectionCompleted = async (): Promise<boolean> => {
+    if (!journeyId || !trainee.id) {
+      // Offline / missing ids: still allow local complete so Next can unlock.
+      return true;
     }
+    const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
+    const sectionRow = sections[currentSection];
+    const sectionId =
+      extractObjectId(sectionRow?._id) ||
+      extractObjectId(sectionRow?.id) ||
+      extractObjectId(sectionRow?.sectionId);
+    if (!moduleId || !/^[0-9a-fA-F]{24}$/.test(moduleId)) {
+      console.error('[TraineeModulePlayer] Module must have a valid MongoDB ObjectId _id:', module);
+      return false;
+    }
+    if (!sectionId || !/^[0-9a-fA-F]{24}$/.test(sectionId)) {
+      // No section ObjectId — treat as completed locally.
+      return true;
+    }
+    try {
+      const result = await ProgressService.updateProgress({
+        repId: trainee.id,
+        journeyId,
+        moduleId,
+        sectionId,
+        progress: Math.round(((currentSection + 1) / Math.max(sections.length, 1)) * 100),
+        status: 'completed',
+        completed: true,
+        timeSpent: Math.floor(currentTime / 60),
+        engagementScore,
+      });
+      return result != null;
+    } catch (err) {
+      console.error('[TraineeModulePlayer] Error completing section:', err);
+      return false;
+    }
+  };
 
-    if (currentSection < maxSection) {
-      setCurrentSection(prev => prev + 1);
-      setSectionProgress(0);
-      setCurrentTime(0);
-    } else {
-      // Module sections completed - check for quizzes before marking as completed
+  /** Mark section completed only — does not advance. Unlocks Suivant when status is completed. */
+  const markCurrentSectionComplete = async () => {
+    if (completedSectionIndexes.has(currentSection) || isMarkingSection) return;
+    handleInteraction();
+    setIsMarkingSection(true);
+    try {
+      const ok = await persistCurrentSectionCompleted();
+      if (ok) {
+        setCompletedSectionIndexes((prev) => {
+          const next = new Set(prev);
+          next.add(currentSection);
+          return next;
+        });
+      }
+    } finally {
+      setIsMarkingSection(false);
+    }
+  };
+
+  /** Advance only when current section status is completed. */
+  const goNextSection = async () => {
+    if (!completedSectionIndexes.has(currentSection) || isAdvancingSection) return;
+    handleInteraction();
+    setIsAdvancingSection(true);
+    try {
+      const maxSection = Math.max(sections.length, sectionTitles.length) - 1;
+      if (currentSection < maxSection) {
+        setCurrentSection((prev) => prev + 1);
+        setSectionProgress(0);
+        setCurrentTime(0);
+        return;
+      }
+
+      // Last section → module sections done (quiz / complete flow)
       setModuleCompleted(true);
 
-      // Check for quizzes in assessments
       const hasAssessments = module.assessments &&
         module.assessments.length > 0 &&
         module.assessments[0] &&
@@ -378,55 +415,42 @@ export default function TraineeModulePlayer({
         Array.isArray(module.assessments[0].questions) &&
         module.assessments[0].questions.length > 0;
 
-      // Check for quizzes in module.quizzes
       const hasQuizzes = (module as any).quizzes && Array.isArray((module as any).quizzes) &&
         (module as any).quizzes.length > 0;
 
-      // Save progress but DON'T mark as completed if there are quizzes
-      // The module will only be marked as completed after quizzes are passed
       if (journeyId && trainee.id) {
         const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
         if (!moduleId || !/^[0-9a-fA-F]{24}$/.test(moduleId)) {
           console.error('[TraineeModulePlayer] Module must have a valid MongoDB ObjectId _id:', module);
           return;
         }
-        if (moduleId) {
-          const timeSpentMinutes = Math.floor(currentTime / 60);
-          // Only mark as completed if there are no quizzes
-          // If there are quizzes, keep status as "in-progress" until quizzes are passed
-          const moduleStatus = (hasAssessments || hasQuizzes) ? 'in-progress' : 'completed';
+        const timeSpentMinutes = Math.floor(currentTime / 60);
+        const moduleStatus = (hasAssessments || hasQuizzes) ? 'in-progress' : 'completed';
 
-          // Show alert if module has quizzes and is being marked as in-progress
-          if ((hasAssessments || hasQuizzes) && moduleStatus === 'in-progress') {
-            // Get passing score from quiz metadata
-            const { passingScore, passingScoreIsPercentage } = getQuizMetadata();
-            const passingScoreText = passingScoreIsPercentage
-              ? `${passingScore}%`
-              : `${passingScore} points`;
+        if ((hasAssessments || hasQuizzes) && moduleStatus === 'in-progress') {
+          const { passingScore, passingScoreIsPercentage } = getQuizMetadata();
+          const passingScoreText = passingScoreIsPercentage
+            ? `${passingScore}%`
+            : `${passingScore} points`;
 
-            setTimeout(() => {
-              alert(`⚠️ Module en cours\n\nVous devez réussir le quiz de ce module avec un score minimum de ${passingScoreText} pour passer au module suivant.\n\nVeuillez compléter le quiz ci-dessous.`);
-            }, 500);
-          }
-
-          ProgressService.updateProgress({
-            repId: trainee.id,
-            journeyId: journeyId,
-            moduleId: moduleId,
-            progress: 100,
-            status: moduleStatus,
-            timeSpent: timeSpentMinutes,
-            engagementScore: engagementScore
-          }).catch(err => console.error('Error saving completed progress:', err));
+          setTimeout(() => {
+            alert(`⚠️ Module en cours\n\nVous devez réussir le quiz de ce module avec un score minimum de ${passingScoreText} pour passer au module suivant.\n\nVeuillez compléter le quiz ci-dessous.`);
+          }, 500);
         }
+
+        ProgressService.updateProgress({
+          repId: trainee.id,
+          journeyId: journeyId,
+          moduleId: moduleId,
+          progress: 100,
+          status: moduleStatus,
+          timeSpent: timeSpentMinutes,
+          engagementScore: engagementScore
+        }).catch(err => console.error('Error saving completed progress:', err));
       }
 
-      // If quizzes exist, redirect automatically to quiz
       if (hasAssessments && module.assessments && module.assessments[0] && module.assessments[0].questions) {
-        
         const firstQuestion = module.assessments[0].questions[0];
-        
-
         if (firstQuestion) {
           const quizData = {
             type: 'module-quiz',
@@ -438,13 +462,9 @@ export default function TraineeModulePlayer({
             difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8,
             aiGenerated: true
           };
-          
-
           setCurrentQuiz(quizData);
           setShowModuleQuiz(true);
           setCurrentQuizIndex(0);
-
-          // Scroll to quiz section after state update
           setTimeout(() => {
             const quizSection = document.querySelector('.bg-white.rounded-2xl.shadow-xl.border.border-gray-200.mt-6');
             if (quizSection) {
@@ -496,9 +516,10 @@ export default function TraineeModulePlayer({
         }
       } else {
         // No quizzes, complete immediately
-        
         onComplete();
       }
+    } finally {
+      setIsAdvancingSection(false);
     }
   };
 
@@ -921,7 +942,11 @@ export default function TraineeModulePlayer({
                 sectionTitles={sectionTitles}
                 fileTrainingUrl={fileTrainingUrl}
                 onComplete={onComplete}
-                handleSectionComplete={handleSectionComplete}
+                onMarkComplete={markCurrentSectionComplete}
+                onNext={goNextSection}
+                isCurrentSectionCompleted={completedSectionIndexes.has(currentSection)}
+                isMarkingSection={isMarkingSection}
+                isAdvancing={isAdvancingSection}
               />
 
               {/* Quiz Trigger */}
@@ -1014,6 +1039,7 @@ export default function TraineeModulePlayer({
               jumpToBookmark={jumpToBookmark}
               formatTime={formatTime}
               module={module}
+              completedSectionIndexes={completedSectionIndexes}
             />
           </div>
 

@@ -427,6 +427,7 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
   var i = 0;
   var quizPick = null;
   var quizLocked = false;
+  var quizPassed = false;
 
   function esc(s) {
     return String(s == null ? '' : s)
@@ -437,6 +438,7 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
   function renderSlide() {
     quizPick = null;
     quizLocked = false;
+    quizPassed = false;
     var s = slides[i];
     var deck = document.getElementById('deck');
     if (!s) {
@@ -499,11 +501,20 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
         var fb = document.getElementById('quiz-fb');
         fb.style.display = 'block';
         var ok = quizPick === correct;
+        quizPassed = ok;
         fb.innerHTML = '<strong>' + (ok ? 'Bonne réponse !' : 'Réponse incorrecte.') + '</strong>' +
           (s.explanation ? '<div style="margin-top:8px">' + esc(s.explanation) + '</div>' : '');
         document.getElementById('quiz-check').disabled = true;
+        updateNextEnabled();
       };
     }
+  }
+
+  function updateNextEnabled() {
+    var s = slides[i];
+    var atEnd = i >= slides.length - 1;
+    var blockQuiz = s && s.kind === 'quiz' && !quizPassed;
+    document.getElementById('next').disabled = atEnd || blockQuiz;
   }
 
   function renderDots() {
@@ -527,8 +538,8 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
     document.getElementById('progress-bar').style.width = pct + '%';
     document.getElementById('counter').textContent = (i + 1) + ' / ' + slides.length;
     document.getElementById('prev').disabled = i <= 0;
-    document.getElementById('next').disabled = i >= slides.length - 1;
     renderSlide();
+    updateNextEnabled();
     renderDots();
   }
 
@@ -536,6 +547,8 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
     if (i > 0) { i--; sync(); }
   };
   document.getElementById('next').onclick = function () {
+    var s = slides[i];
+    if (s && s.kind === 'quiz' && !quizPassed) return;
     if (i < slides.length - 1) { i++; sync(); }
   };
 
