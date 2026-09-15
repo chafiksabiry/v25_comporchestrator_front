@@ -331,9 +331,37 @@ export default function TraineeModulePlayer({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSectionComplete = () => {
+  const handleSectionComplete = async () => {
     handleInteraction();
     const maxSection = Math.max(sections.length, sectionTitles.length) - 1;
+
+    // Persist current section as completed before advancing (await to avoid races).
+    if (journeyId && trainee.id) {
+      const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
+      const sectionRow = sections[currentSection];
+      const sectionId =
+        extractObjectId(sectionRow?._id) ||
+        extractObjectId(sectionRow?.id) ||
+        extractObjectId(sectionRow?.sectionId);
+      if (moduleId && /^[0-9a-fA-F]{24}$/.test(moduleId) && sectionId && /^[0-9a-fA-F]{24}$/.test(sectionId)) {
+        try {
+          await ProgressService.updateProgress({
+            repId: trainee.id,
+            journeyId,
+            moduleId,
+            sectionId,
+            progress: Math.round(((currentSection + 1) / Math.max(sections.length, 1)) * 100),
+            status: 'completed',
+            completed: true,
+            timeSpent: Math.floor(currentTime / 60),
+            engagementScore,
+          });
+        } catch (err) {
+          console.error('[TraineeModulePlayer] Error completing section:', err);
+        }
+      }
+    }
+
     if (currentSection < maxSection) {
       setCurrentSection(prev => prev + 1);
       setSectionProgress(0);
