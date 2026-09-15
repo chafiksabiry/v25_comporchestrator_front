@@ -125,28 +125,17 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
   );
 
 
-  // Vérifier si tous les jours sont déjà sélectionnés
-  const selectedDays = data.schedules
-    .filter(schedule => schedule.day && schedule.day.trim() !== "")
-    .map(schedule => schedule.day);
-
-  const allDaysSelected = allWeekDays.every(day => selectedDays.includes(day));
-
+  // Days may appear in multiple groups (split shifts: Mon 08–12 + Mon 13–18).
   const addNewScheduleGroup = () => {
     const currentSchedules = data.schedules || [];
 
-    // 1. Find first available day
-    const currentSelectedDays = currentSchedules
+    // Prefer a weekday already used so split shifts are easy to add; else Monday.
+    const usedDays = currentSchedules
       .filter(schedule => schedule.day && schedule.day.trim() !== "")
       .map(schedule => schedule.day);
+    const defaultDay = usedDays[0] || allWeekDays[0];
 
-    const firstAvailableDay = allWeekDays.find(day => !currentSelectedDays.includes(day));
-
-    if (!firstAvailableDay) {
-      return;
-    }
-
-    // 2. Find unique hours to avoid auto-merging with existing groups
+    // Find unique hours to avoid auto-merging with existing groups
     let startHour = 9;
     let endHour = 17;
 
@@ -165,7 +154,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
     }
 
     const newSchedule: DaySchedule = {
-      day: firstAvailableDay,
+      day: defaultDay,
       hours: {
         start: `${startHour.toString().padStart(2, '0')}:00`,
         end: `${endHour.toString().padStart(2, '0')}:00`
@@ -184,14 +173,16 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
   ) => {
     const updatedSchedules = [...data.schedules];
     const existingScheduleIndex = updatedSchedules.findIndex(
-      schedule => schedule.day === dayToToggle
+      schedule =>
+        schedule.day === dayToToggle &&
+        schedule.hours.start === groupHours.start &&
+        schedule.hours.end === groupHours.end
     );
 
     if (existingScheduleIndex !== -1) {
-      // Remove the day
+      // Remove only this day+hours entry (other ranges for the same day stay)
       updatedSchedules.splice(existingScheduleIndex, 1);
     } else {
-      // Add the day with the group's hours
       updatedSchedules.push({
         day: dayToToggle,
         hours: { ...groupHours },
@@ -344,16 +335,17 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
                     {Object.keys(groupedSchedules).length}
                   </span>
                 </div>
-                {!allDaysSelected && (
-                  <button
-                    onClick={addNewScheduleGroup}
-                    className="flex items-center gap-2 px-3 py-2 bg-harx-500 text-white rounded-lg hover:bg-harx-600 transition-colors text-sm font-medium"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Schedule
-                  </button>
-                )}
+                <button
+                  onClick={addNewScheduleGroup}
+                  className="flex items-center gap-2 px-3 py-2 bg-harx-500 text-white rounded-lg hover:bg-harx-600 transition-colors text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Schedule
+                </button>
               </div>
+              <p className="text-xs text-gray-500 mb-4">
+                Add several groups for split shifts (e.g. Mon 08:00–12:00 and Mon 13:00–18:00).
+              </p>
 
               {Object.entries(groupedSchedules).length > 0 ? (
                 <div className="space-y-4">
@@ -380,18 +372,15 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
                         <div className="grid grid-cols-7 gap-1">
                           {allWeekDays.map(day => {
                             const isSelected = group.days.includes(day);
-                            const isAlreadySelected = selectedDays.includes(day) && !isSelected;
 
                             return (
                               <button
                                 key={day}
-                                onClick={() => !isAlreadySelected && handleDayToggle(day, group.hours)}
-                                disabled={isAlreadySelected}
+                                type="button"
+                                onClick={() => handleDayToggle(day, group.hours)}
                                 className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${isSelected
                                   ? 'bg-harx-500 text-white'
-                                  : isAlreadySelected
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-harx-50 hover:border-harx-300'
+                                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-harx-50 hover:border-harx-300'
                                   }`}
                               >
                                 {day.slice(0, 3)}
