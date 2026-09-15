@@ -2289,7 +2289,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       schedule => !schedule.day || schedule.day.trim() === ""
     );
 
-    // Vérifier si tous les jours sont déjà sélectionnés
+    // Days may appear in multiple groups (split shifts).
     const selectedDays = suggestions.schedule.schedules
       .filter(schedule => schedule.day && schedule.day.trim() !== "")
       .map(schedule => schedule.day);
@@ -2299,12 +2299,15 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     const addNewScheduleGroup = () => {
       if (!suggestions) return;
 
-      // Cherche un horaire non utilisé
+      // Cherche un horaire non utilisé (for a new split-shift group)
       const defaultHoursList = [
         { start: "09:00", end: "17:00" },
+        { start: "08:00", end: "12:00" },
+        { start: "13:00", end: "18:00" },
         { start: "07:00", end: "15:00" },
         { start: "11:00", end: "19:00" },
         { start: "14:00", end: "22:00" },
+        { start: "18:00", end: "21:00" },
       ];
       const usedHours = suggestions.schedule.schedules.map(s => `${s.hours.start}-${s.hours.end}`);
       const availableHours = defaultHoursList.find(
@@ -2338,30 +2341,36 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     ) => {
       const newSuggestions = JSON.parse(JSON.stringify(suggestions));
       const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-        (s: ScheduleEntry) => s.day === dayToToggle
+        (s: ScheduleEntry) =>
+          s.day === dayToToggle &&
+          s.hours.start === groupHours.start &&
+          s.hours.end === groupHours.end
       );
 
       if (scheduleIndex > -1) {
-        const currentHours =
-          newSuggestions.schedule.schedules[scheduleIndex].hours;
-        if (
-          currentHours.start === groupHours.start &&
-          currentHours.end === groupHours.end
-        ) {
-          newSuggestions.schedule.schedules.splice(scheduleIndex, 1);
-        } else {
-          newSuggestions.schedule.schedules[scheduleIndex].hours = groupHours;
-        }
+        // Remove only this day+hours entry (other ranges for the same day stay)
+        newSuggestions.schedule.schedules.splice(scheduleIndex, 1);
       } else {
-        newSuggestions.schedule.schedules.push({
-          day: dayToToggle,
-          hours: groupHours,
-          _id: {
-            $oid: `generated_${Date.now()}_${Math.random()
-              .toString(36)
-              .substr(2, 9)}`,
-          },
-        });
+        // Prefer filling an empty placeholder row for this hours group
+        const emptyIndex = newSuggestions.schedule.schedules.findIndex(
+          (s: ScheduleEntry) =>
+            (!s.day || s.day.trim() === "") &&
+            s.hours.start === groupHours.start &&
+            s.hours.end === groupHours.end
+        );
+        if (emptyIndex > -1) {
+          newSuggestions.schedule.schedules[emptyIndex].day = dayToToggle;
+        } else {
+          newSuggestions.schedule.schedules.push({
+            day: dayToToggle,
+            hours: { ...groupHours },
+            _id: {
+              $oid: `generated_${Date.now()}_${Math.random()
+                .toString(36)
+                .substr(2, 9)}`,
+            },
+          });
+        }
       }
       setSuggestions(newSuggestions);
     };
@@ -2371,12 +2380,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       field: "start" | "end",
       value: string
     ) => {
-      // Allow free typing, validation happens later
-      // if (field === "end" && value < group.hours.start) return;
-
       const newSuggestions = JSON.parse(JSON.stringify(suggestions));
 
-      // If Start > End, we will also update End
       let shouldUpdateEnd = false;
       if (field === "start" && value > group.hours.end) {
         shouldUpdateEnd = true;
@@ -2384,7 +2389,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
       group.days.forEach((day: string) => {
         const schedule = newSuggestions.schedule.schedules.find(
-          (s: ScheduleEntry) => s.day === day
+          (s: ScheduleEntry) =>
+            s.day === day &&
+            s.hours.start === group.hours.start &&
+            s.hours.end === group.hours.end
         );
         if (schedule) {
           schedule.hours[field] = value;
@@ -2418,7 +2426,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       const newSuggestions = JSON.parse(JSON.stringify(suggestions));
       group.days.forEach((day: string) => {
         const schedule = newSuggestions.schedule.schedules.find(
-          (s: ScheduleEntry) => s.day === day
+          (s: ScheduleEntry) =>
+            s.day === day &&
+            s.hours.start === group.hours.start &&
+            s.hours.end === group.hours.end
         );
         if (schedule) {
           schedule.hours = newHours;
@@ -2523,7 +2534,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {Object.keys(groupedSchedules).length > 0 ? (
           Object.entries(groupedSchedules).map(([key, group]) => (
             <div
-              key={group.days.slice().sort().join('-')}
+              key={key}
               className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm"
             >
               <div className="flex items-center justify-between mb-3">
@@ -2542,14 +2553,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <div className="flex gap-1 flex-wrap border-b border-gray-200 pb-2 mb-3">
                 {allWeekDays.map((day) => {
                   const isSelected = group.days.includes(day);
-                  const isInOtherGroup = !isSelected && suggestions.schedule.schedules.some((s) => s.day === day);
                   return (
                     <button
                       key={day}
+                      type="button"
                       onClick={() => handleDayToggle(day, group.hours)}
-                      disabled={isInOtherGroup}
                       className={`rounded-full px-4 py-1.5 font-semibold text-sm transition-all duration-200 shadow-sm
-                        ${isSelected ? 'bg-harx-alt-600 text-white shadow' : isInOtherGroup ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-harx-alt-100 hover:text-harx-alt-700'}
+                        ${isSelected ? 'bg-harx-alt-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-harx-alt-100 hover:text-harx-alt-700'}
                       `}
                     >
                       {day}
@@ -2667,14 +2677,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             <div className="flex gap-1 mb-4">
               {allWeekDays.map((day) => {
                 const isSelected = emptySchedule.day === day;
-                const isInOtherGroup = suggestions.schedule.schedules.some((s) => s.day === day);
                 return (
                   <button
                     key={day}
+                    type="button"
                     onClick={() => handleEmptyScheduleDayToggle(day, emptySchedule)}
-                    disabled={isInOtherGroup}
                     className={`rounded-full px-4 py-1.5 font-semibold text-sm transition-all duration-200 shadow-sm
-                      ${isSelected ? 'bg-harx-600 text-white shadow' : isInOtherGroup ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-harx-100 hover:text-harx-700'}
+                      ${isSelected ? 'bg-harx-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-harx-100 hover:text-harx-700'}
                     `}
                   >
                     {day}
@@ -2777,10 +2786,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           </div>
         )}
 
-        {/* Afficher le bouton seulement si tous les jours ne sont pas sélectionnés ET qu'il n'y a pas de groupes vides */}
-        {!allDaysSelected && emptySchedules.length === 0 && (
-          <div className="flex justify-center mt-8">
+        {/* Always allow adding another time range (split shifts / multiple slots per day) */}
+        {emptySchedules.length === 0 && (
+          <div className="flex flex-col items-center mt-8 gap-3">
+            <p className="text-xs text-gray-500 text-center max-w-md">
+              You can add several groups for the same day (e.g. Mon 08:00–12:00 and Mon 13:00–18:00).
+            </p>
             <button
+              type="button"
               onClick={addNewScheduleGroup}
               className="group relative inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-harx-alt-600 to-harx-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:from-harx-alt-700 hover:to-harx-700 transform hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-purple-300 focus:ring-opacity-50"
             >
@@ -2790,24 +2803,18 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 </div>
                 <div className="text-left">
                   <div className="text-sm font-bold">Add Schedule Group</div>
-                  <div className="text-xs text-harx-alt-100 opacity-90">Create a new time slot</div>
+                  <div className="text-xs text-harx-alt-100 opacity-90">
+                    Add another time range (split shift)
+                  </div>
                 </div>
               </div>
               <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </button>
-          </div>
-        )}
-
-        {/* Message quand tous les jours sont sélectionnés ET qu'il n'y a pas de groupes vides */}
-        {allDaysSelected && emptySchedules.length === 0 && (
-          <div className="text-center mt-6 p-4 bg-harx-50 border border-harx-200 rounded-lg">
-            <div className="flex items-center justify-center space-x-2 text-harx-700">
-              <CheckCircle className="w-5 h-5" />
-              <span className="font-medium">All week days are scheduled!</span>
-            </div>
-            <p className="text-sm text-green-600 mt-1">
-              You can still modify existing schedules or remove days to add new groups.
-            </p>
+            {allDaysSelected && (
+              <p className="text-xs text-harx-700 font-medium">
+                All weekdays already have at least one slot — add another group for split shifts.
+              </p>
+            )}
           </div>
         )}
       </div>
