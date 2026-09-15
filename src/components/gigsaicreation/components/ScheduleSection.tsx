@@ -322,7 +322,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
                 <div className="space-y-4">
                   {scheduleGroups.map((group, groupIndex) => (
                     <div
-                      key={group.days.join("|") || `group-${groupIndex}`}
+                      key={`sched-group-${group.days.slice().sort().join('-') || groupIndex}`}
                       className="bg-gradient-to-br from-harx-50 to-harx-alt-50 rounded-xl p-4 border-2 border-harx-100 shadow-sm"
                     >
                       <div className="flex items-center justify-between mb-4">
@@ -401,7 +401,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
                                     : "flex-1 min-w-0 px-2 py-1.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-harx-400";
                                   return (
                                     <div
-                                      key={`${range.start}-${range.end}-${rangeIndex}`}
+                                      key={`range-${groupIndex}-${rangeIndex}`}
                                       className="flex items-center gap-2"
                                     >
                                       <input

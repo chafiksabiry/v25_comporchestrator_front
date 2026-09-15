@@ -2356,14 +2356,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       field: "start" | "end",
       value: string
     ) => {
-      const nextRanges = group.ranges.map((r, i) => {
-        if (i !== rangeIndex) return r;
-        const updated = { ...r, [field]: value };
-        if (field === "start" && value > updated.end) {
-          updated.end = value;
-        }
-        return updated;
-      });
+      const nextRanges = group.ranges.map((r, i) =>
+        i === rangeIndex ? { ...r, [field]: value } : r
+      );
       commitGroup(group, group.days, nextRanges);
     };
 
@@ -2406,7 +2401,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {scheduleGroups.length > 0 ? (
           scheduleGroups.map((group, groupIndex) => (
             <div
-              key={group.days.join("|") || `group-${groupIndex}`}
+              key={`sched-group-${group.days.slice().sort().join('-') || groupIndex}`}
               className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm"
             >
               <div className="flex items-center justify-between mb-3">
@@ -2481,7 +2476,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                             : "flex-1 min-w-0 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-harx-500 bg-white";
                           return (
                             <div
-                              key={`${range.start}-${range.end}-${rangeIndex}`}
+                              key={`range-${groupIndex}-${rangeIndex}`}
                               className="flex items-center gap-2"
                             >
                               <input

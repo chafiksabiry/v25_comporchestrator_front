@@ -114,24 +114,22 @@ export function groupSchedulesByDayRanges(
 
   const bySig = new Map<string, MultiRangeScheduleGroup>();
   for (const [day, ranges] of byDay) {
-    const sorted = [...ranges].sort((a, b) => a.start.localeCompare(b.start));
-    const id = rangesSignature(sorted);
+    // Keep insertion order for editor focus stability (do NOT sort ranges here).
+    const id = rangesSignature(ranges);
     const existing = bySig.get(id);
     if (existing) {
       if (!existing.days.includes(day)) existing.days.push(day);
     } else {
-      bySig.set(id, { id, days: [day], ranges: sorted });
+      bySig.set(id, { id, days: [day], ranges: [...ranges] });
     }
   }
 
-  return [...bySig.values()]
-    .map((g) => ({
-      ...g,
-      days: [...g.days].sort(
-        (a, b) => WEEKDAY_ORDER.indexOf(a) - WEEKDAY_ORDER.indexOf(b)
-      ),
-    }))
-    .sort((a, b) => (a.ranges[0]?.start || '').localeCompare(b.ranges[0]?.start || ''));
+  return [...bySig.values()].map((g) => ({
+    ...g,
+    days: [...g.days].sort(
+      (a, b) => WEEKDAY_ORDER.indexOf(a) - WEEKDAY_ORDER.indexOf(b)
+    ),
+  }));
 }
 
 /** Apply changes to one group: wipe its previous days, write new days × ranges. */
