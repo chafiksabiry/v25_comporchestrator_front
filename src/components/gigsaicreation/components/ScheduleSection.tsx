@@ -14,7 +14,9 @@ import {
   DaySchedule,
   MultiRangeScheduleGroup,
   TimeRange,
+  findOverlappingRangeIndexes,
   groupSchedulesByDayRanges,
+  rangesOverlap,
   replaceScheduleGroup,
 } from "../lib/scheduleUtils";
 
@@ -70,10 +72,16 @@ const rangeCandidates: TimeRange[] = [
 
 const pickUnusedRange = (existing: TimeRange[]): TimeRange => {
   const taken = new Set(existing.map((r) => `${r.start}-${r.end}`));
+  const nonOverlapping = rangeCandidates.find(
+    (c) =>
+      !taken.has(`${c.start}-${c.end}`) &&
+      !existing.some((r) => rangesOverlap(r, c))
+  );
+  if (nonOverlapping) return nonOverlapping;
   return (
     rangeCandidates.find((c) => !taken.has(`${c.start}-${c.end}`)) || {
-      start: "10:00",
-      end: "16:00",
+      start: "18:00",
+      end: "21:00",
     }
   );
 };
@@ -365,8 +373,8 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
                         </div>
                       </div>
 
-                      {/* Multiple time ranges */}
-                      <div className="space-y-3">
+                      {/* Multiple time ranges — compact */}
+                      <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <label className="block text-xs font-medium text-gray-700">
                             Time ranges
@@ -374,77 +382,83 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
                           <button
                             type="button"
                             onClick={() => addRangeToGroup(group)}
-                            className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-harx-700 bg-white border border-harx-200 rounded-md hover:bg-harx-50"
+                            className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-harx-700 bg-white border border-harx-200 rounded-md hover:bg-harx-50"
                           >
                             <Plus className="w-3 h-3" />
-                            Add range
+                            Add
                           </button>
                         </div>
 
-                        {group.ranges.map((range, rangeIndex) => (
-                          <div
-                            key={`${range.start}-${range.end}-${rangeIndex}`}
-                            className="bg-white rounded-lg p-3 border border-harx-100"
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-semibold text-harx-600">
-                                Range {rangeIndex + 1}
-                              </span>
-                              {group.ranges.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => removeRangeFromGroup(group, rangeIndex)}
-                                  className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
-                                  title="Remove range"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 mb-2">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  Start Time
-                                </label>
-                                <input
-                                  type="time"
-                                  value={range.start}
-                                  onChange={(e) =>
-                                    handleRangeChange(group, rangeIndex, "start", e.target.value)
-                                  }
-                                  className="w-full px-3 py-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  End Time
-                                </label>
-                                <input
-                                  type="time"
-                                  value={range.end}
-                                  onChange={(e) =>
-                                    handleRangeChange(group, rangeIndex, "end", e.target.value)
-                                  }
-                                  className="w-full px-3 py-2 text-sm bg-white border border-harx-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                                />
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {timePresets.map((preset) => (
-                                <button
-                                  key={preset.label}
-                                  type="button"
-                                  onClick={() =>
-                                    handlePresetClick(group, rangeIndex, preset.label)
-                                  }
-                                  className="px-2 py-1 text-xs bg-white border border-harx-200 text-harx-600 rounded-md hover:bg-harx-50 transition-colors"
-                                >
-                                  {preset.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
+                        <div className="space-y-1.5">
+                          {(() => {
+                            const conflicts = findOverlappingRangeIndexes(group.ranges);
+                            return (
+                              <>
+                                {group.ranges.map((range, rangeIndex) => {
+                                  const hasConflict = conflicts.has(rangeIndex);
+                                  const inputCls = hasConflict
+                                    ? "flex-1 min-w-0 px-2 py-1.5 text-sm bg-white border-2 border-red-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-400"
+                                    : "flex-1 min-w-0 px-2 py-1.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-harx-400";
+                                  return (
+                                    <div
+                                      key={`${range.start}-${range.end}-${rangeIndex}`}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <input
+                                        type="time"
+                                        value={range.start}
+                                        onChange={(e) =>
+                                          handleRangeChange(group, rangeIndex, "start", e.target.value)
+                                        }
+                                        className={inputCls}
+                                        aria-label="Start"
+                                      />
+                                      <span className="text-xs text-gray-400 shrink-0">→</span>
+                                      <input
+                                        type="time"
+                                        value={range.end}
+                                        onChange={(e) =>
+                                          handleRangeChange(group, rangeIndex, "end", e.target.value)
+                                        }
+                                        className={inputCls}
+                                        aria-label="End"
+                                      />
+                                      <button
+                                        type="button"
+                                        disabled={group.ranges.length <= 1}
+                                        onClick={() => removeRangeFromGroup(group, rangeIndex)}
+                                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md disabled:opacity-25 disabled:cursor-not-allowed shrink-0"
+                                        title="Remove range"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                                {conflicts.size > 0 && (
+                                  <p className="text-[11px] font-medium text-red-600 bg-red-50 border border-red-100 rounded-md px-2 py-1.5">
+                                    Overlapping time ranges — adjust so plages do not overlap (e.g. 08:00–12:00 and 13:00–18:00).
+                                  </p>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+
+                        <div className="flex flex-wrap gap-1 pt-0.5">
+                          {timePresets.map((preset) => (
+                            <button
+                              key={preset.label}
+                              type="button"
+                              onClick={() =>
+                                handlePresetClick(group, group.ranges.length - 1, preset.label)
+                              }
+                              className="px-1.5 py-0.5 text-[10px] font-medium bg-white border border-gray-200 text-gray-600 rounded hover:border-harx-300 hover:text-harx-700"
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   ))}
