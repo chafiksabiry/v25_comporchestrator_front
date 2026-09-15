@@ -16,6 +16,8 @@ interface ModuleSidebarProps {
   jumpToBookmark: (time: number) => void;
   formatTime: (time: number) => string;
   module: TrainingModule;
+  /** Indexes of sections with status completed — future incomplete ones stay locked. */
+  completedSectionIndexes?: Set<number>;
 }
 
 export const ModuleSidebar: React.FC<ModuleSidebarProps> = ({
@@ -31,7 +33,8 @@ export const ModuleSidebar: React.FC<ModuleSidebarProps> = ({
   bookmarks,
   jumpToBookmark,
   formatTime,
-  module
+  module,
+  completedSectionIndexes,
 }) => {
   return (
     <div className="lg:col-span-1 space-y-6">
@@ -75,32 +78,43 @@ export const ModuleSidebar: React.FC<ModuleSidebarProps> = ({
       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
         <h3 className="font-semibold text-gray-900 mb-4">Module Sections</h3>
         <div className="space-y-2">
-          {sectionTitles.map((title: string, index: number) => (
+          {sectionTitles.map((title: string, index: number) => {
+            const isCompleted = completedSectionIndexes?.has(index) || index < currentSection;
+            const isLocked = index > currentSection && !completedSectionIndexes?.has(index);
+            return (
             <button
               key={index}
+              type="button"
+              disabled={isLocked}
+              title={isLocked ? 'Terminez la section en cours avant d’accéder à celle-ci' : undefined}
               onClick={() => {
+                if (isLocked) return;
                 handleInteraction();
                 setCurrentSection(index);
                 setSectionProgress(0);
                 setCurrentTime(0);
               }}
-              className={`w-full text-left p-3 rounded-lg transition-colors border ${index === currentSection
-                ? 'bg-[var(--primary-color,#eff6ff)]05 border-[var(--primary-color,#3b82f6)] text-[var(--primary-color,#1e40af)]'
-                : index < currentSection
-                  ? 'bg-green-50 border-green-200 text-green-800'
-                  : 'bg-gray-50 border-gray-100 text-gray-700 hover:bg-gray-100'
+              className={`w-full text-left p-3 rounded-lg transition-colors border ${
+                isLocked
+                  ? 'bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                  : index === currentSection
+                    ? 'bg-[var(--primary-color,#eff6ff)]05 border-[var(--primary-color,#3b82f6)] text-[var(--primary-color,#1e40af)]'
+                    : isCompleted
+                      ? 'bg-green-50 border-green-200 text-green-800'
+                      : 'bg-gray-50 border-gray-100 text-gray-700 hover:bg-gray-100'
                 }`}
-              style={index === currentSection ? {
+              style={index === currentSection && !isLocked ? {
                 backgroundColor: 'var(--primary-color-light, rgba(59, 130, 246, 0.1))',
                 borderColor: 'var(--primary-color, #3b82f6)'
               } : {}}
             >
               <div className="flex items-center space-x-3">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${index < currentSection ? 'bg-green-500 text-white' :
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                  isCompleted ? 'bg-green-500 text-white' :
                   index === currentSection ? 'bg-[var(--primary-color,#3b82f6)] text-white' :
                     'bg-gray-300 text-gray-600'
                   }`}>
-                  {index < currentSection ? (
+                  {isCompleted ? (
                     <CheckCircle className="h-4 w-4" />
                   ) : (
                     index + 1
@@ -109,7 +123,8 @@ export const ModuleSidebar: React.FC<ModuleSidebarProps> = ({
                 <span className="font-medium text-sm truncate">{title}</span>
               </div>
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 

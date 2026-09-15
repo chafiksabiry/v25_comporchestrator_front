@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Play, Maximize, CheckCircle } from 'lucide-react';
+import { FileText, Play, Maximize, CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { TrainingModule } from '../../types';
 import DocumentViewer from '../DocumentViewer/DocumentViewer';
 import PresentationPreview from '../Training/PresentationPreview';
@@ -13,7 +13,13 @@ interface SectionContentProps {
   sectionTitles: string[];
   fileTrainingUrl?: string;
   onComplete: () => void;
-  handleSectionComplete: () => void;
+  /** Persist current section as completed (does not advance). */
+  onMarkComplete: () => void | Promise<void>;
+  /** Advance to next section / quiz — only when current section is completed. */
+  onNext: () => void | Promise<void>;
+  isCurrentSectionCompleted: boolean;
+  isMarkingSection?: boolean;
+  isAdvancing?: boolean;
 }
 
 export const SectionContent: React.FC<SectionContentProps> = ({
@@ -24,8 +30,15 @@ export const SectionContent: React.FC<SectionContentProps> = ({
   sectionTitles,
   fileTrainingUrl,
   onComplete,
-  handleSectionComplete
+  onMarkComplete,
+  onNext,
+  isCurrentSectionCompleted,
+  isMarkingSection = false,
+  isAdvancing = false,
 }) => {
+  const isLastSection = currentSection >= Math.max(sections.length, sectionTitles.length) - 1;
+  const nextDisabled = !isCurrentSectionCompleted || isMarkingSection || isAdvancing;
+
   return (
     <>
       {/* PPTX Presentation Viewer (Primary Content) */}
@@ -41,6 +54,7 @@ export const SectionContent: React.FC<SectionContentProps> = ({
                 Source: AI Generated
               </span>
               <button
+                type="button"
                 onClick={() => {
                   const el = document.getElementById('presentation-viewer');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -71,6 +85,46 @@ export const SectionContent: React.FC<SectionContentProps> = ({
               isSaving={false}
             />
           </div>
+          {/* Even with PPTX, force section completion before Next */}
+          <div className="p-4 border-t border-gray-100 bg-white flex flex-wrap items-center justify-end gap-3">
+            {!isCurrentSectionCompleted ? (
+              <button
+                type="button"
+                onClick={() => void onMarkComplete()}
+                disabled={isMarkingSection}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isMarkingSection ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                <span>{isMarkingSection ? 'Enregistrement…' : 'Marquer terminé'}</span>
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg">
+                <CheckCircle className="h-4 w-4" />
+                Section completed
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => void onNext()}
+              disabled={nextDisabled}
+              title={
+                nextDisabled
+                  ? 'Terminez la section avant de passer à la suite'
+                  : isLastSection
+                    ? 'Continuer vers le quiz / fin du module'
+                    : 'Section suivante'
+              }
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
+                nextDisabled
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-[var(--primary-color,#2563eb)] text-white hover:opacity-90'
+              }`}
+            >
+              {isAdvancing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              <span>{isLastSection ? 'Continuer' : 'Suivant'}</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -80,7 +134,7 @@ export const SectionContent: React.FC<SectionContentProps> = ({
           <div className="flex flex-col" style={{ minHeight: '600px' }}>
             {/* Section Header */}
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50" style={{ background: 'linear-gradient(to right, var(--primary-color)10, var(--secondary-color)10)' }}>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900">
                     Section {currentSection + 1}: {currentSectionData.title || sectionTitles[currentSection] || 'Untitled Section'}
@@ -89,13 +143,45 @@ export const SectionContent: React.FC<SectionContentProps> = ({
                     <p className="text-sm text-gray-600 mt-1">{currentSectionData.description}</p>
                   )}
                 </div>
-                <button
-                  onClick={handleSectionComplete}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  <span>Mark Complete</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {!isCurrentSectionCompleted ? (
+                    <button
+                      type="button"
+                      onClick={() => void onMarkComplete()}
+                      disabled={isMarkingSection}
+                      className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isMarkingSection ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                      <span>{isMarkingSection ? 'Enregistrement…' : 'Marquer terminé'}</span>
+                    </button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg">
+                      <CheckCircle className="h-4 w-4" />
+                      Completed
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void onNext()}
+                    disabled={nextDisabled}
+                    title={
+                      nextDisabled
+                        ? 'Terminez la section avant de passer à la suite'
+                        : isLastSection
+                          ? 'Continuer vers le quiz / fin du module'
+                          : 'Section suivante'
+                    }
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
+                      nextDisabled
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-[var(--primary-color,#2563eb)] text-white hover:opacity-90'
+                    }`}
+                  >
+                    {isAdvancing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    <span>{isLastSection ? 'Continuer' : 'Suivant'}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
