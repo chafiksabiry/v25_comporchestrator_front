@@ -18,10 +18,6 @@ import {
   Check,
   Loader2,
   Users,
-  Sun,
-  Sunrise,
-  Sunset,
-  Moon,
   Calendar,
   Search,
   ChevronDown,
@@ -52,7 +48,9 @@ import { scrollPageToTop } from '../../../utils/scrollPageToTop';
 import {
   MultiRangeScheduleGroup,
   TimeRange,
+  findOverlappingRangeIndexes,
   groupSchedulesByDayRanges,
+  rangesOverlap,
   replaceScheduleGroup,
 } from "../lib/scheduleUtils";
 
@@ -2251,12 +2249,6 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     );
   };
 
-  const formatTime24 = (time: string) => {
-    if (!time || !time.includes(":")) return time;
-    let [hoursStr, minutesStr] = time.split(":");
-    return `${hoursStr}h${minutesStr}`;
-  };
-
   const renderEditableSchedules = () => {
     if (!suggestions?.schedule) return null;
 
@@ -2281,19 +2273,25 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
     const pickUnusedRange = (existing: TimeRange[]): TimeRange => {
       const taken = new Set(existing.map((r) => `${r.start}-${r.end}`));
+      const nonOverlapping = rangeCandidates.find(
+        (c) =>
+          !taken.has(`${c.start}-${c.end}`) &&
+          !existing.some((r) => rangesOverlap(r, c))
+      );
+      if (nonOverlapping) return nonOverlapping;
       return (
         rangeCandidates.find((c) => !taken.has(`${c.start}-${c.end}`)) || {
-          start: "10:00",
-          end: "16:00",
+          start: "18:00",
+          end: "21:00",
         }
       );
     };
 
-    const schedulePresets: { label: string; hours: TimeRange; icon: "sun" | "sunrise" | "clock" | "moon" }[] = [
-      { label: "9-5", hours: { start: "09:00", end: "17:00" }, icon: "sun" },
-      { label: "Early", hours: { start: "07:00", end: "15:00" }, icon: "sunrise" },
-      { label: "Late", hours: { start: "11:00", end: "19:00" }, icon: "clock" },
-      { label: "Evening", hours: { start: "14:00", end: "22:00" }, icon: "moon" },
+    const schedulePresets: { label: string; hours: TimeRange }[] = [
+      { label: "9-5", hours: { start: "09:00", end: "17:00" } },
+      { label: "Early", hours: { start: "07:00", end: "15:00" } },
+      { label: "Late", hours: { start: "11:00", end: "19:00" } },
+      { label: "Evening", hours: { start: "14:00", end: "22:00" } },
     ];
 
     const scheduleGroups = groupSchedulesByDayRanges(suggestions.schedule.schedules);
@@ -2399,13 +2397,6 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       );
     };
 
-    const presetIcon = (icon: "sun" | "sunrise" | "clock" | "moon") => {
-      if (icon === "sun") return <Sun className="w-4 h-4 text-yellow-500 mb-1" />;
-      if (icon === "sunrise") return <Sunrise className="w-4 h-4 text-harx-500 mb-1" />;
-      if (icon === "moon") return <Moon className="w-4 h-4 text-harx-alt-500 mb-1" />;
-      return <Clock className="w-4 h-4 text-harx-alt-500 mb-1" />;
-    };
-
     return (
       <div className="space-y-4">
         <p className="text-xs text-gray-500">
@@ -2462,94 +2453,92 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 })}
               </div>
 
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 space-y-4">
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 space-y-2">
                 <div className="flex items-center justify-between">
-                  <h5 className="text-sm font-semibold text-gray-700 flex items-center">
-                    <Clock className="w-4 h-4 mr-2 text-harx-600" />
+                  <h5 className="text-xs font-semibold text-gray-700 flex items-center">
+                    <Clock className="w-3.5 h-3.5 mr-1.5 text-harx-600" />
                     Time ranges
                   </h5>
                   <button
                     type="button"
                     onClick={() => addRangeToGroup(group)}
-                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-harx-700 bg-white border border-harx-200 rounded-md hover:bg-harx-50"
+                    className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-harx-700 bg-white border border-harx-200 rounded-md hover:bg-harx-50"
                   >
                     <Plus className="w-3 h-3" />
-                    Add range
+                    Add
                   </button>
                 </div>
 
-                {group.ranges.map((range, rangeIndex) => (
-                  <div
-                    key={`${range.start}-${range.end}-${rangeIndex}`}
-                    className="bg-white rounded-lg p-3 border border-slate-200"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold text-gray-600">
-                        Range {rangeIndex + 1}: {formatTime24(range.start)} –{" "}
-                        {formatTime24(range.end)}
-                      </span>
-                      {group.ranges.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeRangeFromGroup(group, rangeIndex)}
-                          className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
-                          title="Remove range"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                <div className="space-y-1.5">
+                  {(() => {
+                    const conflicts = findOverlappingRangeIndexes(group.ranges);
+                    return (
+                      <>
+                        {group.ranges.map((range, rangeIndex) => {
+                          const hasConflict = conflicts.has(rangeIndex);
+                          const inputCls = hasConflict
+                            ? "flex-1 min-w-0 px-2 py-1.5 text-sm border-2 border-red-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"
+                            : "flex-1 min-w-0 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-harx-500 bg-white";
+                          return (
+                            <div
+                              key={`${range.start}-${range.end}-${rangeIndex}`}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                type="time"
+                                value={range.start}
+                                onChange={(e) =>
+                                  handleRangeChange(group, rangeIndex, "start", e.target.value)
+                                }
+                                className={inputCls}
+                                aria-label="Start"
+                              />
+                              <span className="text-xs text-gray-400 shrink-0">→</span>
+                              <input
+                                type="time"
+                                value={range.end}
+                                onChange={(e) =>
+                                  handleRangeChange(group, rangeIndex, "end", e.target.value)
+                                }
+                                className={inputCls}
+                                aria-label="End"
+                              />
+                              <button
+                                type="button"
+                                disabled={group.ranges.length <= 1}
+                                onClick={() => removeRangeFromGroup(group, rangeIndex)}
+                                className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md disabled:opacity-25 disabled:cursor-not-allowed shrink-0"
+                                title="Remove range"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                        {conflicts.size > 0 && (
+                          <p className="text-[11px] font-medium text-red-600 bg-red-50 border border-red-100 rounded-md px-2 py-1.5">
+                            Overlapping time ranges — adjust so plages do not overlap (e.g. 08:00–12:00 and 13:00–18:00).
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                      <div>
-                        <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
-                          <Sunrise className="w-3 h-3 mr-1 text-harx-400" />
-                          Start Time
-                        </label>
-                        <input
-                          type="time"
-                          value={range.start}
-                          onChange={(e) =>
-                            handleRangeChange(group, rangeIndex, "start", e.target.value)
-                          }
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
-                          <Sunset className="w-3 h-3 mr-1 text-harx-alt-400" />
-                          End Time
-                        </label>
-                        <input
-                          type="time"
-                          value={range.end}
-                          onChange={(e) =>
-                            handleRangeChange(group, rangeIndex, "end", e.target.value)
-                          }
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {schedulePresets.map((preset) => (
-                        <button
-                          key={preset.label}
-                          type="button"
-                          onClick={() =>
-                            handlePresetClick(group, rangeIndex, preset.hours)
-                          }
-                          className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                        >
-                          {presetIcon(preset.icon)}
-                          <span className="text-xs font-medium text-gray-600">
-                            {preset.label}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                <div className="flex flex-wrap gap-1">
+                  {schedulePresets.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() =>
+                        handlePresetClick(group, group.ranges.length - 1, preset.hours)
+                      }
+                      className="px-1.5 py-0.5 text-[10px] font-medium bg-white border border-gray-200 text-gray-600 rounded hover:border-harx-alt-400 hover:text-harx-alt-700"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           ))

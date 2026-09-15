@@ -39,6 +39,48 @@ export function rangesSignature(ranges: TimeRange[]): string {
     .join('|');
 }
 
+/** "HH:MM" → minutes from midnight. */
+export function timeToMinutes(time: string): number {
+  const [h, m] = String(time || '0:0').split(':').map((n) => Number(n) || 0);
+  return h * 60 + m;
+}
+
+/**
+ * Interval in minutes; overnight (end <= start) spans past midnight (+24h).
+ */
+function rangeInterval(range: TimeRange): [number, number] {
+  const start = timeToMinutes(range.start);
+  let end = timeToMinutes(range.end);
+  if (end <= start) end += 24 * 60;
+  return [start, end];
+}
+
+/** True if two ranges overlap (including overnight). Touching endpoints OK (12:00–12:00 no overlap). */
+export function rangesOverlap(a: TimeRange, b: TimeRange): boolean {
+  if (!a?.start || !a?.end || !b?.start || !b?.end) return false;
+  const [a0, a1] = rangeInterval(a);
+  const [b0, b1] = rangeInterval(b);
+  return a0 < b1 && b0 < a1;
+}
+
+/** Indexes of ranges that conflict with at least one other range in the list. */
+export function findOverlappingRangeIndexes(ranges: TimeRange[]): Set<number> {
+  const bad = new Set<number>();
+  for (let i = 0; i < ranges.length; i++) {
+    for (let j = i + 1; j < ranges.length; j++) {
+      if (rangesOverlap(ranges[i], ranges[j])) {
+        bad.add(i);
+        bad.add(j);
+      }
+    }
+  }
+  return bad;
+}
+
+export function hasOverlappingRanges(ranges: TimeRange[]): boolean {
+  return findOverlappingRangeIndexes(ranges).size > 0;
+}
+
 export function expandDaysAndRanges(days: string[], ranges: TimeRange[]): DaySchedule[] {
   const out: DaySchedule[] = [];
   for (const day of days) {
