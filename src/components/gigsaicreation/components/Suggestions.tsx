@@ -49,16 +49,17 @@ import Logo from "./Logo";
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
 import { scrollPageToTop } from '../../../utils/scrollPageToTop';
+import {
+  MultiRangeScheduleGroup,
+  TimeRange,
+  groupSchedulesByDayRanges,
+  replaceScheduleGroup,
+} from "../lib/scheduleUtils";
 
 type ScheduleEntry = {
   day: string;
   hours: { start: string; end: string };
   _id?: { $oid: string };
-};
-
-type GroupedSchedule = {
-  hours: { start: string; end: string };
-  days: string[];
 };
 
 // Timezone data type with _id
@@ -2259,21 +2260,6 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
   const renderEditableSchedules = () => {
     if (!suggestions?.schedule) return null;
 
-    const groupedSchedules = (suggestions.schedule.schedules || []).reduce(
-      (groups, schedule) => {
-        // Ignorer les schedules avec des jours vides
-        if (!schedule.day || schedule.day.trim() === "") return groups;
-
-        const key = `${schedule.hours.start}-${schedule.hours.end}`;
-        if (!groups[key]) {
-          groups[key] = { hours: schedule.hours, days: [] };
-        }
-        groups[key].days.push(schedule.day);
-        return groups;
-      },
-      {} as Record<string, GroupedSchedule>
-    );
-
     const allWeekDays = [
       "Monday",
       "Tuesday",
@@ -2284,257 +2270,152 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       "Sunday",
     ];
 
-    // Trouver les groupes vides (schedules avec des jours vides)
-    const emptySchedules = suggestions.schedule.schedules.filter(
-      schedule => !schedule.day || schedule.day.trim() === ""
-    );
+    const rangeCandidates: TimeRange[] = [
+      { start: "09:00", end: "17:00" },
+      { start: "08:00", end: "12:00" },
+      { start: "13:00", end: "18:00" },
+      { start: "14:00", end: "18:00" },
+      { start: "07:00", end: "15:00" },
+      { start: "11:00", end: "19:00" },
+    ];
 
-    // Days may appear in multiple groups (split shifts).
-    const selectedDays = suggestions.schedule.schedules
-      .filter(schedule => schedule.day && schedule.day.trim() !== "")
-      .map(schedule => schedule.day);
+    const pickUnusedRange = (existing: TimeRange[]): TimeRange => {
+      const taken = new Set(existing.map((r) => `${r.start}-${r.end}`));
+      return (
+        rangeCandidates.find((c) => !taken.has(`${c.start}-${c.end}`)) || {
+          start: "10:00",
+          end: "16:00",
+        }
+      );
+    };
 
-    const allDaysSelected = allWeekDays.every(day => selectedDays.includes(day));
+    const schedulePresets: { label: string; hours: TimeRange; icon: "sun" | "sunrise" | "clock" | "moon" }[] = [
+      { label: "9-5", hours: { start: "09:00", end: "17:00" }, icon: "sun" },
+      { label: "Early", hours: { start: "07:00", end: "15:00" }, icon: "sunrise" },
+      { label: "Late", hours: { start: "11:00", end: "19:00" }, icon: "clock" },
+      { label: "Evening", hours: { start: "14:00", end: "22:00" }, icon: "moon" },
+    ];
 
-    const addNewScheduleGroup = () => {
-      if (!suggestions) return;
+    const scheduleGroups = groupSchedulesByDayRanges(suggestions.schedule.schedules);
+    const usedDays = new Set(scheduleGroups.flatMap((g) => g.days));
+    const freeDays = allWeekDays.filter((d) => !usedDays.has(d));
 
-      // Cherche un horaire non utilisé (for a new split-shift group)
-      const defaultHoursList = [
-        { start: "09:00", end: "17:00" },
-        { start: "08:00", end: "12:00" },
-        { start: "13:00", end: "18:00" },
-        { start: "07:00", end: "15:00" },
-        { start: "11:00", end: "19:00" },
-        { start: "14:00", end: "22:00" },
-        { start: "18:00", end: "21:00" },
-      ];
-      const usedHours = suggestions.schedule.schedules.map(s => `${s.hours.start}-${s.hours.end}`);
-      const availableHours = defaultHoursList.find(
-        h => !usedHours.includes(`${h.start}-${h.end}`)
-      ) || { start: "09:00", end: "17:00" };
-
-      // Créer un nouveau groupe avec des horaires mais sans jours sélectionnés
-      const newSchedule: ScheduleEntry = {
-        day: "", // Jour vide - aucun jour sélectionné par défaut
-        hours: availableHours,
-        _id: {
-          $oid: `generated_${Date.now()}_${Math.random()
-            .toString(36)
-            .substr(2, 9)}`,
-        },
-      };
-
-      const newSuggestions = {
+    const setSchedules = (next: ScheduleEntry[]) => {
+      setSuggestions({
         ...suggestions,
         schedule: {
           ...suggestions.schedule,
-          schedules: [...suggestions.schedule.schedules, newSchedule],
+          schedules: next,
         },
-      };
-      setSuggestions(newSuggestions);
+      });
     };
 
-    const handleDayToggle = (
-      dayToToggle: string,
-      groupHours: { start: string; end: string }
+    const commitGroup = (
+      group: MultiRangeScheduleGroup,
+      nextDays: string[],
+      nextRanges: TimeRange[]
     ) => {
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-        (s: ScheduleEntry) =>
-          s.day === dayToToggle &&
-          s.hours.start === groupHours.start &&
-          s.hours.end === groupHours.end
+      setSchedules(
+        replaceScheduleGroup(suggestions.schedule.schedules || [], group, nextDays, nextRanges)
       );
-
-      if (scheduleIndex > -1) {
-        // Remove only this day+hours entry (other ranges for the same day stay)
-        newSuggestions.schedule.schedules.splice(scheduleIndex, 1);
-      } else {
-        // Prefer filling an empty placeholder row for this hours group
-        const emptyIndex = newSuggestions.schedule.schedules.findIndex(
-          (s: ScheduleEntry) =>
-            (!s.day || s.day.trim() === "") &&
-            s.hours.start === groupHours.start &&
-            s.hours.end === groupHours.end
-        );
-        if (emptyIndex > -1) {
-          newSuggestions.schedule.schedules[emptyIndex].day = dayToToggle;
-        } else {
-          newSuggestions.schedule.schedules.push({
-            day: dayToToggle,
-            hours: { ...groupHours },
-            _id: {
-              $oid: `generated_${Date.now()}_${Math.random()
-                .toString(36)
-                .substr(2, 9)}`,
-            },
-          });
-        }
-      }
-      setSuggestions(newSuggestions);
     };
 
-    const handleHoursChange = (
-      group: GroupedSchedule,
+    const addNewScheduleGroup = () => {
+      if (freeDays.length === 0) return;
+      const hours = pickUnusedRange(scheduleGroups.flatMap((g) => g.ranges));
+      setSchedules([
+        ...(suggestions.schedule.schedules || []).filter(
+          (s) => s.day && s.day.trim() !== ""
+        ),
+        {
+          day: freeDays[0],
+          hours: { ...hours },
+          _id: {
+            $oid: `generated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          },
+        },
+      ]);
+    };
+
+    const handleDayToggle = (group: MultiRangeScheduleGroup, day: string) => {
+      const isSelected = group.days.includes(day);
+      if (!isSelected && usedDays.has(day)) return;
+      const nextDays = isSelected
+        ? group.days.filter((d) => d !== day)
+        : [...group.days, day];
+      if (nextDays.length === 0) {
+        setSchedules(
+          (suggestions.schedule.schedules || []).filter((s) => !group.days.includes(s.day))
+        );
+        return;
+      }
+      commitGroup(group, nextDays, group.ranges);
+    };
+
+    const handleRangeChange = (
+      group: MultiRangeScheduleGroup,
+      rangeIndex: number,
       field: "start" | "end",
       value: string
     ) => {
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-
-      let shouldUpdateEnd = false;
-      if (field === "start" && value > group.hours.end) {
-        shouldUpdateEnd = true;
-      }
-
-      group.days.forEach((day: string) => {
-        const schedule = newSuggestions.schedule.schedules.find(
-          (s: ScheduleEntry) =>
-            s.day === day &&
-            s.hours.start === group.hours.start &&
-            s.hours.end === group.hours.end
-        );
-        if (schedule) {
-          schedule.hours[field] = value;
-          if (shouldUpdateEnd) {
-            schedule.hours.end = value;
-          }
+      const nextRanges = group.ranges.map((r, i) => {
+        if (i !== rangeIndex) return r;
+        const updated = { ...r, [field]: value };
+        if (field === "start" && value > updated.end) {
+          updated.end = value;
         }
+        return updated;
       });
-      setSuggestions(newSuggestions);
+      commitGroup(group, group.days, nextRanges);
     };
 
-    const handlePresetClick = (group: GroupedSchedule, preset: string) => {
-      let newHours;
-      switch (preset) {
-        case "9-5":
-          newHours = { start: "09:00", end: "17:00" };
-          break;
-        case "Early":
-          newHours = { start: "07:00", end: "15:00" };
-          break;
-        case "Late":
-          newHours = { start: "11:00", end: "19:00" };
-          break;
-        case "Evening":
-          newHours = { start: "14:00", end: "22:00" };
-          break;
-        default:
-          newHours = group.hours;
-      }
-
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      group.days.forEach((day: string) => {
-        const schedule = newSuggestions.schedule.schedules.find(
-          (s: ScheduleEntry) =>
-            s.day === day &&
-            s.hours.start === group.hours.start &&
-            s.hours.end === group.hours.end
-        );
-        if (schedule) {
-          schedule.hours = newHours;
-        }
-      });
-      setSuggestions(newSuggestions);
-    };
-
-    const handleEmptyScheduleDayToggle = (dayToToggle: string, emptySchedule: ScheduleEntry) => {
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-        (s: ScheduleEntry) => s._id?.$oid === emptySchedule._id?.$oid
+    const handlePresetClick = (
+      group: MultiRangeScheduleGroup,
+      rangeIndex: number,
+      hours: TimeRange
+    ) => {
+      const nextRanges = group.ranges.map((r, i) =>
+        i === rangeIndex ? { ...hours } : r
       );
-
-      if (scheduleIndex > -1) {
-        newSuggestions.schedule.schedules[scheduleIndex].day = dayToToggle;
-      }
-      setSuggestions(newSuggestions);
+      commitGroup(group, group.days, nextRanges);
     };
 
-    const handleEmptyScheduleHoursChange = (emptySchedule: ScheduleEntry, field: "start" | "end", value: string) => {
-      // Allow free typing, validation happens on save/confirm if needed
-      // if (field === "end" && value < emptySchedule.hours.start) return;
-
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-        (s: ScheduleEntry) => s._id?.$oid === emptySchedule._id?.$oid
-      );
-
-      if (scheduleIndex > -1) {
-        newSuggestions.schedule.schedules[scheduleIndex].hours[field] = value;
-        // If Start > End, update End as well
-        if (field === "start" && value > newSuggestions.schedule.schedules[scheduleIndex].hours.end) {
-          newSuggestions.schedule.schedules[scheduleIndex].hours.end = value;
-        }
-      }
-      setSuggestions(newSuggestions);
+    const addRangeToGroup = (group: MultiRangeScheduleGroup) => {
+      commitGroup(group, group.days, [...group.ranges, pickUnusedRange(group.ranges)]);
     };
 
-    const handleEmptySchedulePresetClick = (emptySchedule: ScheduleEntry, preset: string) => {
-      let newHours;
-      switch (preset) {
-        case "9-5":
-          newHours = { start: "09:00", end: "17:00" };
-          break;
-        case "Early":
-          newHours = { start: "07:00", end: "15:00" };
-          break;
-        case "Late":
-          newHours = { start: "11:00", end: "19:00" };
-          break;
-        case "Evening":
-          newHours = { start: "14:00", end: "22:00" };
-          break;
-        default:
-          newHours = emptySchedule.hours;
-      }
-
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-        (s: ScheduleEntry) => s._id?.$oid === emptySchedule._id?.$oid
+    const removeRangeFromGroup = (group: MultiRangeScheduleGroup, rangeIndex: number) => {
+      if (group.ranges.length <= 1) return;
+      commitGroup(
+        group,
+        group.days,
+        group.ranges.filter((_, i) => i !== rangeIndex)
       );
-
-      if (scheduleIndex > -1) {
-        newSuggestions.schedule.schedules[scheduleIndex].hours = newHours;
-      }
-      setSuggestions(newSuggestions);
     };
 
-    const deleteEmptySchedule = (emptySchedule: ScheduleEntry) => {
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-        (s: ScheduleEntry) => s._id?.$oid === emptySchedule._id?.$oid
+    const deleteScheduleGroup = (group: MultiRangeScheduleGroup) => {
+      setSchedules(
+        (suggestions.schedule.schedules || []).filter((s) => !group.days.includes(s.day))
       );
-
-      if (scheduleIndex > -1) {
-        newSuggestions.schedule.schedules.splice(scheduleIndex, 1);
-        setSuggestions(newSuggestions);
-      }
     };
 
-    const deleteScheduleGroup = (groupHours: { start: string; end: string }) => {
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const schedulesToRemove = newSuggestions.schedule.schedules.filter(
-        (s: ScheduleEntry) => s.hours.start === groupHours.start && s.hours.end === groupHours.end
-      );
-
-      schedulesToRemove.forEach((schedule: ScheduleEntry) => {
-        const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-          (s: ScheduleEntry) => s._id?.$oid === schedule._id?.$oid
-        );
-        if (scheduleIndex > -1) {
-          newSuggestions.schedule.schedules.splice(scheduleIndex, 1);
-        }
-      });
-
-      setSuggestions(newSuggestions);
+    const presetIcon = (icon: "sun" | "sunrise" | "clock" | "moon") => {
+      if (icon === "sun") return <Sun className="w-4 h-4 text-yellow-500 mb-1" />;
+      if (icon === "sunrise") return <Sunrise className="w-4 h-4 text-harx-500 mb-1" />;
+      if (icon === "moon") return <Moon className="w-4 h-4 text-harx-alt-500 mb-1" />;
+      return <Clock className="w-4 h-4 text-harx-alt-500 mb-1" />;
     };
 
     return (
       <div className="space-y-4">
-        {Object.keys(groupedSchedules).length > 0 ? (
-          Object.entries(groupedSchedules).map(([key, group]) => (
+        <p className="text-xs text-gray-500">
+          Pick days for a group, then add several time ranges inside
+        </p>
+
+        {scheduleGroups.length > 0 ? (
+          scheduleGroups.map((group, groupIndex) => (
             <div
-              key={key}
+              key={group.days.join("|") || `group-${groupIndex}`}
               className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm"
             >
               <div className="flex items-center justify-between mb-3">
@@ -2543,7 +2424,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   Working Days
                 </h5>
                 <button
-                  onClick={() => deleteScheduleGroup(group.hours)}
+                  onClick={() => deleteScheduleGroup(group)}
                   className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                   title="Delete schedule group"
                 >
@@ -2553,13 +2434,26 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <div className="flex gap-1 flex-wrap border-b border-gray-200 pb-2 mb-3">
                 {allWeekDays.map((day) => {
                   const isSelected = group.days.includes(day);
+                  const isInOtherGroup = !isSelected && usedDays.has(day);
                   return (
                     <button
                       key={day}
                       type="button"
-                      onClick={() => handleDayToggle(day, group.hours)}
+                      onClick={() => handleDayToggle(group, day)}
+                      disabled={isInOtherGroup}
+                      title={
+                        isInOtherGroup
+                          ? `${day} is already selected in another schedule group`
+                          : undefined
+                      }
                       className={`rounded-full px-4 py-1.5 font-semibold text-sm transition-all duration-200 shadow-sm
-                        ${isSelected ? 'bg-harx-alt-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-harx-alt-100 hover:text-harx-alt-700'}
+                        ${
+                          isSelected
+                            ? "bg-harx-alt-600 text-white shadow"
+                            : isInOtherGroup
+                              ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                              : "bg-gray-100 text-gray-700 hover:bg-harx-alt-100 hover:text-harx-alt-700"
+                        }
                       `}
                     >
                       {day}
@@ -2568,230 +2462,105 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 })}
               </div>
 
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-                <h5 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                  <Clock className="w-4 h-4 mr-2 text-harx-600" />
-                  Working Hours
-                </h5>
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h5 className="text-sm font-semibold text-gray-700 flex items-center">
+                    <Clock className="w-4 h-4 mr-2 text-harx-600" />
+                    Time ranges
+                  </h5>
+                  <button
+                    type="button"
+                    onClick={() => addRangeToGroup(group)}
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-harx-700 bg-white border border-harx-200 rounded-md hover:bg-harx-50"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add range
+                  </button>
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
-                      <Sunrise className="w-3 h-3 mr-1 text-harx-400" />
-                      Start Time
-                    </label>
-                    <input
-                      type="time"
-                      value={group.hours.start}
-                      onChange={(e) =>
-                        handleHoursChange(group, "start", e.target.value)
-                      }
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
-                    />
+                {group.ranges.map((range, rangeIndex) => (
+                  <div
+                    key={`${range.start}-${range.end}-${rangeIndex}`}
+                    className="bg-white rounded-lg p-3 border border-slate-200"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-gray-600">
+                        Range {rangeIndex + 1}: {formatTime24(range.start)} –{" "}
+                        {formatTime24(range.end)}
+                      </span>
+                      {group.ranges.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeRangeFromGroup(group, rangeIndex)}
+                          className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                          title="Remove range"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
+                          <Sunrise className="w-3 h-3 mr-1 text-harx-400" />
+                          Start Time
+                        </label>
+                        <input
+                          type="time"
+                          value={range.start}
+                          onChange={(e) =>
+                            handleRangeChange(group, rangeIndex, "start", e.target.value)
+                          }
+                          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
+                          <Sunset className="w-3 h-3 mr-1 text-harx-alt-400" />
+                          End Time
+                        </label>
+                        <input
+                          type="time"
+                          value={range.end}
+                          onChange={(e) =>
+                            handleRangeChange(group, rangeIndex, "end", e.target.value)
+                          }
+                          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {schedulePresets.map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() =>
+                            handlePresetClick(group, rangeIndex, preset.hours)
+                          }
+                          className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
+                        >
+                          {presetIcon(preset.icon)}
+                          <span className="text-xs font-medium text-gray-600">
+                            {preset.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
-                      <Sunset className="w-3 h-3 mr-1 text-harx-alt-400" />
-                      End Time
-                    </label>
-                    <input
-                      type="time"
-                      value={group.hours.end}
-                      onChange={(e) =>
-                        handleHoursChange(group, "end", e.target.value)
-                      }
-                      min={group.hours.start}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="text-center bg-white border border-gray-200 rounded-lg p-2 mb-4">
-                  <span className="font-semibold text-gray-700 text-sm">
-                    {formatTime24(group.hours.start)} -{" "}
-                    {formatTime24(group.hours.end)}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <button
-                    onClick={() => handlePresetClick(group, "9-5")}
-                    className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                  >
-                    <Sun className="w-4 h-4 text-yellow-500 mb-1" />
-                    <span className="text-xs font-medium text-gray-600">
-                      9-5
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => handlePresetClick(group, "Early")}
-                    className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                  >
-                    <Sunrise className="w-4 h-4 text-harx-500 mb-1" />
-                    <span className="text-xs font-medium text-gray-600">
-                      Early
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => handlePresetClick(group, "Late")}
-                    className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                  >
-                    <Clock className="w-4 h-4 text-harx-alt-500 mb-1" />
-                    <span className="text-xs font-medium text-gray-600">
-                      Late
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => handlePresetClick(group, "Evening")}
-                    className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                  >
-                    <Moon className="w-4 h-4 text-harx-alt-500 mb-1" />
-                    <span className="text-xs font-medium text-gray-600">
-                      Evening
-                    </span>
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
           ))
-        ) : null}
-
-        {/* Afficher les groupes vides */}
-        {emptySchedules.map((emptySchedule, index) => (
-          <div
-            key={`empty-schedule-${index}`}
-            className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h5 className="text-sm font-semibold text-gray-600">
-                New Schedule Group (No days selected)
-              </h5>
-              <button
-                onClick={() => deleteEmptySchedule(emptySchedule)}
-                className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex gap-1 mb-4">
-              {allWeekDays.map((day) => {
-                const isSelected = emptySchedule.day === day;
-                return (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => handleEmptyScheduleDayToggle(day, emptySchedule)}
-                    className={`rounded-full px-4 py-1.5 font-semibold text-sm transition-all duration-200 shadow-sm
-                      ${isSelected ? 'bg-harx-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-harx-100 hover:text-harx-700'}
-                    `}
-                  >
-                    {day}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-              <h5 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                <Clock className="w-4 h-4 mr-2 text-harx-600" />
-                Working Hours
-              </h5>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
-                    <Sunrise className="w-3 h-3 mr-1 text-harx-400" />
-                    Start Time
-                  </label>
-                  <input
-                    type="time"
-                    value={emptySchedule.hours.start}
-                    onChange={(e) =>
-                      handleEmptyScheduleHoursChange(emptySchedule, "start", e.target.value)
-                    }
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
-                    <Sunset className="w-3 h-3 mr-1 text-harx-alt-400" />
-                    End Time
-                  </label>
-                  <input
-                    type="time"
-                    value={emptySchedule.hours.end}
-                    onChange={(e) =>
-                      handleEmptyScheduleHoursChange(emptySchedule, "end", e.target.value)
-                    }
-                    min={emptySchedule.hours.start}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
-                  />
-                </div>
-              </div>
-
-              <div className="text-center bg-white border border-gray-200 rounded-lg p-2 mb-4">
-                <span className="font-semibold text-gray-700 text-sm">
-                  {formatTime24(emptySchedule.hours.start)} -{" "}
-                  {formatTime24(emptySchedule.hours.end)}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <button
-                  onClick={() => handleEmptySchedulePresetClick(emptySchedule, "9-5")}
-                  className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                >
-                  <Sun className="w-4 h-4 text-yellow-500 mb-1" />
-                  <span className="text-xs font-medium text-gray-600">
-                    9-5
-                  </span>
-                </button>
-                <button
-                  onClick={() => handleEmptySchedulePresetClick(emptySchedule, "Early")}
-                  className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                >
-                  <Sunrise className="w-4 h-4 text-harx-500 mb-1" />
-                  <span className="text-xs font-medium text-gray-600">
-                    Early
-                  </span>
-                </button>
-                <button
-                  onClick={() => handleEmptySchedulePresetClick(emptySchedule, "Late")}
-                  className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                >
-                  <Clock className="w-4 h-4 text-harx-alt-500 mb-1" />
-                  <span className="text-xs font-medium text-gray-600">
-                    Late
-                  </span>
-                </button>
-                <button
-                  onClick={() => handleEmptySchedulePresetClick(emptySchedule, "Evening")}
-                  className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                >
-                  <Moon className="w-4 h-4 text-harx-alt-500 mb-1" />
-                  <span className="text-xs font-medium text-gray-600">
-                    Evening
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Message si aucun planning n'est défini */}
-        {Object.keys(groupedSchedules).length === 0 && emptySchedules.length === 0 && (
+        ) : (
           <div className="text-center py-10">
             <p className="text-gray-500 mb-4">No schedule defined.</p>
           </div>
         )}
 
-        {/* Always allow adding another time range (split shifts / multiple slots per day) */}
-        {emptySchedules.length === 0 && (
+        {freeDays.length > 0 && (
           <div className="flex flex-col items-center mt-8 gap-3">
-            <p className="text-xs text-gray-500 text-center max-w-md">
-              You can add several groups for the same day (e.g. Mon 08:00–12:00 and Mon 13:00–18:00).
-            </p>
             <button
               type="button"
               onClick={addNewScheduleGroup}
@@ -2802,19 +2571,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <Plus className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-bold">Add Schedule Group</div>
+                  <div className="text-sm font-bold">Add Schedule</div>
                   <div className="text-xs text-harx-alt-100 opacity-90">
-                    Add another time range (split shift)
+                    New group for remaining days
                   </div>
                 </div>
               </div>
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </button>
-            {allDaysSelected && (
-              <p className="text-xs text-harx-700 font-medium">
-                All weekdays already have at least one slot — add another group for split shifts.
-              </p>
-            )}
           </div>
         )}
       </div>

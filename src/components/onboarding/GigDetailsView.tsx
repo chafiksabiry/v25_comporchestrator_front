@@ -1028,15 +1028,28 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   <div className="flex items-center justify-between mb-3">
                     <span className={labelCls}>{g('fields.scheduleEntries')}</span>
                     <button
-                      onClick={() => setScheduleDraft((d: any) => ({
-                        ...d,
-                        schedule: [...d.schedule, { day: 'Monday', start: '09:00', end: '17:00' }],
-                      }))}
+                      onClick={() => setScheduleDraft((d: any) => {
+                        const last = d.schedule?.[d.schedule.length - 1];
+                        return {
+                          ...d,
+                          schedule: [
+                            ...d.schedule,
+                            {
+                              day: last?.day || 'Monday',
+                              start: '13:00',
+                              end: '18:00',
+                            },
+                          ],
+                        };
+                      })}
                       className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full hover:bg-emerald-100 transition-all active:scale-95"
                     >
                       <Plus size={11} /> {g('actions.addDay')}
                     </button>
                   </div>
+                  <p className="text-[11px] text-slate-500 mb-3">
+                    Add several rows for the same day for split shifts (e.g. Mon 08:00–12:00 and Mon 13:00–18:00).
+                  </p>
                   <div className="space-y-2">
                     {scheduleDraft.schedule?.map((entry: any, idx: number) => (
                       <div key={idx} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
@@ -1083,7 +1096,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                       </div>
                     ))}
                     {scheduleDraft.schedule?.length === 0 && (
-                      <p className="text-xs text-slate-400 italic">No entries. Click "Add Day" to start.</p>
+                      <p className="text-xs text-slate-400 italic">
+                        No entries. Click add to create a time range (multiple ranges per day allowed).
+                      </p>
                     )}
                   </div>
                 </div>

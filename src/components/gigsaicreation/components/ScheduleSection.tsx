@@ -10,17 +10,13 @@ import {
   Loader2
 } from "lucide-react";
 import { fetchAllTimezones } from "../lib/api";
-
-interface DaySchedule {
-  day: string;
-  hours: { start: string; end: string };
-  _id?: { $oid: string };
-}
-
-interface GroupedSchedule {
-  hours: { start: string; end: string };
-  days: string[];
-}
+import {
+  DaySchedule,
+  MultiRangeScheduleGroup,
+  TimeRange,
+  groupSchedulesByDayRanges,
+  replaceScheduleGroup,
+} from "../lib/scheduleUtils";
 
 interface ScheduleSectionProps {
   data: {
@@ -62,6 +58,25 @@ const timePresets = [
   { label: "Night", start: "21:00", end: "05:00" },
   { label: "Full Day", start: "00:00", end: "23:59" },
 ];
+
+const rangeCandidates: TimeRange[] = [
+  { start: "09:00", end: "17:00" },
+  { start: "08:00", end: "12:00" },
+  { start: "13:00", end: "18:00" },
+  { start: "14:00", end: "18:00" },
+  { start: "07:00", end: "15:00" },
+  { start: "11:00", end: "19:00" },
+];
+
+const pickUnusedRange = (existing: TimeRange[]): TimeRange => {
+  const taken = new Set(existing.map((r) => `${r.start}-${r.end}`));
+  return (
+    rangeCandidates.find((c) => !taken.has(`${c.start}-${c.end}`)) || {
+      start: "10:00",
+      end: "16:00",
+    }
+  );
+};
 
 // Function to get header gradient based on section type
 const getHeaderGradient = (bgColor: string) => {
@@ -108,147 +123,93 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
     fetchTimezones();
   }, []);
 
-  // Group schedules by hours (same logic as Suggestions.tsx)
-  const groupedSchedules = (data.schedules || []).reduce(
-    (groups, schedule) => {
-      // Ignorer les schedules avec des jours vides
-      if (!schedule.day || schedule.day.trim() === "") return groups;
+  const scheduleGroups = groupSchedulesByDayRanges(data.schedules);
+  const usedDays = new Set(scheduleGroups.flatMap((g) => g.days));
+  const freeDays = allWeekDays.filter((d) => !usedDays.has(d));
 
-      const key = `${schedule.hours.start}-${schedule.hours.end}`;
-      if (!groups[key]) {
-        groups[key] = { hours: schedule.hours, days: [] };
-      }
-      groups[key].days.push(schedule.day);
-      return groups;
-    },
-    {} as Record<string, GroupedSchedule>
-  );
-
-
-  // Days may appear in multiple groups (split shifts: Mon 08–12 + Mon 13–18).
-  const addNewScheduleGroup = () => {
-    const currentSchedules = data.schedules || [];
-
-    // Prefer a weekday already used so split shifts are easy to add; else Monday.
-    const usedDays = currentSchedules
-      .filter(schedule => schedule.day && schedule.day.trim() !== "")
-      .map(schedule => schedule.day);
-    const defaultDay = usedDays[0] || allWeekDays[0];
-
-    // Find unique hours to avoid auto-merging with existing groups
-    let startHour = 9;
-    let endHour = 17;
-
-    const isHoursTaken = (s: number, e: number) => {
-      const sStr = `${s.toString().padStart(2, '0')}:00`;
-      const eStr = `${e.toString().padStart(2, '0')}:00`;
-      return currentSchedules.some(sch => sch.hours.start === sStr && sch.hours.end === eStr);
-    };
-
-    // Try to find a free slot (up to 12 attempts to shift by hour)
-    let attempts = 0;
-    while (isHoursTaken(startHour, endHour) && attempts < 12) {
-      startHour = (startHour + 1) % 24;
-      endHour = (endHour + 1) % 24;
-      attempts++;
-    }
-
-    const newSchedule: DaySchedule = {
-      day: defaultDay,
-      hours: {
-        start: `${startHour.toString().padStart(2, '0')}:00`,
-        end: `${endHour.toString().padStart(2, '0')}:00`
-      },
-    };
-
-    onChange({
-      ...data,
-      schedules: [...currentSchedules, newSchedule]
-    });
-  };
-
-  const handleDayToggle = (
-    dayToToggle: string,
-    groupHours: { start: string; end: string }
+  const commitGroup = (
+    group: MultiRangeScheduleGroup,
+    nextDays: string[],
+    nextRanges: TimeRange[]
   ) => {
-    const updatedSchedules = [...data.schedules];
-    const existingScheduleIndex = updatedSchedules.findIndex(
-      schedule =>
-        schedule.day === dayToToggle &&
-        schedule.hours.start === groupHours.start &&
-        schedule.hours.end === groupHours.end
-    );
-
-    if (existingScheduleIndex !== -1) {
-      // Remove only this day+hours entry (other ranges for the same day stay)
-      updatedSchedules.splice(existingScheduleIndex, 1);
-    } else {
-      updatedSchedules.push({
-        day: dayToToggle,
-        hours: { ...groupHours },
-      });
-    }
-
     onChange({
       ...data,
-      schedules: updatedSchedules
+      schedules: replaceScheduleGroup(data.schedules || [], group, nextDays, nextRanges),
     });
   };
 
-  const handleHoursChange = (
-    group: GroupedSchedule,
+  const addNewScheduleGroup = () => {
+    if (freeDays.length === 0) return;
+    const hours = pickUnusedRange(
+      scheduleGroups.flatMap((g) => g.ranges)
+    );
+    onChange({
+      ...data,
+      schedules: [
+        ...(data.schedules || []),
+        { day: freeDays[0], hours: { ...hours } },
+      ],
+    });
+  };
+
+  const handleDayToggle = (group: MultiRangeScheduleGroup, day: string) => {
+    const isSelected = group.days.includes(day);
+    if (!isSelected && usedDays.has(day)) return;
+    const nextDays = isSelected
+      ? group.days.filter((d) => d !== day)
+      : [...group.days, day];
+    if (nextDays.length === 0) {
+      onChange({
+        ...data,
+        schedules: (data.schedules || []).filter((s) => !group.days.includes(s.day)),
+      });
+      return;
+    }
+    commitGroup(group, nextDays, group.ranges);
+  };
+
+  const handleRangeChange = (
+    group: MultiRangeScheduleGroup,
+    rangeIndex: number,
     field: "start" | "end",
     value: string
   ) => {
-    const updatedSchedules = data.schedules.map(schedule => {
-      if (group.days.includes(schedule.day) &&
-        schedule.hours.start === group.hours.start &&
-        schedule.hours.end === group.hours.end) {
-        return {
-          ...schedule,
-          hours: { ...schedule.hours, [field]: value }
-        };
-      }
-      return schedule;
-    });
-
-    onChange({
-      ...data,
-      schedules: updatedSchedules
-    });
-  };
-
-  const handlePresetClick = (group: GroupedSchedule, preset: string) => {
-    const presetData = timePresets.find(p => p.label === preset);
-    if (!presetData) return;
-
-    const updatedSchedules = data.schedules.map(schedule => {
-      if (group.days.includes(schedule.day) &&
-        schedule.hours.start === group.hours.start &&
-        schedule.hours.end === group.hours.end) {
-        return {
-          ...schedule,
-          hours: { start: presetData.start, end: presetData.end }
-        };
-      }
-      return schedule;
-    });
-
-    onChange({
-      ...data,
-      schedules: updatedSchedules
-    });
-  };
-
-  const deleteScheduleGroup = (groupHours: { start: string; end: string }) => {
-    const updatedSchedules = data.schedules.filter(schedule =>
-      !(schedule.hours.start === groupHours.start &&
-        schedule.hours.end === groupHours.end)
+    const nextRanges = group.ranges.map((r, i) =>
+      i === rangeIndex ? { ...r, [field]: value } : r
     );
+    commitGroup(group, group.days, nextRanges);
+  };
 
+  const handlePresetClick = (
+    group: MultiRangeScheduleGroup,
+    rangeIndex: number,
+    presetLabel: string
+  ) => {
+    const preset = timePresets.find((p) => p.label === presetLabel);
+    if (!preset) return;
+    const nextRanges = group.ranges.map((r, i) =>
+      i === rangeIndex ? { start: preset.start, end: preset.end } : r
+    );
+    commitGroup(group, group.days, nextRanges);
+  };
+
+  const addRangeToGroup = (group: MultiRangeScheduleGroup) => {
+    commitGroup(group, group.days, [...group.ranges, pickUnusedRange(group.ranges)]);
+  };
+
+  const removeRangeFromGroup = (group: MultiRangeScheduleGroup, rangeIndex: number) => {
+    if (group.ranges.length <= 1) return;
+    commitGroup(
+      group,
+      group.days,
+      group.ranges.filter((_, i) => i !== rangeIndex)
+    );
+  };
+
+  const deleteScheduleGroup = (group: MultiRangeScheduleGroup) => {
     onChange({
       ...data,
-      schedules: updatedSchedules
+      schedules: (data.schedules || []).filter((s) => !group.days.includes(s.day)),
     });
   };
 
@@ -332,56 +293,70 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-700">Schedule Groups</span>
                   <span className="bg-harx-100 text-harx-800 text-xs font-semibold px-2 py-1 rounded-full">
-                    {Object.keys(groupedSchedules).length}
+                    {scheduleGroups.length}
                   </span>
                 </div>
-                <button
-                  onClick={addNewScheduleGroup}
-                  className="flex items-center gap-2 px-3 py-2 bg-harx-500 text-white rounded-lg hover:bg-harx-600 transition-colors text-sm font-medium"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Schedule
-                </button>
+                {freeDays.length > 0 && (
+                  <button
+                    onClick={addNewScheduleGroup}
+                    className="flex items-center gap-2 px-3 py-2 bg-harx-500 text-white rounded-lg hover:bg-harx-600 transition-colors text-sm font-medium"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Schedule
+                  </button>
+                )}
               </div>
               <p className="text-xs text-gray-500 mb-4">
-                Add several groups for split shifts (e.g. Mon 08:00–12:00 and Mon 13:00–18:00).
+                Pick days for a group, then add several time ranges inside
               </p>
 
-              {Object.entries(groupedSchedules).length > 0 ? (
+              {scheduleGroups.length > 0 ? (
                 <div className="space-y-4">
-                  {Object.entries(groupedSchedules).map(([key, group]) => (
+                  {scheduleGroups.map((group, groupIndex) => (
                     <div
-                      key={key}
+                      key={group.days.join("|") || `group-${groupIndex}`}
                       className="bg-gradient-to-br from-harx-50 to-harx-alt-50 rounded-xl p-4 border-2 border-harx-100 shadow-sm"
                     >
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-sm font-semibold text-harx-700">
-                          {formatTime24(group.hours.start)} - {formatTime24(group.hours.end)}
+                          {group.ranges
+                            .map((r) => `${formatTime24(r.start)}–${formatTime24(r.end)}`)
+                            .join(" · ")}
                         </h4>
                         <button
-                          onClick={() => deleteScheduleGroup(group.hours)}
+                          onClick={() => deleteScheduleGroup(group)}
                           className="p-1 text-red-500 hover:text-white hover:bg-red-500 rounded-md transition-all"
+                          title="Delete schedule group"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
 
-                      {/* Days Selection */}
+                      {/* Days Selection — exclusive across groups */}
                       <div className="mb-4">
                         <label className="block text-xs font-medium text-gray-700 mb-2">Working Days</label>
                         <div className="grid grid-cols-7 gap-1">
-                          {allWeekDays.map(day => {
+                          {allWeekDays.map((day) => {
                             const isSelected = group.days.includes(day);
-
+                            const isInOtherGroup = !isSelected && usedDays.has(day);
                             return (
                               <button
                                 key={day}
                                 type="button"
-                                onClick={() => handleDayToggle(day, group.hours)}
-                                className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${isSelected
-                                  ? 'bg-harx-500 text-white'
-                                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-harx-50 hover:border-harx-300'
-                                  }`}
+                                onClick={() => handleDayToggle(group, day)}
+                                disabled={isInOtherGroup}
+                                title={
+                                  isInOtherGroup
+                                    ? `${day} is already selected in another schedule group`
+                                    : undefined
+                                }
+                                className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${
+                                  isSelected
+                                    ? "bg-harx-500 text-white"
+                                    : isInOtherGroup
+                                      ? "bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100"
+                                      : "bg-white text-gray-600 border border-gray-200 hover:bg-harx-50 hover:border-harx-300"
+                                }`}
                               >
                                 {day.slice(0, 3)}
                               </button>
@@ -390,39 +365,85 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
                         </div>
                       </div>
 
-                      {/* Time Selection */}
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Start Time</label>
-                          <input
-                            type="time"
-                            value={group.hours.start}
-                            onChange={(e) => handleHoursChange(group, 'start', e.target.value)}
-                            className="w-full px-3 py-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">End Time</label>
-                          <input
-                            type="time"
-                            value={group.hours.end}
-                            onChange={(e) => handleHoursChange(group, 'end', e.target.value)}
-                            min={group.hours.start}
-                            className="w-full px-3 py-2 text-sm bg-white border border-harx-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Time Presets */}
-                      <div className="flex flex-wrap gap-2">
-                        {timePresets.map(preset => (
+                      {/* Multiple time ranges */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-medium text-gray-700">
+                            Time ranges
+                          </label>
                           <button
-                            key={preset.label}
-                            onClick={() => handlePresetClick(group, preset.label)}
-                            className="px-2 py-1 text-xs bg-white border border-harx-200 text-harx-600 rounded-md hover:bg-harx-50 transition-colors"
+                            type="button"
+                            onClick={() => addRangeToGroup(group)}
+                            className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-harx-700 bg-white border border-harx-200 rounded-md hover:bg-harx-50"
                           >
-                            {preset.label}
+                            <Plus className="w-3 h-3" />
+                            Add range
                           </button>
+                        </div>
+
+                        {group.ranges.map((range, rangeIndex) => (
+                          <div
+                            key={`${range.start}-${range.end}-${rangeIndex}`}
+                            className="bg-white rounded-lg p-3 border border-harx-100"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold text-harx-600">
+                                Range {rangeIndex + 1}
+                              </span>
+                              {group.ranges.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeRangeFromGroup(group, rangeIndex)}
+                                  className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                                  title="Remove range"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 mb-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Start Time
+                                </label>
+                                <input
+                                  type="time"
+                                  value={range.start}
+                                  onChange={(e) =>
+                                    handleRangeChange(group, rangeIndex, "start", e.target.value)
+                                  }
+                                  className="w-full px-3 py-2 text-sm bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  End Time
+                                </label>
+                                <input
+                                  type="time"
+                                  value={range.end}
+                                  onChange={(e) =>
+                                    handleRangeChange(group, rangeIndex, "end", e.target.value)
+                                  }
+                                  className="w-full px-3 py-2 text-sm bg-white border border-harx-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {timePresets.map((preset) => (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() =>
+                                    handlePresetClick(group, rangeIndex, preset.label)
+                                  }
+                                  className="px-2 py-1 text-xs bg-white border border-harx-200 text-harx-600 rounded-md hover:bg-harx-50 transition-colors"
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>
