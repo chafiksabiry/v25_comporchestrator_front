@@ -271,6 +271,22 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
   const mappedDestinationZone = generatedData.destination_zone || generatedData.destinationZones?.[0] || '';
   
 
+  const schedule = generatedData.schedule || {
+    schedules: [],
+    time_zone: '',
+    timeZones: [],
+    flexibility: [],
+    minimumHours: {}
+  };
+  // Mirror edited schedule into availability so SectionContent / save never
+  // rehydrate deleted plages from a stale availability.schedule.
+  const mirroredScheduleEntries = Array.isArray(schedule.schedules)
+    ? schedule.schedules.map((s: any) => ({
+        day: s.day,
+        hours: s.hours ? { start: s.hours.start, end: s.hours.end } : s.hours,
+      }))
+    : [];
+
   return {
     title: generatedData.jobTitles?.[0] || '',
     description: generatedData.description || '',
@@ -279,14 +295,15 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
     activities: generatedData.activities || [],
     industries: generatedData.industries || [],
     skills: generatedData.skills || { languages: [], soft: [], professional: [], technical: [] } as any,
-    availability: generatedData.availability || {},
-    schedule: generatedData.schedule || {
-      schedules: [],
-      time_zone: '',
-      timeZones: [],
-      flexibility: [],
-      minimumHours: {}
+    availability: {
+      ...(generatedData.availability || {}),
+      schedule: mirroredScheduleEntries,
+      time_zone: schedule.time_zone || generatedData.availability?.time_zone || '',
+      timeZones: schedule.timeZones || generatedData.availability?.timeZones || [],
+      flexibility: schedule.flexibility || generatedData.availability?.flexibility || [],
+      minimumHours: schedule.minimumHours || generatedData.availability?.minimumHours || {},
     },
+    schedule,
     commission: generatedData.commission || {} as any,
     team: generatedData.team || { size: 1, structure: [], territories: [] },
     destination_zone: mappedDestinationZone,
