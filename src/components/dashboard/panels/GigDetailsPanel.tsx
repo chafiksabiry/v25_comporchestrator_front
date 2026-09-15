@@ -260,49 +260,100 @@ function GigDetailsPanel() {
       }
 
       case 'availability': {
-        const existing = (gig.availability?.schedule || []) as Array<{ day: string; hours: { start: string; end: string } }>;
-        const tz = gig.availability?.time_zone || (Array.isArray(gig.availability?.timeZones) ? gig.availability.timeZones[0] : '') || '';
-        const byDay = new Map(existing.map(s => [s.day, s.hours]));
-        const rowsHtml = DAYS_OF_WEEK.map(day => {
-          const slot = byDay.get(day);
-          const checked = slot ? 'checked' : '';
-          const start = slot?.start || '09:00';
-          const end = slot?.end || '18:00';
-          return (
-            `<div style="display: grid; grid-template-columns: 110px 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 6px;">` +
-              `<label style="display:flex; gap:6px; align-items:center; font-weight:600; font-size:13px;">` +
-                `<input type="checkbox" data-day="${day}" ${checked} /> ${day.slice(0,3)}` +
-              `</label>` +
-              `<input type="time" data-day-start="${day}" value="${start}" class="swal2-input" style="margin:0;" />` +
-              `<input type="time" data-day-end="${day}" value="${end}" class="swal2-input" style="margin:0;" />` +
-            `</div>`
-          );
-        }).join('');
+        const existing = (gig.availability?.schedule || []) as Array<{
+          day: string;
+          hours: { start: string; end: string };
+        }>;
+        const tz =
+          gig.availability?.time_zone ||
+          (Array.isArray(gig.availability?.timeZones) ? gig.availability.timeZones[0] : '') ||
+          '';
+
+        const slots =
+          existing.length > 0
+            ? existing.map((s) => ({
+                day: s.day || 'Monday',
+                start: s.hours?.start || '09:00',
+                end: s.hours?.end || '17:00',
+              }))
+            : [{ day: 'Monday', start: '09:00', end: '17:00' }];
+
+        const slotRowHtml = (slot: { day: string; start: string; end: string }, idx: number) =>
+          `<div class="gig-slot-row" data-idx="${idx}" style="display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px;">` +
+            `<select data-slot-day class="swal2-input" style="margin:0;width:100%;">${DAYS_OF_WEEK.map(
+              (d) =>
+                `<option value="${d}" ${d === slot.day ? 'selected' : ''}>${d.slice(0, 3)}</option>`
+            ).join('')}</select>` +
+            `<input type="time" data-slot-start value="${slot.start}" class="swal2-input" style="margin:0;" />` +
+            `<input type="time" data-slot-end value="${slot.end}" class="swal2-input" style="margin:0;" />` +
+            `<button type="button" data-slot-remove class="swal2-confirm swal2-styled" style="background:#ef4444;padding:0.4em 0.7em;margin:0;">✕</button>` +
+          `</div>`;
+
         const { value: formValues, isConfirmed } = await Swal.fire({
           title: 'Modifier les disponibilités',
           html:
             `<input id="swal-tz" class="swal2-input" placeholder="Timezone (ex: Europe/Paris)" value="${escapeHtml(String(tz))}" />` +
-            `<div style="text-align:left; margin-top:12px;">${rowsHtml}</div>`,
-          width: 560,
+            `<p style="text-align:left;font-size:12px;color:#64748b;margin:10px 0 6px;">` +
+              `Plusieurs plages par jour possibles (ex. Lun 08–12 et Lun 13–18).` +
+            `</p>` +
+            `<div id="swal-slots" style="text-align:left;max-height:320px;overflow:auto;padding-right:4px;">` +
+              slots.map((s, i) => slotRowHtml(s, i)).join('') +
+            `</div>` +
+            `<button type="button" id="swal-add-slot" class="swal2-confirm swal2-styled" style="margin-top:10px;background:#10b981;">` +
+              `+ Ajouter une plage` +
+            `</button>`,
+          width: 640,
           focusConfirm: false,
           showCancelButton: true,
           confirmButtonText: 'Sauvegarder',
           cancelButtonText: 'Annuler',
-          preConfirm: () => {
-            const schedule: Array<{ day: string; hours: { start: string; end: string } }> = [];
-            DAYS_OF_WEEK.forEach(day => {
-              const cb = document.querySelector(`input[data-day="${day}"]`) as HTMLInputElement | null;
-              const s = document.querySelector(`input[data-day-start="${day}"]`) as HTMLInputElement | null;
-              const e = document.querySelector(`input[data-day-end="${day}"]`) as HTMLInputElement | null;
-              if (cb?.checked && s?.value && e?.value) {
-                schedule.push({ day, hours: { start: s.value, end: e.value } });
+          didOpen: () => {
+            const container = document.getElementById('swal-slots');
+            const addBtn = document.getElementById('swal-add-slot');
+
+            const wireRemove = (row: Element) => {
+              row.querySelector('[data-slot-remove]')?.addEventListener('click', () => {
+                row.remove();
+              });
+            };
+
+            container?.querySelectorAll('.gig-slot-row').forEach(wireRemove);
+
+            addBtn?.addEventListener('click', () => {
+              if (!container) return;
+              const next = { day: 'Monday', start: '13:00', end: '18:00' };
+              const firstDay = (
+                container.querySelector('[data-slot-day]') as HTMLSelectElement | null
+              )?.value;
+              if (firstDay) next.day = firstDay;
+              const wrap = document.createElement('div');
+              wrap.innerHTML = slotRowHtml(next, container.children.length);
+              const row = wrap.firstElementChild;
+              if (row) {
+                container.appendChild(row);
+                wireRemove(row);
               }
             });
+          },
+          preConfirm: () => {
+            const schedule: Array<{ day: string; hours: { start: string; end: string } }> = [];
+            document.querySelectorAll('#swal-slots .gig-slot-row').forEach((row) => {
+              const day = (row.querySelector('[data-slot-day]') as HTMLSelectElement | null)?.value;
+              const start = (row.querySelector('[data-slot-start]') as HTMLInputElement | null)?.value;
+              const end = (row.querySelector('[data-slot-end]') as HTMLInputElement | null)?.value;
+              if (day && start && end) {
+                schedule.push({ day, hours: { start, end } });
+              }
+            });
+            if (schedule.length === 0) {
+              Swal.showValidationMessage('Ajoutez au moins une plage horaire.');
+              return false;
+            }
             return {
               timezone: (document.getElementById('swal-tz') as HTMLInputElement)?.value.trim(),
-              schedule
+              schedule,
             };
-          }
+          },
         });
         if (isConfirmed && formValues) {
           const timezones = formValues.timezone ? [formValues.timezone] : [];
@@ -311,14 +362,14 @@ function GigDetailsPanel() {
               ...(gig.availability || {}),
               schedule: formValues.schedule,
               time_zone: formValues.timezone,
-              timeZones: timezones
+              timeZones: timezones,
             },
             schedule: {
               ...(gig.schedule || {}),
               schedules: formValues.schedule,
               time_zone: formValues.timezone,
-              timeZones: timezones
-            }
+              timeZones: timezones,
+            },
           });
         }
         break;
