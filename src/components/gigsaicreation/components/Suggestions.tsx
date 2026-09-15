@@ -2299,12 +2299,39 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     const freeDays = allWeekDays.filter((d) => !usedDays.has(d));
 
     const setSchedules = (next: ScheduleEntry[]) => {
+      const normalized = (next || []).map((s) => ({
+        day: s.day,
+        hours: { start: s.hours.start, end: s.hours.end },
+        ...(s._id ? { _id: s._id } : {}),
+      }));
       setSuggestions({
         ...suggestions,
         schedule: {
           ...suggestions.schedule,
-          schedules: next,
+          schedules: normalized,
         },
+        // Keep availability in lockstep so Confirm → Schedule Groups
+        // does not resurrect deleted plages from a stale copy.
+        availability: {
+          ...suggestions.availability,
+          schedule: normalized.map(({ day, hours }) => ({ day, hours })),
+          time_zone:
+            suggestions.schedule?.time_zone ||
+            suggestions.availability?.time_zone ||
+            '',
+          timeZones:
+            suggestions.schedule?.timeZones ||
+            suggestions.availability?.timeZones ||
+            [],
+          flexibility:
+            suggestions.schedule?.flexibility ||
+            suggestions.availability?.flexibility ||
+            [],
+          minimumHours:
+            suggestions.schedule?.minimumHours ||
+            suggestions.availability?.minimumHours ||
+            {},
+        } as any,
       });
     };
 

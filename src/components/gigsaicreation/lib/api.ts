@@ -342,11 +342,9 @@ function fixScheduleData(data: GigData): GigData {
   return data;
 }
 
-// Merge availability.schedule and schedule.schedules into a single, deduplicated
-// list. We do this because the UI keeps both fields in parallel and the two
-// can drift out of sync (e.g. after AI generation followed by manual edits),
-// which previously caused only one of the two arrays to be persisted and lost
-// any newly added Schedule Groups (Sat/Sun, etc.).
+// Prefer schedule.schedules (editor source of truth). Only fall back to
+// availability when schedule is missing — never union-merge, or deleted plages
+// resurrect from a stale availability copy after Suggestions edits.
 function mergeAndDedupeSchedule(data: GigData): Array<{ day: string; hours: { start: string; end: string } }> {
   const fromAvailability: any[] = Array.isArray((data as any)?.availability?.schedule)
     ? (data as any).availability.schedule
@@ -355,10 +353,7 @@ function mergeAndDedupeSchedule(data: GigData): Array<{ day: string; hours: { st
     ? (data as any).schedule.schedules
     : [];
 
-  // schedule.schedules is the source of truth in the UI (ScheduleSection
-  // writes to it directly), so we prefer it but fall back to availability for
-  // any entries that may only live there.
-  const ordered = [...fromSchedule, ...fromAvailability];
+  const ordered = fromSchedule.length > 0 ? fromSchedule : fromAvailability;
 
   const seen = new Set<string>();
   const merged: Array<{ day: string; hours: { start: string; end: string } }> = [];
