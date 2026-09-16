@@ -421,7 +421,15 @@ export function resolveUnvalidatedTransactionStatus(call: CallLike): StatusBadge
       : { label: 'Messagerie', tone: 'bg-slate-50 text-slate-600 border-slate-200', title: 'Messagerie — aucune commission due' };
   }
 
-  if (call.transaction?.validByCompany === false) {
+  // Stale inconsistency: call is AI-valid but transaction still carries an old
+  // AI auto-reject (validByAI=false + validByCompany=false). Ignore it and
+  // fall through to disposition — company "Not signed" keeps validByAI null/true.
+  const staleAiAutoReject =
+    call.validByAI === true &&
+    call.transaction?.validByAI === false &&
+    call.transaction?.validByCompany === false;
+
+  if (call.transaction?.validByCompany === false && !staleAiAutoReject) {
     return {
       label: 'Call refused',
       tone: 'bg-rose-50 text-rose-700 border-rose-200',
