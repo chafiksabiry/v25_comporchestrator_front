@@ -35,6 +35,8 @@ interface ScheduleSectionProps {
   onChange: (data: ScheduleSectionProps['data']) => void;
   onNext?: () => void;
   onPrevious?: () => void;
+  /** When true, hide wizard Previous/Next (used in gig edit). */
+  hideNavigation?: boolean;
 }
 
 const allWeekDays = [
@@ -110,7 +112,7 @@ const formatTime24 = (time: string) => {
   return `${hoursStr}h${minutesStr}`;
 };
 
-export function ScheduleSection({ data, onChange, onNext, onPrevious }: ScheduleSectionProps) {
+export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNavigation = false }: ScheduleSectionProps) {
   const [timezones, setTimezones] = useState<any[]>([]);
   const [timezonesLoading, setTimezonesLoading] = useState(true);
 
@@ -615,25 +617,27 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious }: Schedule
             </div>
           </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
-            <div className="flex items-center gap-3">
+          {/* Navigation Buttons (wizard only) */}
+          {!hideNavigation && (
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={onPrevious}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  Previous
+                </button>
+              </div>
               <button
-                onClick={onPrevious}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                onClick={onNext}
+                className="flex items-center gap-2 px-6 py-2 rounded-xl bg-harx-500 text-white hover:bg-harx-600 shadow-md hover:shadow-lg transition-all"
               >
-                <ArrowLeft className="w-5 h-5" />
-                Previous
+                Next
+                <ArrowRight className="w-5 h-5" />
               </button>
             </div>
-            <button
-              onClick={onNext}
-              className="flex items-center gap-2 px-6 py-2 rounded-xl bg-harx-500 text-white hover:bg-harx-600 shadow-md hover:shadow-lg transition-all"
-            >
-              Next
-              <ArrowRight className="w-5 h-5" />
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </div>
