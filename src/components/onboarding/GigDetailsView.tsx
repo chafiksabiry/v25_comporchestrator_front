@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import RepProfileView from '../RepProfileView';
-import { groupSchedules } from '../gigsaicreation/lib/scheduleUtils';
+import { groupSchedules, timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
+import { ScheduleSection } from '../gigsaicreation/components/ScheduleSection';
 
 interface Gig {
   _id: string;
@@ -149,7 +150,6 @@ const selectCls =
 const labelCls = 'block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1';
 
 
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const YEARS_EXPERIENCE = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '10+'];
 const TEAM_SIZES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '20', '25', '30', '50+'];
 
@@ -202,18 +202,6 @@ const LEGACY_PROFICIENCY_MAP: Record<string, string> = {
   intermediate: 'B1', 'upper-intermediate': 'B2',
   advanced: 'C1', fluent: 'C1', native: 'C2', mastery: 'C2',
 };
-const FLEXIBILITY_OPTIONS = [
-  { value: 'Remote',          labelKey: 'remote' },
-  { value: 'Hybrid',          labelKey: 'hybrid' },
-  { value: 'On-site',         labelKey: 'onSite' },
-  { value: 'Full-time',       labelKey: 'fullTime' },
-  { value: 'Part-time',       labelKey: 'partTime' },
-  { value: 'Weekends',        labelKey: 'weekends' },
-  { value: 'Evenings',        labelKey: 'evenings' },
-  { value: 'Flexible hours',  labelKey: 'flexibleHours' },
-  { value: 'Shifts',          labelKey: 'shifts' },
-  { value: 'Night shift',     labelKey: 'nightShift' },
-];
 
 interface EditBtnProps { onClick: () => void }
 const EditBtn: React.FC<EditBtnProps> = ({ onClick }) => {
@@ -430,19 +418,26 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
         additionalDetails: localGig.commission?.additionalDetails ?? '',
       });
     } else if (section === 'schedule') {
+      const tz: any = localGig.availability?.time_zone;
+      const timeZoneId =
+        (tz && typeof tz === 'object' && (tz._id || tz.id)) ||
+        (typeof tz === 'string' ? tz : '') ||
+        '';
       setScheduleDraft({
-        schedule: (localGig.availability?.schedule || []).map((s: any) => ({
+        schedules: (localGig.availability?.schedule || []).map((s: any) => ({
           day: s.day || 'Monday',
-          start: s.hours?.start || '',
-          end: s.hours?.end || '',
-          _id: s._id,
+          hours: {
+            start: s.hours?.start || '09:00',
+            end: s.hours?.end || '17:00',
+          },
         })),
-        daily: localGig.availability?.minimumHours?.daily ?? '',
-        weekly: localGig.availability?.minimumHours?.weekly ?? '',
-        monthly: localGig.availability?.minimumHours?.monthly ?? '',
-        // flexibility items are stored as strings like "Remote", "Hybrid", etc.
+        minimumHours: {
+          daily: localGig.availability?.minimumHours?.daily,
+          weekly: localGig.availability?.minimumHours?.weekly,
+          monthly: localGig.availability?.minimumHours?.monthly,
+        },
+        time_zone: timeZoneId,
         flexibility: [...(localGig.availability?.flexibility || [])],
-        newFlexibility: '',
       });
     } else if (section === 'skills') {
       const extractId = (v: any) =>
@@ -513,20 +508,30 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
           },
         };
       } else if (section === 'schedule') {
+        const schedules = (scheduleDraft.schedules || [])
+          .filter((s: any) => s?.day && s?.hours?.start && s?.hours?.end)
+          .map((s: any) => ({
+            day: s.day,
+            hours: { start: s.hours.start, end: s.hours.end },
+          }));
         payload = {
           availability: {
             ...localGig.availability,
-            schedule: scheduleDraft.schedule.map((s: any) => ({
-              day: s.day,
-              hours: { start: s.start, end: s.end },
-              ...(s._id ? { _id: s._id } : {}),
-            })),
+            schedule: schedules,
             minimumHours: {
-              daily: Number(scheduleDraft.daily) || 0,
-              weekly: Number(scheduleDraft.weekly) || 0,
-              monthly: Number(scheduleDraft.monthly) || 0,
+              daily: Number(scheduleDraft.minimumHours?.daily) || 0,
+              weekly: Number(scheduleDraft.minimumHours?.weekly) || 0,
+              monthly: Number(scheduleDraft.minimumHours?.monthly) || 0,
             },
-            flexibility: scheduleDraft.flexibility,
+            flexibility: scheduleDraft.flexibility || [],
+            ...(scheduleDraft.time_zone
+              ? { time_zone: scheduleDraft.time_zone }
+              : {}),
+          },
+          // Keep mirrored schedule.schedules in sync (create-flow + AI prompt)
+          schedule: {
+            ...((localGig as any).schedule || {}),
+            schedules,
           },
         };
       } else if (section === 'skills') {
@@ -958,10 +963,10 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
           const start = s?.hours?.start;
           const end = s?.hours?.end;
           if (!start || !end) return acc;
-          const [sh, sm] = start.split(':').map(Number);
-          const [eh, em] = end.split(':').map(Number);
-          if ([sh, sm, eh, em].some((n) => Number.isNaN(n))) return acc;
-          return acc + Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+          const startM = timeToMinutes(start);
+          let endM = timeToMinutes(end);
+          if (endM <= startM) endM += 24 * 60;
+          return acc + Math.max(0, endM - startM);
         }, 0);
         const totalHoursDisplay = totalMinutes > 0
           ? `${Math.floor(totalMinutes / 60)}h${totalMinutes % 60 ? String(totalMinutes % 60).padStart(2, '0') : ''}`
@@ -1020,153 +1025,25 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
               </div>
             </div>
 
-            {/* ── Schedule EDIT form */}
+            {/* ── Schedule EDIT form (same multi-plage UI as gig creation) */}
             {editingSection === 'schedule' ? (
-              <div className="space-y-6">
-                {/* Schedule entries */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={labelCls}>{g('fields.scheduleEntries')}</span>
-                    <button
-                      onClick={() => setScheduleDraft((d: any) => {
-                        const last = d.schedule?.[d.schedule.length - 1];
-                        return {
-                          ...d,
-                          schedule: [
-                            ...d.schedule,
-                            {
-                              day: last?.day || 'Monday',
-                              start: '13:00',
-                              end: '18:00',
-                            },
-                          ],
-                        };
-                      })}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full hover:bg-emerald-100 transition-all active:scale-95"
-                    >
-                      <Plus size={11} /> {g('actions.addDay')}
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-slate-500 mb-3">
-                    Add several rows for the same day for split shifts (e.g. Mon 08:00–12:00 and Mon 13:00–18:00).
-                  </p>
-                  <div className="space-y-2">
-                    {scheduleDraft.schedule?.map((entry: any, idx: number) => (
-                      <div key={idx} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
-                        <select
-                          className={selectCls}
-                          value={entry.day}
-                          onChange={e => setScheduleDraft((d: any) => {
-                            const s = [...d.schedule];
-                            s[idx] = { ...s[idx], day: e.target.value };
-                            return { ...d, schedule: s };
-                          })}
-                        >
-                          {DAYS_OF_WEEK.map(day => <option key={day}>{day}</option>)}
-                        </select>
-                        <input
-                          type="time"
-                          className={inputCls + ' w-auto'}
-                          value={entry.start}
-                          onChange={e => setScheduleDraft((d: any) => {
-                            const s = [...d.schedule];
-                            s[idx] = { ...s[idx], start: e.target.value };
-                            return { ...d, schedule: s };
-                          })}
-                        />
-                        <input
-                          type="time"
-                          className={inputCls + ' w-auto'}
-                          value={entry.end}
-                          onChange={e => setScheduleDraft((d: any) => {
-                            const s = [...d.schedule];
-                            s[idx] = { ...s[idx], end: e.target.value };
-                            return { ...d, schedule: s };
-                          })}
-                        />
-                        <button
-                          onClick={() => setScheduleDraft((d: any) => ({
-                            ...d,
-                            schedule: d.schedule.filter((_: any, i: number) => i !== idx),
-                          }))}
-                          className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                    {scheduleDraft.schedule?.length === 0 && (
-                      <p className="text-xs text-slate-400 italic">
-                        No entries. Click add to create a time range (multiple ranges per day allowed).
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Minimum hours */}
-                <div>
-                  <span className={labelCls}>{g('fields.minimumHours')}</span>
-                  <div className="grid grid-cols-3 gap-3">
-                    {(['daily', 'weekly', 'monthly'] as const).map(key => (
-                      <div key={key}>
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">{g(`periods.${key}`)}</label>
-                        <input
-                          type="number"
-                          min="0"
-                          className={inputCls}
-                          value={scheduleDraft[key]}
-                          onChange={e => setScheduleDraft((d: any) => ({ ...d, [key]: e.target.value }))}
-                          placeholder="0"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Flexibility */}
-                <div>
-                  <span className={labelCls}>{g('fields.flexibilityTags')}</span>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {scheduleDraft.flexibility?.map((opt: string, i: number) => (
-                      <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-extrabold text-slate-700">
-                        {g(`flexibility.${FLEXIBILITY_OPTIONS.find(f => f.value === opt)?.labelKey ?? ''}`, opt)}
-                        <button
-                          onClick={() => setScheduleDraft((d: any) => ({ ...d, flexibility: d.flexibility.filter((_: any, fi: number) => fi !== i) }))}
-                          className="text-rose-400 hover:text-rose-600 transition-colors"
-                        >
-                          <X size={11} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      className={selectCls}
-                      value={scheduleDraft.newFlexibility || ''}
-                      onChange={e => setScheduleDraft((d: any) => ({ ...d, newFlexibility: e.target.value }))}
-                    >
-                      <option value="">{g('placeholders.selectFlexibility')}</option>
-                      {FLEXIBILITY_OPTIONS.filter(o => !scheduleDraft.flexibility?.includes(o.value)).map(o => (
-                        <option key={o.value} value={o.value}>{g(`flexibility.${o.labelKey}`)}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => {
-                        if (scheduleDraft.newFlexibility?.trim()) {
-                          setScheduleDraft((d: any) => ({
-                            ...d,
-                            flexibility: [...d.flexibility, d.newFlexibility.trim()],
-                            newFlexibility: '',
-                          }));
-                        }
-                      }}
-                      className="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl text-[11px] font-black hover:bg-indigo-100 transition-all active:scale-95"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <ScheduleSection
+                hideNavigation
+                data={{
+                  schedules: scheduleDraft.schedules || [],
+                  minimumHours: scheduleDraft.minimumHours || {},
+                  time_zone: scheduleDraft.time_zone || '',
+                  flexibility: scheduleDraft.flexibility || [],
+                }}
+                onChange={(next) =>
+                  setScheduleDraft({
+                    schedules: next.schedules || [],
+                    minimumHours: next.minimumHours || {},
+                    time_zone: next.time_zone || '',
+                    flexibility: next.flexibility || [],
+                  })
+                }
+              />
             ) : (
               /* Schedule DISPLAY */
               <>
