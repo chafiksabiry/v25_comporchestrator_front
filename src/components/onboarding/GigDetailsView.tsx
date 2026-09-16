@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import RepProfileView from '../RepProfileView';
-import { groupSchedules, timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
+import { groupSchedulesByDayRanges, timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
 import { ScheduleSection } from '../gigsaicreation/components/ScheduleSection';
 
 interface Gig {
@@ -956,7 +956,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
       {(() => {
         const rawSchedule = Array.isArray(localGig.availability?.schedule) ? localGig.availability.schedule : [];
         const grouped = rawSchedule.length > 0
-          ? groupSchedules(rawSchedule.map((s: any) => ({ day: s.day, hours: { start: s.hours?.start, end: s.hours?.end } })))
+          ? groupSchedulesByDayRanges(rawSchedule.map((s: any) => ({ day: s.day, hours: { start: s.hours?.start, end: s.hours?.end } })))
           : [];
 
         const totalMinutes = rawSchedule.reduce((acc: number, s: any) => {
@@ -1048,23 +1048,32 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
               /* Schedule DISPLAY */
               <>
                 {grouped.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {grouped.map((slot: any, idx: number) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {grouped.map((group, idx) => (
                       <div
-                        key={idx}
-                        className="p-4 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white flex items-center gap-4 hover:shadow-md hover:border-indigo-200 transition-all duration-300 hover:-translate-y-0.5"
+                        key={group.id || idx}
+                        className="p-4 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white flex items-start gap-4 hover:shadow-md hover:border-indigo-200 transition-all duration-300 hover:-translate-y-0.5"
                       >
-                        <div className="p-2.5 bg-white border border-slate-100 rounded-xl shadow-sm">
+                        <div className="p-2.5 bg-white border border-slate-100 rounded-xl shadow-sm shrink-0">
                           <ClockIcon className="w-5 h-5 text-indigo-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">
-                            {slot.days.join(' · ')}
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex flex-wrap gap-x-1.5 gap-y-0.5">
+                            {group.days.map((day, i) => (
+                              <span key={day}>
+                                {day.slice(0, 3)}
+                                {i < group.days.length - 1 ? ' ·' : ''}
+                              </span>
+                            ))}
                           </div>
-                          <div className="text-lg font-black text-slate-900 tabular-nums">
-                            {slot.hours.start}
-                            <span className="text-slate-300 font-bold mx-1.5">→</span>
-                            {slot.hours.end}
+                          <div className="flex flex-col gap-1">
+                            {group.ranges.map((range, ri) => (
+                              <div key={`${range.start}-${range.end}-${ri}`} className="text-lg font-black text-slate-900 tabular-nums">
+                                {range.start}
+                                <span className="text-slate-300 font-bold mx-1.5">→</span>
+                                {range.end}
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
