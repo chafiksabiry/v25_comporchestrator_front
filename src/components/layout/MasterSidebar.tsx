@@ -152,20 +152,20 @@ export function MasterSidebar({
     { icon: <MessageSquare size={20} />, label: t('sidebar.liveChat'), path: '/dashboard/chat', key: 'live-chat', requiresRepMatching: true, hideForCallCenter: true, groupId: 2 },
 
     // Group 3
-    { icon: <Briefcase size={20} />, label: 'Gigs', path: '/dashboard/gigs', key: 'gigs', requiresGigs: true, groupId: 3 },
+    { icon: <Briefcase size={20} />, label: t('sidebar.gigs'), path: '/dashboard/gigs', key: 'gigs', requiresGigs: true, groupId: 3 },
     { icon: <ScrollText size={20} />, label: t('sidebar.scriptGenerator'), path: '/dashboard/script-generator', key: 'script-generator', alwaysShow: true, groupId: 3 },
     { icon: <Book size={20} />, label: t('sidebar.knowledgeBase'), path: '/dashboard/knowledge-base', key: 'knowledge-base', alwaysShow: true, groupId: 3 },
-    { icon: <PhoneCall size={20} />, label: t('sidebar.telephony', 'Telephony'), path: '/dashboard/telephony', key: 'telephony', alwaysShow: true, groupId: 3 },
+    { icon: <PhoneCall size={20} />, label: t('sidebar.telephony'), path: '/dashboard/telephony', key: 'telephony', alwaysShow: true, groupId: 3 },
     {
       icon: <Bot size={20} />,
-      label: t('sidebar.voiceAssistant', 'Assistant vocal'),
+      label: t('sidebar.voiceAssistant'),
       path: '/dashboard/voice-assistant',
       key: 'voice-assistant',
       alwaysShow: true,
       groupId: 3,
       disabled: true,
     },
-    { icon: <Plug size={20} />, label: 'Gig Activation', path: '/dashboard/gig-activation', key: 'integrations', alwaysShow: true, groupId: 3 },
+    { icon: <Plug size={20} />, label: t('sidebar.gigActivation'), path: '/dashboard/gig-activation', key: 'integrations', alwaysShow: true, groupId: 3 },
     { icon: <ClipboardCheck size={20} />, label: t('sidebar.qualityAssurance'), path: '/dashboard/quality-assurance', key: 'quality-assurance', requiresRepMatching: true, hideForCallCenter: true, groupId: 3 },
     { icon: <ScrollText size={20} />, label: t('sidebar.operations'), path: '/dashboard/operations', key: 'operations', requiresRepMatching: true, hideForCallCenter: true, groupId: 3 },
     { icon: <TrendingUp size={20} />, label: t('sidebar.analytics'), path: '/dashboard/analytics', key: 'analytics', requiresRepMatching: true, hideForCallCenter: true, groupId: 3 },
@@ -190,9 +190,9 @@ export function MasterSidebar({
   });
 
   const groups = [
-    { id: 1, label: 'Dashboard' },
-    { id: 2, label: 'Opérations' },
-    { id: 3, label: 'Orchestrator' }
+    { id: 1, label: t('sidebar.groupDashboard') },
+    { id: 2, label: t('sidebar.groupOperations') },
+    { id: 3, label: t('sidebar.groupOrchestrator') },
   ];
 
   const groupedItems = groups.map(group => ({

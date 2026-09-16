@@ -1,37 +1,43 @@
+import i18n from '../i18n';
+
 export interface StatusBadge {
   label: string;
   tone: string;
   title?: string;
 }
 
+function tb(key: string, opts?: Record<string, unknown>): string {
+  return i18n.t(`calls.statusBadges.${key}`, opts);
+}
+
 /** Map `callOutcome` to a short label + tone for disposition pills. */
 export function callOutcomeBadge(outcome: string | null | undefined): StatusBadge | null {
   if (!outcome) return null;
   const map: Record<string, StatusBadge> = {
-    transaction: { label: 'Transaction', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    appointment: { label: 'RDV', tone: 'bg-violet-50 text-violet-700 border-violet-200' },
-    callback_requested: { label: 'Rappel', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-    argued_interested: { label: 'Argumenté', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    refusal: { label: 'Refus', tone: 'bg-rose-50 text-rose-700 border-rose-200' },
-    not_interested: { label: 'Pas intéressé', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-    already_equipped: { label: 'Déjà équipé', tone: 'bg-blue-50 text-blue-700 border-blue-200' },
-    voicemail: { label: 'Messagerie', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-    no_answer: { label: 'Non décroché', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-    busy: { label: 'Occupé', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-    wrong_number: { label: 'Faux numéro', tone: 'bg-rose-50 text-rose-700 border-rose-200' },
-    fraud: { label: 'Fraude', tone: 'bg-rose-100 text-rose-800 border-rose-300' },
-    too_short: { label: 'Trop court', tone: 'bg-slate-50 text-slate-500 border-slate-200' },
-    connected_no_sale: { label: 'Sans suite', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
+    transaction: { label: tb('transaction'), tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    appointment: { label: tb('appointment'), tone: 'bg-violet-50 text-violet-700 border-violet-200' },
+    callback_requested: { label: tb('callbackRequested'), tone: 'bg-amber-50 text-amber-700 border-amber-200' },
+    argued_interested: { label: tb('arguedInterested'), tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    refusal: { label: tb('refusal'), tone: 'bg-rose-50 text-rose-700 border-rose-200' },
+    not_interested: { label: tb('notInterested'), tone: 'bg-amber-50 text-amber-700 border-amber-200' },
+    already_equipped: { label: tb('alreadyEquipped'), tone: 'bg-blue-50 text-blue-700 border-blue-200' },
+    voicemail: { label: tb('voicemail'), tone: 'bg-slate-50 text-slate-600 border-slate-200' },
+    no_answer: { label: tb('noAnswer'), tone: 'bg-slate-50 text-slate-600 border-slate-200' },
+    busy: { label: tb('busy'), tone: 'bg-slate-50 text-slate-600 border-slate-200' },
+    wrong_number: { label: tb('wrongNumber'), tone: 'bg-rose-50 text-rose-700 border-rose-200' },
+    fraud: { label: tb('fraud'), tone: 'bg-rose-100 text-rose-800 border-rose-300' },
+    too_short: { label: tb('tooShort'), tone: 'bg-slate-50 text-slate-500 border-slate-200' },
+    connected_no_sale: { label: tb('connectedNoSale'), tone: 'bg-slate-50 text-slate-600 border-slate-200' },
   };
   return map[outcome] || { label: outcome.replace(/_/g, ' '), tone: 'bg-slate-50 text-slate-600 border-slate-200' };
 }
 
-const PROSPECT_RUBRICS: Array<{ key: string; label: string; tone: string }> = [
-  { key: 'RDV', label: 'RDV', tone: 'bg-violet-50 text-violet-700 border-violet-200' },
-  { key: 'A plus tard', label: 'Plus tard', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { key: 'PAS INTÉRESSÉS', label: 'Pas intéressé', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { key: 'PAS AU COURANT', label: 'Pas au courant', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-  { key: 'DÉJÀ ÉQUIPÉS', label: 'Déjà équipé', tone: 'bg-blue-50 text-blue-700 border-blue-200' },
+const PROSPECT_RUBRIC_KEYS: Array<{ key: string; labelKey: string; tone: string }> = [
+  { key: 'RDV', labelKey: 'appointment', tone: 'bg-violet-50 text-violet-700 border-violet-200' },
+  { key: 'A plus tard', labelKey: 'later', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { key: 'PAS INTÉRESSÉS', labelKey: 'notInterested', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { key: 'PAS AU COURANT', labelKey: 'notAware', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
+  { key: 'DÉJÀ ÉQUIPÉS', labelKey: 'alreadyEquipped', tone: 'bg-blue-50 text-blue-700 border-blue-200' },
 ];
 
 /** Rubriques prospect passées — on affiche la plus pertinente (meilleur score). */
@@ -40,9 +46,9 @@ export function getProspectStatusBadge(
 ): StatusBadge | null {
   if (!aiCallScore) return null;
 
-  let best: { rubric: typeof PROSPECT_RUBRICS[number]; score: number } | null = null;
+  let best: { rubric: typeof PROSPECT_RUBRIC_KEYS[number]; score: number } | null = null;
 
-  for (const rubric of PROSPECT_RUBRICS) {
+  for (const rubric of PROSPECT_RUBRIC_KEYS) {
     const metric = aiCallScore[rubric.key];
     if (!metric) continue;
     const passed = typeof metric.passed === 'boolean' ? metric.passed : (metric.score ?? 0) >= 50;
@@ -54,7 +60,11 @@ export function getProspectStatusBadge(
   }
 
   if (!best) return null;
-  return { label: best.rubric.label, tone: best.rubric.tone, title: best.rubric.key };
+  return {
+    label: tb(best.rubric.labelKey),
+    tone: best.rubric.tone,
+    title: best.rubric.key,
+  };
 }
 
 const PRIORITY_CALLOUTCOMES = new Set([
@@ -369,24 +379,33 @@ export function computeAgentFraudStats<T extends CallLike>(
   return Array.from(map.values()).sort((a, b) => b.fraudCount - a.fraudCount || a.agentName.localeCompare(b.agentName));
 }
 
+export function getCallRejectedBadge(): StatusBadge {
+  return {
+    label: tb('callRejectedByAi'),
+    tone: 'bg-rose-50 text-rose-700 border-rose-200',
+    title: tb('callRejectedByAiTitle'),
+  };
+}
+
+/** @deprecated use getCallRejectedBadge() — kept for import compatibility */
 export const CALL_REJECTED_BADGE: StatusBadge = {
   label: 'Appel refusé',
   tone: 'bg-rose-50 text-rose-700 border-rose-200',
-  title: 'L\'appel n\'a pas été validé par l\'IA — aucune transaction à traiter',
+  title: "L'appel n'a pas été validé par l'IA — aucune transaction à traiter",
 };
 
 /** Disposition label (pills, modal) when the call itself is still valid. */
 export function resolveCallDispositionStatus(call: CallLike): StatusBadge {
   if (isCallVoicemail(call)) {
     const badge = callOutcomeBadge('voicemail');
-    if (badge) return { ...badge, title: 'Messagerie — aucun échange avec le prospect' };
+    if (badge) return { ...badge, title: tb('voicemailTitle') };
   }
 
   const outcome = call.callOutcome;
 
   if (outcome && PRIORITY_CALLOUTCOMES.has(outcome)) {
     const badge = callOutcomeBadge(outcome);
-    if (badge) return { ...badge, title: `Résultat appel : ${outcome}` };
+    if (badge) return { ...badge, title: tb('outcomeTitle', { outcome }) };
   }
 
   const prospect = getProspectStatusBadge(call.ai_call_score);
@@ -394,21 +413,21 @@ export function resolveCallDispositionStatus(call: CallLike): StatusBadge {
 
   const outcomeBadge = callOutcomeBadge(outcome);
   if (outcomeBadge) {
-    return { ...outcomeBadge, title: `Résultat appel : ${outcome}` };
+    return { ...outcomeBadge, title: tb('outcomeTitle', { outcome }) };
   }
 
   if (call.transaction?.validByAI === false) {
     return {
-      label: 'Pas de vente IA',
+      label: tb('noAiSale'),
       tone: 'bg-slate-50 text-slate-600 border-slate-200',
-      title: 'L\'IA n\'a pas détecté de transaction',
+      title: tb('noAiSaleTitle'),
     };
   }
 
   return {
-    label: 'À confirmer',
+    label: tb('toConfirm'),
     tone: 'bg-blue-50 text-blue-600 border-blue-200',
-    title: 'En attente de validation entreprise',
+    title: tb('toConfirmTitle'),
   };
 }
 
@@ -417,8 +436,8 @@ export function resolveUnvalidatedTransactionStatus(call: CallLike): StatusBadge
   if (isCallVoicemail(call)) {
     const badge = callOutcomeBadge('voicemail');
     return badge
-      ? { ...badge, title: 'Messagerie — aucune commission due' }
-      : { label: 'Messagerie', tone: 'bg-slate-50 text-slate-600 border-slate-200', title: 'Messagerie — aucune commission due' };
+      ? { ...badge, title: tb('voicemailTitle') }
+      : { label: tb('voicemail'), tone: 'bg-slate-50 text-slate-600 border-slate-200', title: tb('voicemailTitle') };
   }
 
   // Stale inconsistency: call is AI-valid but transaction still carries an old
@@ -431,14 +450,14 @@ export function resolveUnvalidatedTransactionStatus(call: CallLike): StatusBadge
 
   if (call.transaction?.validByCompany === false && !staleAiAutoReject) {
     return {
-      label: 'Call refused',
+      label: tb('callRefused'),
       tone: 'bg-rose-50 text-rose-700 border-rose-200',
-      title: 'Décision entreprise : refusé',
+      title: tb('companyRefusedTitle'),
     };
   }
 
   if (isCallRejectedByAI(call)) {
-    return CALL_REJECTED_BADGE;
+    return getCallRejectedBadge();
   }
 
   return resolveCallDispositionStatus(call);
