@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { TimeSlot, Rep } from '../../types/scheduler';
 import { Clock, Calendar, Save } from 'lucide-react';
 import { schedulerApi } from '../../services/schedulerService';
 import { markGigStepDone } from '../../services/gigSetupSync';
+import { timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
 
 interface PlanningMatrixProps {
     selectedDate: Date;
@@ -26,29 +27,80 @@ function getDateForDayInWeek(anchor: Date, dayName: (typeof DAYS)[number]): Date
     return addDays(monday, dayIndex);
 }
 
+/** True if [hour, hour+1) overlaps any availability range (supports multi-plages + overnight). */
+function hourOverlapsRanges(
+    hour: number,
+    ranges: { start: string; end: string }[]
+): boolean {
+    if (!ranges.length) return false;
+    const hourStart = hour * 60;
+    const hourEnd = (hour + 1) * 60;
+    return ranges.some(({ start, end }) => {
+        if (!start || !end) return false;
+        const startM = timeToMinutes(start);
+        let endM = timeToMinutes(end);
+        if (endM <= startM) endM += 24 * 60;
+        return hourStart < endM && hourEnd > startM;
+    });
+}
+
 export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelectDay, availabilitySchedule = [] }: PlanningMatrixProps) {
     const [localMatrix, setLocalMatrix] = useState<Record<string, Record<number, number>>>({});
     const [isSaving, setIsSaving] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [dragValue, setDragValue] = useState<number | null>(null);
 
+    /** Multiple plages per weekday (same day can appear several times). */
+    const availabilityByDay = useMemo(() => {
+        const map: Record<string, { start: string; end: string }[]> = {};
+        availabilitySchedule.forEach((entry: any) => {
+            const key = String(entry?.day || '').trim().toLowerCase();
+            if (!key) return;
+            const start = String(entry?.start || entry?.hours?.start || '').trim();
+            const end = String(entry?.end || entry?.hours?.end || '').trim();
+            if (!start || !end) return;
+            if (!map[key]) map[key] = [];
+            // Dedupe identical ranges
+            if (!map[key].some((r) => r.start === start && r.end === end)) {
+                map[key].push({ start, end });
+            }
+        });
+        return map;
+    }, [availabilitySchedule]);
+
+    const isHourAvailable = useCallback(
+        (dayName: string, hour: number) => {
+            const ranges = availabilityByDay[String(dayName || '').toLowerCase()] || [];
+            return hourOverlapsRanges(hour, ranges);
+        },
+        [availabilityByDay]
+    );
+
     const hoursList = useMemo(() => {
-        let minH = 9;
-        let maxH = 23;
-        if (availabilitySchedule && availabilitySchedule.length > 0) {
-            availabilitySchedule.forEach((entry: any) => {
-                const startHour = Number.parseInt(String(entry.start || '').slice(0, 2), 10);
-                const endHour = Number.parseInt(String(entry.end || '').slice(0, 2), 10);
-                if (!Number.isNaN(startHour) && startHour < minH) {
-                    minH = startHour;
-                }
-                if (!Number.isNaN(endHour) && endHour > maxH) {
-                    maxH = endHour;
-                }
-            });
+        if (!availabilitySchedule?.length) {
+            return Array.from({ length: 15 }, (_, i) => i + 9);
         }
-        const length = maxH - minH + 1;
-        return Array.from({ length: length > 0 ? length : 15 }, (_, i) => i + minH);
+        let minH = 23;
+        let maxH = 0;
+        availabilitySchedule.forEach((entry: any) => {
+            const startStr = String(entry.start || entry?.hours?.start || '');
+            const endStr = String(entry.end || entry?.hours?.end || '');
+            const startHour = Number.parseInt(startStr.slice(0, 2), 10);
+            const endHour = Number.parseInt(endStr.slice(0, 2), 10);
+            if (!Number.isNaN(startHour)) minH = Math.min(minH, startHour);
+            if (!Number.isNaN(endHour)) {
+                // Overnight end (e.g. 02:00) — extend grid to 23
+                const startM = timeToMinutes(startStr);
+                const endM = timeToMinutes(endStr);
+                if (endM <= startM) maxH = Math.max(maxH, 23);
+                else maxH = Math.max(maxH, endHour);
+            }
+        });
+        if (minH > maxH) return Array.from({ length: 15 }, (_, i) => i + 9);
+        // Rows from first open hour through last full hour before end (end exclusive)
+        const lastRow = Math.max(minH, maxH - 1);
+        const length = lastRow - minH + 1;
+        return Array.from({ length: length > 0 ? length : 1 }, (_, i) => i + minH);
     }, [availabilitySchedule]);
 
     useEffect(() => {
@@ -85,7 +137,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             });
             return next;
         });
-    }, [slots, gigId, availabilitySchedule, hoursList]);
+    }, [slots, gigId, availabilitySchedule, hoursList, isHourAvailable]);
     // Removed old sync logic
 
     const handleCellChange = (dateStr: string, hour: number, value: string) => {
@@ -143,28 +195,6 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
         }
     };
 
-    const availabilityByDay = useMemo(() => {
-        const map: Record<string, { start: string; end: string }> = {};
-        availabilitySchedule.forEach((entry: any) => {
-            const key = String(entry?.day || '').trim().toLowerCase();
-            if (!key) return;
-            map[key] = {
-                start: String(entry?.start || '').trim(),
-                end: String(entry?.end || '').trim()
-            };
-        });
-        return map;
-    }, [availabilitySchedule]);
-
-    const isHourAvailable = (dayName: string, hour: number) => {
-        const row = availabilityByDay[String(dayName || '').toLowerCase()];
-        if (!row?.start || !row?.end) return false;
-        const startHour = Number.parseInt(row.start.slice(0, 2), 10);
-        const endHour = Number.parseInt(row.end.slice(0, 2), 10);
-        if (Number.isNaN(startHour) || Number.isNaN(endHour)) return false;
-        return hour >= startHour && hour < endHour;
-    };
-
     // Calculate totals with explicit casting and memoization
     const dayTotals = useMemo(() => {
         return DAYS.map(dayName => {
@@ -176,7 +206,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                 return sum + val;
             }, 0);
         });
-    }, [localMatrix, availabilitySchedule, hoursList]);
+    }, [localMatrix, hoursList, isHourAvailable]);
 
     const todayWeekdayEnglish = useMemo(
         () => format(new Date(), 'EEEE', { locale: enUS }),

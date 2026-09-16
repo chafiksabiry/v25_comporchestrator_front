@@ -24,11 +24,46 @@ export default function SessionPlanningStep({
   const [reps, setReps] = useState<Rep[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [availabilitySchedule, setAvailabilitySchedule] = useState<
+    { day: string; start: string; end: string }[]
+  >([]);
 
   const fetchData = async () => {
     if (!gigId) return;
     setLoading(true);
     try {
+      // Gig availability (multi-plages) for PlanningMatrix open hours
+      try {
+        const GIGS_API =
+          import.meta.env.VITE_API_URL_GIGS ||
+          import.meta.env.VITE_GIGS_API ||
+          'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+        const token = localStorage.getItem('token') || '';
+        const gigRes = await fetch(`${GIGS_API}/gigs/${gigId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (gigRes.ok) {
+          const gigJson = await gigRes.json();
+          const gig = gigJson?.data ?? gigJson;
+          const schedule = Array.isArray(gig?.availability?.schedule)
+            ? gig.availability.schedule
+            : Array.isArray(gig?.schedule?.schedules)
+              ? gig.schedule.schedules
+              : [];
+          setAvailabilitySchedule(
+            schedule
+              .map((entry: any) => ({
+                day: String(entry?.day || '').trim(),
+                start: String(entry?.hours?.start || entry?.start || '').trim(),
+                end: String(entry?.hours?.end || entry?.end || '').trim(),
+              }))
+              .filter((e: any) => e.day && e.start && e.end)
+          );
+        }
+      } catch (e) {
+        console.warn('[SessionPlanningStep] Could not load gig availability', e);
+      }
+
       // Fetch agents for this gig
       const agents = await schedulerApi.getGigAgents(gigId);
       if (agents) {
@@ -151,6 +186,7 @@ export default function SessionPlanningStep({
                 reps={reps}
                 onRefresh={fetchData}
                 onSelectDay={setSelectedDate}
+                availabilitySchedule={availabilitySchedule}
               />
             </div>
           ) : (
