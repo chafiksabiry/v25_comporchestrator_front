@@ -230,13 +230,25 @@ export function isSingleVoiceSelfCall(aiCallScore?: AiCallScoreWithVoice): boole
   if (typeof fraudScore === 'number' && fraudScore >= 50) return false;
 
   const voiceAnalysis = aiCallScore?.['Fraud detection']?.voiceAnalysis as
-    | { distinctVoices?: number; sameSpeakerSuspected?: boolean; fraudReason?: string }
+    | {
+        distinctVoices?: number;
+        sameSpeakerSuspected?: boolean;
+        fraudReason?: string;
+        confidence?: number;
+      }
     | undefined;
   if (!voiceAnalysis) return typeof fraudScore === 'number' && fraudScore < 50;
 
-  if (voiceAnalysis.distinctVoices === 1) return true;
-  if (voiceAnalysis.sameSpeakerSuspected === true) return true;
-  return ['single_speaker_ai', 'same_voice_ai'].includes(String(voiceAnalysis.fraudReason || ''));
+  const reason = String(voiceAnalysis.fraudReason || '');
+  if (['single_speaker_ai', 'same_voice_ai', 'transcript_no_customer', 'transcript_customer_absent'].includes(reason)) {
+    return true;
+  }
+
+  const confidence = typeof voiceAnalysis.confidence === 'number' ? voiceAnalysis.confidence : 0;
+  // Low-confidence "1 voice" is often a quiet customer / mono mix — not self-call UI.
+  if (voiceAnalysis.distinctVoices === 1 && confidence >= 75) return true;
+  if (voiceAnalysis.sameSpeakerSuspected === true && confidence >= 75) return true;
+  return false;
 }
 
 /** Relabel inferred Customer turns for display when audio fraud detected one voice. */
