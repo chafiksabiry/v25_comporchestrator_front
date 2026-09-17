@@ -166,7 +166,10 @@ export const phoneNumberService = {
     provider: 'telnyx' | 'twilio' = 'telnyx'
   ): Promise<AvailablePhoneNumber[]> => {
     try {
-      const endpoint = provider === 'twilio'
+      // France is Twilio-only
+      const resolved: 'telnyx' | 'twilio' =
+        String(countryCode || '').toUpperCase() === 'FR' ? 'twilio' : provider;
+      const endpoint = resolved === 'twilio'
         ? '/phone-numbers/search/twilio'
         : '/phone-numbers/search';
       
@@ -201,7 +204,7 @@ export const phoneNumberService = {
         })
         .map((number: any) => ({
           ...number,
-          provider
+          provider: resolved
         }));
 
       return numbers;
@@ -312,8 +315,14 @@ export const phoneNumberService = {
       );
     }
 
+    // France / +33 → Twilio only
+    const resolved: 'telnyx' | 'twilio' =
+      String(phoneNumber || '').replace(/[^\d+]/g, '').startsWith('+33')
+        ? 'twilio'
+        : provider;
+
     // Vérifier le requirementGroupId pour Telnyx
-    if (provider === 'telnyx' && !requirementGroupId) {
+    if (resolved === 'telnyx' && !requirementGroupId) {
       throw new PhoneNumberServiceError(
         'requirementGroupId is required for Telnyx numbers',
         'MISSING_PARAMETER'
@@ -321,20 +330,23 @@ export const phoneNumberService = {
     }
 
     try {
-      const endpoint = provider === 'twilio'
+      const endpoint = resolved === 'twilio'
         ? '/phone-numbers/purchase/twilio'
         : '/phone-numbers/purchase';
       
 
       const payload: any = {
         phoneNumber,
-        provider,
+        provider: resolved,
         gigId,
         companyId: data.companyId,
-        requirementGroupId
       };
 
-      if (provider === 'twilio') {
+      if (resolved === 'telnyx') {
+        payload.requirementGroupId = requirementGroupId;
+      }
+
+      if (resolved === 'twilio') {
         if (bundleSid) payload.bundleSid = bundleSid;
         if (addressSid) payload.addressSid = addressSid;
         if (paymentId) payload.paymentId = paymentId;
