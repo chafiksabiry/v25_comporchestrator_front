@@ -92,7 +92,7 @@ interface WalletEntryRow {
 interface RepTransactionRow {
   _id: string;
   type: 'call_validated' | 'transaction' | 'bonus';
-  status: 'earned' | 'paid' | 'refused';
+  status: 'earned' | 'paid' | 'refused' | 'pending_retraction' | 'reversed';
   amount: number;
   repShare: number;
   harxShare: number;
@@ -489,12 +489,14 @@ export function WalletCompanyPanel() {
   };
 
   const unifiedMovements = React.useMemo(() => {
-    const reps = repTransactions.map((tx) => ({
-      kind: 'rep' as const,
-      id: tx._id,
-      date: tx.call?.startTime || tx.createdAt,
-      raw: tx,
-    }));
+    const reps = repTransactions
+      .filter((tx) => tx.status !== 'reversed' && tx.status !== 'refused')
+      .map((tx) => ({
+        kind: 'rep' as const,
+        id: tx._id,
+        date: tx.call?.startTime || tx.createdAt,
+        raw: tx,
+      }));
     const deposits = walletEntries
       .filter((e) => e.direction === 'credit' && e.status !== 'failed')
       .map((entry) => ({
