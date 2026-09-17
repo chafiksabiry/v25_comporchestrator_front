@@ -1,6 +1,6 @@
 /**
  * Map a gig destination (ISO cca2) to the phone-number provider.
- * France → provider A; other markets (e.g. US) → provider B.
+ * France → Twilio only; other markets → Telnyx by default.
  * Brand names are intentionally not exposed in the UI.
  */
 export type PhoneLineProvider = 'twilio' | 'telnyx';
