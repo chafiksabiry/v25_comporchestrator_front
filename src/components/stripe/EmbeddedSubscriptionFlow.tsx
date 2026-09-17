@@ -91,6 +91,21 @@ function formatPrice(plan: Pick<ApiPlan, 'price' | 'priceCents' | 'currency'>): 
   }
 }
 
+/** Stripe product metadata → display lines (keys may differ per plan). */
+function metadataLines(meta?: Record<string, string> | null): Array<{ key: string; value: string }> {
+  if (!meta || typeof meta !== 'object') return [];
+  return Object.entries(meta)
+    .filter(([k, v]) => {
+      const key = k.toLowerCase();
+      return (
+        key !== 'features' &&
+        !/^feature[_-]?\d+$/i.test(k) &&
+        String(v ?? '').trim().length > 0
+      );
+    })
+    .map(([k, v]) => ({ key: k, value: String(v).trim() }));
+}
+
 const EmbeddedSubscriptionFlow: React.FC<Props> = ({
   companyId,
   userId,
@@ -338,19 +353,47 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
                 </span>
                 <span className="text-xs font-bold text-gray-400">/ month</span>
               </div>
-              {Array.isArray(plan.features) && plan.features.length > 0 && (
-                <ul className="mt-4 space-y-2 flex-1">
-                  {plan.features.map((feat, i) => (
-                    <li
-                      key={`${plan._id}-feat-${i}`}
-                      className="flex items-start gap-2 text-xs text-gray-700 font-medium"
-                    >
-                      <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
-                      <span>{feat}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {(() => {
+                const meta = metadataLines(plan.metadata);
+                const feats = Array.isArray(plan.features) ? plan.features : [];
+                if (!meta.length && !feats.length) return null;
+                return (
+                  <div className="mt-4 flex-1 space-y-3">
+                    {meta.length > 0 && (
+                      <ul className="space-y-2">
+                        {meta.map(({ key, value }) => (
+                          <li
+                            key={`${plan._id}-meta-${key}`}
+                            className="flex items-start gap-2 text-xs text-gray-800 font-semibold"
+                          >
+                            <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
+                            <span>
+                              <span className="text-gray-500 font-bold uppercase tracking-wide text-[10px]">
+                                {key}
+                              </span>
+                              {': '}
+                              <span className="text-gray-900">{value}</span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {feats.length > 0 && (
+                      <ul className="space-y-2">
+                        {feats.map((feat, i) => (
+                          <li
+                            key={`${plan._id}-feat-${i}`}
+                            className="flex items-start gap-2 text-xs text-gray-700 font-medium"
+                          >
+                            <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
+                            <span>{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })()}
               <button
                 onClick={() => !isCurrent && openSubscribe(plan)}
                 disabled={
