@@ -331,11 +331,9 @@ const TelephonySetup = ({
     }
   }, [phoneNumbers]);
 
-  /* New state for Twilio SIDs */
-  const [twilioRegulatorySids, setTwilioRegulatorySids] = useState<{ bundleSid?: string; addressSid?: string }>({
-    addressSid: 'ADfa022505e9b0433a23c8b4f6e56cf15a', // From Screenshot
-    bundleSid: 'BUf007aeefc1a71ad9ac096a4d205563b0'  // From Screenshot for FR
-  });
+  /* Twilio SIDs come from server env (TWILIO_FRENCH_BUNDLE_SID / ADDRESS_SID).
+     Do not hardcode — wrong SID causes Twilio 21649 on purchase. */
+  const [twilioRegulatorySids, setTwilioRegulatorySids] = useState<{ bundleSid?: string; addressSid?: string }>({});
 
   const checkGigPhoneNumber = async (zoneOverride?: string) => {
     if (!selectedGigId) return false;
@@ -475,9 +473,10 @@ const TelephonySetup = ({
     const destZone = zoneOverride || selectedGig.destination_zone.cca2;
     setDestinationZone(destZone); // Set destination zone for number search
 
-    // Check for available numbers first
+    // Check for available numbers first (provider follows destination country)
     try {
-      const numbers = await phoneNumberService.searchPhoneNumbers(destZone, 'telnyx');
+      const lineProvider = providerForDestinationCountry(destZone);
+      const numbers = await phoneNumberService.searchPhoneNumbers(destZone, lineProvider);
       setAvailableNumbers(Array.isArray(numbers) ? numbers : []);
 
       // If no numbers available, don't proceed with requirements
