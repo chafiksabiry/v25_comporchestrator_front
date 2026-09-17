@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Clock,
   Calendar,
@@ -48,6 +49,16 @@ const allWeekDays = [
   "Saturday",
   "Sunday",
 ];
+
+const weekdayI18nKey: Record<string, string> = {
+  Monday: "monday",
+  Tuesday: "tuesday",
+  Wednesday: "wednesday",
+  Thursday: "thursday",
+  Friday: "friday",
+  Saturday: "saturday",
+  Sunday: "sunday",
+};
 
 const flexibilityOptions = [
   'Remote Work Available', 'Flexible Hours', 'Weekend Rotation',
@@ -113,7 +124,14 @@ const formatTime24 = (time: string) => {
 };
 
 export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNavigation = false }: ScheduleSectionProps) {
+  const { t } = useTranslation();
   const [timezones, setTimezones] = useState<any[]>([]);
+
+  const dayDisplay = (day: string, abbrev = false) => {
+    const key = weekdayI18nKey[day];
+    const label = key ? t(`gigCreation.schedule.days.${key}`) : day;
+    return abbrev ? label.slice(0, 3) : label;
+  };
   const [timezonesLoading, setTimezonesLoading] = useState(true);
 
   // Load timezones from API
@@ -292,7 +310,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                   <Calendar className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Work Schedule</h3>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.schedule.workSchedule')}</h3>
                   <p className="text-white/80 text-sm">Define working days and hours</p>
                 </div>
               </div>
@@ -312,7 +330,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                     className="flex items-center gap-2 px-3 py-2 bg-harx-500 text-white rounded-lg hover:bg-harx-600 transition-colors text-sm font-medium"
                   >
                     <Plus className="w-4 h-4" />
-                    Add Schedule
+                    {t('gigCreation.schedule.addSchedule')}
                   </button>
                 )}
               </div>
@@ -344,7 +362,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
 
                       {/* Days Selection — exclusive across groups */}
                       <div className="mb-4">
-                        <label className="block text-xs font-medium text-gray-700 mb-2">Working Days</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-2">{t('gigCreation.schedule.workingDays')}</label>
                         <div className="grid grid-cols-7 gap-1">
                           {allWeekDays.map((day) => {
                             const isSelected = group.days.includes(day);
@@ -368,7 +386,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                                       : "bg-white text-gray-600 border border-gray-200 hover:bg-harx-50 hover:border-harx-300"
                                 }`}
                               >
-                                {day.slice(0, 3)}
+                                {dayDisplay(day, true)}
                               </button>
                             );
                           })}
@@ -387,7 +405,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                             className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-harx-700 bg-white border border-harx-200 rounded-md hover:bg-harx-50"
                           >
                             <Plus className="w-3 h-3" />
-                            Add
+                            {t('gigCreation.nav.add')}
                           </button>
                         </div>
 
@@ -483,7 +501,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                   <Clock className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Minimum Hours</h3>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.schedule.minimumHours')}</h3>
                   <p className="text-white/80 text-sm">Set minimum working hour requirements</p>
                 </div>
               </div>
@@ -492,7 +510,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Daily Hours</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('gigCreation.schedule.dailyHours')}</label>
                   <input
                     type="number"
                     min="1"
@@ -504,7 +522,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Weekly Hours</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('gigCreation.schedule.weeklyHours')}</label>
                   <input
                     type="number"
                     min="1"
@@ -516,7 +534,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Hours</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('gigCreation.schedule.monthlyHours')}</label>
                   <input
                     type="number"
                     min="1"
@@ -539,7 +557,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                   <Globe className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Time Zone</h3>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.schedule.timeZone')}</h3>
                   <p className="text-white/80 text-sm">Select the primary working timezone</p>
                 </div>
               </div>
@@ -584,7 +602,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                   <Clock className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Schedule Flexibility</h3>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.schedule.flexibility')}</h3>
                   <p className="text-white/80 text-sm">Define flexible working arrangements</p>
                 </div>
               </div>
@@ -626,14 +644,14 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                 >
                   <ArrowLeft className="w-5 h-5" />
-                  Previous
+                  {t('gigCreation.nav.previous')}
                 </button>
               </div>
               <button
                 onClick={onNext}
                 className="flex items-center gap-2 px-6 py-2 rounded-xl bg-harx-500 text-white hover:bg-harx-600 shadow-md hover:shadow-lg transition-all"
               >
-                Next
+                {t('gigCreation.nav.next')}
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>

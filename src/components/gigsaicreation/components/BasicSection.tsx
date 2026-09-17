@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { InfoText } from './InfoText';
 import { Briefcase, ArrowRight, ArrowLeft } from 'lucide-react';
 import { GigData } from '../types';
@@ -27,6 +28,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
   onNext,
   onSectionChange,
 }) => {
+  const { t } = useTranslation();
   const titleOk = Boolean(String(data.title || '').trim());
 
   const goNext = () => {
@@ -58,8 +60,8 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 <Briefcase className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">Gig title</h3>
-                <p className="text-white/80 text-sm">Only this field is required to continue</p>
+                <h3 className="text-xl font-bold text-white">{t('gigCreation.basic.title')}</h3>
+                <p className="text-white/80 text-sm">{t('gigCreation.basic.titleHint')}</p>
               </div>
             </div>
           </div>
@@ -82,9 +84,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 <p className="mt-2 text-sm text-red-600 font-medium">{errors.title.join(', ')}</p>
               )}
             </div>
-            <p className="text-xs text-gray-500">
-              Tip: use “Skip to review” if you only want to publish with a title for now.
-            </p>
+            <p className="text-xs text-gray-500">{t('gigCreation.basic.skipTip')}</p>
           </div>
         </div>
 
@@ -96,7 +96,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            Previous
+            {t('gigCreation.nav.previous')}
           </button>
           <div className="flex items-center gap-3">
             <button
@@ -105,7 +105,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
               disabled={!titleOk}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Skip to review
+              {t('gigCreation.basic.skipToReview')}
               <ArrowRight className="w-5 h-5" />
             </button>
             <button
@@ -114,7 +114,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
               disabled={!titleOk}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-harx-500 text-white hover:bg-harx-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Next
+              {t('gigCreation.nav.next')}
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>

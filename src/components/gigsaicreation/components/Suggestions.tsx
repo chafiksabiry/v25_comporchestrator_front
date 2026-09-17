@@ -45,6 +45,7 @@ import Logo from "./Logo";
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
 import { scrollPageToTop } from '../../../utils/scrollPageToTop';
+import { useTranslation } from 'react-i18next';
 import {
   MultiRangeScheduleGroup,
   TimeRange,
@@ -221,6 +222,7 @@ const FLEXIBILITY_SELECT_OPTIONS = [
 ];
 
 export const Suggestions: React.FC<SuggestionsProps> = (props) => {
+  const { t } = useTranslation();
   const [suggestions, setSuggestions] = useState<GigSuggestion | null>(props.initialSuggestions || null);
   const [loading, setLoading] = useState(!props.initialSuggestions);
   const [error, setError] = useState<string | null>(null);
@@ -1422,11 +1424,70 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
       const finalSuggestions = finalMigration();
 
+      // Sync destination / currency from user edits so Review does not keep stale AI metas
+      const zones = Array.isArray(finalSuggestions.destinationZones)
+        ? finalSuggestions.destinationZones
+        : [];
+      const primaryZone = zones[0] ? String(zones[0]) : '';
+      let destination_zone_meta = (finalSuggestions as any).destination_zone_meta;
+      if (primaryZone) {
+        const country = allCountriesFromAPI.find((c) => c._id === primaryZone);
+        if (country) {
+          destination_zone_meta = {
+            _id: country._id,
+            name: {
+              common: country.name?.common || '',
+              official: (country.name as any)?.official || country.name?.common || '',
+            },
+            cca2: country.cca2,
+          };
+        } else if (
+          destination_zone_meta &&
+          String(destination_zone_meta._id || '') !== primaryZone
+        ) {
+          destination_zone_meta = undefined;
+        }
+      } else {
+        destination_zone_meta = undefined;
+      }
+
+      const commission = { ...(finalSuggestions.commission || {}) } as any;
+      const rawCurrency = commission.currency;
+      const currencyId =
+        typeof rawCurrency === 'object' && rawCurrency?.$oid
+          ? String(rawCurrency.$oid)
+          : rawCurrency
+            ? String(rawCurrency)
+            : '';
+      if (currencyId) {
+        commission.currency = currencyId;
+        const currency = currencies.find(
+          (c) => c._id === currencyId || c.code === currencyId
+        );
+        if (currency) {
+          commission.currency_meta = {
+            _id: currency._id,
+            name: currency.name,
+            code: currency.code,
+            symbol: currency.symbol,
+          };
+        } else if (
+          commission.currency_meta &&
+          String(commission.currency_meta._id || '') !== currencyId
+        ) {
+          delete commission.currency_meta;
+        }
+      }
+
       // Add selected job title to the final suggestions
       const suggestionsWithSelectedTitle: GigSuggestion = {
         ...finalSuggestions,
-        selectedJobTitle: selectedJobTitle || undefined
-      };
+        selectedJobTitle: selectedJobTitle || undefined,
+        destination_zone: primaryZone || (finalSuggestions as any).destination_zone,
+        destination_zone_meta,
+        destinationZones: zones,
+        commission,
+      } as GigSuggestion;
 
       props.onConfirm(suggestionsWithSelectedTitle);
       // Next step mounts in the dashboard <main> scrollport — scroll it up.
@@ -2582,7 +2643,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <Plus className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-bold">Add Schedule</div>
+                  <div className="text-sm font-bold">{t('gigCreation.suggestions.addSchedule')}</div>
                   <div className="text-xs text-harx-alt-100 opacity-90">
                     New group for remaining days
                   </div>
@@ -2785,6 +2846,24 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     const handleRemoveDestinationZone = (zone: string) => {
       const newSuggestions = { ...suggestions };
       newSuggestions.destinationZones = newSuggestions.destinationZones.filter(z => z !== zone);
+      const nextPrimary = newSuggestions.destinationZones[0];
+      if (nextPrimary) {
+        const country = allCountriesFromAPI.find(c => c._id === nextPrimary);
+        (newSuggestions as any).destination_zone = nextPrimary;
+        (newSuggestions as any).destination_zone_meta = country
+          ? {
+              _id: country._id,
+              name: {
+                common: country.name?.common || '',
+                official: (country.name as any)?.official || country.name?.common || '',
+              },
+              cca2: country.cca2,
+            }
+          : undefined;
+      } else {
+        (newSuggestions as any).destination_zone = '';
+        (newSuggestions as any).destination_zone_meta = undefined;
+      }
       setSuggestions(newSuggestions);
     };
 
@@ -3877,7 +3956,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <DollarSign className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold bg-gradient-to-r from-harx-700 to-emerald-700 bg-clip-text text-transparent">Commission Structure</h3>
+              <h3 className="text-xl font-bold bg-gradient-to-r from-harx-700 to-emerald-700 bg-clip-text text-transparent">{t('gigCreation.suggestions.commissionStructure')}</h3>
               <p className="text-sm text-green-600 font-medium">Compensation details and performance incentives</p>
             </div>
           </div>
@@ -3974,8 +4053,25 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                       updateCommissionOption(
                                         0,
                                         "currency",
-                                        { $oid: currency._id }
+                                        currency._id
                                       );
+                                      // Keep currency_meta in sync with selection (avoid stale AI EUR meta)
+                                      setSuggestions((prev) => {
+                                        if (!prev) return prev;
+                                        return {
+                                          ...prev,
+                                          commission: {
+                                            ...(prev.commission || {}),
+                                            currency: currency._id,
+                                            currency_meta: {
+                                              _id: currency._id,
+                                              name: currency.name,
+                                              code: currency.code,
+                                              symbol: currency.symbol,
+                                            },
+                                          },
+                                        } as GigSuggestion;
+                                      });
                                       setIsCurrencyDropdownOpen(false);
                                       setCurrencySearchTerm("");
                                     }}
@@ -5528,7 +5624,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               className="flex items-center space-x-1 bg-gradient-harx hover:opacity-90 text-white font-bold px-3 py-1 rounded-md shadow-md hover:shadow-lg transition-all transform hover:scale-105"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Role</span>
+              <span>{t('gigCreation.suggestions.addRole')}</span>
             </button>
           </div>
 
@@ -5685,7 +5781,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             <Logo />
           </div>
           <p className="mt-8 text-2xl font-bold bg-gradient-harx bg-clip-text text-transparent animate-pulse tracking-widest drop-shadow-sm border-2 border-harx-200 px-8 py-3 rounded-full shadow-inner bg-white/50 backdrop-blur-md">
-            generating...
+            {t('gigCreation.suggestions.generating')}
           </p>
         </div>
       </div>
@@ -5707,7 +5803,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
             <div className="space-y-3">
               <h2 className="text-2xl font-bold text-gray-900">
-                Error Generating Suggestions
+                {t('gigCreation.suggestions.errorTitle')}
               </h2>
               <p className="text-gray-600 leading-relaxed">
                 {error}
@@ -5720,7 +5816,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 className="inline-flex items-center px-6 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Input
+                {t('gigCreation.suggestions.backToInput')}
               </button>
             </div>
           </div>
@@ -5744,10 +5840,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
             <div className="space-y-3">
               <h2 className="text-2xl font-bold text-gray-900">
-                No Suggestions Available
+                {t('gigCreation.suggestions.emptyTitle')}
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                We couldn't generate suggestions based on your input. Please try again with different requirements.
+                {t('gigCreation.suggestions.emptyBody')}
               </p>
             </div>
 
@@ -5757,7 +5853,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 className="inline-flex items-center px-6 py-2 text-sm font-medium text-white bg-harx-600 border border-transparent rounded-lg hover:bg-harx-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-harx-500 shadow-sm transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Input
+                {t('gigCreation.suggestions.backToInput')}
               </button>
             </div>
           </div>
@@ -5779,12 +5875,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               className="group inline-flex items-center px-6 py-3 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
-              Back to Input
+              {t('gigCreation.suggestions.backToInput')}
             </button>
 
             <div className="text-center">
               <h2 className="text-lg font-semibold text-gray-900">
-                Review & Refine Suggestions
+                {t('gigCreation.suggestions.reviewTitle')}
               </h2>
               {/* Mock Data Indicator */}
               {import.meta.env.VITE_USE_MOCK_DATA === 'true' && (
@@ -5798,7 +5894,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               onClick={handleConfirm}
               className="group inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-harx-500 hover:bg-harx-600 border border-transparent rounded-lg transition-colors shadow-sm"
             >
-              Confirm & Continue
+              {t('gigCreation.suggestions.confirmContinue')}
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
             </button>
           </div>
@@ -5817,7 +5913,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <Briefcase className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Basic Information</h3>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.basicInformation')}</h3>
                   <p className="text-harx-100 text-sm">Core details and requirements for your gig</p>
                 </div>
               </div>
@@ -5840,7 +5936,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2 mb-2">
                     <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-                    <h4 className="text-lg font-semibold text-gray-900">Job Description</h4>
+                    <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.jobDescription')}</h4>
                   </div>
                   {renderDescriptionSection()}
                 </div>
@@ -5889,7 +5985,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <Clock className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Schedule & Availability</h3>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.scheduleAvailability')}</h3>
                   <p className="text-harx-alt-100 text-sm">Working hours, timezones, and flexibility options</p>
                 </div>
               </div>
@@ -5922,7 +6018,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <DollarSign className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Commission Structure</h3>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.commissionStructure')}</h3>
                   <p className="text-harx-100 text-sm">Compensation details and performance incentives</p>
                 </div>
               </div>
@@ -5941,7 +6037,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <Award className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Skills & Qualifications</h3>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.skillsQualifications')}</h3>
                   <p className="text-harx-alt-100 text-sm">Required technical, professional, and soft skills</p>
                 </div>
               </div>
@@ -5960,7 +6056,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Team Structure</h3>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.teamStructure')}</h3>
                   <p className="text-harx-100 text-sm">Team composition, roles, and territories</p>
                 </div>
               </div>
@@ -5977,7 +6073,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             onClick={handleConfirm}
             className="group inline-flex items-center px-12 py-4 text-lg font-bold text-white bg-harx-500 hover:bg-harx-600 border border-transparent rounded-2xl transition-all shadow-xl shadow-harx-500/25 hover:shadow-harx-500/40 hover:-translate-y-1"
           >
-            Confirm & Continue
+            {t('gigCreation.suggestions.confirmContinue')}
             <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
           </button>
         </div>
