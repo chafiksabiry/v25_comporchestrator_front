@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
-import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck, BellRing } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck, BellRing, Bot } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import CallDetailModal, { type NormalizedCall, companyTransactionCanValidate } from '../components/CallDetailModal';
 import {
@@ -36,6 +36,39 @@ const CALL_OUTCOME_FILTERS = new Set<CallOutcomeFilter>([
   'wrong_number',
   'too_short',
 ]);
+
+/** Gig commission of 0€ is valid — never treat it as missing (|| would fall back to 4/30). */
+function resolveGigCommissionAmount(
+  primary: unknown,
+  secondary: unknown,
+  fallback: number
+): number {
+  const candidates = [primary, secondary];
+  for (const c of candidates) {
+    if (typeof c === 'number' && Number.isFinite(c)) return c;
+    if (c && typeof c === 'object' && typeof (c as { amount?: unknown }).amount === 'number') {
+      const amount = (c as { amount: number }).amount;
+      if (Number.isFinite(amount)) return amount;
+    }
+  }
+  return fallback;
+}
+
+function callCommissionDisplayAmount(call: any): string {
+  return resolveGigCommissionAmount(
+    call?.lead?.gigId?.commission?.commission_per_call,
+    call?.lead?.gigId?.rewardPerCall,
+    4
+  ).toFixed(2);
+}
+
+function transactionCommissionDisplayAmount(call: any): string {
+  return resolveGigCommissionAmount(
+    call?.lead?.gigId?.commission?.transactionCommission,
+    call?.lead?.gigId?.rewardPerSale,
+    30
+  ).toFixed(2);
+}
 
 function readUrlOutcomeFilter(): CallOutcomeFilter {
   try {
@@ -389,7 +422,13 @@ export default function CallsDashboardPage() {
     return t('calls.fallback.lead');
   };
 
+  const isVoicebotCall = (call: any): boolean =>
+    Boolean(call?.aiVoice?.enabled || call?.aiVoice?.source === 'voicebot');
+
   const callAgentName = (call: any): string => {
+    if (isVoicebotCall(call)) {
+      return t('calls.voicebot', 'Assistant vocal IA');
+    }
     const agent = call?.agent;
     if (agent && typeof agent === 'object') {
       const n =
@@ -673,6 +712,7 @@ export default function CallsDashboardPage() {
               {filteredCalls.map((call, idx) => {
                 const callId = call._id || idx;
                 const isInbound = String(call.direction || '').toLowerCase().startsWith('inbound');
+                const isVoicebot = isVoicebotCall(call);
                 const agentName = callAgentName(call);
                 const leadName = callLeadName(call);
                 const fromName = isInbound ? leadName : agentName;
@@ -704,14 +744,28 @@ export default function CallsDashboardPage() {
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
                         <div
-                          title={isInbound ? t('calls.direction.inbound') : t('calls.direction.outbound')}
+                          title={
+                            isVoicebot
+                              ? t('calls.voicebot', 'Assistant vocal IA')
+                              : isInbound
+                                ? t('calls.direction.inbound')
+                                : t('calls.direction.outbound')
+                          }
                           className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform flex-shrink-0 ${
-                            isInbound
-                              ? 'bg-blue-50 text-blue-600'
-                              : 'bg-violet-50 text-violet-600'
+                            isVoicebot
+                              ? 'bg-teal-50 text-teal-600'
+                              : isInbound
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'bg-violet-50 text-violet-600'
                           }`}
                         >
-                          {isInbound ? <PhoneIncoming className="w-6 h-6" /> : <PhoneOutgoing className="w-6 h-6" />}
+                          {isVoicebot ? (
+                            <Bot className="w-6 h-6" />
+                          ) : isInbound ? (
+                            <PhoneIncoming className="w-6 h-6" />
+                          ) : (
+                            <PhoneOutgoing className="w-6 h-6" />
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap text-sm">
@@ -730,6 +784,12 @@ export default function CallsDashboardPage() {
                             </span>
                           </div>
                           <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                            {isVoicebot && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-50 text-teal-700 border border-teal-200">
+                                <Bot className="w-3 h-3" />
+                                {t('calls.voicebotBadge', 'Voicebot')}
+                              </span>
+                            )}
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm border ${call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 'bg-rose-50 text-rose-600 border-rose-100/50'}`}>
                               {t(`calls.status.${String(call.status || '').toLowerCase()}`, call.status)}
                             </span>
@@ -801,7 +861,7 @@ export default function CallsDashboardPage() {
                               {isCallApprovedByAI(call) ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
-                                  {t('calls.ai.approvedWithAmount', { amount: (call.lead?.gigId?.commission?.commission_per_call || call.lead?.gigId?.rewardPerCall || 4).toFixed(2) })}
+                                  {t('calls.ai.approvedWithAmount', { amount: callCommissionDisplayAmount(call) })}
                                 </span>
                               ) : isCallRejectedByAI(call) ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
@@ -824,7 +884,7 @@ export default function CallsDashboardPage() {
                               {call.transaction?.validByCompany === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
-                                  {t('calls.transaction.signedWithAmount', { amount: (call.lead?.gigId?.commission?.transactionCommission || call.lead?.gigId?.rewardPerSale || 30).toFixed(2) })}
+                                  {t('calls.transaction.signedWithAmount', { amount: transactionCommissionDisplayAmount(call) })}
                                 </span>
                               ) : isCallRejectedByAI(call) ? (
                                 (() => {
@@ -1063,7 +1123,7 @@ export default function CallsDashboardPage() {
                     {selectedCall.transaction?.validByCompany === true ? (
                       <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">
                         <Check className="w-3 h-3" />
-                        -{(selectedCall.lead?.gigId?.commission?.transactionCommission || selectedCall.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€
+                        -{transactionCommissionDisplayAmount(selectedCall)}€
                       </span>
                     ) : selectedCall.transaction?.validByCompany === false ? (
                       <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title={t('calls.status.rejected')}>
