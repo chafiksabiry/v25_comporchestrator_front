@@ -177,7 +177,7 @@ export function PhoneNumberPanel() {
   }, [location.search]);
 
   const [selectedGigIdForNumber, setSelectedGigIdForNumber] = useState('');
-  const [searchLimit, setSearchLimit] = useState('10');
+  const [searchLimit, setSearchLimit] = useState('50');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [purchasing, setPurchasing] = useState<string | null>(null);
