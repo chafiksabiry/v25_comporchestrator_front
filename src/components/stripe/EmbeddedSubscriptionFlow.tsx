@@ -16,7 +16,10 @@ interface ApiPlan {
   stripePriceId: string;
   description?: string;
   features?: string[];
+  metadata?: Record<string, string>;
   isPopular?: boolean;
+  maxGigs?: number;
+  maxReps?: number;
 }
 
 interface ActiveSubscription {
@@ -62,10 +65,12 @@ function formatPrice(amount: number, currency: string): string {
     return new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency: (currency || 'EUR').toUpperCase(),
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   } catch {
-    return `${amount} ${currency?.toUpperCase() || 'EUR'}`;
+    const n = Number(amount);
+    return `${Number.isFinite(n) ? n.toFixed(2) : amount} ${currency?.toUpperCase() || 'EUR'}`;
   }
 }
 
@@ -318,7 +323,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
               </div>
               {Array.isArray(plan.features) && plan.features.length > 0 && (
                 <ul className="mt-4 space-y-2 flex-1">
-                  {plan.features.slice(0, 6).map((feat, i) => (
+                  {plan.features.map((feat, i) => (
                     <li
                       key={`${plan._id}-feat-${i}`}
                       className="flex items-start gap-2 text-xs text-gray-700 font-medium"
