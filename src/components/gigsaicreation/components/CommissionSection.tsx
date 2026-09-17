@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { InfoText } from './InfoText';
 import { predefinedOptions } from '../lib/guidance';
 import { fetchAllCurrencies, fetchCurrencyById, Currency } from "../lib/api";
@@ -18,6 +19,7 @@ interface CommissionSectionProps {
 }
 
 export function CommissionSection({ data, onChange, errors, warnings, onNext, onPrevious }: CommissionSectionProps) {
+  const { t } = useTranslation();
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [currenciesLoading, setCurrenciesLoading] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<Currency | null>(null);
@@ -205,7 +207,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
                 <DollarSign className="w-6 h-6 text-white" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-bold text-gray-900">Currency</h3>
+                <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.commission.currency')}</h3>
                 <p className="text-sm text-gray-500">Base currency for payments</p>
               </div>
             </div>
@@ -314,7 +316,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-bold text-gray-900">Per call compensation</h3>
+                <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.commission.perCall')}</h3>
                 <p className="text-sm text-gray-500">Amount per completed call</p>
               </div>
             </div>
@@ -342,7 +344,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
                 <Coins className="w-6 h-6 text-white" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-bold text-gray-900">Transaction Commission</h3>
+                <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.commission.transaction')}</h3>
                 <p className="text-sm text-gray-500">Commission per transaction</p>
               </div>
             </div>
@@ -370,7 +372,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
                 <Star className="w-6 h-6 text-white" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-bold text-gray-900">Bonus & Incentives</h3>
+                <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.commission.bonus')}</h3>
                 <p className="text-sm text-gray-500">Performance bonus amount</p>
               </div>
             </div>
@@ -399,7 +401,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
               <Target className="w-6 h-6 text-white" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-bold text-gray-900">Minimum Volume Requirements For Bonus</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.commission.minVolume')}</h3>
               <p className="text-sm text-gray-500">Set minimum performance thresholds</p>
             </div>
           </div>
@@ -422,10 +424,10 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
               onChange={e => handleMinimumVolumeChange('period', e.target.value)}
               className="w-full px-4 py-3 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-harx-200 rounded-xl text-harx-900 font-semibold focus:outline-none focus:ring-3 focus:ring-orange-300 focus:border-orange-400 transition-all"
             >
-              <option value="">Select Period</option>
+              <option value="">{t('gigCreation.commission.selectPeriod')}</option>
               <option value="Daily">Daily</option>
-              <option value="Weekly">Weekly</option>
-              <option value="Monthly">Monthly</option>
+              <option value="Weekly">{t('gigCreation.commission.weekly')}</option>
+              <option value="Monthly">{t('gigCreation.commission.monthly')}</option>
             </select>
           </div>
         </div>
@@ -439,7 +441,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
               </svg>
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-bold text-gray-900">Additional Details</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.additionalDetails')}</h3>
               <p className="text-sm text-gray-500">Terms, conditions and special notes</p>
             </div>
           </div>
@@ -466,7 +468,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
               <div className="flex items-start gap-3 p-6 bg-red-50 rounded-xl text-red-700 border border-red-200">
                 <AlertCircle className="w-6 h-6 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-semibold text-lg">Please fix the following:</p>
+                  <p className="font-semibold text-lg">{t('gigCreation.commission.fixErrors')}</p>
                   <ul className="mt-2 text-sm list-disc list-inside space-y-1">
                     {errors.commission.map((error, index) => (
                       <li key={index}>{error}</li>
@@ -500,14 +502,14 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
               className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium"
             >
               <ArrowLeft className="w-5 h-5" />
-              Previous
+              {t('gigCreation.nav.previous')}
             </button>
           </div>
           <button
             onClick={onNext}
             className="flex items-center gap-3 px-6 py-3 rounded-xl bg-harx-500 text-white hover:bg-harx-600 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
           >
-            Next
+            {t('gigCreation.nav.next')}
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>

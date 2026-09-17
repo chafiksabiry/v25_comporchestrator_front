@@ -21,6 +21,7 @@ import {
   Repeat,
   Phone,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { GigData } from "../types";
 import { predefinedOptions } from "../lib/guidance";
 import { groupSchedules } from "../lib/scheduleUtils";
@@ -66,16 +67,17 @@ export function GigReview({
   isReadOnly = false,
   onEditSection,
 }: GigReviewProps) {
+  const { t } = useTranslation();
   // Compact pencil button rendered next to each section header. Visible
   // whenever `onEditSection` is provided, even in read-only mode.
-  const EditSectionBtn = ({ section, label = 'Edit' }: { section: string; label?: string }) => {
+  const EditSectionBtn = ({ section, label = t('gigCreation.nav.edit') }: { section: string; label?: string }) => {
     if (!onEditSection) return null;
     return (
       <button
         type="button"
         onClick={() => onEditSection(section)}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-harx-500 bg-harx-500/10 hover:bg-harx-500/20 border border-harx-500/20 rounded-full transition-all shadow-sm active:scale-95"
-        title={`Modifier ${label}`}
+        title={`${t('gigCreation.nav.edit')} ${label}`}
       >
         <Edit3 className="w-3 h-3" />
         {label}
@@ -173,8 +175,14 @@ export function GigReview({
         }
       }
 
-      // Fetch country name only when backend did not send _meta
-      if (data.destination_zone && !data.destination_zone_meta?.name?.common) {
+      // Fetch country name only when backend did not send matching _meta
+      const metaZoneId = data.destination_zone_meta?._id
+        ? String(data.destination_zone_meta._id)
+        : '';
+      const zoneId = data.destination_zone ? String(data.destination_zone) : '';
+      const metaMatchesZone = Boolean(metaZoneId && zoneId && metaZoneId === zoneId);
+
+      if (data.destination_zone && !(data.destination_zone_meta?.name?.common && metaMatchesZone)) {
         try {
           const countryNameFromApi = await getCountryNameById(data.destination_zone);
           setCountryName(countryNameFromApi);
@@ -182,6 +190,8 @@ export function GigReview({
           console.error('❌ GigReview: Error fetching country name:', e);
           setCountryName(data.destination_zone);
         }
+      } else if (data.destination_zone_meta?.name?.common && metaMatchesZone) {
+        setCountryName(data.destination_zone_meta.name.common);
       }
     };
     fetchMeta();
@@ -190,33 +200,33 @@ export function GigReview({
   // Fetch currency details
   useEffect(() => {
     const loadCurrency = async () => {
-      if (data?.commission?.currency_meta) {
-        setSelectedCurrency(data.commission.currency_meta);
+      const currencyVal = data?.commission?.currency;
+      const currencyId = (typeof currencyVal === 'object' && (currencyVal as any)?.$oid)
+        ? String((currencyVal as any).$oid)
+        : currencyVal
+          ? String(currencyVal)
+          : '';
+
+      const meta = data?.commission?.currency_meta;
+      const metaId = meta?._id ? String(meta._id) : '';
+      if (meta?.symbol && (!currencyId || !metaId || metaId === currencyId)) {
+        setSelectedCurrency(meta);
         return;
       }
 
-      const currencyVal = data?.commission?.currency;
-      if (!currencyVal) return;
+      if (!currencyId) return;
 
-      const currencyId = (typeof currencyVal === 'object' && (currencyVal as any).$oid)
-        ? (currencyVal as any).$oid
-        : currencyVal;
+      const currencies = (predefinedOptions.commission as any)?.currencies || [];
+      const found = currencies.find((c: any) => c._id === currencyId || c.code === currencyId);
 
-      if (typeof currencyId === 'string') {
-        // Try finding in predefined options first
-        const currencies = (predefinedOptions.commission as any)?.currencies || [];
-        const found = currencies.find((c: any) => c._id === currencyId || c.code === currencyId);
-
-        if (found) {
-          setSelectedCurrency(found);
-        } else if (/^[0-9a-fA-F]{24}$/.test(currencyId)) {
-          // If not found and looks like an ID, fetch it
-          try {
-            const fetched = await fetchCurrencyById(currencyId);
-            if (fetched) setSelectedCurrency(fetched);
-          } catch (e) {
-            console.error('Error fetching currency:', e);
-          }
+      if (found) {
+        setSelectedCurrency(found);
+      } else if (/^[0-9a-fA-F]{24}$/.test(currencyId)) {
+        try {
+          const fetched = await fetchCurrencyById(currencyId);
+          if (fetched) setSelectedCurrency(fetched);
+        } catch (e) {
+          console.error('Error fetching currency:', e);
         }
       }
     };
@@ -274,19 +284,26 @@ export function GigReview({
   };
 
   const getCurrencySymbol = () => {
-    if (data.commission?.currency_meta?.symbol) return data.commission.currency_meta.symbol;
     if (selectedCurrency?.symbol) return selectedCurrency.symbol;
 
-    // Fallback logic
-    if (!data.commission) {
-      return "€";
+    const currencyVal = data.commission?.currency;
+    const currencyId = (typeof currencyVal === 'object' && (currencyVal as any)?.$oid)
+      ? String((currencyVal as any).$oid)
+      : currencyVal
+        ? String(currencyVal)
+        : '';
+
+    const meta = data.commission?.currency_meta;
+    const metaId = meta?._id ? String(meta._id) : '';
+    if (meta?.symbol && (!currencyId || !metaId || metaId === currencyId)) {
+      return meta.symbol;
     }
+
+    if (!data.commission) return '€';
     const currencies = predefinedOptions.commission.currencies || [];
-    return data.commission.currency
-      ? currencies.find(
-        (c: any) => c.code === data.commission.currency
-      )?.symbol || "€"
-      : "€";
+    return currencyId
+      ? currencies.find((c: any) => c._id === currencyId || c.code === currencyId)?.symbol || '€'
+      : '€';
   };
 
   const handlePublish = async () => {
@@ -331,7 +348,7 @@ export function GigReview({
 
       await Toast.fire({
         icon: 'success',
-        title: isEditMode ? "Gig updated successfully" : "Gig published successfully"
+        title: isEditMode ? t('gigCreation.review.updateSuccess') : t('gigCreation.review.publishSuccess')
       });
 
       if (isEditMode && editGigId) {
@@ -457,7 +474,7 @@ export function GigReview({
             className="flex items-center gap-2 px-4 py-2 bg-gradient-harx hover:opacity-90 text-white rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
           >
             <Edit3 className="w-4 h-4" />
-            Edit
+            {t('gigCreation.nav.edit')}
           </button>
         )}
       </div>
@@ -471,7 +488,10 @@ export function GigReview({
   // Before return, define a variable for readable schedule time zones
   // Define a variable for the readable destination zone name
   const destinationZoneName =
-    data.destination_zone_meta?.name?.common ||
+    (data.destination_zone_meta?._id &&
+      data.destination_zone &&
+      String(data.destination_zone_meta._id) === String(data.destination_zone) &&
+      data.destination_zone_meta?.name?.common) ||
     countryName ||
     getTimeZoneName(data.destination_zone);
 
@@ -484,7 +504,7 @@ export function GigReview({
           className="inline-flex items-center gap-2 px-5 py-2 text-sm font-black uppercase tracking-tighter text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-all duration-300 shadow-sm"
         >
           <ArrowLeft size={16} />
-          Back
+          {t('gigCreation.nav.back')}
         </button>
         {!isReadOnly && (
           <button
@@ -495,12 +515,12 @@ export function GigReview({
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                {isEditMode ? 'Updating...' : 'Publishing...'}
+                {isEditMode ? t('gigCreation.review.updating') : t('gigCreation.review.publishing')}
               </>
             ) : (
               <>
                 <Zap className="w-4 h-4" />
-                {isEditMode ? 'Update Gig' : 'Publish Gig'}
+                {isEditMode ? t('gigCreation.review.update') : t('gigCreation.review.publish')}
               </>
             )}
           </button>
@@ -516,11 +536,11 @@ export function GigReview({
               {data.category || 'OUTBOUND SALES'}
             </span>
             <h1 className="text-3xl font-black text-gray-900 leading-tight">
-              {data.title || 'No title provided'}
+              {data.title || '—'}
             </h1>
           </div>
           <div className="shrink-0">
-            <EditSectionBtn section="header" label="Titre & Catégorie" />
+            <EditSectionBtn section="header" label={t('gigCreation.review.editTitleCategory')} />
           </div>
         </div>
 
@@ -529,11 +549,11 @@ export function GigReview({
           {/* Left Column: Job Description */}
           <div className="space-y-6">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-black text-gray-900">Job Description</h2>
+              <h2 className="text-2xl font-black text-gray-900">{t('gigCreation.review.jobDescription')}</h2>
               <EditSectionBtn section="description" />
             </div>
             <p className="text-gray-600 leading-relaxed font-medium text-lg">
-              {data.description || 'No description provided'}
+              {data.description || '—'}
             </p>
             {/* Seniority Tags */}
             <div className="flex flex-wrap gap-2 mt-4">
@@ -544,7 +564,7 @@ export function GigReview({
               )}
               {data.seniority?.yearsExperience && (
                 <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-xs font-bold">
-                  {data.seniority.yearsExperience} Years Experience
+                  {data.seniority.yearsExperience} {t('gigCreation.team.seniority')}
                 </span>
               )}
             </div>
@@ -553,7 +573,7 @@ export function GigReview({
           {/* Right Column: Commission & Details */}
           <div className="space-y-6">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-black text-gray-900">Commission & details</h2>
+              <h2 className="text-2xl font-black text-gray-900">{t('gigCreation.review.commissionDetails')}</h2>
               <EditSectionBtn section="commission" />
             </div>
             
@@ -575,7 +595,7 @@ export function GigReview({
                 <Star size={14} />
                 +{data.commission?.bonusAmount || 0}{getCurrencySymbol()} BONUS
                 <span className="text-xs font-medium opacity-80 normal-case ml-1">
-                  Chaque {data.commission?.minimumVolume?.amount || 0} appels / {data.commission?.minimumVolume?.period || 'mois'}
+                  Chaque {data.commission?.minimumVolume?.amount || 0} transactions /{data.commission?.minimumVolume?.period || 'mois'}
                 </span>
               </div>
 
@@ -598,14 +618,14 @@ export function GigReview({
                 <div className="p-3 bg-harx-50 rounded-xl">
                   <Users className="h-6 w-6 text-harx-500" />
                 </div>
-                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Team Structure</h2>
+                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">{t('gigCreation.review.teamStructure')}</h2>
               </div>
               <EditSectionBtn section="team" />
             </div>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Team Size</span>
-                <span className="font-bold text-gray-900">{data.team.size} members</span>
+                <span className="text-gray-600 font-medium">{t('gigCreation.sections.team')}</span>
+                <span className="font-bold text-gray-900">{data.team.size}</span>
               </div>
               {/* Add more team details if needed */}
             </div>
@@ -620,7 +640,7 @@ export function GigReview({
                 <div className="p-3 bg-emerald-50 rounded-xl">
                   <MapPin className="h-6 w-6 text-emerald-600" />
                 </div>
-                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Destination Zone</h2>
+                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">{t('gigCreation.review.destinationZone')}</h2>
               </div>
               <EditSectionBtn section="destination" />
             </div>
@@ -676,8 +696,8 @@ export function GigReview({
                   <Calendar className="h-6 w-6 text-indigo-500" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Availability</h2>
-                  <p className="text-xs text-gray-400 font-medium italic mt-0.5">Plages horaires actives du gig</p>
+                  <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">{t('gigCreation.review.availability')}</h2>
+                  <p className="text-xs text-gray-400 font-medium italic mt-0.5">{t('gigCreation.review.editScheduleSlots')}</p>
                 </div>
               </div>
 
@@ -746,7 +766,7 @@ export function GigReview({
               <div className="p-3 bg-harx-50 rounded-xl">
                 <Target className="h-6 w-6 text-harx-500" />
               </div>
-              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Skills & Requirements</h2>
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">{t('gigCreation.review.skillsRequirements')}</h2>
             </div>
             <EditSectionBtn section="skills" />
           </div>
@@ -754,10 +774,10 @@ export function GigReview({
             {/* Technical Skills */}
             {data.skills.technical && data.skills.technical.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-500 uppercase">Technical</h3>
+                <h3 className="text-sm font-bold text-gray-500 uppercase">{t('gigCreation.review.technical')}</h3>
                 {data.skills.technical.map((s, i) => (
                   <div key={i} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">{skillsLoading ? 'Loading...' : getSkillName(s.skill, 'technical')}</span>
+                    <span className="text-sm font-medium text-gray-700">{skillsLoading ? '…' : getSkillName(s.skill, 'technical')}</span>
                   </div>
                 ))}
               </div>
@@ -765,10 +785,10 @@ export function GigReview({
             {/* Professional Skills */}
             {data.skills.professional && data.skills.professional.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-500 uppercase">Professional</h3>
+                <h3 className="text-sm font-bold text-gray-500 uppercase">{t('gigCreation.review.professional')}</h3>
                 {data.skills.professional.map((s, i) => (
                   <div key={i} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">{skillsLoading ? 'Loading...' : getSkillName(s.skill, 'professional')}</span>
+                    <span className="text-sm font-medium text-gray-700">{skillsLoading ? '…' : getSkillName(s.skill, 'professional')}</span>
                   </div>
                 ))}
               </div>
@@ -776,10 +796,10 @@ export function GigReview({
             {/* Soft Skills */}
             {data.skills.soft && data.skills.soft.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-500 uppercase">Soft</h3>
+                <h3 className="text-sm font-bold text-gray-500 uppercase">{t('gigCreation.skills.soft')}</h3>
                 {data.skills.soft.map((s, i) => (
                   <div key={i} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">{skillsLoading ? 'Loading...' : getSkillName(s.skill, 'soft')}</span>
+                    <span className="text-sm font-medium text-gray-700">{skillsLoading ? '…' : getSkillName(s.skill, 'soft')}</span>
                   </div>
                 ))}
               </div>
@@ -787,7 +807,7 @@ export function GigReview({
             {/* Languages */}
             {data.skills.languages && data.skills.languages.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-500 uppercase">Languages</h3>
+                <h3 className="text-sm font-bold text-gray-500 uppercase">{t('gigCreation.review.languages')}</h3>
                 {data.skills.languages.map((lang, index) => (
                   <div key={index} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-700">{getLanguageName(lang.language)} ({lang.proficiency})</span>

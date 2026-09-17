@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { InfoText } from './InfoText';
 import { Languages, BookOpen, Laptop, Users, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 import { 
@@ -55,6 +56,7 @@ const LANGUAGE_LEVELS = [
 
 
 export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSectionProps) {
+  const { t } = useTranslation();
   // API data states
   const [professionalSkills, setProfessionalSkills] = useState<Array<{_id: string, name: string, description: string, category: string}>>([]);
   const [softSkills, setSoftSkills] = useState<Array<{_id: string, name: string, description: string, category: string}>>([]);
@@ -652,7 +654,11 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                       }}
                       className="w-full px-2 py-1 text-xs border border-harx-300 rounded-md focus:outline-none focus:ring-2 focus:ring-harx-500"
                     >
-                      <option value="">Select {skillType === 'languages' ? 'language' : 'skill'}...</option>
+                      <option value="">
+                        {skillType === 'languages'
+                          ? t('gigCreation.skills.selectLanguage')
+                          : t('gigCreation.skills.selectSkill')}
+                      </option>
                       {skillOptions.map(option => (
                         <option key={option.id} value={option.id}>
                           {option.name}
@@ -779,7 +785,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
             {renderSkillCard(
               'languages',
               safeData.languages,
-              'Languages',
+              t('gigCreation.skills.languages'),
               <Languages className="w-5 h-5 text-harx-500" />
             )}
 
@@ -787,7 +793,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
             {renderSkillCard(
               'professional',
               safeData.professional,
-              'Professional Skills',
+              t('gigCreation.skills.professional'),
               <BookOpen className="w-5 h-5 text-harx-500" />
             )}
 
@@ -795,7 +801,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
             {renderSkillCard(
               'technical',
               safeData.technical,
-              'Technical Skills',
+              t('gigCreation.skills.technical'),
               <Laptop className="w-5 h-5 text-purple-500" />
             )}
 
@@ -803,7 +809,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
             {renderSkillCard(
               'soft',
               safeData.soft,
-              'Soft Skills',
+              t('gigCreation.skills.soft'),
               <Users className="w-5 h-5 text-orange-500" />
             )}
           </div>
@@ -816,14 +822,14 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
               >
                 <ArrowLeft className="w-5 h-5" />
-                Previous
+                {t('gigCreation.nav.previous')}
               </button>
             </div>
             <button
               onClick={onNext}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
             >
-              Next
+              {t('gigCreation.nav.next')}
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>

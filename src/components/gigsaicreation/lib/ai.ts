@@ -263,13 +263,27 @@ export function mapGigDataToSuggestions(gigData: GigData): any {
 
 // Keep the mapGeneratedDataToGigData function for compatibility
 export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> {
-  
-  
-  
-  
+  const unwrapId = (val: any): string => {
+    if (!val) return '';
+    if (typeof val === 'object' && val.$oid) return String(val.$oid);
+    if (typeof val === 'object' && val._id) return String(val._id);
+    return String(val);
+  };
 
-  const mappedDestinationZone = generatedData.destination_zone || generatedData.destinationZones?.[0] || '';
-  
+  // Prefer user-edited destinationZones chips over stale AI destination_zone
+  const zones = Array.isArray(generatedData.destinationZones)
+    ? generatedData.destinationZones.map(unwrapId).filter(Boolean)
+    : [];
+  const mappedDestinationZone =
+    zones[0] || unwrapId(generatedData.destination_zone) || '';
+
+  let destination_zone_meta = generatedData.destination_zone_meta;
+  if (destination_zone_meta) {
+    const metaId = unwrapId(destination_zone_meta._id || destination_zone_meta);
+    if (!mappedDestinationZone || (metaId && metaId !== mappedDestinationZone)) {
+      destination_zone_meta = undefined;
+    }
+  }
 
   const schedule = generatedData.schedule || {
     schedules: [],
@@ -287,8 +301,20 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
       }))
     : [];
 
+  const commission = { ...(generatedData.commission || {}) } as any;
+  const currencyId = unwrapId(commission.currency);
+  if (currencyId) {
+    commission.currency = currencyId;
+  }
+  if (commission.currency_meta) {
+    const metaCurrencyId = unwrapId(commission.currency_meta._id || commission.currency_meta);
+    if (!currencyId || (metaCurrencyId && metaCurrencyId !== currencyId)) {
+      delete commission.currency_meta;
+    }
+  }
+
   return {
-    title: generatedData.jobTitles?.[0] || '',
+    title: generatedData.selectedJobTitle || generatedData.jobTitles?.[0] || '',
     description: generatedData.description || '',
     category: generatedData.category || '',
     seniority: generatedData.seniority || { level: '', yearsExperience: 0 },
@@ -304,9 +330,9 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
       minimumHours: schedule.minimumHours || generatedData.availability?.minimumHours || {},
     },
     schedule,
-    commission: generatedData.commission || {} as any,
+    commission,
     team: generatedData.team || { size: 1, structure: [], territories: [] },
     destination_zone: mappedDestinationZone,
-    destination_zone_meta: generatedData.destination_zone_meta,
+    destination_zone_meta,
   };
 }
