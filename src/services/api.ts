@@ -175,7 +175,7 @@ export const phoneNumberService = {
       
 
       const response = await api.get<AvailablePhoneNumber[]>(endpoint, {
-        params: { countryCode }
+        params: { countryCode, limit: 50 }
       });
 
       // Handle empty or invalid response.
