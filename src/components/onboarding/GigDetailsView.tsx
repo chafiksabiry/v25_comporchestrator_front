@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import RepProfileView from '../RepProfileView';
 import { groupSchedulesByDayRanges, timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
 import { ScheduleSection } from '../gigsaicreation/components/ScheduleSection';
+import { fetchAllCountries, Country } from '../gigsaicreation/lib/api';
 
 interface Gig {
   _id: string;
@@ -123,6 +124,7 @@ interface Gig {
     }>;
   };
   destination_zone: {
+    _id?: string;
     name: {
       common: string;
       official: string;
@@ -268,6 +270,25 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
   const [scheduleDraft, setScheduleDraft] = useState<any>({});
   const [skillsDraft, setSkillsDraft] = useState<any>({});
   const [teamDraft, setTeamDraft] = useState<any>({});
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+
+  const extractCountryId = (value: any): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+      if (value.$oid) return String(value.$oid);
+      if (value._id) return String(typeof value._id === 'object' ? value._id.$oid || value._id : value._id);
+    }
+    return '';
+  };
+
+  const getCountryLabel = (country: Country | any): string => {
+    if (!country) return '';
+    if (typeof country.name === 'string') return country.name;
+    return country.name?.common || country.name?.official || country.cca2 || '';
+  };
 
   // ── DB reference data for skills / languages dropdowns
   const [dbSkills, setDbSkills] = useState<{ professional: any[]; technical: any[]; soft: any[] }>({
@@ -294,6 +315,21 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
       setDbLanguages(langs?.data ?? []);
     }).finally(() => setLoadingRefs(false));
   }, []);
+
+  useEffect(() => {
+    if (editingSection !== 'team' || countries.length > 0) return;
+    let cancelled = false;
+    setCountriesLoading(true);
+    fetchAllCountries()
+      .then((list) => {
+        if (!cancelled) setCountries(Array.isArray(list) ? list : []);
+      })
+      .catch((err) => console.error('Error fetching countries:', err))
+      .finally(() => {
+        if (!cancelled) setCountriesLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [editingSection, countries.length]);
 
   // ── existing handlers
   const handleMatchingRedirect = () => {
@@ -466,7 +502,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
       });
     } else if (section === 'team') {
       // size can be a number — coerce to string for the <select>
-      setTeamDraft({ size: localGig.team?.size != null ? String(localGig.team.size) : '' });
+      setTeamDraft({
+        size: localGig.team?.size != null ? String(localGig.team.size) : '',
+        destinationZoneId: extractCountryId(localGig.destination_zone),
+        territories: (localGig.team?.territories || [])
+          .map((t: any) => extractCountryId(t))
+          .filter(Boolean),
+      });
+      setCountrySearch('');
     }
     setEditingSection(section);
   };
@@ -552,7 +595,18 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
           },
         };
       } else if (section === 'team') {
-        payload = { team: { ...localGig.team, size: teamDraft.size } };
+        const territoryIds = (teamDraft.territories || [])
+          .map((t: any) => extractCountryId(t))
+          .filter(Boolean);
+        const destinationZoneId = extractCountryId(teamDraft.destinationZoneId);
+        payload = {
+          ...(destinationZoneId ? { destination_zone: destinationZoneId } : {}),
+          team: {
+            ...localGig.team,
+            size: teamDraft.size,
+            territories: territoryIds,
+          },
+        };
       }
 
       const res = await fetch(`${API_URL}/gigs/${localGig._id}`, {
@@ -734,7 +788,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   <Star size={14} className="animate-spin-slow" />
                   +{localGig.commission?.bonusAmount ?? '84'}€ BONUS
                   <span className="text-[10px] font-bold opacity-80 normal-case ml-1 tracking-normal bg-black/15 px-2 py-0.5 rounded-md">
-                    Chaque {localGig.commission?.minimumVolume?.amount ?? '25'} appels / {localGig.commission?.minimumVolume?.period ?? 'mois'}
+                    Chaque {localGig.commission?.minimumVolume?.amount ?? '25'} transactions /{localGig.commission?.minimumVolume?.period ?? 'mois'}
                   </span>
                 </div>
                 <div className="bg-slate-50 rounded-2xl p-6 text-slate-600 text-xs font-medium leading-relaxed italic border border-slate-100">
@@ -852,7 +906,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
 
         {/* Team edit form */}
         {editingSection === 'team' ? (
-          <div className="space-y-5">
+          <div className="space-y-6">
             <div className="max-w-xs">
               <label className={labelCls}>{g('fields.allocatedSeats')}</label>
               <select
@@ -864,13 +918,122 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 {TEAM_SIZES.map(s => <option key={s} value={s}>{s} {Number(s) === 1 ? 'agent' : 'agents'}</option>)}
               </select>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={labelCls}>{g('fields.destinationZone')}</label>
+                <input
+                  type="search"
+                  className={inputCls + ' mb-2'}
+                  value={countrySearch}
+                  onChange={(e) => setCountrySearch(e.target.value)}
+                  placeholder={g('placeholders.searchCountry')}
+                />
+                <select
+                  className={selectCls}
+                  value={teamDraft.destinationZoneId || ''}
+                  disabled={countriesLoading}
+                  onChange={(e) =>
+                    setTeamDraft((d: any) => ({ ...d, destinationZoneId: e.target.value }))
+                  }
+                >
+                  <option value="">
+                    {countriesLoading
+                      ? g('placeholders.loadingCountries')
+                      : g('placeholders.selectDestination')}
+                  </option>
+                  {countries
+                    .filter((c) => {
+                      const q = countrySearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return getCountryLabel(c).toLowerCase().includes(q) ||
+                        String(c.cca2 || '').toLowerCase().includes(q);
+                    })
+                    .slice(0, 300)
+                    .map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {getCountryLabel(c)}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelCls}>{g('fields.territories')}</label>
+                <select
+                  className={selectCls}
+                  disabled={countriesLoading}
+                  value=""
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    if (!id) return;
+                    setTeamDraft((d: any) => ({
+                      ...d,
+                      territories: Array.from(new Set([...(d.territories || []), id])),
+                    }));
+                    e.target.value = '';
+                  }}
+                >
+                  <option value="">
+                    {countriesLoading
+                      ? g('placeholders.loadingCountries')
+                      : g('placeholders.addTerritory')}
+                  </option>
+                  {countries
+                    .filter((c) => !(teamDraft.territories || []).includes(c._id))
+                    .map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {getCountryLabel(c)}
+                      </option>
+                    ))}
+                </select>
+
+                {(teamDraft.territories || []).length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(teamDraft.territories as string[]).map((id) => {
+                      const country = countries.find((c) => c._id === id);
+                      const existing = (localGig.team?.territories || []).find(
+                        (t: any) => extractCountryId(t) === id
+                      );
+                      const label =
+                        getCountryLabel(country) ||
+                        (typeof existing === 'object' ? existing?.name?.common : '') ||
+                        id;
+                      return (
+                        <span
+                          key={id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold"
+                        >
+                          {label}
+                          <button
+                            type="button"
+                            className="text-emerald-500 hover:text-red-500"
+                            onClick={() =>
+                              setTeamDraft((d: any) => ({
+                                ...d,
+                                territories: (d.territories || []).filter((t: string) => t !== id),
+                              }))
+                            }
+                            aria-label={g('actions.remove')}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-slate-400 font-medium">{g('display.noTerritories')}</p>
+                )}
+              </div>
+            </div>
           </div>
         ) : (
           /* Team display */
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Team size */}
             <div className="space-y-2.5 hover:scale-[1.02] transition-transform duration-300">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Team Structure</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{g('display.teamStructure')}</span>
               <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 flex items-center gap-4 hover:border-purple-200 transition-colors duration-300">
                 <div className="p-3 bg-purple-100 rounded-xl text-purple-700 shrink-0 animate-bounce" style={{ animationDuration: '3s' }}>
                   <Briefcase className="h-5 w-5" />
@@ -883,9 +1046,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
             </div>
 
             {/* Destination zone */}
-            {localGig.destination_zone && (
-              <div className="space-y-2.5 hover:scale-[1.02] transition-transform duration-300">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Target Country</span>
+            <div className="space-y-2.5 hover:scale-[1.02] transition-transform duration-300">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{g('display.targetCountry')}</span>
+              {localGig.destination_zone ? (
                 <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex items-center gap-4 hover:border-emerald-200 transition-colors duration-300">
                   {localGig.destination_zone.flags?.png ? (
                     <img src={localGig.destination_zone.flags.png} alt="" className="w-12 h-8 rounded-lg border border-slate-200 object-cover shrink-0 shadow-sm" />
@@ -899,16 +1062,20 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                       {typeof localGig.destination_zone === 'object' ? localGig.destination_zone.name?.common : localGig.destination_zone}
                     </p>
                     <p className="text-[9px] text-emerald-600 font-black mt-1 uppercase tracking-wider">
-                      {typeof localGig.destination_zone === 'object' ? (localGig.destination_zone.name?.official || 'Territory') : 'Territory'}
+                      {typeof localGig.destination_zone === 'object' ? (localGig.destination_zone.name?.official || g('display.territory')) : g('display.territory')}
                     </p>
                   </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs font-semibold text-slate-400">
+                  {g('display.noDestination')}
+                </div>
+              )}
+            </div>
 
             {/* Enrolled reps */}
             <div className="space-y-2.5">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Assigned Representatives</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{g('display.assignedReps')}</span>
               {enrolledAgents.length > 0 ? (
                 <div
                   onClick={() => setShowAgentsModal(true)}
@@ -944,6 +1111,37 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse animate-glow-pulse group-hover:scale-110" />
                   <span className="text-[10px] text-indigo-600 font-black uppercase tracking-wider group-hover:text-indigo-800">{g('actions.matchAgents')}</span>
                 </button>
+              )}
+            </div>
+
+            {/* Territories list */}
+            <div className="md:col-span-3 space-y-2.5">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{g('fields.territories')}</span>
+              {(localGig.team?.territories || []).length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {(localGig.team.territories as any[]).map((territory, index) => {
+                    const id = extractCountryId(territory);
+                    const label =
+                      typeof territory === 'object'
+                        ? territory?.name?.common || territory?.name?.official || id
+                        : (countries.find((c) => c._id === id)?.name?.common || id);
+                    return (
+                      <span
+                        key={id || index}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold"
+                      >
+                        {typeof territory === 'object' && territory?.flags?.png ? (
+                          <img src={territory.flags.png} alt="" className="w-5 h-3.5 rounded object-cover" />
+                        ) : (
+                          <Globe className="w-3.5 h-3.5" />
+                        )}
+                        {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 font-medium">{g('display.noTerritories')}</p>
               )}
             </div>
           </div>

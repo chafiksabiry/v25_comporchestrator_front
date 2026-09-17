@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Brain, HelpCircle, PlusCircle, ArrowUp } from 'lucide-react';
 import { Suggestions } from './Suggestions';
 import { SectionContent } from './SectionContent';
@@ -16,17 +16,10 @@ import {
   ClipboardList
 } from "lucide-react";
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { getPostCreateGigRoute, rememberCreatedGigId } from '../../../services/gigSetupSync';
 import { scrollPageToTop } from '../../../utils/scrollPageToTop';
 import { assertCompanyHasAiTokens } from '../../../lib/aiTokensUsage';
-const sections = [
-  { id: 'basic', label: 'Basic Information', icon: Briefcase },
-  { id: 'schedule', label: 'Schedule', icon: Calendar },
-  { id: 'commission', label: 'Commission', icon: DollarSign },
-  { id: 'skills', label: 'Skills', icon: Award },
-  { id: 'team', label: 'Team', icon: Users },
-  { id: 'review', label: 'Review', icon: ClipboardList }
-];
 
 interface PrompAIProps {
   onBack?: () => void; // Existing back (Back to AI Assistant or original onBack)
@@ -37,6 +30,19 @@ interface PrompAIProps {
 }
 
 const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboarding, onPublishSuccess }) => {
+  const { t } = useTranslation();
+  const sections = useMemo(
+    () => [
+      { id: 'basic', label: t('gigCreation.sections.basic'), icon: Briefcase },
+      { id: 'schedule', label: t('gigCreation.sections.schedule'), icon: Calendar },
+      { id: 'commission', label: t('gigCreation.sections.commission'), icon: DollarSign },
+      { id: 'skills', label: t('gigCreation.sections.skills'), icon: Award },
+      { id: 'team', label: t('gigCreation.sections.team'), icon: Users },
+      { id: 'review', label: t('gigCreation.sections.review'), icon: ClipboardList },
+    ],
+    [t]
+  );
+
   const backToOnboarding = onBackToOnboarding ?? onBack;
   const handlePublishSuccess =
     onPublishSuccess ??
@@ -487,8 +493,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     } catch (err: any) {
       window.alert(
         err?.code === 'insufficient_tokens'
-          ? err.message || 'Solde de tokens AI insuffisant. Rechargez pour continuer.'
-          : err?.message || 'Impossible de vérifier le solde de tokens AI.'
+          ? err.message || t('gigCreation.prompt.insufficientTokens')
+          : err?.message || t('gigCreation.prompt.tokenCheckFailed')
       );
       return;
     }
@@ -586,8 +592,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       });
       toast.success(
         hasSelection
-          ? 'Passage sélectionné remplacé par l’audio.'
-          : 'Dictée terminée — corrigez ou envoyez.'
+          ? t('gigCreation.prompt.dictationReplaced')
+          : t('gigCreation.prompt.dictationDone')
       );
       return;
     }
@@ -606,7 +612,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     }
     const next = current.slice(0, start) + insert + current.slice(end);
     setInput(next);
-    toast.success('Dictée terminée — corrigez ou envoyez.');
+    toast.success(t('gigCreation.prompt.dictationDone'));
   };
 
   const handleAudioCancel = () => {
@@ -616,7 +622,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     lockedSelectionRef.current = null;
     setAudioReplaceSnippet(null);
     setIsLiveDictating(false);
-    toast('Enregistrement annulé');
+    toast(t('gigCreation.prompt.dictationCancelled'));
   };
 
   const handleConfirmSuggestions = (suggestions: GigSuggestion) => {
@@ -684,7 +690,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading gig data for editing...</p>
+          <p className="text-gray-600">{t('gigCreation.prompt.loadingEdit')}</p>
         </div>
       </div>
     );
@@ -745,17 +751,17 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
-                  {isEditMode ? 'Back' : 'Back to AI Assistant'}
+                  {isEditMode ? t('gigCreation.nav.back') : t('gigCreation.prompt.backToAi')}
                 </button>
               </div>
               <div className="text-center mt-2">
                 <div className="flex items-center justify-center space-x-3 mb-2">
                   <h1 className="text-4xl font-black bg-gradient-harx bg-clip-text text-transparent">
-                    {isEditMode ? 'Edit Gig' : 'Create Gig Manually'}
+                    {isEditMode ? t('gigCreation.prompt.editTitle') : t('gigCreation.prompt.createTitle')}
                   </h1>
                 </div>
                 <p className="text-lg text-gray-500 font-medium">
-                  {isEditMode ? 'Modify the sections below to update your gig' : 'Fill out the sections below to create your gig'}
+                  {isEditMode ? t('gigCreation.prompt.editSubtitle') : t('gigCreation.prompt.createSubtitle')}
                 </p>
               </div>
             </div>
@@ -820,7 +826,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white/80 hover:text-harx-500 transition-all duration-300 shadow-sm"
               >
                 <Briefcase className="w-4 h-4" />
-                Back to Gigs
+                {t('gigCreation.prompt.backToGigs')}
               </button>
             )}
           </div>
@@ -836,7 +842,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   htmlFor="description"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Describe your needs naturally
+                  {t('gigCreation.prompt.describeNeeds')}
                 </label>
                 <div className="flex items-center space-x-4">
                   <button
@@ -845,7 +851,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                     className="text-harx-500 hover:text-harx-600 flex items-center text-sm font-bold"
                   >
                     <HelpCircle className="w-4 h-4 mr-1" />
-                    Writing Tips
+                    {t('gigCreation.prompt.writingTips')}
                   </button>
                   <button
                     type="button"
@@ -853,20 +859,20 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                     className="text-gray-400 flex items-center text-sm cursor-not-allowed"
                   >
                     <PlusCircle className="w-5 h-5 mr-1 text-gray-400" />
-                    <span>Create Manually</span>
+                    <span>{t('gigCreation.prompt.createManually')}</span>
                   </button>
                 </div>
               </div>
 
               {showGuidance && (
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h3 className="text-sm font-medium text-blue-800 mb-2">Writing Tips</h3>
+                  <h3 className="text-sm font-medium text-blue-800 mb-2">{t('gigCreation.prompt.writingTips')}</h3>
                   <ul className="text-sm text-blue-600 space-y-2">
-                    <li>• Be specific about your target audience and location</li>
-                    <li>• Mention key requirements and qualifications</li>
-                    <li>• Include details about schedule and availability</li>
-                    <li>• Specify any technical requirements or tools needed</li>
-                    <li>• Describe the compensation structure if possible</li>
+                    <li>• {t('gigCreation.prompt.tipAudience')}</li>
+                    <li>• {t('gigCreation.prompt.tipRequirements')}</li>
+                    <li>• {t('gigCreation.prompt.tipSchedule')}</li>
+                    <li>• {t('gigCreation.prompt.tipTools')}</li>
+                    <li>• {t('gigCreation.prompt.tipCompensation')}</li>
                   </ul>
                 </div>
               )}
@@ -897,7 +903,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                     }
                   }}
                   rows={1}
-                  placeholder="Décrivez votre besoin, ou dictez avec le micro…"
+                  placeholder={t('gigCreation.prompt.placeholder')}
                   className={`w-full min-h-[120px] max-h-[220px] pl-6 py-5 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none shadow-sm overflow-y-auto ${
                     isLiveDictating ? 'pr-6' : 'pr-28'
                   }`}
@@ -919,8 +925,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   <button
                     type="submit"
                     disabled={!input.trim() || isAnalyzing}
-                    title="Envoyer pour générer le gig"
-                    aria-label="Envoyer pour générer le gig"
+                    title={t('gigCreation.prompt.sendTitle')}
+                    aria-label={t('gigCreation.prompt.sendAria')}
                     className="absolute bottom-4 right-4 p-4 bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-gray-200 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-harx-500/20"
                   >
                     <ArrowUp className="w-7 h-7 stroke-[3]" />
@@ -932,7 +938,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
 
               {audioReplaceSnippet && !isLiveDictating ? (
                 <p className="mt-2 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-                  Remplacement audio : «{' '}
+                  {t('gigCreation.prompt.audioReplaceLabel')} «{' '}
                   {audioReplaceSnippet.length > 80
                     ? `${audioReplaceSnippet.slice(0, 80)}…`
                     : audioReplaceSnippet}{' '}
@@ -941,8 +947,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
               ) : null}
               <p className="mt-3 text-xs font-medium text-gray-500">
                 {isLiveDictating
-                  ? 'Parlez clairement — les ondes et le texte live confirment la prise. Valider pour garder, Annuler pour jeter.'
-                  : 'Écrivez, sélectionnez un passage puis dictez pour le remplacer, ou dictez à la suite. Entrée / Envoyer pour générer.'}
+                  ? t('gigCreation.prompt.dictatingHint')
+                  : t('gigCreation.prompt.nonDictatingHint')}
               </p>
             </div>
           </form>
