@@ -241,7 +241,7 @@ export function PhoneNumberPanel() {
   const selectedGigForSearch = useMemo(() => gigsAndReps.find(g => g.gigId === selectedGigIdForNumber), [gigsAndReps, selectedGigIdForNumber]);
   const destZone = selectedGigForSearch?.destinationCountry;
 
-  // FR → provider A; other destinations → provider B (names not shown in UI).
+  // FR → Twilio; other destinations → Telnyx (names not shown in UI).
   useEffect(() => {
     const next = providerForDestinationCountry(destZone);
     setSearchProvider((prev) => {
