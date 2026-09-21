@@ -44,6 +44,8 @@ const initialGigData: GigData = {
   destinationZones: [],
   callTypes: [],
   highlights: [],
+  deliverables: [],
+  sectors: [],
   industries: [],
   status: 'to_activate',
   requirements: {

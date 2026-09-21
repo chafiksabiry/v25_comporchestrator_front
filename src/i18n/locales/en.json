@@ -1586,6 +1586,7 @@
       "titleHint": "Title is required; other fields are recommended",
       "titlePlaceholder": "e.g., Call Center Agent — Outbound Sales",
       "infoBanner": "Give your gig a clear title, then set category, seniority and experience. You can still skip optional sections later with “Skip to review”.",
+      "infoBannerFull": "Fill in title, description, key highlights, sectors, industries, activities, deliverables and destination zones. Only the title is required to continue.",
       "categoryLabel": "Category",
       "categoryPlaceholder": "Select a category…",
       "seniorityLabel": "Seniority level",
@@ -1601,16 +1602,16 @@
       "basic": {
         "title": "Basic Information",
         "steps": [
-          "Enter a clear and descriptive title for the role",
-          "Select the appropriate category",
-          "Choose the seniority level",
-          "Specify required years of experience"
+          "Enter the job title and description",
+          "Add key highlights and deliverables",
+          "Choose sectors, industries and activities",
+          "Set destination zones"
         ],
         "tips": [
-          "Use industry-standard job titles for better visibility",
-          "Be specific about the role category to attract the right candidates",
-          "Match seniority level with experience requirements",
-          "Consider both minimum and preferred experience levels"
+          "A clear title improves visibility for reps",
+          "Highlights help sell the gig quickly",
+          "Align sectors and industries with your target market",
+          "Destination zones guide phone-line matching"
         ]
       }
     },

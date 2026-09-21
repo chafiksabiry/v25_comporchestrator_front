@@ -49,6 +49,8 @@ export interface GigData {
   destinationZones?: string[];
   callTypes: string[];
   highlights: string[];
+  deliverables?: string[];
+  sectors?: string[];
   industries: string[]; // Array of industry IDs
   activities: string[]; // Array of activity IDs
   status?: 'to_activate' | 'active' | 'inactive' | 'archived';
