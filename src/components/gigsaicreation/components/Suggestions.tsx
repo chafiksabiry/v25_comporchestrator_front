@@ -1963,7 +1963,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             className="flex items-center space-x-1 text-harx-700 hover:text-harx-900 font-semibold text-sm transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Add</span>
+            <span>{t('gigCreation.suggestions.add')}</span>
           </button>
         </div>
 
@@ -2015,7 +2015,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                               cancelEditing();
                             }
                           }}
-                          placeholder="Type to search countries..."
+                          placeholder={t('gigCreation.suggestions.searchCountries')}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
                           autoFocus
                         />
@@ -2069,7 +2069,16 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
                         autoFocus
                       >
-                        <option value="">Select a {section === "sectors" ? "sector" : section === "industries" ? "industry" : "activity"}...</option>
+                        <option value="">
+                          {t('gigCreation.suggestions.selectGeneric', {
+                            kind:
+                              section === 'sectors'
+                                ? t('gigCreation.suggestions.kindSector')
+                                : section === 'industries'
+                                  ? t('gigCreation.suggestions.kindIndustry')
+                                  : t('gigCreation.suggestions.kindActivity')
+                          })}
+                        </option>
                         {(section === "sectors" ? predefinedOptions.sectors : section === "industries" ? predefinedOptions.industries : predefinedOptions.activities).filter((item: string) => {
                           // When editing, include the current item being edited
                           if (editingIndex >= 0 && currentItems[editingIndex] === item) {
@@ -2198,7 +2207,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       cancelEditing();
                     }
                   }}
-                  placeholder="Type to search countries..."
+                  placeholder={t('gigCreation.suggestions.searchCountries')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
                   autoFocus
                 />
@@ -2251,7 +2260,16 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
                 autoFocus
               >
-                <option value="">Select a {section === "sectors" ? "sector" : section === "industries" ? "industry" : "activity"}...</option>
+                <option value="">
+                  {t('gigCreation.suggestions.selectGeneric', {
+                    kind:
+                      section === 'sectors'
+                        ? t('gigCreation.suggestions.kindSector')
+                        : section === 'industries'
+                          ? t('gigCreation.suggestions.kindIndustry')
+                          : t('gigCreation.suggestions.kindActivity')
+                  })}
+                </option>
                 {(section === "sectors" ? predefinedOptions.sectors : section === "industries" ? predefinedOptions.industries : predefinedOptions.activities).filter((item: string) => {
                   // When editing, include the current item being edited
                   if (editingIndex >= 0 && currentItems[editingIndex] === item) {
@@ -2483,7 +2501,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     return (
       <div className="space-y-4">
         <p className="text-xs text-gray-500">
-          Pick days for a group, then add several time ranges inside
+          {t('gigCreation.suggestions.pickDaysHint')}
         </p>
 
         {scheduleGroups.length > 0 ? (
@@ -2495,12 +2513,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <div className="flex items-center justify-between mb-3">
                 <h5 className="text-sm font-semibold text-gray-800 flex items-center">
                   <Calendar className="w-4 h-4 mr-2 text-harx-500" />
-                  Working Days
+                  {t('gigCreation.suggestions.workingDays')}
                 </h5>
                 <button
                   onClick={() => deleteScheduleGroup(group)}
                   className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Delete schedule group"
+                  title={t('gigCreation.suggestions.deleteScheduleGroup')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -2517,7 +2535,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       disabled={isInOtherGroup}
                       title={
                         isInOtherGroup
-                          ? `${day} is already selected in another schedule group`
+                          ? t('gigCreation.suggestions.dayInOtherGroup', {
+                              day: t(`gigCreation.schedule.days.${day.toLowerCase()}`, day)
+                            })
                           : undefined
                       }
                       className={`rounded-full px-4 py-1.5 font-semibold text-sm transition-all duration-200 shadow-sm
@@ -2530,7 +2550,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         }
                       `}
                     >
-                      {day}
+                      {t(`gigCreation.schedule.days.${day.toLowerCase()}`, day)}
                     </button>
                   );
                 })}
@@ -2540,7 +2560,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 <div className="flex items-center justify-between">
                   <h5 className="text-xs font-semibold text-gray-700 flex items-center">
                     <Clock className="w-3.5 h-3.5 mr-1.5 text-harx-600" />
-                    Time ranges
+                    {t('gigCreation.suggestions.timeRanges')}
                   </h5>
                   <button
                     type="button"
@@ -2548,7 +2568,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-harx-700 bg-white border border-harx-200 rounded-md hover:bg-harx-50"
                   >
                     <Plus className="w-3 h-3" />
-                    Add
+                    {t('gigCreation.suggestions.add')}
                   </button>
                 </div>
 
@@ -2627,7 +2647,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           ))
         ) : (
           <div className="text-center py-10">
-            <p className="text-gray-500 mb-4">No schedule defined.</p>
+            <p className="text-gray-500 mb-4">{t('gigCreation.suggestions.noSchedule')}</p>
           </div>
         )}
 
@@ -2645,7 +2665,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 <div className="text-left">
                   <div className="text-sm font-bold">{t('gigCreation.suggestions.addSchedule')}</div>
                   <div className="text-xs text-harx-alt-100 opacity-90">
-                    New group for remaining days
+                    {t('gigCreation.suggestions.newGroupRemaining')}
                   </div>
                 </div>
               </div>
@@ -2674,7 +2694,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="mb-8">
         <div className="flex items-center space-x-2 mb-4">
           <Clock className="w-5 h-5 text-harx-alt-500" />
-          <h4 className="text-lg font-semibold text-gray-900">Minimum Hours Requirements</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.minHours')}</h4>
         </div>
 
         <div className="space-y-4">
@@ -2683,7 +2703,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Daily Hours */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-700">Daily Hours</label>
+                <label className="text-xs font-medium text-gray-700">{t('gigCreation.schedule.dailyHours')}</label>
                 <div className="relative">
                   <input
                     type="number"
@@ -2702,7 +2722,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
               {/* Weekly Hours */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-700">Weekly Hours</label>
+                <label className="text-xs font-medium text-gray-700">{t('gigCreation.schedule.weeklyHours')}</label>
                 <div className="relative">
                   <input
                     type="number"
@@ -2721,7 +2741,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
               {/* Monthly Hours */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-700">Monthly Hours</label>
+                <label className="text-xs font-medium text-gray-700">{t('gigCreation.schedule.monthlyHours')}</label>
                 <div className="relative">
                   <input
                     type="number"
@@ -2786,7 +2806,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="mb-8">
         <div className="flex items-center space-x-2 mb-4">
           <Globe2 className="w-5 h-5 text-harx-alt-500" />
-          <h4 className="text-lg font-semibold text-gray-900">Time Zone</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.timeZone')}</h4>
         </div>
 
         {/* Search input */}
@@ -2794,7 +2814,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           <div className="mb-3">
             <input
               type="text"
-              placeholder="Search timezones by name, country, or abbreviation..."
+              placeholder={t('gigCreation.suggestions.searchTimezones')}
               value={timezoneSearch}
               onChange={(e) => setTimezoneSearch(e.target.value)}
               className="w-full p-3 rounded-lg border border-purple-300 bg-white text-purple-900 focus:outline-none focus:ring-2 focus:ring-harx-alt-400"
@@ -2808,7 +2828,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           onChange={handleTimezoneChange}
           disabled={timezoneLoading}
         >
-          <option value="">Select a timezone...</option>
+          <option value="">{t('gigCreation.suggestions.selectTimezone')}</option>
           {filteredTimezones.map((tz) => (
             <option key={tz._id} value={tz._id}>
               {tz.name} {tz.countryName ? `- ${tz.countryName}` : ''} (GMT{tz.offset >= 0 ? '+' : ''}{tz.offset})
@@ -2818,11 +2838,16 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         <p className="text-xs text-gray-500 italic text-center mt-2">
           {availableTimezones.length > 0
             ? timezoneSearch
-              ? `Showing ${filteredTimezones.length} of ${availableTimezones.length} timezones`
-              : `${availableTimezones.length} timezones available worldwide`
+              ? t('gigCreation.suggestions.timezonesShowing', {
+                  filtered: filteredTimezones.length,
+                  total: availableTimezones.length
+                })
+              : t('gigCreation.suggestions.timezonesAvailable', {
+                  count: availableTimezones.length
+                })
             : timezoneLoading
-              ? 'Loading timezones from API...'
-              : 'No timezones available'
+              ? t('gigCreation.suggestions.loadingTimezones')
+              : t('gigCreation.suggestions.noTimezones')
           }
         </p>
       </div>
@@ -2881,7 +2906,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="mb-8">
         <div className="flex items-center space-x-2 mb-4">
           <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Destination Zones</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.destinationZones')}</h4>
         </div>
 
         {/* Select pour ajouter */}
@@ -2892,7 +2917,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           disabled={destinationCountriesLoading}
         >
           <option value="" disabled>
-            {destinationCountriesLoading ? 'Loading countries...' : 'Add destination zone...'}
+            {destinationCountriesLoading ? t('gigCreation.suggestions.loadingCountries') : t('gigCreation.suggestions.addDestinationZone')}
           </option>
           {availableCountries.map(({ code, name }) => (
             <option key={code} value={code}>{name}</option>
@@ -2909,7 +2934,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   type="button"
                   onClick={() => handleRemoveDestinationZone(zone)}
                   className="ml-2 text-white hover:text-harx-200 rounded-full focus:outline-none focus:bg-harx-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Remove"
+                  title={t('gigCreation.suggestions.remove')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
@@ -2920,7 +2945,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         <p className="text-xs text-gray-500 italic text-center mt-2">
           {destinationCountriesLoading
-            ? 'Loading countries from API...'
+            ? t('gigCreation.suggestions.loadingCountries')
             : `${availableCountries.length} countries available for selection`
           }
         </p>
@@ -2993,8 +3018,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             <Briefcase className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h4 className="text-xl font-bold bg-gradient-harx bg-clip-text text-transparent">Position Details</h4>
-            <p className="text-sm text-gray-500">Define the role title and main responsibilities</p>
+            <h4 className="text-xl font-bold bg-gradient-harx bg-clip-text text-transparent">{t('gigCreation.suggestions.positionDetails')}</h4>
+            <p className="text-sm text-gray-500">{t('gigCreation.suggestions.positionDetailsSubtitle')}</p>
           </div>
         </div>
 
@@ -3006,7 +3031,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             </div>
             <div>
               <p className="text-sm font-medium text-harx-900">
-                Start by providing the basic information about the contact center role. Be specific and clear about the position's requirements and responsibilities.
+                {t('gigCreation.suggestions.positionDetailsHint')}
               </p>
             </div>
           </div>
@@ -3015,8 +3040,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {/* Job titles list */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h5 className="text-lg font-semibold text-gray-900">Available Job Titles</h5>
-            <span className="text-sm text-gray-500">Click to select your main position</span>
+            <h5 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.jobTitles')}</h5>
+            <span className="text-sm text-gray-500">{t('gigCreation.suggestions.clickSelectMainPosition')}</span>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -3050,14 +3075,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     <button
                       onClick={() => handleUpdateJobTitle(index)}
                       className="p-1 text-green-600 hover:text-harx-700 hover:bg-harx-50 rounded transition-colors"
-                      title="Save"
+                      title={t('gigCreation.suggestions.save')}
                     >
                       <Check className="w-4 h-4" />
                     </button>
                     <button
                       onClick={handleCancelEdit}
                       className="p-1 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Cancel"
+                      title={t('gigCreation.suggestions.cancel')}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -3078,7 +3103,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       e.stopPropagation();
                       // Disable double-click functionality
                     }}
-                    title={selectedJobTitle === title ? "Selected as main job title" : "Click to select as main job title"}
+                    title={selectedJobTitle === title ? t('gigCreation.suggestions.selectedAsMainTitle') : t('gigCreation.suggestions.clickSelectAsMainTitle')}
                   >
                     {selectedJobTitle === title && (
                       <CheckCircle className="w-5 h-5 mr-2" />
@@ -3092,7 +3117,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       }}
                       className={`ml-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 ${selectedJobTitle === title ? 'text-white hover:bg-white/20' : 'text-harx-600 hover:bg-harx-100'
                         }`}
-                      title="Click to edit"
+                      title={t('gigCreation.suggestions.edit')}
                     >
                       <Edit2 className="w-3 h-3" />
                     </button>
@@ -3109,7 +3134,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         ? 'text-white hover:bg-harx-700'
                         : 'text-harx-600 hover:bg-harx-200 hover:text-harx-800'
                         }`}
-                      title="Remove"
+                      title={t('gigCreation.suggestions.remove')}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -3140,7 +3165,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       handleCancelEdit();
                     }
                   }}
-                  placeholder="Enter job title..."
+                  placeholder={t('gigCreation.suggestions.enterJobTitle')}
                   className="bg-transparent border-none outline-none text-sm font-medium text-harx-800 min-w-0 flex-1"
                   style={{ width: `${Math.max(newJobTitle.length || 15, 15)}ch` }}
                   autoFocus
@@ -3156,7 +3181,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 <button
                   onClick={handleCancelEdit}
                   className="text-gray-500 hover:text-gray-700"
-                  title="Cancel"
+                  title={t('gigCreation.suggestions.cancel')}
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -3167,7 +3192,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 className="inline-flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 font-medium text-sm rounded-full transition-colors"
               >
                 <Plus className="w-3 h-3" />
-                <span>Add</span>
+                <span>{t('gigCreation.suggestions.add')}</span>
               </button>
             )}
           </div>
@@ -3230,7 +3255,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Key Highlights</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.highlights')}</h4>
         </div>
 
 
@@ -3266,14 +3291,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <button
                     onClick={() => handleUpdateHighlight(index)}
                     className="text-harx-600 hover:text-harx-800"
-                    title="Save"
+                    title={t('gigCreation.suggestions.save')}
                   >
                     <Check className="w-3 h-3" />
                   </button>
                   <button
                     onClick={handleCancelEdit}
                     className="text-gray-500 hover:text-gray-700"
-                    title="Cancel"
+                    title={t('gigCreation.suggestions.cancel')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3290,7 +3315,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       handleEditClick(highlight, index);
                     }}
                     className="ml-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/20 text-white"
-                    title="Click to edit"
+                    title={t('gigCreation.suggestions.edit')}
                   >
                     <Edit2 className="w-3 h-3" />
                   </button>
@@ -3298,7 +3323,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     type="button"
                     onClick={() => handleRemoveHighlight(highlight)}
                     className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3329,7 +3354,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     handleCancelEdit();
                   }
                 }}
-                placeholder="Enter highlight..."
+                placeholder={t('gigCreation.suggestions.enterHighlight')}
                 className="bg-transparent border-none outline-none text-sm font-medium text-harx-800 min-w-0 flex-1"
                 style={{ width: `${Math.max(newHighlight.length || 15, 15)}ch` }}
                 autoFocus
@@ -3345,7 +3370,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <button
                 onClick={handleCancelEdit}
                 className="text-gray-500 hover:text-gray-700"
-                title="Cancel"
+                title={t('gigCreation.suggestions.cancel')}
               >
                 <X className="w-3 h-3" />
               </button>
@@ -3356,7 +3381,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               className="inline-flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 font-medium text-sm rounded-full transition-colors"
             >
               <Plus className="w-3 h-3" />
-              <span>Add</span>
+              <span>{t('gigCreation.suggestions.add')}</span>
             </button>
           )}
         </div>
@@ -3418,7 +3443,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-harx-alt-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Deliverables</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.deliverables')}</h4>
         </div>
 
 
@@ -3454,14 +3479,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <button
                     onClick={() => handleUpdateDeliverable(index)}
                     className="text-harx-alt-600 hover:text-harx-alt-800"
-                    title="Save"
+                    title={t('gigCreation.suggestions.save')}
                   >
                     <Check className="w-3 h-3" />
                   </button>
                   <button
                     onClick={handleCancelEdit}
                     className="text-gray-500 hover:text-gray-700"
-                    title="Cancel"
+                    title={t('gigCreation.suggestions.cancel')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3478,7 +3503,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       handleEditClick(deliverable, index);
                     }}
                     className="ml-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/20 text-white"
-                    title="Click to edit"
+                    title={t('gigCreation.suggestions.edit')}
                   >
                     <Edit2 className="w-3 h-3" />
                   </button>
@@ -3486,7 +3511,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     type="button"
                     onClick={() => handleRemoveDeliverable(deliverable)}
                     className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3517,7 +3542,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     handleCancelEdit();
                   }
                 }}
-                placeholder="Enter deliverable..."
+                placeholder={t('gigCreation.suggestions.enterDeliverable')}
                 className="bg-transparent border-none outline-none text-sm font-medium text-harx-alt-800 min-w-0 flex-1"
                 style={{ width: `${Math.max(newDeliverable.length || 15, 15)}ch` }}
                 autoFocus
@@ -3533,7 +3558,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <button
                 onClick={handleCancelEdit}
                 className="text-gray-500 hover:text-gray-700"
-                title="Cancel"
+                title={t('gigCreation.suggestions.cancel')}
               >
                 <X className="w-3 h-3" />
               </button>
@@ -3544,7 +3569,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               className="inline-flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 font-medium text-sm rounded-full transition-colors"
             >
               <Plus className="w-3 h-3" />
-              <span>Add</span>
+              <span>{t('gigCreation.suggestions.add')}</span>
             </button>
           )}
         </div>
@@ -3581,7 +3606,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Sectors</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.sectors')}</h4>
         </div>
 
         {/* Add selector */}
@@ -3590,7 +3615,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           defaultValue=""
           onChange={handleAddSector}
         >
-          <option value="" disabled>Select a sector...</option>
+          <option value="" disabled>{t('gigCreation.suggestions.selectSector')}</option>
           {available.map(sector => (
             <option key={sector} value={sector}>{sector}</option>
           ))}
@@ -3610,7 +3635,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     type="button"
                     onClick={() => handleRemoveSector(sector)}
                     className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3660,14 +3685,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Activities</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.activities')}</h4>
         </div>
 
         {/* Add selector */}
         {activitiesLoading ? (
           <div className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-500 text-center text-sm">
             <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-            Loading activities from API...
+            {t('gigCreation.suggestions.loadingActivities')}
           </div>
         ) : (
           <select
@@ -3675,7 +3700,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             defaultValue=""
             onChange={handleAddActivity}
           >
-            <option value="" disabled>Select an activity...</option>
+            <option value="" disabled>{t('gigCreation.suggestions.selectActivity')}</option>
             {available.map(activity => (
               <option key={activity.value} value={activity.label}>{activity.label}</option>
             ))}
@@ -3684,7 +3709,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         {!activitiesLoading && activities.length === 0 && (
           <div className="text-center py-4 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
-            ⚠️ No activities available. Please check API connection.
+            ⚠️ {t('gigCreation.suggestions.noActivities')}
           </div>
         )}
 
@@ -3703,7 +3728,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     type="button"
                     onClick={() => handleRemoveActivity(activityId)}
                     className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3753,14 +3778,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Industries</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.industries')}</h4>
         </div>
 
         {/* Add selector */}
         {industriesLoading ? (
           <div className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-500 text-center text-sm">
             <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-            Loading industries from API...
+            {t('gigCreation.suggestions.loadingIndustries')}
           </div>
         ) : (
           <select
@@ -3768,7 +3793,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             defaultValue=""
             onChange={handleAddIndustry}
           >
-            <option value="" disabled>Select an industry...</option>
+            <option value="" disabled>{t('gigCreation.suggestions.selectIndustry')}</option>
             {available.map(industry => (
               <option key={industry.value} value={industry.label}>{industry.label}</option>
             ))}
@@ -3777,7 +3802,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         {!industriesLoading && industries.length === 0 && (
           <div className="text-center py-4 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
-            ⚠️ No industries available. Please check API connection.
+            ⚠️ {t('gigCreation.suggestions.noIndustries')}
           </div>
         )}
 
@@ -3796,7 +3821,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     type="button"
                     onClick={() => handleRemoveIndustry(industryId)}
                     className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3838,7 +3863,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="mb-8">
         <div className="flex items-center space-x-2 mb-4">
           <Gauge className="w-5 h-5 text-harx-alt-500" />
-          <h4 className="text-lg font-semibold text-gray-900">Schedule Flexibility</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.scheduleFlexibility')}</h4>
         </div>
 
         {/* Select pour ajouter */}
@@ -3847,7 +3872,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           defaultValue=""
           onChange={handleAddFlexibility}
         >
-          <option value="" disabled>Add flexibility option...</option>
+          <option value="" disabled>{t('gigCreation.suggestions.addFlexibility')}</option>
           {available.map(option => (
             <option key={option} value={option}>{option}</option>
           ))}
@@ -3863,7 +3888,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   type="button"
                   onClick={() => handleRemoveFlexibility(option)}
                   className="ml-2 text-white hover:text-purple-200 rounded-full focus:outline-none focus:bg-harx-alt-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Remove"
+                  title={t('gigCreation.suggestions.remove')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
@@ -3873,7 +3898,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         )}
 
         <p className="text-xs text-gray-500 italic text-center mt-2">
-          Select all applicable schedule flexibility options
+          {t('gigCreation.suggestions.flexibilityHint')}
         </p>
       </div>
     );
@@ -3894,17 +3919,17 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         <textarea
           value={suggestions.description || ""}
           onChange={(e) => handleDescriptionChange(e.target.value)}
-          placeholder="Enter a detailed description of the role, responsibilities, and what success looks like..."
+          placeholder={t('gigCreation.suggestions.descriptionPlaceholder')}
           rows={8}
           className="w-full p-4 bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500 resize-none text-gray-700 leading-relaxed"
         />
 
         <div className="mt-3 flex items-center justify-between">
           <div className="text-sm text-gray-500">
-            {suggestions.description ? `${suggestions.description.length} characters` : "0 characters"}
+            {t('gigCreation.suggestions.characters', { count: suggestions.description?.length || 0 })}
           </div>
           <div className="text-xs text-harx-600 bg-harx-100 px-2 py-1 rounded-full">
-            Detailed description helps attract the right candidates
+            {t('gigCreation.suggestions.descriptionHint')}
           </div>
         </div>
       </div>
@@ -3957,7 +3982,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             </div>
             <div>
               <h3 className="text-xl font-bold bg-gradient-to-r from-harx-700 to-emerald-700 bg-clip-text text-transparent">{t('gigCreation.suggestions.commissionStructure')}</h3>
-              <p className="text-sm text-green-600 font-medium">Compensation details and performance incentives</p>
+              <p className="text-sm text-green-600 font-medium">{t('gigCreation.suggestions.commissionSubtitle')}</p>
             </div>
           </div>
         </div> */}
@@ -3977,7 +4002,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
                       Commission Structure
                     </h2>
-                    <p className="text-gray-500 text-sm">Configure compensation and performance incentives</p>
+                    <p className="text-gray-500 text-sm">{t('gigCreation.suggestions.configureCompensation')}</p>
                   </div> */}
 
                   {/* Commission Grid */}
@@ -3990,8 +4015,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           <DollarSign className="w-6 h-6 text-white" />
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-lg font-bold text-gray-900">Currency</h3>
-                          <p className="text-sm text-gray-500">Base currency for payments</p>
+                          <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.currency')}</h3>
+                          <p className="text-sm text-gray-500">{t('gigCreation.suggestions.baseCurrency')}</p>
                         </div>
                       </div>
 
@@ -4013,7 +4038,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                   </span>
                                 );
                               }
-                              return <span className="text-harx-400 font-normal">Select currency...</span>;
+                              return <span className="text-harx-400 font-normal">{t('gigCreation.suggestions.selectCurrency')}</span>;
                             })()}
                           </div>
                           <ChevronDown className={`w-5 h-5 text-harx-400 transition-transform ${isCurrencyDropdownOpen ? 'rotate-180' : ''}`} />
@@ -4027,7 +4052,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                 <input
                                   autoFocus
                                   type="text"
-                                  placeholder="Search currency..."
+                                  placeholder={t('gigCreation.suggestions.searchCurrency')}
                                   value={currencySearchTerm}
                                   onChange={(e) => setCurrencySearchTerm(e.target.value)}
                                   className="w-full pl-9 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-harx-400 focus:border-transparent"
@@ -4095,7 +4120,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                 ))
                               ) : (
                                 <div className="px-4 py-8 text-center">
-                                  <p className="text-gray-400 text-sm">No currencies found matching "{currencySearchTerm}"</p>
+                                  <p className="text-gray-400 text-sm">{t('gigCreation.suggestions.noCurrenciesFound', { term: currencySearchTerm })}</p>
                                 </div>
                               )}
                             </div>
@@ -4106,7 +4131,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       {currenciesLoading && (
                         <div className="flex items-center mt-3 text-sm text-harx-600">
                           <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Loading currencies...
+                          {t('gigCreation.suggestions.loadingCurrencies')}
                         </div>
                       )}
                     </div>
@@ -4118,8 +4143,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           <Briefcase className="w-6 h-6 text-white" />
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-lg font-bold text-gray-900">Per call compensation</h3>
-                          <p className="text-sm text-gray-500">Base amount per successful call</p>
+                          <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.perCall')}</h3>
+                          <p className="text-sm text-gray-500">{t('gigCreation.suggestions.perCallSubtitle')}</p>
                         </div>
                       </div>
 
@@ -4152,8 +4177,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           <DollarSign className="w-6 h-6 text-white" />
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-lg font-bold text-gray-900">Transaction Commission</h3>
-                          <p className="text-sm text-gray-500">Commission per transaction</p>
+                          <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.transactionCommission')}</h3>
+                          <p className="text-sm text-gray-500">{t('gigCreation.suggestions.transactionSubtitle')}</p>
                         </div>
                       </div>
 
@@ -4186,8 +4211,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           <Award className="w-6 h-6 text-white" />
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-lg font-bold text-gray-900">Bonus & Incentives</h3>
-                          <p className="text-sm text-gray-500">Performance bonus amount</p>
+                          <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.bonus')}</h3>
+                          <p className="text-sm text-gray-500">{t('gigCreation.suggestions.bonusSubtitle')}</p>
                         </div>
                       </div>
 
@@ -4228,8 +4253,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         <Gauge className="w-6 h-6 text-white" />
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-bold text-gray-900">Minimum Volume Requirements For Bonus</h3>
-                        <p className="text-sm text-gray-500">Set minimum performance thresholds</p>
+                        <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.minVolume')}</h3>
+                        <p className="text-sm text-gray-500">{t('gigCreation.suggestions.minVolumeSubtitle')}</p>
                       </div>
                     </div>
 
@@ -4267,10 +4292,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         }
                         className="w-full px-4 py-3 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-xl text-orange-900 font-semibold focus:outline-none focus:ring-3 focus:ring-orange-300 focus:border-harx-400 transition-all"
                       >
-                        <option value="">Select Period</option>
-                        <option value="Daily">Daily</option>
-                        <option value="Weekly">Weekly</option>
-                        <option value="Monthly">Monthly</option>
+                        <option value="">{t('gigCreation.suggestions.selectPeriod')}</option>
+                        <option value="Daily">{t('gigCreation.suggestions.periodDaily')}</option>
+                        <option value="Weekly">{t('gigCreation.suggestions.periodWeekly')}</option>
+                        <option value="Monthly">{t('gigCreation.suggestions.periodMonthly')}</option>
                       </select>
                     </div>
                   </div>
@@ -4284,8 +4309,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         </svg>
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-bold text-gray-900">Additional Details</h3>
-                        <p className="text-sm text-gray-500">Terms, conditions and special notes</p>
+                        <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.additionalDetails')}</h3>
+                        <p className="text-sm text-gray-500">{t('gigCreation.suggestions.additionalDetailsSubtitle')}</p>
                       </div>
                     </div>
 
@@ -4298,7 +4323,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           e.target.value
                         )
                       }
-                      placeholder="Commission details, payment terms, conditions, or special notes..."
+                      placeholder={t('gigCreation.suggestions.commissionDetailsPlaceholder')}
                       rows={4}
                       className="w-full px-4 py-3 bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-3 focus:ring-gray-300 focus:border-gray-400 transition-all resize-none"
                     />
@@ -4314,7 +4339,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <DollarSign className="w-10 h-10 text-green-600" />
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-3">
-              No Commission Data
+              {t('gigCreation.suggestions.noCommissionData')}
             </h3>
             <p className="text-gray-600 mb-8 w-full mx-auto text-lg leading-relaxed">
               Commission data will be populated automatically from AI suggestions.
@@ -4849,7 +4874,11 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <button
                 onClick={handleShowAddInterface}
                 className={`w-8 h-8 rounded-full ${skillType === 'professional' ? 'bg-harx-500 hover:bg-green-600' : skillType === 'technical' ? 'bg-harx-alt-500 hover:bg-harx-alt-600' : skillType === 'languages' ? 'bg-harx-500 hover:bg-harx-600' : 'bg-harx-500 hover:bg-orange-600'} text-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group`}
-                title={`Add ${skillType === "languages" ? "language" : "skill"}`}
+                title={t('gigCreation.suggestions.addLanguageOrSkill', {
+                  type: skillType === 'languages'
+                    ? t('gigCreation.suggestions.skillTypeLanguage')
+                    : t('gigCreation.suggestions.skillTypeSkill')
+                })}
               >
                 <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </button>
@@ -4860,7 +4889,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           {skillsLoading && (
             <div className={`w-full px-4 py-3 rounded-lg border ${colors.border} bg-gray-50 text-gray-500 text-center text-sm`}>
               <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-              Loading {skillType} from API...
+              {t('gigCreation.suggestions.loadingSkills', { type: skillType })}
             </div>
           )}
 
@@ -4869,9 +4898,17 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             // Message when no skills
             <div className="text-center py-8">
               <p className="text-gray-500 text-sm">
-                No {skillType === "languages" ? "languages" : "skills"} added yet.
+                {t('gigCreation.suggestions.noSkillsYet', {
+                  type: skillType === 'languages'
+                    ? t('gigCreation.suggestions.skillTypeLanguages')
+                    : t('gigCreation.suggestions.skillTypeSkills')
+                })}
                 <br />
-                Click the + button above to add your first {skillType === "languages" ? "language" : "skill"}.
+                {t('gigCreation.suggestions.addFirstSkill', {
+                  type: skillType === 'languages'
+                    ? t('gigCreation.suggestions.skillTypeLanguage')
+                    : t('gigCreation.suggestions.skillTypeSkill')
+                })}
               </p>
             </div>
           )}
@@ -4975,10 +5012,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                               autoFocus
                             >
                               <option value="">
-                                {skillType === 'languages' ? 'Select a language...' :
-                                  skillType === 'professional' ? 'Select a professional skill...' :
-                                    skillType === 'technical' ? 'Select a technical skill...' :
-                                      'Select a soft skill...'}
+                                {skillType === 'languages'
+                                  ? t('gigCreation.suggestions.selectLanguage')
+                                  : skillType === 'professional'
+                                    ? t('gigCreation.suggestions.selectProfessionalSkill')
+                                    : skillType === 'technical'
+                                      ? t('gigCreation.suggestions.selectTechnicalSkill')
+                                      : t('gigCreation.suggestions.selectSoftSkill')}
                               </option>
                               {editSkillOptions.map(option => (
                                 <option key={option.id} value={option.id}>
@@ -4991,7 +5031,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                             <button
                               onClick={() => handleStartEditSkill(index)}
                               className="font-medium text-xs truncate text-left hover:underline cursor-pointer w-full"
-                              title="Click to edit"
+                              title={t('gigCreation.suggestions.edit')}
                             >
                               {skillName}
                             </button>
@@ -5178,7 +5218,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                             type="button"
                             onClick={() => handleRemoveSkill(index)}
                             className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${skillType === 'professional' ? 'bg-emerald-100 hover:bg-emerald-200 text-harx-700' : skillType === 'technical' ? 'bg-violet-100 hover:bg-violet-200 text-violet-700' : skillType === 'languages' ? 'bg-indigo-100 hover:bg-indigo-200 text-harx-700' : 'bg-amber-100 hover:bg-amber-200 text-amber-700'} focus:outline-none opacity-0 group-hover:opacity-100 transition-all duration-200 flex-shrink-0 ml-2 hover:scale-110`}
-                            title="Remove"
+                            title={t('gigCreation.suggestions.remove')}
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -5219,10 +5259,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           className={`w-full px-1 py-0.5 text-xs border ${colors.border} rounded bg-white transition-all duration-200`}
                         >
                           <option value="">
-                            {skillType === "languages" ? "Select a language..." :
-                              skillType === "professional" ? "Select a professional skill..." :
-                                skillType === "technical" ? "Select a technical skill..." :
-                                  "Select a soft skill..."}
+                            {skillType === "languages"
+                              ? t('gigCreation.suggestions.selectLanguage')
+                              : skillType === "professional"
+                                ? t('gigCreation.suggestions.selectProfessionalSkill')
+                                : skillType === "technical"
+                                  ? t('gigCreation.suggestions.selectTechnicalSkill')
+                                  : t('gigCreation.suggestions.selectSoftSkill')}
                           </option>
                           {skillOptions.map(option => (
                             <option key={option.id} value={option.id}>
@@ -5397,7 +5440,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
           {!skillsLoading && skillOptions.length === 0 && currentItems.length === 0 && (
             <div className="text-center py-4 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
-              ⚠️ No {skillType} available. Please check API connection.
+              ⚠️ {t('gigCreation.suggestions.noSkillsAvailable', { type: skillType })}
             </div>
           )}
 
@@ -5410,25 +5453,25 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {renderSkillCard(
           "languages",
           suggestions.skills?.languages || [],
-          "Languages",
+          t('gigCreation.suggestions.languages'),
           <Globe2 className="w-5 h-5 text-harx-500" />
         )}
         {renderSkillCard(
           "professional",
           suggestions.skills?.professional || [],
-          "Professional Skills",
+          t('gigCreation.suggestions.professionalSkills'),
           <Briefcase className="w-5 h-5 text-harx-alt-500" />
         )}
         {renderSkillCard(
           "technical",
           suggestions.skills?.technical || [],
-          "Technical Skills",
+          t('gigCreation.suggestions.technicalSkills'),
           <Target className="w-5 h-5 text-harx-500" />
         )}
         {renderSkillCard(
           "soft",
           suggestions.skills?.soft || [],
-          "Soft Skills",
+          t('gigCreation.suggestions.softSkills'),
           <Users className="w-5 h-5 text-harx-alt-500" />
         )}
       </div>
@@ -5611,9 +5654,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
-              <h4 className="text-lg font-bold bg-gradient-to-r from-harx-600 via-harx-600 to-harx-alt-600 bg-clip-text text-transparent">Team Roles</h4>
+              <h4 className="text-lg font-bold bg-gradient-to-r from-harx-600 via-harx-600 to-harx-alt-600 bg-clip-text text-transparent">{t('gigCreation.suggestions.teamRoles')}</h4>
               <div className="flex items-center space-x-1">
-                <span className="text-sm font-medium text-harx-600">Total:</span>
+                <span className="text-sm font-medium text-harx-600">{t('gigCreation.suggestions.total')}</span>
                 <span className="text-md font-bold text-harx-700 bg-white border border-harx-300 rounded-md px-2 py-1">
                   {suggestions.team?.size || 0}
                 </span>
@@ -5643,7 +5686,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     className="bg-white rounded-lg p-2 border border-harx-500/20 shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] hover:border-harx-500/50"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h5 className="text-md font-bold bg-gradient-harx bg-clip-text text-transparent">Role #{index + 1}</h5>
+                      <h5 className="text-md font-bold bg-gradient-harx bg-clip-text text-transparent">{t('gigCreation.suggestions.roleNumber', { n: index + 1 })}</h5>
                       <button
                         onClick={() => deleteTeamRole(index)}
                         className="p-1 text-red-500 hover:text-white hover:bg-red-500 rounded-md transition-all transform hover:scale-110 shadow-sm"
@@ -5655,7 +5698,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     <div className="space-y-2">
                       <div>
                         <label className="text-xs font-bold text-harx-700 mb-1 block">
-                          Role Type
+                          {t('gigCreation.suggestions.roleType')}
                         </label>
                         <select
                           value={roleId}
@@ -5672,7 +5715,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
                       <div>
                         <label className="text-xs font-bold text-harx-500 mb-1 block">
-                          Number of Members
+                          {t('gigCreation.suggestions.numberOfMembers')}
                         </label>
                         <input
                           type="number"
@@ -5693,17 +5736,17 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 <Users className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-lg font-bold bg-gradient-to-r from-harx-700 via-harx-700 to-violet-700 bg-clip-text text-transparent mb-2">
-                No Team Roles Defined
+                {t('gigCreation.suggestions.noTeamRoles')}
               </h3>
               <p className="text-harx-600 font-medium mb-4 max-w-md mx-auto text-sm">
-                Add team roles to define the structure and responsibilities of your team members.
+                {t('gigCreation.suggestions.noTeamRolesHint')}
               </p>
               <button
                 onClick={addTeamRole}
                 className="inline-flex items-center space-x-2 bg-gradient-to-r from-harx-500 via-harx-alt-500 to-harx-alt-500 hover:from-harx-600 hover:via-harx-600 hover:to-harx-alt-600 text-white font-bold px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
               >
                 <Plus className="w-4 h-4" />
-                <span>Add Team Role</span>
+                <span>{t('gigCreation.suggestions.addTeamRole')}</span>
               </button>
             </div>
           )}
@@ -5712,7 +5755,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {/* Territories */}
         <div className="bg-gradient-to-br from-harx-50 via-harx-50 to-violet-50 rounded-lg p-3 border border-blue-200 shadow-md mb-4">
           <div className="flex items-center space-x-2 mb-2">
-            <h4 className="text-md font-semibold text-gray-900">Territories</h4>
+            <h4 className="text-md font-semibold text-gray-900">{t('gigCreation.suggestions.territories')}</h4>
           </div>
 
           <select
@@ -5727,7 +5770,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             disabled={territoriesLoading}
           >
             <option value="" disabled>
-              {territoriesLoading ? "Loading territories..." : "Add territory..."}
+              {territoriesLoading ? t('gigCreation.suggestions.loadingTerritories') : t('gigCreation.suggestions.addTerritory')}
             </option>
             {territoriesFromAPI.filter(
               (country: Country) => !suggestions.team?.territories?.includes(country._id)
@@ -5750,7 +5793,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <button
                     onClick={() => removeTerritory(territory)}
                     className="ml-1 text-white hover:text-blue-200 rounded-full focus:outline-none focus:bg-harx-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -5763,7 +5806,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
           <p className="text-xs text-gray-500 italic text-center mt-1">
             {territoriesLoading
-              ? 'Loading countries from API...'
+              ? t('gigCreation.suggestions.loadingCountries')
               : `${territoriesFromAPI.filter((country: Country) => !suggestions.team?.territories?.includes(country._id)).length} countries available for selection`
             }
           </p>
@@ -5914,7 +5957,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.basicInformation')}</h3>
-                  <p className="text-harx-100 text-sm">Core details and requirements for your gig</p>
+                  <p className="text-harx-100 text-sm">{t('gigCreation.suggestions.coreDetails')}</p>
                 </div>
               </div>
             </div>
@@ -5986,7 +6029,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.scheduleAvailability')}</h3>
-                  <p className="text-harx-alt-100 text-sm">Working hours, timezones, and flexibility options</p>
+                  <p className="text-harx-alt-100 text-sm">{t('gigCreation.suggestions.scheduleSectionSubtitle')}</p>
                 </div>
               </div>
             </div>
@@ -6019,7 +6062,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.commissionStructure')}</h3>
-                  <p className="text-harx-100 text-sm">Compensation details and performance incentives</p>
+                  <p className="text-harx-100 text-sm">{t('gigCreation.suggestions.commissionSubtitle')}</p>
                 </div>
               </div>
             </div>
@@ -6038,7 +6081,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.skillsQualifications')}</h3>
-                  <p className="text-harx-alt-100 text-sm">Required technical, professional, and soft skills</p>
+                  <p className="text-harx-alt-100 text-sm">{t('gigCreation.suggestions.skillsSectionSubtitle')}</p>
                 </div>
               </div>
             </div>
@@ -6057,7 +6100,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.teamStructure')}</h3>
-                  <p className="text-harx-100 text-sm">Team composition, roles, and territories</p>
+                  <p className="text-harx-100 text-sm">{t('gigCreation.suggestions.teamSectionSubtitle')}</p>
                 </div>
               </div>
             </div>
