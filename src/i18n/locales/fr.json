@@ -1586,6 +1586,7 @@
       "titleHint": "Le titre est obligatoire ; les autres champs sont recommandés",
       "titlePlaceholder": "ex. : Agent centre d'appels — Vente sortante",
       "infoBanner": "Donnez un titre clair à votre gig, puis renseignez la catégorie, le niveau et l'expérience. Vous pourrez toujours passer les sections optionnelles plus tard avec « Passer à la revue ».",
+      "infoBannerFull": "Renseignez le titre, la description, les points clés, secteurs, industries, activités, livrables et zones de destination. Seul le titre est obligatoire pour continuer.",
       "categoryLabel": "Catégorie",
       "categoryPlaceholder": "Sélectionner une catégorie…",
       "seniorityLabel": "Niveau de séniorité",
@@ -1601,16 +1602,16 @@
       "basic": {
         "title": "Informations de base",
         "steps": [
-          "Saisir un titre clair et descriptif pour le rôle",
-          "Sélectionner la catégorie appropriée",
-          "Choisir le niveau de séniorité",
-          "Indiquer les années d'expérience requises"
+          "Saisir le titre et la description du poste",
+          "Ajouter les points clés et les livrables",
+          "Choisir secteurs, industries et activités",
+          "Définir les zones de destination"
         ],
         "tips": [
-          "Utilisez des intitulés reconnus dans le métier pour plus de visibilité",
-          "Précisez la catégorie pour attirer les bons candidats",
-          "Alignez le niveau de séniorité avec l'expérience demandée",
-          "Distinguez expérience minimum et expérience préférée si besoin"
+          "Un titre clair améliore la visibilité auprès des reps",
+          "Les points clés aident à vendre le gig rapidement",
+          "Alignez secteurs et industries sur votre marché cible",
+          "Les zones de destination guident le matching téléphonique"
         ]
       }
     },
