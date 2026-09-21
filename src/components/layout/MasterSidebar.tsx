@@ -352,11 +352,41 @@ export function MasterSidebar({
                             >
                               <div className="shrink-0">{item.icon}</div>
                               {!isCollapsed && (
-                                <span className="font-semibold whitespace-nowrap overflow-hidden text-[13px]">{item.label}</span>
+                                <span className="font-semibold whitespace-nowrap overflow-hidden text-[13px] flex items-center gap-1.5 min-w-0">
+                                  <span className="truncate">{item.label}</span>
+                                  {item.key === 'gigs' ? (
+                                    <span
+                                      className="relative shrink-0 group/gigsinfo"
+                                      title={t('sidebar.gigsInfo')}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                        }
+                                      }}
+                                      role="img"
+                                      aria-label={t('sidebar.gigsInfo')}
+                                    >
+                                      <Info className="h-3.5 w-3.5 text-slate-400 transition-colors group-hover/gigsinfo:text-white" />
+                                      <span className="pointer-events-none absolute left-1/2 top-full z-[60] mt-2 hidden w-52 -translate-x-1/2 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-2 text-[10px] font-medium normal-case tracking-normal text-white shadow-xl group-hover/gigsinfo:block whitespace-normal leading-snug">
+                                        {t('sidebar.gigsInfo')}
+                                      </span>
+                                    </span>
+                                  ) : null}
+                                </span>
                               )}
                               {isCollapsed && (
-                                <div className="absolute left-16 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border bg-slate-900 text-white border-white/10 shadow-xl">
+                                <div className="absolute left-16 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border bg-slate-900 text-white border-white/10 shadow-xl max-w-[14rem] whitespace-normal">
                                   {item.label}
+                                  {item.key === 'gigs' ? (
+                                    <span className="mt-1 block text-[10px] text-slate-300 normal-case tracking-normal font-medium">
+                                      {t('sidebar.gigsInfo')}
+                                    </span>
+                                  ) : null}
                                 </div>
                               )}
                             </NavLink>
