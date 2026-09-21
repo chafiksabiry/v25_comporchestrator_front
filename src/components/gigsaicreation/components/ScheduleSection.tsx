@@ -319,7 +319,11 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">{t('gigCreation.schedule.scheduleGroups')}</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    {t('gigCreation.schedule.scheduleGroups', {
+                      count: scheduleGroups.length,
+                    })}
+                  </span>
                   <span className="bg-harx-100 text-harx-800 text-xs font-semibold px-2 py-1 rounded-full">
                     {scheduleGroups.length}
                   </span>

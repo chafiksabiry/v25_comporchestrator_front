@@ -1704,6 +1704,8 @@
       "workSchedule": "Planning de travail",
       "workScheduleHint": "Définir les jours et horaires de travail",
       "scheduleGroups": "Groupes de planning",
+      "scheduleGroups_one": "Groupe de planning",
+      "scheduleGroups_other": "Groupes de planning",
       "scheduleGroupsHint": "Choisissez les jours d'un groupe, puis ajoutez plusieurs plages horaires",
       "timeRanges": "Plages horaires",
       "addSchedule": "Ajouter un créneau",
