@@ -5,7 +5,7 @@ import { SectionContent } from './SectionContent';
 import { AudioBriefRecorder } from './AudioBriefRecorder';
 import { GigData, GigSuggestion } from '../types';
 import { predefinedOptions } from '../lib/guidance';
-import { mapGeneratedDataToGigData } from '../lib/ai';
+import { mapGeneratedDataToGigData, asTextList } from '../lib/ai';
 import Cookies from 'js-cookie';
 import {
   Briefcase,
@@ -92,6 +92,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     destinationZones: [],
     callTypes: [],
     highlights: [],
+    deliverables: [],
+    sectors: [],
     industries: [],
     activities: [],
     status: 'to_activate',
@@ -235,6 +237,12 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
           destinationZones: data.destinationZones || [],
           callTypes: data.callTypes || [],
           highlights: data.highlights || [],
+          deliverables: data.deliverables || [],
+          sectors: Array.isArray(data.sectors)
+            ? data.sectors
+            : data.category
+              ? [data.category]
+              : [],
           industries: Array.isArray(data.industries)
             ? data.industries.map((industry: { _id: any; }) =>
               typeof industry === 'object' && industry?._id
@@ -632,9 +640,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
 
     // Map the generated data to the initialized structure
     const mappedData = mapGeneratedDataToGigData(suggestions);
-    
-    
-    
+    const prefer = (mapped?: string[], raw?: string[]) =>
+      mapped && mapped.length ? mapped : raw && raw.length ? raw : mapped || raw || [];
 
     // Update the gig data with the mapped suggestions
     setGigData((prevData: GigData) => ({
@@ -642,6 +649,26 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       ...mappedData,
       // Use selected job title as the main title
       title: suggestions.selectedJobTitle || mappedData.title || prevData.title,
+      highlights: prefer(
+        mappedData.highlights,
+        asTextList(suggestions.highlights, (suggestions as any).keyPoints, (suggestions as any).key_points)
+      ),
+      deliverables: prefer(
+        mappedData.deliverables,
+        asTextList(suggestions.deliverables, (suggestions as any).livrables)
+      ),
+      sectors: prefer(
+        mappedData.sectors,
+        asTextList(suggestions.sectors, suggestions.category)
+      ),
+      destinationZones: prefer(
+        mappedData.destinationZones,
+        asTextList(
+          suggestions.destinationZones,
+          suggestions.destination_zone,
+          (suggestions as any).destination_zone_meta
+        )
+      ),
       // Preserve any existing data that wasn't in the suggestions
       userId: prevData.userId,
       companyId: prevData.companyId,

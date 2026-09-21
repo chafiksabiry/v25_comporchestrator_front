@@ -2,6 +2,12 @@ import Cookies from 'js-cookie';
 import { GigData, GigSuggestion } from '../types';
 import { applyBackendAiUsage } from '../../../lib/aiTokensUsage';
 import { generateMockGigSuggestions } from './mockData';
+import {
+  convertActivityNamesToIds,
+  convertIndustryNamesToIds,
+  getActivityById,
+  getIndustryById,
+} from './activitiesIndustries';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
 
@@ -11,6 +17,67 @@ const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true' || false;
 function getCompanyId(): string | undefined {
   const id = Cookies.get('companyId');
   return id ? String(id).trim() : undefined;
+}
+
+function asText(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'object') {
+    const row = value as Record<string, unknown>;
+    const nested =
+      row.text ?? row.label ?? row.name ?? row.value ?? row.title ?? row.highlight ?? row.deliverable;
+    if (typeof nested === 'string') return nested.trim();
+    if (nested && typeof nested === 'object') {
+      const named = nested as { common?: unknown };
+      if (typeof named.common === 'string') return named.common.trim();
+    }
+  }
+  return '';
+}
+
+/** First non-empty text list among aliases. Empty arrays do not block later sources. */
+export function asTextList(...sources: unknown[]): string[] {
+  const out: string[] = [];
+  const push = (value: unknown) => {
+    if (Array.isArray(value)) {
+      value.forEach(push);
+      return;
+    }
+    const text = asText(value);
+    if (text && !out.includes(text)) out.push(text);
+  };
+  sources.forEach(push);
+  return out;
+}
+
+function asZoneId(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'object') {
+    const row = value as { _id?: unknown; $oid?: unknown; id?: unknown };
+    const id = row._id ?? row.$oid ?? row.id;
+    if (typeof id === 'string' && id.trim()) return id.trim();
+    if (id && typeof id === 'object' && '$oid' in (id as object)) {
+      const oid = (id as { $oid?: unknown }).$oid;
+      if (typeof oid === 'string') return oid.trim();
+    }
+  }
+  return asText(value);
+}
+
+function asZoneList(...sources: unknown[]): string[] {
+  const out: string[] = [];
+  const push = (value: unknown) => {
+    if (Array.isArray(value)) {
+      value.forEach(push);
+      return;
+    }
+    const id = asZoneId(value);
+    if (id && !out.includes(id)) out.push(id);
+  };
+  sources.forEach(push);
+  return out;
 }
 
 function throwInsufficientTokens(data: any, status?: number): never {
@@ -144,7 +211,6 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       jobTitles: data.jobTitles || [],
       jobDescription: data.jobDescription || '',
       category: data.category || '',
-      destination_zone: data.destination_zone || '',
       destination_zone_meta: data.destination_zone_meta,
       activities: data.activities || [],
       industries: data.industries || [],
@@ -192,8 +258,8 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       // Missing fields required by GigSuggestion interface
       title: data.jobTitles?.[0] || '',
       description: data.jobDescription || '',
-      highlights: data.highlights || [],
-      deliverables: data.deliverables || [],
+      highlights: asTextList(data.highlights, data.keyPoints, data.key_points, data.pointsCles),
+      deliverables: asTextList(data.deliverables, data.livrables),
       requirements: { essential: [], preferred: [] },
       timeframes: [],
       benefits: [],
@@ -201,8 +267,14 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       leads: { types: [], sources: [], distribution: { method: '', rules: [] }, qualificationCriteria: [] },
       documentation: { templates: {}, reference: {}, product: [], process: [], training: [] },
       selectedJobTitle: data.jobTitles?.[0] || '',
-      sectors: data.category ? [data.category] : [],
-      destinationZones: data.destination_zone ? [data.destination_zone] : [],
+      sectors: asTextList(data.sectors, data.category),
+      destination_zone: asZoneId(data.destination_zone) || asZoneId(data.destination_zone_meta) || '',
+      destinationZones: asZoneList(
+        data.destinationZones,
+        data.destination_zones,
+        data.destination_zone,
+        data.destination_zone_meta
+      ),
 
       // Schedule mapping
       schedule: {
@@ -255,9 +327,14 @@ export function mapGigDataToSuggestions(gigData: GigData): any {
     commission: gigData.commission || {},
     team: gigData.team || { size: 1, structure: [], territories: [] },
     highlights: gigData.highlights || [],
+    deliverables: gigData.deliverables || [],
+    sectors: gigData.sectors || [],
     requirements: gigData.requirements || { essential: [], preferred: [] },
     benefits: gigData.benefits || [],
-    callTypes: gigData.callTypes || []
+    callTypes: gigData.callTypes || [],
+    selectedJobTitle: gigData.title || undefined,
+    destination_zone: gigData.destination_zone || '',
+    destination_zone_meta: gigData.destination_zone_meta,
   };
 }
 
@@ -270,10 +347,14 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
     return String(val);
   };
 
-  // Prefer user-edited destinationZones chips over stale AI destination_zone
-  const zones = Array.isArray(generatedData.destinationZones)
-    ? generatedData.destinationZones.map(unwrapId).filter(Boolean)
-    : [];
+  // Prefer user-edited destinationZones chips over stale AI destination_zone.
+  // Empty arrays must not hide destination_zone / destination_zone_meta.
+  const zones = asZoneList(
+    generatedData.destinationZones,
+    generatedData.destination_zones,
+    generatedData.destination_zone,
+    generatedData.destination_zone_meta
+  );
   const mappedDestinationZone =
     zones[0] || unwrapId(generatedData.destination_zone) || '';
 
@@ -313,13 +394,48 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
     }
   }
 
+  // Industries / activities may arrive as names (AI) or IDs (Suggestions UI)
+  const normalizeRefIds = (
+    values: any[],
+    getById: (id: string) => unknown,
+    convertNames: (names: string[]) => string[]
+  ): string[] => {
+    if (!Array.isArray(values) || values.length === 0) return [];
+    const raw = values.map(unwrapId).filter(Boolean);
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const v of raw) {
+      const id = getById(v) ? v : (convertNames([v])[0] || v);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+    return out;
+  };
+
   return {
     title: generatedData.selectedJobTitle || generatedData.jobTitles?.[0] || '',
-    description: generatedData.description || '',
-    category: generatedData.category || '',
+    description: generatedData.description || generatedData.jobDescription || '',
+    category: generatedData.category || generatedData.sectors?.[0] || '',
     seniority: generatedData.seniority || { level: '', yearsExperience: 0 },
-    activities: generatedData.activities || [],
-    industries: generatedData.industries || [],
+    activities: normalizeRefIds(
+      generatedData.activities || [],
+      getActivityById,
+      convertActivityNamesToIds
+    ),
+    industries: normalizeRefIds(
+      generatedData.industries || [],
+      getIndustryById,
+      convertIndustryNamesToIds
+    ),
+    highlights: asTextList(
+      generatedData.highlights,
+      generatedData.keyPoints,
+      generatedData.key_points,
+      generatedData.pointsCles
+    ),
+    deliverables: asTextList(generatedData.deliverables, generatedData.livrables),
+    sectors: asTextList(generatedData.sectors, generatedData.category),
     skills: generatedData.skills || { languages: [], soft: [], professional: [], technical: [] } as any,
     availability: {
       ...(generatedData.availability || {}),
@@ -334,5 +450,10 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
     team: generatedData.team || { size: 1, structure: [], territories: [] },
     destination_zone: mappedDestinationZone,
     destination_zone_meta,
+    destinationZones: zones.length
+      ? zones
+      : mappedDestinationZone
+        ? [mappedDestinationZone]
+        : [],
   };
 }
