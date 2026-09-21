@@ -197,6 +197,9 @@ export function PhoneNumberPanel() {
   const [isBuyGigOpen, setIsBuyGigOpen] = useState(false);
   const [selectedPhoneLine, setSelectedPhoneLine] = useState<string | null>(null);
   const [searchProvider, setSearchProvider] = useState<'twilio' | 'telnyx'>('telnyx');
+  /** phoneNumber → draft gigId while assigning an unassigned line */
+  const [assignGigDraft, setAssignGigDraft] = useState<Record<string, string>>({});
+  const [assigningNumber, setAssigningNumber] = useState<string | null>(null);
 
   const [showRequirementModal, setShowRequirementModal] = useState(false);
   const [countryReq, setCountryReq] = useState<{
@@ -562,7 +565,15 @@ export function PhoneNumberPanel() {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
-          const myLines = data.filter((n: any) => n.companyId === companyId);
+          const myLines = data
+            .filter((n: any) => String(n.companyId || '') === String(companyId))
+            .map((n: any) => ({
+              ...n,
+              _id: n._id || n.id,
+              id: n.id || n._id,
+              gigId: n.gigId ? String(n.gigId) : undefined,
+              companyId: n.companyId ? String(n.companyId) : undefined
+            }));
           setPhoneNumbers(myLines);
           // Keep the navbar "LIGNES TÉL." badge in sync
           window.dispatchEvent(new CustomEvent('balanceUpdated', { detail: { escrow: myLines.length } }));
@@ -702,6 +713,43 @@ export function PhoneNumberPanel() {
   const handleSearchNumbers = (e: React.FormEvent) => {
     e.preventDefault();
     void doSearch(selectedGigIdForNumber);
+  };
+
+  const handleAssignNumberToGig = async (num: PurchasedNumber) => {
+    const draftGigId = assignGigDraft[num.phoneNumber] || '';
+    if (!draftGigId) {
+      toast.error(t('phoneNumberPanel.toasts.assignSelectGig'));
+      return;
+    }
+    setAssigningNumber(num.phoneNumber);
+    try {
+      const res = await fetch(`${apiBaseUrl}/phone-numbers/assign-gig`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: num._id || num.id,
+          phoneNumber: num.phoneNumber,
+          gigId: draftGigId,
+          companyId
+        })
+      });
+      const data = await safeParseJson(res);
+      if (!res.ok) {
+        throw new Error(data?.message || data?.error || t('phoneNumberPanel.toasts.assignFailed'));
+      }
+      toast.success(t('phoneNumberPanel.toasts.assignSuccess', { number: num.phoneNumber }));
+      setAssignGigDraft((prev) => {
+        const next = { ...prev };
+        delete next[num.phoneNumber];
+        return next;
+      });
+      await fetchData(true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || t('phoneNumberPanel.toasts.assignFailed'));
+    } finally {
+      setAssigningNumber(null);
+    }
   };
 
   const handleDirectPurchase = async (numberToBuy: string, provider: 'twilio' | 'telnyx') => {
@@ -1561,9 +1609,57 @@ export function PhoneNumberPanel() {
                           </div>
                         </td>
                         <td className="py-4 px-4 font-bold text-slate-700">
-                          {linkedGig
-                            ? <span className="px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100">{linkedGig.title}</span>
-                            : <span className="text-slate-400 italic">{t('phoneNumberPanel.myNumbers.table.unassigned')}</span>}
+                          {linkedGig ? (
+                            <span className="px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100">{linkedGig.title}</span>
+                          ) : (
+                            <div
+                              className="flex flex-col sm:flex-row sm:items-center gap-2 max-w-xs"
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => e.stopPropagation()}
+                            >
+                              <span className="text-slate-400 italic text-[11px]">
+                                {t('phoneNumberPanel.myNumbers.table.unassigned')}
+                              </span>
+                              {gigsAndReps.length > 0 ? (
+                                <div className="flex items-center gap-1.5">
+                                  <select
+                                    value={assignGigDraft[num.phoneNumber] || ''}
+                                    onChange={(e) =>
+                                      setAssignGigDraft((prev) => ({
+                                        ...prev,
+                                        [num.phoneNumber]: e.target.value
+                                      }))
+                                    }
+                                    disabled={assigningNumber === num.phoneNumber}
+                                    className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    aria-label={t('phoneNumberPanel.myNumbers.table.assignPlaceholder')}
+                                  >
+                                    <option value="">
+                                      {t('phoneNumberPanel.myNumbers.table.assignPlaceholder')}
+                                    </option>
+                                    {gigsAndReps.map((g) => (
+                                      <option key={g.gigId} value={g.gigId}>
+                                        {g.title}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      assigningNumber === num.phoneNumber ||
+                                      !assignGigDraft[num.phoneNumber]
+                                    }
+                                    onClick={() => void handleAssignNumberToGig(num)}
+                                    className="shrink-0 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-white disabled:opacity-40 hover:bg-indigo-700"
+                                  >
+                                    {assigningNumber === num.phoneNumber
+                                      ? t('phoneNumberPanel.myNumbers.table.assigning')
+                                      : t('phoneNumberPanel.myNumbers.table.assign')}
+                                  </button>
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
                         </td>
                         <td className="py-4 px-4 font-black text-slate-900 tabular-nums">
                           {num.isTrial ? (
@@ -1943,10 +2039,54 @@ export function PhoneNumberPanel() {
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {t('phoneNumberPanel.myNumbers.detailModal.gig')}
                 </span>
-                <span className="text-sm font-bold text-slate-900 text-right max-w-[60%]">
-                  {gigsAndReps.find((g) => g.gigId === selectedPhoneLineData.gigId)?.title
-                    || t('phoneNumberPanel.myNumbers.table.unassigned')}
-                </span>
+                {gigsAndReps.find((g) => g.gigId === selectedPhoneLineData.gigId) ? (
+                  <span className="text-sm font-bold text-slate-900 text-right max-w-[60%]">
+                    {gigsAndReps.find((g) => g.gigId === selectedPhoneLineData.gigId)?.title}
+                  </span>
+                ) : (
+                  <div className="flex flex-col items-end gap-2 max-w-[70%]">
+                    <span className="text-sm font-bold text-slate-400 italic">
+                      {t('phoneNumberPanel.myNumbers.table.unassigned')}
+                    </span>
+                    {gigsAndReps.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <select
+                          value={assignGigDraft[selectedPhoneLineData.phoneNumber] || ''}
+                          onChange={(e) =>
+                            setAssignGigDraft((prev) => ({
+                              ...prev,
+                              [selectedPhoneLineData.phoneNumber]: e.target.value
+                            }))
+                          }
+                          disabled={assigningNumber === selectedPhoneLineData.phoneNumber}
+                          className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="">
+                            {t('phoneNumberPanel.myNumbers.table.assignPlaceholder')}
+                          </option>
+                          {gigsAndReps.map((g) => (
+                            <option key={g.gigId} value={g.gigId}>
+                              {g.title}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          disabled={
+                            assigningNumber === selectedPhoneLineData.phoneNumber ||
+                            !assignGigDraft[selectedPhoneLineData.phoneNumber]
+                          }
+                          onClick={() => void handleAssignNumberToGig(selectedPhoneLineData)}
+                          className="shrink-0 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-white disabled:opacity-40 hover:bg-indigo-700"
+                        >
+                          {assigningNumber === selectedPhoneLineData.phoneNumber
+                            ? t('phoneNumberPanel.myNumbers.table.assigning')
+                            : t('phoneNumberPanel.myNumbers.table.assign')}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-100">
