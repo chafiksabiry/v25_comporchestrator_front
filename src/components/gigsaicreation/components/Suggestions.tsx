@@ -1182,18 +1182,18 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         // Ensure ref data is loaded, then normalize names → IDs
         await Promise.all([loadActivities(), loadIndustries()]);
         if (Array.isArray(result.industries) && result.industries.length > 0) {
-          result.industries = result.industries.map((item: string) => {
+          result.industries = [...new Set(result.industries.map((item: string) => {
             if (!item) return item;
             if (getIndustryById(item)) return item;
             return convertIndustryNamesToIds([item])[0] || item;
-          }).filter(Boolean);
+          }).filter(Boolean))];
         }
         if (Array.isArray(result.activities) && result.activities.length > 0) {
-          result.activities = result.activities.map((item: string) => {
+          result.activities = [...new Set(result.activities.map((item: string) => {
             if (!item) return item;
             if (getActivityById(item)) return item;
             return convertActivityNamesToIds([item])[0] || item;
-          }).filter(Boolean);
+          }).filter(Boolean))];
         }
 
         setSuggestions(result);
@@ -3738,7 +3738,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {/* Available activities */}
         {selected.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-            {selected.map(activityId => {
+            {[...new Set(selected)].map(activityId => {
               const activityName = getActivityNameById(activityId);
               return activityName ? (
                 <span
@@ -3831,7 +3831,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {/* Selected badges - displayed below the select */}
         {selected.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-            {selected.map(industryId => {
+            {[...new Set(selected)].map(industryId => {
               const industryName = getIndustryNameById(industryId);
               return industryName ? (
                 <span

@@ -381,7 +381,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 {t('gigCreation.suggestions.industries')}
               </label>
               <div className="flex flex-wrap gap-2 mb-3">
-                {(data.industries || []).map((id) => {
+                {[...new Set(data.industries || [])].map((id) => {
                   const name = getIndustryNameById(id);
                   if (!name) return null;
                   return (
@@ -426,7 +426,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 {t('gigCreation.suggestions.activities')}
               </label>
               <div className="flex flex-wrap gap-2 mb-3">
-                {(data.activities || []).map((id) => {
+                {[...new Set(data.activities || [])].map((id) => {
                   const name = getActivityNameById(id);
                   if (!name) return null;
                   return (

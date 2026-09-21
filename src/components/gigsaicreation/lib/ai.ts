@@ -400,11 +400,15 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
   ): string[] => {
     if (!Array.isArray(values) || values.length === 0) return [];
     const raw = values.map(unwrapId).filter(Boolean);
-    return raw.map((v) => {
-      if (getById(v)) return v;
-      const converted = convertNames([v]);
-      return converted[0] || v;
-    });
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const v of raw) {
+      const id = getById(v) ? v : (convertNames([v])[0] || v);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+    return out;
   };
 
   return {
