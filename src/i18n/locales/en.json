@@ -1580,10 +1580,39 @@
       "numberOfMembers": "Number of Members"
     },
     "basic": {
+      "sectionTitle": "Basic Information",
       "title": "Gig title",
-      "titleHint": "Only this field is required to continue",
+      "titleLabel": "Title",
+      "titleHint": "Title is required; other fields are recommended",
+      "titlePlaceholder": "e.g., Call Center Agent — Outbound Sales",
+      "infoBanner": "Give your gig a clear title, then set category, seniority and experience. You can still skip optional sections later with “Skip to review”.",
+      "categoryLabel": "Category",
+      "categoryPlaceholder": "Select a category…",
+      "seniorityLabel": "Seniority level",
+      "seniorityPlaceholder": "Select a level…",
+      "yearsLabel": "Required years of experience",
       "skipToReview": "Skip to review",
       "skipTip": "Tip: use “Skip to review” if you only want to publish with a title for now."
+    },
+    "guidance": {
+      "forSection": "Guidance for {{title}}",
+      "stepsLabel": "Steps:",
+      "tipsLabel": "Tips:",
+      "basic": {
+        "title": "Basic Information",
+        "steps": [
+          "Enter a clear and descriptive title for the role",
+          "Select the appropriate category",
+          "Choose the seniority level",
+          "Specify required years of experience"
+        ],
+        "tips": [
+          "Use industry-standard job titles for better visibility",
+          "Be specific about the role category to attract the right candidates",
+          "Match seniority level with experience requirements",
+          "Consider both minimum and preferred experience levels"
+        ]
+      }
     },
     "schedule": {
       "workSchedule": "Work Schedule",
