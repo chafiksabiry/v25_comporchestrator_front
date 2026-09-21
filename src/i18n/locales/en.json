@@ -1508,6 +1508,13 @@
       "pickDaysHint": "Pick days for a group, then add several time ranges inside",
       "workingDays": "Working Days",
       "timeRanges": "Time ranges",
+      "overlapWarning": "Overlapping time ranges — adjust so plages do not overlap (e.g. 08:00–12:00 and 13:00–18:00).",
+      "schedulePresets": {
+        "nineToFive": "9-5",
+        "early": "Early",
+        "late": "Late",
+        "evening": "Evening"
+      },
       "noSchedule": "No schedule defined.",
       "newGroupRemaining": "New group for remaining days",
       "dayInOtherGroup": "{{day}} is already selected in another schedule group",
