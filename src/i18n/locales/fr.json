@@ -1508,6 +1508,13 @@
       "pickDaysHint": "Choisissez les jours d'un groupe, puis ajoutez plusieurs plages horaires",
       "workingDays": "Jours travaillés",
       "timeRanges": "Plages horaires",
+      "overlapWarning": "Plages qui se chevauchent — ajustez pour qu'elles ne se croisent pas (ex. 08:00–12:00 et 13:00–18:00).",
+      "schedulePresets": {
+        "nineToFive": "9h-17h",
+        "early": "Tôt",
+        "late": "Tard",
+        "evening": "Soir"
+      },
       "noSchedule": "Aucun planning défini.",
       "newGroupRemaining": "Nouveau groupe pour les jours restants",
       "dayInOtherGroup": "{{day}} est déjà sélectionné dans un autre groupe",
