@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Check } from 'lucide-react';
+import { persistHarxLanguage } from '../../i18n';
 
 export function LanguageSwitcher() {
   const { i18n, t } = useTranslation();
@@ -11,11 +12,12 @@ export function LanguageSwitcher() {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const languages = [
+    { code: 'fr', flagUrl: 'https://flagcdn.com/w320/fr.png' },
     { code: 'en', flagUrl: 'https://flagcdn.com/w320/gb.png' },
-    { code: 'fr', flagUrl: 'https://flagcdn.com/w320/fr.png' }
   ];
 
-  const currentLang = languages.find(l => i18n.language.startsWith(l.code)) || languages[0];
+  const currentLang =
+    languages.find((l) => i18n.language.toLowerCase().startsWith(l.code)) || languages[0];
 
   const updateMenuPos = () => {
     const el = buttonRef.current;
@@ -51,7 +53,8 @@ export function LanguageSwitcher() {
   }, []);
 
   const selectLanguage = (code: string) => {
-    i18n.changeLanguage(code);
+    persistHarxLanguage(code, { explicit: true });
+    void i18n.changeLanguage(code);
     setIsOpen(false);
   };
 
