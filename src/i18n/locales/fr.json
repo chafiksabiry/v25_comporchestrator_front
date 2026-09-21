@@ -1563,6 +1563,7 @@
       "noTimezones": "Aucun fuseau horaire disponible",
       "loadingCountries": "Chargement des pays…",
       "addDestinationZone": "Ajouter une zone de destination…",
+      "countriesAvailable": "{{count}} pays disponibles à la sélection",
       "loadingCurrencies": "Chargement des devises…",
       "noCommissionData": "Aucune donnée de commission",
       "loadingTerritories": "Chargement des territoires…",
@@ -1624,10 +1625,15 @@
       "selectSkill": "Sélectionner une compétence…",
       "levels": {
         "beginner": "Débutant",
+        "elementary": "Élémentaire",
         "intermediate": "Intermédiaire",
+        "upperIntermediate": "Intermédiaire supérieur",
         "advanced": "Avancé",
         "expert": "Expert",
-        "mastery": "Maîtrise"
+        "mastery": "Maîtrise",
+        "basic": "Basique",
+        "novice": "Novice",
+        "master": "Maître"
       }
     },
     "team": {
