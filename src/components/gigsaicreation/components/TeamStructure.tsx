@@ -212,7 +212,7 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">{t('gigCreation.team.title')}</h3>
-                  <p className="text-white/80 text-sm">Define team roles and member count</p>
+                  <p className="text-white/80 text-sm">{t('gigCreation.team.titleHint')}</p>
                 </div>
               </div>
             </div>
@@ -249,7 +249,7 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                         className="bg-gradient-to-br from-harx-50 to-harx-alt-50 rounded-xl p-4 border-2 border-harx-100 shadow-sm hover:shadow-md transition-all duration-200 group"
                       >
                         <div className="flex items-center justify-between mb-3">
-                          <h5 className="text-sm font-bold text-harx-800">Role #{index + 1}</h5>
+                          <h5 className="text-sm font-bold text-harx-800">{t('gigCreation.team.roleNumber', { n: index + 1 })}</h5>
                           <button
                             onClick={() => deleteTeamRole(index)}
                             className="p-1 text-red-500 hover:text-white hover:bg-red-500 rounded-md transition-all opacity-0 group-hover:opacity-100"
@@ -260,7 +260,7 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
 
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">{t('gigCreation.team.roleLabel')}</label>
                             <select
                               value={roleId}
                               onChange={(e) => updateTeamRole(index, 'roleId', e.target.value)}
@@ -276,7 +276,7 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Count</label>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">{t('gigCreation.team.countLabel')}</label>
                               <input
                                 type="number"
                                 min="1"
@@ -288,7 +288,7 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                             </div>
 
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Experience</label>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">{t('gigCreation.team.yearsLabel')}</label>
                               <input
                                 type="number"
                                 min="0"
@@ -339,14 +339,14 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">{t('gigCreation.team.territories')}</h3>
-                  <p className="text-white/80 text-sm">Define operational territories and regions</p>
+                  <p className="text-white/80 text-sm">{t('gigCreation.team.territoriesHint')}</p>
                 </div>
               </div>
             </div>
 
             <div className="p-6">
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Add Territory</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('gigCreation.team.addTerritory')}</label>
                 <select
                   onChange={(e) => {
                     if (e.target.value) {
@@ -358,7 +358,9 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                   className="w-full px-4 py-3 bg-gradient-to-r from-harx-50 to-harx-alt-50 border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all disabled:opacity-50"
                 >
                   <option value="">
-                    {territoriesLoading ? 'Loading territories...' : 'Select a territory'}
+                    {territoriesLoading
+                      ? t('gigCreation.team.loadingTerritories')
+                      : t('gigCreation.team.selectTerritory')}
                   </option>
                   {territoriesFromAPI
                     .filter(country => !(data.team?.territories || []).includes(country._id))
