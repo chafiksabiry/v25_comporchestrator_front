@@ -1704,6 +1704,8 @@
       "workSchedule": "Work Schedule",
       "workScheduleHint": "Define working days and hours",
       "scheduleGroups": "Schedule Groups",
+      "scheduleGroups_one": "Schedule Group",
+      "scheduleGroups_other": "Schedule Groups",
       "scheduleGroupsHint": "Pick days for a group, then add several time ranges inside",
       "timeRanges": "Time ranges",
       "addSchedule": "Add Schedule",
