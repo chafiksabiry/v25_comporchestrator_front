@@ -193,8 +193,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
 
       <div className="space-y-8">
         <InfoText>
-          Define the complete commission structure including base rate, transaction commission,
-          and performance bonus. All components will be displayed together.
+          {t('gigCreation.commission.infoBanner')}
         </InfoText>
 
         {/* Commission Grid */}
@@ -208,7 +207,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
               </div>
               <div className="ml-4">
                 <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.commission.currency')}</h3>
-                <p className="text-sm text-gray-500">Base currency for payments</p>
+                <p className="text-sm text-gray-500">{t('gigCreation.commission.currencyHint')}</p>
               </div>
             </div>
 
@@ -225,7 +224,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
                       {selectedCurrency.name} ({selectedCurrency.code}) {selectedCurrency.symbol}
                     </span>
                   ) : (
-                    <span className="text-harx-300 font-normal">Select currency...</span>
+                    <span className="text-harx-300 font-normal">{t('gigCreation.commission.selectCurrency')}</span>
                   )}
                 </div>
                 <ChevronDown className={`w-5 h-5 text-harx-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -239,7 +238,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
                       <input
                         autoFocus
                         type="text"
-                        placeholder="Search currency..."
+                        placeholder={t('gigCreation.commission.searchCurrency')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-9 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-harx-400 focus:border-transparent"
@@ -292,7 +291,9 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
                       ))
                     ) : (
                       <div className="px-4 py-8 text-center">
-                        <p className="text-gray-400 text-sm">No currencies found matching "{searchTerm}"</p>
+                        <p className="text-gray-400 text-sm">
+                          {t('gigCreation.commission.noCurrencyMatch', { term: searchTerm })}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -302,7 +303,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
             {currenciesLoading && (
               <div className="mt-2 flex items-center justify-center">
                 <Loader2 className="w-4 h-4 animate-spin text-harx-500" />
-                <span className="ml-2 text-sm text-harx-600">Loading...</span>
+                <span className="ml-2 text-sm text-harx-600">{t('gigCreation.commission.loading')}</span>
               </div>
             )}
           </div>
@@ -317,7 +318,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
               </div>
               <div className="ml-4">
                 <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.commission.perCall')}</h3>
-                <p className="text-sm text-gray-500">Amount per completed call</p>
+                <p className="text-sm text-gray-500">{t('gigCreation.commission.perCallHint')}</p>
               </div>
             </div>
 
@@ -345,7 +346,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
               </div>
               <div className="ml-4">
                 <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.commission.transaction')}</h3>
-                <p className="text-sm text-gray-500">Commission per transaction</p>
+                <p className="text-sm text-gray-500">{t('gigCreation.commission.transactionHint')}</p>
               </div>
             </div>
 
@@ -373,7 +374,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
               </div>
               <div className="ml-4">
                 <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.commission.bonus')}</h3>
-                <p className="text-sm text-gray-500">Performance bonus amount</p>
+                <p className="text-sm text-gray-500">{t('gigCreation.commission.bonusHint')}</p>
               </div>
             </div>
 
@@ -402,7 +403,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.commission.minVolume')}</h3>
-              <p className="text-sm text-gray-500">Set minimum performance thresholds</p>
+              <p className="text-sm text-gray-500">{t('gigCreation.commission.minVolumeHint')}</p>
             </div>
           </div>
 
@@ -441,8 +442,8 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
               </svg>
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.additionalDetails')}</h3>
-              <p className="text-sm text-gray-500">Terms, conditions and special notes</p>
+              <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.commission.additionalDetails')}</h3>
+              <p className="text-sm text-gray-500">{t('gigCreation.commission.additionalDetailsHint')}</p>
             </div>
           </div>
 
@@ -455,7 +456,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
                 additionalDetails: e.target.value
               }
             })}
-            placeholder="Commission details, payment terms, conditions, or special notes..."
+            placeholder={t('gigCreation.commission.additionalDetailsPlaceholder')}
             rows={4}
             className="w-full px-4 py-3 bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-3 focus:ring-gray-300 focus:border-gray-400 transition-all resize-none"
           />
