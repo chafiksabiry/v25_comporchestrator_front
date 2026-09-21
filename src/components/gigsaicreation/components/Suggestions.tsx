@@ -159,20 +159,20 @@ const DESTINATION_ZONES: { [key: string]: string } = {
 
 
 const LANGUAGE_LEVELS = [
-  { value: "A1", label: "A1 - Beginner" },
-  { value: "A2", label: "A2 - Elementary" },
-  { value: "B1", label: "B1 - Intermediate" },
-  { value: "B2", label: "B2 - Upper Intermediate" },
-  { value: "C1", label: "C1 - Advanced" },
-  { value: "C2", label: "C2 - Mastery" },
+  { value: "A1", labelKey: "beginner" },
+  { value: "A2", labelKey: "elementary" },
+  { value: "B1", labelKey: "intermediate" },
+  { value: "B2", labelKey: "upperIntermediate" },
+  { value: "C1", labelKey: "advanced" },
+  { value: "C2", labelKey: "mastery" },
 ];
 
 const SKILL_LEVELS = [
-  { value: 1, label: "Basic" },
-  { value: 2, label: "Intermediate" },
-  { value: 3, label: "Advanced" },
-  { value: 4, label: "Expert" },
-  { value: 5, label: "Master" },
+  { value: 1, labelKey: "basic" },
+  { value: 2, labelKey: "intermediate" },
+  { value: 3, labelKey: "advanced" },
+  { value: 4, labelKey: "expert" },
+  { value: 5, labelKey: "master" },
 ];
 
 
@@ -2946,7 +2946,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         <p className="text-xs text-gray-500 italic text-center mt-2">
           {destinationCountriesLoading
             ? t('gigCreation.suggestions.loadingCountries')
-            : `${availableCountries.length} countries available for selection`
+            : t('gigCreation.suggestions.countriesAvailable', { count: availableCountries.length })
           }
         </p>
       </div>
@@ -4668,12 +4668,24 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
       const getLevelLabel = (level: number, type: string) => {
         if (type === "languages") {
-          const labels = ['Beginner', 'Elementary', 'Intermediate', 'Upper Intermediate', 'Advanced', 'Mastery'];
-          return labels[level] || 'Intermediate';
-        } else {
-          const labels = ['', 'Basic', 'Novice', 'Intermediate', 'Advanced', 'Expert'];
-          return labels[level] || 'Basic';
+          const keys = ['beginner', 'elementary', 'intermediate', 'upperIntermediate', 'advanced', 'mastery'];
+          const key = keys[level] || 'intermediate';
+          return t(`gigCreation.skills.levels.${key}`);
         }
+        const keys = ['', 'basic', 'novice', 'intermediate', 'advanced', 'expert'];
+        const key = keys[level] || 'basic';
+        return t(`gigCreation.skills.levels.${key}`);
+      };
+
+      const getLanguageLevelLabel = (code?: string) => {
+        const level = LANGUAGE_LEVELS.find((l) => l.value === code);
+        if (!level) return code || 'B1';
+        return `${level.value} - ${t(`gigCreation.skills.levels.${level.labelKey}`)}`;
+      };
+
+      const getLanguageLevelDescription = (code?: string, fallbackKey = 'intermediate') => {
+        const level = LANGUAGE_LEVELS.find((l) => l.value === code);
+        return t(`gigCreation.skills.levels.${level?.labelKey || fallbackKey}`);
       };
 
       // Helper function to get progressive colors for skill levels
@@ -4930,7 +4942,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           ? "bg-harx-100 text-blue-800"
                           : "bg-yellow-100 text-yellow-800"
                         }`}>
-                        {LANGUAGE_LEVELS.find(l => l.value === item.proficiency)?.label || "B1"}
+                        {getLanguageLevelLabel(item.proficiency)}
                       </span>
                     );
                   } else {
@@ -5189,7 +5201,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                   else if (hoveredLevel >= 16.67) languageLevel = LANGUAGE_LEVELS.find(l => l.value === 'A2');
                                   else languageLevel = LANGUAGE_LEVELS.find(l => l.value === 'A1');
                                   // Extraire seulement la description après le " - "
-                                  const description = languageLevel?.label?.split(' - ')[1] || 'Beginner';
+                                  const description = languageLevel
+                                    ? t(`gigCreation.skills.levels.${languageLevel.labelKey}`)
+                                    : t('gigCreation.skills.levels.beginner');
                                   return description;
                                 } else {
                                   // 5 zones : 0-20%, 20-40%, 40-60%, 60-80%, 80-100%
@@ -5204,9 +5218,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                               }
 
                               if (skillType === "languages") {
-                                const currentLevel = LANGUAGE_LEVELS.find(l => l.value === item.proficiency);
-                                const description = currentLevel?.label?.split(' - ')[1] || 'Intermediate';
-                                return description;
+                                return getLanguageLevelDescription(item.proficiency, 'intermediate');
                               } else {
                                 return getLevelLabel(item.level || 1, skillType);
                               }
@@ -5405,8 +5417,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                 else if (hoveredLevel[skillType] >= 33.33) languageLevel = LANGUAGE_LEVELS.find(l => l.value === 'B1');
                                 else if (hoveredLevel[skillType] >= 16.67) languageLevel = LANGUAGE_LEVELS.find(l => l.value === 'A2');
                                 else languageLevel = LANGUAGE_LEVELS.find(l => l.value === 'A1');
-                                // Extraire seulement la description après le " - "
-                                const description = languageLevel?.label?.split(' - ')[1] || 'Beginner';
+                                const description = languageLevel
+                                  ? t(`gigCreation.skills.levels.${languageLevel.labelKey}`)
+                                  : t('gigCreation.skills.levels.beginner');
                                 return description;
                               } else {
                                 // 5 zones : 0-20%, 20-40%, 40-60%, 60-80%, 80-100%
@@ -5422,8 +5435,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
                             if (skillType === "languages") {
                               const currentLevel = LANGUAGE_LEVELS[selectedLevelToAdd[skillType]];
-                              const description = currentLevel?.label?.split(' - ')[1] || 'Intermediate';
-                              return description;
+                              return currentLevel
+                                ? t(`gigCreation.skills.levels.${currentLevel.labelKey}`)
+                                : t('gigCreation.skills.levels.intermediate');
                             } else {
                               return getLevelLabel(selectedLevelToAdd[skillType] || 1, skillType);
                             }
@@ -5807,7 +5821,11 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           <p className="text-xs text-gray-500 italic text-center mt-1">
             {territoriesLoading
               ? t('gigCreation.suggestions.loadingCountries')
-              : `${territoriesFromAPI.filter((country: Country) => !suggestions.team?.territories?.includes(country._id)).length} countries available for selection`
+              : t('gigCreation.suggestions.countriesAvailable', {
+                  count: territoriesFromAPI.filter(
+                    (country: Country) => !suggestions.team?.territories?.includes(country._id)
+                  ).length
+                })
             }
           </p>
         </div>

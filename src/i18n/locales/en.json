@@ -1563,6 +1563,7 @@
       "noTimezones": "No timezones available",
       "loadingCountries": "Loading countries…",
       "addDestinationZone": "Add destination zone…",
+      "countriesAvailable": "{{count}} countries available for selection",
       "loadingCurrencies": "Loading currencies…",
       "noCommissionData": "No Commission Data",
       "loadingTerritories": "Loading territories…",
@@ -1624,10 +1625,15 @@
       "selectSkill": "Select a skill…",
       "levels": {
         "beginner": "Beginner",
+        "elementary": "Elementary",
         "intermediate": "Intermediate",
+        "upperIntermediate": "Upper Intermediate",
         "advanced": "Advanced",
         "expert": "Expert",
-        "mastery": "Mastery"
+        "mastery": "Mastery",
+        "basic": "Basic",
+        "novice": "Novice",
+        "master": "Master"
       }
     },
     "team": {
