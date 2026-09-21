@@ -1013,19 +1013,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         // Commission data is now used directly as an object (no options array needed)
 
-        // Validate and filter sectors to only allow predefined ones
-        if (result.sectors && result.sectors.length > 0) {
-
-
-          const validSectors = result.sectors.filter(sector => {
-            const isValid = predefinedOptions.sectors.includes(sector);
-            if (!isValid) {
-              console.warn(`❌ Invalid sector "${sector}" - not in allowed list`);
-            }
-            return isValid;
-          });
-
-          result.sectors = validSectors;
+        // Keep every suggested sector. Dropping unknown labels left Infos de base empty.
+        result.sectors = (Array.isArray(result.sectors) ? result.sectors : [])
+          .map((sector: unknown) => (typeof sector === 'string' ? sector.trim() : ''))
+          .filter(Boolean);
+        if (result.sectors.length === 0 && result.category) {
+          result.sectors = [String(result.category)];
         }
 
         // Validate and filter flexibility options to only allow predefined ones
@@ -1135,6 +1128,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         if (result.destinationZones && result.destinationZones.length > 0) {
 
           const convertedZones = await Promise.all(result.destinationZones.map(async (zone) => {
+            if (zone && typeof zone === 'object') {
+              const raw = zone as { _id?: unknown; $oid?: unknown; name?: { common?: string; official?: string } | string };
+              const id = typeof raw._id === 'string' ? raw._id : typeof raw.$oid === 'string' ? raw.$oid : '';
+              if (id) return id;
+              const label = typeof raw.name === 'string' ? raw.name : raw.name?.common || raw.name?.official || '';
+              if (label) zone = label;
+            }
+
             // If it's already a MongoDB ObjectId (24 characters), keep it
             if (typeof zone === 'string' && zone.length === 24) {
               return zone;

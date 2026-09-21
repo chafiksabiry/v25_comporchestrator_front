@@ -101,7 +101,8 @@ const BasicSection: React.FC<BasicSectionProps> = ({
   const listFor = (field: ChipField): string[] => {
     if (field === 'highlights') return data.highlights || [];
     if (field === 'deliverables') return data.deliverables || [];
-    return data.sectors || [];
+    if ((data.sectors || []).length) return data.sectors || [];
+    return data.category ? [data.category] : [];
   };
 
   const setList = (field: ChipField, next: string[]) => {
@@ -257,9 +258,21 @@ const BasicSection: React.FC<BasicSectionProps> = ({
     </div>
   );
 
+  const sectorValues = (data.sectors && data.sectors.length
+    ? data.sectors
+    : data.category
+      ? [data.category]
+      : []);
+
   const availableSectors = predefinedOptions.sectors.filter(
-    (s) => !(data.sectors || []).includes(s)
+    (s) => !sectorValues.includes(s)
   );
+
+  const zoneValues = (data.destinationZones && data.destinationZones.length
+    ? data.destinationZones
+    : data.destination_zone
+      ? [String(data.destination_zone)]
+      : []);
 
   return (
     <div className="w-full bg-white py-6">
@@ -327,7 +340,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 {t('gigCreation.suggestions.sectors')}
               </label>
               <div className="flex flex-wrap gap-2 mb-3">
-                {(data.sectors || []).map((sector, index) => (
+                {sectorValues.map((sector, index) => (
                   <span
                     key={`sector-${index}`}
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-violet-50 text-violet-800 border border-violet-200"
@@ -465,7 +478,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 {t('gigCreation.suggestions.destinationZones')}
               </label>
               <div className="flex flex-wrap gap-2 mb-3">
-                {(data.destinationZones || []).map((id) => {
+                {zoneValues.map((id) => {
                   const country = countries.find((c) => c._id === id);
                   const name = country?.name?.common || id;
                   return (
@@ -496,7 +509,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                     : t('gigCreation.suggestions.addDestinationZone')}
                 </option>
                 {countries
-                  .filter((c) => !(data.destinationZones || []).includes(c._id))
+                  .filter((c) => !zoneValues.includes(c._id))
                   .map((country) => (
                     <option key={country._id} value={country._id}>
                       {country.name?.common}
@@ -506,9 +519,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
               {!loadingRefs && (
                 <p className="mt-2 text-xs text-gray-500 text-center italic">
                   {t('gigCreation.suggestions.countriesAvailable', {
-                    count: countries.filter(
-                      (c) => !(data.destinationZones || []).includes(c._id)
-                    ).length,
+                    count: countries.filter((c) => !zoneValues.includes(c._id)).length,
                   })}
                 </p>
               )}

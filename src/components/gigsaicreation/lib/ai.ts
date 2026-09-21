@@ -19,6 +19,67 @@ function getCompanyId(): string | undefined {
   return id ? String(id).trim() : undefined;
 }
 
+function asText(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'object') {
+    const row = value as Record<string, unknown>;
+    const nested =
+      row.text ?? row.label ?? row.name ?? row.value ?? row.title ?? row.highlight ?? row.deliverable;
+    if (typeof nested === 'string') return nested.trim();
+    if (nested && typeof nested === 'object') {
+      const named = nested as { common?: unknown };
+      if (typeof named.common === 'string') return named.common.trim();
+    }
+  }
+  return '';
+}
+
+/** First non-empty text list among aliases. Empty arrays do not block later sources. */
+export function asTextList(...sources: unknown[]): string[] {
+  const out: string[] = [];
+  const push = (value: unknown) => {
+    if (Array.isArray(value)) {
+      value.forEach(push);
+      return;
+    }
+    const text = asText(value);
+    if (text && !out.includes(text)) out.push(text);
+  };
+  sources.forEach(push);
+  return out;
+}
+
+function asZoneId(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'object') {
+    const row = value as { _id?: unknown; $oid?: unknown; id?: unknown };
+    const id = row._id ?? row.$oid ?? row.id;
+    if (typeof id === 'string' && id.trim()) return id.trim();
+    if (id && typeof id === 'object' && '$oid' in (id as object)) {
+      const oid = (id as { $oid?: unknown }).$oid;
+      if (typeof oid === 'string') return oid.trim();
+    }
+  }
+  return asText(value);
+}
+
+function asZoneList(...sources: unknown[]): string[] {
+  const out: string[] = [];
+  const push = (value: unknown) => {
+    if (Array.isArray(value)) {
+      value.forEach(push);
+      return;
+    }
+    const id = asZoneId(value);
+    if (id && !out.includes(id)) out.push(id);
+  };
+  sources.forEach(push);
+  return out;
+}
+
 function throwInsufficientTokens(data: any, status?: number): never {
   const err = new Error(
     String(data?.message || data?.error || 'Solde de tokens AI insuffisant. Rechargez pour continuer.')
@@ -148,7 +209,6 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       jobTitles: data.jobTitles || [],
       jobDescription: data.jobDescription || '',
       category: data.category || '',
-      destination_zone: data.destination_zone || '',
       destination_zone_meta: data.destination_zone_meta,
       activities: data.activities || [],
       industries: data.industries || [],
@@ -196,8 +256,8 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       // Missing fields required by GigSuggestion interface
       title: data.jobTitles?.[0] || '',
       description: data.jobDescription || '',
-      highlights: data.highlights || [],
-      deliverables: data.deliverables || [],
+      highlights: asTextList(data.highlights, data.keyPoints, data.key_points, data.pointsCles),
+      deliverables: asTextList(data.deliverables, data.livrables),
       requirements: { essential: [], preferred: [] },
       timeframes: [],
       benefits: [],
@@ -205,8 +265,14 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       leads: { types: [], sources: [], distribution: { method: '', rules: [] }, qualificationCriteria: [] },
       documentation: { templates: {}, reference: {}, product: [], process: [], training: [] },
       selectedJobTitle: data.jobTitles?.[0] || '',
-      sectors: data.category ? [data.category] : [],
-      destinationZones: data.destination_zone ? [data.destination_zone] : [],
+      sectors: asTextList(data.sectors, data.category),
+      destination_zone: asZoneId(data.destination_zone) || asZoneId(data.destination_zone_meta) || '',
+      destinationZones: asZoneList(
+        data.destinationZones,
+        data.destination_zones,
+        data.destination_zone,
+        data.destination_zone_meta
+      ),
 
       // Schedule mapping
       schedule: {
@@ -279,10 +345,14 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
     return String(val);
   };
 
-  // Prefer user-edited destinationZones chips over stale AI destination_zone
-  const zones = Array.isArray(generatedData.destinationZones)
-    ? generatedData.destinationZones.map(unwrapId).filter(Boolean)
-    : [];
+  // Prefer user-edited destinationZones chips over stale AI destination_zone.
+  // Empty arrays must not hide destination_zone / destination_zone_meta.
+  const zones = asZoneList(
+    generatedData.destinationZones,
+    generatedData.destination_zones,
+    generatedData.destination_zone,
+    generatedData.destination_zone_meta
+  );
   const mappedDestinationZone =
     zones[0] || unwrapId(generatedData.destination_zone) || '';
 
@@ -352,13 +422,14 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
       getIndustryById,
       convertIndustryNamesToIds
     ),
-    highlights: Array.isArray(generatedData.highlights) ? generatedData.highlights : [],
-    deliverables: Array.isArray(generatedData.deliverables) ? generatedData.deliverables : [],
-    sectors: Array.isArray(generatedData.sectors)
-      ? generatedData.sectors
-      : generatedData.category
-        ? [generatedData.category]
-        : [],
+    highlights: asTextList(
+      generatedData.highlights,
+      generatedData.keyPoints,
+      generatedData.key_points,
+      generatedData.pointsCles
+    ),
+    deliverables: asTextList(generatedData.deliverables, generatedData.livrables),
+    sectors: asTextList(generatedData.sectors, generatedData.category),
     skills: generatedData.skills || { languages: [], soft: [], professional: [], technical: [] } as any,
     availability: {
       ...(generatedData.availability || {}),
