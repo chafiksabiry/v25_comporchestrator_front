@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { InfoText } from './InfoText';
 import { Briefcase, ArrowRight, ArrowLeft } from 'lucide-react';
 import { GigData } from '../types';
+import { predefinedOptions } from '../lib/guidance';
 
 interface BasicSectionProps {
   data: GigData;
@@ -17,8 +18,8 @@ interface BasicSectionProps {
 }
 
 /**
- * Onboarding / create-gig basics: title required.
- * Next continues the wizard (schedule → …); Skip to review remains available.
+ * Create-gig basics: title (required) + category / seniority / experience.
+ * Next continues the wizard; Skip to review remains available.
  */
 const BasicSection: React.FC<BasicSectionProps> = ({
   data,
@@ -45,13 +46,21 @@ const BasicSection: React.FC<BasicSectionProps> = ({
     onNext?.();
   };
 
+  const updateSeniority = (patch: Partial<GigData['seniority']>) => {
+    onChange({
+      ...data,
+      seniority: {
+        level: data.seniority?.level || '',
+        yearsExperience: data.seniority?.yearsExperience ?? 0,
+        ...patch,
+      },
+    });
+  };
+
   return (
     <div className="w-full bg-white py-6">
       <div className="space-y-8">
-        <InfoText>
-          Give your gig a clear title, then continue through the next steps. You can still skip optional
-          sections later with “Skip to review”.
-        </InfoText>
+        <InfoText>{t('gigCreation.basic.infoBanner')}</InfoText>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-gradient-harx px-6 py-4">
@@ -60,16 +69,16 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 <Briefcase className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">{t('gigCreation.basic.title')}</h3>
+                <h3 className="text-xl font-bold text-white">{t('gigCreation.basic.sectionTitle')}</h3>
                 <p className="text-white/80 text-sm">{t('gigCreation.basic.titleHint')}</p>
               </div>
             </div>
           </div>
 
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-5">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Title <span className="text-red-500">*</span>
+                {t('gigCreation.basic.titleLabel')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -78,12 +87,70 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 className={`w-full px-4 py-3 bg-gradient-to-r from-harx-50 to-harx-alt-50 border-2 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all ${
                   errors.title ? 'border-red-300 focus:ring-red-300' : 'border-harx-200'
                 }`}
-                placeholder="e.g., Call Center Agent — Outbound Sales"
+                placeholder={t('gigCreation.basic.titlePlaceholder')}
               />
               {errors.title && (
                 <p className="mt-2 text-sm text-red-600 font-medium">{errors.title.join(', ')}</p>
               )}
             </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {t('gigCreation.basic.categoryLabel')}
+              </label>
+              <select
+                value={data.category || ''}
+                onChange={(e) => onChange({ ...data, category: e.target.value })}
+                className="w-full px-4 py-3 bg-white border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all"
+              >
+                <option value="">{t('gigCreation.basic.categoryPlaceholder')}</option>
+                {predefinedOptions.basic.categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  {t('gigCreation.basic.seniorityLabel')}
+                </label>
+                <select
+                  value={data.seniority?.level || ''}
+                  onChange={(e) => updateSeniority({ level: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all"
+                >
+                  <option value="">{t('gigCreation.basic.seniorityPlaceholder')}</option>
+                  {predefinedOptions.basic.seniorityLevels.map((level) => (
+                    <option key={level} value={level}>
+                      {level}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  {t('gigCreation.basic.yearsLabel')}
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={data.seniority?.yearsExperience ?? 0}
+                  onChange={(e) =>
+                    updateSeniority({
+                      yearsExperience: Math.max(0, Number(e.target.value) || 0),
+                    })
+                  }
+                  className="w-full px-4 py-3 bg-white border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
             <p className="text-xs text-gray-500">{t('gigCreation.basic.skipTip')}</p>
           </div>
         </div>
