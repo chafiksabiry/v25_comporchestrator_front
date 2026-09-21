@@ -39,7 +39,11 @@ import {
   getLanguageOptions,
   getActivityNameById,
   getIndustryNameById,
-  getLanguageNameById
+  getLanguageNameById,
+  getActivityById,
+  getIndustryById,
+  convertActivityNamesToIds,
+  convertIndustryNamesToIds,
 } from '../lib/activitiesIndustries';
 import Logo from "./Logo";
 import { useLanguage } from '../contexts/LanguageContext';
@@ -1009,19 +1013,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         // Commission data is now used directly as an object (no options array needed)
 
-        // Validate and filter sectors to only allow predefined ones
-        if (result.sectors && result.sectors.length > 0) {
-
-
-          const validSectors = result.sectors.filter(sector => {
-            const isValid = predefinedOptions.sectors.includes(sector);
-            if (!isValid) {
-              console.warn(`❌ Invalid sector "${sector}" - not in allowed list`);
-            }
-            return isValid;
-          });
-
-          result.sectors = validSectors;
+        // Keep every suggested sector. Dropping unknown labels left Infos de base empty.
+        result.sectors = (Array.isArray(result.sectors) ? result.sectors : [])
+          .map((sector: unknown) => (typeof sector === 'string' ? sector.trim() : ''))
+          .filter(Boolean);
+        if (result.sectors.length === 0 && result.category) {
+          result.sectors = [String(result.category)];
         }
 
         // Validate and filter flexibility options to only allow predefined ones
@@ -1131,6 +1128,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         if (result.destinationZones && result.destinationZones.length > 0) {
 
           const convertedZones = await Promise.all(result.destinationZones.map(async (zone) => {
+            if (zone && typeof zone === 'object') {
+              const raw = zone as { _id?: unknown; $oid?: unknown; name?: { common?: string; official?: string } | string };
+              const id = typeof raw._id === 'string' ? raw._id : typeof raw.$oid === 'string' ? raw.$oid : '';
+              if (id) return id;
+              const label = typeof raw.name === 'string' ? raw.name : raw.name?.common || raw.name?.official || '';
+              if (label) zone = label;
+            }
+
             // If it's already a MongoDB ObjectId (24 characters), keep it
             if (typeof zone === 'string' && zone.length === 24) {
               return zone;
@@ -1172,6 +1177,23 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             c.cca2 === 'FR'
           );
           result.destinationZones = franceCountry ? [franceCountry._id] : [];
+        }
+
+        // Ensure ref data is loaded, then normalize names → IDs
+        await Promise.all([loadActivities(), loadIndustries()]);
+        if (Array.isArray(result.industries) && result.industries.length > 0) {
+          result.industries = [...new Set(result.industries.map((item: string) => {
+            if (!item) return item;
+            if (getIndustryById(item)) return item;
+            return convertIndustryNamesToIds([item])[0] || item;
+          }).filter(Boolean))];
+        }
+        if (Array.isArray(result.activities) && result.activities.length > 0) {
+          result.activities = [...new Set(result.activities.map((item: string) => {
+            if (!item) return item;
+            if (getActivityById(item)) return item;
+            return convertActivityNamesToIds([item])[0] || item;
+          }).filter(Boolean))];
         }
 
         setSuggestions(result);
@@ -3716,7 +3738,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {/* Available activities */}
         {selected.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-            {selected.map(activityId => {
+            {[...new Set(selected)].map(activityId => {
               const activityName = getActivityNameById(activityId);
               return activityName ? (
                 <span
@@ -3809,7 +3831,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {/* Selected badges - displayed below the select */}
         {selected.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-            {selected.map(industryId => {
+            {[...new Set(selected)].map(industryId => {
               const industryName = getIndustryNameById(industryId);
               return industryName ? (
                 <span
