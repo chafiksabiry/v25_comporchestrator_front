@@ -67,11 +67,11 @@ const flexibilityOptions = [
 ];
 
 const timePresets = [
-  { label: "Morning", start: "09:00", end: "17:00" },
-  { label: "Afternoon", start: "13:00", end: "21:00" },
-  { label: "Evening", start: "17:00", end: "01:00" },
-  { label: "Night", start: "21:00", end: "05:00" },
-  { label: "Full Day", start: "00:00", end: "23:59" },
+  { id: "morning", start: "09:00", end: "17:00" },
+  { id: "afternoon", start: "13:00", end: "21:00" },
+  { id: "evening", start: "17:00", end: "01:00" },
+  { id: "night", start: "21:00", end: "05:00" },
+  { id: "fullDay", start: "00:00", end: "23:59" },
 ];
 
 const rangeCandidates: TimeRange[] = [
@@ -211,9 +211,9 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
   const handlePresetClick = (
     group: MultiRangeScheduleGroup,
     rangeIndex: number,
-    presetLabel: string
+    presetId: string
   ) => {
-    const preset = timePresets.find((p) => p.label === presetLabel);
+    const preset = timePresets.find((p) => p.id === presetId);
     if (!preset) return;
     const nextRanges = group.ranges.map((r, i) =>
       i === rangeIndex ? { start: preset.start, end: preset.end } : r
@@ -311,7 +311,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">{t('gigCreation.schedule.workSchedule')}</h3>
-                  <p className="text-white/80 text-sm">Define working days and hours</p>
+                  <p className="text-white/80 text-sm">{t('gigCreation.schedule.workScheduleHint')}</p>
                 </div>
               </div>
             </div>
@@ -319,7 +319,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">Schedule Groups</span>
+                  <span className="text-sm font-medium text-gray-700">{t('gigCreation.schedule.scheduleGroups')}</span>
                   <span className="bg-harx-100 text-harx-800 text-xs font-semibold px-2 py-1 rounded-full">
                     {scheduleGroups.length}
                   </span>
@@ -335,7 +335,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                 )}
               </div>
               <p className="text-xs text-gray-500 mb-4">
-                Pick days for a group, then add several time ranges inside
+                {t('gigCreation.schedule.scheduleGroupsHint')}
               </p>
 
               {scheduleGroups.length > 0 ? (
@@ -354,7 +354,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                         <button
                           onClick={() => deleteScheduleGroup(group)}
                           className="p-1 text-red-500 hover:text-white hover:bg-red-500 rounded-md transition-all"
-                          title="Delete schedule group"
+                          title={t('gigCreation.schedule.deleteGroup')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -375,7 +375,9 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                                 disabled={isInOtherGroup}
                                 title={
                                   isInOtherGroup
-                                    ? `${day} is already selected in another schedule group`
+                                    ? t('gigCreation.schedule.dayAlreadyUsed', {
+                                        day: dayDisplay(day, false),
+                                      })
                                     : undefined
                                 }
                                 className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${
@@ -397,7 +399,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <label className="block text-xs font-medium text-gray-700">
-                            Time ranges
+                            {t('gigCreation.schedule.timeRanges')}
                           </label>
                           <button
                             type="button"
@@ -448,7 +450,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                                         disabled={group.ranges.length <= 1}
                                         onClick={() => removeRangeFromGroup(group, rangeIndex)}
                                         className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md disabled:opacity-25 disabled:cursor-not-allowed shrink-0"
-                                        title="Remove range"
+                                        title={t('gigCreation.schedule.removeRange')}
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </button>
@@ -457,7 +459,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                                 })}
                                 {conflicts.size > 0 && (
                                   <p className="text-[11px] font-medium text-red-600 bg-red-50 border border-red-100 rounded-md px-2 py-1.5">
-                                    Overlapping time ranges — adjust so plages do not overlap (e.g. 08:00–12:00 and 13:00–18:00).
+                                    {t('gigCreation.schedule.overlapWarning')}
                                   </p>
                                 )}
                               </>
@@ -468,14 +470,14 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                         <div className="flex flex-wrap gap-1 pt-0.5">
                           {timePresets.map((preset) => (
                             <button
-                              key={preset.label}
+                              key={preset.id}
                               type="button"
                               onClick={() =>
-                                handlePresetClick(group, group.ranges.length - 1, preset.label)
+                                handlePresetClick(group, group.ranges.length - 1, preset.id)
                               }
                               className="px-1.5 py-0.5 text-[10px] font-medium bg-white border border-gray-200 text-gray-600 rounded hover:border-harx-300 hover:text-harx-700"
                             >
-                              {preset.label}
+                              {t(`gigCreation.schedule.presets.${preset.id}`)}
                             </button>
                           ))}
                         </div>
@@ -486,8 +488,8 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm">No schedule groups defined</p>
-                  <p className="text-xs text-gray-400">Click "Add Schedule" to get started</p>
+                  <p className="text-sm">{t('gigCreation.schedule.noGroups')}</p>
+                  <p className="text-xs text-gray-400">{t('gigCreation.schedule.noGroupsHint')}</p>
                 </div>
               )}
             </div>
@@ -502,7 +504,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">{t('gigCreation.schedule.minimumHours')}</h3>
-                  <p className="text-white/80 text-sm">Set minimum working hour requirements</p>
+                  <p className="text-white/80 text-sm">{t('gigCreation.schedule.minimumHoursHint')}</p>
                 </div>
               </div>
             </div>
@@ -558,7 +560,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">{t('gigCreation.schedule.timeZone')}</h3>
-                  <p className="text-white/80 text-sm">Select the primary working timezone</p>
+                  <p className="text-white/80 text-sm">{t('gigCreation.schedule.timeZoneHint')}</p>
                 </div>
               </div>
             </div>
@@ -571,7 +573,9 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                 className="w-full px-4 py-3 bg-gradient-to-r from-harx-50 to-harx-alt-50 border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all disabled:opacity-50"
               >
                 <option value="">
-                  {timezonesLoading ? 'Loading timezones...' : 'Select a timezone'}
+                  {timezonesLoading
+                    ? t('gigCreation.schedule.loadingTimezones')
+                    : t('gigCreation.schedule.selectTimezone')}
                 </option>
                 {timezones.map((timezone) => {
                   // Convertir gmtOffset (probablement en secondes) en heures
@@ -588,7 +592,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
               {timezonesLoading && (
                 <div className="mt-2 flex items-center justify-center">
                   <Loader2 className="w-4 h-4 animate-spin text-harx-500" />
-                  <span className="ml-2 text-sm text-harx-600">Loading timezones...</span>
+                  <span className="ml-2 text-sm text-harx-600">{t('gigCreation.schedule.loadingTimezones')}</span>
                 </div>
               )}
             </div>
@@ -603,7 +607,7 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">{t('gigCreation.schedule.flexibility')}</h3>
-                  <p className="text-white/80 text-sm">Define flexible working arrangements</p>
+                  <p className="text-white/80 text-sm">{t('gigCreation.schedule.flexibilityHint')}</p>
                 </div>
               </div>
             </div>
@@ -626,7 +630,11 @@ export function ScheduleSection({ data, onChange, onNext, onPrevious, hideNaviga
                           }`}>
                           {isSelected && <span className="text-white text-xs">✓</span>}
                         </div>
-                        <span className="text-sm font-medium">{option}</span>
+                        <span className="text-sm font-medium">
+                          {t(`gigCreation.schedule.flexibilityOptions.${option}`, {
+                            defaultValue: option,
+                          })}
+                        </span>
                       </div>
                     </button>
                   );

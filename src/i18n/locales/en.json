@@ -1596,7 +1596,7 @@
       "skipTip": "Tip: use “Skip to review” if you only want to publish with a title for now."
     },
     "guidance": {
-      "forSection": "Guidance for {{title}}",
+      "forSection": "Guide — {{title}}",
       "stepsLabel": "Steps:",
       "tipsLabel": "Tips:",
       "basic": {
@@ -1613,18 +1613,128 @@
           "Align sectors and industries with your target market",
           "Destination zones guide phone-line matching"
         ]
+      },
+      "schedule": {
+        "title": "Schedule & Availability",
+        "steps": [
+          "Select working days",
+          "Define working hours",
+          "Specify time zones",
+          "Set minimum hour requirements",
+          "Choose flexibility options"
+        ],
+        "tips": [
+          "Consider multiple time zones for global coverage",
+          "Be clear about shift patterns and rotations",
+          "Include any flexibility in scheduling",
+          "Specify both core hours and flexible time slots"
+        ]
+      },
+      "availability": {
+        "title": "Availability",
+        "steps": [
+          "Select working days",
+          "Define working hours",
+          "Specify time zones",
+          "Set minimum hour requirements",
+          "Choose flexibility options"
+        ],
+        "tips": [
+          "Consider multiple time zones for global coverage",
+          "Be clear about shift patterns and rotations",
+          "Include any flexibility in scheduling",
+          "Specify both core hours and flexible time slots"
+        ]
+      },
+      "commission": {
+        "title": "Commission Structure",
+        "steps": [
+          "Select the currency",
+          "Choose the commission type",
+          "Set base amounts",
+          "Define bonus structure",
+          "Add detailed commission terms"
+        ],
+        "tips": [
+          "Be transparent about commission calculations",
+          "Include all potential bonus opportunities",
+          "Clearly explain performance targets",
+          "Specify payment frequency and terms"
+        ]
+      },
+      "skills": {
+        "title": "Required Skills",
+        "steps": [
+          "Select required languages",
+          "Choose technical skills",
+          "Add soft skills",
+          "Specify required tools"
+        ],
+        "tips": [
+          "Prioritize must-have vs. nice-to-have skills",
+          "Be specific about language proficiency levels",
+          "Include both technical and soft skills",
+          "List relevant tools and software"
+        ]
+      },
+      "team": {
+        "title": "Team Structure",
+        "steps": [
+          "Define team size",
+          "List team roles",
+          "Select target countries",
+          "Set reporting relationships"
+        ],
+        "tips": [
+          "Be clear about team hierarchy",
+          "Include cross-functional relationships",
+          "Specify country coverage requirements",
+          "Define collaboration requirements"
+        ]
       }
     },
     "schedule": {
       "workSchedule": "Work Schedule",
+      "workScheduleHint": "Define working days and hours",
+      "scheduleGroups": "Schedule Groups",
+      "scheduleGroupsHint": "Pick days for a group, then add several time ranges inside",
+      "timeRanges": "Time ranges",
       "addSchedule": "Add Schedule",
+      "noGroups": "No schedule groups defined",
+      "noGroupsHint": "Click “Add Schedule” to get started",
+      "deleteGroup": "Delete schedule group",
+      "removeRange": "Remove range",
+      "overlapWarning": "Overlapping time ranges — adjust so plages do not overlap (e.g. 08:00–12:00 and 13:00–18:00).",
+      "dayAlreadyUsed": "{{day}} is already selected in another schedule group",
       "workingDays": "Working Days",
       "minimumHours": "Minimum Hours",
+      "minimumHoursHint": "Set minimum working hour requirements",
       "dailyHours": "Daily Hours",
       "weeklyHours": "Weekly Hours",
       "monthlyHours": "Monthly Hours",
       "timeZone": "Time Zone",
+      "timeZoneHint": "Select the primary working timezone",
+      "selectTimezone": "Select a timezone",
+      "loadingTimezones": "Loading timezones…",
       "flexibility": "Schedule Flexibility",
+      "flexibilityHint": "Define flexible working arrangements",
+      "presets": {
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "evening": "Evening",
+        "night": "Night",
+        "fullDay": "Full Day"
+      },
+      "flexibilityOptions": {
+        "Remote Work Available": "Remote Work Available",
+        "Flexible Hours": "Flexible Hours",
+        "Weekend Rotation": "Weekend Rotation",
+        "Night Shift Available": "Night Shift Available",
+        "Split Shifts": "Split Shifts",
+        "Part-Time Options": "Part-Time Options",
+        "Compressed Work Week": "Compressed Work Week",
+        "Shift Swapping Allowed": "Shift Swapping Allowed"
+      },
       "days": {
         "monday": "Monday",
         "tuesday": "Tuesday",
@@ -1636,23 +1746,40 @@
       }
     },
     "commission": {
+      "infoBanner": "Define the complete commission structure including base rate, transaction commission, and performance bonus. All components will be displayed together.",
       "currency": "Currency",
+      "currencyHint": "Base currency for payments",
+      "selectCurrency": "Select currency…",
+      "searchCurrency": "Search currency…",
+      "noCurrencyMatch": "No currencies found matching “{{term}}”",
+      "loading": "Loading…",
       "perCall": "Per call compensation",
+      "perCallHint": "Amount per completed call",
       "transaction": "Transaction Commission",
+      "transactionHint": "Commission per transaction",
       "bonus": "Bonus & Incentives",
+      "bonusHint": "Performance bonus amount",
       "minVolume": "Minimum Volume Requirements For Bonus",
+      "minVolumeHint": "Set minimum performance thresholds",
+      "additionalDetails": "Additional details",
+      "additionalDetailsHint": "Terms, payment conditions, or special notes",
+      "additionalDetailsPlaceholder": "Commission details, payment terms, conditions, or special notes…",
       "selectPeriod": "Select Period",
       "weekly": "Weekly",
       "monthly": "Monthly",
       "fixErrors": "Please fix the following:"
     },
     "skills": {
+      "infoBanner": "Define all required skills for the role, including languages, technical tools, and soft skills. Be specific about proficiency levels where applicable.",
       "languages": "Languages",
       "professional": "Professional Skills",
       "technical": "Technical Skills",
       "soft": "Soft Skills",
+      "availableCount": "{{count}} available",
       "selectLanguage": "Select a language…",
       "selectSkill": "Select a skill…",
+      "mastery": "Mastery",
+      "removeSkill": "Remove skill",
       "levels": {
         "beginner": "Beginner",
         "elementary": "Elementary",
@@ -1668,13 +1795,22 @@
     },
     "team": {
       "title": "Team Structure",
+      "titleHint": "Define team roles and member count",
       "addRole": "Add Role",
+      "roleNumber": "Role #{{n}}",
+      "roleLabel": "Role",
+      "countLabel": "Count",
+      "yearsLabel": "Years of experience",
       "seniority": "Seniority Level",
       "junior": "Junior",
       "mid": "Mid-Level",
       "senior": "Senior",
       "lead": "Lead",
-      "territories": "Territories"
+      "territories": "Territories",
+      "territoriesHint": "Define operational territories and regions",
+      "addTerritory": "Add Territory",
+      "selectTerritory": "Select a territory",
+      "loadingTerritories": "Loading territories…"
     },
     "review": {
       "jobDescription": "Job Description",
