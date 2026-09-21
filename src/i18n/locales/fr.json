@@ -1613,18 +1613,128 @@
           "Alignez secteurs et industries sur votre marché cible",
           "Les zones de destination guident le matching téléphonique"
         ]
+      },
+      "schedule": {
+        "title": "Planning et disponibilité",
+        "steps": [
+          "Sélectionner les jours travaillés",
+          "Définir les horaires de travail",
+          "Indiquer le fuseau horaire",
+          "Fixer les heures minimum",
+          "Choisir les options de flexibilité"
+        ],
+        "tips": [
+          "Prévoyez plusieurs fuseaux pour une couverture mondiale",
+          "Clarifiez les rotations et les équipes",
+          "Indiquez toute flexibilité du planning",
+          "Précisez les heures de base et les plages flexibles"
+        ]
+      },
+      "availability": {
+        "title": "Disponibilité",
+        "steps": [
+          "Sélectionner les jours travaillés",
+          "Définir les horaires de travail",
+          "Indiquer le fuseau horaire",
+          "Fixer les heures minimum",
+          "Choisir les options de flexibilité"
+        ],
+        "tips": [
+          "Prévoyez plusieurs fuseaux pour une couverture mondiale",
+          "Clarifiez les rotations et les équipes",
+          "Indiquez toute flexibilité du planning",
+          "Précisez les heures de base et les plages flexibles"
+        ]
+      },
+      "commission": {
+        "title": "Structure de commission",
+        "steps": [
+          "Sélectionner la devise",
+          "Choisir le type de commission",
+          "Définir les montants de base",
+          "Configurer le bonus",
+          "Ajouter les conditions détaillées"
+        ],
+        "tips": [
+          "Soyez transparent sur le calcul des commissions",
+          "Incluez toutes les opportunités de bonus",
+          "Expliquez clairement les objectifs de performance",
+          "Précisez la fréquence et les modalités de paiement"
+        ]
+      },
+      "skills": {
+        "title": "Compétences requises",
+        "steps": [
+          "Sélectionner les langues requises",
+          "Choisir les compétences techniques",
+          "Ajouter les soft skills",
+          "Préciser les outils requis"
+        ],
+        "tips": [
+          "Priorisez l’essentiel versus le souhaitable",
+          "Soyez précis sur les niveaux de langue",
+          "Incluez compétences techniques et soft skills",
+          "Listez les outils et logiciels pertinents"
+        ]
+      },
+      "team": {
+        "title": "Structure d'équipe",
+        "steps": [
+          "Définir la taille de l'équipe",
+          "Lister les rôles",
+          "Sélectionner les pays cibles",
+          "Définir les relations hiérarchiques"
+        ],
+        "tips": [
+          "Clarifiez la hiérarchie de l'équipe",
+          "Incluez les relations transverses",
+          "Précisez la couverture géographique",
+          "Définissez les besoins de collaboration"
+        ]
       }
     },
     "schedule": {
       "workSchedule": "Planning de travail",
+      "workScheduleHint": "Définir les jours et horaires de travail",
+      "scheduleGroups": "Groupes de planning",
+      "scheduleGroupsHint": "Choisissez les jours d'un groupe, puis ajoutez plusieurs plages horaires",
+      "timeRanges": "Plages horaires",
       "addSchedule": "Ajouter un créneau",
+      "noGroups": "Aucun groupe de planning défini",
+      "noGroupsHint": "Cliquez sur « Ajouter un créneau » pour commencer",
+      "deleteGroup": "Supprimer le groupe",
+      "removeRange": "Supprimer la plage",
+      "overlapWarning": "Plages qui se chevauchent — ajustez pour qu'elles ne se croisent pas (ex. 08:00–12:00 et 13:00–18:00).",
+      "dayAlreadyUsed": "{{day}} est déjà sélectionné dans un autre groupe",
       "workingDays": "Jours travaillés",
       "minimumHours": "Heures minimum",
+      "minimumHoursHint": "Définir les exigences d'heures minimum",
       "dailyHours": "Heures quotidiennes",
       "weeklyHours": "Heures hebdomadaires",
       "monthlyHours": "Heures mensuelles",
       "timeZone": "Fuseau horaire",
+      "timeZoneHint": "Sélectionner le fuseau horaire principal",
+      "selectTimezone": "Sélectionner un fuseau horaire",
+      "loadingTimezones": "Chargement des fuseaux…",
       "flexibility": "Flexibilité du planning",
+      "flexibilityHint": "Définir les modalités de travail flexibles",
+      "presets": {
+        "morning": "Matin",
+        "afternoon": "Après-midi",
+        "evening": "Soir",
+        "night": "Nuit",
+        "fullDay": "Journée complète"
+      },
+      "flexibilityOptions": {
+        "Remote Work Available": "Télétravail possible",
+        "Flexible Hours": "Horaires flexibles",
+        "Weekend Rotation": "Rotation week-end",
+        "Night Shift Available": "Travail de nuit possible",
+        "Split Shifts": "Horaires fractionnés",
+        "Part-Time Options": "Options à temps partiel",
+        "Compressed Work Week": "Semaine compressée",
+        "Shift Swapping Allowed": "Échange de shifts autorisé"
+      },
       "days": {
         "monday": "Lundi",
         "tuesday": "Mardi",
@@ -1636,23 +1746,40 @@
       }
     },
     "commission": {
+      "infoBanner": "Définissez la structure complète de commission : taux de base, commission par transaction et bonus de performance. Tous les éléments seront affichés ensemble.",
       "currency": "Devise",
+      "currencyHint": "Devise de base pour les paiements",
+      "selectCurrency": "Sélectionner une devise…",
+      "searchCurrency": "Rechercher une devise…",
+      "noCurrencyMatch": "Aucune devise ne correspond à « {{term}} »",
+      "loading": "Chargement…",
       "perCall": "Rémunération par appel",
+      "perCallHint": "Montant par appel réalisé",
       "transaction": "Commission par transaction",
+      "transactionHint": "Commission par transaction",
       "bonus": "Bonus et incentives",
+      "bonusHint": "Montant du bonus de performance",
       "minVolume": "Volume minimum pour le bonus",
+      "minVolumeHint": "Définir les seuils de performance minimum",
+      "additionalDetails": "Détails supplémentaires",
+      "additionalDetailsHint": "Conditions, modalités de paiement ou notes spéciales",
+      "additionalDetailsPlaceholder": "Détails de commission, modalités de paiement, conditions ou notes…",
       "selectPeriod": "Sélectionner la période",
       "weekly": "Hebdomadaire",
       "monthly": "Mensuel",
       "fixErrors": "Veuillez corriger les points suivants :"
     },
     "skills": {
+      "infoBanner": "Définissez toutes les compétences requises pour le rôle : langues, outils techniques et soft skills. Précisez les niveaux de maîtrise lorsque c’est pertinent.",
       "languages": "Langues",
       "professional": "Compétences professionnelles",
       "technical": "Compétences techniques",
       "soft": "Soft skills",
+      "availableCount": "{{count}} disponibles",
       "selectLanguage": "Sélectionner une langue…",
       "selectSkill": "Sélectionner une compétence…",
+      "mastery": "Maîtrise",
+      "removeSkill": "Retirer la compétence",
       "levels": {
         "beginner": "Débutant",
         "elementary": "Élémentaire",
@@ -1668,13 +1795,22 @@
     },
     "team": {
       "title": "Structure d'équipe",
+      "titleHint": "Définir les rôles et le nombre de membres",
       "addRole": "Ajouter un rôle",
+      "roleNumber": "Rôle n°{{n}}",
+      "roleLabel": "Rôle",
+      "countLabel": "Effectif",
+      "yearsLabel": "Années d'expérience",
       "seniority": "Niveau de séniorité",
       "junior": "Junior",
       "mid": "Confirmé",
       "senior": "Senior",
       "lead": "Lead",
-      "territories": "Territoires"
+      "territories": "Territoires",
+      "territoriesHint": "Définir les territoires et régions opérationnels",
+      "addTerritory": "Ajouter un territoire",
+      "selectTerritory": "Sélectionner un territoire",
+      "loadingTerritories": "Chargement des territoires…"
     },
     "review": {
       "jobDescription": "Description du poste",
