@@ -37,6 +37,7 @@
     "overview": "Vue d'ensemble",
     "company": "Entreprise",
     "gigs": "Gigs",
+    "gigsInfo": "Les GIGS sont les missions postées par la COMPANY",
     "leads": "Prospects",
     "calls": "Appels",
     "repMatching": "Rep Matching",
