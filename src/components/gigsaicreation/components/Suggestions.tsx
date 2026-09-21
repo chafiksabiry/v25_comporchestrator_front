@@ -2388,11 +2388,11 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       );
     };
 
-    const schedulePresets: { label: string; hours: TimeRange }[] = [
-      { label: "9-5", hours: { start: "09:00", end: "17:00" } },
-      { label: "Early", hours: { start: "07:00", end: "15:00" } },
-      { label: "Late", hours: { start: "11:00", end: "19:00" } },
-      { label: "Evening", hours: { start: "14:00", end: "22:00" } },
+    const schedulePresets: { id: string; hours: TimeRange }[] = [
+      { id: "nineToFive", hours: { start: "09:00", end: "17:00" } },
+      { id: "early", hours: { start: "07:00", end: "15:00" } },
+      { id: "late", hours: { start: "11:00", end: "19:00" } },
+      { id: "evening", hours: { start: "14:00", end: "22:00" } },
     ];
 
     const scheduleGroups = groupSchedulesByDayRanges(suggestions.schedule.schedules);
@@ -2642,7 +2642,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         })}
                         {conflicts.size > 0 && (
                           <p className="text-[11px] font-medium text-red-600 bg-red-50 border border-red-100 rounded-md px-2 py-1.5">
-                            Overlapping time ranges — adjust so plages do not overlap (e.g. 08:00–12:00 and 13:00–18:00).
+                            {t('gigCreation.suggestions.overlapWarning')}
                           </p>
                         )}
                       </>
@@ -2653,14 +2653,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 <div className="flex flex-wrap gap-1">
                   {schedulePresets.map((preset) => (
                     <button
-                      key={preset.label}
+                      key={preset.id}
                       type="button"
                       onClick={() =>
                         handlePresetClick(group, group.ranges.length - 1, preset.hours)
                       }
                       className="px-1.5 py-0.5 text-[10px] font-medium bg-white border border-gray-200 text-gray-600 rounded hover:border-harx-alt-400 hover:text-harx-alt-700"
                     >
-                      {preset.label}
+                      {t(`gigCreation.suggestions.schedulePresets.${preset.id}`)}
                     </button>
                   ))}
                 </div>
