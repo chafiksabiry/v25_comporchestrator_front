@@ -1580,10 +1580,39 @@
       "numberOfMembers": "Nombre de membres"
     },
     "basic": {
+      "sectionTitle": "Informations de base",
       "title": "Titre du gig",
-      "titleHint": "Seul ce champ est obligatoire pour continuer",
+      "titleLabel": "Titre",
+      "titleHint": "Le titre est obligatoire ; les autres champs sont recommandés",
+      "titlePlaceholder": "ex. : Agent centre d'appels — Vente sortante",
+      "infoBanner": "Donnez un titre clair à votre gig, puis renseignez la catégorie, le niveau et l'expérience. Vous pourrez toujours passer les sections optionnelles plus tard avec « Passer à la revue ».",
+      "categoryLabel": "Catégorie",
+      "categoryPlaceholder": "Sélectionner une catégorie…",
+      "seniorityLabel": "Niveau de séniorité",
+      "seniorityPlaceholder": "Sélectionner un niveau…",
+      "yearsLabel": "Années d'expérience requises",
       "skipToReview": "Passer à la revue",
       "skipTip": "Astuce : utilisez « Passer à la revue » si vous voulez publier avec un titre pour l'instant."
+    },
+    "guidance": {
+      "forSection": "Guide — {{title}}",
+      "stepsLabel": "Étapes :",
+      "tipsLabel": "Conseils :",
+      "basic": {
+        "title": "Informations de base",
+        "steps": [
+          "Saisir un titre clair et descriptif pour le rôle",
+          "Sélectionner la catégorie appropriée",
+          "Choisir le niveau de séniorité",
+          "Indiquer les années d'expérience requises"
+        ],
+        "tips": [
+          "Utilisez des intitulés reconnus dans le métier pour plus de visibilité",
+          "Précisez la catégorie pour attirer les bons candidats",
+          "Alignez le niveau de séniorité avec l'expérience demandée",
+          "Distinguez expérience minimum et expérience préférée si besoin"
+        ]
+      }
     },
     "schedule": {
       "workSchedule": "Planning de travail",
