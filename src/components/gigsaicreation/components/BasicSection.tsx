@@ -44,8 +44,9 @@ const BasicSection: React.FC<BasicSectionProps> = ({
   onNext,
   onSectionChange,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const titleOk = Boolean(String(data.title || '').trim());
+  const uiLang = (i18n.language || 'en').slice(0, 2);
 
   const [activities, setActivities] = useState<Array<{ value: string; label: string; category: string }>>([]);
   const [industries, setIndustries] = useState<Array<{ value: string; label: string }>>([]);
@@ -65,8 +66,8 @@ const BasicSection: React.FC<BasicSectionProps> = ({
         await Promise.all([loadActivities(), loadIndustries()]);
         const countriesData = await fetchAllCountries();
         if (cancelled) return;
-        setActivities(getActivityOptions());
-        setIndustries(getIndustryOptions());
+        setActivities(getActivityOptions(uiLang));
+        setIndustries(getIndustryOptions(uiLang));
         setCountries(Array.isArray(countriesData) ? countriesData : []);
       } catch (err) {
         console.error('BasicSection: failed to load reference data', err);
@@ -82,7 +83,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [uiLang]);
 
   const goNext = () => {
     if (!titleOk) return;
@@ -382,7 +383,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
               </label>
               <div className="flex flex-wrap gap-2 mb-3">
                 {[...new Set(data.industries || [])].map((id) => {
-                  const name = getIndustryNameById(id);
+                  const name = getIndustryNameById(id, uiLang);
                   if (!name) return null;
                   return (
                     <span
@@ -427,7 +428,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
               </label>
               <div className="flex flex-wrap gap-2 mb-3">
                 {[...new Set(data.activities || [])].map((id) => {
-                  const name = getActivityNameById(id);
+                  const name = getActivityNameById(id, uiLang);
                   if (!name) return null;
                   return (
                     <span

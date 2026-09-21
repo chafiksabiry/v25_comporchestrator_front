@@ -5,6 +5,8 @@ export interface Activity {
   description: string;
   category: string;
   isActive: boolean;
+  name_i18n?: { en?: string; fr?: string };
+  description_i18n?: { en?: string; fr?: string };
   __v: number;
   createdAt: string;
   updatedAt: string;
@@ -15,6 +17,8 @@ export interface Industry {
   name: string;
   description: string;
   isActive: boolean;
+  name_i18n?: { en?: string; fr?: string };
+  description_i18n?: { en?: string; fr?: string };
   __v: number;
   createdAt: string;
   updatedAt: string;
