@@ -76,9 +76,11 @@ export function getActivityById(id: string): Activity | undefined {
   return activitiesCache.find(activity => activity._id === id);
 }
 
-export function getActivityNameById(id: string): string {
+export function getActivityNameById(id: string, lang?: string): string {
   const activity = activitiesCache.find(activity => activity._id === id);
-  return activity ? activity.name : '';
+  if (!activity) return '';
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+  return activity.name_i18n?.[code] || activity.name_i18n?.en || activity.name;
 }
 
 export function convertActivityNamesToIds(names: string[]): string[] {
@@ -94,12 +96,13 @@ export function convertActivityNamesToIds(names: string[]): string[] {
   return ids;
 }
 
-export function getActivityOptions(): Array<{ value: string; label: string; category: string }> {
+export function getActivityOptions(lang?: string): Array<{ value: string; label: string; category: string }> {
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
   const options = activitiesCache
     .filter(activity => activity.isActive)
     .map(activity => ({
       value: activity._id,
-      label: activity.name,
+      label: activity.name_i18n?.[code] || activity.name_i18n?.en || activity.name,
       category: activity.category
     }));
   return options;
@@ -110,9 +113,11 @@ export function getIndustryById(id: string): Industry | undefined {
   return industriesCache.find(industry => industry._id === id);
 }
 
-export function getIndustryNameById(id: string): string {
+export function getIndustryNameById(id: string, lang?: string): string {
   const industry = industriesCache.find(industry => industry._id === id);
-  return industry ? industry.name : '';
+  if (!industry) return '';
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+  return industry.name_i18n?.[code] || industry.name_i18n?.en || industry.name;
 }
 
 export function convertIndustryNamesToIds(names: string[]): string[] {
@@ -128,12 +133,13 @@ export function convertIndustryNamesToIds(names: string[]): string[] {
   return ids;
 }
 
-export function getIndustryOptions(): Array<{ value: string; label: string }> {
+export function getIndustryOptions(lang?: string): Array<{ value: string; label: string }> {
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
   const options = industriesCache
     .filter(industry => industry.isActive)
     .map(industry => ({
       value: industry._id,
-      label: industry.name
+      label: industry.name_i18n?.[code] || industry.name_i18n?.en || industry.name
     }));
   return options;
 }
