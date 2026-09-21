@@ -49,7 +49,7 @@
     "integrations": "Integrations",
     "companyOnboarding": "Company Onboarding",
     "scriptGenerator": "Script Generator",
-    "training": "Training",
+    "training": "HARX Academy",
     "knowledgeBase": "Knowledge Base",
     "voiceAssistant": "Voice assistant",
     "telephony": "Telephony",
@@ -2326,7 +2326,7 @@
       "unavailable": "Viewer unavailable."
     },
     "trainingSection": {
-      "title": "Training",
+      "title": "HARX Academy",
       "subtitle": "Skills development and validation",
       "loading": "Loading available trainings...",
       "emptyTitle": "No training journeys yet",

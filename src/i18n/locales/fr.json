@@ -36,7 +36,7 @@
     "dashboard": "Tableau de Bord",
     "overview": "Vue d'ensemble",
     "company": "Entreprise",
-    "gigs": "Missions",
+    "gigs": "Gigs",
     "leads": "Prospects",
     "calls": "Appels",
     "repMatching": "Rep Matching",
@@ -49,7 +49,7 @@
     "integrations": "Intégrations",
     "companyOnboarding": "Onboarding Entreprise",
     "scriptGenerator": "Script d'Appel",
-    "training": "Formation",
+    "training": "HARX Academy",
     "knowledgeBase": "Base de Connaissances",
     "voiceAssistant": "Assistant vocal",
     "telephony": "Téléphonie",
@@ -324,7 +324,7 @@
     "newGig": "Nouvelle Mission",
     "stats": {
       "activeProfiles": "Profils Actifs",
-      "activeGigs": "Missions Actives",
+      "activeGigs": "Gigs actifs",
       "successfulMatches": "Matchs Réussis",
       "pendingApprovals": "Approbations en Attente",
       "vsLastMonth": "vs mois dernier",
@@ -349,7 +349,7 @@
     "quickActions": {
       "profileUnit": "Unité de Profil",
       "profileUnitDesc": "Génération de neuro-profils",
-      "gigForge": "Forge de Missions",
+      "gigForge": "Forge de Gigs",
       "gigForgeDesc": "Moteur d'optimisation",
       "matchMatrix": "Matrice de Match",
       "matchMatrixDesc": "Jumelage algorithmique",
@@ -2326,7 +2326,7 @@
       "unavailable": "Visionneuse indisponible."
     },
     "trainingSection": {
-      "title": "Formation",
+      "title": "HARX Academy",
       "subtitle": "Développement et validation des compétences",
       "loading": "Chargement des formations disponibles...",
       "emptyTitle": "Pas encore de parcours de formation",
