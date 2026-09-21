@@ -2,6 +2,12 @@ import Cookies from 'js-cookie';
 import { GigData, GigSuggestion } from '../types';
 import { applyBackendAiUsage } from '../../../lib/aiTokensUsage';
 import { generateMockGigSuggestions } from './mockData';
+import {
+  convertActivityNamesToIds,
+  convertIndustryNamesToIds,
+  getActivityById,
+  getIndustryById,
+} from './activitiesIndustries';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
 
@@ -253,9 +259,14 @@ export function mapGigDataToSuggestions(gigData: GigData): any {
     commission: gigData.commission || {},
     team: gigData.team || { size: 1, structure: [], territories: [] },
     highlights: gigData.highlights || [],
+    deliverables: gigData.deliverables || [],
+    sectors: gigData.sectors || [],
     requirements: gigData.requirements || { essential: [], preferred: [] },
     benefits: gigData.benefits || [],
-    callTypes: gigData.callTypes || []
+    callTypes: gigData.callTypes || [],
+    selectedJobTitle: gigData.title || undefined,
+    destination_zone: gigData.destination_zone || '',
+    destination_zone_meta: gigData.destination_zone_meta,
   };
 }
 
@@ -311,13 +322,43 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
     }
   }
 
+  // Industries / activities may arrive as names (AI) or IDs (Suggestions UI)
+  const normalizeRefIds = (
+    values: any[],
+    getById: (id: string) => unknown,
+    convertNames: (names: string[]) => string[]
+  ): string[] => {
+    if (!Array.isArray(values) || values.length === 0) return [];
+    const raw = values.map(unwrapId).filter(Boolean);
+    return raw.map((v) => {
+      if (getById(v)) return v;
+      const converted = convertNames([v]);
+      return converted[0] || v;
+    });
+  };
+
   return {
     title: generatedData.selectedJobTitle || generatedData.jobTitles?.[0] || '',
-    description: generatedData.description || '',
-    category: generatedData.category || '',
+    description: generatedData.description || generatedData.jobDescription || '',
+    category: generatedData.category || generatedData.sectors?.[0] || '',
     seniority: generatedData.seniority || { level: '', yearsExperience: 0 },
-    activities: generatedData.activities || [],
-    industries: generatedData.industries || [],
+    activities: normalizeRefIds(
+      generatedData.activities || [],
+      getActivityById,
+      convertActivityNamesToIds
+    ),
+    industries: normalizeRefIds(
+      generatedData.industries || [],
+      getIndustryById,
+      convertIndustryNamesToIds
+    ),
+    highlights: Array.isArray(generatedData.highlights) ? generatedData.highlights : [],
+    deliverables: Array.isArray(generatedData.deliverables) ? generatedData.deliverables : [],
+    sectors: Array.isArray(generatedData.sectors)
+      ? generatedData.sectors
+      : generatedData.category
+        ? [generatedData.category]
+        : [],
     skills: generatedData.skills || { languages: [], soft: [], professional: [], technical: [] } as any,
     availability: {
       ...(generatedData.availability || {}),
@@ -332,5 +373,10 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
     team: generatedData.team || { size: 1, structure: [], territories: [] },
     destination_zone: mappedDestinationZone,
     destination_zone_meta,
+    destinationZones: zones.length
+      ? zones
+      : mappedDestinationZone
+        ? [mappedDestinationZone]
+        : [],
   };
 }

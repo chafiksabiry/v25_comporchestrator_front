@@ -39,7 +39,11 @@ import {
   getLanguageOptions,
   getActivityNameById,
   getIndustryNameById,
-  getLanguageNameById
+  getLanguageNameById,
+  getActivityById,
+  getIndustryById,
+  convertActivityNamesToIds,
+  convertIndustryNamesToIds,
 } from '../lib/activitiesIndustries';
 import Logo from "./Logo";
 import { useLanguage } from '../contexts/LanguageContext';
@@ -1172,6 +1176,23 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             c.cca2 === 'FR'
           );
           result.destinationZones = franceCountry ? [franceCountry._id] : [];
+        }
+
+        // Ensure ref data is loaded, then normalize names → IDs
+        await Promise.all([loadActivities(), loadIndustries()]);
+        if (Array.isArray(result.industries) && result.industries.length > 0) {
+          result.industries = result.industries.map((item: string) => {
+            if (!item) return item;
+            if (getIndustryById(item)) return item;
+            return convertIndustryNamesToIds([item])[0] || item;
+          }).filter(Boolean);
+        }
+        if (Array.isArray(result.activities) && result.activities.length > 0) {
+          result.activities = result.activities.map((item: string) => {
+            if (!item) return item;
+            if (getActivityById(item)) return item;
+            return convertActivityNamesToIds([item])[0] || item;
+          }).filter(Boolean);
         }
 
         setSuggestions(result);

@@ -92,6 +92,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     destinationZones: [],
     callTypes: [],
     highlights: [],
+    deliverables: [],
+    sectors: [],
     industries: [],
     activities: [],
     status: 'to_activate',
@@ -235,6 +237,12 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
           destinationZones: data.destinationZones || [],
           callTypes: data.callTypes || [],
           highlights: data.highlights || [],
+          deliverables: data.deliverables || [],
+          sectors: Array.isArray(data.sectors)
+            ? data.sectors
+            : data.category
+              ? [data.category]
+              : [],
           industries: Array.isArray(data.industries)
             ? data.industries.map((industry: { _id: any; }) =>
               typeof industry === 'object' && industry?._id
@@ -642,6 +650,14 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       ...mappedData,
       // Use selected job title as the main title
       title: suggestions.selectedJobTitle || mappedData.title || prevData.title,
+      highlights: mappedData.highlights ?? suggestions.highlights ?? [],
+      deliverables: mappedData.deliverables ?? suggestions.deliverables ?? [],
+      sectors: mappedData.sectors ?? suggestions.sectors ?? [],
+      destinationZones:
+        mappedData.destinationZones ??
+        suggestions.destinationZones ??
+        prevData.destinationZones ??
+        [],
       // Preserve any existing data that wasn't in the suggestions
       userId: prevData.userId,
       companyId: prevData.companyId,
