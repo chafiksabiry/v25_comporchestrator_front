@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { Building2, PencilLine, BarChart3, MapPin, Mail, Phone, Globe, Briefcase, ListChecks, Activity as ActivityIcon } from 'lucide-react';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { getGigsByCompanyId } from '../matching';
+import { localizeText } from '../../../utils/i18nText';
 
 interface CompanyCallStat {
   duration?: number;
@@ -40,12 +42,18 @@ function companyIdString(company: CompanyRecord | null): string | undefined {
 }
 
 export function CompanyDashboardPage() {
+  const { i18n } = useTranslation();
   const [company, setCompany] = useState<CompanyRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<{ completedSteps?: number[]; currentPhase?: number } | null>(null);
   const [gigsCount, setGigsCount] = useState<number | null>(null);
   const [calls, setCalls] = useState<CompanyCallStat[]>([]);
+
+  const industryLabel = useMemo(() => {
+    if (!company) return '';
+    return localizeText(company.industry_i18n, i18n.language) || String(company.industry || '');
+  }, [company, i18n.language]);
 
   const base = import.meta.env.VITE_COMPANY_API_URL;
   const orchestratorBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
@@ -243,7 +251,7 @@ export function CompanyDashboardPage() {
             </div>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 truncate">{company.name || 'Entreprise'}</h1>
             <p className="mt-1 text-slate-600 text-sm">
-              {[company.industry, company.headquarters].filter(Boolean).join(' · ') || 'Vue synthétique des informations clés.'}
+              {[industryLabel, company.headquarters].filter(Boolean).join(' · ') || 'Vue synthétique des informations clés.'}
             </p>
           </div>
         </div>
@@ -402,7 +410,7 @@ export function CompanyDashboardPage() {
           <dl className="mt-4 space-y-3 text-sm">
             <div>
               <dt className="text-xs font-bold uppercase tracking-wide text-slate-400">Secteur</dt>
-              <dd className="font-medium text-slate-800">{company.industry || '—'}</dd>
+              <dd className="font-medium text-slate-800">{industryLabel || '—'}</dd>
             </div>
             <div className="flex gap-2">
               <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />

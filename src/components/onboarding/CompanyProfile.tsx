@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { useTranslation } from "react-i18next";
 
 import {
   Building2,
@@ -33,6 +34,7 @@ import {
 } from "lucide-react";
 
 import Cookies from 'js-cookie';
+import { localizeText, uiLocale } from "../../utils/i18nText";
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
@@ -121,7 +123,6 @@ const EditableField = ({
   className?: string;
 }) => {
   const {
-    company,
     editMode,
     tempValues,
     setTempValues,
@@ -146,7 +147,7 @@ const EditableField = ({
         <div className={`w-full ${isHeroField ? "mt-1" : "mt-1"}`}>
           {isLongTextField ? (
             <textarea
-              value={(tempValues[field] ?? getNestedValue(company, field) ?? "") as string}
+              value={(tempValues[field] ?? value ?? "") as string}
               rows={4}
               onChange={(e) =>
                 setTempValues((prev: any) => ({
@@ -163,7 +164,7 @@ const EditableField = ({
           ) : (
             <input
               type="text"
-              value={(tempValues[field] ?? getNestedValue(company, field) ?? "") as string}
+              value={(tempValues[field] ?? value ?? "") as string}
               onChange={(e) =>
                 setTempValues((prev: any) => ({
                   ...prev,
@@ -189,6 +190,8 @@ const EditableField = ({
 };
 
 function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | null; onBack?: () => void }) {
+  const { t, i18n } = useTranslation();
+  const lang = uiLocale(i18n.language);
   const [company, setCompany] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -427,20 +430,16 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
 
   const handleApplyChanges = (field: string) => {
     setCompany((prev) => {
-      // Deep clone only what's necessary or use a simple deep clone approach
-      // For simplicity and safety against mutation, we'll deep clone the whole specific branch or the whole object if small enough.
-      // Given company object size, JSON parse/stringify is simplest safe bet for deep clone, though not most performant.
       const newCompany = JSON.parse(JSON.stringify(prev));
+      const nextValue = tempValues[field];
 
       if (field.includes('.')) {
         const parts = field.split('.');
         let current = newCompany;
 
-        // Navigate to the nested object
         for (let i = 0; i < parts.length - 1; i++) {
           const key = parts[i];
           if (!current[key]) {
-            // Check if the NEXT part is an index (number), if so create array, else object
             const nextKey = parts[i + 1];
             const isNextIndex = !isNaN(Number(nextKey));
             current[key] = isNextIndex ? [] : {};
@@ -448,10 +447,19 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
           current = current[key];
         }
 
-        // Set the value on the deepest level
-        current[parts[parts.length - 1]] = tempValues[field];
+        current[parts[parts.length - 1]] = nextValue;
       } else {
-        newCompany[field] = tempValues[field];
+        newCompany[field] = nextValue;
+        // Keep bilingual mirrors in sync for narrative fields.
+        if (field === 'overview' || field === 'mission' || field === 'industry' || field === 'companyIntro') {
+          const i18nKey = `${field}_i18n`;
+          newCompany[i18nKey] = {
+            en: '',
+            fr: '',
+            ...(newCompany[i18nKey] || {}),
+            [lang]: String(nextValue ?? ''),
+          };
+        }
       }
 
       return newCompany;
@@ -498,10 +506,15 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
         name: company.name,
         logo: company.logo || logoUrl,
         industry: company.industry,
+        industry_i18n: company.industry_i18n,
         founded: company.founded,
         headquarters: company.headquarters,
         overview: company.overview,
+        overview_i18n: company.overview_i18n,
         mission: company.mission,
+        mission_i18n: company.mission_i18n,
+        companyIntro: company.companyIntro,
+        companyIntro_i18n: company.companyIntro_i18n,
         culture: company.culture,
         opportunities: company.opportunities,
         technology: company.technology,
@@ -680,6 +693,16 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
       innovation: "We use cutting-edge technologies to solve complex problems."
     }
   };
+
+  const localizedIndustry =
+    localizeText(company.industry_i18n, lang) || profile.industry || '';
+  const localizedOverview =
+    localizeText(company.overview_i18n, lang) ||
+    localizeText(company.companyIntro_i18n, lang) ||
+    profile.overview ||
+    '';
+  const localizedMission =
+    localizeText(company.mission_i18n, lang) || profile.mission || '';
 
   const fields = [
     {
@@ -861,14 +884,14 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
                       />
                     </div>
                     <div className="flex flex-wrap gap-6 text-white/90">
-                      {profile.industry && (
+                      {localizedIndustry ? (
                         <EditableField
-                          value={profile.industry}
+                          value={localizedIndustry}
                           field="industry"
                           icon={Factory}
                           className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm"
                         />
-                      )}
+                      ) : null}
                       {profile.founded && (
                         <EditableField
                           value={profile.founded}
@@ -902,7 +925,7 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
                   <div className="space-y-4">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                       <Mail className="text-blue-600" size={20} />
-                      Contact Information
+                      {t('searchCompanyWizard.profile.contactInfo')}
                     </h3>
                     <div className="space-y-3">
                       {profile.contact?.email && (
@@ -963,13 +986,13 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
                                   className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-sm text-blue-600 rounded-lg shadow-lg backdrop-blur-sm flex items-center gap-1.5 transition-all hover:scale-105"
                                 >
                                   <MapPin size={14} />
-                                  Get Directions
+                                  {t('searchCompanyWizard.profile.getDirections')}
                                 </a>
                               )}
                             </>
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
-                              <span>Map not available</span>
+                              <span>{t('searchCompanyWizard.profile.mapNotAvailable')}</span>
                             </div>
                           )}
                         </div>
@@ -983,7 +1006,7 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
                   <div className="space-y-4">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                       <Globe className="text-blue-600" size={20} />
-                      Digital Presence
+                      {t('searchCompanyWizard.profile.digitalPresence')}
                     </h3>
                     <div className="flex gap-3">
                       {profile.socialMedia?.linkedin && (
@@ -1045,17 +1068,17 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
                       </div>
                       <div className="flex-1">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                          Company Overview
+                          {t('searchCompanyWizard.profile.companyOverview')}
                         </h2>
                         <EditableField
-                          value={profile.overview}
+                          value={localizedOverview}
                           field="overview"
                           className="text-gray-700 leading-relaxed text-lg"
                         />
                       </div>
                     </div>
 
-                    {profile.mission && (
+                    {localizedMission ? (
                       <div className="ml-18 p-8 bg-gradient-to-br from-indigo-50 via-blue-50 to-white rounded-2xl border border-indigo-100/50 shadow-sm">
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center">
@@ -1063,17 +1086,17 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
                           </div>
                           <div>
                             <h3 className="text-xl font-bold text-indigo-700 mb-3">
-                              Our Mission
+                              {t('searchCompanyWizard.profile.ourMission')}
                             </h3>
                             <EditableField
-                              value={profile.mission}
+                              value={localizedMission}
                               field="mission"
                               className="text-gray-700"
                             />
                           </div>
                         </div>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </section>
               </div>
