@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, MessageSquare, Activity as ActivityIcon, Globe, ShieldAlert, ShieldCheck,
   TrendingUp, Star, Clock, Phone, CreditCard, Check, Brain, Calendar, RefreshCw,
+  ThumbsUp, ThumbsDown,
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
-import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getExecutiveSummaryScore, getExecutiveSummaryText, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, getDisplayOverallScore, hasAiCallAnalysis } from '../../../utils/callStatusDisplay';
+import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getExecutiveSummaryScore, getExecutiveSummaryText, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, hasAiCallAnalysis, isCallTooShortForAnalysis, getTooShortAnalysisNotice, getScoreDecisionTooltip, shouldHideCallScoring } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;
@@ -24,6 +25,13 @@ export interface NormalizedCall {
   callOutcome?: string | null;
   flags?: { fraud?: boolean; selfCall?: boolean };
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null };
+  duration?: number | null;
+  ai_call_status?: string | null;
+  scoreCalibration?: {
+    verdict?: 'up' | 'down' | null;
+    explanation?: string | null;
+    calibratedAt?: string | null;
+  } | null;
 }
 
 /** L'entreprise peut valider/refuser dès que l'appel est analysé (transaction optionnelle). */
@@ -51,13 +59,26 @@ interface Props {
   analyzingCallId?: string | null;
   analysisError?: string | null;
   onValidateTransaction?: (callId: string, current: boolean | null, next: boolean) => void;
+  onCalibrateScore?: (callId: string, payload: { verdict: 'up' | 'down'; explanation?: string }) => Promise<void> | void;
 }
 
-export default function CallDetailModal({ call, agentFraudCount = 0, onClose, onAnalyze, analyzingCallId, analysisError, onValidateTransaction }: Props) {
+export default function CallDetailModal({ call, agentFraudCount = 0, onClose, onAnalyze, analyzingCallId, analysisError, onValidateTransaction, onCalibrateScore }: Props) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'transcript' | 'insights'>('transcript');
+  const [calibrationVerdict, setCalibrationVerdict] = useState<'up' | 'down' | null>(call.scoreCalibration?.verdict || null);
+  const [calibrationExplanation, setCalibrationExplanation] = useState(call.scoreCalibration?.explanation || '');
+  const [calibrationSaving, setCalibrationSaving] = useState(false);
+  const [calibrationError, setCalibrationError] = useState<string | null>(null);
   const isFraud = isCallFraudDetected(call);
   const isVoicemail = isCallVoicemail(call);
+  const isTooShort = isCallTooShortForAnalysis(call);
+  const hideScoring = shouldHideCallScoring(call);
+
+  useEffect(() => {
+    setCalibrationVerdict(call.scoreCalibration?.verdict || null);
+    setCalibrationExplanation(call.scoreCalibration?.explanation || '');
+    setCalibrationError(null);
+  }, [call.id, call.scoreCalibration?.verdict, call.scoreCalibration?.explanation]);
 
   const recordingUrl = call.recording_url_cloudinary || call.recording_url;
   const finalUrl = recordingUrl
@@ -101,8 +122,28 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
       </div>
     ) : null;
 
+  const handleSaveCalibration = async () => {
+    if (!onCalibrateScore || !calibrationVerdict) return;
+    if (calibrationVerdict === 'down' && calibrationExplanation.trim().length < 3) {
+      setCalibrationError(t('calls.calibration.explanationRequired'));
+      return;
+    }
+    setCalibrationSaving(true);
+    setCalibrationError(null);
+    try {
+      await onCalibrateScore(call.id, {
+        verdict: calibrationVerdict,
+        explanation: calibrationExplanation.trim(),
+      });
+    } catch (err: unknown) {
+      setCalibrationError((err as { message?: string })?.message || t('calls.calibration.saveError'));
+    } finally {
+      setCalibrationSaving(false);
+    }
+  };
+
   const renderRelaunchButton = (className = '') =>
-    onAnalyze ? (
+    onAnalyze && !isTooShort ? (
       <button
         type="button"
         onClick={() => onAnalyze(call.id, { force: true })}
@@ -314,7 +355,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                   <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                     {renderAnalysisErrorBanner()}
                     <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">{t('calls.modal.transcriptUnavailable')}</p>
-                    {onAnalyze && (
+                    {onAnalyze && !isTooShort && (
                       <button
                         onClick={() => onAnalyze(call.id)}
                         disabled={analyzingCallId === call.id}
@@ -330,7 +371,19 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
             </div>
           ) : (
             <div className="max-w-5xl mx-auto space-y-4 pb-2">
-              {(!call.ai_call_score || !hasAiCallAnalysis(call)) ? (
+              {isTooShort ? (
+                <div className="py-12 text-center flex flex-col items-center justify-center gap-4 px-6">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
+                    <Clock className="w-7 h-7" />
+                  </div>
+                  <p className="text-sm font-black uppercase tracking-widest text-slate-700">
+                    {t('calls.calibration.tooShortTitle')}
+                  </p>
+                  <p className="text-sm font-medium text-slate-500 max-w-lg leading-relaxed">
+                    {getTooShortAnalysisNotice(i18n.language, Number(call.duration) || undefined)}
+                  </p>
+                </div>
+              ) : (!call.ai_call_score || !hasAiCallAnalysis(call)) ? (
                 <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                   {renderAnalysisErrorBanner()}
                   <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">{t('calls.modal.analysisUnavailable')}</p>
@@ -363,7 +416,8 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                               <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">{t('calls.globalAudit', 'Audit Global de Performance')}</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4 bg-slate-50/80 px-4 py-3 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm self-start sm:self-auto">
+                          {!hideScoring && (
+                          <div className="relative group/score flex items-center gap-4 bg-slate-50/80 px-4 py-3 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm self-start sm:self-auto cursor-help">
                             <div className="text-right">
                               <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{t('calls.modal.overallScore')}</p>
                               <div className="text-2xl sm:text-4xl font-black text-slate-900 leading-none">
@@ -373,7 +427,11 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
                               <TrendingUp className={`w-5 h-5 sm:w-6 sm:h-6 ${getExecutiveSummaryScore(call) >= 70 ? 'text-emerald-500' : 'text-rose-500'}`} />
                             </div>
+                            <div className="pointer-events-none absolute right-0 top-full z-30 mt-2 hidden w-72 rounded-2xl border border-slate-200 bg-slate-900 px-4 py-3 text-left text-[11px] font-medium leading-relaxed text-white shadow-xl group-hover/score:block whitespace-pre-line">
+                              {getScoreDecisionTooltip(call, i18n.language)}
+                            </div>
                           </div>
+                          )}
                         </div>
                         <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-inner">
                           <p className="text-base sm:text-xl font-bold text-slate-800 leading-relaxed italic relative">
@@ -386,7 +444,86 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                     </div>
                   </div>
 
-                  {!isNonEvaluableCall(call) && (
+                  {!hideScoring && onCalibrateScore && (
+                    <div className="bg-white rounded-[24px] sm:rounded-[32px] border border-violet-100 shadow-lg shadow-violet-500/5 p-5 sm:p-7 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                          <h5 className="text-sm font-black uppercase tracking-widest text-violet-700">
+                            {t('calls.calibration.title')}
+                          </h5>
+                          <p className="text-xs font-medium text-slate-500 mt-1">
+                            {t('calls.calibration.subtitle')}
+                          </p>
+                        </div>
+                        {call.scoreCalibration?.calibratedAt ? (
+                          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full self-start">
+                            {t('calls.calibration.recorded')}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setCalibrationVerdict('up')}
+                          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
+                            calibrationVerdict === 'up'
+                              ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/25'
+                              : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                          }`}
+                        >
+                          <ThumbsUp className="w-4 h-4" />
+                          {t('calls.calibration.thumbsUp')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCalibrationVerdict('down')}
+                          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
+                            calibrationVerdict === 'down'
+                              ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/25'
+                              : 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50'
+                          }`}
+                        >
+                          <ThumbsDown className="w-4 h-4" />
+                          {t('calls.calibration.thumbsDown')}
+                        </button>
+                      </div>
+
+                      {calibrationVerdict === 'down' || calibrationExplanation ? (
+                        <label className="block space-y-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            {t('calls.calibration.explanationLabel')}
+                          </span>
+                          <textarea
+                            value={calibrationExplanation}
+                            onChange={(e) => setCalibrationExplanation(e.target.value)}
+                            rows={3}
+                            placeholder={t('calls.calibration.explanationPlaceholder')}
+                            className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 resize-y min-h-[88px]"
+                          />
+                        </label>
+                      ) : null}
+
+                      {calibrationError ? (
+                        <p className="text-xs font-semibold text-rose-600">{calibrationError}</p>
+                      ) : null}
+
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          disabled={!calibrationVerdict || calibrationSaving}
+                          onClick={() => void handleSaveCalibration()}
+                          className="px-5 py-2.5 rounded-2xl bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-black uppercase tracking-widest shadow-md shadow-violet-500/20 transition-all"
+                        >
+                          {calibrationSaving
+                            ? t('calls.calibration.saving')
+                            : t('calls.calibration.submit')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {!isNonEvaluableCall(call) && !isTooShort && (
                 <>
                   {/* Primary metric cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">

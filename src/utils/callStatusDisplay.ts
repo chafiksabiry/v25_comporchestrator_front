@@ -81,6 +81,7 @@ const PRIORITY_CALLOUTCOMES = new Set([
 export type CallLike = {
   validByAI?: boolean | null;
   valid?: boolean | null;
+  duration?: number | null;
   ai_call_status?: string | null;
   callOutcome?: string | null;
   ai_summary?: string | null;
@@ -88,6 +89,71 @@ export type CallLike = {
   ai_call_score?: Record<string, { passed?: boolean; score?: number; feedback?: string; feedback_fr?: string; feedback_en?: string }> | null;
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null } | null;
 };
+
+export const MIN_CALL_ANALYSIS_SECONDS = 60;
+
+export function isCallTooShortForAnalysis(
+  call: Pick<CallLike, 'duration' | 'ai_call_status'>
+): boolean {
+  if (call.ai_call_status === 'too_short') return true;
+  const duration = Number(call.duration);
+  return Number.isFinite(duration) && duration > 0 && duration < MIN_CALL_ANALYSIS_SECONDS;
+}
+
+export function getTooShortAnalysisNotice(language: string = 'fr', durationSec?: number): string {
+  const d =
+    typeof durationSec === 'number' && Number.isFinite(durationSec) && durationSec > 0
+      ? ` (${Math.round(durationSec)}s)`
+      : '';
+  return language.toLowerCase().startsWith('en')
+    ? `Call too short${d} — AI analysis is only run for calls of at least ${MIN_CALL_ANALYSIS_SECONDS} seconds.`
+    : `Appel trop court${d} — l’analyse IA n’est lancée qu’à partir de ${MIN_CALL_ANALYSIS_SECONDS} secondes.`;
+}
+
+const SCORE_RUBRIC_KEYS = [
+  'Agent fluency',
+  'Sentiment analysis',
+  'Fraud detection',
+  'Script coherence',
+  'Argumentation',
+  'Script adherence',
+];
+
+export function getScoreDecisionTooltip(call: CallLike, language: string = 'fr'): string {
+  const isEn = String(language || '').toLowerCase().startsWith('en');
+  const lines: string[] = [];
+  const score = call.ai_call_score?.overall?.score;
+  if (typeof score === 'number') {
+    lines.push(
+      isEn
+        ? `Overall score ${score}% based only on recorded evidence.`
+        : `Score global ${score}% calculé uniquement sur les preuves enregistrées.`
+    );
+  }
+  const duration = Number(call.duration);
+  if (Number.isFinite(duration) && duration > 0) {
+    lines.push(
+      isEn ? `Call duration: ${Math.round(duration)}s.` : `Durée de l’appel : ${Math.round(duration)}s.`
+    );
+  }
+  const bits = SCORE_RUBRIC_KEYS.map((key) => {
+    const metric = call.ai_call_score?.[key];
+    return typeof metric?.score === 'number' ? `${key}: ${metric.score}%` : null;
+  }).filter(Boolean);
+  if (bits.length) {
+    lines.push(isEn ? `Rubrics: ${bits.join(' · ')}` : `Critères : ${bits.join(' · ')}`);
+  }
+  const feedback = isEn
+    ? call.ai_call_score?.overall?.feedback_en || call.ai_call_score?.overall?.feedback || ''
+    : call.ai_call_score?.overall?.feedback_fr || call.ai_call_score?.overall?.feedback || '';
+  if (String(feedback).trim()) lines.push(String(feedback).trim().slice(0, 280));
+  lines.push(
+    isEn
+      ? 'The AI must not invent facts that are absent from the transcript.'
+      : 'L’IA ne doit pas inventer de faits absents de la transcription.'
+  );
+  return lines.join('\n');
+}
 
 const VOICEMAIL_REGEX =
   /messagerie|messagerie\s+(vocale|automatique)|r[ée]pondeur|laissez\s+(votre|un)\s+message|bo[îi]te\s+vocale|voicemail|answering\s+machine|leave\s+(a|your)\s+message|after\s+(the\s+)?(tone|beep)|appel\s+non\s+productif|non\s+productif|aucun(?:e)?\s+(?:interaction|[ée]change)|aucun\s+(?:él|el)[ée]ment\s+exploitable|n['']?est\s+pas\s+disponible|votre\s+correspondant|tombe?\s+(?:imm[ée]diatement\s+)?sur\s+la?\s?messagerie|redirig[ée]\s+vers\s+la?\s?messagerie/i;
@@ -193,22 +259,29 @@ export function isNonEvaluableCall(call: CallLike): boolean {
   return isCallVoicemail(call) || isCallFraudDetected(call);
 }
 
-/** Display score: hidden (null) for voicemail/fraud in list badges; otherwise the persisted overall score. */
+/** Display score: hidden (null) for voicemail/fraud/short calls. */
 export function getDisplayOverallScore(call: CallLike): number | null {
-  if (isNonEvaluableCall(call)) return null;
+  if (isCallTooShortForAnalysis(call) || isNonEvaluableCall(call)) return null;
   const raw = call.ai_call_score?.overall?.score;
   return typeof raw === 'number' ? raw : null;
 }
 
-/** Score shown on the executive summary card (0 % for voicemail/fraud). */
+/** Score shown on the executive summary card (0 % for voicemail/fraud/short). */
 export function getExecutiveSummaryScore(call: CallLike): number {
-  if (isNonEvaluableCall(call)) return 0;
+  if (isCallTooShortForAnalysis(call) || isNonEvaluableCall(call)) return 0;
   const raw = call.ai_call_score?.overall?.score;
   return typeof raw === 'number' ? raw : 0;
 }
 
+export function shouldHideCallScoring(call: CallLike): boolean {
+  return isCallTooShortForAnalysis(call) || isNonEvaluableCall(call);
+}
+
 export function getExecutiveSummaryText(call: CallLike, language: string = 'fr'): string {
   const isEn = String(language || '').toLowerCase().startsWith('en');
+  if (isCallTooShortForAnalysis(call)) {
+    return getTooShortAnalysisNotice(language, Number(call.duration) || undefined);
+  }
   if (isCallVoicemail(call)) return getVoicemailCallNotice(language);
   if (isCallFraudDetected(call)) {
     const fromOverall = isEn
@@ -227,6 +300,7 @@ export function getExecutiveSummaryText(call: CallLike, language: string = 'fr')
 }
 
 export function hasAiCallAnalysis(call: CallLike): boolean {
+  if (isCallTooShortForAnalysis(call)) return false;
   if (typeof call.ai_call_score?.overall?.score === 'number') return true;
   const overall = call.ai_call_score?.overall;
   if (overall?.feedback || overall?.feedback_fr || overall?.feedback_en) return true;
