@@ -17,6 +17,10 @@ import {
   isCallVoicemail,
   matchesCallOutcomeFilter,
   resolveUnvalidatedTransactionStatus,
+  getDisplayOverallScore,
+  getScoreDecisionTooltip,
+  getTooShortAnalysisNotice,
+  isCallTooShortForAnalysis,
   type CallOutcomeFilter,
 } from '../../../utils/callStatusDisplay';
 import { callsApi } from '../services/api/calls';
@@ -276,6 +280,11 @@ export default function CallsDashboardPage() {
   };
 
   const handleAnalyzeCall = async (callId: string, options?: { force?: boolean }) => {
+    const target = calls.find((c) => normalizeCallId(c) === callId) || selectedCall;
+    if (target && isCallTooShortForAnalysis(target)) {
+      toast.error(getTooShortAnalysisNotice(i18n.language, Number(target.duration) || undefined));
+      return;
+    }
     try {
       setAnalyzingCallId(callId);
       setAnalysisError(null);
@@ -335,6 +344,31 @@ export default function CallsDashboardPage() {
     } finally {
       setAnalyzingCallId(null);
     }
+  };
+
+  const handleCalibrateScore = async (
+    callId: string,
+    payload: { verdict: 'up' | 'down'; explanation?: string }
+  ) => {
+    const result = await callsApi.calibrateScore(callId, {
+      ...payload,
+      companyId: companyId || undefined,
+    });
+    if (!result?.success) {
+      throw new Error(result?.message || t('calls.calibration.saveError'));
+    }
+    const next = result.data?.scoreCalibration || {
+      verdict: payload.verdict,
+      explanation: payload.explanation || null,
+      calibratedAt: new Date().toISOString(),
+    };
+    setCalls((prev) =>
+      prev.map((c) => (normalizeCallId(c) === callId ? { ...c, scoreCalibration: next } : c))
+    );
+    setSelectedCall((prev: any) =>
+      prev && normalizeCallId(prev) === callId ? { ...prev, scoreCalibration: next } : prev
+    );
+    toast.success(t('calls.calibration.saved'));
   };
 
   const handleUpdateTransactionValidation = async (callId: string, currentStatus: boolean | null, clickedStatus: boolean) => {
@@ -844,12 +878,29 @@ export default function CallsDashboardPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-4 xl:gap-6">
-                        {call.ai_call_score?.overall?.score !== undefined && (
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-full border border-amber-100/50 shadow-sm">
+                        {(() => {
+                          const displayScore = getDisplayOverallScore(call);
+                          if (displayScore === null) {
+                            if (isCallTooShortForAnalysis(call)) {
+                              return (
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-500 rounded-full border border-slate-200 shadow-sm">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  <span className="text-[10px] font-black uppercase tracking-widest">{t('calls.calibration.tooShortTitle')}</span>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }
+                          return (
+                          <div className="relative group/score flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-full border border-amber-100/50 shadow-sm cursor-help">
                             <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                            <span className="text-xs font-black">{call.ai_call_score.overall.score}%</span>
+                            <span className="text-xs font-black">{displayScore}%</span>
+                            <div className="pointer-events-none absolute right-0 top-full z-30 mt-2 hidden w-72 rounded-2xl border border-slate-200 bg-slate-900 px-4 py-3 text-left text-[11px] font-medium leading-relaxed text-white shadow-xl group-hover/score:block whitespace-pre-line">
+                              {getScoreDecisionTooltip(call, i18n.language)}
+                            </div>
                           </div>
-                        )}
+                          );
+                        })()}
 
                         {call.status?.toLowerCase() === 'completed' ? (
                           <>
@@ -999,6 +1050,9 @@ export default function CallsDashboardPage() {
           callOutcome: selectedCall.callOutcome,
           flags: selectedCall.flags,
           transaction: selectedCall.transaction,
+          duration: selectedCall.duration,
+          ai_call_status: selectedCall.ai_call_status,
+          scoreCalibration: selectedCall.scoreCalibration,
         };
         const selectedAgentFraudCount =
           agentFraudCountById.get(callAgentId(selectedCall)) ||
@@ -1015,6 +1069,7 @@ export default function CallsDashboardPage() {
             analyzingCallId={analyzingCallId}
             analysisError={selectedCallAnalysisError}
             onValidateTransaction={(callId, current, next) => handleUpdateTransactionValidation(callId, current, next)}
+            onCalibrateScore={handleCalibrateScore}
           />
         );
       })()}
