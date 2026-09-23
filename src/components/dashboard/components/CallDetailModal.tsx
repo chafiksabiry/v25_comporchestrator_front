@@ -142,8 +142,15 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
     }
   };
 
+  const isAutoRefused = call.ai_call_status === 'auto_refused';
+  // Show relaunch button for: scored calls, auto_refused (REP may now be
+  // eligible), and too_short only when the call has no transcript (if a
+  // transcript exists the dedicated force-button inside the too_short block
+  // is displayed instead).
+  const canRelaunch = !isTooShort || isAutoRefused;
+
   const renderRelaunchButton = (className = '') =>
-    onAnalyze && !isTooShort ? (
+    onAnalyze && canRelaunch ? (
       <button
         type="button"
         onClick={() => onAnalyze(call.id, { force: true })}
@@ -382,6 +389,27 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                   <p className="text-sm font-medium text-slate-500 max-w-lg leading-relaxed">
                     {getTooShortAnalysisNotice(i18n.language, Number(call.duration) || undefined)}
                   </p>
+                  {/* If the call already has a transcript the duration stored was
+                      wrong — offer a force re-analysis that recalculates from
+                      endTime-startTime on the backend */}
+                  {onAnalyze && call.transcript && call.transcript.length > 0 && (
+                    <div className="flex flex-col items-center gap-2 mt-2">
+                      <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">
+                        {t('calls.actions.transcriptExistsHint', 'Une transcription existe — la durée stockée semble incorrecte.')}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => onAnalyze(call.id, { force: true })}
+                        disabled={analyzingCallId === call.id}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${analyzingCallId === call.id ? 'animate-spin' : ''}`} />
+                        {analyzingCallId === call.id
+                          ? t('calls.actions.analyzing')
+                          : t('calls.actions.forceReanalyze', 'Forcer l\'analyse IA')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (!call.ai_call_score || !hasAiCallAnalysis(call)) ? (
                 <div className="py-10 text-center flex flex-col items-center justify-center gap-4">

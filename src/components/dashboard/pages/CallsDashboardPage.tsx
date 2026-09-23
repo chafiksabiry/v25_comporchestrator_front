@@ -281,7 +281,10 @@ export default function CallsDashboardPage() {
 
   const handleAnalyzeCall = async (callId: string, options?: { force?: boolean }) => {
     const target = calls.find((c) => normalizeCallId(c) === callId) || selectedCall;
-    if (target && isCallTooShortForAnalysis(target)) {
+    // Block too-short calls unless force=true (company can override for legacy
+    // calls whose stored duration was wrong — backend will recalculate from
+    // endTime-startTime and bypass the gate if a transcript already exists).
+    if (!options?.force && target && isCallTooShortForAnalysis(target)) {
       toast.error(getTooShortAnalysisNotice(i18n.language, Number(target.duration) || undefined));
       return;
     }
