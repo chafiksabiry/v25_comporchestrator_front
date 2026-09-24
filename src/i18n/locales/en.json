@@ -2694,8 +2694,8 @@
     "duration": "Duration: {{minutes}}m {{seconds}}s",
     "alreadyAnalyzed": "Analysis already completed. Use “Re-run analysis” to recalculate.",
     "reanalyzeStarted": "Analysis restarted — update in progress.",
-    "executiveSummary": "Executive Summary",
-    "globalAudit": "Overall Performance Audit",
+    "executiveSummary": "Call Summary",
+    "globalAudit": "Quality Analysis · Call Centre",
     "common": {
       "yes": "Yes",
       "no": "No"
