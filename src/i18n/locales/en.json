@@ -2807,11 +2807,23 @@
       "transaction": "Transaction Analysis"
     },
     "prospectMetrics": {
-      "notInterested": "Not interested",
-      "notAware": "Not aware",
+      "notInterested": "Transaction declined",
+      "notAware": "Not aware of context",
       "alreadyEquipped": "Already equipped / supplied",
-      "appointment": "Appointment booked",
-      "callback": "Later / callback"
+      "appointment": "Appointment / reflection time",
+      "callback": "Requests callback"
+    },
+    "suggestedDisposition": "AI suggested disposition",
+    "disp": {
+      "to_call": "To call",
+      "called_unreachable": "Called – Unreachable",
+      "called_voicemail": "Called – Voicemail",
+      "called_wrong_number": "Called – Wrong number",
+      "called_callback": "Called – Requests callback",
+      "called_rdv": "Called – Callback RDV set",
+      "argued_rdv": "Argued – Appointment / reflection",
+      "argued_declined": "Argued – Transaction declined",
+      "argued_done": "Argued – Transaction completed"
     },
     "statusBadges": {
       "transaction": "Transaction",
