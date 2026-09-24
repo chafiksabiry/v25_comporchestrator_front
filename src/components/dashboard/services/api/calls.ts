@@ -53,7 +53,7 @@ export interface Call {
     validByCompany: boolean | null;
     valid: boolean | null;
   } | null;
-
+  suggestedDisposition?: string | null;
 }
 
 export const callsApi = {

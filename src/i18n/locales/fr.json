@@ -2807,11 +2807,23 @@
       "transaction": "Analyse de la transaction"
     },
     "prospectMetrics": {
-      "notInterested": "Pas intéressé",
-      "notAware": "Pas au courant",
+      "notInterested": "Transaction déclinée",
+      "notAware": "Pas au courant du contexte",
       "alreadyEquipped": "Déjà équipé / fourni",
-      "appointment": "Prise de rendez-vous",
-      "callback": "Plus tard / rappel"
+      "appointment": "RDV pris / délai de réflexion",
+      "callback": "Souhaite être rappelé"
+    },
+    "suggestedDisposition": "Disposition suggérée par l'IA",
+    "disp": {
+      "to_call": "À appeler",
+      "called_unreachable": "Appelé – Injoignable",
+      "called_voicemail": "Appelé – Répondeur",
+      "called_wrong_number": "Appelé – Numéro non attribué",
+      "called_callback": "Appelé – Souhaite être rappelé",
+      "called_rdv": "Appelé – RDV pris pour rappel",
+      "argued_rdv": "Appel argumenté – RDV pris / délai de réflexion",
+      "argued_declined": "Appel argumenté – Transaction déclinée",
+      "argued_done": "Appel argumenté – Transaction aboutie"
     },
     "statusBadges": {
       "transaction": "Transaction",
