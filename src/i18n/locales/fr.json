@@ -2694,8 +2694,8 @@
     "duration": "Durée : {{minutes}} min {{seconds}} s",
     "alreadyAnalyzed": "Analyse déjà effectuée. Utilisez « Relancer l’analyse » pour recalculer.",
     "reanalyzeStarted": "Analyse relancée — mise à jour en cours.",
-    "executiveSummary": "Synthèse",
-    "globalAudit": "Audit global des performances",
+    "executiveSummary": "Résumé de l'appel",
+    "globalAudit": "Analyse qualité · Centre d'appel",
     "common": {
       "yes": "Oui",
       "no": "Non"
