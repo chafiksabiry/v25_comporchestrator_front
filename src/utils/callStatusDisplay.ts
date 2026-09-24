@@ -335,15 +335,54 @@ export function isSingleVoiceSelfCall(aiCallScore?: AiCallScoreWithVoice): boole
   return false;
 }
 
+/**
+ * Normalise generic "Speaker N" labels from legacy transcripts.
+ *
+ * In outbound commercial calls the Agent speaks first — so the FIRST unique
+ * speaker encountered in the transcript is mapped to "Agent" and the second
+ * to "Client". This provides correct bubble styling for transcripts produced
+ * before the prompt used "Agent"/"Client" labels.
+ *
+ * If the transcript already uses meaningful labels (e.g. "Agent", "Client",
+ * "Répondeur", "rep"…) the function is a no-op.
+ */
+function normalizeGenericSpeakers(transcript: TranscriptEntry[]): TranscriptEntry[] {
+  const GENERIC_SPEAKER = /^speaker\s*\d+$/i;
+  const hasGenericLabels = transcript.some((e) => GENERIC_SPEAKER.test(String(e.speaker || '')));
+  if (!hasGenericLabels) return transcript; // already named — nothing to do
+
+  // Build first-seen order for speaker mapping
+  const order: string[] = [];
+  for (const entry of transcript) {
+    const s = String(entry.speaker || '');
+    if (!order.includes(s)) order.push(s);
+    if (order.length >= 2) break;
+  }
+  const speakerMap: Record<string, string> = {};
+  if (order[0]) speakerMap[order[0]] = 'Agent';
+  if (order[1]) speakerMap[order[1]] = 'Client';
+
+  return transcript.map((entry) => {
+    const s = String(entry.speaker || '');
+    const mapped = GENERIC_SPEAKER.test(s) && speakerMap[s] ? speakerMap[s] : s;
+    return mapped !== s ? { ...entry, originalSpeaker: entry.originalSpeaker || s, speaker: mapped } : entry;
+  });
+}
+
 /** Relabel inferred Customer turns for display when audio fraud detected one voice. */
 export function getDisplayTranscript(
   transcript: TranscriptEntry[] | undefined | null,
   aiCallScore?: AiCallScoreWithVoice
 ): TranscriptEntry[] {
   if (!transcript?.length) return [];
-  if (!isSingleVoiceSelfCall(aiCallScore)) return transcript;
 
-  return transcript.map((entry) => {
+  // Step 1: Normalise generic "Speaker N" labels (legacy transcripts)
+  const normalised = normalizeGenericSpeakers(transcript);
+
+  // Step 2: If self-call fraud — mark customer turns as simulated
+  if (!isSingleVoiceSelfCall(aiCallScore)) return normalised;
+
+  return normalised.map((entry) => {
     const speaker = String(entry.speaker || '');
     if (entry.simulated || isAgentSpeakerLabel(speaker)) return entry;
     return {

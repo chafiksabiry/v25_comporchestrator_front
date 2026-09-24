@@ -21,6 +21,7 @@ import {
   getScoreDecisionTooltip,
   getTooShortAnalysisNotice,
   isCallTooShortForAnalysis,
+  getDisplayTranscript,
   type CallOutcomeFilter,
 } from '../../../utils/callStatusDisplay';
 import { callsApi } from '../services/api/calls';
@@ -1235,22 +1236,25 @@ export default function CallsDashboardPage() {
               {activeTab === 'transcript' ? (
                 <div className="max-w-4xl mx-auto space-y-6">
                   {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
-                    selectedCall.transcript.map((t: any, i: number) => (
-                      <div key={i} className={`flex gap-4 ${t.speaker?.toLowerCase().includes('agent') ? 'flex-row' : 'flex-row-reverse'}`}>
-                        <div className={`flex flex-col max-w-[75%] ${t.speaker?.toLowerCase().includes('agent') ? 'items-start' : 'items-end'}`}>
-                          <div className="flex items-center gap-2 mb-1.5 px-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.speaker}</span>
-                            <span className="text-[9px] font-bold text-slate-300">{t.timestamp}</span>
-                          </div>
-                          <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${t.speaker?.toLowerCase().includes('agent')
-                            ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm'
-                            : 'bg-gradient-harx text-white rounded-tr-none shadow-lg shadow-harx-500/20'
-                            }`}>
-                            {t.text}
+                    getDisplayTranscript(selectedCall.transcript, selectedCall.ai_call_score).map((t, i: number) => {
+                      const isAgent = t.speaker?.toLowerCase().includes('agent') || t.speaker?.toLowerCase() === 'rep';
+                      return (
+                        <div key={i} className={`flex gap-4 ${isAgent ? 'flex-row' : 'flex-row-reverse'}`}>
+                          <div className={`flex flex-col max-w-[75%] ${isAgent ? 'items-start' : 'items-end'}`}>
+                            <div className="flex items-center gap-2 mb-1.5 px-2">
+                              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.speaker}</span>
+                              <span className="text-[9px] font-bold text-slate-300">{t.timestamp || t.start}</span>
+                            </div>
+                            <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${isAgent
+                              ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm'
+                              : 'bg-gradient-harx text-white rounded-tr-none shadow-lg shadow-harx-500/20'
+                              }`}>
+                              {t.text}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                       {renderAnalysisErrorBanner()}
