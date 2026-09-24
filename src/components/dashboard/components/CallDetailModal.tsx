@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import {
   X, MessageSquare, Activity as ActivityIcon, Globe, ShieldAlert, ShieldCheck,
   TrendingUp, Star, Clock, Phone, CreditCard, Check, Brain, Calendar, RefreshCw,
-  ThumbsUp, ThumbsDown,
+  ThumbsUp, ThumbsDown, Sparkles, PhoneMissed, Voicemail, PhoneOff, Repeat2,
+  CalendarCheck, Handshake, Ban, PartyPopper,
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
@@ -32,6 +33,7 @@ export interface NormalizedCall {
     explanation?: string | null;
     calibratedAt?: string | null;
   } | null;
+  suggestedDisposition?: string | null;
 }
 
 /** L'entreprise peut valider/refuser dès que l'appel est analysé (transaction optionnelle). */
@@ -104,12 +106,26 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
   ];
 
   const prospectMetrics = [
-    { label: t('calls.prospectMetrics.notInterested'), key: 'PAS INTÉRESSÉS', icon: ShieldAlert, color: 'rose' },
+    { label: t('calls.prospectMetrics.notInterested'), key: 'PAS INTÉRESSÉS', icon: Ban, color: 'rose' },
     { label: t('calls.prospectMetrics.notAware'), key: 'PAS AU COURANT', icon: Globe, color: 'blue' },
     { label: t('calls.prospectMetrics.alreadyEquipped'), key: 'DÉJÀ ÉQUIPÉS', icon: ShieldCheck, color: 'indigo' },
-    { label: t('calls.prospectMetrics.appointment'), key: 'RDV', icon: Calendar, color: 'emerald' },
-    { label: t('calls.prospectMetrics.callback'), key: 'A plus tard', icon: Clock, color: 'amber' },
+    { label: t('calls.prospectMetrics.appointment'), key: 'RDV', icon: CalendarCheck, color: 'emerald' },
+    { label: t('calls.prospectMetrics.callback'), key: 'A plus tard', icon: Repeat2, color: 'amber' },
   ];
+
+  // HARX 9-status disposition config for AI suggestion banner
+  type DispConf = { label: string; Icon: React.ComponentType<{ className?: string }>; bg: string; text: string; border: string; dot: string };
+  const HARX_DISP_CONF: Record<string, DispConf> = {
+    to_call:             { label: t('calls.disp.to_call',             'À appeler'),                                        Icon: Phone,        bg: 'bg-gray-50',    text: 'text-gray-600',    border: 'border-gray-200',    dot: 'bg-gray-400'    },
+    called_unreachable:  { label: t('calls.disp.called_unreachable',  'Appelé – Injoignable'),                              Icon: PhoneMissed,  bg: 'bg-orange-50',  text: 'text-orange-600',  border: 'border-orange-200',  dot: 'bg-orange-500'  },
+    called_voicemail:    { label: t('calls.disp.called_voicemail',    'Appelé – Répondeur'),                                Icon: Voicemail,    bg: 'bg-orange-50',  text: 'text-orange-500',  border: 'border-orange-200',  dot: 'bg-orange-400'  },
+    called_wrong_number: { label: t('calls.disp.called_wrong_number', 'Appelé – Numéro non attribué'),                      Icon: PhoneOff,     bg: 'bg-red-50',     text: 'text-red-600',     border: 'border-red-200',     dot: 'bg-red-500'     },
+    called_callback:     { label: t('calls.disp.called_callback',     'Appelé – Souhaite être rappelé'),                    Icon: Repeat2,      bg: 'bg-amber-50',   text: 'text-amber-600',   border: 'border-amber-200',   dot: 'bg-amber-500'   },
+    called_rdv:          { label: t('calls.disp.called_rdv',          'Appelé – RDV pris pour rappel'),                     Icon: CalendarCheck, bg: 'bg-violet-50', text: 'text-violet-600',  border: 'border-violet-200',  dot: 'bg-violet-500'  },
+    argued_rdv:          { label: t('calls.disp.argued_rdv',          'Appel argumenté – RDV pris / délai de réflexion'),   Icon: Handshake,    bg: 'bg-indigo-50',  text: 'text-indigo-600',  border: 'border-indigo-200',  dot: 'bg-indigo-500'  },
+    argued_declined:     { label: t('calls.disp.argued_declined',     'Appel argumenté – Transaction déclinée'),            Icon: Ban,          bg: 'bg-rose-50',    text: 'text-rose-600',    border: 'border-rose-200',    dot: 'bg-rose-500'    },
+    argued_done:         { label: t('calls.disp.argued_done',         'Appel argumenté – Transaction aboutie'),             Icon: PartyPopper,  bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+  };
 
   const renderAnalysisErrorBanner = () =>
     analysisError ? (
@@ -604,6 +620,30 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                       <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">{t('calls.modal.prospectResponses')}</h5>
                       <div className="h-px flex-1 bg-slate-200/60" />
                     </div>
+
+                    {/* Disposition suggérée par l'IA */}
+                    {(() => {
+                      const disp = call.suggestedDisposition;
+                      const conf = disp ? HARX_DISP_CONF[disp] : null;
+                      if (!conf) return null;
+                      const { Icon } = conf;
+                      return (
+                        <div className={`flex items-center gap-4 px-5 py-4 rounded-2xl border ${conf.border} ${conf.bg} shadow-sm`}>
+                          <div className={`w-10 h-10 rounded-xl ${conf.bg} ${conf.text} flex items-center justify-center shrink-0 border ${conf.border}`}>
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                              <Sparkles className="w-3 h-3" />
+                              {t('calls.suggestedDisposition', 'Disposition suggérée par l\'IA')}
+                            </p>
+                            <p className={`text-sm font-black uppercase tracking-wide ${conf.text} mt-0.5`}>{conf.label}</p>
+                          </div>
+                          <span className={`w-2.5 h-2.5 rounded-full ${conf.dot} shrink-0`} />
+                        </div>
+                      );
+                    })()}
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                       {prospectMetrics.map((metric, mIdx) => {
                         const metricData = call.ai_call_score?.[metric.key];
