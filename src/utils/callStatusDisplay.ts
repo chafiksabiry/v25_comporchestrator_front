@@ -90,7 +90,7 @@ export type CallLike = {
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null } | null;
 };
 
-export const MIN_CALL_ANALYSIS_SECONDS = 60;
+export const MIN_CALL_ANALYSIS_SECONDS = 30;
 
 export function isCallTooShortForAnalysis(
   call: Pick<CallLike, 'duration' | 'ai_call_status'>
@@ -106,8 +106,8 @@ export function getTooShortAnalysisNotice(language: string = 'fr', durationSec?:
       ? ` (${Math.round(durationSec)}s)`
       : '';
   return language.toLowerCase().startsWith('en')
-    ? `Call too short${d} — AI analysis is only run for calls of at least ${MIN_CALL_ANALYSIS_SECONDS} seconds.`
-    : `Appel trop court${d} — l’analyse IA n’est lancée qu’à partir de ${MIN_CALL_ANALYSIS_SECONDS} secondes.`;
+    ? `Call too short${d} — the transcript is kept. QA analysis only runs for calls over ${MIN_CALL_ANALYSIS_SECONDS} seconds.`
+    : `Appel trop court${d} — la retranscription est conservée. L’analyse QA ne se lance qu’au-delà de ${MIN_CALL_ANALYSIS_SECONDS} secondes.`;
 }
 
 const SCORE_RUBRIC_KEYS = [
