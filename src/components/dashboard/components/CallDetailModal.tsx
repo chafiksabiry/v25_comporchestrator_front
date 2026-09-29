@@ -158,6 +158,82 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
     }
   };
 
+  const showCalibration = Boolean(onCalibrateScore) && hasAiCallAnalysis(call) && !isTooShort;
+
+  const renderCalibrationPanel = () => {
+    if (!showCalibration || !onCalibrateScore) return null;
+    return (
+      <div className="px-4 py-4 md:px-8 border-b border-violet-100 bg-violet-50/40 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div>
+            <h5 className="text-sm font-black uppercase tracking-widest text-violet-700">
+              {t('calls.calibration.title')}
+            </h5>
+            <p className="text-xs font-medium text-slate-500 mt-1">
+              {t('calls.calibration.subtitle')}
+            </p>
+          </div>
+          {call.scoreCalibration?.calibratedAt ? (
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full self-start">
+              {t('calls.calibration.recorded')}
+            </span>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap gap-3 mb-3">
+          <button
+            type="button"
+            onClick={() => setCalibrationVerdict('up')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
+              calibrationVerdict === 'up'
+                ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/25'
+                : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+            }`}
+          >
+            <ThumbsUp className="w-4 h-4" />
+            {t('calls.calibration.thumbsUp')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCalibrationVerdict('down')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
+              calibrationVerdict === 'down'
+                ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/25'
+                : 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50'
+            }`}
+          >
+            <ThumbsDown className="w-4 h-4" />
+            {t('calls.calibration.thumbsDown')}
+          </button>
+        </div>
+        <label className="block space-y-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            {t('calls.calibration.explanationLabel')}
+          </span>
+          <textarea
+            value={calibrationExplanation}
+            onChange={(e) => setCalibrationExplanation(e.target.value)}
+            rows={2}
+            placeholder={t('calls.calibration.explanationPlaceholder')}
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 resize-y min-h-[72px]"
+          />
+        </label>
+        {calibrationError ? (
+          <p className="text-xs font-semibold text-rose-600 mt-2">{calibrationError}</p>
+        ) : null}
+        <div className="flex justify-end mt-3">
+          <button
+            type="button"
+            disabled={!calibrationVerdict || calibrationSaving}
+            onClick={() => void handleSaveCalibration()}
+            className="px-5 py-2.5 rounded-2xl bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-black uppercase tracking-widest shadow-md shadow-violet-500/20 transition-all"
+          >
+            {calibrationSaving ? t('calls.calibration.saving') : t('calls.calibration.submit')}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const isAutoRefused = call.ai_call_status === 'auto_refused';
   // Show relaunch button for: scored calls, auto_refused (REP may now be
   // eligible), and too_short only when the call has no transcript (if a
@@ -257,6 +333,8 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
             )}
           </div>
         )}
+
+        {renderCalibrationPanel()}
 
         {/* ── Tabs + AI decision ── */}
         <div className="px-4 py-3 md:px-8 md:py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 bg-white shrink-0">
@@ -378,14 +456,18 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                   <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                     {renderAnalysisErrorBanner()}
                     <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">{t('calls.modal.transcriptUnavailable')}</p>
-                    {onAnalyze && !isTooShort && (
+                    {onAnalyze && (
                       <button
                         onClick={() => onAnalyze(call.id)}
                         disabled={analyzingCallId === call.id}
                         className="flex items-center gap-2 px-6 py-3 bg-harx-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-harx-600 transition-all shadow-lg shadow-harx-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Brain className={`w-4 h-4 ${analyzingCallId === call.id ? 'animate-spin' : ''}`} />
-                        {analyzingCallId === call.id ? t('calls.actions.analyzing') : t('calls.actions.analyzeTranscribe')}
+                        {analyzingCallId === call.id
+                          ? t('calls.actions.analyzing')
+                          : isTooShort
+                            ? t('calls.actions.transcribeOnly', 'Transcrire l’appel')
+                            : t('calls.actions.analyzeTranscribe')}
                       </button>
                     )}
                   </div>
@@ -487,85 +569,6 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                       </div>
                     </div>
                   </div>
-
-                  {!hideScoring && onCalibrateScore && (
-                    <div className="bg-white rounded-[24px] sm:rounded-[32px] border border-violet-100 shadow-lg shadow-violet-500/5 p-5 sm:p-7 space-y-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div>
-                          <h5 className="text-sm font-black uppercase tracking-widest text-violet-700">
-                            {t('calls.calibration.title')}
-                          </h5>
-                          <p className="text-xs font-medium text-slate-500 mt-1">
-                            {t('calls.calibration.subtitle')}
-                          </p>
-                        </div>
-                        {call.scoreCalibration?.calibratedAt ? (
-                          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full self-start">
-                            {t('calls.calibration.recorded')}
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <div className="flex flex-wrap gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setCalibrationVerdict('up')}
-                          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
-                            calibrationVerdict === 'up'
-                              ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/25'
-                              : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
-                          }`}
-                        >
-                          <ThumbsUp className="w-4 h-4" />
-                          {t('calls.calibration.thumbsUp')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCalibrationVerdict('down')}
-                          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
-                            calibrationVerdict === 'down'
-                              ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/25'
-                              : 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50'
-                          }`}
-                        >
-                          <ThumbsDown className="w-4 h-4" />
-                          {t('calls.calibration.thumbsDown')}
-                        </button>
-                      </div>
-
-                      {calibrationVerdict === 'down' || calibrationExplanation ? (
-                        <label className="block space-y-2">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                            {t('calls.calibration.explanationLabel')}
-                          </span>
-                          <textarea
-                            value={calibrationExplanation}
-                            onChange={(e) => setCalibrationExplanation(e.target.value)}
-                            rows={3}
-                            placeholder={t('calls.calibration.explanationPlaceholder')}
-                            className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 resize-y min-h-[88px]"
-                          />
-                        </label>
-                      ) : null}
-
-                      {calibrationError ? (
-                        <p className="text-xs font-semibold text-rose-600">{calibrationError}</p>
-                      ) : null}
-
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          disabled={!calibrationVerdict || calibrationSaving}
-                          onClick={() => void handleSaveCalibration()}
-                          className="px-5 py-2.5 rounded-2xl bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-black uppercase tracking-widest shadow-md shadow-violet-500/20 transition-all"
-                        >
-                          {calibrationSaving
-                            ? t('calls.calibration.saving')
-                            : t('calls.calibration.submit')}
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                   {!isNonEvaluableCall(call) && !isTooShort && (
                 <>
