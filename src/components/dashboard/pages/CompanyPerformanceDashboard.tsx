@@ -712,7 +712,7 @@ export function CompanyPerformanceDashboard() {
                         color="blue"
                         extra={`${displayStats.validatedCalls.toLocaleString()} / ${displayStats.aiEligibleCalls.toLocaleString()}`}
                         extraNote={[
-                            displayStats.tooShortCalls > 0    ? `${displayStats.tooShortCalls} < 60s exclus` : '',
+                            displayStats.tooShortCalls > 0    ? `${displayStats.tooShortCalls} < 30s exclus` : '',
                             displayStats.autoRefusedCalls > 0 ? `${displayStats.autoRefusedCalls} refusés auto` : '',
                             displayStats.errorCalls > 0       ? `${displayStats.errorCalls} erreurs IA` : '',
                         ].filter(Boolean).join(' · ') || undefined}
