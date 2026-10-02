@@ -2876,8 +2876,8 @@
       "prospectResponses": "Lead Statuses & Responses",
       "detected": "Detected",
       "noQuote": "No quote detected.",
-      "standardPerformance": "The agent demonstrated standard performance.",
-      "overallAiEvaluation": "Overall AI Evaluation"
+      "standardPerformance": "No factual call summary is available for this call.",
+      "overallAiEvaluation": "Call quality analysis"
     }
   },
   "approvalPublishing": {

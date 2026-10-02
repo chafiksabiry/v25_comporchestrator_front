@@ -551,8 +551,8 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                               <Star className="w-6 h-6 sm:w-8 sm:h-8" />
                             </div>
                             <div>
-                              <h4 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-widest">{t('calls.executiveSummary', 'Executive Summary')}</h4>
-                              <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">{t('calls.globalAudit', 'Audit Global de Performance')}</p>
+                              <h4 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-widest">{t('calls.executiveSummary', "Résumé de l'appel")}</h4>
+                              <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">{t('calls.globalAudit', "Analyse qualité · Centre d'appel")}</p>
                             </div>
                           </div>
                           {!hideScoring && (
