@@ -96,6 +96,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
     indigo:  { bg: 'bg-indigo-50',  text: 'text-indigo-600',  bgBar: 'bg-indigo-500'  },
     amber:   { bg: 'bg-amber-50',   text: 'text-amber-600',   bgBar: 'bg-amber-500'   },
     violet:  { bg: 'bg-violet-50',  text: 'text-violet-600',  bgBar: 'bg-violet-500'  },
+    orange:  { bg: 'bg-orange-50',  text: 'text-orange-600',  bgBar: 'bg-orange-500'  },
   };
 
   const primaryMetrics = [
@@ -108,12 +109,24 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
   ];
 
   const prospectMetrics = [
-    { label: t('calls.prospectMetrics.notInterested'), key: 'PAS INTÉRESSÉS', icon: Ban, color: 'rose' },
-    { label: t('calls.prospectMetrics.notAware'), key: 'PAS AU COURANT', icon: Globe, color: 'blue' },
-    { label: t('calls.prospectMetrics.alreadyEquipped'), key: 'DÉJÀ ÉQUIPÉS', icon: ShieldCheck, color: 'indigo' },
-    { label: t('calls.prospectMetrics.appointment'), key: 'RDV', icon: CalendarCheck, color: 'emerald' },
-    { label: t('calls.prospectMetrics.callback'), key: 'A plus tard', icon: Repeat2, color: 'amber' },
+    { label: t('calls.disp.called_unreachable', 'Appelé – Injoignable'), key: 'called_unreachable', legacyKeys: [] as string[], icon: PhoneMissed, color: 'amber' },
+    { label: t('calls.disp.called_voicemail', 'Appelé – Répondeur'), key: 'called_voicemail', legacyKeys: [] as string[], icon: Voicemail, color: 'orange' },
+    { label: t('calls.disp.called_wrong_number', 'Appelé – Numéro non attribué'), key: 'called_wrong_number', legacyKeys: ['PAS AU COURANT'], icon: PhoneOff, color: 'rose' },
+    { label: t('calls.disp.called_callback', 'Appelé – Souhaite être rappelé'), key: 'called_callback', legacyKeys: ['A plus tard'], icon: Repeat2, color: 'amber' },
+    { label: t('calls.disp.called_rdv', 'Appelé – RDV pris pour rappel'), key: 'called_rdv', legacyKeys: [], icon: CalendarCheck, color: 'violet' },
+    { label: t('calls.disp.argued_rdv', 'Appel argumenté – RDV pris / délai de réflexion'), key: 'argued_rdv', legacyKeys: ['RDV'], icon: Handshake, color: 'indigo' },
+    { label: t('calls.disp.argued_declined', 'Appel argumenté – Transaction déclinée'), key: 'argued_declined', legacyKeys: ['PAS INTÉRESSÉS', 'DÉJÀ ÉQUIPÉS'], icon: Ban, color: 'rose' },
+    { label: t('calls.disp.argued_done', 'Appel argumenté – Transaction aboutie'), key: 'argued_done', legacyKeys: [], icon: PartyPopper, color: 'emerald' },
   ];
+
+  const resolveProspectMetricData = (metric: { key: string; legacyKeys?: string[] }) => {
+    const scores = call.ai_call_score || {};
+    if (scores[metric.key]) return scores[metric.key];
+    for (const legacy of metric.legacyKeys || []) {
+      if (scores[legacy]) return scores[legacy];
+    }
+    return null;
+  };
 
   // HARX 9-status disposition config for AI suggestion banner
   type DispConf = { label: string; Icon: React.ComponentType<{ className?: string }>; bg: string; text: string; border: string; dot: string };
@@ -662,13 +675,13 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                       {prospectMetrics.map((metric, mIdx) => {
-                        const metricData = call.ai_call_score?.[metric.key];
+                        const metricData = resolveProspectMetricData(metric);
                         if (!metricData) return null;
                         const score = metricData?.score || 0;
                         const passed = typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50;
                         const theme = colorMap[metric.color] || { bg: 'bg-slate-50', text: 'text-slate-600', bgBar: 'bg-slate-500' };
                         return (
-                          <div key={mIdx} className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                          <div key={metric.key || mIdx} className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
                             <div>
                               <div className="flex justify-between items-start mb-4 sm:mb-6">
                                 <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${theme.bg} ${theme.text} flex items-center justify-center shadow-sm shrink-0`}>
@@ -688,13 +701,10 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                             </div>
                             <div className="mt-2">
                               <div className="text-xs sm:text-[13px] font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl sm:rounded-2xl p-4 border border-slate-50 group-hover:bg-white group-hover:border-slate-100 transition-all max-h-[160px] overflow-y-auto custom-scrollbar italic">
-                                {metricData?.feedback
-                                  ? metricData.feedback.split('"').map((part: string, i: number) =>
-                                    i % 2 === 1
-                                      ? <span key={i} className="bg-amber-100/50 text-amber-900 font-bold px-1 rounded border-b border-amber-200 not-italic">&quot;{part}&quot;</span>
-                                      : part
-                                  )
-                                  : t('calls.modal.noQuote')}
+                                {(i18n.language || '').toLowerCase().startsWith('en')
+                                  ? (metricData?.feedback_en || metricData?.feedback || t('calls.modal.noQuote'))
+                                  : (metricData?.feedback_fr || metricData?.feedback || t('calls.modal.noQuote'))
+                                }
                               </div>
                             </div>
                           </div>
