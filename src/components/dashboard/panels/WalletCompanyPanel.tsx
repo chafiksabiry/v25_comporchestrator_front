@@ -22,6 +22,8 @@ import {
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import CallDetailModal, { type NormalizedCall } from '../components/CallDetailModal';
+import { callsApi } from '../services/api/calls';
+import { useTranslation } from 'react-i18next';
 import {
   fetchPaymentConfig,
   getOrchestratorApiBase,
@@ -200,6 +202,7 @@ function repTxCauseLabel(type?: string): { label: string; tone: string } {
 }
 
 export function WalletCompanyPanel() {
+  const { t } = useTranslation();
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [agentWithdrawals, setAgentWithdrawals] = useState<AgentWithdrawal[]>([]);
   const [repTransactions, setRepTransactions] = useState<RepTransactionRow[]>([]);
@@ -211,6 +214,7 @@ export function WalletCompanyPanel() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCall, setSelectedCall] = useState<CompanyCallRow | null>(null);
   const [selectedCallTab, setSelectedCallTab] = useState<'transcript' | 'insights'>('transcript');
+  const [analyzingCallId, setAnalyzingCallId] = useState<string | null>(null);
 
   // Modals state
   const [showDepositModal, setShowDepositModal] = useState(false);
@@ -961,27 +965,79 @@ export function WalletCompanyPanel() {
 
       {/* Call Details Modal — replaced by shared CallDetailModal */}
       {selectedCall && (() => {
+        const nested = selectedCall.call || ({} as NonNullable<CompanyCallRow['call']>);
+        const callId = String(selectedCall.callId || nested._id || selectedCall._id || '');
         const normalized: NormalizedCall = {
-          id: selectedCall.callId || selectedCall._id,
+          id: callId,
           leadName: selectedCall.leadObj
             ? `${selectedCall.leadObj.First_Name} ${selectedCall.leadObj.Last_Name}`.trim()
             : selectedCall.lead || 'Lead',
           agentName: selectedCall.agent,
-          createdAt: selectedCall.startTime || selectedCall.createdAt || '',
-          recording_url: selectedCall.recording_url,
-          recording_url_cloudinary: selectedCall.recording_url_cloudinary,
-          transcript: selectedCall.transcript,
-          ai_call_score: selectedCall.ai_call_score,
-          validByAI: selectedCall.validByAI,
-          transaction: selectedCall.repTx ? {
-            validByCompany: selectedCall.repTx.status === 'earned' ? null : selectedCall.repTx.status === 'paid' ? true : false,
-            validByAI: selectedCall.validByAI,
-          } : undefined,
+          createdAt: selectedCall.startTime || nested.startTime || selectedCall.createdAt || '',
+          recording_url: selectedCall.recording_url || nested.recording_url,
+          recording_url_cloudinary:
+            selectedCall.recording_url_cloudinary || nested.recording_url_cloudinary,
+          transcript: selectedCall.transcript || nested.transcript,
+          ai_call_score: selectedCall.ai_call_score || nested.ai_call_score,
+          ai_summary_en: (selectedCall as any).ai_summary_en || (nested as any).ai_summary_en,
+          ai_summary_fr: (selectedCall as any).ai_summary_fr || (nested as any).ai_summary_fr,
+          validByAI: selectedCall.validByAI ?? nested.validByAI,
+          duration: nested.duration ?? (selectedCall as any).duration,
+          ai_call_status: (selectedCall as any).ai_call_status || (nested as any).ai_call_status,
+          scoreCalibration:
+            (selectedCall as any).scoreCalibration || (nested as any).scoreCalibration,
+          transaction: selectedCall.repTx
+            ? {
+                validByCompany:
+                  selectedCall.repTx.status === 'earned'
+                    ? null
+                    : selectedCall.repTx.status === 'paid'
+                      ? true
+                      : false,
+                validByAI: selectedCall.validByAI ?? nested.validByAI,
+              }
+            : undefined,
         };
         return (
           <CallDetailModal
             call={normalized}
             onClose={() => setSelectedCall(null)}
+            analyzingCallId={analyzingCallId}
+            onAnalyze={async (id, options) => {
+              setAnalyzingCallId(id);
+              try {
+                await callsApi.analyze(id, { force: options?.force === true });
+                toast.success(t('calls.actions.analyzeQueued', 'Analyse relancée'));
+              } catch (err: any) {
+                toast.error(err?.message || t('calls.actions.analyzeError', 'Échec de l’analyse'));
+              } finally {
+                setAnalyzingCallId(null);
+              }
+            }}
+            onCalibrateScore={async (id, payload) => {
+              const result = await callsApi.calibrateScore(id, {
+                ...payload,
+                companyId: companyId || undefined,
+              });
+              if (!result?.success) {
+                throw new Error(result?.message || t('calls.calibration.saveError'));
+              }
+              const next = result.data?.scoreCalibration || {
+                verdict: payload.verdict,
+                explanation: payload.explanation || null,
+                calibratedAt: new Date().toISOString(),
+              };
+              setSelectedCall((prev) =>
+                prev
+                  ? ({
+                      ...prev,
+                      scoreCalibration: next,
+                      call: prev.call ? { ...prev.call, scoreCalibration: next } : prev.call,
+                    } as CompanyCallRow)
+                  : prev
+              );
+              toast.success(t('calls.calibration.saved'));
+            }}
           />
         );
       })()}

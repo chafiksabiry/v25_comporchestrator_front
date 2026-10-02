@@ -334,6 +334,17 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
           </div>
         )}
 
+        {isTooShort && (
+          <div className="px-4 md:px-8 py-3 border-b border-amber-100 bg-amber-50/70 shrink-0">
+            <p className="text-[11px] font-bold text-amber-800 leading-relaxed flex items-start gap-2">
+              <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+              <span>
+                {getTooShortAnalysisNotice(i18n.language, Number(call.duration) || undefined)}
+              </span>
+            </p>
+          </div>
+        )}
+
         {renderCalibrationPanel()}
 
         {/* ── Tabs + AI decision ── */}
