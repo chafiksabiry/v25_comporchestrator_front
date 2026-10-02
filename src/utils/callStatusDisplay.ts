@@ -74,12 +74,15 @@ export function callOutcomeBadge(outcome: string | null | undefined): StatusBadg
   return map[outcome] || { label: outcome.replace(/_/g, ' '), tone: 'bg-slate-50 text-slate-600 border-slate-200' };
 }
 
-const PROSPECT_RUBRIC_KEYS: Array<{ key: string; labelKey: string; tone: string }> = [
-  { key: 'RDV', labelKey: 'appointment', tone: 'bg-violet-50 text-violet-700 border-violet-200' },
-  { key: 'A plus tard', labelKey: 'later', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { key: 'PAS INTÉRESSÉS', labelKey: 'notInterested', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { key: 'PAS AU COURANT', labelKey: 'notAware', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-  { key: 'DÉJÀ ÉQUIPÉS', labelKey: 'alreadyEquipped', tone: 'bg-blue-50 text-blue-700 border-blue-200' },
+const PROSPECT_RUBRIC_KEYS: Array<{ key: string; labelKey: string; tone: string; legacyKeys?: string[] }> = [
+  { key: 'called_unreachable', labelKey: 'unreachable', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { key: 'called_voicemail', labelKey: 'voicemail', tone: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { key: 'called_wrong_number', labelKey: 'wrongNumber', tone: 'bg-rose-50 text-rose-700 border-rose-200', legacyKeys: ['PAS AU COURANT'] },
+  { key: 'called_callback', labelKey: 'callbackAsked', tone: 'bg-amber-50 text-amber-700 border-amber-200', legacyKeys: ['A plus tard'] },
+  { key: 'called_rdv', labelKey: 'rdvCallback', tone: 'bg-violet-50 text-violet-700 border-violet-200' },
+  { key: 'argued_rdv', labelKey: 'arguedRdv', tone: 'bg-indigo-50 text-indigo-700 border-indigo-200', legacyKeys: ['RDV'] },
+  { key: 'argued_declined', labelKey: 'arguedDeclined', tone: 'bg-rose-50 text-rose-700 border-rose-200', legacyKeys: ['PAS INTÉRESSÉS', 'DÉJÀ ÉQUIPÉS'] },
+  { key: 'argued_done', labelKey: 'arguedDone', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 ];
 
 /** Rubriques prospect passées — on affiche la plus pertinente (meilleur score). */
@@ -91,19 +94,26 @@ export function getProspectStatusBadge(
   let best: { rubric: typeof PROSPECT_RUBRIC_KEYS[number]; score: number } | null = null;
 
   for (const rubric of PROSPECT_RUBRIC_KEYS) {
-    const metric = aiCallScore[rubric.key];
-    if (!metric) continue;
-    const passed = typeof metric.passed === 'boolean' ? metric.passed : (metric.score ?? 0) >= 50;
-    if (!passed) continue;
-    const score = metric.score ?? 0;
-    if (!best || score >= best.score) {
-      best = { rubric, score };
+    const keys = [rubric.key, ...(rubric.legacyKeys || [])];
+    for (const key of keys) {
+      const metric = aiCallScore[key];
+      if (!metric) continue;
+      const passed = typeof metric.passed === 'boolean' ? metric.passed : (metric.score ?? 0) >= 50;
+      if (!passed) continue;
+      const score = metric.score ?? 0;
+      if (!best || score >= best.score) {
+        best = { rubric, score };
+      }
     }
   }
 
   if (!best) return null;
+  const label =
+    i18n.t(`calls.prospectMetrics.${best.rubric.labelKey}`) ||
+    tb(best.rubric.labelKey) ||
+    best.rubric.key;
   return {
-    label: tb(best.rubric.labelKey),
+    label,
     tone: best.rubric.tone,
     title: best.rubric.key,
   };
@@ -374,6 +384,46 @@ export function hasAiCallAnalysis(call: CallLike): boolean {
   if (overall?.feedback || overall?.feedback_fr || overall?.feedback_en) return true;
   if (call.ai_summary || call.ai_summary_fr || call.ai_summary_en) return true;
   return isNonEvaluableCall(call);
+}
+
+const HARX_PROSPECT_SCORE_KEYS = [
+  'called_unreachable',
+  'called_voicemail',
+  'called_wrong_number',
+  'called_callback',
+  'called_rdv',
+  'argued_rdv',
+  'argued_declined',
+  'argued_done',
+] as const;
+
+const LEGACY_PROSPECT_SCORE_KEYS = [
+  'PAS INTÉRESSÉS',
+  'PAS AU COURANT',
+  'DÉJÀ ÉQUIPÉS',
+  'RDV',
+  'A plus tard',
+] as const;
+
+const QUALITY_SCORE_KEYS = [
+  'Agent fluency',
+  'Sentiment analysis',
+  'Fraud detection',
+  'Script coherence',
+  'Argumentation',
+  'Script adherence',
+  'Transaction analysis',
+  'overall',
+] as const;
+
+/** True when stored scores predate the HARX prospect ladder (needs force re-score). */
+export function needsHarxProspectRescore(
+  aiCallScore?: Record<string, unknown> | null
+): boolean {
+  if (!aiCallScore || typeof aiCallScore !== 'object') return false;
+  if (HARX_PROSPECT_SCORE_KEYS.some((k) => aiCallScore[k] != null)) return false;
+  if (LEGACY_PROSPECT_SCORE_KEYS.some((k) => aiCallScore[k] != null)) return true;
+  return QUALITY_SCORE_KEYS.some((k) => aiCallScore[k] != null);
 }
 
 /** Single-voice self-call: transcript Customer labels were inferred, not real. */

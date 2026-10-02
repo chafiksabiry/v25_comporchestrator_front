@@ -22,6 +22,7 @@ import {
   getTooShortAnalysisNotice,
   isCallTooShortForAnalysis,
   getDisplayTranscript,
+  needsHarxProspectRescore,
   type CallOutcomeFilter,
 } from '../../../utils/callStatusDisplay';
 import { callsApi } from '../services/api/calls';
@@ -123,6 +124,7 @@ export default function CallsDashboardPage() {
   };
 
   const pendingCallHandledRef = useRef(false);
+  const autoRescoredCallIdsRef = useRef<Set<string>>(new Set());
 
   const openCallDetails = useCallback((call: any, tab: 'transcript' | 'insights') => {
     setSelectedCall(call);
@@ -327,6 +329,7 @@ export default function CallsDashboardPage() {
         const message = getCallAnalyzeErrorMessage(result);
         setAnalysisError({ callId, message });
         toast.error(message);
+        if (options?.force) autoRescoredCallIdsRef.current.delete(callId);
         if (selectedCall && selectedCall._id === callId) {
           setSelectedCall({ ...selectedCall, ai_call_status: 'error' });
         }
@@ -338,6 +341,7 @@ export default function CallsDashboardPage() {
       const message = getCallAnalyzeErrorMessage(error);
       setAnalysisError({ callId, message });
       toast.error(message);
+      if (options?.force) autoRescoredCallIdsRef.current.delete(callId);
       if (selectedCall && selectedCall._id === callId) {
         setSelectedCall({ ...selectedCall, ai_call_status: 'error' });
       }
@@ -349,6 +353,23 @@ export default function CallsDashboardPage() {
       setAnalyzingCallId(null);
     }
   };
+
+  // À l'ouverture d'un détail : relancer automatiquement si le scoring est encore
+  // en ancien format (PAS INTÉRESSÉS / …) pour basculer sur la liste HARX.
+  useEffect(() => {
+    if (!selectedCall) return;
+    const callId = normalizeCallId(selectedCall);
+    if (!callId) return;
+    if (autoRescoredCallIdsRef.current.has(callId)) return;
+    if (analyzingCallId === callId) return;
+    if (selectedCall.ai_call_status === 'processing') return;
+    if (isCallVoicemail(selectedCall)) return;
+    if (!needsHarxProspectRescore(selectedCall.ai_call_score)) return;
+
+    autoRescoredCallIdsRef.current.add(callId);
+    void handleAnalyzeCall(callId, { force: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot per call id on open
+  }, [selectedCall?._id]);
 
   const handleCalibrateScore = async (
     callId: string,
@@ -1405,13 +1426,18 @@ export default function CallsDashboardPage() {
                             };
 
                             return [
-                              { label: t('calls.prospectMetrics.notInterested'), key: "PAS INTÉRESSÉS", icon: Ban, color: 'rose' },
-                              { label: t('calls.prospectMetrics.notAware'), key: "PAS AU COURANT", icon: Globe, color: 'blue' },
-                              { label: t('calls.prospectMetrics.alreadyEquipped'), key: "DÉJÀ ÉQUIPÉS", icon: ShieldCheck, color: 'indigo' },
-                              { label: t('calls.prospectMetrics.appointment'), key: "RDV", icon: CalendarCheck, color: 'emerald' },
-                              { label: t('calls.prospectMetrics.callback'), key: "A plus tard", icon: Repeat2, color: 'amber' }
+                              { label: t('calls.disp.called_unreachable', 'Appelé – Injoignable'), key: 'called_unreachable', legacyKeys: [] as string[], icon: PhoneMissed, color: 'amber' },
+                              { label: t('calls.disp.called_voicemail', 'Appelé – Répondeur'), key: 'called_voicemail', legacyKeys: [] as string[], icon: Voicemail, color: 'amber' },
+                              { label: t('calls.disp.called_wrong_number', 'Appelé – Numéro non attribué'), key: 'called_wrong_number', legacyKeys: ['PAS AU COURANT'], icon: PhoneOff, color: 'rose' },
+                              { label: t('calls.disp.called_callback', 'Appelé – Souhaite être rappelé'), key: 'called_callback', legacyKeys: ['A plus tard'], icon: Repeat2, color: 'amber' },
+                              { label: t('calls.disp.called_rdv', 'Appelé – RDV pris pour rappel'), key: 'called_rdv', legacyKeys: [] as string[], icon: CalendarCheck, color: 'indigo' },
+                              { label: t('calls.disp.argued_rdv', 'Appel argumenté – RDV pris / délai de réflexion'), key: 'argued_rdv', legacyKeys: ['RDV'], icon: Handshake, color: 'indigo' },
+                              { label: t('calls.disp.argued_declined', 'Appel argumenté – Transaction déclinée'), key: 'argued_declined', legacyKeys: ['PAS INTÉRESSÉS', 'DÉJÀ ÉQUIPÉS'], icon: Ban, color: 'rose' },
+                              { label: t('calls.disp.argued_done', 'Appel argumenté – Transaction aboutie'), key: 'argued_done', legacyKeys: [] as string[], icon: PartyPopper, color: 'emerald' },
                             ].map((metric, mIdx) => {
-                              const metricData = selectedCall.ai_call_score?.[metric.key];
+                              const metricData =
+                                selectedCall.ai_call_score?.[metric.key] ||
+                                metric.legacyKeys.map((k) => selectedCall.ai_call_score?.[k]).find(Boolean);
                               if (!metricData) return null;
                               const score = metricData?.score || 0;
                               const scoreColorClass = score >= 50 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50';
