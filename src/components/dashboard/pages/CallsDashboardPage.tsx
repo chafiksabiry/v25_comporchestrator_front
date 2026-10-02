@@ -621,7 +621,7 @@ export default function CallsDashboardPage() {
               <option value="completed">{t('calls.status.completed', 'Terminé')}</option>
               <option value="missed">{t('calls.status.missed', 'Manqué')}</option>
               <option value="failed">{t('calls.status.failed', 'Échoué')}</option>
-              <option value="voicemail">{t('calls.status.voicemail', 'Messagerie')}</option>
+              <option value="voicemail">{t('calls.disp.called_voicemail', 'Appelé – Répondeur')}</option>
             </select>
           </div>
         </div>
@@ -1056,6 +1056,8 @@ export default function CallsDashboardPage() {
           transaction: selectedCall.transaction,
           duration: selectedCall.duration,
           ai_call_status: selectedCall.ai_call_status,
+          status: selectedCall.status,
+          answeredBy: selectedCall.answeredBy,
           scoreCalibration: selectedCall.scoreCalibration,
         };
         const selectedAgentFraudCount =
