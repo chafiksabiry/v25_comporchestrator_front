@@ -28,6 +28,8 @@ export interface NormalizedCall {
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null };
   duration?: number | null;
   ai_call_status?: string | null;
+  status?: string | null;
+  answeredBy?: string | null;
   scoreCalibration?: {
     verdict?: 'up' | 'down' | null;
     explanation?: string | null;
