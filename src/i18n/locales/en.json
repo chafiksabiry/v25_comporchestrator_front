@@ -2807,11 +2807,19 @@
       "transaction": "Transaction Analysis"
     },
     "prospectMetrics": {
-      "notInterested": "Transaction declined",
-      "notAware": "Not aware of context",
-      "alreadyEquipped": "Already equipped / supplied",
-      "appointment": "Appointment / reflection time",
-      "callback": "Requests callback"
+      "notInterested": "Argued – Transaction declined",
+      "notAware": "Called – Wrong number",
+      "alreadyEquipped": "Argued – Transaction declined",
+      "appointment": "Argued – Appointment / reflection",
+      "callback": "Called – Requests callback",
+      "unreachable": "Called – Unreachable",
+      "voicemail": "Called – Voicemail",
+      "wrongNumber": "Called – Wrong number",
+      "callbackAsked": "Called – Requests callback",
+      "rdvCallback": "Called – Callback RDV set",
+      "arguedRdv": "Argued – Appointment / reflection",
+      "arguedDeclined": "Argued – Transaction declined",
+      "arguedDone": "Argued – Transaction completed"
     },
     "suggestedDisposition": "AI suggested disposition",
     "disp": {
@@ -2841,7 +2849,7 @@
       "tooShort": "Too short",
       "connectedNoSale": "No follow-up",
       "later": "Called – Wants a callback",
-      "notAware": "Not aware",
+      "notAware": "Called – Wrong number",
       "callRefused": "Call refused",
       "callRejectedByAi": "Call rejected",
       "callRejectedByAiTitle": "Call was not validated by AI — no transaction to process",
@@ -2873,7 +2881,7 @@
       "overallScore": "Overall Score",
       "score": "Score",
       "analysisCompleted": "Detailed analysis completed.",
-      "prospectResponses": "Lead Statuses & Responses",
+      "prospectResponses": "Prospect progress status",
       "detected": "Detected",
       "noQuote": "No quote detected.",
       "standardPerformance": "No factual call summary is available for this call.",
