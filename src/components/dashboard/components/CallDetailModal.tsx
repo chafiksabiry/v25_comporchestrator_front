@@ -36,6 +36,9 @@ export interface NormalizedCall {
     calibratedAt?: string | null;
   } | null;
   suggestedDisposition?: string | null;
+  leadId?: string | null;
+  repDisposition?: string | null;
+  pendingDisposition?: string | null;
 }
 
 /** L'entreprise peut valider/refuser dès que l'appel est analysé (transaction optionnelle). */
@@ -64,15 +67,17 @@ interface Props {
   analysisError?: string | null;
   onValidateTransaction?: (callId: string, current: boolean | null, next: boolean) => void;
   onCalibrateScore?: (callId: string, payload: { verdict: 'up' | 'down'; explanation?: string }) => Promise<void> | void;
+  onConfirmDisposition?: (leadId: string, approve: boolean) => Promise<void> | void;
 }
 
-export default function CallDetailModal({ call, agentFraudCount = 0, onClose, onAnalyze, analyzingCallId, analysisError, onValidateTransaction, onCalibrateScore }: Props) {
+export default function CallDetailModal({ call, agentFraudCount = 0, onClose, onAnalyze, analyzingCallId, analysisError, onValidateTransaction, onCalibrateScore, onConfirmDisposition }: Props) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'transcript' | 'insights'>('transcript');
   const [calibrationVerdict, setCalibrationVerdict] = useState<'up' | 'down' | null>(call.scoreCalibration?.verdict || null);
   const [calibrationExplanation, setCalibrationExplanation] = useState(call.scoreCalibration?.explanation || '');
   const [calibrationSaving, setCalibrationSaving] = useState(false);
   const [calibrationError, setCalibrationError] = useState<string | null>(null);
+  const [dispositionConfirming, setDispositionConfirming] = useState(false);
   const isFraud = isCallFraudDetected(call);
   const isVoicemail = isCallVoicemail(call);
   const isTooShort = isCallTooShortForAnalysis(call);
@@ -441,6 +446,65 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
               </div>
             )}
           </div>
+
+          {call.pendingDisposition && call.leadId && onConfirmDisposition && (() => {
+            const pendingConf = HARX_DISP_CONF[call.pendingDisposition];
+            const currentConf = call.repDisposition ? HARX_DISP_CONF[call.repDisposition] : null;
+            return (
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-2xl border border-amber-200 bg-amber-50/70">
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-1">
+                    {t('calls.disposition.pendingTitle', 'Statut proposé par le REP')}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {currentConf && (
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${currentConf.bg} ${currentConf.text} ${currentConf.border}`}>
+                        {t('calls.disposition.current', 'Actuel')}: {currentConf.label}
+                      </span>
+                    )}
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${pendingConf?.bg || 'bg-amber-50'} ${pendingConf?.text || 'text-amber-700'} ${pendingConf?.border || 'border-amber-200'}`}>
+                      <Clock className="w-3 h-3" />
+                      {pendingConf?.label || call.pendingDisposition}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    disabled={dispositionConfirming}
+                    onClick={async () => {
+                      setDispositionConfirming(true);
+                      try {
+                        await onConfirmDisposition(call.leadId!, true);
+                      } finally {
+                        setDispositionConfirming(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100/60 hover:bg-emerald-100/60 transition-all shadow-sm text-[9px] font-black uppercase tracking-widest disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {t('calls.actions.validate')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={dispositionConfirming}
+                    onClick={async () => {
+                      setDispositionConfirming(true);
+                      try {
+                        await onConfirmDisposition(call.leadId!, false);
+                      } finally {
+                        setDispositionConfirming(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-50 text-slate-600 border border-slate-200/60 hover:bg-slate-100/60 transition-all shadow-sm text-[9px] font-black uppercase tracking-widest disabled:opacity-50"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    {t('calls.actions.reject')}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* ── Body ── */}
