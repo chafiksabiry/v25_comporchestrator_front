@@ -65,7 +65,11 @@ export function callOutcomeBadge(outcome: string | null | undefined): StatusBadg
       tone: 'bg-blue-50 text-blue-700 border-blue-200',
     },
     fraud: { label: tb('fraud'), tone: 'bg-rose-100 text-rose-800 border-rose-300' },
-    too_short: { label: tb('tooShort'), tone: 'bg-slate-50 text-slate-500 border-slate-200' },
+    // Legacy too_short is never shown as a user-facing label — map to sans suite.
+    too_short: {
+      label: tb('connectedNoSale'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+    },
     connected_no_sale: {
       label: tb('connectedNoSale'),
       tone: 'bg-slate-50 text-slate-600 border-slate-200',
@@ -127,8 +131,32 @@ const PRIORITY_CALLOUTCOMES = new Set([
   'no_answer',
   'busy',
   'wrong_number',
-  'too_short',
+  'connected_no_sale',
 ]);
+
+/** Twilio / post-analysis badge when callOutcome is missing or legacy `too_short`. */
+export function resolveTwilioOrPostAnalysisBadge(call: CallLike): StatusBadge | null {
+  if (isCallVoicemail(call)) {
+    const badge = callOutcomeBadge('voicemail');
+    return badge ? { ...badge, title: badge.title || tb('voicemailTitle') } : null;
+  }
+
+  const status = String(call.status || '').toLowerCase();
+  if (status === 'busy') return callOutcomeBadge('busy');
+  if (['no-answer', 'noanswer', 'canceled', 'cancelled'].includes(status)) {
+    return callOutcomeBadge('no_answer');
+  }
+  if (status === 'failed') return callOutcomeBadge('wrong_number');
+
+  const outcome = String(call.callOutcome || '').toLowerCase();
+  if (outcome && outcome !== 'too_short') {
+    const badge = callOutcomeBadge(outcome);
+    if (badge) return { ...badge, title: badge.title || tb('outcomeTitle', { outcome }) };
+  }
+
+  // Short connected call (QA skipped) → Sans suite, never « Trop court ».
+  return callOutcomeBadge('connected_no_sale');
+}
 
 export type CallLike = {
   validByAI?: boolean | null;
@@ -632,6 +660,16 @@ export function resolveCallDispositionStatus(call: CallLike): StatusBadge {
     if (badge) return { ...badge, title: badge.title || tb('voicemailTitle') };
   }
 
+  const outcome = String(call.callOutcome || '').toLowerCase();
+
+  // Legacy / internal too_short → Twilio status or Sans suite (never « Trop court »).
+  if (outcome === 'too_short' || (!outcome && isCallTooShortForAnalysis(call))) {
+    return resolveTwilioOrPostAnalysisBadge(call) || {
+      label: tb('connectedNoSale'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+    };
+  }
+
   // Prefer Twilio status when outcome missing (Busy / no-answer / failed).
   const status = String(call.status || '').toLowerCase();
   if (!call.callOutcome) {
@@ -648,8 +686,6 @@ export function resolveCallDispositionStatus(call: CallLike): StatusBadge {
       if (badge) return badge;
     }
   }
-
-  const outcome = call.callOutcome;
 
   if (outcome && PRIORITY_CALLOUTCOMES.has(outcome)) {
     const badge = callOutcomeBadge(outcome);

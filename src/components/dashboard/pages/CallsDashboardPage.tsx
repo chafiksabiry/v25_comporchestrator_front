@@ -17,6 +17,7 @@ import {
   isCallVoicemail,
   matchesCallOutcomeFilter,
   resolveUnvalidatedTransactionStatus,
+  resolveCallDispositionStatus,
   getDisplayOverallScore,
   getScoreDecisionTooltip,
   getTooShortAnalysisNotice,
@@ -907,10 +908,13 @@ export default function CallsDashboardPage() {
                           const displayScore = getDisplayOverallScore(call);
                           if (displayScore === null) {
                             if (isCallTooShortForAnalysis(call)) {
+                              const disposition = resolveCallDispositionStatus(call);
                               return (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-500 rounded-full border border-slate-200 shadow-sm">
-                                  <Clock className="w-3.5 h-3.5" />
-                                  <span className="text-[10px] font-black uppercase tracking-widest">{t('calls.calibration.tooShortTitle')}</span>
+                                <div
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm ${disposition.tone}`}
+                                  title={disposition.title}
+                                >
+                                  <span className="text-[10px] font-black uppercase tracking-widest">{disposition.label}</span>
                                 </div>
                               );
                             }
