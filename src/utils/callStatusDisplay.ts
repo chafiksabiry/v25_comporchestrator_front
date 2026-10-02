@@ -10,24 +10,66 @@ function tb(key: string, opts?: Record<string, unknown>): string {
   return i18n.t(`calls.statusBadges.${key}`, opts);
 }
 
-/** Map `callOutcome` to a short label + tone for disposition pills. */
+/** Map `callOutcome` / Twilio signals → HARX ladder labels (9 statuses). */
 export function callOutcomeBadge(outcome: string | null | undefined): StatusBadge | null {
   if (!outcome) return null;
   const map: Record<string, StatusBadge> = {
-    transaction: { label: tb('transaction'), tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    appointment: { label: tb('appointment'), tone: 'bg-violet-50 text-violet-700 border-violet-200' },
-    callback_requested: { label: tb('callbackRequested'), tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-    argued_interested: { label: tb('arguedInterested'), tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    refusal: { label: tb('refusal'), tone: 'bg-rose-50 text-rose-700 border-rose-200' },
-    not_interested: { label: tb('notInterested'), tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-    already_equipped: { label: tb('alreadyEquipped'), tone: 'bg-blue-50 text-blue-700 border-blue-200' },
-    voicemail: { label: tb('voicemail'), tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-    no_answer: { label: tb('noAnswer'), tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-    busy: { label: tb('busy'), tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-    wrong_number: { label: tb('wrongNumber'), tone: 'bg-rose-50 text-rose-700 border-rose-200' },
+    // Twilio / system telephony → HARX
+    voicemail: {
+      label: tb('voicemail'),
+      tone: 'bg-orange-50 text-orange-700 border-orange-200',
+      title: tb('voicemailTitle'),
+    },
+    busy: {
+      label: tb('busy'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+      title: tb('busyTitle'),
+    },
+    no_answer: {
+      label: tb('noAnswer'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+      title: tb('noAnswerTitle'),
+    },
+    wrong_number: {
+      label: tb('wrongNumber'),
+      tone: 'bg-rose-50 text-rose-700 border-rose-200',
+      title: tb('wrongNumberTitle'),
+    },
+    // Commercial ladder
+    callback_requested: {
+      label: tb('callbackRequested'),
+      tone: 'bg-amber-50 text-amber-700 border-amber-200',
+    },
+    appointment: {
+      label: tb('appointment'),
+      tone: 'bg-violet-50 text-violet-700 border-violet-200',
+    },
+    transaction: {
+      label: tb('transaction'),
+      tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    },
+    argued_interested: {
+      label: tb('arguedInterested'),
+      tone: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    },
+    refusal: {
+      label: tb('refusal'),
+      tone: 'bg-rose-50 text-rose-700 border-rose-200',
+    },
+    not_interested: {
+      label: tb('notInterested'),
+      tone: 'bg-rose-50 text-rose-700 border-rose-200',
+    },
+    already_equipped: {
+      label: tb('alreadyEquipped'),
+      tone: 'bg-blue-50 text-blue-700 border-blue-200',
+    },
     fraud: { label: tb('fraud'), tone: 'bg-rose-100 text-rose-800 border-rose-300' },
     too_short: { label: tb('tooShort'), tone: 'bg-slate-50 text-slate-500 border-slate-200' },
-    connected_no_sale: { label: tb('connectedNoSale'), tone: 'bg-slate-50 text-slate-600 border-slate-200' },
+    connected_no_sale: {
+      label: tb('connectedNoSale'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+    },
   };
   return map[outcome] || { label: outcome.replace(/_/g, ' '), tone: 'bg-slate-50 text-slate-600 border-slate-200' };
 }
@@ -82,12 +124,15 @@ export type CallLike = {
   validByAI?: boolean | null;
   valid?: boolean | null;
   duration?: number | null;
+  status?: string | null;
   ai_call_status?: string | null;
   callOutcome?: string | null;
   ai_summary?: string | null;
   ai_summary_fr?: string | null;
   ai_call_score?: Record<string, { passed?: boolean; score?: number; feedback?: string; feedback_fr?: string; feedback_en?: string }> | null;
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null } | null;
+  /** Twilio AMD AnsweredBy */
+  answeredBy?: string | null;
 };
 
 export const MIN_CALL_ANALYSIS_SECONDS = 30;
@@ -158,11 +203,13 @@ export function getScoreDecisionTooltip(call: CallLike, language: string = 'fr')
 const VOICEMAIL_REGEX =
   /messagerie|messagerie\s+(vocale|automatique)|r[ée]pondeur|laissez\s+(votre|un)\s+message|bo[îi]te\s+vocale|voicemail|answering\s+machine|leave\s+(a|your)\s+message|after\s+(the\s+)?(tone|beep)|appel\s+non\s+productif|non\s+productif|aucun(?:e)?\s+(?:interaction|[ée]change)|aucun\s+(?:él|el)[ée]ment\s+exploitable|n['']?est\s+pas\s+disponible|votre\s+correspondant|tombe?\s+(?:imm[ée]diatement\s+)?sur\s+la?\s?messagerie|redirig[ée]\s+vers\s+la?\s?messagerie/i;
 
-/** Messagerie / répondeur — distinct de la fraude. */
+/** Messagerie / répondeur (Twilio AMD) — distinct de la fraude. */
 export function isCallVoicemail(
   call: CallLike & { flags?: { fraud?: boolean; selfCall?: boolean } }
 ): boolean {
   if (call.callOutcome === 'voicemail') return true;
+  const answeredBy = String(call.answeredBy || '').toLowerCase();
+  if (answeredBy.startsWith('machine') || answeredBy === 'fax') return true;
   const feedback = String(
     call.ai_summary_fr ||
       call.ai_summary ||
@@ -172,6 +219,27 @@ export function isCallVoicemail(
       ''
   ).toLowerCase();
   return VOICEMAIL_REGEX.test(feedback);
+}
+
+/** Map Twilio CallStatus / AMD → HARX disposition key. */
+export function harxDispositionFromTwilio(call: CallLike): string | null {
+  if (isCallVoicemail(call)) return 'called_voicemail';
+  const outcome = String(call.callOutcome || '').toLowerCase();
+  const status = String(call.status || '').toLowerCase();
+  if (outcome === 'wrong_number' || status === 'failed') return 'called_wrong_number';
+  if (
+    outcome === 'busy' ||
+    outcome === 'no_answer' ||
+    ['busy', 'no-answer', 'noanswer', 'canceled', 'cancelled'].includes(status)
+  ) {
+    return 'called_unreachable';
+  }
+  if (outcome === 'callback_requested') return 'called_callback';
+  if (outcome === 'appointment') return 'called_rdv';
+  if (outcome === 'transaction') return 'argued_done';
+  if (['refusal', 'not_interested', 'already_equipped'].includes(outcome)) return 'argued_declined';
+  if (outcome === 'argued_interested') return 'argued_rdv';
+  return null;
 }
 
 export function getVoicemailCallNotice(language: string = 'fr'): string {
@@ -511,14 +579,31 @@ export const CALL_REJECTED_BADGE: StatusBadge = {
 export function resolveCallDispositionStatus(call: CallLike): StatusBadge {
   if (isCallVoicemail(call)) {
     const badge = callOutcomeBadge('voicemail');
-    if (badge) return { ...badge, title: tb('voicemailTitle') };
+    if (badge) return { ...badge, title: badge.title || tb('voicemailTitle') };
+  }
+
+  // Prefer Twilio status when outcome missing (Busy / no-answer / failed).
+  const status = String(call.status || '').toLowerCase();
+  if (!call.callOutcome) {
+    if (status === 'busy') {
+      const badge = callOutcomeBadge('busy');
+      if (badge) return badge;
+    }
+    if (['no-answer', 'noanswer', 'canceled', 'cancelled'].includes(status)) {
+      const badge = callOutcomeBadge('no_answer');
+      if (badge) return badge;
+    }
+    if (status === 'failed') {
+      const badge = callOutcomeBadge('wrong_number');
+      if (badge) return badge;
+    }
   }
 
   const outcome = call.callOutcome;
 
   if (outcome && PRIORITY_CALLOUTCOMES.has(outcome)) {
     const badge = callOutcomeBadge(outcome);
-    if (badge) return { ...badge, title: tb('outcomeTitle', { outcome }) };
+    if (badge) return { ...badge, title: badge.title || tb('outcomeTitle', { outcome }) };
   }
 
   const prospect = getProspectStatusBadge(call.ai_call_score);
@@ -526,7 +611,7 @@ export function resolveCallDispositionStatus(call: CallLike): StatusBadge {
 
   const outcomeBadge = callOutcomeBadge(outcome);
   if (outcomeBadge) {
-    return { ...outcomeBadge, title: tb('outcomeTitle', { outcome }) };
+    return { ...outcomeBadge, title: outcomeBadge.title || tb('outcomeTitle', { outcome }) };
   }
 
   if (call.transaction?.validByAI === false) {
