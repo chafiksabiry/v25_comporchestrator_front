@@ -2770,6 +2770,13 @@
       "awaitingValidation": "Awaiting validation",
       "signedWithAmount": "Signed (-€{{amount}})"
     },
+    "disposition": {
+      "pendingTitle": "Status proposed by the REP",
+      "current": "Current",
+      "approved": "Status confirmed",
+      "rejected": "Status proposal rejected",
+      "confirmError": "Unable to confirm status"
+    },
     "actions": {
       "validate": "Validate",
       "reject": "Reject",

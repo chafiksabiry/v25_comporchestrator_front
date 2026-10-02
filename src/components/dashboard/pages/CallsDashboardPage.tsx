@@ -447,6 +447,52 @@ export default function CallsDashboardPage() {
     }
   };
 
+  const handleConfirmDisposition = async (leadId: string, approve: boolean) => {
+    try {
+      const dashboardBase = String(import.meta.env.VITE_DASHBOARD_API || '').replace(/\/$/, '');
+      if (!dashboardBase || !leadId) return;
+
+      const response = await fetch(`${dashboardBase}/leads/${leadId}/disposition/confirm`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId, approve }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) {
+        toast.error(data.error || t('calls.disposition.confirmError', 'Impossible de confirmer le statut'));
+        return;
+      }
+
+      const updatedLead = data.data || {};
+      const patchLead = (lead: any) => {
+        if (!lead) return lead;
+        const id = lead._id || lead.id;
+        if (String(id) !== String(leadId)) return lead;
+        return {
+          ...lead,
+          repDisposition: updatedLead.repDisposition ?? lead.repDisposition,
+          repDispositionAt: updatedLead.repDispositionAt ?? lead.repDispositionAt,
+          pendingDisposition: updatedLead.pendingDisposition ?? null,
+          pendingDispositionAt: updatedLead.pendingDispositionAt ?? null,
+          pendingDispositionBy: updatedLead.pendingDispositionBy ?? null,
+          assignedRepId: updatedLead.assignedRepId ?? lead.assignedRepId,
+        };
+      };
+
+      setCalls((prev) => prev.map((c) => ({ ...c, lead: patchLead(c.lead) })));
+      setSelectedCall((prev: any) => (prev ? { ...prev, lead: patchLead(prev.lead) } : prev));
+
+      toast.success(
+        approve
+          ? t('calls.disposition.approved', 'Statut confirmé')
+          : t('calls.disposition.rejected', 'Proposition de statut refusée')
+      );
+    } catch (error) {
+      console.error('Error confirming disposition:', error);
+      toast.error(t('calls.disposition.confirmError', 'Impossible de confirmer le statut'));
+    }
+  };
+
   const callGigId = (call: any): string => {
     const raw =
       call?.lead?.gigId?._id ||
@@ -1084,6 +1130,12 @@ export default function CallsDashboardPage() {
           status: selectedCall.status,
           answeredBy: selectedCall.answeredBy,
           scoreCalibration: selectedCall.scoreCalibration,
+          leadId:
+            typeof selectedCall.lead?._id === 'object'
+              ? (selectedCall.lead?._id as any)?.$oid
+              : selectedCall.lead?._id || selectedCall.lead?.id || null,
+          repDisposition: selectedCall.lead?.repDisposition || null,
+          pendingDisposition: selectedCall.lead?.pendingDisposition || null,
         };
         const selectedAgentFraudCount =
           agentFraudCountById.get(callAgentId(selectedCall)) ||
@@ -1101,6 +1153,7 @@ export default function CallsDashboardPage() {
             analysisError={selectedCallAnalysisError}
             onValidateTransaction={(callId, current, next) => handleUpdateTransactionValidation(callId, current, next)}
             onCalibrateScore={handleCalibrateScore}
+            onConfirmDisposition={handleConfirmDisposition}
           />
         );
       })()}
