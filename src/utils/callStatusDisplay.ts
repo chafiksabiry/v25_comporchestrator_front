@@ -724,6 +724,24 @@ export function resolveUnvalidatedTransactionStatus(call: CallLike): StatusBadge
       : { label: tb('voicemail'), tone: 'bg-slate-50 text-slate-600 border-slate-200', title: tb('voicemailTitle') };
   }
 
+  const outcome = String(call.callOutcome || '').toLowerCase();
+  // Call disposition (Sans suite, busy, …) is NOT a transaction status.
+  // Short / no-sale calls → show « Non validé » on the TRANSACTION badge.
+  if (
+    isCallTooShortForAnalysis(call) ||
+    outcome === 'too_short' ||
+    outcome === 'connected_no_sale' ||
+    outcome === 'busy' ||
+    outcome === 'no_answer' ||
+    outcome === 'wrong_number'
+  ) {
+    return {
+      label: tb('notValidated'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+      title: tb('notValidatedTitle'),
+    };
+  }
+
   // Stale inconsistency: call is AI-valid but transaction still carries an old
   // AI auto-reject (validByAI=false + validByCompany=false). Ignore it and
   // fall through to disposition — company "Not signed" keeps validByAI null/true.
