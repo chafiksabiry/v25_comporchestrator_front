@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
-import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getExecutiveSummaryScore, getExecutiveSummaryText, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, hasAiCallAnalysis, isCallTooShortForAnalysis, getTooShortAnalysisNotice, getScoreDecisionTooltip, shouldHideCallScoring } from '../../../utils/callStatusDisplay';
+import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, resolveCallDispositionStatus, getDisplayTranscript, getExecutiveSummaryScore, getExecutiveSummaryText, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, hasAiCallAnalysis, isCallTooShortForAnalysis, getTooShortAnalysisNotice, getScoreDecisionTooltip, shouldHideCallScoring } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;
@@ -504,12 +504,17 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
             <div className="max-w-5xl mx-auto space-y-4 pb-2">
               {isTooShort ? (
                 <div className="py-12 text-center flex flex-col items-center justify-center gap-4 px-6">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
-                    <Clock className="w-7 h-7" />
-                  </div>
-                  <p className="text-sm font-black uppercase tracking-widest text-slate-700">
-                    {t('calls.calibration.tooShortTitle')}
-                  </p>
+                  {(() => {
+                    const disposition = resolveCallDispositionStatus(call);
+                    return (
+                      <span
+                        className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest border ${disposition.tone}`}
+                        title={disposition.title}
+                      >
+                        {disposition.label}
+                      </span>
+                    );
+                  })()}
                   <p className="text-sm font-medium text-slate-500 max-w-lg leading-relaxed">
                     {getTooShortAnalysisNotice(i18n.language, Number(call.duration) || undefined)}
                   </p>
