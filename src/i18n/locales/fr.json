@@ -2770,6 +2770,13 @@
       "awaitingValidation": "En attente de validation",
       "signedWithAmount": "Signée (-{{amount}} €)"
     },
+    "disposition": {
+      "pendingTitle": "Statut proposé par le REP",
+      "current": "Actuel",
+      "approved": "Statut confirmé",
+      "rejected": "Proposition de statut refusée",
+      "confirmError": "Impossible de confirmer le statut"
+    },
     "actions": {
       "validate": "Valider",
       "reject": "Refuser",
