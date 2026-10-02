@@ -2848,6 +2848,8 @@
       "fraud": "Fraud",
       "tooShort": "Too short",
       "connectedNoSale": "No follow-up",
+      "notValidated": "Not validated",
+      "notValidatedTitle": "Transaction not validated",
       "later": "Called – Wants a callback",
       "notAware": "Called – Wrong number",
       "callRefused": "Call refused",
