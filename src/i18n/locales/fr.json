@@ -2876,8 +2876,8 @@
       "prospectResponses": "Statuts et réponses du prospect",
       "detected": "Détecté",
       "noQuote": "Aucune citation détectée.",
-      "standardPerformance": "L’agent a fourni une performance standard.",
-      "overallAiEvaluation": "Évaluation globale par l’IA"
+      "standardPerformance": "Aucun résumé factuel disponible pour cet appel.",
+      "overallAiEvaluation": "Analyse qualité de l’appel"
     }
   },
   "approvalPublishing": {
