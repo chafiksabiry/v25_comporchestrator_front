@@ -41,16 +41,41 @@ export async function updateCompanyData(companyId: string, companyData: unknown)
   return response.data;
 }
 
+async function resolveCompanyIdForUser(userId?: string): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const res = await axios.get(`${apiUrl()}/companies/user/${userId}`);
+    const data = res.data?.data ?? res.data;
+    const id = data?._id ?? data?.id;
+    return id ? String(id) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Create or update company profile. Prefers PUT when `companyId` cookie matches an existing record.
+ * Create or update company profile. Prefers PUT when a company already exists
+ * (cookie / userId) so "Publier" is idempotent — no "already exists" dead-end.
  */
 export async function publishCompanyData(companyData: unknown): Promise<{ _id: string; data?: unknown }> {
-  const existingId = Cookies.get("companyId");
+  const payload = (companyData && typeof companyData === "object"
+    ? (companyData as Record<string, unknown>)
+    : {}) as Record<string, unknown>;
+  const userId =
+    (typeof payload.userId === "string" && payload.userId) ||
+    Cookies.get("userId") ||
+    undefined;
+
+  let existingId = Cookies.get("companyId") || undefined;
+  if (!existingId && userId) {
+    existingId = (await resolveCompanyIdForUser(userId)) || undefined;
+  }
+
   if (existingId) {
     try {
       const response = await updateCompanyData(existingId, companyData);
-      const id =
-        response?.data?._id ?? response?.data?.id ?? existingId;
+      const id = response?.data?._id ?? response?.data?.id ?? existingId;
+      Cookies.set("companyId", String(id), { expires: 30 });
       return { _id: String(id), data: response.data };
     } catch (putErr) {
       const message = extractApiError(putErr);
@@ -67,9 +92,21 @@ export async function publishCompanyData(companyData: unknown): Promise<{ _id: s
     if (!id) {
       throw new Error("Réponse API sans identifiant société (_id).");
     }
+    Cookies.set("companyId", String(id), { expires: 30 });
     return { _id: String(id), data: response.data };
   } catch (postErr) {
-    throw new Error(extractApiError(postErr));
+    // Legacy race: name already exists → recover via user company or re-POST after lookup.
+    const message = extractApiError(postErr);
+    if (/already exists/i.test(message) && userId) {
+      const recoveredId = await resolveCompanyIdForUser(userId);
+      if (recoveredId) {
+        const response = await updateCompanyData(recoveredId, companyData);
+        const id = response?.data?._id ?? response?.data?.id ?? recoveredId;
+        Cookies.set("companyId", String(id), { expires: 30 });
+        return { _id: String(id), data: response.data };
+      }
+    }
+    throw new Error(message);
   }
 }
 
