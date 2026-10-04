@@ -14,6 +14,7 @@ import { CompanyProfile } from "./CompanyProfile";
 import ManualCompanyForm from "./ManualCompanyForm";
 import ExistingCompanyProfile from "../CompanyProfile";
 import { OnboardingBackButton } from "./OnboardingBackButton";
+import { clearStaleCompanyClientState } from "../../../utils/companyClientState";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -58,6 +59,8 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
         await axios.get(`${apiBase}/companies/${fallbackCompanyId}/details`);
         setExistingCompanyId(fallbackCompanyId);
       } catch {
+        // Deleted company still in cookie/localStorage — clear so Publish can create again.
+        clearStaleCompanyClientState();
         setExistingCompanyId(null);
       } finally {
         setCheckingExisting(false);
