@@ -44,6 +44,9 @@ import {
   getIndustryById,
   convertActivityNamesToIds,
   convertIndustryNamesToIds,
+  convertSectorNamesToIds,
+  loadSectors,
+  getSectorById,
 } from '../lib/activitiesIndustries';
 import Logo from "./Logo";
 import { useLanguage } from '../contexts/LanguageContext';
@@ -1181,7 +1184,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         }
 
         // Ensure ref data is loaded, then normalize names → IDs
-        await Promise.all([loadActivities(), loadIndustries()]);
+        await Promise.all([loadActivities(), loadIndustries(), loadSectors()]);
+        if (Array.isArray(result.sectors) && result.sectors.length > 0) {
+          result.sectors = [...new Set(result.sectors.map((item: string) => {
+            if (!item) return item;
+            if (getSectorById(item) || /^[a-f0-9]{24}$/i.test(item)) return item;
+            return convertSectorNamesToIds([item])[0] || item;
+          }).filter(Boolean))];
+        }
         if (Array.isArray(result.industries) && result.industries.length > 0) {
           result.industries = [...new Set(result.industries.map((item: string) => {
             if (!item) return item;
