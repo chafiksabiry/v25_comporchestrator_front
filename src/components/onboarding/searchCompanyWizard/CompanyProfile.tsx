@@ -30,6 +30,7 @@ import { extractApiError, publishCompanyData } from "./api/companyApi";
 import type { CompanyProfileData } from "./api/openai";
 import { uploadImage } from "./api/uploads";
 import { redirectToCompanyOnboarding } from "./navigation";
+import { OnboardingBackButton } from "./OnboardingBackButton";
 import { LucideProps } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -40,27 +41,42 @@ type CompanyProfileType = CompanyProfileData & {
   website?: string;
   metaDescription?: string;
   description?: string;
+  overview_i18n?: { en?: string; fr?: string };
+  mission_i18n?: { en?: string; fr?: string };
+  industry_i18n?: { en?: string; fr?: string };
 };
+
+function pickLocalized(
+  plain: string | undefined,
+  i18n: { en?: string; fr?: string } | undefined,
+  lang: "fr" | "en"
+): string {
+  const localized = lang === "fr" ? i18n?.fr || i18n?.en : i18n?.en || i18n?.fr;
+  return String(localized || plain || "").trim();
+}
 
 interface Props {
   profile: CompanyProfileType;
+  /** Discard unpublished draft and go back to search/URL step */
+  onBack?: () => void;
   /** When set (embedded in Company Onboarding), called instead of a full-page redirect */
   onPublished?: (companyId: string) => void;
 }
 
 const userId = Cookies.get("userId");
 
-export function CompanyProfile({ profile: initialProfile, onPublished }: Props) {
-  const { t } = useTranslation();
+export function CompanyProfile({ profile: initialProfile, onBack, onPublished }: Props) {
+  const { t, i18n } = useTranslation();
+  const uiLang: "fr" | "en" = i18n.language?.startsWith("fr") ? "fr" : "en";
   const defaultProfile = {
     userId: userId || "",
     name: initialProfile.name || "",
     logo: initialProfile.logo || "",
-    industry: initialProfile.industry || "",
+    industry: pickLocalized(initialProfile.industry, initialProfile.industry_i18n, uiLang),
     founded: initialProfile.founded || "",
     headquarters: initialProfile.headquarters || "",
-    overview: initialProfile.overview || "",
-    mission: initialProfile.mission || "",
+    overview: pickLocalized(initialProfile.overview, initialProfile.overview_i18n, uiLang),
+    mission: pickLocalized(initialProfile.mission, initialProfile.mission_i18n, uiLang),
     culture: {
       values: initialProfile.culture?.values || [],
       benefits: initialProfile.culture?.benefits || [],
@@ -762,8 +778,17 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
             <style>{`@keyframes shine {0% { transform: translateX(-200%);}100% { transform: translateX(200%);}}`}</style>
           </div>
 
-          {/* Edit / Done toggle — always visible in the hero */}
-          <div className="absolute top-4 right-4 z-20">
+          {/* Back (no publish) + Edit / Done — always visible in the hero */}
+          <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between gap-3">
+            {onBack ? (
+              <OnboardingBackButton
+                variant="icon"
+                label={t("searchCompanyWizard.backToSearch", "Retour à la recherche")}
+                onClick={onBack}
+              />
+            ) : (
+              <span />
+            )}
             <button
               type="button"
               onClick={() => setEditMode((v) => !v)}

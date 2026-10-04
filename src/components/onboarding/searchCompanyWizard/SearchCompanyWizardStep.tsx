@@ -13,6 +13,7 @@ import { CompanyLogo } from "./CompanyLogo";
 import { CompanyProfile } from "./CompanyProfile";
 import ManualCompanyForm from "./ManualCompanyForm";
 import ExistingCompanyProfile from "../CompanyProfile";
+import { OnboardingBackButton } from "./OnboardingBackButton";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -23,7 +24,8 @@ interface Props {
 }
 
 export default function SearchCompanyWizardStep({ onBack, companyId, onStepComplete }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const uiLanguage = i18n.language?.startsWith("fr") ? "fr" : "en";
 
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -98,7 +100,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     setError(null);
     setResults([]);
     try {
-      const generated = await generateCompanyProfileFromUrl(trimmedQuery);
+      const generated = await generateCompanyProfileFromUrl(trimmedQuery, undefined, uiLanguage);
       setProfile(generated);
     } catch (e: any) {
       setError(e?.response?.data?.message || e?.message || t('searchCompanyWizard.errors.generateFailed'));
@@ -132,7 +134,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
 
       if (result.link) {
         try {
-          const generated = await generateCompanyProfileFromUrl(result.link, logoUrl);
+          const generated = await generateCompanyProfileFromUrl(result.link, logoUrl, uiLanguage);
           if (!generated.logo && logoUrl) generated.logo = logoUrl;
           setProfile(generated);
           return;
@@ -147,7 +149,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
         `Description: ${result.snippet}`,
       ].join("\n");
 
-      const generated = await generateCompanyProfile(companyInfo, logoUrl);
+      const generated = await generateCompanyProfile(companyInfo, logoUrl, uiLanguage);
       if (!generated.logo && logoUrl) generated.logo = logoUrl;
       setProfile(generated);
     } catch (e: any) {
@@ -160,14 +162,29 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   if (profile) {
     return (
       <div className="w-full p-6">
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {t(
-            "searchCompanyWizard.publishHint",
-            "Vérifiez les informations ci-dessous puis cliquez sur Publier pour enregistrer la société."
-          )}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <OnboardingBackButton
+            variant="cta"
+            label={t("searchCompanyWizard.backToSearch", "Retour à la recherche")}
+            onClick={() => {
+              // Discard unpublished draft and return to search / URL step.
+              setProfile(null);
+              setError(null);
+            }}
+          />
+          <div className="flex-1 min-w-[220px] rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {t(
+              "searchCompanyWizard.publishHint",
+              "Vérifiez les informations ci-dessous puis cliquez sur Publier pour enregistrer la société. Vous pouvez revenir en arrière sans publier."
+            )}
+          </div>
         </div>
         <CompanyProfile
           profile={profile}
+          onBack={() => {
+            setProfile(null);
+            setError(null);
+          }}
           onPublished={(newCompanyId) => {
             setProfile(null);
             if (onStepComplete) {
