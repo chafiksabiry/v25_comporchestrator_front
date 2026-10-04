@@ -240,6 +240,22 @@ function getOnboardingPhases(isCallCenter: boolean): Phase[] {
   }));
 }
 
+const PHASE_REQUIRED_STEP_IDS: Record<number, number[]> = {
+  1: [1],
+  2: [3, 4, 5], // gig + telephony + contacts
+  3: [7, 8, 9, 10],
+  4: [11, 12, 13],
+};
+
+function computeValidOnboardingPhase(completedSteps: number[], callCenter: boolean): number {
+  if (callCenter) return completedSteps.includes(1) ? 2 : 1;
+  for (let pId = 1; pId <= 4; pId++) {
+    const required = PHASE_REQUIRED_STEP_IDS[pId] || [];
+    if (!required.every((id) => completedSteps.includes(id))) return pId;
+  }
+  return 4;
+}
+
 interface OnboardingProgressResponse {
   currentPhase: number;
   completedSteps: number[];
@@ -320,8 +336,12 @@ const CompanyOnboarding = () => {
     }
   };
   const initialSnapshot = readPersistedOnboardingSnapshot();
-  const [currentPhase, setCurrentPhase] = useState(initialSnapshot.currentPhase);
-  const [displayedPhase, setDisplayedPhase] = useState(initialSnapshot.currentPhase);
+  const initialPhase = computeValidOnboardingPhase(
+    initialSnapshot.completedSteps,
+    isCallCenter
+  );
+  const [currentPhase, setCurrentPhase] = useState(initialPhase);
+  const [displayedPhase, setDisplayedPhase] = useState(initialPhase);
   const [completedSteps, setCompletedSteps] = useState<number[]>(initialSnapshot.completedSteps);
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -981,35 +1001,30 @@ const CompanyOnboarding = () => {
         }
       }
 
-      // Required steps per phase — never treat phases 3/4 as done by default,
-      // and never skip past telephony (step 4) after only creating a gig.
-      const phaseRequiredSteps: Record<number, number[]> = {
-        1: [1],
-        2: [3, 4, 5], // gig + telephony + contacts
-        3: [7, 8, 9, 10],
-        4: [11, 12, 13],
-      };
-      const isPhaseFullyCompleted = (phaseId: number) => {
-        const required = phaseRequiredSteps[phaseId] || [];
-        return required.every((id) => completedStepsState.includes(id));
-      };
-
-      let validPhase = 1;
-      if (isCallCenterWorkspace()) {
-        // IMPORTANT: call-center must land on phase 2 right after step 1 (company created),
-        // never auto-jump to phase 4 on progress reload.
-        validPhase = completedStepsState.includes(1) ? 2 : 1;
-      } else {
-        // Land on the first incomplete phase (e.g. gig done → stay on phase 2 / telephony).
-        for (let pId = 1; pId <= 4; pId++) {
-          validPhase = pId;
-          if (!isPhaseFullyCompleted(pId)) break;
-        }
-      }
+      const validPhase = computeValidOnboardingPhase(
+        completedStepsState,
+        isCallCenterWorkspace()
+      );
 
       setCurrentPhase(validPhase);
       setDisplayedPhase(validPhase);
       setCompletedSteps(completedStepsState);
+
+      if (
+        !isCallCenterWorkspace() &&
+        Number(progress.currentPhase) !== validPhase
+      ) {
+        try {
+          const userType = localStorage.getItem('userType') || undefined;
+          await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${effectiveCompanyId}/onboarding/current-phase`,
+            { phase: validPhase },
+            { params: userType ? { userType } : undefined }
+          );
+        } catch (phaseFixError) {
+          console.warn('[Onboarding] current-phase realign failed', phaseFixError);
+        }
+      }
 
       // Build stepStatuses map from API phases — used for button gating
       if (progress.phases) {
@@ -1435,11 +1450,7 @@ const CompanyOnboarding = () => {
 
   const phaseRequiredSteps = (phaseId: number): number[] => {
     if (isCallCenterWorkspace()) return [];
-    if (phaseId === 1) return [1];
-    if (phaseId === 2) return [3, 4, 5]; // gig + telephony + contacts
-    if (phaseId === 3) return [7, 8, 9, 10];
-    if (phaseId === 4) return [11, 12, 13];
-    return [];
+    return PHASE_REQUIRED_STEP_IDS[phaseId] || [];
   };
 
   const isPhaseCompleted = (phaseId: number) => {
