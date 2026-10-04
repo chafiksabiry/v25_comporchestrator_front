@@ -201,17 +201,24 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   if (manualMode) {
     return (
       <div className="w-full p-6">
-      <ManualCompanyForm
-        onClose={() => setManualMode(false)}
-        onPublished={(newCompanyId) => {
-          setManualMode(false);
-          if (onStepComplete) {
-            onStepComplete(newCompanyId);
-          } else {
-            onBack?.();
-          }
-        }}
-      />
+        <div className="mb-4">
+          <OnboardingBackButton
+            variant="cta"
+            label={t("searchCompanyWizard.backToSearch", "Retour à la recherche")}
+            onClick={() => setManualMode(false)}
+          />
+        </div>
+        <ManualCompanyForm
+          onClose={() => setManualMode(false)}
+          onPublished={(newCompanyId) => {
+            setManualMode(false);
+            if (onStepComplete) {
+              onStepComplete(newCompanyId);
+            } else {
+              onBack?.();
+            }
+          }}
+        />
       </div>
     );
   }
@@ -225,6 +232,11 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
       </div>
 
       <div className="relative z-10">
+        {onBack ? (
+          <div className="mb-6">
+            <OnboardingBackButton variant="cta" onClick={onBack} />
+          </div>
+        ) : null}
         {!loading && (
         <div className="manual-cta-sticker absolute right-0 top-0 flex flex-col items-end gap-2 select-none">
           <div className="manual-cta-bubble relative flex items-center gap-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-3.5 py-2 shadow-md shadow-amber-500/10">

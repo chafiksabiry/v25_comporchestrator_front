@@ -35,6 +35,7 @@ import {
 
 import Cookies from 'js-cookie';
 import { localizeText, uiLocale } from "../../utils/i18nText";
+import { OnboardingBackButton } from "./searchCompanyWizard/OnboardingBackButton";
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
@@ -189,7 +190,13 @@ const EditableField = ({
   );
 };
 
-function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | null; onBack?: () => void }) {
+function CompanyProfile({
+  companyId: propCompanyId,
+  onBack,
+}: {
+  companyId?: string | null;
+  onBack?: () => void;
+}) {
   const { t, i18n } = useTranslation();
   const lang = uiLocale(i18n.language);
   const [company, setCompany] = useState<Record<string, any>>({});
@@ -776,6 +783,11 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
     <CompanyContext.Provider value={contextValue}>
       <ErrorBoundary>
         <div className="min-h-screen bg-gray-50">
+          {onBack ? (
+            <div className="px-4 pt-4 sm:px-6">
+              <OnboardingBackButton variant="cta" onClick={onBack} />
+            </div>
+          ) : null}
           <div className="bg-white shadow-xl">
             {/* Hero Section */}
             <div className="relative h-80">
