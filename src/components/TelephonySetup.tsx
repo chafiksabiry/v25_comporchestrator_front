@@ -270,11 +270,20 @@ const TelephonySetup = ({
     checkCompletedSteps();
   }, [companyId]);
 
-  // Auto-sélection du premier gig disponible si aucun n'est sélectionné
+  // Prefer the gig just created in onboarding; otherwise first available.
   useEffect(() => {
-    if (!selectedGigId && Array.isArray(gigs) && gigs.length > 0) {
-      setSelectedGigId(gigs[0]._id);
+    if (selectedGigId || !Array.isArray(gigs) || gigs.length === 0) return;
+    let preferred: string | null = null;
+    try {
+      preferred =
+        localStorage.getItem('selectedGigId') ||
+        localStorage.getItem('gigId') ||
+        null;
+    } catch {
+      preferred = null;
     }
+    const match = preferred ? gigs.find((g) => g._id === preferred) : null;
+    setSelectedGigId(match?._id || gigs[0]._id);
   }, [gigs, selectedGigId]);
 
   // Vérifier l'éligibilité au trial gratuit 15 jours pour la company.

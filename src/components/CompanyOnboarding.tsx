@@ -980,11 +980,17 @@ const CompanyOnboarding = () => {
         }
       }
 
-      // Helper — company: profile (1) + gig (3); call-center is handled separately.
+      // Required steps per phase — never treat phases 3/4 as done by default,
+      // and never skip past telephony (step 4) after only creating a gig.
+      const phaseRequiredSteps: Record<number, number[]> = {
+        1: [1],
+        2: [3, 4],
+        3: [7, 8, 9, 10],
+        4: [11, 12, 13],
+      };
       const isPhaseFullyCompleted = (phaseId: number) => {
-        if (phaseId === 1) return completedStepsState.includes(1);
-        if (phaseId === 2) return completedStepsState.includes(3);
-        return true;
+        const required = phaseRequiredSteps[phaseId] || [];
+        return required.every((id) => completedStepsState.includes(id));
       };
 
       let validPhase = 1;
@@ -993,22 +999,11 @@ const CompanyOnboarding = () => {
         // never auto-jump to phase 4 on progress reload.
         validPhase = completedStepsState.includes(1) ? 2 : 1;
       } else {
-        // Determine valid phase based on dependencies
+        // Land on the first incomplete phase (e.g. gig done → stay on phase 2 / telephony).
         for (let pId = 1; pId <= 4; pId++) {
-          if (pId === 1) {
-            validPhase = 1;
-          } else if (isPhaseFullyCompleted(pId - 1)) {
-            validPhase = pId;
-          } else {
-            break;
-          }
+          validPhase = pId;
+          if (!isPhaseFullyCompleted(pId)) break;
         }
-
-        // Manual overrides for step completions (matching step 13 is company-only)
-        if (completedStepsState.includes(9) && validPhase < 3 && isPhaseFullyCompleted(2)) validPhase = 3;
-        if (completedStepsState.includes(10) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
-        if (completedStepsState.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
-        if (completedStepsState.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
       }
 
       setCurrentPhase(validPhase);
@@ -1346,48 +1341,14 @@ const CompanyOnboarding = () => {
       const allSteps = phases.flatMap((phase) => phase.steps);
       const step = allSteps.find((s) => s.id === stepId);
 
-      // Special handling for Knowledge Base step
-      if (stepId === 7) {
-        dispatchInsideStepGuide(stepId);
-        localStorage.setItem("activeTab", "knowledge-base");
-        window.dispatchEvent(
-          new CustomEvent("tabChange", {
-            detail: { tab: "knowledge-base" },
-          })
-        );
-        return;
-      }
-
-      // Special handling for Call Script step
-      if (stepId === 9) {
-        dispatchInsideStepGuide(stepId);
-        localStorage.setItem("activeTab", "script-generator");
-        window.dispatchEvent(
-          new CustomEvent("tabChange", {
-            detail: { tab: "script-generator" },
-          })
-        );
-        return;
-      }
-
-      // Special handling for Gig Activation step (step 12) - redirect to Approval & Publishing
-      if (stepId === 12) {
-        dispatchInsideStepGuide(stepId);
-        localStorage.setItem("activeTab", "approval-publishing");
-        window.dispatchEvent(
-          new CustomEvent("tabChange", {
-            detail: { tab: "approval-publishing" },
-          })
-        );
-        return;
-      }
-
+      // Keep incomplete onboarding inside orchestrator (never jump to dashboard tabs).
       if (stepId === 3) {
         await openGigsStepView();
         return;
       }
 
       if (step?.component) {
+        dispatchInsideStepGuide(stepId);
         if (stepId === 4) {
           setShowTelephonySetup(true);
         } else if (stepId === 7) {
@@ -1396,6 +1357,9 @@ const CompanyOnboarding = () => {
           setShowUploadContacts(true);
         } else {
           setActiveStep(stepId);
+        }
+        if (!window.location.hash.includes('/orchestrator')) {
+          window.location.hash = '#/orchestrator';
         }
       }
     } catch (error: any) {
@@ -1416,49 +1380,24 @@ const CompanyOnboarding = () => {
       const allSteps = phases.flatMap((phase) => phase.steps);
       const step = allSteps.find((s) => s.id === stepId);
 
-      if (stepId === 7) {
-        dispatchInsideStepGuide(stepId);
-        localStorage.setItem("activeTab", "knowledge-base");
-        window.dispatchEvent(
-          new CustomEvent("tabChange", {
-            detail: { tab: "knowledge-base" },
-          })
-        );
-        return;
-      }
-
-      if (stepId === 9) {
-        dispatchInsideStepGuide(stepId);
-        localStorage.setItem("activeTab", "script-generator");
-        window.dispatchEvent(
-          new CustomEvent("tabChange", {
-            detail: { tab: "script-generator" },
-          })
-        );
-        return;
-      }
-
-      if (stepId === 12) {
-        dispatchInsideStepGuide(stepId);
-        localStorage.setItem("activeTab", "approval-publishing");
-        window.dispatchEvent(
-          new CustomEvent("tabChange", {
-            detail: { tab: "approval-publishing" },
-          })
-        );
-        return;
-      }
-
       if (stepId === 3) {
         await openGigsStepView();
         return;
       }
 
       if (step?.component) {
+        dispatchInsideStepGuide(stepId);
         if (stepId === 4) {
           setShowTelephonySetup(true);
+        } else if (stepId === 7) {
+          setShowKnowledgeBase(true);
+        } else if (stepId === 5) {
+          setShowUploadContacts(true);
         } else {
           setActiveStep(stepId);
+        }
+        if (!window.location.hash.includes('/orchestrator')) {
+          window.location.hash = '#/orchestrator';
         }
       }
     } catch (error) {
@@ -1493,15 +1432,21 @@ const CompanyOnboarding = () => {
     }
   };
 
+  const phaseRequiredSteps = (phaseId: number): number[] => {
+    if (isCallCenterWorkspace()) return [];
+    if (phaseId === 1) return [1];
+    if (phaseId === 2) return [3, 4]; // gig + telephony
+    if (phaseId === 3) return [7, 8, 9, 10];
+    if (phaseId === 4) return [11, 12, 13];
+    return [];
+  };
+
   const isPhaseCompleted = (phaseId: number) => {
     // Call-center: same wizard, but no phase is mandatory.
     if (isCallCenterWorkspace()) return true;
     const phase = phases[phaseId - 1];
     if (!phase) return false;
-    // Align with backend: phase 1 = profile, phase 2 = gig only, 3–4 optional
-    if (phaseId === 1) return completedSteps.includes(1);
-    if (phaseId === 2) return completedSteps.includes(3);
-    return true;
+    return phaseRequiredSteps(phaseId).every((id) => completedSteps.includes(id));
   };
 
   const markOptionalStepsSkipped = async (phaseId: number) => {
@@ -1509,14 +1454,9 @@ const CompanyOnboarding = () => {
     const phase = phases[phaseId - 1];
     if (!phase) return;
 
-    const requiredIds = isCallCenterWorkspace()
-      ? []
-      : phaseId === 1
-        ? [1]
-        : phaseId === 2
-          ? [3]
-          : []; // nothing required in 3–4
+    const requiredIds = phaseRequiredSteps(phaseId);
 
+    // Never auto-complete required funnel steps (especially telephony).
     const toSkip = phase.steps.filter(
       (step) =>
         !step.disabled &&
@@ -1556,11 +1496,25 @@ const CompanyOnboarding = () => {
 
   const handleNextPhase = async () => {
     if (displayedPhase === 4) {
-      goToCompanyDashboard();
+      if (isPhaseCompleted(4) || isCallCenterWorkspace()) {
+        goToCompanyDashboard();
+      }
       return;
     }
 
-    // Allow skipping incomplete optional steps in the current phase
+    // Do not advance past an incomplete phase (keeps user on telephony, etc.).
+    if (!isCallCenterWorkspace() && !isPhaseCompleted(displayedPhase)) {
+      const phase = phases[displayedPhase - 1];
+      const nextIncomplete = phase?.steps.find(
+        (s) => !s.disabled && !completedSteps.includes(s.id)
+      );
+      if (nextIncomplete) {
+        void executeStartStep(nextIncomplete.id);
+      }
+      return;
+    }
+
+    // Skip only truly optional leftovers, then advance.
     await markOptionalStepsSkipped(displayedPhase);
 
     const newPhase = Math.min(4, displayedPhase + 1);
@@ -1581,7 +1535,15 @@ const CompanyOnboarding = () => {
     }
   };
 
-  const isPhaseAccessible = (_phaseId: number) => true;
+  const isPhaseAccessible = (phaseId: number) => {
+    if (isCallCenterWorkspace()) return true;
+    if (phaseId <= 1) return true;
+    // Only previous completed phases (and the current incomplete one) are open.
+    for (let p = 1; p < phaseId; p++) {
+      if (!isPhaseCompleted(p)) return false;
+    }
+    return true;
+  };
 
 
   const getStepIcon = (step: any) => {
@@ -1639,7 +1601,7 @@ const CompanyOnboarding = () => {
     [loadCompanyProgress]
   );
 
-  /** After gig create: jump straight to telephony (next funnel step). */
+  /** After gig create: open telephony inside orchestrator (do not leave onboarding). */
   const handleGigPublishSuccess = useCallback(async (gigId?: string) => {
     if (gigId) rememberCreatedGigId(gigId);
     setHasGigs(true);
@@ -1647,11 +1609,13 @@ const CompanyOnboarding = () => {
     setShowGigCreation(false);
     setShowGigDetails(false);
     setActiveStep(null);
+    setCurrentPhase(2);
+    setDisplayedPhase(2);
     setShowTelephonySetup(true);
-    // Also deep-link the dashboard telephony route (works when user
-    // created the gig from /dashboard/gigs rather than the checklist).
-    if (gigId) {
-      window.location.hash = `#/dashboard/telephony?action=buy&gigId=${encodeURIComponent(gigId)}`;
+    // Stay on orchestrator while onboarding is incomplete — dashboard
+    // telephony is only for post-onboarding /dashboard/gigs flows.
+    if (!window.location.hash.includes('/orchestrator')) {
+      window.location.hash = '#/orchestrator';
     }
     window.dispatchEvent(new CustomEvent('refreshOnboardingProgress'));
   }, []);
@@ -1800,36 +1764,33 @@ const CompanyOnboarding = () => {
       return;
     }
 
-    // Pour Knowledge Base
+    // Knowledge Base / Call Script / Telephony — stay in orchestrator
     if (stepId === 7) {
       if (allPreviousCompleted) {
-        localStorage.setItem("activeTab", "knowledge-base");
-        window.dispatchEvent(
-          new CustomEvent("tabChange", {
-            detail: { tab: "knowledge-base" },
-          })
-        );
+        setShowKnowledgeBase(true);
+        if (!window.location.hash.includes('/orchestrator')) {
+          window.location.hash = '#/orchestrator';
+        }
       }
       return;
     }
 
-    // Pour Call Script
     if (stepId === 9) {
       if (allPreviousCompleted) {
-        localStorage.setItem("activeTab", "script-generator");
-        window.dispatchEvent(
-          new CustomEvent("tabChange", {
-            detail: { tab: "script-generator" },
-          })
-        );
+        setActiveStep(9);
+        if (!window.location.hash.includes('/orchestrator')) {
+          window.location.hash = '#/orchestrator';
+        }
       }
       return;
     }
 
-    // Pour Telephony Setup
     if (stepId === 4) {
       if (allPreviousCompleted) {
         setShowTelephonySetup(true);
+        if (!window.location.hash.includes('/orchestrator')) {
+          window.location.hash = '#/orchestrator';
+        }
       }
       return;
     }
