@@ -77,6 +77,24 @@ export function getSectorById(id: string): Sector | undefined {
   return sectorsCache.find((sector) => sector._id === id);
 }
 
+export function getSectorNameById(id: string, lang?: string): string {
+  const raw = String(id || '').trim();
+  if (!raw) return '';
+  if (!/^[a-f0-9]{24}$/i.test(raw)) return raw;
+  const sector = sectorsCache.find((s) => s._id === raw);
+  if (!sector) return '';
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+  return sector.name_i18n?.[code] || sector.name_i18n?.en || sector.name || '';
+}
+
+export function getSectorOptions(lang?: string): Array<{ value: string; label: string }> {
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+  return sectorsCache.map((sector) => ({
+    value: sector._id,
+    label: sector.name_i18n?.[code] || sector.name_i18n?.en || sector.name,
+  }));
+}
+
 export function convertSectorNamesToIds(names: string[]): string[] {
   const ids: string[] = [];
   for (const name of names) {

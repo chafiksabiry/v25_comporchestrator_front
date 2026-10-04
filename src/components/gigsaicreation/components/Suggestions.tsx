@@ -47,6 +47,8 @@ import {
   convertSectorNamesToIds,
   loadSectors,
   getSectorById,
+  getSectorNameById,
+  getSectorOptions,
 } from '../lib/activitiesIndustries';
 import Logo from "./Logo";
 import { useLanguage } from '../contexts/LanguageContext';
@@ -258,6 +260,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
   const skillsLoadedRef = useRef(false);
   const [activities, setActivities] = useState<Array<{ value: string; label: string; category: string }>>([]);
   const [industries, setIndustries] = useState<Array<{ value: string; label: string }>>([]);
+  const [sectors, setSectors] = useState<Array<{ value: string; label: string }>>([]);
   const [languages, setLanguages] = useState<Array<{ value: string; label: string; code: string }>>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [industriesLoading, setIndustriesLoading] = useState(true);
@@ -471,11 +474,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         await loadIndustries();
 
+        await loadSectors();
+
         await loadLanguages();
 
         // Get options for UI components
         const activityOptions = getActivityOptions();
         const industryOptions = getIndustryOptions();
+        const sectorOptions = getSectorOptions();
         const languageOptions = getLanguageOptions();
 
 
@@ -490,6 +496,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         setActivities(activityOptions);
         setIndustries(industryOptions);
+        setSectors(sectorOptions);
         setLanguages(languageOptions);
 
 
@@ -1708,14 +1715,18 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           console.warn(`Language "${item}" not found in available options. Skipping.`);
         }
         break;
-      case "sectors":
-        // Validate that the sector is in the allowed list
-        if (predefinedOptions.sectors.includes(item)) {
-          newSuggestions.sectors = [...(newSuggestions.sectors || []), item];
+      case "sectors": {
+        const sectorId =
+          sectors.find((s) => s.label === item)?.value ||
+          convertSectorNamesToIds([item])[0] ||
+          (/^[a-f0-9]{24}$/i.test(item) ? item : '');
+        if (sectorId) {
+          newSuggestions.sectors = [...(newSuggestions.sectors || []), sectorId];
         } else {
           console.warn(`Sector "${item}" is not in the allowed list. Skipping.`);
         }
         break;
+      }
       case "destinationZones":
         // For destination zones, we store the MongoDB ObjectId
 
@@ -1813,14 +1824,18 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           console.warn(`Activity "${newValue}" not found in available options. Skipping update.`);
         }
         break;
-      case "sectors":
-        // Validate that the sector is in the allowed list
-        if (predefinedOptions.sectors.includes(newValue)) {
-          newSuggestions.sectors[index] = newValue;
+      case "sectors": {
+        const sectorId =
+          sectors.find((s) => s.label === newValue)?.value ||
+          convertSectorNamesToIds([newValue])[0] ||
+          (/^[a-f0-9]{24}$/i.test(newValue) ? newValue : '');
+        if (sectorId) {
+          newSuggestions.sectors[index] = sectorId;
         } else {
           console.warn(`Sector "${newValue}" is not in the allowed list. Skipping update.`);
         }
         break;
+      }
       case "destinationZones":
         // For destination zones, we store the MongoDB ObjectId
 
@@ -2112,16 +2127,19 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                   : t('gigCreation.suggestions.kindActivity')
                           })}
                         </option>
-                        {(section === "sectors" ? predefinedOptions.sectors : section === "industries" ? predefinedOptions.industries : predefinedOptions.activities).filter((item: string) => {
-                          // When editing, include the current item being edited
-                          if (editingIndex >= 0 && currentItems[editingIndex] === item) {
+                        {(section === "sectors"
+                          ? sectors
+                          : section === "industries"
+                            ? industries
+                            : activities
+                        ).filter((opt) => {
+                          if (editingIndex >= 0 && currentItems[editingIndex] === opt.value) {
                             return true;
                           }
-                          // Otherwise, exclude items that are already selected
-                          return !currentItems.includes(item);
-                        }).map((item: string) => (
-                          <option key={item} value={item}>
-                            {item}
+                          return !currentItems.includes(opt.value);
+                        }).map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
                           </option>
                         ))}
                       </select>
@@ -2181,6 +2199,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                               </div>
                             );
                           })()
+                          : section === "sectors"
+                            ? getSectorNameById(item) || item
+                          : section === "industries"
+                            ? getIndustryNameById(item) || item
+                          : section === "activities"
+                            ? getActivityNameById(item) || item
                           : item
                         : item?.skill || item?.language || ""}
                     </div>
@@ -2303,20 +2327,21 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           : t('gigCreation.suggestions.kindActivity')
                   })}
                 </option>
-                {(section === "sectors" ? predefinedOptions.sectors : section === "industries" ? predefinedOptions.industries : predefinedOptions.activities).filter((item: string) => {
-                  // When editing, include the current item being edited
-                  if (editingIndex >= 0 && currentItems[editingIndex] === item) {
+                {(section === "sectors"
+                  ? sectors
+                  : section === "industries"
+                    ? industries
+                    : activities
+                ).filter((opt) => {
+                  if (editingIndex >= 0 && currentItems[editingIndex] === opt.value) {
                     return true;
                   }
-                  // Otherwise, exclude items that are already selected
-                  return !currentItems.includes(item);
-                }).map(
-                  (item: string) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  )
-                )}
+                  return !currentItems.includes(opt.value);
+                }).map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
             ) : (
               <input
@@ -3633,7 +3658,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     };
 
     const selected = suggestions.sectors || [];
-    const available = predefinedOptions.sectors.filter(sector => !selected.includes(sector));
+    const available = sectors.filter((sector) => !selected.includes(sector.value));
 
     return (
       <div className="space-y-4">
@@ -3650,7 +3675,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         >
           <option value="" disabled>{t('gigCreation.suggestions.selectSector')}</option>
           {available.map(sector => (
-            <option key={sector} value={sector}>{sector}</option>
+            <option key={sector.value} value={sector.value}>{sector.label}</option>
           ))}
         </select>
 
@@ -3663,7 +3688,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   key={sector}
                   className="group relative inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-harx-700 text-white border border-harx-600 hover:bg-harx-800 transition-colors"
                 >
-                  {sector}
+                  {getSectorNameById(sector) || sector}
                   <button
                     type="button"
                     onClick={() => handleRemoveSector(sector)}
