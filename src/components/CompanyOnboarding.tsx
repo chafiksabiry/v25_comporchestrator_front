@@ -985,7 +985,7 @@ const CompanyOnboarding = () => {
       // and never skip past telephony (step 4) after only creating a gig.
       const phaseRequiredSteps: Record<number, number[]> = {
         1: [1],
-        2: [3, 4],
+        2: [3, 4, 5], // gig + telephony + contacts
         3: [7, 8, 9, 10],
         4: [11, 12, 13],
       };
@@ -1412,8 +1412,8 @@ const CompanyOnboarding = () => {
 
   const handlePhaseChange = async (newPhase: number) => {
     if (!companyId) return;
+    if (!isCallCenterWorkspace() && !isPhaseAccessible(newPhase)) return;
 
-    // Phases after Create Gig are optional — free navigation.
     setDisplayedPhase(newPhase);
 
     if (
@@ -1436,7 +1436,7 @@ const CompanyOnboarding = () => {
   const phaseRequiredSteps = (phaseId: number): number[] => {
     if (isCallCenterWorkspace()) return [];
     if (phaseId === 1) return [1];
-    if (phaseId === 2) return [3, 4]; // gig + telephony
+    if (phaseId === 2) return [3, 4, 5]; // gig + telephony + contacts
     if (phaseId === 3) return [7, 8, 9, 10];
     if (phaseId === 4) return [11, 12, 13];
     return [];
