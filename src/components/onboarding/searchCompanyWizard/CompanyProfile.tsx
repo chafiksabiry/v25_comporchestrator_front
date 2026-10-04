@@ -46,13 +46,27 @@ type CompanyProfileType = CompanyProfileData & {
   industry_i18n?: { en?: string; fr?: string };
 };
 
+type I18nBundle = { en: string; fr: string };
+
 function pickLocalized(
   plain: string | undefined,
   i18n: { en?: string; fr?: string } | undefined,
   lang: "fr" | "en"
 ): string {
-  const localized = lang === "fr" ? i18n?.fr || i18n?.en : i18n?.en || i18n?.fr;
-  return String(localized || plain || "").trim();
+  const preferred = String((lang === "fr" ? i18n?.fr : i18n?.en) || "").trim();
+  if (preferred) return preferred;
+  const other = String((lang === "fr" ? i18n?.en : i18n?.fr) || "").trim();
+  return other || String(plain || "").trim();
+}
+
+function toI18nBundle(
+  plain: string | undefined,
+  i18n: { en?: string; fr?: string } | undefined
+): I18nBundle {
+  return {
+    en: String(i18n?.en || "").trim(),
+    fr: String(i18n?.fr || "").trim(),
+  };
 }
 
 interface Props {
@@ -107,6 +121,11 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
   };
 
   const [profile, setProfile] = useState(defaultProfile);
+  const [i18nBundles, setI18nBundles] = useState({
+    overview: toI18nBundle(initialProfile.overview, initialProfile.overview_i18n),
+    mission: toI18nBundle(initialProfile.mission, initialProfile.mission_i18n),
+    industry: toI18nBundle(initialProfile.industry, initialProfile.industry_i18n),
+  });
   const [editMode, setEditMode] = useState(true);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState("");
@@ -118,6 +137,22 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+
+  // Language switch → show the matching EN/FR text from bilingual bundles.
+  useEffect(() => {
+    setEditingField(null);
+    setTempValue("");
+    setProfile((prev) => ({
+      ...prev,
+      overview:
+        pickLocalized(prev.overview, i18nBundles.overview, uiLang) || prev.overview,
+      mission:
+        pickLocalized(prev.mission, i18nBundles.mission, uiLang) || prev.mission,
+      industry:
+        pickLocalized(prev.industry, i18nBundles.industry, uiLang) || prev.industry,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-localize when UI language changes
+  }, [uiLang]);
 
   const applyLogo = (url: string) => {
     setLogoUrl(url);
@@ -200,7 +235,48 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
       (typeof data.description === "string" && data.description.trim()) ||
       (typeof data.metaDescription === "string" && data.metaDescription.trim()) ||
       `Profil généré depuis ${data.website || "le site web"}.`;
-    return { ...data, name, overview };
+
+    // Keep bilingual fields from live bundles; sync edited UI text into active language.
+    const overview_i18n = {
+      en: uiLang === "en" ? overview : i18nBundles.overview.en || overview,
+      fr: uiLang === "fr" ? overview : i18nBundles.overview.fr || overview,
+    };
+    const missionText = String(data.mission || "").trim();
+    const mission_i18n = {
+      en: uiLang === "en" ? missionText : i18nBundles.mission.en || missionText,
+      fr: uiLang === "fr" ? missionText : i18nBundles.mission.fr || missionText,
+    };
+    const industryText = String(data.industry || "").trim();
+    const industry_i18n = {
+      en: uiLang === "en" ? industryText : i18nBundles.industry.en || industryText,
+      fr: uiLang === "fr" ? industryText : i18nBundles.industry.fr || industryText,
+    };
+
+    return {
+      ...data,
+      name,
+      overview,
+      overview_i18n,
+      mission_i18n,
+      industry_i18n,
+      companyIntro_i18n: (initialProfile as any).companyIntro_i18n,
+      culture: {
+        ...data.culture,
+        values_i18n: (initialProfile as any).culture?.values_i18n,
+        benefits_i18n: (initialProfile as any).culture?.benefits_i18n,
+        workEnvironment_i18n: (initialProfile as any).culture?.workEnvironment_i18n,
+      } as any,
+      opportunities: {
+        ...data.opportunities,
+        roles_i18n: (initialProfile as any).opportunities?.roles_i18n,
+        growthPotential_i18n: (initialProfile as any).opportunities?.growthPotential_i18n,
+        training_i18n: (initialProfile as any).opportunities?.training_i18n,
+      } as any,
+      technology: {
+        ...data.technology,
+        innovation_i18n: (initialProfile as any).technology?.innovation_i18n,
+      } as any,
+    };
   };
 
   const markStepCompleted = async (companyId: string) => {
@@ -323,6 +399,12 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
 
     const fieldPath = field.split(".");
     setProfile(updateProfile(fieldPath, trimmed));
+    if (field === "overview" || field === "mission" || field === "industry") {
+      setI18nBundles((prev) => ({
+        ...prev,
+        [field]: { ...prev[field as keyof typeof prev], [uiLang]: trimmed },
+      }));
+    }
     cancelEdit();
   };
 
@@ -1013,10 +1095,10 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
               </div>
 
               <div>
-                <EditableField value={profile.name} field="name" className="text-5xl font-bold text-white mb-2 tracking-tight" />
+                <EditableField key={`name-${uiLang}`} value={profile.name} field="name" className="text-5xl font-bold text-white mb-2 tracking-tight" />
                 <div className="flex flex-wrap gap-6 text-white/90">
                   {profile.industry && (
-                    <EditableField value={profile.industry} field="industry" icon={Factory} className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/10" />
+                    <EditableField key={`industry-${uiLang}`} value={profile.industry} field="industry" icon={Factory} className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/10" />
                   )}
                   {profile.founded && (
                     <EditableField value={profile.founded} field="founded" icon={Calendar} className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm" />
@@ -1041,7 +1123,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
                   </div>
                   <div className="flex-1">
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('searchCompanyWizard.profile.companyOverview')}</h2>
-                    <EditableField value={profile.overview} field="overview" className="text-gray-700 leading-relaxed text-lg" />
+                    <EditableField key={`overview-${uiLang}`} value={profile.overview} field="overview" className="text-gray-700 leading-relaxed text-lg" />
                   </div>
                 </div>
 
@@ -1053,7 +1135,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-harx-700 mb-3">{t('searchCompanyWizard.profile.ourMission')}</h3>
-                        <EditableField value={profile.mission} field="mission" className="text-gray-700" />
+                        <EditableField key={`mission-${uiLang}`} value={profile.mission} field="mission" className="text-gray-700" />
                       </div>
                     </div>
                   </div>
