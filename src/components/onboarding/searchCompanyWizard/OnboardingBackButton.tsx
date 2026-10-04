@@ -6,15 +6,20 @@ interface Props {
   onClick: () => void;
   className?: string;
   variant?: "default" | "cta" | "icon";
+  /** Override default "back to onboarding" label */
+  label?: string;
 }
 
 export function OnboardingBackButton({
   onClick,
   className = "",
   variant = "default",
+  label: labelProp,
 }: Props) {
   const { t } = useTranslation();
-  const label = t("companyOnboarding.ui.backToOnboarding");
+  const label =
+    labelProp ||
+    t("companyOnboarding.ui.backToOnboarding", "Retour");
 
   if (variant === "icon") {
     return (
