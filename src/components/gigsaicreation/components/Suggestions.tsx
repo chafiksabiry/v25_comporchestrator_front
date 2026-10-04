@@ -965,7 +965,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         setLoading(true);
         setError(null);
         await assertCompanyHasAiTokens(1, undefined, { allowFirstGigFree: true });
-        const result = await generateGigSuggestions(props.input);
+        const uiLang = i18n.language?.startsWith('en') ? 'en' : 'fr';
+        const result = await generateGigSuggestions(props.input, uiLang);
 
         // Convert schedules from days array to individual day objects
         if (result.schedule && result.schedule.schedules) {
