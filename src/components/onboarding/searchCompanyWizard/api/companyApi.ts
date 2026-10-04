@@ -95,18 +95,7 @@ export async function publishCompanyData(companyData: unknown): Promise<{ _id: s
     Cookies.set("companyId", String(id), { expires: 30 });
     return { _id: String(id), data: response.data };
   } catch (postErr) {
-    // Legacy race: name already exists → recover via user company or re-POST after lookup.
-    const message = extractApiError(postErr);
-    if (/already exists/i.test(message) && userId) {
-      const recoveredId = await resolveCompanyIdForUser(userId);
-      if (recoveredId) {
-        const response = await updateCompanyData(recoveredId, companyData);
-        const id = response?.data?._id ?? response?.data?.id ?? recoveredId;
-        Cookies.set("companyId", String(id), { expires: 30 });
-        return { _id: String(id), data: response.data };
-      }
-    }
-    throw new Error(message);
+    throw new Error(extractApiError(postErr));
   }
 }
 
