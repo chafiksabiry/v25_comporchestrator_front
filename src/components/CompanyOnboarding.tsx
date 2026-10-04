@@ -690,7 +690,7 @@ const CompanyOnboarding = () => {
   // Define API URL with fallback
   const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
 
-  // Fetch company ID using user ID
+  // Resolve company ID (optional — new users have none yet → Step 1).
   useEffect(() => {
     const fetchCompanyId = async () => {
       if (import.meta.env.VITE_NODE_ENV === "development") {
@@ -702,9 +702,14 @@ const CompanyOnboarding = () => {
 
       if (!userId) {
         console.error("User ID not found in cookies");
-        // Rediriger vers /auth si pas d'userId
         window.location.href = "/auth";
         setIsInitialLoad(false);
+        return;
+      }
+
+      const cachedId = Cookies.get("companyId");
+      if (cachedId && /^[a-f\d]{24}$/i.test(cachedId)) {
+        setCompanyId(cachedId);
         return;
       }
 
@@ -712,21 +717,19 @@ const CompanyOnboarding = () => {
         const response = await axios.get<CompanyResponse>(
           `${API_BASE_URL}/companies/user/${userId}`
         );
-        if (response.data.success && response.data.data) {
+        const found = response.data?.success && response.data?.data;
+        if (found && response.data.data?._id) {
           setCompanyId(response.data.data._id);
-          // Store company ID in cookie for backward compatibility
           Cookies.set("companyId", response.data.data._id);
-          
-        } else {
-          console.error("No company data found for user:", userId);
-          // Ne pas rediriger immédiatement, afficher un message d'erreur à la place
-          // Allow Step 1 (Create Company Profile) to start even without existing companyId
-          setIsInitialLoad(false);
+          return;
         }
-      } catch (error) {
-        console.error("Error fetching company ID:", error);
-        // Ne pas rediriger immédiatement, afficher un message d'erreur à la place
-        // Allow onboarding UI to render so user can create first company profile (step 1)
+        // No company yet — expected during onboarding step 1.
+        setIsInitialLoad(false);
+      } catch (error: any) {
+        // 404 / network: still allow creating the first company profile.
+        if (error?.response?.status !== 404) {
+          console.warn("Company lookup skipped:", error?.message || error);
+        }
         setIsInitialLoad(false);
       }
     };
