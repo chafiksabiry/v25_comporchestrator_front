@@ -497,7 +497,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
 
   const handleGenerateSuggestions = async () => {
     try {
-      await assertCompanyHasAiTokens(1);
+      await assertCompanyHasAiTokens(1, undefined, { allowFirstGigFree: true });
     } catch (err: any) {
       window.alert(
         err?.code === 'insufficient_tokens'
