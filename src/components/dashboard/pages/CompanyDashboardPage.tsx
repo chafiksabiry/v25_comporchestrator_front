@@ -81,11 +81,11 @@ export function CompanyDashboardPage() {
         const res = await axios.get(`${base}/companies/user/${userId}`);
         const data = unwrapPayload(res);
         if (data && typeof data === 'object') resolved = data;
+        // null / empty = no company yet — not an error (onboarding).
       } catch (e: any) {
-        const msg = e?.response?.status === 404
-          ? 'Aucune entreprise trouvée pour ce compte.'
-          : 'Impossible de charger les données entreprise.';
-        setLoadError(msg);
+        if (e?.response?.status !== 404) {
+          setLoadError('Impossible de charger les données entreprise.');
+        }
       }
     }
 
