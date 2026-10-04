@@ -24,6 +24,17 @@ export interface Industry {
   updatedAt: string;
 }
 
+export interface Sector {
+  _id: string;
+  name: string;
+  description?: string;
+  name_i18n?: { en?: string; fr?: string };
+  description_i18n?: { en?: string; fr?: string };
+  __v?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Language {
   _id: string;
   code: string;

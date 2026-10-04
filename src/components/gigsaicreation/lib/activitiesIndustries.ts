@@ -1,14 +1,16 @@
-import { fetchActivities, fetchIndustries, fetchLanguages, fetchSoftSkills, fetchTechnicalSkills, fetchProfessionalSkills } from './api';
-import type { Activity, Industry, Language } from '../types';
+import { fetchActivities, fetchIndustries, fetchLanguages, fetchSectors, fetchSoftSkills, fetchTechnicalSkills, fetchProfessionalSkills } from './api';
+import type { Activity, Industry, Language, Sector } from '../types';
 
 let activitiesCache: Activity[] = [];
 let industriesCache: Industry[] = [];
+let sectorsCache: Sector[] = [];
 let languagesCache: Language[] = [];
 let softSkillsCache: Array<{ _id: string, name: string, description: string, category: string }> = [];
 let technicalSkillsCache: Array<{ _id: string, name: string, description: string, category: string }> = [];
 let professionalSkillsCache: Array<{ _id: string, name: string, description: string, category: string }> = [];
 let isActivitiesLoaded = false;
 let isIndustriesLoaded = false;
+let isSectorsLoaded = false;
 let isLanguagesLoaded = false;
 let isSoftSkillsLoaded = false;
 let isTechnicalSkillsLoaded = false;
@@ -50,6 +52,54 @@ export async function loadIndustries(): Promise<Industry[]> {
     console.error('❌ Error loading industries:', error);
     return [];
   }
+}
+
+export async function loadSectors(): Promise<Sector[]> {
+  if (isSectorsLoaded && sectorsCache.length > 0) {
+    return sectorsCache;
+  }
+  try {
+    const { data, error } = await fetchSectors();
+    if (error) {
+      console.error('❌ Error loading sectors:', error);
+      return [];
+    }
+    sectorsCache = data || [];
+    isSectorsLoaded = true;
+    return sectorsCache;
+  } catch (error) {
+    console.error('❌ Error loading sectors:', error);
+    return [];
+  }
+}
+
+export function getSectorById(id: string): Sector | undefined {
+  return sectorsCache.find((sector) => sector._id === id);
+}
+
+export function convertSectorNamesToIds(names: string[]): string[] {
+  const ids: string[] = [];
+  for (const name of names) {
+    const raw = String(name || '').trim();
+    if (!raw) continue;
+    if (/^[a-f0-9]{24}$/i.test(raw)) {
+      ids.push(raw);
+      continue;
+    }
+    const lower = raw.toLowerCase();
+    const sector = sectorsCache.find(
+      (s) =>
+        s.name?.toLowerCase() === lower ||
+        s.name_i18n?.en?.toLowerCase() === lower ||
+        s.name_i18n?.fr?.toLowerCase() === lower
+    );
+    if (sector) {
+      ids.push(sector._id);
+    } else {
+      console.warn(`Sector "${raw}" not found in cache`);
+    }
+  }
+  return ids;
 }
 
 export async function loadLanguages(): Promise<Language[]> {
