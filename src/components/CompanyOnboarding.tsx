@@ -36,6 +36,7 @@ import ZohoService from "../services/zohoService";
 import PrompAI from "./gigsaicreation/components/PrompAI";
 import CallCenterCreateProject from "./onboarding/CallCenterCreateProject";
 import { rememberCreatedGigId } from "../services/gigSetupSync";
+import { clearStaleCompanyClientState } from "../utils/companyClientState";
 import { useTranslation } from "react-i18next";
 import StepGuideModal, { type StepGuideVariant } from "./onboarding/StepGuideModal";
 import {
@@ -692,6 +693,16 @@ const CompanyOnboarding = () => {
 
   // Resolve company ID (optional — new users have none yet → Step 1).
   useEffect(() => {
+    const resetToFreshOnboarding = () => {
+      clearStaleCompanyClientState();
+      setCompanyId(null);
+      setCurrentPhase(1);
+      setDisplayedPhase(1);
+      setCompletedSteps([]);
+      setStepStatuses({});
+      setIsInitialLoad(false);
+    };
+
     const fetchCompanyId = async () => {
       if (import.meta.env.VITE_NODE_ENV === "development") {
         const devCompanyId = "6830839c641398dc582eb897";
@@ -709,8 +720,14 @@ const CompanyOnboarding = () => {
 
       const cachedId = Cookies.get("companyId");
       if (cachedId && /^[a-f\d]{24}$/i.test(cachedId)) {
-        setCompanyId(cachedId);
-        return;
+        try {
+          await axios.get(`${API_BASE_URL}/companies/${cachedId}/details`);
+          setCompanyId(cachedId);
+          return;
+        } catch {
+          // Cookie points to a deleted company — continue with user lookup.
+          clearStaleCompanyClientState();
+        }
       }
 
       try {
@@ -724,13 +741,13 @@ const CompanyOnboarding = () => {
           return;
         }
         // No company yet — expected during onboarding step 1.
-        setIsInitialLoad(false);
+        resetToFreshOnboarding();
       } catch (error: any) {
         // 404 / network: still allow creating the first company profile.
         if (error?.response?.status !== 404) {
           console.warn("Company lookup skipped:", error?.message || error);
         }
-        setIsInitialLoad(false);
+        resetToFreshOnboarding();
       }
     };
 
@@ -1019,10 +1036,36 @@ const CompanyOnboarding = () => {
       Cookies.set("companyOnboardingProgress", JSON.stringify(progressPayload));
       localStorage.setItem("companyOnboardingProgress", JSON.stringify(progressPayload));
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Error loading company progress:", error);
-      // Keep the current UI state on transient API errors.
-      // Resetting to phase 1 causes false "locked" screens until manual refresh.
+      const status = error?.response?.status;
+      if (status === 404) {
+        // Company and/or onboarding progress deleted in DB while cookie still set.
+        try {
+          await axios.get(
+            `${import.meta.env.VITE_COMPANY_API_URL}/companies/${effectiveCompanyId}/details`
+          );
+          // Company exists but progress missing — start clean phase 1 UI until publish re-inits.
+          setCurrentPhase(1);
+          setDisplayedPhase(1);
+          setCompletedSteps([]);
+          setStepStatuses({});
+          Cookies.remove("companyOnboardingProgress");
+          try {
+            localStorage.removeItem("companyOnboardingProgress");
+          } catch {
+            /* ignore */
+          }
+        } catch {
+          clearStaleCompanyClientState();
+          setCompanyId(null);
+          setCurrentPhase(1);
+          setDisplayedPhase(1);
+          setCompletedSteps([]);
+          setStepStatuses({});
+        }
+      }
+      // Keep current UI on other transient API errors.
     } finally {
       setIsInitialLoad(false);
     }

@@ -1,5 +1,6 @@
 import axios from "axios";
 import Cookies from "js-cookie";
+import { clearStaleCompanyClientState } from "../../../../utils/companyClientState";
 
 const apiUrl = () => import.meta.env.VITE_COMPANY_API_URL;
 
@@ -78,11 +79,18 @@ export async function publishCompanyData(companyData: unknown): Promise<{ _id: s
       Cookies.set("companyId", String(id), { expires: 30 });
       return { _id: String(id), data: response.data };
     } catch (putErr) {
-      const message = extractApiError(putErr);
-      throw new Error(
-        message ||
-          "Impossible de mettre à jour la société existante. Vérifiez les champs obligatoires (nom, description)."
-      );
+      const status = axios.isAxiosError(putErr) ? putErr.response?.status : undefined;
+      // Cookie pointed at a deleted company → create fresh instead of failing.
+      if (status === 404) {
+        clearStaleCompanyClientState();
+        existingId = undefined;
+      } else {
+        const message = extractApiError(putErr);
+        throw new Error(
+          message ||
+            "Impossible de mettre à jour la société existante. Vérifiez les champs obligatoires (nom, description)."
+        );
+      }
     }
   }
 
