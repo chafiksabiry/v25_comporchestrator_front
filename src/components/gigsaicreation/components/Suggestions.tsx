@@ -964,7 +964,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         lastProcessedInputRef.current = props.input.trim();
         setLoading(true);
         setError(null);
-        await assertCompanyHasAiTokens(1);
+        await assertCompanyHasAiTokens(1, undefined, { allowFirstGigFree: true });
         const result = await generateGigSuggestions(props.input);
 
         // Convert schedules from days array to individual day objects
