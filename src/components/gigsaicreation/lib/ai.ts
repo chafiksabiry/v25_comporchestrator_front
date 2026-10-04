@@ -152,12 +152,16 @@ export async function transcribeGigAudio(
   return transcript;
 }
 
-export async function generateGigSuggestions(description: string): Promise<GigSuggestion> {
+export async function generateGigSuggestions(
+  description: string,
+  language: 'fr' | 'en' = 'fr'
+): Promise<GigSuggestion> {
   if (!description) {
     throw new Error('Description is required');
   }
 
-  // PRODUCT: gig AI draft (Review & Refine) must NOT charge company AI tokens.
+  // PRODUCT: first gig AI draft is free (backend). From the 2nd gig → tokens required.
+  // Narrative fields are bilingual FR+EN (*_i18n); plain fields follow UI language.
 
   // Si le mode mock est activé, utiliser les données mockées
   if (USE_MOCK_DATA) {
@@ -175,6 +179,7 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       body: JSON.stringify({
         description,
         companyId: companyId || undefined,
+        language,
       })
     });
 
@@ -209,7 +214,9 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
 
     const transformedData = {
       jobTitles: data.jobTitles || [],
+      jobTitles_i18n: data.jobTitles_i18n || undefined,
       jobDescription: data.jobDescription || '',
+      jobDescription_i18n: data.jobDescription_i18n || undefined,
       category: data.category || '',
       destination_zone_meta: data.destination_zone_meta,
       activities: data.activities || [],
@@ -256,10 +263,14 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       },
 
       // Missing fields required by GigSuggestion interface
-      title: data.jobTitles?.[0] || '',
-      description: data.jobDescription || '',
+      title: data.title || data.jobTitles?.[0] || '',
+      title_i18n: data.title_i18n || undefined,
+      description: data.description || data.jobDescription || '',
+      description_i18n: data.description_i18n || data.jobDescription_i18n || undefined,
       highlights: asTextList(data.highlights, data.keyPoints, data.key_points, data.pointsCles),
+      highlights_i18n: data.highlights_i18n || undefined,
       deliverables: asTextList(data.deliverables, data.livrables),
+      deliverables_i18n: data.deliverables_i18n || undefined,
       requirements: { essential: [], preferred: [] },
       timeframes: [],
       benefits: [],
@@ -413,9 +424,26 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
     return out;
   };
 
+  const selectedTitle =
+    generatedData.selectedJobTitle || generatedData.jobTitles?.[0] || '';
+  const titleI18n = generatedData.title_i18n || {
+    en: generatedData.jobTitles_i18n?.en?.[0] || selectedTitle,
+    fr: generatedData.jobTitles_i18n?.fr?.[0] || selectedTitle,
+  };
+  const description =
+    generatedData.description || generatedData.jobDescription || '';
+  const descriptionI18n =
+    generatedData.description_i18n ||
+    generatedData.jobDescription_i18n || {
+      en: description,
+      fr: description,
+    };
+
   return {
-    title: generatedData.selectedJobTitle || generatedData.jobTitles?.[0] || '',
-    description: generatedData.description || generatedData.jobDescription || '',
+    title: selectedTitle,
+    title_i18n: titleI18n,
+    description,
+    description_i18n: descriptionI18n,
     category: generatedData.category || generatedData.sectors?.[0] || '',
     seniority: generatedData.seniority || { level: '', yearsExperience: 0 },
     activities: normalizeRefIds(
@@ -434,7 +462,9 @@ export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> 
       generatedData.key_points,
       generatedData.pointsCles
     ),
+    highlights_i18n: generatedData.highlights_i18n,
     deliverables: asTextList(generatedData.deliverables, generatedData.livrables),
+    deliverables_i18n: generatedData.deliverables_i18n,
     sectors: asTextList(generatedData.sectors, generatedData.category),
     skills: generatedData.skills || { languages: [], soft: [], professional: [], technical: [] } as any,
     availability: {

@@ -649,14 +649,23 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       ...mappedData,
       // Use selected job title as the main title
       title: suggestions.selectedJobTitle || mappedData.title || prevData.title,
+      title_i18n: mappedData.title_i18n || suggestions.title_i18n || prevData.title_i18n,
+      description_i18n:
+        mappedData.description_i18n ||
+        suggestions.description_i18n ||
+        suggestions.jobDescription_i18n ||
+        prevData.description_i18n,
       highlights: prefer(
         mappedData.highlights,
         asTextList(suggestions.highlights, (suggestions as any).keyPoints, (suggestions as any).key_points)
       ),
+      highlights_i18n: mappedData.highlights_i18n || suggestions.highlights_i18n || prevData.highlights_i18n,
       deliverables: prefer(
         mappedData.deliverables,
         asTextList(suggestions.deliverables, (suggestions as any).livrables)
       ),
+      deliverables_i18n:
+        mappedData.deliverables_i18n || suggestions.deliverables_i18n || prevData.deliverables_i18n,
       sectors: prefer(
         mappedData.sectors,
         asTextList(suggestions.sectors, suggestions.category)

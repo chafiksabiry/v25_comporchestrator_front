@@ -204,6 +204,12 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
   const [showUniquenessPanel, setShowUniquenessPanel] = useState(false);
   const [isStepCompleted, setIsStepCompleted] = useState(false);
 
+  // Language switch → drop in-progress edits so EN/FR text from *_i18n is shown.
+  useEffect(() => {
+    setTempValues({});
+    setEditingField(null);
+  }, [lang]);
+
   const cookieCompanyId = Cookies.get('companyId');
   const companyId = propCompanyId || cookieCompanyId;
   
@@ -500,18 +506,27 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
         return obj === "" || obj === null ? undefined : obj;
       };
 
-      // Send only editable company fields to avoid backend validation errors (400)
+      // Plain fields follow active UI language; *_i18n keeps both sides.
+      const plainIndustry =
+        localizeText(company.industry_i18n, lang) || company.industry;
+      const plainOverview =
+        localizeText(company.overview_i18n, lang) ||
+        localizeText(company.companyIntro_i18n, lang) ||
+        company.overview;
+      const plainMission =
+        localizeText(company.mission_i18n, lang) || company.mission;
+
       const rawPayload = {
         userId: company.userId,
         name: company.name,
         logo: company.logo || logoUrl,
-        industry: company.industry,
+        industry: plainIndustry,
         industry_i18n: company.industry_i18n,
         founded: company.founded,
         headquarters: company.headquarters,
-        overview: company.overview,
+        overview: plainOverview,
         overview_i18n: company.overview_i18n,
-        mission: company.mission,
+        mission: plainMission,
         mission_i18n: company.mission_i18n,
         companyIntro: company.companyIntro,
         companyIntro_i18n: company.companyIntro_i18n,
@@ -886,6 +901,7 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
                     <div className="flex flex-wrap gap-6 text-white/90">
                       {localizedIndustry ? (
                         <EditableField
+                          key={`industry-${lang}`}
                           value={localizedIndustry}
                           field="industry"
                           icon={Factory}
@@ -1071,6 +1087,7 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
                           {t('searchCompanyWizard.profile.companyOverview')}
                         </h2>
                         <EditableField
+                          key={`overview-${lang}`}
                           value={localizedOverview}
                           field="overview"
                           className="text-gray-700 leading-relaxed text-lg"
@@ -1089,6 +1106,7 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
                               {t('searchCompanyWizard.profile.ourMission')}
                             </h3>
                             <EditableField
+                              key={`mission-${lang}`}
                               value={localizedMission}
                               field="mission"
                               className="text-gray-700"
