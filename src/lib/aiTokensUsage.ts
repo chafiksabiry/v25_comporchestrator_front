@@ -25,11 +25,56 @@ export async function fetchCompanyAiTokens(companyId?: string): Promise<number> 
   return typeof json?.data?.tokens === 'number' ? json.data.tokens : 0;
 }
 
-export async function assertCompanyHasAiTokens(minRequired = 1, companyId?: string): Promise<number> {
+function getGigsApiBase(): string {
+  return String(
+    import.meta.env.VITE_GIGS_API ||
+      import.meta.env.VITE_API_URL_GIGS ||
+      'https://v25gigsmanualcreationbackend-production.up.railway.app/api'
+  ).replace(/\/$/, '');
+}
+
+/** True when the company has zero gigs — first AI gig draft is free. */
+export async function isFirstGigForCompany(companyId?: string): Promise<boolean> {
+  const id = companyId || Cookies.get('companyId');
+  if (!id) return true;
+  try {
+    const res = await fetch(
+      `${getGigsApiBase()}/gigs/company/${encodeURIComponent(id)}/has-gigs`
+    );
+    if (res.ok) {
+      const json = await res.json().catch(() => ({}));
+      const hasGigs = Boolean(json?.data?.hasGigs ?? json?.hasGigs);
+      return !hasGigs;
+    }
+    // Fallback: list endpoint
+    const listRes = await fetch(
+      `${getGigsApiBase()}/gigs/company/${encodeURIComponent(id)}`
+    );
+    if (!listRes.ok) return true;
+    const listJson = await listRes.json().catch(() => ({}));
+    const rows = listJson?.data ?? listJson;
+    return !Array.isArray(rows) || rows.length === 0;
+  } catch {
+    return true;
+  }
+}
+
+export async function assertCompanyHasAiTokens(
+  minRequired = 1,
+  companyId?: string,
+  options?: { allowFirstGigFree?: boolean }
+): Promise<number> {
   const id = companyId || Cookies.get('companyId');
   if (!id) {
     throw new Error('Company introuvable pour vérifier les tokens AI.');
   }
+
+  // Gig creation: first gig AI draft does not require prepaid tokens.
+  if (options?.allowFirstGigFree) {
+    const first = await isFirstGigForCompany(id);
+    if (first) return 0;
+  }
+
   const apiBaseUrl = getOrchestratorApiBase();
   const res = await fetch(
     `${apiBaseUrl}/tokens-company/${encodeURIComponent(id)}/check?min=${Math.max(1, minRequired)}`
