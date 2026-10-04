@@ -86,7 +86,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     setError(null);
     setResults([]);
     try {
-      const data = await googleApi.search(trimmedQuery);
+      const data = await googleApi.search(trimmedQuery, uiLanguage);
       setResults(data);
     } catch (e: any) {
       setError(e?.message || t('searchCompanyWizard.errors.searchFailed'));
