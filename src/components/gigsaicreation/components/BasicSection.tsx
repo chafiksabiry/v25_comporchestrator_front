@@ -11,14 +11,16 @@ import {
   Target,
 } from 'lucide-react';
 import { GigData } from '../types';
-import { predefinedOptions } from '../lib/guidance';
 import {
   loadActivities,
   loadIndustries,
+  loadSectors,
   getActivityOptions,
   getIndustryOptions,
+  getSectorOptions,
   getActivityNameById,
   getIndustryNameById,
+  getSectorNameById,
 } from '../lib/activitiesIndustries';
 import { fetchAllCountries, Country } from '../lib/api';
 
@@ -50,6 +52,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
 
   const [activities, setActivities] = useState<Array<{ value: string; label: string; category: string }>>([]);
   const [industries, setIndustries] = useState<Array<{ value: string; label: string }>>([]);
+  const [sectors, setSectors] = useState<Array<{ value: string; label: string }>>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [loadingRefs, setLoadingRefs] = useState(true);
   const [draft, setDraft] = useState<Record<ChipField, string>>({
@@ -63,17 +66,19 @@ const BasicSection: React.FC<BasicSectionProps> = ({
     (async () => {
       try {
         setLoadingRefs(true);
-        await Promise.all([loadActivities(), loadIndustries()]);
+        await Promise.all([loadActivities(), loadIndustries(), loadSectors()]);
         const countriesData = await fetchAllCountries();
         if (cancelled) return;
         setActivities(getActivityOptions(uiLang));
         setIndustries(getIndustryOptions(uiLang));
+        setSectors(getSectorOptions(uiLang));
         setCountries(Array.isArray(countriesData) ? countriesData : []);
       } catch (err) {
         console.error('BasicSection: failed to load reference data', err);
         if (!cancelled) {
           setActivities([]);
           setIndustries([]);
+          setSectors([]);
           setCountries([]);
         }
       } finally {
@@ -265,9 +270,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
       ? [data.category]
       : []);
 
-  const availableSectors = predefinedOptions.sectors.filter(
-    (s) => !sectorValues.includes(s)
-  );
+  const availableSectors = sectors.filter((s) => !sectorValues.includes(s.value));
 
   const zoneValues = (data.destinationZones && data.destinationZones.length
     ? data.destinationZones
@@ -341,12 +344,14 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 {t('gigCreation.suggestions.sectors')}
               </label>
               <div className="flex flex-wrap gap-2 mb-3">
-                {sectorValues.map((sector, index) => (
+                {sectorValues.map((sector, index) => {
+                  const name = getSectorNameById(sector, uiLang) || sector;
+                  return (
                   <span
                     key={`sector-${index}`}
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-violet-50 text-violet-800 border border-violet-200"
                   >
-                    {sector}
+                    {name}
                     <button
                       type="button"
                       onClick={() => removeChip('sectors', index)}
@@ -355,22 +360,26 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </span>
-                ))}
+                  );
+                })}
               </div>
               <select
                 className="w-full px-4 py-2.5 border-2 border-harx-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-harx-300"
                 defaultValue=""
+                disabled={loadingRefs}
                 onChange={(e) => {
                   addSectorFromSelect(e.target.value);
                   e.target.value = '';
                 }}
               >
                 <option value="" disabled>
-                  {t('gigCreation.suggestions.selectSector')}
+                  {loadingRefs
+                    ? t('gigCreation.suggestions.loadingIndustries')
+                    : t('gigCreation.suggestions.selectSector')}
                 </option>
                 {availableSectors.map((sector) => (
-                  <option key={sector} value={sector}>
-                    {sector}
+                  <option key={sector.value} value={sector.value}>
+                    {sector.label}
                   </option>
                 ))}
               </select>

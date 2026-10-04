@@ -57,6 +57,7 @@ import {
   OnboardingNextStepButton,
   ONBOARDING_NEXT_STEP_GATE_EVENT,
 } from "./onboarding/OnboardingNextStepButton";
+import { OnboardingBackButton } from "./onboarding/searchCompanyWizard/OnboardingBackButton";
 
 // NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
 // (see useOrchestratorGuide). Do not re-mount it here, otherwise it would
@@ -1907,9 +1908,8 @@ const CompanyOnboarding = () => {
     }
   }
 
-  // NOTE: the in-content "RETOUR À L'ONBOARDING" CTA was removed because
-  // the sticky icon-only back button rendered at the App.tsx level (top-left)
-  // already provides this navigation. Keeping both caused visual duplication.
+  // Step 1 (company search/profile) and gig wizard already render their own Back.
+  const stepHasOwnBack = activeStep === 1 || showGigCreation;
 
   if (activeComponent) {
     return (
@@ -1917,6 +1917,16 @@ const CompanyOnboarding = () => {
         {orchestratorGuideLayer}
         {stepGuideLayer}
         <div className="animate-fade-in relative min-h-[50vh] pb-24">
+          {!stepHasOwnBack ? (
+            <div className="px-4 pt-4 sm:px-6 mb-2">
+              <OnboardingBackButton
+                variant="cta"
+                onClick={() => {
+                  void handleBackToOnboarding();
+                }}
+              />
+            </div>
+          ) : null}
           {activeComponent}
           {/* Button visibility rules:
               - KB: show if kbHasContent (live event) OR step 7 completed on server
