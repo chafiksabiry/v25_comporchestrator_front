@@ -1,7 +1,33 @@
 import type { Gig, GigHistory } from './types';
-import { GigData } from '../types';
+import { GigData, type Sector } from '../types';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+
+const OBJECT_ID_RE = /^[a-f0-9]{24}$/i;
+
+async function resolveSectorIdsForPayload(sectors: unknown): Promise<string[]> {
+  const list = Array.isArray(sectors) ? sectors.map((s) => String(s || '').trim()).filter(Boolean) : [];
+  if (!list.length) return [];
+  const already = list.filter((s) => OBJECT_ID_RE.test(s));
+  const names = list.filter((s) => !OBJECT_ID_RE.test(s));
+  if (!names.length) return [...new Set(already)];
+
+  const { data } = await fetchSectors();
+  const resolved = names
+    .map((name) => {
+      const lower = name.toLowerCase();
+      const found = (data || []).find(
+        (s) =>
+          s.name?.toLowerCase() === lower ||
+          s.name_i18n?.en?.toLowerCase() === lower ||
+          s.name_i18n?.fr?.toLowerCase() === lower
+      );
+      return found?._id;
+    })
+    .filter((id): id is string => Boolean(id));
+
+  return [...new Set([...already, ...resolved])];
+}
 
 const API_URL = import.meta.env.VITE_API_URL_GIGS || 'http://localhost:3000';
 
@@ -475,9 +501,11 @@ export async function updateGigData(gigId: string, gigData: GigData): Promise<{ 
 
     // Remove the schedule field and other fields that shouldn't be sent to backend
     const { schedule, time_zone, destinationZones, ...cleanGigData } = fixedGigData;
+    const resolvedSectors = await resolveSectorIdsForPayload((cleanGigData as any).sectors);
 
     const gigDataWithIds = {
       ...cleanGigData,
+      sectors: resolvedSectors,
       userId,
       companyId,
       skills: formattedSkills,
@@ -666,10 +694,13 @@ export async function saveGigData(gigData: GigData): Promise<{ data: any; error?
       }
     }
 
+    const resolvedSectors = await resolveSectorIdsForPayload(cleanGigData.sectors);
+
     const gigDataWithIds = {
       ...cleanGigData,
       userId,
       companyId,
+      sectors: resolvedSectors,
       skills: formattedSkills,
       availability: formattedAvailability,
       ...(formattedDestinationZone && { destination_zone: formattedDestinationZone }),
@@ -1061,6 +1092,24 @@ export async function fetchIndustries(): Promise<{ data: Industry[]; error?: Err
     return { data: result.data || [] };
   } catch (error) {
     console.error('Error fetching industries:', error);
+    return { data: [], error: error as Error };
+  }
+}
+
+export async function fetchSectors(): Promise<{ data: Sector[]; error?: Error }> {
+  try {
+    const response = await fetch(`${API_URL}/sectors`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const result = await response.json();
+    if (result?.success === false) {
+      throw new Error(result.message || 'Failed to fetch sectors');
+    }
+    const rows = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+    return { data: rows as Sector[] };
+  } catch (error) {
+    console.error('Error fetching sectors:', error);
     return { data: [], error: error as Error };
   }
 }
