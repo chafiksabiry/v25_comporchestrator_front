@@ -75,6 +75,19 @@ interface ApiResponse {
   data: Lead[];
 }
 
+const PREVIEW_PAGE_SIZE = 25;
+const MAX_VALIDATION_ERRORS = 40;
+
+function trimValidation(validation: any) {
+  if (!validation || typeof validation !== 'object') return validation;
+  const errors = Array.isArray(validation.errors) ? validation.errors : [];
+  return {
+    ...validation,
+    errors: errors.slice(0, MAX_VALIDATION_ERRORS),
+    errorTotal: typeof validation.errorTotal === 'number' ? validation.errorTotal : errors.length,
+  };
+}
+
 interface UploadContactsProps {
   onCancelProcessing?: () => void;
   companyId?: string | null;
@@ -458,6 +471,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
   const [showLeadsPreview, setShowLeadsPreview] = useState(true);
+  const [previewCount, setPreviewCount] = useState(PREVIEW_PAGE_SIZE);
   const [validationResults, setValidationResults] = useState<any>(null);
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
   const [editingSavedLead, setEditingSavedLead] = useState<Lead | null>(null);
@@ -707,7 +721,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       }
 
       if (savedValidationResults && !validationResults) {
-        setValidationResults(savedValidationResults);
+        setValidationResults(trimValidation(savedValidationResults));
       }
 
       dataRestoredRef.current = true;
@@ -715,28 +729,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   }, []);
 
-  // Add a protection effect that runs on every render to prevent data loss
+  // Persist a small sample once per import. Never rewrite the full list:
+  // cloning 15k leads on every render freezes the page.
   useEffect(() => {
-    // If we have parsed leads in state but they're about to be lost, save them
-    if (parsedLeads.length > 0) {
-      // Only save if data is not too large
-      const success = safeStorageSet('parsedLeads', parsedLeads);
-      if (!success) {
-        console.warn('ÔÜá´©Å Could not save parsed leads to storage - keeping in memory only');
-        // Set a flag to indicate data is only in memory
-        setParsedLeads(prev => prev.map(lead => ({ ...lead, _memoryOnly: true })));
-      }
+    if (parsedLeads.length === 0) return;
+    const success = safeStorageSet('parsedLeads', parsedLeads);
+    if (!success) {
+      setDataTooLarge(true);
     }
+  }, [parsedLeads]);
 
-    // Ensure cancelProcessing function is always available
-    if (!(window as any).cancelUploadProcessing) {
-      (window as any).cancelUploadProcessing = cancelProcessing;
-    }
-
-    // Ensure emergency cancel function is always available
-    if (!(window as any).emergencyCancelUpload) {
-      (window as any).emergencyCancelUpload = emergencyCancel;
-    }
+  useEffect(() => {
+    (window as any).cancelUploadProcessing = cancelProcessing;
+    (window as any).emergencyCancelUpload = emergencyCancel;
   });
 
   // Add a protection effect to prevent component re-mounting
@@ -941,14 +946,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
         // Show validation results
         if (result.validation) {
-          setValidationResults(result.validation);
+          setValidationResults(trimValidation(result.validation));
         }
 
+        setPreviewCount(PREVIEW_PAGE_SIZE);
         setParsedLeads(result.leads);
 
         // Store results safely - only if not too large
         const leadsStored = safeStorageSet('parsedLeads', result.leads);
-        const validationStored = safeStorageSet('validationResults', result.validation);
+        const validationStored = safeStorageSet('validationResults', trimValidation(result.validation));
 
         if (!leadsStored) {
           console.warn('ÔÜá´©Å Could not save leads to storage - data too large, keeping in memory only');
@@ -1048,6 +1054,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     // Utiliser la r├®f├®rence pour suivre l'├®tat de traitement de mani├¿re fiable
     processingRef.current = true;
 
+    let didSave = false;
     try {
       // Convert leads to API format
       const currentUserId = Cookies.get('userId');
@@ -1156,14 +1163,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
         // Les leads sont maintenant ajout├®s, on peut mettre ├á jour l'├®tat local si n├®cessaire
         // Pour l'instant, on se fie au rechargement ou ├á la r├®ponse
-        if (responseData.data && Array.isArray(responseData.data)) {
-          const savedData: any[] = responseData.data;
-          setRecentlySavedLeads(savedData);
-          setLeads(prev => [...prev, ...savedData]);
-          setFilteredLeads(prev => [...prev, ...savedData]);
-          setTotalCount(prev => prev + savedCount);
-          setSavedLeadsCount(savedCount);
-        }
+        didSave = true;
+        setSavedLeadsCount(savedCount);
+        setTotalCount((prev) => prev + savedCount);
 
         // Les leads ont ├®t├® ajout├®s, effacer les leads pars├®s
         setParsedLeads([]);
@@ -1210,6 +1212,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       processingRef.current = false;
       setShowSaveButton(true);
       setShowFileName(true);
+      if (didSave && selectedGigId) {
+        localStorage.removeItem('uploadProcessing');
+        sessionStorage.removeItem('uploadProcessing');
+        void fetchLeads(1);
+      }
 
       // Store timer so a new upload can cancel it before it wipes the new file's state
       (window as any).__leadCleanupTimer = setTimeout(() => {
@@ -2519,14 +2526,21 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         <details className="text-sm group">
                           <summary className="cursor-pointer text-harx-600 hover:text-harx-800 font-bold flex items-center transition-colors duration-300">
                             <span className="bg-harx-100 px-2 py-0.5 rounded-lg mr-2 group-hover:bg-harx-200">{t('uploadContacts.analysis.viewDetails')}</span>
-                            ({validationResults.errors.length} {t('uploadContacts.analysis.issuesIdentified')})
+                            ({validationResults.errorTotal ?? validationResults.errors.length} {t('uploadContacts.analysis.issuesIdentified')})
                           </summary>
                           <div className="mt-3 space-y-2">
-                            {validationResults.errors.map((error: string, index: number) => (
+                            {validationResults.errors.slice(0, MAX_VALIDATION_ERRORS).map((error: string, index: number) => (
                               <div key={index} className="text-red-700 bg-red-50/80 backdrop-blur-sm p-3 rounded-xl border border-red-100 text-xs font-semibold">
                                 ÔÇó {error}
                               </div>
                             ))}
+                            {(validationResults.errorTotal ?? validationResults.errors.length) > validationResults.errors.length && (
+                              <p className="text-xs font-semibold text-red-600">
+                                {t('uploadContacts.analysis.moreIssues', {
+                                  count: (validationResults.errorTotal ?? validationResults.errors.length) - validationResults.errors.length,
+                                })}
+                              </p>
+                            )}
                           </div>
                         </details>
                       </div>
@@ -2568,9 +2582,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   {showLeadsPreview && (
                     <>
                       <p className="text-sm text-gray-500 mb-3 font-medium leading-relaxed">{t('uploadContacts.preview.subtitle')}</p>
+                      <p className="text-xs font-semibold text-gray-400 mb-3">
+                        {t('uploadContacts.preview.showing', {
+                          shown: Math.min(previewCount, parsedLeads.length),
+                          total: parsedLeads.length,
+                        })}
+                      </p>
                       <div className="max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                         <div className="space-y-3">
-                          {(parsedLeads || []).map((lead: any, index: number) => lead && (
+                          {(parsedLeads || []).slice(0, previewCount).map((lead: any, index: number) => lead && (
                             <div key={lead._id || `parsed-${index}`} className="bg-gray-50/80 rounded-xl p-3 border border-gray-100 hover:border-harx-200 hover:bg-white transition-all duration-300 group">
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center space-x-2">
@@ -2739,6 +2759,17 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                           ))}
                         </div>
                       </div>
+                      {previewCount < parsedLeads.length && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewCount((count) => Math.min(count + PREVIEW_PAGE_SIZE, parsedLeads.length))}
+                          className="mt-3 w-full rounded-xl border border-harx-200 bg-harx-50 px-4 py-2 text-sm font-bold text-harx-700 hover:bg-harx-100"
+                        >
+                          {t('uploadContacts.preview.showMore', {
+                            count: Math.min(PREVIEW_PAGE_SIZE, parsedLeads.length - previewCount),
+                          })}
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
