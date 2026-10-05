@@ -1901,7 +1901,8 @@
       "verified": "Vérifiés",
       "requiringAttention": "Nécessite Attention",
       "viewDetails": "Voir les Détails",
-      "issuesIdentified": "problèmes identifiés"
+      "issuesIdentified": "problèmes identifiés",
+      "moreIssues": "et {{count}} autres"
     },
     "preview": {
       "title": "Confirmer & Éditer les Leads",
@@ -1919,7 +1920,9 @@
       "discard": "Annuler",
       "confirmChanges": "Confirmer les Changements",
       "noEmail": "Pas d'email",
-      "noPhone": "Pas de téléphone"
+      "noPhone": "Pas de téléphone",
+      "showing": "Affichage de {{shown}} sur {{total}}",
+      "showMore": "Voir {{count}} de plus"
     },
     "save": {
       "buttonText": "Sauvegarder {{count}} Contacts dans la Base de Données",

@@ -1901,7 +1901,8 @@
       "verified": "Verified",
       "requiringAttention": "Requiring Attention",
       "viewDetails": "View Details",
-      "issuesIdentified": "issues identified"
+      "issuesIdentified": "issues identified",
+      "moreIssues": "and {{count}} more"
     },
     "preview": {
       "title": "Confirm & Edit Leads",
@@ -1919,7 +1920,9 @@
       "discard": "Discard",
       "confirmChanges": "Confirm Changes",
       "noEmail": "No email",
-      "noPhone": "No phone"
+      "noPhone": "No phone",
+      "showing": "Showing {{shown}} of {{total}}",
+      "showMore": "Show {{count}} more"
     },
     "save": {
       "buttonText": "Save {{count}} Contacts to Database",
