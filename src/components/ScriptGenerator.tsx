@@ -680,7 +680,7 @@ const ScriptGenerator: React.FC = () => {
         isInteractiveRequest: true
       };
 
-      await assertCompanyHasAiTokens(1, companyId);
+      await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
       const { data } = await apiClient.post('/rag/generate-script', payload);
       const generatedStages = data?.stages || data?.data?.stages;
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
@@ -696,6 +696,7 @@ const ScriptGenerator: React.FC = () => {
             ),
             tool: 'script.generate_interactive',
             companyId,
+            skipIfFirstGigFree: true,
           }).catch(() => undefined);
         }
       } else {
@@ -762,7 +763,7 @@ const ScriptGenerator: React.FC = () => {
         currentStages: activeInteractiveStages,
       };
 
-      await assertCompanyHasAiTokens(1, companyId);
+      await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
       const { data } = await apiClient.post('/rag/generate-script', payload);
       const generatedStages = data?.stages || data?.data?.stages;
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
@@ -778,6 +779,7 @@ const ScriptGenerator: React.FC = () => {
             ),
             tool: 'script.refine_stage',
             companyId,
+            skipIfFirstGigFree: true,
           }).catch(() => undefined);
         }
       } else {
@@ -987,7 +989,7 @@ const ScriptGenerator: React.FC = () => {
           .filter((m) => m.content),
       };
 
-      await assertCompanyHasAiTokens(1, companyId);
+      await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
       const { data: body } = (await apiClient.post('/rag/generate-script', scriptPayload)) as { data: any };
       const assistantText =
         body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
@@ -1005,6 +1007,7 @@ const ScriptGenerator: React.FC = () => {
           ),
           tool: 'script.generate_chat',
           companyId,
+          skipIfFirstGigFree: true,
         }).catch(() => undefined);
       }
 

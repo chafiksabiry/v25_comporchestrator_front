@@ -9,6 +9,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import { OnboardingService } from './training/infrastructure/services/OnboardingService';
 import { markGigStepDone } from '../services/gigSetupSync';
+import DocumentViewer from './training/components/DocumentViewer/DocumentViewer';
 
 interface DocumentAnalysis {
   summary: string;
@@ -103,6 +104,11 @@ const dropdownStyles = `
 const KnowledgeBase: React.FC = () => {
   const { t } = useTranslation();
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{
+    fileUrl: string;
+    name: string;
+    fileType?: string;
+  } | null>(null);
   const [uploadGigId, setUploadGigId] = useState<string>('');
   const [isUploadGigDropdownOpen, setIsUploadGigDropdownOpen] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
@@ -1256,15 +1262,20 @@ const KnowledgeBase: React.FC = () => {
                     <div className="flex justify-between items-start gap-3 mb-2">
                       <h3 className="text-lg font-black text-gray-900 truncate tracking-tight uppercase flex-1 min-w-0 pr-2">{item.name}</h3>
                       <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                        <a
-                          href={item.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewDoc({
+                              fileUrl: item.fileUrl,
+                              name: item.name,
+                              fileType: (item as any).fileType,
+                            })
+                          }
                           className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex"
                           title="View file"
                         >
                           <Eye size={18} />
-                        </a>
+                        </button>
                         <button type="button" onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex" title="AI analysis">
                           <Brain size={18} />
                         </button>
@@ -1322,15 +1333,20 @@ const KnowledgeBase: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <a 
-                          href={item.fileUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewDoc({
+                              fileUrl: item.fileUrl,
+                              name: item.name,
+                              fileType: (item as any).fileType || item.callData?.fileType,
+                            })
+                          }
                           className="flex items-center gap-2 px-4 py-2 bg-white text-harx-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-50 border border-harx-100 transition-all shadow-sm"
                         >
                           <Eye size={14} />
                           {t('knowledgeBase.intelligenceDashboard.viewFile')}
-                        </a>
+                        </button>
                         <button onClick={() => setSelectedItem(null)} className="p-2 hover:bg-white rounded-xl transition-colors text-gray-400 hover:text-harx-500"><X size={24} /></button>
                       </div>
                     </div>
@@ -1408,15 +1424,20 @@ const KnowledgeBase: React.FC = () => {
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                         <a 
-                            href={item.fileUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="flex items-center gap-2 px-4 py-2 bg-harx-50 text-harx-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-100 transition-all"
-                          >
-                            <Eye size={14} />
-                            {t('knowledgeBase.analysisOutput.viewSourceFile')}
-                          </a>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewDoc({
+                              fileUrl: item.fileUrl,
+                              name: item.name,
+                              fileType: (item as any).fileType,
+                            })
+                          }
+                          className="flex items-center gap-2 px-4 py-2 bg-harx-50 text-harx-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-100 transition-all"
+                        >
+                          <Eye size={14} />
+                          {t('knowledgeBase.analysisOutput.viewSourceFile')}
+                        </button>
                         <button onClick={() => setSelectedDocumentForAnalysis(null)} className="text-gray-400 hover:text-harx-500 transition-colors"><X size={24} /></button>
                       </div>
                     </div>
@@ -1503,6 +1524,46 @@ const KnowledgeBase: React.FC = () => {
           </div>
         )}
       </div>
+    );
+  };
+
+  const renderPreviewModal = () => {
+    if (!previewDoc?.fileUrl) return null;
+    return createPortal(
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        onClick={() => setPreviewDoc(null)}
+        role="dialog"
+        aria-modal="true"
+        aria-label={previewDoc.name || 'Document preview'}
+      >
+        <div
+          className="bg-white rounded-[2rem] shadow-2xl w-full max-w-5xl h-[85vh] overflow-hidden flex flex-col animate-fade-in"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-5 border-b border-gray-100 flex justify-between items-center gap-3 shrink-0">
+            <h3 className="text-lg font-black text-gray-900 tracking-tight uppercase truncate">
+              {previewDoc.name || 'Document'}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setPreviewDoc(null)}
+              className="text-gray-400 hover:text-gray-600 focus:outline-none p-2 rounded-xl hover:bg-gray-50"
+              aria-label="Close"
+            >
+              <X size={22} />
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 p-2 bg-gray-50">
+            <DocumentViewer
+              fileUrl={previewDoc.fileUrl}
+              fileName={previewDoc.name}
+              mimeType={previewDoc.fileType}
+            />
+          </div>
+        </div>
+      </div>,
+      document.body
     );
   };
 
@@ -1719,6 +1780,7 @@ const KnowledgeBase: React.FC = () => {
 
       {renderContent()}
       {renderUploadModal()}
+      {renderPreviewModal()}
       <style>{dropdownStyles}</style>
       </div>
     </div>

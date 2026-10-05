@@ -312,7 +312,7 @@ export class AIService {
     metadata?: { gigId?: string; companyId?: string }
   ): Promise<DocumentAnalysis> {
     try {
-      await assertCompanyHasAiTokens(1, metadata?.companyId);
+      await assertCompanyHasAiTokens(1, metadata?.companyId, { allowFirstGigFree: true });
 
       const formData = new FormData();
       formData.append('file', file);
@@ -360,6 +360,7 @@ export class AIService {
           tool: 'training.analyze_document',
           companyId: metadata?.companyId,
           meta: { fileName: file.name },
+          skipIfFirstGigFree: true,
         }).catch((e) => console.warn('[tokens] analyzeDocument charge failed', e));
       }
 
@@ -552,7 +553,7 @@ export class AIService {
     context: string = '',
     extras?: { maxTokens?: number; purpose?: string }
   ): Promise<string> {
-    await assertCompanyHasAiTokens(1);
+    await assertCompanyHasAiTokens(1, undefined, { allowFirstGigFree: true });
     const payload: Record<string, unknown> = { message, context };
     if (extras?.maxTokens != null && Number.isFinite(extras.maxTokens)) {
       payload.maxTokens = extras.maxTokens;
@@ -574,6 +575,7 @@ export class AIService {
         usageId,
         tokensUsed: estimateTokensFromText(message, context, text),
         tool: extras?.purpose || 'training.chat',
+        skipIfFirstGigFree: true,
       }).catch((e) => console.warn('[tokens] chat charge failed', e));
     }
 
@@ -1232,7 +1234,7 @@ ${scopeJson}`;
     onChunk: (chunk: string) => void,
     options?: { gigId?: string; companyId?: string; sessionId?: string; signal?: AbortSignal }
   ): Promise<{ text: string; sessionId?: string; planSaved?: boolean; journeyId?: string }> {
-    await assertCompanyHasAiTokens(1, options?.companyId);
+    await assertCompanyHasAiTokens(1, options?.companyId, { allowFirstGigFree: true });
 
     const token = ApiClient.getToken();
     const apiUrl =
@@ -1307,6 +1309,7 @@ ${scopeJson}`;
         tool: 'training.chat_stream',
         companyId: options?.companyId,
         meta: { sessionId: sessionId || null },
+        skipIfFirstGigFree: true,
       }).catch((e) => console.warn('[tokens] chatStream charge failed', e));
     }
 

@@ -378,7 +378,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       if (isTitle) setVisionTitleGenerating(true);
       else setVisionDescriptionGenerating(true);
 
-      await assertCompanyHasAiTokens(1);
+      await assertCompanyHasAiTokens(1, undefined, { allowFirstGigFree: true });
 
       const trainingBackendUrl = getTrainingBackendUrl();
       const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
@@ -413,6 +413,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
             usageId: `suggest-vision-title-${selectedGig._id || 'gig'}-${Date.now()}`,
             tokensUsed: estimateTokensFromText(gigTitle, gigDescription, suggestedTitle),
             tool: 'training.suggest_vision_title',
+            skipIfFirstGigFree: true,
           }).catch(() => undefined);
         }
       } else {
@@ -423,6 +424,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
             usageId: `suggest-vision-desc-${selectedGig._id || 'gig'}-${Date.now()}`,
             tokensUsed: Math.max(200, estimateTokensFromText(gigTitle, gigDescription, suggestedDescription)),
             tool: 'training.suggest_vision_description',
+            skipIfFirstGigFree: true,
           }).catch(() => undefined);
         }
       }
