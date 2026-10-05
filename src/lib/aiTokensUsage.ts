@@ -33,7 +33,11 @@ function getGigsApiBase(): string {
   ).replace(/\/$/, '');
 }
 
-/** True when the company has zero gigs — first AI gig draft is free. */
+/**
+ * True while the company is still on its first gig package (0 or 1 gig).
+ * First-gig AI (draft + training vision/chat) is included in the subscription —
+ * prepaid tokens apply from the 2nd gig onward.
+ */
 export async function isFirstGigForCompany(companyId?: string): Promise<boolean> {
   const id = companyId || Cookies.get('companyId');
   if (!id) return true;
@@ -43,8 +47,13 @@ export async function isFirstGigForCompany(companyId?: string): Promise<boolean>
     );
     if (res.ok) {
       const json = await res.json().catch(() => ({}));
+      const countRaw = json?.data?.count ?? json?.count;
+      if (typeof countRaw === 'number' && Number.isFinite(countRaw)) {
+        return countRaw <= 1;
+      }
       const hasGigs = Boolean(json?.data?.hasGigs ?? json?.hasGigs);
-      return !hasGigs;
+      if (!hasGigs) return true;
+      // hasGigs without count → resolve via list
     }
     // Fallback: list endpoint
     const listRes = await fetch(
@@ -53,7 +62,8 @@ export async function isFirstGigForCompany(companyId?: string): Promise<boolean>
     if (!listRes.ok) return true;
     const listJson = await listRes.json().catch(() => ({}));
     const rows = listJson?.data ?? listJson;
-    return !Array.isArray(rows) || rows.length === 0;
+    if (!Array.isArray(rows)) return true;
+    return rows.length <= 1;
   } catch {
     return true;
   }
@@ -69,7 +79,7 @@ export async function assertCompanyHasAiTokens(
     throw new Error('Company introuvable pour vérifier les tokens AI.');
   }
 
-  // Gig creation: first gig AI draft does not require prepaid tokens.
+  // First-gig package (draft + training): AI included in subscription — no prepaid check.
   if (options?.allowFirstGigFree) {
     const first = await isFirstGigForCompany(id);
     if (first) return 0;
@@ -99,12 +109,18 @@ export async function chargeCompanyAiUsage(opts: {
   companyId?: string;
   /** Skip when backend already billed this request. */
   skipIfBackendBilled?: boolean;
+  /** Skip debit while still on the first-gig subscription package. */
+  skipIfFirstGigFree?: boolean;
 }): Promise<{ tokens: number; charged: boolean }> {
   if (opts.skipIfBackendBilled) {
     return { tokens: await fetchCompanyAiTokens(opts.companyId), charged: false };
   }
   const id = opts.companyId || Cookies.get('companyId');
   if (!id) return { tokens: 0, charged: false };
+  if (opts.skipIfFirstGigFree) {
+    const first = await isFirstGigForCompany(id);
+    if (first) return { tokens: await fetchCompanyAiTokens(id), charged: false };
+  }
   const used = Math.max(0, Math.round(Number(opts.tokensUsed) || 0));
   if (used <= 0) return { tokens: await fetchCompanyAiTokens(id), charged: false };
 
