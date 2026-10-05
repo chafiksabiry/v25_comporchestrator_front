@@ -189,7 +189,7 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
   return parsed;
 };
 
-const ScriptGenerator: React.FC = () => {
+const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { t } = useTranslation();
   // `useLocation` lets us know whether ScriptGenerator is mounted under
   // the dashboard shell (`/dashboard/script-generator`) or inside the
@@ -199,6 +199,8 @@ const ScriptGenerator: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isInDashboard = location.pathname.startsWith('/dashboard');
+  const onBackRef = useRef(onBack);
+  onBackRef.current = onBack;
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState('');
@@ -271,7 +273,7 @@ const ScriptGenerator: React.FC = () => {
   // When mounted inside the orchestrator the original behaviour is
   // preserved: dispatch a `tabChange` to return to the onboarding step.
   const handleBackToOrchestrator = () => {
-    if (isInDashboard) {
+    if (isInDashboard || onBack) {
       if (activeScriptMessage) {
         setActiveScriptMessage(null);
         return;
@@ -280,7 +282,11 @@ const ScriptGenerator: React.FC = () => {
         setSelectedGig(null);
         return;
       }
-      navigate('/dashboard/main');
+      if (isInDashboard) {
+        navigate('/dashboard/main');
+        return;
+      }
+      onBack?.();
       return;
     }
 
@@ -585,6 +591,10 @@ const ScriptGenerator: React.FC = () => {
       detail: {
         label: 'BACK TO ONBOARDING',
         action: () => {
+          if (onBackRef.current) {
+            onBackRef.current();
+            return;
+          }
           localStorage.setItem('activeTab', 'company-onboarding');
           window.dispatchEvent(
             new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })

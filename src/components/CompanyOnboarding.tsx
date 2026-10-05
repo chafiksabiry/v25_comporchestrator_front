@@ -20,7 +20,7 @@ import TelephonySetup from "./TelephonySetup";
 import SearchCompanyWizardStep from "./onboarding/searchCompanyWizard/SearchCompanyWizardStep";
 import KYCVerification from "./onboarding/KYCVerification";
 import SubscriptionPlan from "./onboarding/SubscriptionPlan";
-import CallScript from "./onboarding/CallScript";
+import ScriptGenerator from "./ScriptGenerator";
 import ReportingSetup from "./onboarding/ReportingSetup";
 import UploadContacts from "./onboarding/UploadContacts";
 import MatchHarxReps from "./onboarding/MatchHarxReps";
@@ -177,7 +177,7 @@ const BASE_ONBOARDING_PHASES: Phase[] = [
         title: "Call Script",
         description: "Define script and conversation flows",
         status: "pending",
-        component: CallScript,
+        component: ScriptGenerator,
       },
       {
         id: 10,
@@ -1920,7 +1920,7 @@ const CompanyOnboarding = () => {
   }
 
   // Step 1 (company search/profile) and gig wizard already render their own Back.
-  const stepHasOwnBack = activeStep === 1 || showGigCreation;
+  const stepHasOwnBack = activeStep === 1 || activeStep === 9 || showGigCreation;
 
   if (activeComponent) {
     return (
