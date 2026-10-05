@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Download, ExternalLink } from "lucide-react";
+import { FileText, Download } from "lucide-react";
 
 interface DocumentViewerProps {
   fileUrl: string;
@@ -46,19 +46,19 @@ export default function DocumentViewer({ fileUrl, fileName, mimeType }: Document
     }
 
     // Check file extension from URL or fileName
-    const url = fileUrl.toLowerCase();
+    const url = fileUrl.toLowerCase().split('?')[0];
     const name = fileName?.toLowerCase() || "";
 
-    if (url.endsWith(".pdf") || name.endsWith(".pdf")) {
+    if (url.endsWith(".pdf") || name.endsWith(".pdf") || url.includes(".pdf")) {
       setType("pdf");
-    } else if (url.endsWith(".doc") || url.endsWith(".docx") || name.endsWith(".doc") || name.endsWith(".docx")) {
+    } else if (url.endsWith(".doc") || url.endsWith(".docx") || name.endsWith(".doc") || name.endsWith(".docx") || url.includes(".docx") || url.includes(".doc")) {
       setType("word");
     } else if (url.endsWith(".mp4") || url.endsWith(".webm") || url.endsWith(".ogg") || name.endsWith(".mp4") || name.endsWith(".webm") || name.endsWith(".ogg")) {
       setType("video");
     } else if (url.endsWith(".jpg") || url.endsWith(".jpeg") || url.endsWith(".png") || url.endsWith(".gif") || url.endsWith(".webp") ||
       name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png") || name.endsWith(".gif") || name.endsWith(".webp")) {
       setType("image");
-    } else if (url.includes("youtube.com") || url.includes("youtu.be")) {
+    } else if (fileUrl.toLowerCase().includes("youtube.com") || fileUrl.toLowerCase().includes("youtu.be")) {
       setType("youtube");
     } else {
       setType("unknown");
@@ -123,16 +123,22 @@ export default function DocumentViewer({ fileUrl, fileName, mimeType }: Document
               <FileText className="w-16 h-16 text-blue-500 mb-4" />
               <h4 className="text-lg font-semibold text-gray-900 mb-2">{fileName || "Word Document"}</h4>
               <p className="text-gray-600 mb-4 text-center">Word document preview not available in browser</p>
-              <a
-                href={fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                download={fileName}
+              <button
+                type="button"
+                onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = fileUrl;
+                  a.download = fileName || 'document.docx';
+                  a.rel = 'noopener';
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                }}
                 className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all"
               >
                 <Download className="h-5 w-5" />
-                <span>Download & Open Document</span>
-              </a>
+                <span>Download Document</span>
+              </button>
             </div>
           ) : (
             <iframe
@@ -203,15 +209,7 @@ export default function DocumentViewer({ fileUrl, fileName, mimeType }: Document
                 <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 rounded-lg border border-gray-200">
                   <FileText className="w-16 h-16 text-red-500 mb-4" />
                   <h4 className="text-lg font-semibold text-gray-900 mb-2">Invalid YouTube URL</h4>
-                  <a
-                    href={fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all"
-                  >
-                    <ExternalLink className="h-5 w-5" />
-                    <span>Open YouTube Link</span>
-                  </a>
+                  <p className="text-gray-600 text-center">Unable to embed this video inside HARX.</p>
                 </div>
               );
             }
@@ -225,16 +223,22 @@ export default function DocumentViewer({ fileUrl, fileName, mimeType }: Document
           <FileText className="w-16 h-16 text-gray-400 mb-4" />
           <h4 className="text-lg font-semibold text-gray-900 mb-2">{fileName || "Document"}</h4>
           <p className="text-gray-600 mb-4 text-center">Format non supporté pour la prévisualisation</p>
-          <a
-            href={fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download={fileName}
+          <button
+            type="button"
+            onClick={() => {
+              const a = document.createElement('a');
+              a.href = fileUrl;
+              a.download = fileName || 'document';
+              a.rel = 'noopener';
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            }}
             className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg font-medium transition-all"
           >
             <Download className="h-5 w-5" />
             <span>Download Document</span>
-          </a>
+          </button>
         </div>
       )}
 
