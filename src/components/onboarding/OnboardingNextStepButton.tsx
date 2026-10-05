@@ -26,7 +26,7 @@ export function OnboardingNextStepButton({
       aria-live="polite"
       className="pointer-events-none"
     >
-      <div className="onboarding-next-step-card pointer-events-auto flex flex-col items-end gap-2">
+      <div className="onboarding-next-step-card pointer-events-auto flex w-max max-w-[min(100vw-2rem,20rem)] flex-col items-stretch gap-3">
 
         {/* Success alert banner */}
         {!alertDismissed && (
