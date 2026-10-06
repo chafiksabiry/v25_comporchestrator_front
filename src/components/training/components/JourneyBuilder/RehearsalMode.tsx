@@ -755,7 +755,7 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
       case 'document':
         if (content?.file && content.file.url) {
           return (
-            <div className="w-full" style={{ height: 'calc(100vh - 500px)', minHeight: '400px' }}>
+            <div className="w-full" style={{ height: 'min(560px, calc(100dvh - 280px))', minHeight: '240px' }}>
               <DocumentViewer
                 fileUrl={content.file.url}
                 fileName={content.file.name}
@@ -820,7 +820,7 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
         const videoUrl = content?.file?.url || content?.url;
         if (videoUrl) {
           return (
-            <div className="w-full" style={{ height: 'calc(100vh - 500px)', minHeight: '400px' }}>
+            <div className="w-full" style={{ height: 'min(560px, calc(100dvh - 280px))', minHeight: '240px' }}>
               <DocumentViewer
                 fileUrl={videoUrl}
                 fileName={content?.file?.name}
@@ -840,7 +840,7 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
         const youtubeUrl = content?.youtubeUrl || content?.url || content?.file?.url;
         if (youtubeUrl) {
           return (
-            <div className="w-full" style={{ height: 'calc(100vh - 500px)', minHeight: '400px' }}>
+            <div className="w-full" style={{ height: 'min(560px, calc(100dvh - 280px))', minHeight: '240px' }}>
               <DocumentViewer
                 fileUrl={youtubeUrl}
                 fileName={content?.file?.name}
@@ -906,7 +906,7 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
   };
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-indigo-50 to-purple-50">
+    <div className="harx-training-step min-h-full bg-gradient-to-br from-indigo-50 to-purple-50">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -975,7 +975,7 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Left Sidebar - Section Navigation */}
             <div className="lg:col-span-3">
-              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sticky top-4 max-h-[min(70dvh,calc(100dvh-8rem))] overflow-y-auto">
                 {/* Module Navigation */}
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-3">

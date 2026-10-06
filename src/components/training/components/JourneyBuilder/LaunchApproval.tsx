@@ -487,7 +487,7 @@ export default function LaunchApproval({
   };
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-green-50 to-emerald-50">
+    <div className="harx-training-step min-h-full bg-gradient-to-br from-green-50 to-emerald-50">
       <div className="container mx-auto px-4 py-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}

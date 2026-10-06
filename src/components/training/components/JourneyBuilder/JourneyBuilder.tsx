@@ -10,6 +10,7 @@ import { TrainingMethodology } from '../../types/methodology';
 import { DraftService } from '../../infrastructure/services/DraftService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { scrollJourneyMainToTop } from './journeyScroll';
+import '../../training-layout.css';
 
 interface JourneyBuilderProps {
   onComplete: (journey: TrainingJourney, modules: TrainingModule[], enrolledReps: Rep[]) => void;
@@ -425,6 +426,7 @@ export default function JourneyBuilder({
       ref={mainScrollRef}
       data-journey-main-scroll
       {...(documentScroll ? { 'data-journey-document-scroll': '' } : {})}
+      className="harx-training-page"
       style={
         documentScroll
           ? {
@@ -432,6 +434,7 @@ export default function JourneyBuilder({
               flexDirection: 'column',
               flex: 1,
               width: '100%',
+              minWidth: 0,
               minHeight: '100%',
               height: '100%',
               overflow: 'visible',
@@ -440,9 +443,10 @@ export default function JourneyBuilder({
               display: 'flex',
               flexDirection: 'column',
               flex: 1,
+              minWidth: 0,
               minHeight: 0,
               height: '100%',
-              overflow: currentStep === 0 ? 'hidden' : 'auto',
+              overflow: 'auto',
             }
       }
     >

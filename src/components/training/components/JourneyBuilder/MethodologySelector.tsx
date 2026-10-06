@@ -141,126 +141,124 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
   ];
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col bg-white">
-      <div className="flex min-h-0 flex-1 flex-col px-5 pt-3 pb-4 md:px-7">
-        <div className="mx-auto flex w-full max-w-5xl min-h-0 flex-1 flex-col">
-          <div className="mb-3 shrink-0">
-            {onBack && !hideBackButton && (
-              <button
-                type="button"
-                onClick={onBack}
-                className="mb-2 inline-flex items-center gap-1.5 rounded-lg border border-harx-200 px-2.5 py-1.5 text-xs font-bold text-harx-600 transition-all hover:border-harx-300 hover:bg-harx-50/60"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                {t('trainingMethodology.back')}
-              </button>
-            )}
-            <div className="text-center">
-              <h1 className="mb-1 flex items-center justify-center gap-2 text-[17px] font-extrabold tracking-tight text-gray-900 md:text-lg">
-                <Brain className="h-[18px] w-[18px] shrink-0 text-harx-500" />
-                {t('trainingMethodology.title')}
-              </h1>
-              <p className="mx-auto max-w-2xl text-xs leading-snug text-gray-500">
-                {t('trainingMethodology.subtitle')}
-              </p>
-            </div>
+    <div className="harx-training-page w-full min-w-0 bg-white">
+      <div className="mx-auto flex w-full min-w-0 max-w-[1120px] flex-col gap-3 px-1 py-1 sm:px-2">
+        <div>
+          {onBack && !hideBackButton && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="mb-2 inline-flex items-center gap-1.5 rounded-lg border border-harx-200 px-2.5 py-1.5 text-xs font-bold text-harx-600 transition-all hover:border-harx-300 hover:bg-harx-50/60"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              {t('trainingMethodology.back')}
+            </button>
+          )}
+          <div className="text-center">
+            <h1 className="mb-1 flex flex-wrap items-center justify-center gap-2 text-base font-extrabold tracking-tight text-gray-900 sm:text-lg">
+              <Brain className="h-[18px] w-[18px] shrink-0 text-harx-500" />
+              {t('trainingMethodology.title')}
+            </h1>
+            <p className="mx-auto max-w-3xl text-xs leading-relaxed text-gray-500 sm:text-sm">
+              {t('trainingMethodology.subtitle')}
+            </p>
           </div>
+        </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto pb-1">
-            <div className="mb-3 rounded-xl border border-harx-100/80 bg-harx-50/35 p-3">
-              <h2 className="mb-2 text-center text-xs font-bold uppercase tracking-wide text-gray-800">
-                {t('trainingMethodology.includesTitle')}
-              </h2>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-                {featureItems.map(({ id, Icon, label }) => (
-                  <div
-                    key={id}
-                    className="flex flex-col items-center justify-center rounded-lg border border-harx-100/70 bg-white px-1.5 py-2 text-center shadow-sm"
-                  >
-                    <Icon className="mb-1 h-4 w-4 text-harx-500" />
-                    <h3 className="text-[10px] font-semibold leading-tight text-gray-800">{label}</h3>
-                  </div>
-                ))}
+        <div className="rounded-xl border border-harx-100/80 bg-harx-50/35 p-2 sm:p-3">
+          <h2 className="mb-2 text-center text-[11px] font-bold uppercase tracking-wide text-gray-800">
+            {t('trainingMethodology.includesTitle')}
+          </h2>
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {featureItems.map(({ id, Icon, label }) => (
+              <div
+                key={id}
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-harx-100/70 bg-white px-2.5 py-1 text-left shadow-sm"
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0 text-harx-500" />
+                <span className="text-[11px] font-semibold leading-tight text-gray-800">{label}</span>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
 
-            <div className="mb-2">
-              <h2 className="mb-2 text-center text-sm font-extrabold text-gray-900">{t('trainingMethodology.selectIndustry')}</h2>
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                {industries.map((industry) => {
-                  const Icon = industry.icon;
-                  const isAvailable = industry.methodology !== null;
-                  const isSelectedSoon = selectedIndustry === industry.id;
+        <div>
+          <h2 className="mb-2 text-center text-sm font-extrabold text-gray-900">{t('trainingMethodology.selectIndustry')}</h2>
+          <div className="harx-method-grid">
+            {industries.map((industry) => {
+              const Icon = industry.icon;
+              const isAvailable = industry.methodology !== null;
+              const isSelectedSoon = selectedIndustry === industry.id;
 
-                  return (
-                    <div
-                      key={industry.id}
-                      role={isAvailable ? 'button' : undefined}
-                      tabIndex={isAvailable ? 0 : undefined}
-                      onClick={() => isAvailable && handleIndustrySelect(industry)}
-                      onKeyDown={(e) => {
-                        if (isAvailable && (e.key === 'Enter' || e.key === ' ')) {
-                          e.preventDefault();
-                          handleIndustrySelect(industry);
-                        }
-                      }}
-                      className={`rounded-xl border bg-white p-3 transition-all duration-200 ${
-                        isAvailable
-                          ? 'cursor-pointer border-gray-200 hover:border-harx-300 hover:shadow-md focus-visible:outline focus-visible:ring-2 focus-visible:ring-harx-500/25'
-                          : 'border-gray-100 opacity-[0.82]'
-                      } ${isSelectedSoon && !isAvailable ? 'ring-1 ring-harx-200/50' : ''}`}
-                    >
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <Icon className="h-5 w-5 shrink-0 text-harx-500" />
-                          <h3 className="truncate text-sm font-bold text-gray-900">{industry.name}</h3>
-                        </div>
-                        {isAvailable ? (
-                          <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
-                        ) : (
-                          <Clock className="h-4 w-4 shrink-0 text-gray-400" />
-                        )}
-                      </div>
-
-                      <p className="mb-2 line-clamp-2 text-[10px] leading-snug text-gray-500">{industry.description}</p>
-
-                      <div className="mb-2 rounded-lg border border-gray-100 bg-gray-50/80 p-2">
-                        <p className="text-[9px] leading-snug text-gray-600">
-                          <span className="font-bold text-gray-800">{t('trainingMethodology.includes')}:</span> {industry.features.join(', ')}
-                        </p>
-                      </div>
-
-                      <div className="mb-2 flex items-center justify-between px-0.5 text-[10px] text-gray-500">
-                        <div>
-                          <span className="text-gray-400">{t('trainingMethodology.duration')}: </span>
-                          <span className="font-semibold text-gray-800">{industry.duration}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">{t('trainingMethodology.cert')}: </span>
-                          <span className="font-semibold text-gray-800">{t('trainingMethodology.levels', { count: industry.certificationLevels })}</span>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={!isAvailable}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isAvailable) handleIndustrySelect(industry);
-                        }}
-                        className={`w-full rounded-lg py-2 text-xs font-bold transition-all ${
-                          isAvailable
-                            ? 'bg-gradient-harx text-white shadow-sm hover:shadow-md hover:brightness-[1.03] active:brightness-[0.98]'
-                            : 'cursor-not-allowed bg-gray-100 font-semibold text-gray-400'
-                        }`}
-                      >
-                        {isAvailable ? t('trainingMethodology.select') : t('trainingMethodology.comingSoon')}
-                      </button>
+              return (
+                <div
+                  key={industry.id}
+                  role={isAvailable ? 'button' : undefined}
+                  tabIndex={isAvailable ? 0 : undefined}
+                  onClick={() => isAvailable && handleIndustrySelect(industry)}
+                  onKeyDown={(e) => {
+                    if (isAvailable && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      handleIndustrySelect(industry);
+                    }
+                  }}
+                  className={`harx-method-card rounded-xl border bg-white p-3 transition-all duration-200 sm:p-4 ${
+                    isAvailable
+                      ? 'cursor-pointer border-gray-200 hover:border-harx-300 hover:shadow-md focus-visible:outline focus-visible:ring-2 focus-visible:ring-harx-500/25'
+                      : 'border-gray-100 opacity-[0.82]'
+                  } ${isSelectedSoon && !isAvailable ? 'ring-1 ring-harx-200/50' : ''}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-start gap-2">
+                      <Icon className="mt-0.5 h-5 w-5 shrink-0 text-harx-500" />
+                      <h3 className="text-sm font-bold leading-snug text-gray-900">{industry.name}</h3>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                    {isAvailable ? (
+                      <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                    ) : (
+                      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                    )}
+                  </div>
+
+                  <p className="text-xs leading-relaxed text-gray-500">{industry.description}</p>
+
+                  <ul className="flex flex-col gap-1">
+                    {industry.features.slice(0, 4).map((feature) => (
+                      <li key={feature} className="text-xs leading-snug text-gray-700">
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-gray-500">
+                    <div>
+                      <span className="text-gray-400">{t('trainingMethodology.duration')}: </span>
+                      <span className="font-semibold text-gray-800">{industry.duration}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">{t('trainingMethodology.cert')}: </span>
+                      <span className="font-semibold text-gray-800">{t('trainingMethodology.levels', { count: industry.certificationLevels })}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={!isAvailable}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isAvailable) handleIndustrySelect(industry);
+                    }}
+                    className={`w-full rounded-lg px-3 py-2.5 text-sm font-bold transition-all ${
+                      isAvailable
+                        ? 'bg-gradient-harx text-white shadow-sm hover:shadow-md hover:brightness-[1.03] active:brightness-[0.98]'
+                        : 'cursor-not-allowed bg-gray-100 font-semibold text-gray-400'
+                    }`}
+                  >
+                    {isAvailable ? t('trainingMethodology.select') : t('trainingMethodology.comingSoon')}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
