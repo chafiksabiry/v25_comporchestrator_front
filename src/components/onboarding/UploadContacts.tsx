@@ -53,6 +53,9 @@ interface Lead {
   Postal_Code?: string;
   City?: string;
   Date_of_Birth?: string;
+  Created_Time?: string;
+  createdAt?: string;
+  repDisposition?: string | null;
   __v?: number;
   _isPlaceholder?: boolean;
   hasBeenCalled?: boolean;
@@ -173,8 +176,31 @@ function LeadStatChip({
   );
 }
 
-const LEAD_TABLE_COL_COUNT = 7;
+const LEAD_TABLE_COL_COUNT = 9;
 const LEAD_EMPTY = '\u2014';
+
+function leadAddedDate(lead: Lead): Date | null {
+  const raw = lead.Created_Time || lead.createdAt;
+  if (raw) {
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  if (lead._id && /^[a-f0-9]{24}$/i.test(lead._id)) {
+    const seconds = Number.parseInt(lead._id.slice(0, 8), 16);
+    if (Number.isFinite(seconds)) return new Date(seconds * 1000);
+  }
+  return null;
+}
+
+function formatLeadAddedAt(lead: Lead, language: string): string {
+  const date = leadAddedDate(lead);
+  if (!date) return LEAD_EMPTY;
+  return date.toLocaleDateString(language.toLowerCase().startsWith('en') ? 'en-GB' : 'fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
 
 function formatLeadLocation(lead: Lead): string {
   const cp = lead.Postal_Code?.trim();
@@ -215,6 +241,12 @@ function LeadTableRow({
   selectTitle,
   archiveTitle,
 }: LeadTableRowProps) {
+  const { t, i18n } = useTranslation();
+  const statusKey = lead.repDisposition || 'to_call';
+  const statusLabel = i18n.exists(`calls.disp.${statusKey}`)
+    ? t(`calls.disp.${statusKey}`)
+    : (lead.Stage || t('calls.disp.to_call'));
+  const addedLabel = formatLeadAddedAt(lead, i18n.language);
   const isPlaceholder = Boolean((lead as Lead & { _isPlaceholder?: boolean })._isPlaceholder);
   const rowBorder =
     variant === 'realtime'
@@ -289,7 +321,20 @@ function LeadTableRow({
           {formatLeadLocation(lead)}
         </span>
       </td>
-      <td className={`${LEAD_ROW_CELL} rounded-r-2xl border-r px-1 ${rowBorder}`}>
+      <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+        <span className="block truncate text-xs font-medium tabular-nums text-slate-700" title={addedLabel}>
+          {addedLabel}
+        </span>
+      </td>
+      <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+        <span
+          className="inline-flex max-w-full truncate rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold leading-snug text-slate-700"
+          title={statusLabel}
+        >
+          {statusLabel}
+        </span>
+      </td>
+      <td className={`whitespace-nowrap px-1 py-2.5 align-middle border-y bg-white/80 rounded-r-2xl border-r ${rowBorder}`}>
         <div className="flex items-center justify-center gap-0.5">
           <button
             type="button"
@@ -3108,17 +3153,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         </div>
         {/* Tableau d'affichage des leads */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
-          <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar min-h-0">
-            <div className="relative w-full min-w-0 px-2 pb-2">
+          <div className="flex-1 overflow-auto custom-scrollbar min-h-0">
+            <div className="relative w-full min-w-[1080px] px-2 pb-2">
               <table className="w-full table-fixed border-separate border-spacing-y-1.5">
                 <colgroup>
-                  <col className="w-[7%]" />
+                  <col className="w-[6%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[9%]" />
                   <col className="w-[11%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[13%]" />
-                  <col className="w-[24%]" />
-                  <col className="w-[22%]" />
+                  <col className="w-[16%]" />
                   <col className="w-[12%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[10%]" />
                 </colgroup>
                 <thead className="sticky top-0 z-[50] bg-white/95 backdrop-blur-sm">
                   <tr>
@@ -3145,7 +3192,13 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                       {t('uploadContacts.list.table.email')}
                     </th>
                     <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
-                      {t('uploadContacts.list.table.location', 'Localisation')}
+                      {t('uploadContacts.list.table.location')}
+                    </th>
+                    <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                      {t('uploadContacts.list.table.addedAt')}
+                    </th>
+                    <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                      {t('uploadContacts.list.table.status')}
                     </th>
                     <th scope="col" className="px-1 py-2 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.actions')}
