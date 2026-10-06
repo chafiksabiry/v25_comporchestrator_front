@@ -33,7 +33,7 @@ import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
 import {
   markGigSteps,
-  STEP_ID_TO_FIELD,
+  type SetupStepField,
   type SetupSteps,
 } from '../../../services/gigSetupSync';
 import {
@@ -184,13 +184,25 @@ async function safeBool(promise: Promise<boolean>): Promise<boolean> {
  *  has progressed since last time, push the diff to the backend via
  *  the shared `markGigSteps` helper. Same util is used directly by
  *  each step page after a successful mutation. */
+/** Probe ids in this checklist. They are not the onboarding step ids
+ *  in `STEP_ID_TO_FIELD` (KB is 8 here and 7 in onboarding). */
+const PROBE_STEP_TO_FIELD: Record<number, SetupStepField> = {
+  4: 'telephony',
+  5: 'uploadContacts',
+  6: 'callScript',
+  8: 'knowledgeBase',
+  9: 'repOnboarding',
+  10: 'sessionPlanning',
+  12: 'gigActivation',
+};
+
 async function persistSetupSteps(
   gigId: string,
   liveFlags: Record<number, boolean>,
   storedSteps?: Partial<SetupSteps>
 ): Promise<void> {
   const diff: Partial<SetupSteps> = {};
-  for (const [stepIdStr, field] of Object.entries(STEP_ID_TO_FIELD)) {
+  for (const [stepIdStr, field] of Object.entries(PROBE_STEP_TO_FIELD)) {
     const stepId = Number(stepIdStr);
     const next = !!liveFlags[stepId];
     const prev = !!storedSteps?.[field];
@@ -242,19 +254,26 @@ async function probeGigSetup(
     ),
     safeBool(
       (async () => {
-        const params = new URLSearchParams({ gigId });
-        if (userId) params.append('userId', userId);
-        const r = await fetch(`${KB_API()}/documents?${params.toString()}`);
-        if (!r.ok) return false;
-        const j = await r.json().catch(() => null);
-        const list = Array.isArray(j?.documents)
-          ? j.documents
-          : Array.isArray(j?.data)
-          ? j.data
-          : Array.isArray(j)
-          ? j
-          : [];
-        return list.length > 0;
+        const readDocs = async (params: URLSearchParams) => {
+          const r = await fetch(`${KB_API()}/documents?${params.toString()}`);
+          if (!r.ok) return [] as unknown[];
+          const j = await r.json().catch(() => null);
+          return Array.isArray(j?.documents)
+            ? j.documents
+            : Array.isArray(j?.data)
+            ? j.data
+            : Array.isArray(j)
+            ? j
+            : [];
+        };
+        const gigParams = new URLSearchParams({ gigId });
+        if (userId) gigParams.append('userId', userId);
+        const forGig = await readDocs(gigParams);
+        if (forGig.length > 0) return true;
+        // The KB step often stores company documents without a gig id.
+        if (!userId) return false;
+        const companyDocs = await readDocs(new URLSearchParams({ userId }));
+        return companyDocs.length > 0;
       })()
     ),
     safeBool(
@@ -465,7 +484,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
       { id: 4, label: t('gigDetails.setupBanner.steps.telephony'), icon: Phone, tone: 'sky' as const },
       { id: 5, label: t('gigDetails.setupBanner.steps.uploadContacts'), icon: Users, tone: 'indigo' as const },
       { id: 6, label: t('gigDetails.setupBanner.steps.callScript'), icon: FileText, tone: 'violet' as const },
-      { id: 8, label: t('gigDetails.setupBanner.steps.knowledgeBase'), icon: BookOpen, tone: 'amber' as const },
+      { id: 8, label: t('gigDetails.setupBanner.steps.knowledgeBase'), icon: BookOpen, tone: 'amber' as const, optional: true },
       { id: 9, label: t('gigDetails.setupBanner.steps.repOnboarding'), icon: UserCheck, tone: 'rose' as const },
       { id: 10, label: t('gigDetails.setupBanner.steps.sessionPlanning'), icon: Calendar, tone: 'teal' as const },
       { id: 12, label: t('gigDetails.setupBanner.steps.gigActivation'), icon: Rocket, tone: 'emerald' as const },
@@ -641,7 +660,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
         {pendingGigs.map((gig) => {
           const status = gigStepStatus[gig._id];
           const isProbing = !status;
-          const missing = checklist.filter((s) => !(status && status[s.id]));
+          const missing = checklist.filter((s) => !s.optional && !(status && status[s.id]));
           const completedCount = checklist.length - missing.length;
           const progressPct = Math.round((completedCount / checklist.length) * 100);
           // Default = collapsed so the banner stays compact. The rep
@@ -733,7 +752,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                     const done = !!(status && status[step.id]);
                     const targetPath = getContinueTarget(step.id, gig._id);
                     const isNext = !done && step.id === nextActionableStepId;
-                    const isLocked = !done && !isNext;
+                    const isLocked = !done && !isNext && !step.optional;
                     return (
                       <div
                         key={step.id}

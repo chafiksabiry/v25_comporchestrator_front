@@ -8,7 +8,7 @@ import apiClient from '../api/knowledgeClient';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { OnboardingService } from './training/infrastructure/services/OnboardingService';
-import { markGigStepDone } from '../services/gigSetupSync';
+import { markCompanyGigsStepDone, markGigStepDone } from '../services/gigSetupSync';
 import DocumentViewer from './training/components/DocumentViewer/DocumentViewer';
 
 interface DocumentAnalysis {
@@ -308,6 +308,13 @@ const KnowledgeBase: React.FC = () => {
       setKnowledgeItems(documents);
 
       if (documents.length > 0) {
+        const gigForStep = String(gigId || selectedGigId || '').trim();
+        const companyId = Cookies.get('companyId') || '';
+        if (gigForStep) {
+          markGigStepDone(gigForStep, 'knowledgeBase', true);
+        } else if (companyId) {
+          markCompanyGigsStepDone(companyId, 'knowledgeBase', true);
+        }
         updateOnboardingProgress().catch(err => console.error('Failed auto-completion on fetch:', err));
       }
 
@@ -491,8 +498,11 @@ const KnowledgeBase: React.FC = () => {
       // Persist `setupSteps.knowledgeBase` for the targeted gig so the
       // dashboard checklist reflects progress immediately. We only mark
       // it when the user picked a specific gig (not the "all" bucket).
+      const companyId = Cookies.get('companyId') || '';
       if (uploadGigId && uploadGigId !== 'all') {
         markGigStepDone(uploadGigId, 'knowledgeBase', true);
+      } else if (companyId) {
+        markCompanyGigsStepDone(companyId, 'knowledgeBase', true);
       }
 
       setUploadFiles([]);
