@@ -29,6 +29,7 @@ type TokensState = {
   tokens: number;
   purchasedTokens: number;
   consumedTokens: number;
+  lastPurchasedAt?: string | null;
 };
 
 type DisplayTokenPack = { label: string; tokens: number; priceCents: number };
@@ -39,6 +40,15 @@ type GigUsageRow = {
   requests: number;
   lastUsedAt: string | null;
   title?: string;
+};
+
+type TokenPurchaseRow = {
+  id: string;
+  tokens: number;
+  amountCents: number;
+  currency: string;
+  provider: string | null;
+  purchasedAt: string | null;
 };
 
 const defaultDisplayPacks: DisplayTokenPack[] = [
@@ -67,7 +77,7 @@ function formatEuroFromCents(cents: number): string {
 }
 
 export function TokensCompanyPanel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [tokensWallet, setTokensWallet] = useState<TokensState | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -80,9 +90,22 @@ export function TokensCompanyPanel() {
   const [displayPacks, setDisplayPacks] = useState<DisplayTokenPack[]>(defaultDisplayPacks);
   const [customRateCents, setCustomRateCents] = useState(0.02);
   const [gigUsage, setGigUsage] = useState<GigUsageRow[]>([]);
+  const [purchases, setPurchases] = useState<TokenPurchaseRow[]>([]);
 
   const companyId = Cookies.get('companyId') || '';
   const apiBaseUrl = getOrchestratorApiBase();
+  const dateLocale = i18n.language?.toLowerCase().startsWith('en') ? 'en-GB' : 'fr-FR';
+
+  const formatPurchaseDate = (value?: string | null) => {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString(dateLocale, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
 
   const fetchData = async (isSilent = false) => {
     if (!companyId) {
@@ -91,9 +114,10 @@ export function TokensCompanyPanel() {
     }
     if (!isSilent) setLoading(true);
     try {
-      const [walletRes, usageRes, gigs] = await Promise.all([
+      const [walletRes, usageRes, purchasesRes, gigs] = await Promise.all([
         fetch(`${apiBaseUrl}/tokens-company/${companyId}`),
         fetch(`${apiBaseUrl}/tokens-company/${companyId}/usage-by-gig`),
+        fetch(`${apiBaseUrl}/tokens-company/${companyId}/purchases?limit=20`),
         getGigsByCompanyId(companyId).catch(() => [] as any[]),
       ]);
 
@@ -106,12 +130,31 @@ export function TokensCompanyPanel() {
             tokens: typeof data.tokens === 'number' ? data.tokens : 0,
             purchasedTokens: typeof data.purchasedTokens === 'number' ? data.purchasedTokens : 0,
             consumedTokens: typeof data.consumedTokens === 'number' ? data.consumedTokens : 0,
+            lastPurchasedAt:
+              typeof data.lastPurchasedAt === 'string' ? data.lastPurchasedAt : null,
           };
           setTokensWallet(safe);
           window.dispatchEvent(
             new CustomEvent('balanceUpdated', { detail: { tokens: safe.tokens } })
           );
         }
+      }
+
+      if (purchasesRes.ok) {
+        const purchasesJson = await purchasesRes.json();
+        const rows: TokenPurchaseRow[] = Array.isArray(purchasesJson?.data)
+          ? purchasesJson.data.map((row: any) => ({
+              id: String(row.id || row._id || ''),
+              tokens: Number(row.tokens || 0),
+              amountCents: Number(row.amountCents || 0),
+              currency: String(row.currency || 'EUR'),
+              provider: row.provider ? String(row.provider) : null,
+              purchasedAt: row.purchasedAt || null,
+            }))
+          : [];
+        setPurchases(rows);
+      } else {
+        setPurchases([]);
       }
 
       if (usageRes.ok) {
@@ -234,6 +277,8 @@ export function TokensCompanyPanel() {
   const balance = tokensWallet?.tokens ?? 0;
   const purchased = tokensWallet?.purchasedTokens ?? 0;
   const consumed = tokensWallet?.consumedTokens ?? 0;
+  const lastPurchasedAt =
+    tokensWallet?.lastPurchasedAt || purchases[0]?.purchasedAt || null;
   const usagePct =
     purchased > 0 ? Math.min(100, Math.round((consumed / purchased) * 100)) : balance > 0 ? 0 : 100;
 
@@ -313,6 +358,13 @@ export function TokensCompanyPanel() {
                   <span className="text-2xl font-semibold tracking-tight tabular-nums text-white">
                     {formatAiTokensBalance(purchased)}
                   </span>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    {t('tokensPanel.cards.purchasedAt', "Date d'achat")}
+                    {': '}
+                    <span className="font-semibold text-slate-200 tabular-nums">
+                      {formatPurchaseDate(lastPurchasedAt)}
+                    </span>
+                  </p>
                 </div>
                 <div>
                   <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -373,6 +425,64 @@ export function TokensCompanyPanel() {
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CreditCard size={16} className="text-slate-500" />
+            <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+              {t('tokensPanel.purchases.title', 'Historique des achats')}
+            </h2>
+          </div>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+            {purchases.length}
+          </span>
+        </div>
+
+        {purchases.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center">
+            <p className="text-sm font-medium text-slate-500">
+              {t('tokensPanel.purchases.empty', 'Aucun achat de tokens enregistré pour l’instant.')}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-auto rounded-2xl border border-slate-100">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-slate-100 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <th className="px-4 py-3">{t('tokensPanel.purchases.colDate', "Date d'achat")}</th>
+                  <th className="px-4 py-3">{t('tokensPanel.purchases.colTokens', 'Tokens')}</th>
+                  <th className="px-4 py-3">{t('tokensPanel.purchases.colAmount', 'Montant')}</th>
+                  <th className="px-4 py-3 text-right">
+                    {t('tokensPanel.purchases.colProvider', 'Paiement')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 text-sm">
+                {purchases.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50/80">
+                    <td className="px-4 py-3 font-medium tabular-nums text-slate-900">
+                      {formatPurchaseDate(row.purchasedAt)}
+                    </td>
+                    <td className="px-4 py-3 font-semibold tabular-nums text-slate-900">
+                      {formatAiTokensBalance(row.tokens)}
+                      <span className="ml-1 text-[10px] font-normal text-slate-400">
+                        ({row.tokens.toLocaleString(dateLocale)})
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-slate-700">
+                      {formatEuroFromCents(row.amountCents)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      {row.provider || '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
