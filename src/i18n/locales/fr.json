@@ -3130,5 +3130,88 @@
     },
     "yearsCount_one": "{{count}} an",
     "yearsCount_other": "{{count}} ans"
+  },
+  "trainingMethodology": {
+    "back": "Retour",
+    "title": "Choisir la méthodologie de formation",
+    "subtitle": "Prospection et vente de services B2B sont disponibles pour tous les métiers. L’assurance santé reste la rubrique spécialisée.",
+    "includesTitle": "Notre méthode comprend",
+    "selectIndustry": "Choisissez une rubrique",
+    "includes": "Comprend",
+    "duration": "Durée",
+    "cert": "Certif.",
+    "levels": "{{count}} niv.",
+    "hours": "{{count}} h",
+    "select": "Choisir cette méthodologie",
+    "comingSoon": "Bientôt disponible",
+    "features": {
+      "foundational": "Connaissances de base",
+      "compliance": "Conformité",
+      "industry": "Expertise métier",
+      "operational": "Excellence opérationnelle",
+      "integration": "Intégration entreprise",
+      "development": "Développement professionnel"
+    },
+    "industries": {
+      "health": {
+        "duration": "120+ heures"
+      },
+      "auto": {
+        "name": "Vente d’assurance auto",
+        "description": "Formation à la vente d’assurance automobile : réglementation et connaissance produit.",
+        "duration": "80+ heures",
+        "features": ["Réglementation assurance", "Produits auto", "Sinistres et service client", "Techniques de vente et objections", "Systèmes informatiques", "Qualité en centre de contact"]
+      },
+      "property": {
+        "name": "Assurance habitation et dommages",
+        "description": "Formation IARD : évaluation du risque, souscription et sinistres.",
+        "duration": "90+ heures",
+        "features": ["Évaluation du risque", "Règles de souscription", "Gestion des sinistres", "Conseil client", "Conformité", "Opérations de centre de contact"]
+      },
+      "life": {
+        "name": "Vente d’assurance vie",
+        "description": "Assurance vie et bases de la planification financière.",
+        "duration": "100+ heures",
+        "features": ["Produits d’assurance vie", "Bases de la planification financière", "Notions de succession", "Produits d’investissement", "Pratiques de vente éthiques", "Excellence en centre de contact"]
+      },
+      "financial": {
+        "name": "Services financiers",
+        "description": "Formation aux services financiers : investissement, banque et conseil.",
+        "duration": "150+ heures",
+        "features": ["Produits et stratégies d’investissement", "Services bancaires et réglementation", "Conseil financier", "Gestion du risque", "Conformité et éthique", "Service client multicanal"]
+      },
+      "healthcare": {
+        "name": "Services de santé",
+        "description": "Formation au secteur de la santé : prise en charge, réglementation et qualité de service.",
+        "duration": "110+ heures",
+        "features": ["Standards de prise en charge", "Réglementation santé", "Terminologie médicale", "Excellence de service", "Systèmes informatiques", "Communication avec le patient"]
+      }
+    }
+  },
+  "trainingWizard": {
+    "steps": {
+      "gig": "Gig",
+      "vision": "Vision",
+      "team": "Équipe",
+      "methodology": "Méthodologie"
+    },
+    "welcomeTitle": "Bienvenue dans votre parcours de formation",
+    "welcomeSubtitle": "Valeurs par défaut · Conformité",
+    "visionTitle": "Définir la vision de la formation",
+    "visionSubtitle": "Nom et description — même langue que le titre et la description du gig",
+    "teamTitle": "Identifier les apprenants",
+    "teamSubtitle": "Parcours par rôle · Évaluations · Personnalisation",
+    "back": "Retour",
+    "continue": "Continuer",
+    "startBuilding": "Commencer la construction",
+    "stepOf": "Étape {{current}} sur {{total}}",
+    "generating": "Génération…",
+    "visionNext": "Vision · ensuite : Méthodologie",
+    "trainingProgram": "Programme de formation",
+    "methodology": "Méthodologie",
+    "targetRoles": "{{count}} rôles cibles",
+    "days": "{{count}} jour(s)",
+    "hours": "{{count}} heure(s)",
+    "minutes": "{{count}} minute(s)"
   }
 }
