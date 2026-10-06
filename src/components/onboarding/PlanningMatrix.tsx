@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { TimeSlot, Rep } from '../../types/scheduler';
@@ -27,6 +28,25 @@ function getDateForDayInWeek(anchor: Date, dayName: (typeof DAYS)[number]): Date
     return addDays(monday, dayIndex);
 }
 
+/** France: commercial calls are forbidden 13:00–14:00, not 12:00–13:00. */
+const FR_LUNCH_BLOCK_HOUR = 13;
+const WEEKDAYS = new Set(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+
+function minutesOf(time: string): number {
+    return timeToMinutes(time);
+}
+
+/**
+ * A morning plage ending at 12:00 and an afternoon plage starting at 13:00
+ * closes 12:00–13:00. That gap is the wrong lunch hour: open 12:00–13:00.
+ */
+function isMisplacedNoonGap(hour: number, ranges: { start: string; end: string }[]): boolean {
+    if (hour !== 12 || !ranges.length) return false;
+    const endsAtNoon = ranges.some((r) => minutesOf(r.end) === 12 * 60);
+    const startsAtOne = ranges.some((r) => minutesOf(r.start) === 13 * 60);
+    return endsAtNoon && startsAtOne;
+}
+
 /** True if [hour, hour+1) overlaps any availability range (supports multi-plages + overnight). */
 function hourOverlapsRanges(
     hour: number,
@@ -45,6 +65,7 @@ function hourOverlapsRanges(
 }
 
 export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelectDay, availabilitySchedule = [] }: PlanningMatrixProps) {
+    const { t } = useTranslation();
     const [localMatrix, setLocalMatrix] = useState<Record<string, Record<number, number>>>({});
     const [isSaving, setIsSaving] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -71,6 +92,8 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
     const isHourAvailable = useCallback(
         (dayName: string, hour: number) => {
             const ranges = availabilityByDay[String(dayName || '').toLowerCase()] || [];
+            if (WEEKDAYS.has(dayName) && hour === FR_LUNCH_BLOCK_HOUR) return false;
+            if (WEEKDAYS.has(dayName) && isMisplacedNoonGap(hour, ranges)) return true;
             return hourOverlapsRanges(hour, ranges);
         },
         [availabilityByDay]
@@ -118,12 +141,28 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
 
         DAYS.forEach(dayName => {
             matrix[dayName] = {};
+            const ranges = availabilityByDay[dayName.toLowerCase()] || [];
+            const noonWasClosedByOldLunch = WEEKDAYS.has(dayName) && isMisplacedNoonGap(12, ranges);
             hoursList.forEach(hour => {
                 const timeStr = `${hour.toString().padStart(2, '0')}:00`;
                 const slot = slots.find(s => s.date === dayName && s.startTime === timeStr && s.gigId === gigId);
                 const available = isHourAvailable(dayName, hour);
                 // Important: Use + here to ensure it's a number
-                matrix[dayName][hour] = available && slot ? (Number(slot.capacity) || 0) : 0;
+                let capacity = available && slot ? (Number(slot.capacity) || 0) : 0;
+                // Old plages closed 12:00–13:00 and kept capacity on 13:00.
+                // Show that morning capacity on 12:00 so the hole sits on 13:00–14:00.
+                if (available && capacity === 0 && hour === 12 && noonWasClosedByOldLunch) {
+                    for (let earlier = 11; earlier >= 8; earlier -= 1) {
+                        const earlierTime = `${earlier.toString().padStart(2, '0')}:00`;
+                        const earlierSlot = slots.find(s => s.date === dayName && s.startTime === earlierTime && s.gigId === gigId);
+                        const earlierCapacity = Number(earlierSlot?.capacity) || 0;
+                        if (earlierCapacity > 0) {
+                            capacity = earlierCapacity;
+                            break;
+                        }
+                    }
+                }
+                matrix[dayName][hour] = capacity;
             });
         });
 
@@ -137,7 +176,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             });
             return next;
         });
-    }, [slots, gigId, availabilitySchedule, hoursList, isHourAvailable]);
+    }, [slots, gigId, availabilitySchedule, availabilityByDay, hoursList, isHourAvailable]);
     // Removed old sync logic
 
     const handleCellChange = (dateStr: string, hour: number, value: string) => {
@@ -335,7 +374,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                         {hoursList.map(hour => (
                             <tr key={hour} className="group hover:bg-gray-50/50 transition-colors">
                                 <td className="p-1 border-b border-gray-50 text-gray-500 font-bold text-xs">
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1" title={hour === FR_LUNCH_BLOCK_HOUR ? t('sessionPlanning.legalLunch') : undefined}>
                                         <Clock className="w-3 h-3 opacity-40" />
                                         {hour}:00
                                     </div>

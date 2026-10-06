@@ -1509,7 +1509,7 @@
       "pickDaysHint": "Pick days for a group, then add several time ranges inside",
       "workingDays": "Working Days",
       "timeRanges": "Time ranges",
-      "overlapWarning": "Overlapping time ranges — adjust so plages do not overlap (e.g. 08:00–12:00 and 13:00–18:00).",
+      "overlapWarning": "Overlapping time ranges — adjust so plages do not overlap (e.g. 08:00–13:00 and 14:00–18:00).",
       "schedulePresets": {
         "nineToFive": "9-5",
         "early": "Early",
@@ -1714,7 +1714,7 @@
       "noGroupsHint": "Click “Add Schedule” to get started",
       "deleteGroup": "Delete schedule group",
       "removeRange": "Remove range",
-      "overlapWarning": "Overlapping time ranges — adjust so plages do not overlap (e.g. 08:00–12:00 and 13:00–18:00).",
+      "overlapWarning": "Overlapping time ranges — adjust so plages do not overlap (e.g. 08:00–13:00 and 14:00–18:00).",
       "dayAlreadyUsed": "{{day}} is already selected in another schedule group",
       "workingDays": "Working Days",
       "minimumHours": "Minimum Hours",
@@ -2526,7 +2526,8 @@
       "availableSlots": "Available Slots",
       "reservedSlots": "Reserved Slots",
       "gigHours": "Gig Hours"
-    }
+    },
+    "legalLunch": "Calls forbidden from 13:00 to 14:00"
   },
   "orchestratorGuide": {
     "intro": {
