@@ -39,13 +39,16 @@ export const STEP_ID_TO_FIELD: Record<number, SetupStepField> = {
   12: 'gigActivation',
 };
 
+/** Knowledge base improves answers. It is not required to activate a gig. */
+export const OPTIONAL_SETUP_STEPS: SetupStepField[] = ['knowledgeBase'];
+
 /** Sequential order in which the rep should complete each step.
  *  Used by `getNextStepRoute` to drive the "Continue →" CTA after
- *  every successful action. Activation comes last. */
+ *  every successful action. Activation comes last. Knowledge base
+ *  stays in the flow as an optional improvement, not a gate. */
 export const STEP_FIELD_ORDER: SetupStepField[] = [
   'telephony',
   'uploadContacts',
-  'knowledgeBase',
   'repOnboarding',
   'callScript',
   'sessionPlanning',

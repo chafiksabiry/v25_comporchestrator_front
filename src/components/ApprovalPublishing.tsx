@@ -64,7 +64,7 @@ interface Gig {
  *  `gigActivation` is excluded — it is set by the backend hook as a
  *  side effect of the very action this screen performs. */
 const REQUIRED_SETUP_STEPS: SetupStepField[] = SETUP_STEP_FIELDS.filter(
-  (f) => f !== 'gigActivation'
+  (f) => f !== 'gigActivation' && f !== 'knowledgeBase'
 );
 
 /** Returns the setup steps that are still pending for a given gig.
