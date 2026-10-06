@@ -233,39 +233,56 @@ type RecentCallApi = {
 
 type CallbacksStats = { today: number; week: number; appointmentsConfirmed: number };
 
-/** Map persisted / derived callOutcome → UI tag on recent-call rows. */
+/** Same ladder the reps record on a lead (`repDisposition`). */
+const REP_CALL_STATUSES: Array<{
+  key: string;
+  outcomes: string[];
+  bar: string;
+  dot: string;
+  pill: string;
+}> = [
+  { key: 'called_unreachable', outcomes: ['no_answer', 'busy'], bar: 'bg-amber-400', dot: 'bg-amber-400', pill: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { key: 'called_voicemail', outcomes: ['voicemail'], bar: 'bg-orange-400', dot: 'bg-orange-400', pill: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { key: 'called_wrong_number', outcomes: ['wrong_number'], bar: 'bg-rose-400', dot: 'bg-rose-400', pill: 'bg-rose-50 text-rose-700 border-rose-200' },
+  { key: 'called_callback', outcomes: ['callback_requested'], bar: 'bg-amber-500', dot: 'bg-amber-500', pill: 'bg-amber-50 text-amber-800 border-amber-200' },
+  { key: 'called_rdv', outcomes: ['appointment'], bar: 'bg-violet-500', dot: 'bg-violet-500', pill: 'bg-violet-50 text-violet-700 border-violet-200' },
+  { key: 'argued_rdv', outcomes: ['argued_interested'], bar: 'bg-indigo-500', dot: 'bg-indigo-500', pill: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  { key: 'argued_declined', outcomes: ['refusal', 'not_interested', 'already_equipped'], bar: 'bg-rose-500', dot: 'bg-rose-500', pill: 'bg-rose-50 text-rose-700 border-rose-200' },
+  { key: 'argued_done', outcomes: ['transaction'], bar: 'bg-emerald-500', dot: 'bg-emerald-500', pill: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+];
+
+const CALL_OUTCOME_TO_REP_STATUS: Record<string, string> = {};
+for (const row of REP_CALL_STATUSES) {
+  for (const outcome of row.outcomes) CALL_OUTCOME_TO_REP_STATUS[outcome] = row.key;
+}
+
+/** Map persisted / derived callOutcome → the rep disposition label. */
 function outcomeTag(
   outcome: string | null | undefined,
   t: TFunction
 ): RecentCall['tag'] | undefined {
   if (!outcome) return undefined;
-  const map: Record<string, RecentCall['tag']> = {
-    transaction: { label: t('opsDashboard.tags.transaction', 'transaction'), tone: 'emerald' },
-    appointment: { label: t('opsDashboard.tags.appointment', 'RDV fixé'), tone: 'violet' },
-    callback_requested: { label: t('opsDashboard.tags.callbackJ2', 'rappel'), tone: 'amber' },
-    fraud: { label: t('opsDashboard.tags.fraud', 'fraude'), tone: 'rose' },
-    voicemail: {
-      label: t('opsDashboard.statuses.voicemail', 'messagerie vocale'),
-      tone: 'slate',
-    },
-    no_answer: {
-      label: t('opsDashboard.statuses.unreachable', 'injoignable').toLowerCase(),
-      tone: 'amber',
-    },
-    busy: {
-      label: t('opsDashboard.statuses.unreachable', 'injoignable').toLowerCase(),
-      tone: 'amber',
-    },
-    wrong_number: { label: t('opsDashboard.statuses.wrongNumber', 'faux numéro'), tone: 'rose' },
-    argued_interested: { label: t('opsDashboard.results.issues.argued', 'Argumenté'), tone: 'emerald' },
-    refusal: { label: t('opsDashboard.results.issues.refusal', 'Refus'), tone: 'rose' },
-    not_interested: { label: t('opsDashboard.results.issues.notInterested', 'Pas intéressé'), tone: 'amber' },
-    already_equipped: {
-      label: t('opsDashboard.results.issues.alreadyEquipped', 'Déjà équipé'),
-      tone: 'slate',
-    },
-  };
-  return map[outcome];
+  const disposition = CALL_OUTCOME_TO_REP_STATUS[outcome];
+  if (disposition) {
+    const tone: NonNullable<RecentCall['tag']>['tone'] =
+      disposition === 'argued_done' || disposition === 'argued_rdv'
+        ? 'emerald'
+        : disposition === 'called_rdv'
+          ? 'violet'
+          : disposition === 'called_wrong_number' || disposition === 'argued_declined'
+            ? 'rose'
+            : disposition === 'called_voicemail'
+              ? 'slate'
+              : 'amber';
+    return { label: t(`calls.disp.${disposition}`), tone };
+  }
+  if (outcome === 'fraud') {
+    return { label: t('calls.statusBadges.fraud', 'Fraude'), tone: 'rose' };
+  }
+  if (outcome === 'too_short' || outcome === 'connected_no_sale') {
+    return { label: t('calls.statusBadges.connectedNoSale', 'Sans suite'), tone: 'slate' };
+  }
+  return undefined;
 }
 
 type TabId = 'overview' | 'leads' | 'calls' | 'agents' | 'wallet';
@@ -1138,66 +1155,20 @@ export default function OperationsDashboard() {
   const statuses: StatusBucket[] = useMemo(() => {
     const pct = (n: number) =>
       stats.total > 0 ? Math.round((n / stats.total) * 1000) / 10 : 0;
-    const wrong = countByOutcome.wrong_number ?? 0;
-    const hangup = countByOutcome.too_short ?? 0;
 
-    return [
-      {
-        key: 'serious',
-        label: t('opsDashboard.statuses.serious', 'Sérieux — argumenté'),
-        count: stats.serious,
-        pct: stats.pctSerious,
-        bar: 'bg-emerald-500',
-        dot: 'bg-emerald-500',
-        pill: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      },
-      {
-        key: 'voicemail',
-        label: t('opsDashboard.statuses.voicemail', 'Messagerie vocale'),
-        count: stats.voicemail,
-        pct: stats.pctVoicemail,
-        bar: 'bg-slate-400',
-        dot: 'bg-slate-400',
-        pill: 'bg-slate-100 text-slate-600 border-slate-200',
-      },
-      {
-        key: 'unreachable',
-        label: t('opsDashboard.statuses.unreachable', 'Injoignable'),
-        count: stats.unreachable,
-        pct: stats.pctUnreachable,
-        bar: 'bg-amber-400',
-        dot: 'bg-amber-400',
-        pill: 'bg-amber-50 text-amber-700 border-amber-200',
-      },
-      {
-        key: 'wrong-number',
-        label: t('opsDashboard.statuses.wrongNumber', 'Faux numéro'),
-        count: wrong,
-        pct: pct(wrong),
-        bar: 'bg-rose-400',
-        dot: 'bg-rose-400',
-        pill: 'bg-rose-50 text-rose-700 border-rose-200',
-      },
-      {
-        key: 'fraud',
-        label: t('opsDashboard.statuses.fraud', 'Fraude'),
-        count: stats.fraud,
-        pct: pct(stats.fraud),
-        bar: 'bg-rose-600',
-        dot: 'bg-rose-600',
-        pill: 'bg-rose-50 text-rose-700 border-rose-200',
-      },
-      {
-        key: 'hangup',
-        label: t('opsDashboard.statuses.hangup', 'Raccrochage immédiat'),
-        count: hangup,
-        pct: pct(hangup),
-        bar: 'bg-slate-300',
-        dot: 'bg-slate-300',
-        pill: 'bg-slate-100 text-slate-500 border-slate-200',
-      },
-    ];
-  }, [stats, countByOutcome, t]);
+    return REP_CALL_STATUSES.map((row) => {
+      const count = row.outcomes.reduce((sum, outcome) => sum + (countByOutcome[outcome] ?? 0), 0);
+      return {
+        key: row.key,
+        label: t(`calls.disp.${row.key}`),
+        count,
+        pct: pct(count),
+        bar: row.bar,
+        dot: row.dot,
+        pill: row.pill,
+      };
+    });
+  }, [stats.total, countByOutcome, t]);
 
   const recentCalls: RecentCall[] = useMemo(() => {
     if (!recentCallsApi?.length) return [];
@@ -1289,23 +1260,19 @@ export default function OperationsDashboard() {
   }, [countByOutcome, stats.total, series7dChart, repsMonth, selectedPeriodId]);
 
   // ────────────────────────────────────────────────────────────────────
-  //  "Résultats d'appels (aujourd'hui)" — donut chart data.
-  //  We collapse the raw `callOutcome` enum into 8 user-facing buckets
-  //  (transaction, RDV, argumenté, rappel, refus, msg vocale, injoignable,
-  //  faux numéro). Each bucket has a stable colour so legend ↔ slice ↔
-  //  underlying bar charts stay visually consistent across the dashboard.
+  //  "Résultats d'appels" — same 8 dispositions the reps record.
   // ────────────────────────────────────────────────────────────────────
   const outcomeBuckets = useMemo(() => {
     const c = countByOutcome;
     const buckets = [
-      { key: 'transaction', label: t('opsDashboard.overview.donut.transaction', 'Transaction'), color: '#10b981', count: c.transaction ?? 0 },
-      { key: 'appointment', label: t('opsDashboard.overview.donut.appointment', 'RDV'),         color: '#8b5cf6', count: c.appointment ?? 0 },
-      { key: 'argued',      label: t('opsDashboard.overview.donut.argued', 'Argumenté'),        color: '#3b82f6', count: c.argued_interested ?? 0 },
-      { key: 'callback',    label: t('opsDashboard.overview.donut.callback', 'Rappel'),         color: '#f59e0b', count: c.callback_requested ?? 0 },
-      { key: 'refusal',     label: t('opsDashboard.overview.donut.refusal', 'Refus'),           color: '#ef4444', count: (c.refusal ?? 0) + (c.not_interested ?? 0) + (c.already_equipped ?? 0) },
-      { key: 'voicemail',   label: t('opsDashboard.overview.donut.voicemail', 'Msg vocale'),    color: '#14b8a6', count: c.voicemail ?? 0 },
-      { key: 'unreachable', label: t('opsDashboard.overview.donut.unreachable', 'Injoignable'), color: '#94a3b8', count: (c.no_answer ?? 0) + (c.busy ?? 0) + (c.too_short ?? 0) },
-      { key: 'wrong',       label: t('opsDashboard.overview.donut.wrongNumber', 'Faux numéro'), color: '#f9a8d4', count: c.wrong_number ?? 0 },
+      { key: 'argued_done', label: t('calls.disp.argued_done'), color: '#10b981', count: c.transaction ?? 0 },
+      { key: 'called_rdv', label: t('calls.disp.called_rdv'), color: '#8b5cf6', count: c.appointment ?? 0 },
+      { key: 'argued_rdv', label: t('calls.disp.argued_rdv'), color: '#6366f1', count: c.argued_interested ?? 0 },
+      { key: 'called_callback', label: t('calls.disp.called_callback'), color: '#f59e0b', count: c.callback_requested ?? 0 },
+      { key: 'argued_declined', label: t('calls.disp.argued_declined'), color: '#ef4444', count: (c.refusal ?? 0) + (c.not_interested ?? 0) + (c.already_equipped ?? 0) },
+      { key: 'called_voicemail', label: t('calls.disp.called_voicemail'), color: '#fb923c', count: c.voicemail ?? 0 },
+      { key: 'called_unreachable', label: t('calls.disp.called_unreachable'), color: '#fbbf24', count: (c.no_answer ?? 0) + (c.busy ?? 0) },
+      { key: 'called_wrong_number', label: t('calls.disp.called_wrong_number'), color: '#f43f5e', count: c.wrong_number ?? 0 },
     ];
     const total = buckets.reduce((sum, b) => sum + b.count, 0);
     return buckets.map((b) => ({
@@ -3303,12 +3270,12 @@ function OverviewView({
             <ul className="grid grid-cols-1 gap-2 text-[11px] font-bold text-slate-700">
               {outcomeBuckets.map((b) => (
                 <li key={b.key} className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 truncate">
+                  <span className="flex min-w-0 items-center gap-2">
                     <span
                       className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
                       style={{ backgroundColor: b.color }}
                     />
-                    <span className="truncate">{b.label}</span>
+                    <span className="leading-snug">{b.label}</span>
                   </span>
                   <span className="shrink-0 text-slate-500 tabular-nums">
                     {b.pct.toFixed(0)}%
@@ -3827,16 +3794,16 @@ function OverviewKpiDetail({
             <DetailRow label={t('opsDashboard.overview.detail.seriousCount', 'Appels sérieux')} value={fmtNum(stats.serious)} />
             <DetailRow label={t('opsDashboard.overview.detail.seriousRate', 'Taux sur total')} value={`${stats.pctSerious.toFixed(1)}%`} />
             <DetailRow
-              label={t('opsDashboard.overview.donut.argued', 'Argumentés')}
-              value={fmtNum(bucketCount('argued'))}
+              label={t('calls.disp.argued_rdv')}
+              value={fmtNum(bucketCount('argued_rdv'))}
             />
             <DetailRow
-              label={t('opsDashboard.overview.donut.appointment', 'RDV')}
-              value={fmtNum(bucketCount('appointment'))}
+              label={t('calls.disp.called_rdv')}
+              value={fmtNum(bucketCount('called_rdv'))}
             />
             <DetailRow
-              label={t('opsDashboard.overview.donut.callback', 'Rappels')}
-              value={fmtNum(bucketCount('callback'))}
+              label={t('calls.disp.called_callback')}
+              value={fmtNum(bucketCount('called_callback'))}
             />
             <DetailRow
               label={t('opsDashboard.kpi.avgDuration', 'Durée moy.')}
@@ -3854,16 +3821,16 @@ function OverviewKpiDetail({
               value={`${fmtNum(transactionsToday)} / ${fmtNum(stats.total)}`}
             />
             <DetailRow
-              label={t('opsDashboard.overview.donut.appointment', 'RDV fixés')}
-              value={fmtNum(bucketCount('appointment'))}
+              label={t('calls.disp.called_rdv')}
+              value={fmtNum(bucketCount('called_rdv'))}
             />
             <DetailRow
-              label={t('opsDashboard.overview.donut.callback', 'Rappels demandés')}
-              value={fmtNum(bucketCount('callback'))}
+              label={t('calls.disp.called_callback')}
+              value={fmtNum(bucketCount('called_callback'))}
             />
             <DetailRow
-              label={t('opsDashboard.overview.donut.refusal', 'Refus')}
-              value={fmtNum(bucketCount('refusal'))}
+              label={t('calls.disp.argued_declined')}
+              value={fmtNum(bucketCount('argued_declined'))}
             />
           </>
         );
@@ -4057,30 +4024,14 @@ function CallsView({
   fmtDuration: (sec: number) => string;
 }) {
   const { t } = useTranslation();
-  const [selectedKpi, setSelectedKpi] = useState<
-    | 'total'
-    | 'serious'
-    | 'voicemail'
-    | 'unreachable'
-    | 'fraud'
-    | 'avgDuration'
-    | 'wrong-number'
-    | 'hangup'
-    | null
-  >(null);
+  const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
   const recentCallsRef = useRef<HTMLElement>(null);
 
-  const toggleKpi = (
-    id: 'total' | 'serious' | 'voicemail' | 'unreachable' | 'fraud' | 'avgDuration' | 'wrong-number' | 'hangup'
-  ) => {
+  const toggleKpi = (id: string) => {
     setSelectedKpi((prev) => (prev === id ? null : id));
   };
 
-  const statusKpiId = (key: string) => {
-    if (key === 'wrong-number') return 'wrong-number' as const;
-    if (key === 'hangup') return 'hangup' as const;
-    return key as 'serious' | 'voicemail' | 'unreachable' | 'fraud';
-  };
+  const selectedStatus = statuses.find((s) => s.key === selectedKpi) ?? null;
 
   const fmtCount = (n: number) => n.toLocaleString('fr-FR');
   const pctLabel = (pct: number) => `${pct.toFixed(1)}%`;
@@ -4207,27 +4158,13 @@ function CallsView({
           <DetailRow label={t('opsDashboard.kpi.totalToday', 'Total du jour')} value={fmtCount(stats.total)} />
         </InlineKpiDetailPanel>
       )}
-      {selectedKpi === 'wrong-number' && (
+      {selectedStatus && (
         <InlineKpiDetailPanel
-          title={t('opsDashboard.statuses.wrongNumber', 'Faux numéro')}
+          title={selectedStatus.label}
           onClose={() => setSelectedKpi(null)}
         >
-          <DetailRow
-            label={t('opsDashboard.statuses.wrongNumber', 'Faux numéro')}
-            value={fmtCount(statuses.find((s) => s.key === 'wrong-number')?.count ?? 0)}
-          />
-          <DetailRow label={t('opsDashboard.mtd.wrongNumbers', 'FAUX NUMÉROS MTD')} value={fmtCount(mtd.wrongNumber)} />
-        </InlineKpiDetailPanel>
-      )}
-      {selectedKpi === 'hangup' && (
-        <InlineKpiDetailPanel
-          title={t('opsDashboard.statuses.hangup', 'Raccrochage immédiat')}
-          onClose={() => setSelectedKpi(null)}
-        >
-          <DetailRow
-            label={t('opsDashboard.statuses.hangup', 'Raccrochage immédiat')}
-            value={fmtCount(statuses.find((s) => s.key === 'hangup')?.count ?? 0)}
-          />
+          <DetailRow label={selectedStatus.label} value={fmtCount(selectedStatus.count)} />
+          <DetailRow label={t('opsDashboard.overview.kpi.rate', 'Taux')} value={pctLabel(selectedStatus.pct)} />
         </InlineKpiDetailPanel>
       )}
 
@@ -4249,14 +4186,14 @@ function CallsView({
               <button
                 key={s.key}
                 type="button"
-                onClick={() => toggleKpi(statusKpiId(s.key))}
+                onClick={() => toggleKpi(s.key)}
                 className={`w-full rounded-xl text-left transition-colors hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/30 px-1 -mx-1 ${
-                  selectedKpi === statusKpiId(s.key) ? 'bg-harx-50/60' : ''
+                  selectedKpi === s.key ? 'bg-harx-50/60' : ''
                 }`}
               >
-                <div className="mb-1 flex items-center justify-between">
+                <div className="mb-1 flex items-start justify-between gap-3">
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold ${s.pill}`}
+                    className={`inline-flex max-w-[16rem] items-center rounded-md border px-2 py-0.5 text-left text-[11px] font-bold leading-snug ${s.pill}`}
                   >
                     {s.label}
                   </span>
