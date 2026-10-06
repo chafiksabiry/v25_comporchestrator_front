@@ -149,7 +149,7 @@ interface GigAndReps {
 }
 
 export function PhoneNumberPanel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   const [phoneNumbers, setPhoneNumbers] = useState<PurchasedNumber[]>([]);
@@ -520,12 +520,30 @@ export function PhoneNumberPanel() {
     }
   };
 
+  const resolveLinePurchaseDate = (num: PurchasedNumber & Record<string, any>): string | undefined => {
+    const raw =
+      num.createdAt ||
+      num.purchasedAt ||
+      num.purchaseDate ||
+      num.created_at ||
+      num.updatedAt;
+    if (typeof raw === 'string' && raw.trim()) return raw;
+    const id = String(num._id || num.id || '');
+    if (/^[a-f0-9]{24}$/i.test(id)) {
+      const seconds = Number.parseInt(id.slice(0, 8), 16);
+      if (Number.isFinite(seconds)) return new Date(seconds * 1000).toISOString();
+    }
+    return undefined;
+  };
+
   const formatLineDate = (value?: string) => {
     if (!value) return '—';
     try {
-      return new Date(value).toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '—';
+      return date.toLocaleDateString(i18n.language?.toLowerCase().startsWith('en') ? 'en-GB' : 'fr-FR', {
+        day: '2-digit',
+        month: 'short',
         year: 'numeric',
       });
     } catch {
@@ -572,7 +590,14 @@ export function PhoneNumberPanel() {
               _id: n._id || n.id,
               id: n.id || n._id,
               gigId: n.gigId ? String(n.gigId) : undefined,
-              companyId: n.companyId ? String(n.companyId) : undefined
+              companyId: n.companyId ? String(n.companyId) : undefined,
+              createdAt:
+                n.createdAt ||
+                n.purchasedAt ||
+                n.purchaseDate ||
+                n.created_at ||
+                n.updatedAt ||
+                undefined,
             }));
           setPhoneNumbers(myLines);
           // Keep the navbar "LIGNES TÉL." badge in sync
@@ -1578,6 +1603,7 @@ export function PhoneNumberPanel() {
                   <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 border-b border-indigo-100">
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.number')}</th>
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.gig')}</th>
+                    <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.purchasedAt')}</th>
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.price')}</th>
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.status')}</th>
                     <th className="py-3 px-4 w-10" aria-hidden />
@@ -1661,6 +1687,9 @@ export function PhoneNumberPanel() {
                             </div>
                           )}
                         </td>
+                        <td className="py-4 px-4 font-bold text-slate-700 tabular-nums whitespace-nowrap">
+                          {formatLineDate(resolveLinePurchaseDate(num))}
+                        </td>
                         <td className="py-4 px-4 font-black text-slate-900 tabular-nums">
                           {num.isTrial ? (
                             <span className="px-2 py-0.5 rounded-lg bg-cyan-50 text-cyan-700 border border-cyan-100 text-[10px] font-black uppercase">
@@ -1693,7 +1722,7 @@ export function PhoneNumberPanel() {
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-indigo-100 bg-indigo-50/30">
-                    <td colSpan={3} className="py-3 px-4 text-[10px] font-black uppercase tracking-wider text-indigo-700">
+                    <td colSpan={4} className="py-3 px-4 text-[10px] font-black uppercase tracking-wider text-indigo-700">
                       {hasActiveFilters
                         ? t('phoneNumberPanel.myNumbers.table.filteredTotalLabel')
                         : t('phoneNumberPanel.myNumbers.table.companyTotalLabel')}
@@ -2116,7 +2145,7 @@ export function PhoneNumberPanel() {
                   {t('phoneNumberPanel.myNumbers.detailModal.createdAt')}
                 </span>
                 <span className="text-sm font-bold text-slate-900">
-                  {formatLineDate(selectedPhoneLineData.createdAt)}
+                  {formatLineDate(resolveLinePurchaseDate(selectedPhoneLineData))}
                 </span>
               </div>
             </div>
