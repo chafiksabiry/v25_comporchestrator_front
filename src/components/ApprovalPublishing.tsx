@@ -578,8 +578,7 @@ const ApprovalPublishing = () => {
         return;
       }
 
-      const isBalanceSufficient = await checkCompanyBalance();
-      if (!isBalanceSufficient) {
+      if (balance !== null && balance <= 0) {
         toast.error(t('approvalPublishing.balance.singleError'), {
           duration: 5000,
           position: 'top-right',
@@ -597,22 +596,36 @@ const ApprovalPublishing = () => {
       const gigIdCookie = Cookies.get('gigId');
 
       if (!companyId || !userId) {
-        throw new Error('Missing authentication tokens');
+        setError(t('approvalPublishing.errors.approveGig'));
+        toast.error(t('approvalPublishing.errors.approveGig'), {
+          duration: 5000,
+          position: 'top-right'
+        });
+        return;
       }
 
+      setGigs(prevGigs => prevGigs.map(item =>
+        item._id === gigId
+          ? {
+              ...item,
+              status: 'active',
+              setupSteps: {
+                ...(item.setupSteps || {}),
+                gigActivation: true,
+              },
+            }
+          : item
+      ));
+
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
-
-      const requestBody = {
-        status: 'active'
-      };
-
       const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${gigIdCookie}:${userId}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({ status: 'active' }),
+        signal: AbortSignal.timeout(20000),
       });
 
       if (!response.ok) {
@@ -626,29 +639,26 @@ const ApprovalPublishing = () => {
         console.error('❌ API Error response:', errorMessage);
         throw new Error(errorMessage);
       }
-
-      const responseData = await response.json();
-
-      // Update the gig status locally instead of refreshing
-      setGigs(prevGigs => prevGigs.map(gig =>
-        gig._id === gigId
-          ? {
-              ...gig,
-              status: 'active',
-              setupSteps: {
-                ...(gig.setupSteps || {}),
-                gigActivation: true,
-              },
-            }
-          : gig
-      ));
+      void response.body?.cancel();
 
       markGigStepDone(gigId, 'gigActivation', true);
-
-      // Mark step 12 (phase 4) as completed since we now have an active gig
-      await markStep12AsCompleted();
+      void markStep12AsCompleted();
+      return;
     } catch (error) {
       console.error('❌ Error approving gig:', error);
+      const previousStatus = gigs.find((g) => g._id === gigId)?.status || 'to_activate';
+      setGigs(prevGigs => prevGigs.map(item =>
+        item._id === gigId
+          ? {
+              ...item,
+              status: previousStatus,
+              setupSteps: {
+                ...(item.setupSteps || {}),
+                gigActivation: false,
+              },
+            }
+          : item
+      ));
       setError(t('approvalPublishing.errors.approveGig'));
       toast.error(t('approvalPublishing.errors.approveGig'), {
         duration: 5000,
