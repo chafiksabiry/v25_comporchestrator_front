@@ -3223,5 +3223,8 @@
     "days": "{{count}} day(s)",
     "hours": "{{count}} hour(s)",
     "minutes": "{{count}} minute(s)"
+  },
+  "trainingViewer": {
+    "validateFormation": "Validate the training"
   }
 }

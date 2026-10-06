@@ -1665,6 +1665,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 startWithRepViewer={Boolean(showTraining.openFormationViewer)}
                 repOnboardingLayout={true}
                 onExitToTrainingList={closeTrainingViewer}
+                onFormationValidated={handleEmbeddedJourneyComplete}
                 onJourneyLaunch={handleEmbeddedJourneyComplete}
               />
             </div>
