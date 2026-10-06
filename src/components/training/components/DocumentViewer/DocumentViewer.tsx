@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Download } from "lucide-react";
+import { FileText, Eye } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface DocumentViewerProps {
   fileUrl: string;
@@ -7,57 +8,106 @@ interface DocumentViewerProps {
   mimeType?: string;
 }
 
+/** Browser PDF chrome without download / print / edit tools. */
+function viewOnlyPdfSrc(url: string): string {
+  const hash = "toolbar=0&navpanes=0&scrollbar=1&view=FitH";
+  if (!url) return url;
+  if (url.includes("#")) {
+    const [base, existing] = url.split("#", 2);
+    return `${base}#${hash}&${existing}`;
+  }
+  return `${url}#${hash}`;
+}
+
 export default function DocumentViewer({ fileUrl, fileName, mimeType }: DocumentViewerProps) {
+  const { t } = useTranslation();
   const [type, setType] = useState<string | null>(null);
 
-  // Debug log
-  useEffect(() => {
-    console.log('[DocumentViewer] Input received', {
-      fileName,
-      mimeType,
-      urlType: fileUrl ? (fileUrl.startsWith('blob:') ? 'blob' : fileUrl.startsWith('http') ? 'http' : 'other') : 'none'
-    });
-  }, [fileUrl, fileName, mimeType]);
-
-  // Don't scroll automatically - let the container handle it
-
-  // Detect file type from URL, mimeType, or fileName
   useEffect(() => {
     if (!fileUrl) {
       setType(null);
       return;
     }
 
-    // Check mimeType first
     if (mimeType) {
       if (mimeType.includes("pdf")) {
         setType("pdf");
         return;
-      } else if (mimeType.includes("word") || mimeType.includes("document") || mimeType.includes("msword") || mimeType.includes("officedocument")) {
+      }
+      if (
+        mimeType.includes("word") ||
+        mimeType.includes("document") ||
+        mimeType.includes("msword") ||
+        mimeType.includes("officedocument")
+      ) {
         setType("word");
         return;
-      } else if (mimeType.includes("video")) {
+      }
+      if (mimeType.includes("video")) {
         setType("video");
         return;
-      } else if (mimeType.includes("image")) {
+      }
+      if (mimeType.includes("image")) {
         setType("image");
+        return;
+      }
+      if (mimeType.includes("audio")) {
+        setType("audio");
+        return;
+      }
+      if (mimeType.includes("text/plain")) {
+        setType("text");
         return;
       }
     }
 
-    // Check file extension from URL or fileName
-    const url = fileUrl.toLowerCase().split('?')[0];
+    const url = fileUrl.toLowerCase().split("?")[0];
     const name = fileName?.toLowerCase() || "";
 
     if (url.endsWith(".pdf") || name.endsWith(".pdf") || url.includes(".pdf")) {
       setType("pdf");
-    } else if (url.endsWith(".doc") || url.endsWith(".docx") || name.endsWith(".doc") || name.endsWith(".docx") || url.includes(".docx") || url.includes(".doc")) {
+    } else if (
+      url.endsWith(".doc") ||
+      url.endsWith(".docx") ||
+      name.endsWith(".doc") ||
+      name.endsWith(".docx") ||
+      url.includes(".docx") ||
+      url.includes(".doc")
+    ) {
       setType("word");
-    } else if (url.endsWith(".mp4") || url.endsWith(".webm") || url.endsWith(".ogg") || name.endsWith(".mp4") || name.endsWith(".webm") || name.endsWith(".ogg")) {
+    } else if (
+      url.endsWith(".mp4") ||
+      url.endsWith(".webm") ||
+      url.endsWith(".ogg") ||
+      name.endsWith(".mp4") ||
+      name.endsWith(".webm") ||
+      name.endsWith(".ogg")
+    ) {
       setType("video");
-    } else if (url.endsWith(".jpg") || url.endsWith(".jpeg") || url.endsWith(".png") || url.endsWith(".gif") || url.endsWith(".webp") ||
-      name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png") || name.endsWith(".gif") || name.endsWith(".webp")) {
+    } else if (
+      url.endsWith(".mp3") ||
+      url.endsWith(".wav") ||
+      url.endsWith(".m4a") ||
+      name.endsWith(".mp3") ||
+      name.endsWith(".wav") ||
+      name.endsWith(".m4a")
+    ) {
+      setType("audio");
+    } else if (
+      url.endsWith(".jpg") ||
+      url.endsWith(".jpeg") ||
+      url.endsWith(".png") ||
+      url.endsWith(".gif") ||
+      url.endsWith(".webp") ||
+      name.endsWith(".jpg") ||
+      name.endsWith(".jpeg") ||
+      name.endsWith(".png") ||
+      name.endsWith(".gif") ||
+      name.endsWith(".webp")
+    ) {
       setType("image");
+    } else if (url.endsWith(".txt") || name.endsWith(".txt")) {
+      setType("text");
     } else if (fileUrl.toLowerCase().includes("youtube.com") || fileUrl.toLowerCase().includes("youtu.be")) {
       setType("youtube");
     } else {
@@ -65,132 +115,118 @@ export default function DocumentViewer({ fileUrl, fileName, mimeType }: Document
     }
   }, [fileUrl, fileName, mimeType]);
 
-  // Extract YouTube video ID
   const getYouTubeId = (url: string): string | null => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return match && match[2].length === 11 ? match[2] : null;
   };
 
-  // For blob URLs, we need to handle them differently
   const isBlobUrl = fileUrl.startsWith("blob:");
+  const blockContextMenu = (e: React.MouseEvent) => e.preventDefault();
+
+  const consultationNotice = (
+    <div className="flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-slate-500 bg-slate-50 border-b border-slate-100 shrink-0">
+      <Eye className="h-3.5 w-3.5 text-harx-500 shrink-0" />
+      <span>{t("documentViewer.consultationOnly", "Consultation uniquement — modification et téléchargement désactivés")}</span>
+    </div>
+  );
+
+  const unsupportedPreview = (
+    <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 rounded-lg border border-gray-200">
+      <FileText className="w-16 h-16 text-slate-400 mb-4" />
+      <h4 className="text-lg font-semibold text-gray-900 mb-2">{fileName || t("documentViewer.document", "Document")}</h4>
+      <p className="text-gray-600 text-center max-w-md">
+        {t(
+          "documentViewer.previewUnavailable",
+          "Aperçu en consultation non disponible pour ce format. Le téléchargement est désactivé."
+        )}
+      </p>
+    </div>
+  );
 
   return (
-    <div className="w-full h-full flex flex-col" style={{ height: '100%', width: '100%', flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* PDF VIEWER */}
+    <div
+      className="w-full h-full flex flex-col"
+      style={{ height: "100%", width: "100%", flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}
+      onContextMenu={blockContextMenu}
+    >
+      {consultationNotice}
+
       {type === "pdf" && (
-        <>
-          {isBlobUrl ? (
-            <embed
-              src={fileUrl}
-              type="application/pdf"
-              className="w-full h-full"
-              style={{ height: '100%', width: '100%', flex: '1 1 auto', border: 'none' }}
-            />
-          ) : (
-            <>
-              {/* Validate URL before loading */}
-              {fileUrl && fileUrl.startsWith('http') ? (
-                <iframe
-                  src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(fileUrl)}`}
-                  className="w-full h-full border-0"
-                  title="PDF Viewer"
-                  style={{ height: '100%', width: '100%', flex: '1 1 auto', minHeight: 0, border: 'none' }}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 rounded-lg border border-gray-200">
-                  <FileText className="w-16 h-16 text-yellow-500 mb-4" />
-                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Invalid PDF URL</h4>
-                  <p className="text-gray-600 mb-4 text-center">The PDF URL is not valid or accessible</p>
-                  <details className="mt-4 text-left max-w-md mx-auto">
-                    <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-600">Debug Info</summary>
-                    <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">
-                      {JSON.stringify({ fileUrl, fileName, mimeType }, null, 2)}
-                    </pre>
-                  </details>
-                </div>
-              )}
-            </>
-          )}
-        </>
+        <iframe
+          src={viewOnlyPdfSrc(fileUrl)}
+          className="w-full h-full border-0"
+          title={fileName || "PDF"}
+          style={{ height: "100%", width: "100%", flex: "1 1 auto", minHeight: 0, border: "none" }}
+        />
       )}
 
-      {/* WORD VIEWER VIA GOOGLE DOCS */}
-      {type === "word" && (
-        <>
-          {isBlobUrl ? (
-            <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 rounded-lg border border-gray-200">
-              <FileText className="w-16 h-16 text-blue-500 mb-4" />
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">{fileName || "Word Document"}</h4>
-              <p className="text-gray-600 mb-4 text-center">Word document preview not available in browser</p>
-              <button
-                type="button"
-                onClick={() => {
-                  const a = document.createElement('a');
-                  a.href = fileUrl;
-                  a.download = fileName || 'document.docx';
-                  a.rel = 'noopener';
-                  document.body.appendChild(a);
-                  a.click();
-                  a.remove();
-                }}
-                className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all"
-              >
-                <Download className="h-5 w-5" />
-                <span>Download Document</span>
-              </button>
-            </div>
-          ) : (
-            <iframe
-              src={`https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`}
-              className="w-full h-full border-0 rounded-lg shadow"
-              title="Word Viewer"
-              style={{ height: '100%', width: '100%' }}
-            />
-          )}
-        </>
-      )}
+      {type === "word" &&
+        (isBlobUrl ? (
+          unsupportedPreview
+        ) : (
+          <iframe
+            src={`https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`}
+            className="w-full h-full border-0 rounded-lg shadow"
+            title={fileName || "Word"}
+            style={{ height: "100%", width: "100%", flex: "1 1 auto", minHeight: 0 }}
+            sandbox="allow-scripts allow-same-origin"
+          />
+        ))}
 
-      {/* VIDEO VIEWER */}
       {type === "video" && (
-        <div className="w-full h-full" style={{ height: '100%', width: '100%' }}>
-          {isBlobUrl ? (
-            <video
-              src={fileUrl}
-              controls
-              className="w-full h-full rounded-lg shadow"
-              style={{ height: '100%', width: '100%' }}
-            >
-              Your browser does not support the video tag.
-            </video>
-          ) : (
-            <video
-              src={fileUrl}
-              controls
-              className="w-full h-full rounded-lg shadow"
-              style={{ height: '100%', width: '100%' }}
-            >
-              Your browser does not support the video tag.
-            </video>
-          )}
+        <div className="w-full h-full flex-1 min-h-0" style={{ height: "100%", width: "100%" }}>
+          <video
+            src={fileUrl}
+            controls
+            controlsList="nodownload noplaybackrate"
+            disablePictureInPicture
+            className="w-full h-full rounded-lg shadow"
+            style={{ height: "100%", width: "100%" }}
+            onContextMenu={blockContextMenu}
+          >
+            {t("documentViewer.videoUnsupported", "Lecture vidéo non supportée")}
+          </video>
         </div>
       )}
 
-      {/* IMAGE VIEWER */}
-      {type === "image" && (
-        <div className="w-full h-full flex items-center justify-center">
-          <img
+      {type === "audio" && (
+        <div className="flex flex-1 items-center justify-center p-8">
+          <audio
             src={fileUrl}
-            alt={fileName || "Image"}
-            className="max-w-full max-h-full rounded-lg shadow object-contain"
-            style={{ maxHeight: '100%', width: 'auto' }}
+            controls
+            controlsList="nodownload noplaybackrate"
+            className="w-full max-w-xl"
+            onContextMenu={blockContextMenu}
           />
         </div>
       )}
 
-      {/* YOUTUBE VIEWER */}
+      {type === "image" && (
+        <div className="w-full h-full flex-1 flex items-center justify-center min-h-0">
+          <img
+            src={fileUrl}
+            alt={fileName || "Image"}
+            className="max-w-full max-h-full rounded-lg shadow object-contain"
+            style={{ maxHeight: "100%", width: "auto" }}
+            draggable={false}
+            onContextMenu={blockContextMenu}
+          />
+        </div>
+      )}
+
+      {type === "text" && (
+        <iframe
+          src={fileUrl}
+          className="w-full h-full border-0"
+          title={fileName || "Text"}
+          style={{ height: "100%", width: "100%", flex: "1 1 auto", minHeight: 0 }}
+          sandbox=""
+        />
+      )}
+
       {type === "youtube" && (
-        <div className="w-full h-full" style={{ height: '100%', width: '100%' }}>
+        <div className="w-full h-full flex-1 min-h-0" style={{ height: "100%", width: "100%" }}>
           {(() => {
             const videoId = getYouTubeId(fileUrl);
             if (videoId) {
@@ -201,55 +237,33 @@ export default function DocumentViewer({ fileUrl, fileName, mimeType }: Document
                   title="YouTube Video"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  style={{ height: '100%', width: '100%' }}
+                  style={{ height: "100%", width: "100%" }}
                 />
               );
-            } else {
-              return (
-                <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 rounded-lg border border-gray-200">
-                  <FileText className="w-16 h-16 text-red-500 mb-4" />
-                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Invalid YouTube URL</h4>
-                  <p className="text-gray-600 text-center">Unable to embed this video inside HARX.</p>
-                </div>
-              );
             }
+            return (
+              <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 rounded-lg border border-gray-200">
+                <FileText className="w-16 h-16 text-red-500 mb-4" />
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                  {t("documentViewer.invalidYoutube", "URL YouTube invalide")}
+                </h4>
+                <p className="text-gray-600 text-center">
+                  {t("documentViewer.cannotEmbed", "Impossible d’intégrer cette vidéo dans HARX.")}
+                </p>
+              </div>
+            );
           })()}
         </div>
       )}
 
-      {/* UNKNOWN TYPE */}
-      {type === "unknown" && (
-        <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 rounded-lg border border-gray-200">
-          <FileText className="w-16 h-16 text-gray-400 mb-4" />
-          <h4 className="text-lg font-semibold text-gray-900 mb-2">{fileName || "Document"}</h4>
-          <p className="text-gray-600 mb-4 text-center">Format non supporté pour la prévisualisation</p>
-          <button
-            type="button"
-            onClick={() => {
-              const a = document.createElement('a');
-              a.href = fileUrl;
-              a.download = fileName || 'document';
-              a.rel = 'noopener';
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-            }}
-            className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg font-medium transition-all"
-          >
-            <Download className="h-5 w-5" />
-            <span>Download Document</span>
-          </button>
-        </div>
-      )}
+      {type === "unknown" && unsupportedPreview}
 
-      {/* NO TYPE DETECTED */}
       {!type && (
         <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 rounded-lg border border-gray-200">
           <FileText className="w-16 h-16 text-gray-300 mb-4" />
-          <p className="text-gray-600">Chargement du document...</p>
+          <p className="text-gray-600">{t("documentViewer.loading", "Chargement du document…")}</p>
         </div>
       )}
     </div>
   );
 }
-
