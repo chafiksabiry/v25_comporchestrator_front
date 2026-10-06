@@ -905,7 +905,7 @@
     "empty": {
       "title": "Intelligence Stream Empty",
       "subtitle": "Your enterprise knowledge has not been synchronized yet. Initiate data ingestion to empower your REPS.",
-      "ingestFirst": "Ingest First Resource"
+      "ingestFirst": "Ingest a resource"
     },
     "analysis": {
       "languageHub": "Language Hub",
@@ -2365,8 +2365,8 @@
       "subtitle": "Skills development and validation",
       "loading": "Loading available trainings...",
       "emptyTitle": "No training journeys yet",
-      "emptyDesc": "Add your first training journey to start onboarding your REPs.",
-      "createFirstBtn": "Create First Journey",
+      "emptyDesc": "Add a training journey to start onboarding your REPs.",
+      "createFirstBtn": "Create a journey",
       "modules": "modules",
       "contentDesc": "Formation content: modules + sections + quizzes",
       "avgProgress": "Average progress",

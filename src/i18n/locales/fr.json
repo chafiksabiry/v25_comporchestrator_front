@@ -905,7 +905,7 @@
     "empty": {
       "title": "Flux d'Intelligence Vide",
       "subtitle": "Vos connaissances d'entreprise n'ont pas encore été synchronisées. Initiez l'ingestion de données pour donner les moyens à vos REPS.",
-      "ingestFirst": "Ingérer la Première Ressource"
+      "ingestFirst": "Ingérer une ressource"
     },
     "analysis": {
       "languageHub": "Centre Linguistique",
@@ -2365,8 +2365,8 @@
       "subtitle": "Développement et validation des compétences",
       "loading": "Chargement des formations disponibles...",
       "emptyTitle": "Pas encore de parcours de formation",
-      "emptyDesc": "Ajoutez votre premier parcours de formation pour commencer l'intégration de vos REPs.",
-      "createFirstBtn": "Créer le premier parcours",
+      "emptyDesc": "Ajoutez un parcours de formation pour commencer l'intégration de vos REPs.",
+      "createFirstBtn": "Créer un parcours",
       "modules": "modules",
       "contentDesc": "Contenu de la formation : modules + sections + quiz",
       "avgProgress": "Progression moyenne",
