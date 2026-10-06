@@ -45,6 +45,7 @@ interface ContentUploaderProps {
   methodology?: TrainingMethodology | null;
   autoOpenFormationViewer?: boolean;
   onExitToTrainingList?: () => void;
+  onFormationValidated?: () => void;
 
   onForkNewJourneyTraining?: () => Promise<{ trainingJourneyId: string }>;
 
@@ -605,6 +606,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     methodology,
     autoOpenFormationViewer = false,
     onExitToTrainingList,
+    onFormationValidated,
     repOnboardingLayout = false,
     onForkNewJourneyTraining,
   } = props;
@@ -6574,20 +6576,41 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               <span className="rounded-full border px-3 py-1 text-xs font-medium text-white" style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.cardBg }}>
                                 {formationViewerSlideIndex + 1} / {formationViewerSlides.length}
                               </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setFormationViewerSlideIndex((i) =>
-                                    Math.min(formationViewerSlides.length - 1, i + 1)
-                                  )
-                                }
-                                disabled={formationViewerSlideIndex >= formationViewerSlides.length - 1}
-                                className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-                                style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.accentBg, boxShadow: viewerThemeTokens.accentShadow }}
-                              >
-                                Suivant
-                                <ChevronRight className="h-4 w-4" />
-                              </button>
+                              {formationViewerSlideIndex >= formationViewerSlides.length - 1 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (onFormationValidated) {
+                                      onFormationValidated();
+                                      return;
+                                    }
+                                    if (repOnboardingLayout && autoOpenFormationViewer && onExitToTrainingList) {
+                                      onExitToTrainingList();
+                                      return;
+                                    }
+                                    setShowGeneratedFormationModal(false);
+                                  }}
+                                  className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold text-white transition hover:-translate-y-0.5 hover:brightness-110"
+                                  style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.accentBg, boxShadow: viewerThemeTokens.accentShadow }}
+                                >
+                                  {t('trainingViewer.validateFormation')}
+                                  <CheckCircle className="h-4 w-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormationViewerSlideIndex((i) =>
+                                      Math.min(formationViewerSlides.length - 1, i + 1)
+                                    )
+                                  }
+                                  className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110"
+                                  style={{ borderColor: viewerThemeTokens.accentBorder, background: viewerThemeTokens.accentBg, boxShadow: viewerThemeTokens.accentShadow }}
+                                >
+                                  Suivant
+                                  <ChevronRight className="h-4 w-4" />
+                                </button>
+                              )}
                             </div>
                           </div>
                         ) : null}
