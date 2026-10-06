@@ -189,21 +189,31 @@ const LEAD_ROW_CELL =
 type LeadTableRowProps = {
   lead: Lead;
   variant?: 'default' | 'realtime';
+  selected?: boolean;
+  onToggleSelect?: (leadId: string) => void;
+  onArchive?: (leadId: string) => void;
   onView: (lead: Lead) => void;
   onEdit: (lead: Lead) => void;
   calledBadgeTitle: string;
   viewTitle: string;
   editTitle: string;
+  selectTitle?: string;
+  archiveTitle?: string;
 };
 
 function LeadTableRow({
   lead,
   variant = 'default',
+  selected = false,
+  onToggleSelect,
+  onArchive,
   onView,
   onEdit,
   calledBadgeTitle,
   viewTitle,
   editTitle,
+  selectTitle,
+  archiveTitle,
 }: LeadTableRowProps) {
   const isPlaceholder = Boolean((lead as Lead & { _isPlaceholder?: boolean })._isPlaceholder);
   const rowBorder =
@@ -218,7 +228,16 @@ function LeadTableRow({
           isPlaceholder ? 'border-l-4 border-l-amber-400' : ''
         }`}
       >
-        <div className="flex justify-center">
+        <div className="flex items-center justify-center gap-1">
+          {onToggleSelect && lead._id ? (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggleSelect(lead._id as string)}
+              aria-label={selectTitle}
+              className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-harx-600 focus:ring-harx-500"
+            />
+          ) : null}
           <div className="relative">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-[10px] font-black text-white shadow-sm group-hover:scale-105 transition-transform duration-300`}
@@ -288,6 +307,16 @@ function LeadTableRow({
           >
             <Edit className="h-3 w-3" />
           </button>
+          {onArchive && lead._id ? (
+            <button
+              type="button"
+              onClick={() => onArchive(lead._id as string)}
+              className="inline-flex items-center justify-center rounded-md border border-slate-200/80 bg-white p-1 text-slate-400 transition-all duration-200 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+              title={archiveTitle}
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          ) : null}
         </div>
       </td>
     </tr>
@@ -454,6 +483,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [isImportingZoho, setIsImportingZoho] = useState(false);
   const [isDisconnectingZoho, setIsDisconnectingZoho] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [isArchivingLeads, setIsArchivingLeads] = useState(false);
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [isLoadingLeads, setIsLoadingLeads] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1696,7 +1727,74 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   };
 
+  const archiveLeads = async (payload: { ids?: string[]; all?: boolean }) => {
+    if (!selectedGigId || isArchivingLeads) return;
+    const count = payload.all
+      ? (leadQuickStats?.total ?? totalCount)
+      : (payload.ids?.length ?? 0);
+    if (!count) return;
+    const confirmed = window.confirm(
+      payload.all
+        ? t('uploadContacts.list.archive.confirmAll', { count })
+        : t('uploadContacts.list.archive.confirm', { count })
+    );
+    if (!confirmed) return;
+
+    setIsArchivingLeads(true);
+    setError(null);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/leads/archive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gigId: selectedGigId,
+          ids: payload.ids,
+          all: payload.all === true,
+        }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.success) {
+        throw new Error(json.error || 'archive failed');
+      }
+      setSelectedLeadIds(new Set());
+      const nextPage = payload.all ? 1 : currentPage;
+      await fetchLeads(nextPage, searchQuery);
+      await fetchLeadQuickStats(selectedGigId);
+    } catch (err) {
+      console.error('Error archiving leads:', err);
+      const message = t('uploadContacts.list.archive.error');
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsArchivingLeads(false);
+    }
+  };
+
+  const visibleLeadIds = filteredLeads
+    .map((lead) => lead?._id)
+    .filter((id): id is string => Boolean(id));
+  const allVisibleSelected = visibleLeadIds.length > 0 && visibleLeadIds.every((id) => selectedLeadIds.has(id));
+
+  const toggleLeadSelected = (leadId: string) => {
+    setSelectedLeadIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(leadId)) next.delete(leadId);
+      else next.add(leadId);
+      return next;
+    });
+  };
+
+  const toggleVisibleSelected = () => {
+    setSelectedLeadIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) visibleLeadIds.forEach((id) => next.delete(id));
+      else visibleLeadIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
   useEffect(() => {
+    setSelectedLeadIds(new Set());
     if (selectedGigId) {
       setCallFilterGigId(selectedGigId);
       setLeadStatsFilter('all');
@@ -2966,7 +3064,24 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 )}
               </div>
             </div>
-            <div className="flex items-center justify-end shrink-0">
+            <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => archiveLeads({ ids: Array.from(selectedLeadIds) })}
+                disabled={isArchivingLeads || selectedLeadIds.size === 0 || !selectedGigId}
+                className="flex items-center rounded-2xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-bold text-rose-600 shadow-sm hover:bg-rose-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t('uploadContacts.list.archive.selected', { count: selectedLeadIds.size })}
+              </button>
+              <button
+                type="button"
+                onClick={() => archiveLeads({ all: true })}
+                disabled={isArchivingLeads || !selectedGigId || (leadQuickStats?.total ?? totalCount) === 0}
+                className="flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {t('uploadContacts.list.archive.all')}
+              </button>
               <button
                 onClick={() => {
                   setSearchQuery('');
@@ -2997,17 +3112,26 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             <div className="relative w-full min-w-0 px-2 pb-2">
               <table className="w-full table-fixed border-separate border-spacing-y-1.5">
                 <colgroup>
-                  <col className="w-[4%]" />
+                  <col className="w-[7%]" />
                   <col className="w-[11%]" />
                   <col className="w-[11%]" />
-                  <col className="w-[14%]" />
-                  <col className="w-[28%]" />
+                  <col className="w-[13%]" />
                   <col className="w-[24%]" />
-                  <col className="w-[8%]" />
+                  <col className="w-[22%]" />
+                  <col className="w-[12%]" />
                 </colgroup>
                 <thead className="sticky top-0 z-[50] bg-white/95 backdrop-blur-sm">
                   <tr>
-                    <th scope="col" className="px-1 py-2 text-left" aria-hidden="true" />
+                    <th scope="col" className="px-1 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={allVisibleSelected}
+                        onChange={toggleVisibleSelected}
+                        disabled={visibleLeadIds.length === 0}
+                        aria-label={t('uploadContacts.list.archive.selectPage')}
+                        className="h-3.5 w-3.5 rounded border-slate-300 text-harx-600 focus:ring-harx-500 disabled:opacity-40"
+                      />
+                    </th>
                     <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.lastName')}
                     </th>
@@ -3057,11 +3181,16 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         <LeadTableRow
                           key={lead._id || `filtered-${index}`}
                           lead={lead}
+                          selected={Boolean(lead._id && selectedLeadIds.has(lead._id))}
+                          onToggleSelect={toggleLeadSelected}
+                          onArchive={(leadId) => archiveLeads({ ids: [leadId] })}
                           onView={setViewingLeadDetail}
                           onEdit={setEditingSavedLead}
                           calledBadgeTitle={t('uploadContacts.list.calledBadge')}
                           viewTitle={t('uploadContacts.list.details.button')}
                           editTitle={t('uploadContacts.list.edit.button')}
+                          selectTitle={t('uploadContacts.list.archive.selectOne')}
+                          archiveTitle={t('uploadContacts.list.archive.one')}
                         />
                       ) : null
                     )

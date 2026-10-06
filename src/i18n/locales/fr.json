@@ -1985,6 +1985,16 @@
         "success": "Lead mis à jour avec succès",
         "error": "Impossible de mettre à jour le lead"
       },
+      "archive": {
+        "one": "Archiver",
+        "selectOne": "Sélectionner ce lead",
+        "selectPage": "Sélectionner les leads de cette page",
+        "selected": "Archiver la sélection ({{count}})",
+        "all": "Archiver tout",
+        "confirm": "Archiver {{count}} lead(s) ? Ils seront retirés de la liste.",
+        "confirmAll": "Archiver les {{count}} leads de ce gig ? Ils seront retirés de la liste.",
+        "error": "Impossible d'archiver les leads"
+      },
       "details": {
         "button": "Voir les détails",
         "contactInfo": "Coordonnées",
