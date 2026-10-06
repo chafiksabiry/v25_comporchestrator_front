@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { Building2, Loader2, Target, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check, Search, ImagePlus, Brain } from 'lucide-react';
 import axios from 'axios';
@@ -29,6 +30,7 @@ interface SetupWizardProps {
 }
 
 export default function SetupWizard({ onComplete, repOnboardingLayout = false, forceNew = false }: SetupWizardProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [company, setCompany] = useState<Partial<Company>>({});
   const [companyData, setCompanyData] = useState<any>(null);
@@ -160,10 +162,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   }, [currentStep, visionSubStep]);
 
   const steps = [
-    { id: 1, label: 'Gig' },
-    { id: 2, label: 'Vision' },
-    { id: 3, label: 'Team' },
-    { id: 4, label: 'Methodology' },
+    { id: 1, label: t('trainingWizard.steps.gig') },
+    { id: 2, label: t('trainingWizard.steps.vision') },
+    { id: 3, label: t('trainingWizard.steps.team') },
+    { id: 4, label: t('trainingWizard.steps.methodology') },
   ];
 
   const handleNext = async () => {
@@ -505,9 +507,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
     if (!raw) return null;
     const m = parseInt(raw, 10);
     if (Number.isNaN(m)) return raw;
-    if (m >= 1440) return `${Math.round(m / 1440)} day(s)`;
-    if (m >= 60) return `${Math.round(m / 60)} hour(s)`;
-    return `${m} minute(s)`;
+    if (m >= 1440) return t('trainingWizard.days', { count: Math.round(m / 1440) });
+    if (m >= 60) return t('trainingWizard.hours', { count: Math.round(m / 60) });
+    return t('trainingWizard.minutes', { count: m });
   };
 
   const HARX = '#dc2626';
@@ -538,15 +540,15 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const setupContentMaxWidth = '100%';
   const lockBodyScroll = embedCompact && currentStep === 1;
   const headerTitle = isVisionStep
-    ? 'Define your training vision'
+    ? t('trainingWizard.visionTitle')
     : currentStep === 3
-      ? 'Identify your learners'
-      : 'Welcome to your training journey';
+      ? t('trainingWizard.teamTitle')
+      : t('trainingWizard.welcomeTitle');
   const headerSubtitle = isVisionStep
-    ? 'Name & description — same language as gig title/description'
+    ? t('trainingWizard.visionSubtitle')
     : currentStep === 3
-      ? 'Role-based paths · Skill assessments · Personalization'
-      : 'Smart defaults · Compliance';
+      ? t('trainingWizard.teamSubtitle')
+      : t('trainingWizard.welcomeSubtitle');
   const uniformStepBodyMinHeight = embedCompact ? '100%' : '100%';
 
   return (
@@ -900,7 +902,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                       }}
                     >
                       <Target style={{ width: 12, height: 12, color: HARX }} />
-                      Training program
+                      {t('trainingWizard.trainingProgram')}
                     </h5>
                     <p style={{ fontSize: 13, color: '#111827', margin: 0, fontWeight: 600, lineHeight: 1.25 }}>
                       {trainingDetails?.trainingName || selectedGig?.title || 'N/A'}
@@ -924,7 +926,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                     <p style={{ fontSize: 10, color: '#9ca3af', margin: '4px 0 0', fontWeight: 600 }}>
                       {formatVisionDuration(trainingDetails?.estimatedDuration) || journey.estimatedDuration || 'N/A'}
                       {' · '}
-                      {journey.targetRoles?.length || 0} target roles
+                      {t('trainingWizard.targetRoles', { count: journey.targetRoles?.length || 0 })}
                     </p>
                   </div>
 
@@ -955,7 +957,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                         }}
                       >
                         <Sparkles style={{ width: 12, height: 12, color: HARX }} />
-                        Methodology
+                        {t('trainingWizard.methodology')}
                       </h5>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignContent: 'start', flexShrink: 0 }}>
                         {(selectedMethodology.components || []).map((c: MethodologyComponent, i: number) => (
@@ -1012,10 +1014,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 }}
               >
                 <ArrowLeft style={{ width: 14, height: 14 }} />
-                Back
+                {t('trainingWizard.back')}
               </button>
               <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>
-                {visionTitleGenerating || visionDescriptionGenerating ? 'Generating…' : 'Vision · next: Methodology'}
+                {visionTitleGenerating || visionDescriptionGenerating ? t('trainingWizard.generating') : t('trainingWizard.visionNext')}
               </span>
               <button
                 type="button"
@@ -1048,10 +1050,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 }}
               >
                 <ArrowLeft style={{ width: 14, height: 14 }} />
-                Back
+                {t('trainingWizard.back')}
               </button>
 
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Step {stepNum} of {steps.length}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>{t('trainingWizard.stepOf', { current: stepNum, total: steps.length })}</span>
 
               <button
                 type="button"
@@ -1065,7 +1067,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                   boxShadow: isStepValid() ? '0 6px 16px rgba(185,28,28,0.22)' : 'none',
                 }}
               >
-                {currentStep === 5 ? 'Start building' : 'Continue'}
+                {currentStep === 5 ? t('trainingWizard.startBuilding') : t('trainingWizard.continue')}
                 <ArrowRight style={{ width: 14, height: 14 }} />
               </button>
             </>

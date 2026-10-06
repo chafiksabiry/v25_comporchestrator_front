@@ -3130,5 +3130,88 @@
     },
     "yearsCount_one": "{{count}} year",
     "yearsCount_other": "{{count}} years"
+  },
+  "trainingMethodology": {
+    "back": "Back",
+    "title": "Choose your training methodology",
+    "subtitle": "Prospecting and B2B services sales are available for every profession. Health insurance stays the specialist track.",
+    "includesTitle": "Our method includes",
+    "selectIndustry": "Choose a track",
+    "includes": "Includes",
+    "duration": "Duration",
+    "cert": "Cert.",
+    "levels": "{{count}} lvl",
+    "hours": "{{count}} h",
+    "select": "Select methodology",
+    "comingSoon": "Coming soon",
+    "features": {
+      "foundational": "Foundational knowledge",
+      "compliance": "Regulatory compliance",
+      "industry": "Industry expertise",
+      "operational": "Operational excellence",
+      "integration": "Company integration",
+      "development": "Professional development"
+    },
+    "industries": {
+      "health": {
+        "duration": "120+ hours"
+      },
+      "auto": {
+        "name": "Auto insurance sales",
+        "description": "Auto insurance sales training with regulations and product expertise.",
+        "duration": "80+ hours",
+        "features": ["Insurance regulations", "Auto insurance products", "Claims and customer service", "Sales techniques and objections", "Systems training", "Contact centre quality"]
+      },
+      "property": {
+        "name": "Property insurance",
+        "description": "Property and casualty training: risk assessment, underwriting and claims.",
+        "duration": "90+ hours",
+        "features": ["Property risk assessment", "Underwriting guidelines", "Claims management", "Customer consultation", "Regulatory compliance", "Contact centre operations"]
+      },
+      "life": {
+        "name": "Life insurance sales",
+        "description": "Life insurance and the basics of financial planning.",
+        "duration": "100+ hours",
+        "features": ["Life insurance products", "Financial planning basics", "Estate planning concepts", "Investment products", "Ethical sales practices", "Contact centre excellence"]
+      },
+      "financial": {
+        "name": "Financial services",
+        "description": "Financial services training: investments, banking and advice.",
+        "duration": "150+ hours",
+        "features": ["Investment products and strategies", "Banking services and regulations", "Financial advisory skills", "Risk management", "Compliance and ethics", "Multi-channel customer service"]
+      },
+      "healthcare": {
+        "name": "Healthcare services",
+        "description": "Healthcare training: patient care, regulations and service quality.",
+        "duration": "110+ hours",
+        "features": ["Patient care standards", "Healthcare regulations", "Medical terminology", "Service excellence", "Technology systems", "Patient communication"]
+      }
+    }
+  },
+  "trainingWizard": {
+    "steps": {
+      "gig": "Gig",
+      "vision": "Vision",
+      "team": "Team",
+      "methodology": "Methodology"
+    },
+    "welcomeTitle": "Welcome to your training journey",
+    "welcomeSubtitle": "Smart defaults · Compliance",
+    "visionTitle": "Define your training vision",
+    "visionSubtitle": "Name & description — same language as gig title/description",
+    "teamTitle": "Identify your learners",
+    "teamSubtitle": "Role-based paths · Skill assessments · Personalization",
+    "back": "Back",
+    "continue": "Continue",
+    "startBuilding": "Start building",
+    "stepOf": "Step {{current}} of {{total}}",
+    "generating": "Generating…",
+    "visionNext": "Vision · next: Methodology",
+    "trainingProgram": "Training program",
+    "methodology": "Methodology",
+    "targetRoles": "{{count}} target roles",
+    "days": "{{count}} day(s)",
+    "hours": "{{count}} hour(s)",
+    "minutes": "{{count}} minute(s)"
   }
 }
