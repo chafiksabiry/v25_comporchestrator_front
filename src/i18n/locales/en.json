@@ -27,6 +27,15 @@
     "openPage": "Place calls",
     "comingSoonBody": "This feature will be available soon for companies."
   },
+  "documentViewer": {
+    "consultationOnly": "View only — editing and download are disabled",
+    "document": "Document",
+    "previewUnavailable": "View-only preview is not available for this format. Download is disabled.",
+    "videoUnsupported": "Video playback is not supported",
+    "invalidYoutube": "Invalid YouTube URL",
+    "cannotEmbed": "Unable to embed this video inside HARX.",
+    "loading": "Loading document…"
+  },
   "userMenu": {
     "profile": "Profile",
     "settings": "Settings",

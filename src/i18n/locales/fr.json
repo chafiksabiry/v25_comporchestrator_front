@@ -27,6 +27,15 @@
     "openPage": "Lancer des appels",
     "comingSoonBody": "Cette fonctionnalité sera bientôt disponible pour les entreprises."
   },
+  "documentViewer": {
+    "consultationOnly": "Consultation uniquement — modification et téléchargement désactivés",
+    "document": "Document",
+    "previewUnavailable": "Aperçu en consultation non disponible pour ce format. Le téléchargement est désactivé.",
+    "videoUnsupported": "Lecture vidéo non supportée",
+    "invalidYoutube": "URL YouTube invalide",
+    "cannotEmbed": "Impossible d’intégrer cette vidéo dans HARX.",
+    "loading": "Chargement du document…"
+  },
   "userMenu": {
     "profile": "Profil",
     "settings": "Paramètres",
