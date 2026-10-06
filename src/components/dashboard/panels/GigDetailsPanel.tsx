@@ -294,7 +294,7 @@ function GigDetailsPanel() {
           html:
             `<input id="swal-tz" class="swal2-input" placeholder="Timezone (ex: Europe/Paris)" value="${escapeHtml(String(tz))}" />` +
             `<p style="text-align:left;font-size:12px;color:#64748b;margin:10px 0 6px;">` +
-              `Plusieurs plages par jour possibles (ex. Lun 08–12 et Lun 13–18).` +
+              `Plusieurs plages par jour possibles (ex. Lun 08–13 et Lun 14–18).` +
             `</p>` +
             `<div id="swal-slots" style="text-align:left;max-height:320px;overflow:auto;padding-right:4px;">` +
               slots.map((s, i) => slotRowHtml(s, i)).join('') +
@@ -321,7 +321,7 @@ function GigDetailsPanel() {
 
             addBtn?.addEventListener('click', () => {
               if (!container) return;
-              const next = { day: 'Monday', start: '13:00', end: '18:00' };
+              const next = { day: 'Monday', start: '14:00', end: '18:00' };
               const firstDay = (
                 container.querySelector('[data-slot-day]') as HTMLSelectElement | null
               )?.value;

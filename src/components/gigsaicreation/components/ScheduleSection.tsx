@@ -68,7 +68,7 @@ const flexibilityOptions = [
 
 const timePresets = [
   { id: "morning", start: "09:00", end: "17:00" },
-  { id: "afternoon", start: "13:00", end: "21:00" },
+  { id: "afternoon", start: "14:00", end: "21:00" },
   { id: "evening", start: "17:00", end: "01:00" },
   { id: "night", start: "21:00", end: "05:00" },
   { id: "fullDay", start: "00:00", end: "23:59" },
@@ -76,8 +76,8 @@ const timePresets = [
 
 const rangeCandidates: TimeRange[] = [
   { start: "09:00", end: "17:00" },
-  { start: "08:00", end: "12:00" },
-  { start: "13:00", end: "18:00" },
+  { start: "08:00", end: "13:00" },
+  { start: "14:00", end: "18:00" },
   { start: "14:00", end: "18:00" },
   { start: "07:00", end: "15:00" },
   { start: "11:00", end: "19:00" },

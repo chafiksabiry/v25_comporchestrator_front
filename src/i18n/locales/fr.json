@@ -1509,7 +1509,7 @@
       "pickDaysHint": "Choisissez les jours d'un groupe, puis ajoutez plusieurs plages horaires",
       "workingDays": "Jours travaillés",
       "timeRanges": "Plages horaires",
-      "overlapWarning": "Plages qui se chevauchent — ajustez pour qu'elles ne se croisent pas (ex. 08:00–12:00 et 13:00–18:00).",
+      "overlapWarning": "Plages qui se chevauchent — ajustez pour qu'elles ne se croisent pas (ex. 08:00–13:00 et 14:00–18:00).",
       "schedulePresets": {
         "nineToFive": "9h-17h",
         "early": "Tôt",
@@ -1714,7 +1714,7 @@
       "noGroupsHint": "Cliquez sur « Ajouter un créneau » pour commencer",
       "deleteGroup": "Supprimer le groupe",
       "removeRange": "Supprimer la plage",
-      "overlapWarning": "Plages qui se chevauchent — ajustez pour qu'elles ne se croisent pas (ex. 08:00–12:00 et 13:00–18:00).",
+      "overlapWarning": "Plages qui se chevauchent — ajustez pour qu'elles ne se croisent pas (ex. 08:00–13:00 et 14:00–18:00).",
       "dayAlreadyUsed": "{{day}} est déjà sélectionné dans un autre groupe",
       "workingDays": "Jours travaillés",
       "minimumHours": "Heures minimum",
@@ -2526,7 +2526,8 @@
       "availableSlots": "Créneaux Disponibles",
       "reservedSlots": "Créneaux Réservés",
       "gigHours": "Heures de Gig"
-    }
+    },
+    "legalLunch": "Appels interdits de 13h à 14h"
   },
   "orchestratorGuide": {
     "intro": {
