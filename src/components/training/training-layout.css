@@ -9,13 +9,36 @@
   overflow-anchor: none;
 }
 
-.harx-method-grid {
+.harx-method-grid,
+.harx-fit-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
-  gap: 0.75rem;
   width: 100%;
   min-width: 0;
   align-items: stretch;
+}
+
+.harx-method-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
+  gap: 0.75rem;
+}
+
+/* Academy list: 1 column when narrow, 2 beside the sidebar, 3 only on a wide content column. */
+.harx-fit-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+  gap: 0.75rem;
+}
+
+.harx-fit-grid > *,
+.harx-stat-grid > * {
+  min-width: 0;
+}
+
+.harx-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .harx-method-card {

@@ -47,6 +47,7 @@ import {
 } from '../training/infrastructure/services/ProgressService';
 import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
+import '../training/training-layout.css';
 
 interface RepOnboardingProps { }
 
@@ -1674,12 +1675,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   }
 
   return (
-    <div className="relative min-h-full">
+    <div className="relative min-h-full w-full min-w-0 max-w-full">
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[radial-gradient(ellipse_90%_70%_at_50%_-30%,rgba(255,77,77,0.07),transparent_65%)]"
         aria-hidden
       />
-      <div className="relative mx-auto max-w-7xl animate-fade-in px-1 pb-10 sm:px-2">
+      <div className="relative mx-auto w-full min-w-0 max-w-7xl animate-fade-in px-1 pb-10 sm:px-2">
         {selectedImageSet ? (
           <div className="relative overflow-hidden rounded-[1.75rem] border border-harx-600/35 bg-gradient-to-br from-harx-950 via-neutral-950 to-harx-alt-950 shadow-[0_32px_120px_-24px_rgba(236,72,153,0.25)] ring-1 ring-harx-500/20">
             {/* Fond ambiance HARX */}
@@ -1896,7 +1897,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           </div>
         </header>
 
-        <div className="mb-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="harx-stat-grid mb-4">
           {[
             { value: participants.length, label: t('repOnboarding.trackingStats.participants'), tab: 'participants' as FormationPageTab, icon: Users, tone: 'from-indigo-500/10 to-indigo-50 border-indigo-100 text-indigo-700' },
             { value: `${trackingStats.avgProgress}%`, label: t('repOnboarding.trackingStats.avgProgress'), tab: 'tracking' as FormationPageTab, icon: TrendingUp, tone: 'from-sky-500/10 to-sky-50 border-sky-100 text-sky-700' },
@@ -2016,7 +2017,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="harx-fit-grid">
                       {trainings.filter(Boolean).map((journey, cardIndex) => {
                         const journeyId = extractMongoId(journey._id || journey.id);
                         const gigId = resolveJourneyGigId(journey);
@@ -2034,7 +2035,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                           <div
                           key={formatted.id}
                           style={{ animationDelay: `${cardIndex * 80}ms` }}
-                          className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 animate-fade-in hover:-translate-y-1 hover:border-harx-300/50 hover:shadow-[0_16px_40px_-12px_rgba(255,77,77,0.18)]"
+                          className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 animate-fade-in hover:-translate-y-1 hover:border-harx-300/50 hover:shadow-[0_16px_40px_-12px_rgba(255,77,77,0.18)]"
                           >
                           <div className="absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b from-harx-500 to-harx-alt-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden />
                           <div className="relative z-10 flex flex-1 flex-col p-4">
@@ -2115,7 +2116,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               </div>
                             </div>
 
-                            <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
                               <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                                 <button
                                   type="button"
@@ -2321,7 +2322,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="harx-stat-grid">
                   {[
                     { label: t('repOnboarding.trackingStats.participants'), value: trackingStats.total, icon: Users, color: 'text-indigo-600 bg-indigo-50 ring-indigo-100' },
                     { label: t('repOnboarding.trackingStats.inProgress'), value: trackingStats.inProgress, icon: TrendingUp, color: 'text-sky-700 bg-sky-50 ring-sky-100' },
