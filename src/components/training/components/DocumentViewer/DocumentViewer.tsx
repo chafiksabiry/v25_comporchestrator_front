@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Eye } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface DocumentViewerProps {
@@ -124,13 +124,6 @@ export default function DocumentViewer({ fileUrl, fileName, mimeType }: Document
   const isBlobUrl = fileUrl.startsWith("blob:");
   const blockContextMenu = (e: React.MouseEvent) => e.preventDefault();
 
-  const consultationNotice = (
-    <div className="flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-slate-500 bg-slate-50 border-b border-slate-100 shrink-0">
-      <Eye className="h-3.5 w-3.5 text-harx-500 shrink-0" />
-      <span>{t("documentViewer.consultationOnly", "Consultation uniquement — modification et téléchargement désactivés")}</span>
-    </div>
-  );
-
   const unsupportedPreview = (
     <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50 rounded-lg border border-gray-200">
       <FileText className="w-16 h-16 text-slate-400 mb-4" />
@@ -150,8 +143,6 @@ export default function DocumentViewer({ fileUrl, fileName, mimeType }: Document
       style={{ height: "100%", width: "100%", flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}
       onContextMenu={blockContextMenu}
     >
-      {consultationNotice}
-
       {type === "pdf" && (
         <iframe
           src={viewOnlyPdfSrc(fileUrl)}

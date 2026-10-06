@@ -28,9 +28,8 @@
     "comingSoonBody": "This feature will be available soon for companies."
   },
   "documentViewer": {
-    "consultationOnly": "View only — editing and download are disabled",
     "document": "Document",
-    "previewUnavailable": "View-only preview is not available for this format. Download is disabled.",
+    "previewUnavailable": "Preview is not available for this format.",
     "videoUnsupported": "Video playback is not supported",
     "invalidYoutube": "Invalid YouTube URL",
     "cannotEmbed": "Unable to embed this video inside HARX.",
