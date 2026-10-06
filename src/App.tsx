@@ -856,7 +856,7 @@ function AppContent() {
           />
         </div>
 
-        <div className="flex flex-1 flex-col overflow-hidden relative bg-harx-sidebar">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden relative bg-harx-sidebar">
           {/* Top Navigation / Navbar */}
           {/* z-40 keeps header menus above main; overflow-visible so absolute menus are not clipped */}
           <header className={`bg-harx-sidebar h-16 flex items-center shrink-0 px-4 md:px-5 relative z-40 overflow-visible ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
@@ -1018,7 +1018,7 @@ function AppContent() {
 
           {/* Main Content Area */}
           <main
-            className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full bg-harx-bg"
+            className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full min-w-0 bg-harx-bg"
             data-harx-scroll-root
           >
             <ProjectViewSwitch
