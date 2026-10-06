@@ -435,9 +435,9 @@ export default function JourneyBuilder({
               flex: 1,
               width: '100%',
               minWidth: 0,
-              minHeight: '100%',
+              minHeight: 0,
               height: '100%',
-              overflow: 'visible',
+              overflow: 'hidden',
             }
           : {
               display: 'flex',
@@ -450,7 +450,15 @@ export default function JourneyBuilder({
             }
       }
     >
-      {renderCurrentStep()}
+      <div
+        className={
+          documentScroll
+            ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
+            : 'min-h-0 min-w-0 flex-1'
+        }
+      >
+        {renderCurrentStep()}
+      </div>
     </div>
   );
 }

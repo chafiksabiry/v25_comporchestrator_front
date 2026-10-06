@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Play, Pause, RotateCcw, CheckCircle, AlertTriangle, MessageSquare, Star, Eye, Users, Rocket, ArrowLeft, ArrowRight, Clock, BarChart3, Zap, Video, BookOpen, Edit3, Save, X as XIcon, Trash2, Plus, Download, FileText, Image as ImageIcon, Youtube, Sparkles, Loader2, FileQuestion } from 'lucide-react';
 import DocumentViewer from '../DocumentViewer/DocumentViewer';
 import { TrainingJourney, TrainingModule, RehearsalFeedback, ContentUpload, Assessment, Question } from '../../types';
@@ -32,6 +33,7 @@ interface RehearsalModeProps {
 }
 
 export default function RehearsalMode({ journey, modules, uploads = [], methodology, onComplete, onBack }: RehearsalModeProps) {
+  const { t } = useTranslation();
   const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
   const [completedModules, setCompletedModules] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<RehearsalFeedback[]>([]);
@@ -906,7 +908,8 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
   };
 
   return (
-    <div className="harx-training-step min-h-full bg-gradient-to-br from-indigo-50 to-purple-50">
+    <div className="harx-training-step flex h-full min-h-0 flex-col bg-gradient-to-br from-indigo-50 to-purple-50">
+      <div className="min-h-0 flex-1 overflow-auto">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -1623,6 +1626,26 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
             </div>
           </div>
         </div>
+      </div>
+      </div>
+      <div className="harx-training-actions shrink-0 border-t border-gray-200 px-4 py-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-2 rounded-xl border-2 border-gray-300 px-5 py-2.5 font-semibold text-gray-700 hover:bg-gray-50"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t('trainingWizard.back')}
+        </button>
+        <button
+          type="button"
+          onClick={handleFinishRehearsal}
+          disabled={overallRating === 0}
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-2.5 font-bold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Rocket className="h-4 w-4" />
+          {t('trainingWizard.continue')}
+        </button>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Brain,
   Video,
@@ -30,6 +31,7 @@ interface CurriculumDesignerProps {
 }
 
 export default function CurriculumDesigner({ uploads, methodology, gigId, onComplete, onBack, fileTrainingUrl }: CurriculumDesignerProps) {
+  const { t } = useTranslation();
   const [modules, setModules] = React.useState<TrainingModule[]>([]);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [editingModuleId, setEditingModuleId] = React.useState<string | null>(null);
@@ -486,8 +488,8 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
   }
 
   return (
-    <div className="harx-training-step min-h-full bg-gradient-to-br from-indigo-50 to-purple-50">
-      <div className="container mx-auto px-4 py-4">
+    <div className="harx-training-step flex h-full min-h-0 flex-col bg-gradient-to-br from-indigo-50 to-purple-50">
+      <div className="container mx-auto min-h-0 flex-1 overflow-auto px-4 py-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-4">
@@ -732,37 +734,37 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
             </div>
           </div>
 
-          {/* Action Footer */}
-          <div className="mt-8 flex items-center justify-between bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-100">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Ready to start training?</h3>
-              <p className="text-sm text-gray-600">Your curriculum is complete and enhanced with AI content.</p>
-            </div>
-
-            <div className="flex space-x-4">
-              <button
-                onClick={handleGeneratePresentation}
-                disabled={modules.length === 0 || isGeneratingPresentation}
-                className="px-6 py-3 bg-white border-2 border-indigo-600 text-indigo-600 rounded-xl hover:bg-indigo-50 disabled:opacity-50 transition-all font-bold flex items-center space-x-2"
-              >
-                {isGeneratingPresentation ? (
-                  <div className="w-5 h-5 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
-                ) : (
-                  <Presentation className="h-5 w-5" />
-                )}
-                <span>Visualiser la Présentation</span>
-              </button>
-
-              <button
-                onClick={() => onComplete(modules)}
-                disabled={modules.length === 0}
-                className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center space-x-2"
-              >
-                <Rocket className="h-5 w-5" />
-                <span>🚀 LAUNCH TRAINING</span>
-              </button>
-            </div>
-          </div>
+        </div>
+      </div>
+      <div className="harx-training-actions shrink-0 border-t border-indigo-100 px-4 py-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-xl border-2 border-gray-300 px-5 py-2.5 font-semibold text-gray-700 transition-all hover:bg-gray-50"
+        >
+          {t('trainingWizard.back')}
+        </button>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <button
+            onClick={handleGeneratePresentation}
+            disabled={modules.length === 0 || isGeneratingPresentation}
+            className="flex items-center space-x-2 rounded-xl border-2 border-indigo-600 bg-white px-5 py-2.5 font-bold text-indigo-600 transition-all hover:bg-indigo-50 disabled:opacity-50"
+          >
+            {isGeneratingPresentation ? (
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-indigo-600/30 border-t-indigo-600" />
+            ) : (
+              <Presentation className="h-5 w-5" />
+            )}
+            <span>Visualiser la Présentation</span>
+          </button>
+          <button
+            onClick={() => onComplete(modules)}
+            disabled={modules.length === 0}
+            className="flex items-center space-x-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-2.5 font-bold text-white shadow-lg transition-all hover:from-green-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Rocket className="h-5 w-5" />
+            <span>{t('trainingWizard.continue')}</span>
+          </button>
         </div>
       </div>
 
