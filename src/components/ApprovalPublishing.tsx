@@ -390,8 +390,8 @@ const ApprovalPublishing = () => {
             budget: gig.commission?.baseAmount && gig.commission.baseAmount !== '0' ? `$${gig.commission.baseAmount}` : null,
             companyId: gig.companyId,
             companyName: gig.companyName || gig.company?.name || company?.name || t('approvalPublishing.fallback.company'),
-            createdAt: gig.createdAt,
-            updatedAt: gig.updatedAt,
+            createdAt: gig.createdAt || gig.created_at || gig.purchasedAt || gig.purchaseDate || null,
+            updatedAt: gig.updatedAt || gig.updated_at || null,
             submittedBy: gig.submittedBy || gig.companyName || gig.company?.name || company?.name || t('approvalPublishing.fallback.company'),
             issues: gig.issues || [],
             setupSteps: gig.setupSteps || undefined,
@@ -457,6 +457,28 @@ const ApprovalPublishing = () => {
     return isMatch;
   });
 
+  const resolveGigPurchaseDate = (gig: { _id?: string; createdAt?: string; updatedAt?: string }): Date | null => {
+    for (const raw of [gig.createdAt, gig.updatedAt]) {
+      if (!raw) continue;
+      const parsed = new Date(raw);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    if (gig._id && /^[a-f0-9]{24}$/i.test(gig._id)) {
+      const seconds = Number.parseInt(gig._id.slice(0, 8), 16);
+      if (Number.isFinite(seconds)) return new Date(seconds * 1000);
+    }
+    return null;
+  };
+
+  const formatAbsoluteDate = (date: Date | null) => {
+    if (!date) return t('approvalPublishing.fallback.notAvailable');
+    return date.toLocaleDateString(i18n.language?.toLowerCase().startsWith('en') ? 'en-GB' : 'fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
   const formatDate = (dateString: string) => {
     
 
@@ -473,19 +495,20 @@ const ApprovalPublishing = () => {
         return t('approvalPublishing.dates.invalid');
       }
 
+      // Always show the calendar purchase date; keep relative time as a hint.
+      const absolute = formatAbsoluteDate(date);
       const now = new Date();
       const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
-      let result;
-      if (diffInHours < 1) result = t('approvalPublishing.dates.justNow');
-      else if (diffInHours < 24) result = t('approvalPublishing.dates.hoursAgo', { count: diffInHours });
-      else {
+      let relative = '';
+      if (diffInHours < 1) relative = t('approvalPublishing.dates.justNow');
+      else if (diffInHours < 24) relative = t('approvalPublishing.dates.hoursAgo', { count: diffInHours });
+      else if (diffInHours < 24 * 14) {
         const diffInDays = Math.floor(diffInHours / 24);
-        result = t('approvalPublishing.dates.daysAgo', { count: diffInDays });
+        relative = t('approvalPublishing.dates.daysAgo', { count: diffInDays });
       }
 
-      
-      return result;
+      return relative ? `${absolute} · ${relative}` : absolute;
     } catch (error) {
       console.error('📅 Error formatting date:', error);
       return t('approvalPublishing.dates.invalid');
@@ -2851,6 +2874,11 @@ const ApprovalPublishing = () => {
                         <p className="text-sm text-gray-500">
                           {gig.category || t('approvalPublishing.fallback.noCategory')}
                           {gig.budget && ` • ${gig.budget}`}
+                          {' · '}
+                          <span className="font-semibold text-slate-600">
+                            {t('approvalPublishing.fields.created')}:{' '}
+                            {formatAbsoluteDate(resolveGigPurchaseDate(gig))}
+                          </span>
                         </p>
                         {!isGigSetupComplete(gig) &&
                           (gig.status === 'pending' ||
@@ -2909,7 +2937,9 @@ const ApprovalPublishing = () => {
                       </div>
                       <div>
                         <p className="text-xs font-medium text-gray-500">{t('approvalPublishing.fields.created')}</p>
-                        <p className="text-sm font-medium text-gray-900">{formatDate(gig.createdAt)}</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {formatAbsoluteDate(resolveGigPurchaseDate(gig))}
+                        </p>
                       </div>
                       <div>
                         <p className="text-xs font-medium text-gray-500">{t('approvalPublishing.fields.status')}</p>
