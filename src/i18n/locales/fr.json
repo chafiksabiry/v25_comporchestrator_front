@@ -125,7 +125,16 @@
     "cards": {
       "balance": "Solde disponible",
       "purchased": "Tokens achetés",
+      "purchasedAt": "Date d'achat",
       "consumed": "Tokens consommés"
+    },
+    "purchases": {
+      "title": "Historique des achats",
+      "empty": "Aucun achat de tokens enregistré pour l’instant.",
+      "colDate": "Date d'achat",
+      "colTokens": "Tokens",
+      "colAmount": "Montant",
+      "colProvider": "Paiement"
     },
     "modal": {
       "title": "Acheter des tokens AI",
