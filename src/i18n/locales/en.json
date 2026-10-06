@@ -1975,6 +1975,9 @@
         "city": "City",
         "postalCode": "Postal Code",
         "mobile": "Mobile",
+        "location": "Location",
+        "addedAt": "Added on",
+        "status": "Status",
         "actions": "Actions"
       },
       "edit": {
