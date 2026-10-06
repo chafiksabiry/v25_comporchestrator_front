@@ -1985,6 +1985,16 @@
         "success": "Lead updated successfully",
         "error": "Unable to update lead"
       },
+      "archive": {
+        "one": "Archive",
+        "selectOne": "Select this lead",
+        "selectPage": "Select the leads on this page",
+        "selected": "Archive selection ({{count}})",
+        "all": "Archive all",
+        "confirm": "Archive {{count}} lead(s)? They will be removed from the list.",
+        "confirmAll": "Archive all {{count}} leads of this gig? They will be removed from the list.",
+        "error": "Unable to archive the leads"
+      },
       "details": {
         "button": "View details",
         "contactInfo": "Contact Information",
