@@ -5539,7 +5539,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const hasFormationContentSlides = formationViewerSlides.some((s) => s.kind !== 'overview');
 
     return (
-    <div className={rep ? 'flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white' : 'min-h-[92vh] bg-white p-2'}>
+    <div className={rep ? 'harx-training-step flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white' : 'harx-training-step h-full min-h-0 w-full min-w-0 overflow-auto bg-white p-2 sm:p-3'}>
       <div
         className={
           rep

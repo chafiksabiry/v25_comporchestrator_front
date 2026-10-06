@@ -1,0 +1,71 @@
+/* Shared frame for company training pages. Sizes follow the space next to the
+   sidebar, not the browser window, so cards stay readable on small, medium
+   and large screens. */
+.harx-training-page {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-anchor: none;
+}
+
+.harx-method-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+
+.harx-method-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  height: 100%;
+}
+
+.harx-wizard {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-anchor: none;
+}
+
+.harx-wizard-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.harx-wizard-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.harx-training-step {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.harx-training-step .container {
+  width: 100%;
+  max-width: 1120px;
+  padding-left: clamp(12px, 2vw, 24px);
+  padding-right: clamp(12px, 2vw, 24px);
+}
+
+@media (max-width: 720px) {
+  .harx-wizard-step-label {
+    display: none;
+  }
+}

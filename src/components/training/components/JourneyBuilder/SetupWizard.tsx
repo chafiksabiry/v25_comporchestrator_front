@@ -12,6 +12,7 @@ import { OnboardingService } from '../../infrastructure/services/OnboardingServi
 import GigSelector from '../Dashboard/GigSelector';
 import TrainingDetailsForm, { VISION_DURATIONS } from './TrainingDetailsForm';
 import { scrollJourneyMainToTop } from './journeyScroll';
+import '../../training-layout.css';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 import { detectOutputLanguageFromGigText } from '../../utils/gigSnapshotForAi';
 import {
@@ -523,19 +524,13 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const stepperPadding = embedCompact ? '2px 24px 4px' : '8px 24px';
   const bodyPadding = embedCompact
     ? currentStep === 1
-      ? '4px 20px 8px'
+      ? '4px 12px 8px'
       : isVisionStep
-        ? '4px 20px 8px'
+        ? '4px 12px 8px'
         : isTeamStep
-          ? '4px 20px 8px'
-          : '8px 20px 10px'
-    : currentStep === 1
-      ? '12px 28px 8px'
-      : isVisionStep
-        ? '12px 28px 8px'
-        : isTeamStep
-          ? '12px 28px 8px'
-          : '16px 28px';
+          ? '4px 12px 8px'
+          : '8px 12px 10px'
+    : '12px clamp(10px, 1.6vw, 20px) 8px';
 
   const setupContentMaxWidth = '100%';
   const lockBodyScroll = embedCompact && currentStep === 1;
@@ -552,7 +547,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const uniformStepBodyMinHeight = embedCompact ? '100%' : '100%';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%', background: WIZARD_BG, borderRadius: 18, overflow: 'hidden' }}>
+    <div className="harx-wizard" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%', background: WIZARD_BG, borderRadius: 18, overflow: 'hidden' }}>
       <style>{`
         @keyframes wizardFadeUp {
           from { opacity: 0; transform: translateY(8px); }
@@ -562,7 +557,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
 
       {/* ── Stepper ── */}
       <div style={{ flexShrink: 0, padding: stepperPadding }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#ffffff', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: 9999, padding: '8px 12px', backdropFilter: 'blur(8px)' }}>
+        <div className="harx-wizard-stepper" style={{ background: '#ffffff', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: 9999, padding: '8px 12px' }}>
           {steps.map((step, i) => {
             const done = currentStep > step.id;
             const active = currentStep === step.id || (currentStep === 5 && step.id === 4);
@@ -589,7 +584,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                   }}>
                     {done ? <Check style={{ width: 11, height: 11 }} /> : step.id}
                   </span>
-                  <span style={{ fontWeight: 700 }}>{step.label}</span>
+                  <span className="harx-wizard-step-label" style={{ fontWeight: 700 }}>{step.label}</span>
                 </button>
                 {i < steps.length - 1 && (
                   <div style={{ width: 22, height: 2, borderRadius: 1, background: done ? '#0f766e' : '#e5e7eb' }} />
@@ -600,7 +595,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
         </div>
       </div>
 
-      <div style={{ flexShrink: 0, textAlign: 'center', padding: embedCompact ? '2px 16px 8px' : '4px 20px 10px' }}>
+      {!isMethodologyStep && (
+      <div style={{ flexShrink: 0, textAlign: 'center', padding: embedCompact ? '2px 16px 8px' : '4px clamp(12px, 2vw, 20px) 10px' }}>
         <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
           {headerTitle}
         </h3>
@@ -608,6 +604,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
           {headerSubtitle}
         </p>
       </div>
+      )}
 
       {/* Body + footer column: footer stays at bottom of card; only the area above scrolls */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -622,12 +619,13 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
           width: '100%',
         }}>
           <div style={{
-            flex: 1,
+            flex: isMethodologyStep ? '0 0 auto' : 1,
             maxWidth: setupContentMaxWidth,
             margin: '0 auto',
             width: '100%',
-            minHeight: uniformStepBodyMinHeight,
-            height: '100%',
+            minWidth: 0,
+            minHeight: isMethodologyStep ? 0 : uniformStepBodyMinHeight,
+            height: isMethodologyStep ? 'auto' : '100%',
             borderRadius: 18,
             border: WIZARD_CARD_BORDER,
             background: WIZARD_CARD_BG,
@@ -959,7 +957,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                         <Sparkles style={{ width: 12, height: 12, color: HARX }} />
                         {t('trainingWizard.methodology')}
                       </h5>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignContent: 'start', flexShrink: 0 }}>
+                      <div className="harx-method-grid" style={{ gap: 4 }}>
                         {(selectedMethodology.components || []).map((c: MethodologyComponent, i: number) => (
                           <div key={c.id || i} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, minWidth: 0 }}>
                             <CheckCircle style={{ width: 11, height: 11, color: '#059669', flexShrink: 0, marginTop: 2 }} />
@@ -990,15 +988,12 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
 
         {/* ── Footer (always bottom of wizard — same bar for all steps) ── */}
         <div
+          className="harx-wizard-footer"
           style={{
             flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: embedCompact ? '8px 20px' : '10px 28px',
+            padding: embedCompact ? '8px 16px' : '10px clamp(12px, 2vw, 28px)',
             borderTop: '1px solid rgba(15,23,42,0.08)',
             background: '#ffffff',
-            backdropFilter: 'blur(10px)',
           }}
         >
           {isVisionStep ? (
