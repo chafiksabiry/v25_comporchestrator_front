@@ -1638,8 +1638,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
-      <div className="flex h-[calc(100dvh-6.5rem)] w-full min-w-0 flex-col overflow-hidden">
-        <div className="flex min-h-0 h-full w-full flex-1 flex-col">
+      <div className="flex h-[calc(100dvh-11.5rem)] max-h-[calc(100dvh-11.5rem)] w-full min-w-0 flex-col overflow-hidden">
+        <div className="flex min-h-0 w-full flex-1 flex-col">
           <header className="mb-2 shrink-0 overflow-hidden rounded-xl border border-harx-100 px-5 py-2">
             <div className="h-0.5 w-full -mx-5 -mt-2 mb-2 rounded-t-xl bg-gradient-harx" aria-hidden />
             <div className="flex items-center justify-between">
@@ -1653,9 +1653,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               </button>
             </div>
           </header>
-          <div className="min-h-0 h-full w-full overflow-hidden rounded-xl border border-harx-100 bg-white">
+          <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-xl border border-harx-100 bg-white">
             <div className="h-0.5 w-full shrink-0 bg-gradient-harx" aria-hidden />
-            <div className="flex min-h-0 h-full w-full flex-col overflow-hidden">
+            <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
               <AppContent
                 initialJourneyId={showTraining.journeyId}
                 initialGigId={showTraining.gigId}

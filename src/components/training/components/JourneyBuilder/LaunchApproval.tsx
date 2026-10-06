@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, AlertTriangle, MessageSquare, Star, Users, Rocket, ArrowLeft, Clock, BarChart3, Eye, Play, Zap, Video, ChevronDown, ChevronUp, FileQuestion, Loader2, FileText, Edit3, Save, X as XIcon } from 'lucide-react';
 import { TrainingJourney, TrainingModule, RehearsalFeedback, Rep, Assessment, Question } from '../../types';
 import DocumentViewer from '../DocumentViewer/DocumentViewer';
@@ -32,6 +33,7 @@ export default function LaunchApproval({
   gigId,
   company
 }: LaunchApprovalProps) {
+  const { t } = useTranslation();
   const [selectedReps, setSelectedReps] = useState<string[]>([]);
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
   const [showModulePreviews, setShowModulePreviews] = useState(false);
@@ -487,8 +489,8 @@ export default function LaunchApproval({
   };
 
   return (
-    <div className="harx-training-step min-h-full bg-gradient-to-br from-green-50 to-emerald-50">
-      <div className="container mx-auto px-4 py-4">
+    <div className="harx-training-step flex h-full min-h-0 flex-col bg-gradient-to-br from-green-50 to-emerald-50">
+      <div className="container mx-auto min-h-0 flex-1 overflow-auto px-4 py-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-4">
@@ -1223,39 +1225,26 @@ export default function LaunchApproval({
             </div>
           </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between items-center mt-8">
-            <button
-              onClick={onBack}
-              className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
-            >
-              Back to Curriculum
-            </button>
-
-            <div className="text-center">
-              <div className="text-sm text-gray-500 mb-2">
-                Rehearsal Rating: {rehearsalRating}/5 stars
-              </div>
-              <div className="flex items-center space-x-2">
-                {isReadyForLaunch ? (
-                  <>
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span className="text-sm text-green-600 font-medium">Ready for Launch</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                    <span className="text-sm text-yellow-600 font-medium">Review Required</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="w-32"></div> {/* Spacer for alignment */}
-          </div>
         </div>
       </div>
-
+      <div className="harx-training-actions shrink-0 border-t border-emerald-100 px-4 py-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-xl border-2 border-gray-300 px-5 py-2.5 font-semibold text-gray-700 transition-all hover:bg-gray-50"
+        >
+          {t('trainingWizard.back')}
+        </button>
+        <button
+          type="button"
+          onClick={handleLaunch}
+          disabled={!isReadyForLaunch || isLaunching}
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-2.5 font-bold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isLaunching ? t('trainingWizard.generating') : t('trainingWizard.continue')}
+          <Rocket className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }
