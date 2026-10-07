@@ -191,7 +191,13 @@
       "paymentError": "An error occurred during payment.",
       "assignSuccess": "Number {{number}} assigned to the gig.",
       "assignFailed": "Unable to assign the number to a gig.",
-      "assignSelectGig": "Please choose a gig to assign."
+      "assignSelectGig": "Please choose a gig to assign.",
+      "reassignSuccess": "Number {{number}} reassigned to another gig.",
+      "reassignFailed": "Unable to reassign the number.",
+      "reassignSameGig": "Choose a different gig from the current assignment.",
+      "terminateConfirm": "Permanently terminate {{number}}? The number will be released at Telnyx/Twilio and removed from HARX. This cannot be undone.",
+      "terminateSuccess": "Number {{number}} terminated at the provider and removed.",
+      "terminateFailed": "Unable to terminate the number."
     },
     "tabs": {
       "myNumbersWithCount": "My Lines ({{count}})",
@@ -229,8 +235,13 @@
         "status": "Status",
         "unassigned": "Unassigned",
         "assignPlaceholder": "Choose a gig…",
+        "reassignPlaceholder": "Reassign to another gig…",
         "assign": "Assign",
+        "reassign": "Reassign",
         "assigning": "…",
+        "terminate": "Terminate",
+        "terminating": "…",
+        "actions": "Actions",
         "active": "active",
         "freeTrial": "Free trial",
         "companyTotalLabel": "Company total",
@@ -249,6 +260,7 @@
         "status": "Status",
         "createdAt": "Purchase date",
         "buyForGig": "Buy another line",
+        "terminate": "Terminate number",
         "close": "Close"
       },
       "filters": {
