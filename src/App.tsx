@@ -323,7 +323,7 @@ function AppContent() {
 
   const handleMinutesClick = () => {
     setActiveProject('dashboard');
-    navigate('/dashboard/minutes');
+    navigate(minutes <= 0 ? '/dashboard/minutes?buy=1' : '/dashboard/minutes');
   };
 
   const handleTokensClick = () => {
@@ -892,14 +892,17 @@ function AppContent() {
                   {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
                     <div
                       onClick={handleMinutesClick}
-                      className="harx-nav-chip group"
+                      className={`harx-nav-chip group ${minutes <= 0 ? 'ring-1 ring-rose-400/50' : ''}`}
+                      title={minutes <= 0 ? t('navbar.minutesLimitReached', 'Limite atteinte — acheter des minutes') : undefined}
                     >
-                      <div className="harx-nav-chip-icon bg-blue-500/15 border border-blue-500/25">
-                        <Clock size={13} className="text-blue-400" />
+                      <div className={`harx-nav-chip-icon border ${minutes <= 0 ? 'bg-rose-500/20 border-rose-400/40' : 'bg-blue-500/15 border-blue-500/25'}`}>
+                        <Clock size={13} className={minutes <= 0 ? 'text-rose-400' : 'text-blue-400'} />
                       </div>
                       <div className="flex flex-col leading-tight">
                         <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.minutes')}</span>
-                        <span className="text-sm font-black text-white tabular-nums whitespace-nowrap">{formatWalletMinutesBalance(minutes)}</span>
+                        <span className={`text-sm font-black tabular-nums whitespace-nowrap ${minutes <= 0 ? 'text-rose-300' : 'text-white'}`}>
+                          {formatWalletMinutesBalance(minutes)}
+                        </span>
                       </div>
                     </div>
                   )}
