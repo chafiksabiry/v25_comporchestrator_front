@@ -191,7 +191,13 @@
       "paymentError": "Erreur lors du paiement.",
       "assignSuccess": "Numéro {{number}} affecté au gig.",
       "assignFailed": "Impossible d'affecter le numéro au gig.",
-      "assignSelectGig": "Choisissez un gig à affecter."
+      "assignSelectGig": "Choisissez un gig à affecter.",
+      "reassignSuccess": "Numéro {{number}} réaffecté à un autre gig.",
+      "reassignFailed": "Impossible de réaffecter le numéro.",
+      "reassignSameGig": "Choisissez un gig différent de l'affectation actuelle.",
+      "terminateConfirm": "Résilier définitivement {{number}} ? Le numéro sera libéré chez Telnyx/Twilio et retiré de HARX. Cette action est irréversible.",
+      "terminateSuccess": "Numéro {{number}} résilié chez le fournisseur et retiré.",
+      "terminateFailed": "Impossible de résilier le numéro."
     },
     "tabs": {
       "myNumbersWithCount": "Mes Lignes ({{count}})",
@@ -229,8 +235,13 @@
         "status": "Statut",
         "unassigned": "Non affecté",
         "assignPlaceholder": "Choisir un gig…",
+        "reassignPlaceholder": "Réaffecter à un autre gig…",
         "assign": "Affecter",
+        "reassign": "Réaffecter",
         "assigning": "…",
+        "terminate": "Résilier",
+        "terminating": "…",
+        "actions": "Actions",
         "active": "actif",
         "freeTrial": "Essai gratuit",
         "companyTotalLabel": "Total entreprise",
@@ -249,6 +260,7 @@
         "status": "Statut",
         "createdAt": "Date d'acquisition",
         "buyForGig": "Acheter une autre ligne",
+        "terminate": "Résilier le numéro",
         "close": "Fermer"
       },
       "filters": {

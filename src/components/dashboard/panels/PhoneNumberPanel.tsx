@@ -20,6 +20,8 @@ import {
   Check,
   ChevronRight,
   Bot,
+  Trash2,
+  Repeat2,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -197,9 +199,10 @@ export function PhoneNumberPanel() {
   const [isBuyGigOpen, setIsBuyGigOpen] = useState(false);
   const [selectedPhoneLine, setSelectedPhoneLine] = useState<string | null>(null);
   const [searchProvider, setSearchProvider] = useState<'twilio' | 'telnyx'>('telnyx');
-  /** phoneNumber → draft gigId while assigning an unassigned line */
+  /** phoneNumber → draft gigId while assigning / reassigning a line */
   const [assignGigDraft, setAssignGigDraft] = useState<Record<string, string>>({});
   const [assigningNumber, setAssigningNumber] = useState<string | null>(null);
+  const [terminatingNumber, setTerminatingNumber] = useState<string | null>(null);
 
   const [showRequirementModal, setShowRequirementModal] = useState(false);
   const [countryReq, setCountryReq] = useState<{
@@ -740,10 +743,14 @@ export function PhoneNumberPanel() {
     void doSearch(selectedGigIdForNumber);
   };
 
-  const handleAssignNumberToGig = async (num: PurchasedNumber) => {
+  const handleAssignNumberToGig = async (num: PurchasedNumber, opts?: { reassign?: boolean }) => {
     const draftGigId = assignGigDraft[num.phoneNumber] || '';
     if (!draftGigId) {
       toast.error(t('phoneNumberPanel.toasts.assignSelectGig'));
+      return;
+    }
+    if (opts?.reassign && draftGigId === String(num.gigId || '')) {
+      toast.error(t('phoneNumberPanel.toasts.reassignSameGig'));
       return;
     }
     setAssigningNumber(num.phoneNumber);
@@ -755,14 +762,24 @@ export function PhoneNumberPanel() {
           id: num._id || num.id,
           phoneNumber: num.phoneNumber,
           gigId: draftGigId,
-          companyId
-        })
+          companyId,
+        }),
       });
       const data = await safeParseJson(res);
-      if (!res.ok) {
-        throw new Error(data?.message || data?.error || t('phoneNumberPanel.toasts.assignFailed'));
+      if (!res.ok || data?.success === false) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            (opts?.reassign
+              ? t('phoneNumberPanel.toasts.reassignFailed')
+              : t('phoneNumberPanel.toasts.assignFailed'))
+        );
       }
-      toast.success(t('phoneNumberPanel.toasts.assignSuccess', { number: num.phoneNumber }));
+      toast.success(
+        opts?.reassign
+          ? t('phoneNumberPanel.toasts.reassignSuccess', { number: num.phoneNumber })
+          : t('phoneNumberPanel.toasts.assignSuccess', { number: num.phoneNumber })
+      );
       setAssignGigDraft((prev) => {
         const next = { ...prev };
         delete next[num.phoneNumber];
@@ -771,9 +788,50 @@ export function PhoneNumberPanel() {
       await fetchData(true);
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || t('phoneNumberPanel.toasts.assignFailed'));
+      toast.error(
+        err?.message ||
+          (opts?.reassign
+            ? t('phoneNumberPanel.toasts.reassignFailed')
+            : t('phoneNumberPanel.toasts.assignFailed'))
+      );
     } finally {
       setAssigningNumber(null);
+    }
+  };
+
+  const handleTerminateNumber = async (num: PurchasedNumber) => {
+    const confirmed = window.confirm(
+      t('phoneNumberPanel.toasts.terminateConfirm', { number: num.phoneNumber })
+    );
+    if (!confirmed) return;
+
+    setTerminatingNumber(num.phoneNumber);
+    try {
+      const res = await fetch(`${apiBaseUrl}/phone-numbers/terminate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: num._id || num.id,
+          phoneNumber: num.phoneNumber,
+          companyId,
+        }),
+      });
+      const data = await safeParseJson(res);
+      if (!res.ok || data?.success === false) {
+        throw new Error(
+          data?.message || data?.error || t('phoneNumberPanel.toasts.terminateFailed')
+        );
+      }
+      toast.success(t('phoneNumberPanel.toasts.terminateSuccess', { number: num.phoneNumber }));
+      if (selectedPhoneLine === num.phoneNumber) {
+        setSelectedPhoneLine(null);
+      }
+      await fetchData(true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || t('phoneNumberPanel.toasts.terminateFailed'));
+    } finally {
+      setTerminatingNumber(null);
     }
   };
 
@@ -1606,12 +1664,18 @@ export function PhoneNumberPanel() {
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.purchasedAt')}</th>
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.price')}</th>
                     <th className="py-3 px-4">{t('phoneNumberPanel.myNumbers.table.status')}</th>
-                    <th className="py-3 px-4 w-10" aria-hidden />
+                    <th className="py-3 px-4 text-right whitespace-nowrap">
+                      {t('phoneNumberPanel.myNumbers.table.actions')}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="text-xs">
                   {filteredPhoneNumbers.map((num) => {
                     const linkedGig = gigsAndReps.find(g => g.gigId === num.gigId);
+                    const otherGigs = gigsAndReps.filter((g) => g.gigId !== num.gigId);
+                    const isBusy =
+                      assigningNumber === num.phoneNumber ||
+                      terminatingNumber === num.phoneNumber;
                     return (
                       <tr
                         key={num.phoneNumber}
@@ -1635,57 +1699,69 @@ export function PhoneNumberPanel() {
                           </div>
                         </td>
                         <td className="py-4 px-4 font-bold text-slate-700">
-                          {linkedGig ? (
-                            <span className="px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100">{linkedGig.title}</span>
-                          ) : (
-                            <div
-                              className="flex flex-col sm:flex-row sm:items-center gap-2 max-w-xs"
-                              onClick={(e) => e.stopPropagation()}
-                              onKeyDown={(e) => e.stopPropagation()}
-                            >
+                          <div
+                            className="flex flex-col gap-2 max-w-sm"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          >
+                            {linkedGig ? (
+                              <span className="inline-flex w-fit px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100">
+                                {linkedGig.title}
+                              </span>
+                            ) : (
                               <span className="text-slate-400 italic text-[11px]">
                                 {t('phoneNumberPanel.myNumbers.table.unassigned')}
                               </span>
-                              {gigsAndReps.length > 0 ? (
-                                <div className="flex items-center gap-1.5">
-                                  <select
-                                    value={assignGigDraft[num.phoneNumber] || ''}
-                                    onChange={(e) =>
-                                      setAssignGigDraft((prev) => ({
-                                        ...prev,
-                                        [num.phoneNumber]: e.target.value
-                                      }))
-                                    }
-                                    disabled={assigningNumber === num.phoneNumber}
-                                    className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    aria-label={t('phoneNumberPanel.myNumbers.table.assignPlaceholder')}
-                                  >
-                                    <option value="">
-                                      {t('phoneNumberPanel.myNumbers.table.assignPlaceholder')}
+                            )}
+                            {gigsAndReps.length > 0 && (
+                              <div className="flex items-center gap-1.5">
+                                <select
+                                  value={assignGigDraft[num.phoneNumber] || ''}
+                                  onChange={(e) =>
+                                    setAssignGigDraft((prev) => ({
+                                      ...prev,
+                                      [num.phoneNumber]: e.target.value,
+                                    }))
+                                  }
+                                  disabled={isBusy}
+                                  className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  aria-label={
+                                    linkedGig
+                                      ? t('phoneNumberPanel.myNumbers.table.reassignPlaceholder')
+                                      : t('phoneNumberPanel.myNumbers.table.assignPlaceholder')
+                                  }
+                                >
+                                  <option value="">
+                                    {linkedGig
+                                      ? t('phoneNumberPanel.myNumbers.table.reassignPlaceholder')
+                                      : t('phoneNumberPanel.myNumbers.table.assignPlaceholder')}
+                                  </option>
+                                  {(linkedGig ? otherGigs : gigsAndReps).map((g) => (
+                                    <option key={g.gigId} value={g.gigId}>
+                                      {g.title}
                                     </option>
-                                    {gigsAndReps.map((g) => (
-                                      <option key={g.gigId} value={g.gigId}>
-                                        {g.title}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <button
-                                    type="button"
-                                    disabled={
-                                      assigningNumber === num.phoneNumber ||
-                                      !assignGigDraft[num.phoneNumber]
-                                    }
-                                    onClick={() => void handleAssignNumberToGig(num)}
-                                    className="shrink-0 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-white disabled:opacity-40 hover:bg-indigo-700"
-                                  >
-                                    {assigningNumber === num.phoneNumber
-                                      ? t('phoneNumberPanel.myNumbers.table.assigning')
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  disabled={isBusy || !assignGigDraft[num.phoneNumber]}
+                                  onClick={() =>
+                                    void handleAssignNumberToGig(num, {
+                                      reassign: Boolean(linkedGig),
+                                    })
+                                  }
+                                  className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-white disabled:opacity-40 hover:bg-indigo-700"
+                                >
+                                  {linkedGig ? <Repeat2 size={12} /> : null}
+                                  {assigningNumber === num.phoneNumber
+                                    ? t('phoneNumberPanel.myNumbers.table.assigning')
+                                    : linkedGig
+                                      ? t('phoneNumberPanel.myNumbers.table.reassign')
                                       : t('phoneNumberPanel.myNumbers.table.assign')}
-                                  </button>
-                                </div>
-                              ) : null}
-                            </div>
-                          )}
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="py-4 px-4 font-bold text-slate-700 tabular-nums whitespace-nowrap">
                           {formatLineDate(resolveLinePurchaseDate(num))}
@@ -1711,10 +1787,29 @@ export function PhoneNumberPanel() {
                           </span>
                         </td>
                         <td className="py-4 px-2 text-right">
-                          <ChevronRight
-                            size={16}
-                            className="inline-block text-slate-300 transition-all group-hover:text-indigo-500 group-hover:translate-x-0.5"
-                          />
+                          <div
+                            className="inline-flex items-center gap-1.5 justify-end"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => void handleTerminateNumber(num)}
+                              title={t('phoneNumberPanel.myNumbers.table.terminate')}
+                              aria-label={t('phoneNumberPanel.myNumbers.table.terminate')}
+                              className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-rose-700 hover:bg-rose-100 disabled:opacity-40"
+                            >
+                              <Trash2 size={12} />
+                              {terminatingNumber === num.phoneNumber
+                                ? t('phoneNumberPanel.myNumbers.table.terminating')
+                                : t('phoneNumberPanel.myNumbers.table.terminate')}
+                            </button>
+                            <ChevronRight
+                              size={16}
+                              className="text-slate-300 transition-all group-hover:text-indigo-500 group-hover:translate-x-0.5"
+                            />
+                          </div>
                         </td>
                       </tr>
                     );
@@ -2064,59 +2159,81 @@ export function PhoneNumberPanel() {
             </div>
 
             <div className="p-6 space-y-1">
-              <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-100">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  {t('phoneNumberPanel.myNumbers.detailModal.gig')}
-                </span>
-                {gigsAndReps.find((g) => g.gigId === selectedPhoneLineData.gigId) ? (
-                  <span className="text-sm font-bold text-slate-900 text-right max-w-[60%]">
-                    {gigsAndReps.find((g) => g.gigId === selectedPhoneLineData.gigId)?.title}
-                  </span>
-                ) : (
-                  <div className="flex flex-col items-end gap-2 max-w-[70%]">
-                    <span className="text-sm font-bold text-slate-400 italic">
-                      {t('phoneNumberPanel.myNumbers.table.unassigned')}
+              {(() => {
+                const modalLinkedGig = gigsAndReps.find(
+                  (g) => g.gigId === selectedPhoneLineData.gigId
+                );
+                const modalOtherGigs = gigsAndReps.filter(
+                  (g) => g.gigId !== selectedPhoneLineData.gigId
+                );
+                const modalBusy =
+                  assigningNumber === selectedPhoneLineData.phoneNumber ||
+                  terminatingNumber === selectedPhoneLineData.phoneNumber;
+                return (
+                  <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-100">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 pt-1">
+                      {t('phoneNumberPanel.myNumbers.detailModal.gig')}
                     </span>
-                    {gigsAndReps.length > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <select
-                          value={assignGigDraft[selectedPhoneLineData.phoneNumber] || ''}
-                          onChange={(e) =>
-                            setAssignGigDraft((prev) => ({
-                              ...prev,
-                              [selectedPhoneLineData.phoneNumber]: e.target.value
-                            }))
-                          }
-                          disabled={assigningNumber === selectedPhoneLineData.phoneNumber}
-                          className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                          <option value="">
-                            {t('phoneNumberPanel.myNumbers.table.assignPlaceholder')}
-                          </option>
-                          {gigsAndReps.map((g) => (
-                            <option key={g.gigId} value={g.gigId}>
-                              {g.title}
+                    <div className="flex flex-col items-end gap-2 max-w-[70%]">
+                      {modalLinkedGig ? (
+                        <span className="text-sm font-bold text-slate-900 text-right">
+                          {modalLinkedGig.title}
+                        </span>
+                      ) : (
+                        <span className="text-sm font-bold text-slate-400 italic">
+                          {t('phoneNumberPanel.myNumbers.table.unassigned')}
+                        </span>
+                      )}
+                      {gigsAndReps.length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                          <select
+                            value={assignGigDraft[selectedPhoneLineData.phoneNumber] || ''}
+                            onChange={(e) =>
+                              setAssignGigDraft((prev) => ({
+                                ...prev,
+                                [selectedPhoneLineData.phoneNumber]: e.target.value,
+                              }))
+                            }
+                            disabled={modalBusy}
+                            className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="">
+                              {modalLinkedGig
+                                ? t('phoneNumberPanel.myNumbers.table.reassignPlaceholder')
+                                : t('phoneNumberPanel.myNumbers.table.assignPlaceholder')}
                             </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          disabled={
-                            assigningNumber === selectedPhoneLineData.phoneNumber ||
-                            !assignGigDraft[selectedPhoneLineData.phoneNumber]
-                          }
-                          onClick={() => void handleAssignNumberToGig(selectedPhoneLineData)}
-                          className="shrink-0 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-white disabled:opacity-40 hover:bg-indigo-700"
-                        >
-                          {assigningNumber === selectedPhoneLineData.phoneNumber
-                            ? t('phoneNumberPanel.myNumbers.table.assigning')
-                            : t('phoneNumberPanel.myNumbers.table.assign')}
-                        </button>
-                      </div>
-                    )}
+                            {(modalLinkedGig ? modalOtherGigs : gigsAndReps).map((g) => (
+                              <option key={g.gigId} value={g.gigId}>
+                                {g.title}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            disabled={
+                              modalBusy ||
+                              !assignGigDraft[selectedPhoneLineData.phoneNumber]
+                            }
+                            onClick={() =>
+                              void handleAssignNumberToGig(selectedPhoneLineData, {
+                                reassign: Boolean(modalLinkedGig),
+                              })
+                            }
+                            className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-white disabled:opacity-40 hover:bg-indigo-700"
+                          >
+                            {modalLinkedGig ? <Repeat2 size={12} /> : null}
+                            {assigningNumber === selectedPhoneLineData.phoneNumber
+                              ? t('phoneNumberPanel.myNumbers.table.assigning')
+                              : modalLinkedGig
+                                ? t('phoneNumberPanel.myNumbers.table.reassign')
+                                : t('phoneNumberPanel.myNumbers.table.assign')}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
+                );
+              })()}
 
               <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-100">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
@@ -2150,20 +2267,33 @@ export function PhoneNumberPanel() {
               </div>
             </div>
 
-            <div className="px-6 pb-6 flex flex-col sm:flex-row gap-2">
+            <div className="px-6 pb-6 flex flex-col gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={openBuyTabForSelectedLine}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-[11px] font-black uppercase tracking-wider transition-colors"
+                >
+                  {t('phoneNumberPanel.myNumbers.detailModal.buyForGig')}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeLineDetailModal}
+                  className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-[11px] font-black uppercase tracking-wider transition-colors"
+                >
+                  {t('phoneNumberPanel.myNumbers.detailModal.close')}
+                </button>
+              </div>
               <button
                 type="button"
-                onClick={openBuyTabForSelectedLine}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-[11px] font-black uppercase tracking-wider transition-colors"
+                disabled={terminatingNumber === selectedPhoneLineData.phoneNumber}
+                onClick={() => void handleTerminateNumber(selectedPhoneLineData)}
+                className="w-full py-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-40 text-[11px] font-black uppercase tracking-wider transition-colors inline-flex items-center justify-center gap-2"
               >
-                {t('phoneNumberPanel.myNumbers.detailModal.buyForGig')}
-              </button>
-              <button
-                type="button"
-                onClick={closeLineDetailModal}
-                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-[11px] font-black uppercase tracking-wider transition-colors"
-              >
-                {t('phoneNumberPanel.myNumbers.detailModal.close')}
+                <Trash2 size={14} />
+                {terminatingNumber === selectedPhoneLineData.phoneNumber
+                  ? t('phoneNumberPanel.myNumbers.table.terminating')
+                  : t('phoneNumberPanel.myNumbers.detailModal.terminate')}
               </button>
             </div>
           </div>
