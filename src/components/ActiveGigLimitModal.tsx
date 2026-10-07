@@ -8,29 +8,35 @@ export type ActiveGigLimitItem = {
   title: string;
 };
 
+export type ActiveGigLimitMode = 'activate' | 'reconcile';
+
 export type ActiveGigLimitModalProps = {
   open: boolean;
   onClose: () => void;
-  /** Gig the user wants to activate */
+  mode?: ActiveGigLimitMode;
+  /** Gig the user wants to activate (activate mode) */
   targetGigTitle: string;
   maxGigs: number;
   planName: string | null;
   nextPlanHint: string | null;
   activeGigs: ActiveGigLimitItem[];
-  /** How many currently-active gigs must be turned off to free a slot */
+  /** How many currently-active gigs must be turned off */
   slotsNeeded: number;
   switching?: boolean;
+  /** activate: deactivate selected then activate target; reconcile: deactivate selected only */
   onSwitch: (deactivateGigIds: string[]) => void;
   onUpgrade: () => void;
+  /** When true, Escape / backdrop cannot dismiss (over-quota reconcile) */
+  blocking?: boolean;
 };
 
 /**
- * Shown when activating a gig would exceed the plan's max active gigs.
- * Mirrors SessionPlanning's BASCULER choice: switch (deactivate + activate) or upgrade.
+ * Plan active-gig limit: BASCULER (deactivate) or upgrade — same idea as SessionPlanning switch.
  */
 const ActiveGigLimitModal: React.FC<ActiveGigLimitModalProps> = ({
   open,
   onClose,
+  mode = 'activate',
   targetGigTitle,
   maxGigs,
   planName,
@@ -40,6 +46,7 @@ const ActiveGigLimitModal: React.FC<ActiveGigLimitModalProps> = ({
   switching = false,
   onSwitch,
   onUpgrade,
+  blocking = false,
 }) => {
   const { t } = useTranslation();
   const needed = Math.max(1, slotsNeeded);
@@ -47,7 +54,7 @@ const ActiveGigLimitModal: React.FC<ActiveGigLimitModalProps> = ({
 
   useEffect(() => {
     if (!open) return;
-    // STARTER (or any case needing all / one): pre-select enough gigs.
+    // Pre-select gigs to deactivate (oldest first) so STARTER can one-click Basculer.
     setSelected(activeGigs.slice(0, needed).map((g) => g._id));
   }, [open, activeGigs, needed]);
 
@@ -56,14 +63,14 @@ const ActiveGigLimitModal: React.FC<ActiveGigLimitModalProps> = ({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !switching) onClose();
+      if (e.key === 'Escape' && !switching && !blocking) onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, switching, onClose]);
+  }, [open, switching, onClose, blocking]);
 
   const canSwitch = selected.length >= needed && !switching;
 
@@ -84,6 +91,11 @@ const ActiveGigLimitModal: React.FC<ActiveGigLimitModalProps> = ({
     );
   };
 
+  const subtitleKey =
+    mode === 'reconcile'
+      ? 'approvalPublishing.activeLimit.reconcileSubtitle'
+      : 'approvalPublishing.activeLimit.subtitle';
+
   return createPortal(
     <div
       className="fixed inset-0 z-[10050] flex items-center justify-center p-4"
@@ -95,8 +107,8 @@ const ActiveGigLimitModal: React.FC<ActiveGigLimitModalProps> = ({
         type="button"
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]"
         aria-label={t('approvalPublishing.activeLimit.close')}
-        disabled={switching}
-        onClick={() => !switching && onClose()}
+        disabled={switching || blocking}
+        onClick={() => !switching && !blocking && onClose()}
       />
       <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
         <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-slate-100">
@@ -112,28 +124,35 @@ const ActiveGigLimitModal: React.FC<ActiveGigLimitModalProps> = ({
                 {t('approvalPublishing.activeLimit.title')}
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                {t('approvalPublishing.activeLimit.subtitle', {
+                {t(subtitleKey, {
                   plan: planName || t('approvalPublishing.activeLimit.yourPlan'),
                   max: maxGigs,
                   target: targetGigTitle,
+                  count: activeGigs.length,
                 })}
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40"
-            disabled={switching}
-            onClick={onClose}
-            aria-label={t('approvalPublishing.activeLimit.close')}
-          >
-            <X className="h-5 w-5" />
-          </button>
+          {!blocking && (
+            <button
+              type="button"
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40"
+              disabled={switching}
+              onClick={onClose}
+              aria-label={t('approvalPublishing.activeLimit.close')}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
         <div className="px-5 py-4 space-y-4">
           <p className="text-sm text-slate-700">
-            {t('approvalPublishing.activeLimit.choose')}
+            {t(
+              mode === 'reconcile'
+                ? 'approvalPublishing.activeLimit.reconcileChoose'
+                : 'approvalPublishing.activeLimit.choose'
+            )}
           </p>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 space-y-2 max-h-48 overflow-y-auto">
@@ -162,7 +181,7 @@ const ActiveGigLimitModal: React.FC<ActiveGigLimitModalProps> = ({
                       type="checkbox"
                       className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
                       checked={checked}
-                      disabled={switching || activeGigs.length === 1}
+                      disabled={switching || activeGigs.length === needed}
                       onChange={() => toggle(g._id)}
                     />
                     <span className="text-sm font-medium text-slate-800 truncate">
@@ -175,11 +194,9 @@ const ActiveGigLimitModal: React.FC<ActiveGigLimitModalProps> = ({
                 );
               })
             )}
-            {activeGigs.length > 1 && (
-              <p className="text-xs text-slate-500 pt-1">
-                {t('approvalPublishing.activeLimit.selectHint', { count: needed })}
-              </p>
-            )}
+            <p className="text-xs text-slate-500 pt-1">
+              {t('approvalPublishing.activeLimit.selectHint', { count: needed })}
+            </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2.5">
@@ -192,9 +209,11 @@ const ActiveGigLimitModal: React.FC<ActiveGigLimitModalProps> = ({
               <RefreshCw className={`h-4 w-4 ${switching ? 'animate-spin' : ''}`} />
               {switching
                 ? t('approvalPublishing.activeLimit.switching')
-                : t('approvalPublishing.activeLimit.switch', {
-                    title: activeLabels || targetGigTitle,
-                  })}
+                : mode === 'reconcile'
+                  ? t('approvalPublishing.activeLimit.reconcileSwitch')
+                  : t('approvalPublishing.activeLimit.switch', {
+                      title: activeLabels || targetGigTitle,
+                    })}
             </button>
             <button
               type="button"

@@ -42,7 +42,9 @@ import toast from 'react-hot-toast';
 import WalletTopUpModal from './wallet/WalletTopUpModal';
 import ActiveGigLimitModal, {
   type ActiveGigLimitItem,
+  type ActiveGigLimitMode,
 } from './ActiveGigLimitModal';
+import { getOrchestratorApiBase } from '../lib/paypalCheckout';
 
 interface Gig {
   _id: string;
@@ -175,13 +177,15 @@ const ApprovalPublishing = () => {
   const [showBalanceWarning, setShowBalanceWarning] = useState(true);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [activeLimitModal, setActiveLimitModal] = useState<{
-    gigId: string;
+    mode: ActiveGigLimitMode;
+    gigId: string | null;
     targetTitle: string;
     maxGigs: number;
     planName: string | null;
     nextPlanHint: string | null;
     activeGigs: ActiveGigLimitItem[];
     slotsNeeded: number;
+    blocking: boolean;
   } | null>(null);
   const [activeLimitSwitching, setActiveLimitSwitching] = useState(false);
 
@@ -415,6 +419,7 @@ const ApprovalPublishing = () => {
 
         
         setGigs(transformedGigs);
+        void enforceActiveGigQuota(transformedGigs, companyId);
       } else {
         console.warn('⚠️ No data property in API response');
         setGigs([]);
@@ -595,11 +600,6 @@ const ApprovalPublishing = () => {
     }
   };
 
-  const orchestratorBackUrl = () =>
-    import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL ||
-    import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, '') ||
-    'http://localhost:3003';
-
   const fetchPlanGigQuota = async (
     companyId: string
   ): Promise<{
@@ -620,43 +620,54 @@ const ApprovalPublishing = () => {
       GROWTH: 'SCALER',
     };
     try {
+      const apiBase = getOrchestratorApiBase();
       const response = await axios.get(
-        `${orchestratorBackUrl()}/api/subscriptions/current/${companyId}`,
+        `${apiBase}/subscriptions/current/${companyId}`,
         { timeout: 8000 }
       );
       const sub = (response.data as any)?.data;
       const plan = sub?.planId || {};
       const name = String(plan.name || '').toUpperCase() || null;
       let maxGigs = Number(plan.maxGigs);
+      const ceiling = name ? FALLBACKS[name] : undefined;
       if (!Number.isFinite(maxGigs) || maxGigs < 0) {
-        maxGigs = (name && FALLBACKS[name]) || 1;
+        maxGigs = ceiling ?? 1;
+      } else if (ceiling != null) {
+        // Never let Stripe metadata exceed the known plan ceiling (STARTER=1).
+        maxGigs = Math.min(Math.round(maxGigs), ceiling);
+      } else {
+        maxGigs = Math.round(maxGigs);
       }
       return {
-        maxGigs: Math.round(maxGigs),
+        maxGigs,
         planName: name,
         nextPlanHint: (name && NEXT[name]) || null,
       };
     } catch (err) {
       console.warn('Failed to load plan gig quota:', err);
-      return { maxGigs: 1, planName: null, nextPlanHint: 'RUNNER' };
+      return { maxGigs: 1, planName: 'STARTER', nextPlanHint: 'RUNNER' };
     }
   };
 
   const openActiveLimitModal = (
-    gigId: string,
+    gigId: string | null,
     opts: {
+      mode?: ActiveGigLimitMode;
       maxGigs: number;
       planName: string | null;
       nextPlanHint: string | null;
       activeGigs: ActiveGigLimitItem[];
+      blocking?: boolean;
     }
   ) => {
-    const target = gigs.find((g) => g._id === gigId);
-    const slotsNeeded = Math.max(
-      1,
-      opts.activeGigs.length - opts.maxGigs + 1
-    );
+    const mode = opts.mode || 'activate';
+    const target = gigId ? gigs.find((g) => g._id === gigId) : null;
+    const slotsNeeded =
+      mode === 'reconcile'
+        ? Math.max(1, opts.activeGigs.length - opts.maxGigs)
+        : Math.max(1, opts.activeGigs.length - opts.maxGigs + 1);
     setActiveLimitModal({
+      mode,
       gigId,
       targetTitle: target?.title || 'Gig',
       maxGigs: opts.maxGigs,
@@ -664,6 +675,31 @@ const ApprovalPublishing = () => {
       nextPlanHint: opts.nextPlanHint,
       activeGigs: opts.activeGigs,
       slotsNeeded,
+      blocking: Boolean(opts.blocking),
+    });
+  };
+
+  /** Fix legacy over-quota state (e.g. 2 Actif on STARTER) as soon as the list loads. */
+  const enforceActiveGigQuota = async (
+    list: Gig[],
+    companyId: string
+  ) => {
+    const active = list.filter(
+      (g) => String(g.status || '').toLowerCase() === 'active'
+    );
+    if (active.length <= 1) return;
+    const quota = await fetchPlanGigQuota(companyId);
+    if (active.length <= quota.maxGigs) return;
+    openActiveLimitModal(null, {
+      mode: 'reconcile',
+      maxGigs: quota.maxGigs,
+      planName: quota.planName,
+      nextPlanHint: quota.nextPlanHint,
+      activeGigs: active.map((g) => ({
+        _id: g._id,
+        title: g.title || 'Gig',
+      })),
+      blocking: true,
     });
   };
 
@@ -880,6 +916,18 @@ const ApprovalPublishing = () => {
     if (!activeLimitModal) return;
     setActiveLimitSwitching(true);
     try {
+      if (activeLimitModal.mode === 'reconcile' || !activeLimitModal.gigId) {
+        for (const id of deactivateGigIds) {
+          await rejectGig(id);
+        }
+        setActiveLimitModal(null);
+        toast.success(t('approvalPublishing.activeLimit.reconcileSuccess'), {
+          duration: 4000,
+          position: 'top-right',
+        });
+        await fetchGigs();
+        return;
+      }
       await approveGig(activeLimitModal.gigId, {
         deactivateGigIds,
         skipLimitCheck: true,
@@ -3395,7 +3443,12 @@ const ApprovalPublishing = () => {
       />
       <ActiveGigLimitModal
         open={Boolean(activeLimitModal)}
-        onClose={() => !activeLimitSwitching && setActiveLimitModal(null)}
+        onClose={() =>
+          !activeLimitSwitching &&
+          !activeLimitModal?.blocking &&
+          setActiveLimitModal(null)
+        }
+        mode={activeLimitModal?.mode || 'activate'}
         targetGigTitle={activeLimitModal?.targetTitle || ''}
         maxGigs={activeLimitModal?.maxGigs || 1}
         planName={activeLimitModal?.planName || null}
@@ -3403,6 +3456,7 @@ const ApprovalPublishing = () => {
         activeGigs={activeLimitModal?.activeGigs || []}
         slotsNeeded={activeLimitModal?.slotsNeeded || 1}
         switching={activeLimitSwitching}
+        blocking={Boolean(activeLimitModal?.blocking)}
         onSwitch={handleActiveLimitSwitch}
         onUpgrade={handleActiveLimitUpgrade}
       />
