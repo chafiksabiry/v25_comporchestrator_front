@@ -112,6 +112,7 @@ const LABEL_TO_KEY: Record<string, string> = {
   'date_of_birth': 'Date_of_Birth',
   dob: 'Date_of_Birth',
   'votre nom': 'repName',
+  'votre nom (rep)': 'repName',
   'votre prénom': 'repName',
   'votre prenom': 'repName',
   'nom du rep': 'repName',
@@ -186,13 +187,23 @@ export function renderScript(
   return out;
 }
 
+/** User-facing token: {{Nom du prospect}} — never expose DB keys in the editor. */
+export function toFriendlyToken(variable: ScriptVariable): string {
+  const label = String(variable.label || variable.key || '').trim();
+  return `{{${label}}}`;
+}
+
 export function formatVariablesForAiPrompt(variables: ScriptVariable[]): string {
   if (!variables.length) return '';
-  const lines = variables.map((v) => `- ${v.token} → ${v.label}${v.example ? ` (ex: ${v.example})` : ''}`);
+  const lines = variables.map((v) => {
+    const token = toFriendlyToken(v);
+    return `- ${token}${v.example ? ` (ex: ${v.example})` : ''}`;
+  });
   return [
-    'Variables contact disponibles (utiliser EXACTEMENT ces tokens dans les répliques) :',
+    'Variables contact disponibles (utiliser EXACTEMENT ces libellés entre {{...}} dans les répliques) :',
     ...lines,
-    'Ne remplace pas les tokens par des valeurs figées — garde {{...}} pour le runtime.',
+    'Ne remplace pas les tokens par des valeurs figées — garde {{Libellé}} pour le runtime.',
+    'Ne jamais utiliser les noms techniques (Deal_Name, Email_1, etc.) — seulement les libellés FR.',
   ].join('\n');
 }
 
