@@ -195,9 +195,16 @@
       "reassignSuccess": "Numéro {{number}} réaffecté à un autre gig.",
       "reassignFailed": "Impossible de réaffecter le numéro.",
       "reassignSameGig": "Choisissez un gig différent de l'affectation actuelle.",
-      "terminateConfirm": "Résilier définitivement {{number}} ? Le numéro sera libéré chez Telnyx/Twilio et retiré de HARX. Cette action est irréversible.",
+      "terminateConfirm": "Résilier définitivement {{number}} ? Le numéro sera libéré chez le fournisseur et retiré de HARX. Cette action est irréversible.",
       "terminateSuccess": "Numéro {{number}} résilié chez le fournisseur et retiré.",
-      "terminateFailed": "Impossible de résilier le numéro."
+      "terminateFailed": "Impossible de résilier le numéro.",
+      "testCallSuccess": "Appel de test lancé avec succès !",
+      "testCallFailed": "Erreur lors du test d'appel.",
+      "testSelectFrom": "Choisissez un numéro acheté dans la liste.",
+      "testEnterDestination": "Saisissez le numéro à appeler.",
+      "testMicUnavailableForLine": "Le test micro n'est pas disponible pour cette ligne. Utilisez le test API.",
+      "softphoneUnavailable": "Le test micro n'est pas disponible pour le moment.",
+      "micDenied": "Accès au microphone refusé."
     },
     "tabs": {
       "myNumbersWithCount": "Mes Lignes ({{count}})",
@@ -247,6 +254,17 @@
         "companyTotalLabel": "Total entreprise",
         "filteredTotalLabel": "Total affiché",
         "paidLinesShort": "payant(s)"
+      },
+      "testCall": {
+        "title": "Tester l'appel",
+        "fromLabel": "Numéro appelant",
+        "toLabel": "Numéro appelé",
+        "toPlaceholder": "Numéro appelé (ex: +336…)",
+        "noLines": "Aucun numéro acheté",
+        "api": "Tester (API)",
+        "mic": "Tester (Micro)",
+        "apiTitle": "Lancer l'appel de test",
+        "micTitle": "Tester l'appel avec votre microphone"
       },
       "rowDetail": {
         "label": "Ligne sélectionnée",
