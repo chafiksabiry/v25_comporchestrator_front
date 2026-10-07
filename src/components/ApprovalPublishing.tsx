@@ -40,6 +40,9 @@ import {
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import WalletTopUpModal from './wallet/WalletTopUpModal';
+import ActiveGigLimitModal, {
+  type ActiveGigLimitItem,
+} from './ActiveGigLimitModal';
 
 interface Gig {
   _id: string;
@@ -171,6 +174,16 @@ const ApprovalPublishing = () => {
   const [balance, setBalance] = useState<number | null>(null);
   const [showBalanceWarning, setShowBalanceWarning] = useState(true);
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [activeLimitModal, setActiveLimitModal] = useState<{
+    gigId: string;
+    targetTitle: string;
+    maxGigs: number;
+    planName: string | null;
+    nextPlanHint: string | null;
+    activeGigs: ActiveGigLimitItem[];
+    slotsNeeded: number;
+  } | null>(null);
+  const [activeLimitSwitching, setActiveLimitSwitching] = useState(false);
 
   const handleWalletTopUpSuccess = async () => {
     const { refreshAndBroadcastWalletBalance } = await import('../lib/walletBalanceSync');
@@ -582,8 +595,83 @@ const ApprovalPublishing = () => {
     }
   };
 
+  const orchestratorBackUrl = () =>
+    import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL ||
+    import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, '') ||
+    'http://localhost:3003';
+
+  const fetchPlanGigQuota = async (
+    companyId: string
+  ): Promise<{
+    maxGigs: number;
+    planName: string | null;
+    nextPlanHint: string | null;
+  }> => {
+    const FALLBACKS: Record<string, number> = {
+      STARTER: 1,
+      RUNNER: 10,
+      GROWTH: 10,
+      SCALER: 30,
+      SCALE: 30,
+    };
+    const NEXT: Record<string, string> = {
+      STARTER: 'RUNNER',
+      RUNNER: 'SCALER',
+      GROWTH: 'SCALER',
+    };
+    try {
+      const response = await axios.get(
+        `${orchestratorBackUrl()}/api/subscriptions/current/${companyId}`,
+        { timeout: 8000 }
+      );
+      const sub = (response.data as any)?.data;
+      const plan = sub?.planId || {};
+      const name = String(plan.name || '').toUpperCase() || null;
+      let maxGigs = Number(plan.maxGigs);
+      if (!Number.isFinite(maxGigs) || maxGigs < 0) {
+        maxGigs = (name && FALLBACKS[name]) || 1;
+      }
+      return {
+        maxGigs: Math.round(maxGigs),
+        planName: name,
+        nextPlanHint: (name && NEXT[name]) || null,
+      };
+    } catch (err) {
+      console.warn('Failed to load plan gig quota:', err);
+      return { maxGigs: 1, planName: null, nextPlanHint: 'RUNNER' };
+    }
+  };
+
+  const openActiveLimitModal = (
+    gigId: string,
+    opts: {
+      maxGigs: number;
+      planName: string | null;
+      nextPlanHint: string | null;
+      activeGigs: ActiveGigLimitItem[];
+    }
+  ) => {
+    const target = gigs.find((g) => g._id === gigId);
+    const slotsNeeded = Math.max(
+      1,
+      opts.activeGigs.length - opts.maxGigs + 1
+    );
+    setActiveLimitModal({
+      gigId,
+      targetTitle: target?.title || 'Gig',
+      maxGigs: opts.maxGigs,
+      planName: opts.planName,
+      nextPlanHint: opts.nextPlanHint,
+      activeGigs: opts.activeGigs,
+      slotsNeeded,
+    });
+  };
+
   // API Functions
-  const approveGig = async (gigId: string) => {
+  const approveGig = async (
+    gigId: string,
+    options?: { deactivateGigIds?: string[]; skipLimitCheck?: boolean }
+  ) => {
     try {
       const gig = gigs.find((g) => g._id === gigId);
       if (gig && !isGigSetupComplete(gig)) {
@@ -627,67 +715,183 @@ const ApprovalPublishing = () => {
         return;
       }
 
-      setGigs(prevGigs => prevGigs.map(item =>
-        item._id === gigId
-          ? {
+      const deactivateGigIds = (options?.deactivateGigIds || []).filter(
+        (id) => id && id !== gigId
+      );
+      const alreadyActive = String(gig?.status || '').toLowerCase() === 'active';
+
+      if (!options?.skipLimitCheck && !alreadyActive && deactivateGigIds.length === 0) {
+        const otherActive = gigs.filter(
+          (g) =>
+            g._id !== gigId &&
+            String(g.status || '').toLowerCase() === 'active'
+        );
+        const quota = await fetchPlanGigQuota(companyId);
+        if (otherActive.length >= quota.maxGigs) {
+          openActiveLimitModal(gigId, {
+            maxGigs: quota.maxGigs,
+            planName: quota.planName,
+            nextPlanHint: quota.nextPlanHint,
+            activeGigs: otherActive.map((g) => ({
+              _id: g._id,
+              title: g.title || 'Gig',
+            })),
+          });
+          return;
+        }
+      }
+
+      setGigs((prevGigs) =>
+        prevGigs.map((item) => {
+          if (deactivateGigIds.includes(item._id)) {
+            return { ...item, status: 'inactive' };
+          }
+          if (item._id === gigId) {
+            return {
               ...item,
               status: 'active',
               setupSteps: {
                 ...(item.setupSteps || {}),
                 gigActivation: true,
               },
-            }
-          : item
-      ));
+            };
+          }
+          return item;
+        })
+      );
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
+      const body: { status: string; deactivateGigIds?: string[] } = {
+        status: 'active',
+      };
+      if (deactivateGigIds.length > 0) {
+        body.deactivateGigIds = deactivateGigIds;
+      }
       const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${gigIdCookie}:${userId}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: 'active' }),
+        body: JSON.stringify(body),
         signal: AbortSignal.timeout(20000),
       });
 
       if (!response.ok) {
         let errorMessage = `Failed to approve gig: ${response.status} ${response.statusText}`;
+        let errorPayload: any = null;
         try {
-          const errorData = await response.json();
-          if (errorData && errorData.message) {
-            errorMessage = errorData.message;
+          errorPayload = await response.json();
+          if (errorPayload?.message) {
+            errorMessage = errorPayload.message;
           }
         } catch (_) {}
+
+        if (
+          response.status === 403 &&
+          (errorPayload?.code === 'ACTIVE_GIG_LIMIT' ||
+            /GIG actif/i.test(String(errorPayload?.message || '')))
+        ) {
+          const data = errorPayload?.data || {};
+          openActiveLimitModal(gigId, {
+            maxGigs: Number(data.maxGigs) || 1,
+            planName: data.planName || null,
+            nextPlanHint: data.nextPlanHint || null,
+            activeGigs: Array.isArray(data.activeGigs)
+              ? data.activeGigs
+              : gigs
+                  .filter(
+                    (g) =>
+                      g._id !== gigId &&
+                      String(g.status || '').toLowerCase() === 'active'
+                  )
+                  .map((g) => ({ _id: g._id, title: g.title || 'Gig' })),
+          });
+          // Roll back optimistic UI without generic toast
+          setGigs((prev) =>
+            prev.map((item) => {
+              if (item._id === gigId) {
+                return {
+                  ...item,
+                  status: gig?.status || 'to_activate',
+                  setupSteps: {
+                    ...(item.setupSteps || {}),
+                    gigActivation: false,
+                  },
+                };
+              }
+              if (deactivateGigIds.includes(item._id)) {
+                return { ...item, status: 'active' };
+              }
+              return item;
+            })
+          );
+          return;
+        }
+
         console.error('❌ API Error response:', errorMessage);
         throw new Error(errorMessage);
       }
       void response.body?.cancel();
 
+      setActiveLimitModal(null);
       markGigStepDone(gigId, 'gigActivation', true);
       void markStep12AsCompleted();
+      if (deactivateGigIds.length > 0) {
+        toast.success(t('approvalPublishing.activeLimit.switchSuccess'), {
+          duration: 4000,
+          position: 'top-right',
+        });
+      }
       return;
     } catch (error) {
       console.error('❌ Error approving gig:', error);
       const previousStatus = gigs.find((g) => g._id === gigId)?.status || 'to_activate';
-      setGigs(prevGigs => prevGigs.map(item =>
-        item._id === gigId
-          ? {
+      const deactivateGigIds = (options?.deactivateGigIds || []).filter(
+        (id) => id && id !== gigId
+      );
+      setGigs((prevGigs) =>
+        prevGigs.map((item) => {
+          if (item._id === gigId) {
+            return {
               ...item,
               status: previousStatus,
               setupSteps: {
                 ...(item.setupSteps || {}),
                 gigActivation: false,
               },
-            }
-          : item
-      ));
+            };
+          }
+          if (deactivateGigIds.includes(item._id)) {
+            return { ...item, status: 'active' };
+          }
+          return item;
+        })
+      );
       setError(t('approvalPublishing.errors.approveGig'));
       toast.error(t('approvalPublishing.errors.approveGig'), {
         duration: 5000,
         position: 'top-right'
       });
     }
+  };
+
+  const handleActiveLimitSwitch = async (deactivateGigIds: string[]) => {
+    if (!activeLimitModal) return;
+    setActiveLimitSwitching(true);
+    try {
+      await approveGig(activeLimitModal.gigId, {
+        deactivateGigIds,
+        skipLimitCheck: true,
+      });
+    } finally {
+      setActiveLimitSwitching(false);
+    }
+  };
+
+  const handleActiveLimitUpgrade = () => {
+    setActiveLimitModal(null);
+    window.location.hash = '#/dashboard/upgrade';
   };
 
   const markStep12AsCompleted = async () => {
@@ -3188,6 +3392,19 @@ const ApprovalPublishing = () => {
         onClose={() => setShowDepositModal(false)}
         companyId={Cookies.get('companyId')}
         onSuccess={handleWalletTopUpSuccess}
+      />
+      <ActiveGigLimitModal
+        open={Boolean(activeLimitModal)}
+        onClose={() => !activeLimitSwitching && setActiveLimitModal(null)}
+        targetGigTitle={activeLimitModal?.targetTitle || ''}
+        maxGigs={activeLimitModal?.maxGigs || 1}
+        planName={activeLimitModal?.planName || null}
+        nextPlanHint={activeLimitModal?.nextPlanHint || null}
+        activeGigs={activeLimitModal?.activeGigs || []}
+        slotsNeeded={activeLimitModal?.slotsNeeded || 1}
+        switching={activeLimitSwitching}
+        onSwitch={handleActiveLimitSwitch}
+        onUpgrade={handleActiveLimitUpgrade}
       />
     </div>
   );

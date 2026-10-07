@@ -3325,6 +3325,21 @@
       "warningBody": "Your current balance is €{{balance}}. Add funds to activate or approve gigs. Until then, your reps will not be able to start working.",
       "topUp": "Add funds"
     },
+    "activeLimit": {
+      "title": "Active GIG limit reached",
+      "subtitle": "Your {{plan}} plan allows {{max}} active GIG(s). To activate “{{target}}”, switch an already active GIG off or upgrade your plan.",
+      "yourPlan": "current",
+      "choose": "Choose to switch (deactivate an active GIG to activate another) or upgrade your subscription.",
+      "activeList": "Currently active GIG(s) ({{count}})",
+      "noneListed": "No other active GIGs listed.",
+      "selectHint": "Select at least {{count}} GIG(s) to deactivate.",
+      "switch": "Switch",
+      "switching": "Switching…",
+      "switchSuccess": "GIG switched: the previous one is inactive, the new one is active.",
+      "upgrade": "Upgrade to {{plan}}",
+      "nextPlan": "the next plan",
+      "close": "Close"
+    },
     "yearsCount_one": "{{count}} year",
     "yearsCount_other": "{{count}} years"
   },
