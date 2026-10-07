@@ -97,6 +97,14 @@ type HarxImportField = (typeof HARX_IMPORT_FIELDS)[number];
 type ColumnMapping = Record<string, string>;
 type FieldVisibilityMap = Record<string, boolean>;
 type LeadFieldVisibility = { company: FieldVisibilityMap; rep: FieldVisibilityMap };
+/** Saved custom column: source field header + display title shown in UI / scripts. */
+type SavedExtraColumn = { label: string };
+type SavedExtraColumnsMap = Record<string, SavedExtraColumn>;
+
+/** Default display title = exact column name; user can edit afterward. */
+function defaultExtraDisplayTitle(header: string): string {
+  return String(header || '').trim();
+}
 
 function defaultLeadFieldVisibility(): LeadFieldVisibility {
   const company: FieldVisibilityMap = {};
@@ -639,8 +647,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [fieldVisibility, setFieldVisibility] = useState<LeadFieldVisibility>(() =>
     defaultLeadFieldVisibility()
   );
-  /** Unmapped file headers the user chose to persist as customFields. */
-  const [savedExtraColumns, setSavedExtraColumns] = useState<Record<string, boolean>>({});
+  /** Unmapped file headers kept as customFields, with a display title. */
+  const [savedExtraColumns, setSavedExtraColumns] = useState<SavedExtraColumnsMap>({});
   const [isSavingLeads, setIsSavingLeads] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
@@ -1180,16 +1188,22 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       throw new Error(t('uploadContacts.errors.userIdNotFound'));
     }
 
-    const extraColumns = Object.entries(savedExtraColumns)
-      .filter(([, on]) => on)
-      .map(([header]) => header)
-      .filter((header) => !mapping[header]);
+    const extraEntries = Object.entries(savedExtraColumns)
+      .filter(([header, meta]) => Boolean(meta) && !mapping[header])
+      .map(([header, meta]) => ({
+        header,
+        label: String(meta?.label || defaultExtraDisplayTitle(header) || header).trim(),
+      }));
+    const extraColumnLabels = Object.fromEntries(
+      extraEntries.map((e) => [e.header, e.label || e.header])
+    );
 
     const formData = new FormData();
     formData.append('file', file);
     formData.append('mapping', JSON.stringify(mapping));
     formData.append('visibility', JSON.stringify(fieldVisibility));
-    formData.append('extraColumns', JSON.stringify(extraColumns));
+    formData.append('extraColumns', JSON.stringify(extraEntries));
+    formData.append('extraColumnLabels', JSON.stringify(extraColumnLabels));
     formData.append('gigId', gigId);
 
     updateRealProgress(40, t('uploadContacts.mapping.applying'));
@@ -1269,7 +1283,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       if (!prev[header]) return prev;
       return { ...prev, [header]: '' };
     });
-    setSavedExtraColumns((prev) => ({ ...prev, [header]: true }));
+    setSavedExtraColumns((prev) => ({
+      ...prev,
+      [header]: prev[header] || { label: defaultExtraDisplayTitle(header) },
+    }));
     const visKey = customVisibilityKey(header);
     setFieldVisibility((prev) => ({
       company: {
@@ -1282,6 +1299,16 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       },
     }));
     setMappingError(null);
+  };
+
+  const updateSavedExtraLabel = (header: string, label: string) => {
+    setSavedExtraColumns((prev) => {
+      if (!prev[header]) return prev;
+      return {
+        ...prev,
+        [header]: { ...prev[header], label },
+      };
+    });
   };
 
   const removeSavedExtraColumn = (header: string) => {
@@ -1326,6 +1353,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const savedExtraHeaderList = mappingHeaders.filter(
     (header) => Boolean(savedExtraColumns[header]) && !columnMapping[header]
   );
+  const getSavedExtraLabel = (header: string) =>
+    String(savedExtraColumns[header]?.label || defaultExtraDisplayTitle(header) || header).trim();
 
   const handleDragHeaderStart = (event: React.DragEvent, header: string) => {
     event.dataTransfer.setData('text/plain', header);
@@ -3236,10 +3265,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                           {savedExtraHeaderList.map((header) => (
                             <span
                               key={`saved-name-${header}`}
-                              className="inline-flex max-w-full items-center gap-1 rounded-lg border border-harx-200 bg-harx-50 px-2 py-1 text-[11px] font-bold text-harx-800"
-                              title={getMappingExample(header)}
+                              className="inline-flex max-w-full flex-col rounded-lg border border-harx-200 bg-harx-50 px-2 py-1 text-harx-800"
+                              title={`${getSavedExtraLabel(header)} ← ${header}`}
                             >
-                              <span className="truncate">{header}</span>
+                              <span className="truncate text-[11px] font-bold">
+                                {getSavedExtraLabel(header)}
+                              </span>
+                              <span className="truncate text-[9px] font-medium text-harx-600/80">
+                                {header}
+                              </span>
                             </span>
                           ))}
                         </div>
@@ -3415,14 +3449,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         ) : (
                           savedExtraHeaderList.map((header) => {
                             const visKey = customVisibilityKey(header);
+                            const displayTitle = getSavedExtraLabel(header);
                             return (
                               <div
                                 key={`extra-${header}`}
-                                className="rounded-xl border border-harx-200 bg-harx-50/40 px-3 py-2.5"
+                                className="rounded-xl border border-harx-200 bg-harx-50/40 px-3 py-2.5 space-y-2"
                               >
-                                <div className="flex items-center justify-between gap-2 mb-1.5">
-                                  <span className="text-xs font-black uppercase tracking-wide text-harx-700 truncate">
-                                    {header}
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-harx-600">
+                                    {t('uploadContacts.mapping.savedExtraField')}
                                   </span>
                                   <div className="flex items-center gap-3 shrink-0">
                                     <label
@@ -3434,7 +3469,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                         onChange={() => toggleFieldVisibility('company', visKey)}
                                         tone="company"
                                         title={t('uploadContacts.mapping.visibleCompany')}
-                                        aria-label={`${t('uploadContacts.mapping.visibleCompany')} — ${header}`}
+                                        aria-label={`${t('uploadContacts.mapping.visibleCompany')} — ${displayTitle}`}
                                       />
                                     </label>
                                     <label
@@ -3446,11 +3481,27 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                         onChange={() => toggleFieldVisibility('rep', visKey)}
                                         tone="rep"
                                         title={t('uploadContacts.mapping.visibleRep')}
-                                        aria-label={`${t('uploadContacts.mapping.visibleRep')} — ${header}`}
+                                        aria-label={`${t('uploadContacts.mapping.visibleRep')} — ${displayTitle}`}
                                       />
                                     </label>
                                   </div>
                                 </div>
+
+                                <label className="block">
+                                  <span className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                    {t('uploadContacts.mapping.displayTitle')}
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={savedExtraColumns[header]?.label ?? displayTitle}
+                                    onChange={(e) => updateSavedExtraLabel(header, e.target.value)}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => e.stopPropagation()}
+                                    placeholder={t('uploadContacts.mapping.displayTitlePlaceholder')}
+                                    className="w-full rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-sm font-bold text-slate-800 outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-200"
+                                  />
+                                </label>
+
                                 <div className="flex items-center justify-between gap-2 rounded-lg border border-harx-200 bg-white px-2.5 py-2">
                                   <div
                                     draggable={!isApplyingMapping}
@@ -3460,6 +3511,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                   >
                                     <GripVertical className="h-3.5 w-3.5 text-slate-300 shrink-0" />
                                     <div className="min-w-0">
+                                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                        {t('uploadContacts.mapping.sourceField')}
+                                      </p>
                                       <p className="text-sm font-bold text-slate-800 truncate">{header}</p>
                                       <p className="text-[11px] text-slate-500 truncate">
                                         {getMappingExample(header)}
