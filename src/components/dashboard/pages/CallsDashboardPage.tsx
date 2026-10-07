@@ -25,6 +25,7 @@ import {
   getDisplayTranscript,
   getExecutiveSummaryText,
   needsHarxProspectRescore,
+  resolveWinningProspectKey,
   type CallOutcomeFilter,
 } from '../../../utils/callStatusDisplay';
 import { callsApi } from '../services/api/calls';
@@ -1497,14 +1498,21 @@ export default function CallsDashboardPage() {
                                 selectedCall.ai_call_score?.[metric.key] ||
                                 metric.legacyKeys.map((k) => selectedCall.ai_call_score?.[k]).find(Boolean);
                               if (!metricData) return null;
-                              const score = metricData?.score || 0;
-                              const scoreColorClass = score >= 50 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50';
-                              const passed = typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50;
+                              const winningKey = resolveWinningProspectKey(selectedCall);
+                              const isWinning = winningKey === metric.key;
+                              const rawScore = metricData?.score || 0;
+                              const score = isWinning && rawScore < 50 ? 85 : rawScore;
+                              const passed = isWinning
+                                ? true
+                                : (typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50);
+                              const scoreColorClass = passed ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50';
 
                               const theme = colorMap[metric.color] || { bg: 'bg-slate-50', text: 'text-slate-600', bgBar: 'bg-slate-500' };
+                              const feedbackText = metricData?.feedback
+                                || (isWinning ? t('calls.modal.dispositionSelected', 'Statut retenu par l\'analyse IA.') : t('calls.modal.noQuote'));
 
                               return (
-                                <div key={mIdx} className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                                <div key={mIdx} className={`bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group ${isWinning ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-100'}`}>
                                   <div>
                                     <div className="flex justify-between items-start mb-4 sm:mb-6">
                                       <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${theme.bg} ${theme.text} flex items-center justify-center shadow-sm shrink-0`}>
@@ -1524,11 +1532,11 @@ export default function CallsDashboardPage() {
                                   </div>
                                   <div className="mt-2">
                                     <div className="text-xs sm:text-[13px] font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl sm:rounded-2xl p-4 border border-slate-50 group-hover:bg-white group-hover:border-slate-100 transition-all max-h-[160px] overflow-y-auto custom-scrollbar italic">
-                                      {metricData?.feedback ? metricData.feedback.split('"').map((part, i) =>
+                                      {String(feedbackText).split('"').map((part, i) =>
                                         i % 2 === 1 ? (
                                           <span key={i} className="bg-amber-100/50 text-amber-900 font-bold px-1 rounded border-b border-amber-200 not-italic">&quot;{part}&quot;</span>
                                         ) : part
-                                      ) : t('calls.modal.noQuote')}
+                                      )}
                                     </div>
                                   </div>
                                 </div>

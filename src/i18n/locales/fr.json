@@ -3019,7 +3019,7 @@
       "noRecording": "Aucun enregistrement",
       "tabs": {
         "transcript": "Transcription",
-        "insights": "Analyse IA"
+        "insights": "Analyse"
       },
       "aiDecision": "Décision de l’IA",
       "call": "Appel",
@@ -3033,6 +3033,7 @@
       "analysisCompleted": "Analyse détaillée terminée.",
       "prospectResponses": "État d’avancement du prospect",
       "detected": "Détecté",
+      "dispositionSelected": "Statut retenu par l'analyse IA.",
       "noQuote": "Aucune preuve dans le transcript.",
       "standardPerformance": "Aucun résumé factuel disponible pour cet appel.",
       "overallAiEvaluation": "Analyse qualité de l’appel"
