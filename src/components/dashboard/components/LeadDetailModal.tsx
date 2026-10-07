@@ -23,6 +23,7 @@ export interface LeadDetail {
   Pipeline?: string;
   updatedAt?: string;
   gigId?: string | { $oid?: string };
+  customFields?: Record<string, string> | Map<string, string>;
 }
 
 interface Props {
@@ -92,10 +93,22 @@ function DetailRow({
   );
 }
 
+function getCustomFieldEntries(
+  raw?: Record<string, string> | Map<string, string>
+): Array<[string, string]> {
+  if (!raw) return [];
+  const entries =
+    raw instanceof Map ? Array.from(raw.entries()) : Object.entries(raw);
+  return entries
+    .map(([k, v]) => [String(k || '').trim(), String(v ?? '').trim()] as [string, string])
+    .filter(([k, v]) => Boolean(k) && Boolean(v));
+}
+
 export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
   const { t } = useTranslation();
   const initials = getInitials(lead);
   const fullName = getFullName(lead);
+  const customEntries = getCustomFieldEntries(lead.customFields);
   const [callingAi, setCallingAi] = useState(false);
   const [endingAi, setEndingAi] = useState(false);
   const [activeAiCall, setActiveAiCall] = useState<ActiveAiCall | null>(null);
@@ -212,7 +225,7 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
             </div>
           </div>
 
-          {(lead.Date_of_Birth || lead.updatedAt) && (
+          {(lead.Date_of_Birth || lead.updatedAt || customEntries.length > 0) && (
             <div>
               <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
                 {t('uploadContacts.list.details.additionalInfo')}
@@ -224,6 +237,9 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
                 {lead.updatedAt && (
                   <DetailRow icon={User} label={t('uploadContacts.list.details.lastUpdated')} value={formatDate(lead.updatedAt)} />
                 )}
+                {customEntries.map(([key, value]) => (
+                  <DetailRow key={key} icon={Hash} label={key} value={value} />
+                ))}
               </div>
             </div>
           )}

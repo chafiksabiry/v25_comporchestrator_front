@@ -1916,7 +1916,7 @@
     },
     "mapping": {
       "title": "Map columns",
-      "subtitle": "Drag each file column onto the matching HARX field. Columns left undropped are ignored.",
+      "subtitle": "Drag each file column onto a HARX field. Required: name (full name OR first+last), email, phone, address, postal code, city, date of birth.",
       "fileColumn": "File column",
       "fileColumns": "File columns",
       "harxFields": "HARX fields",
@@ -1924,19 +1924,25 @@
       "dropHere": "Drop here",
       "unmap": "Remove",
       "allMapped": "All columns are mapped",
+      "visibleCompany": "Company",
+      "visibleRep": "REP",
+      "visibilityHint": "Check which fields are visible in the company table and on the REP side.",
+      "saveExtra": "Save this column",
+      "saveExtraHint": "{{count}} extra column(s) will be stored with the lead.",
       "example": "Example",
       "harxField": "HARX field",
       "ignore": "Ignore",
       "confirm": "Confirm mapping",
       "cancel": "Cancel",
       "applying": "Applying mapping...",
-      "requiredHint": "Map at least a phone or email, and a name (Deal_Name, First Name or Last Name).",
+      "requiredHint": "Map email, phone, address, postal code, city, date of birth, and either a full name or first name + last name.",
+      "requiredBadge": "required",
       "missingIdentity": "Phone or email required",
-      "missingName": "Name required",
+      "missingName": "Full name OR first + last name required",
       "previewTitle": "Mapped preview",
       "rowsInFile": "{{count}} rows in file",
       "fields": {
-        "Deal_Name": "Lead name",
+        "Deal_Name": "Full name",
         "First_Name": "First name",
         "Last_Name": "Last name",
         "Email_1": "Email",
@@ -1944,9 +1950,7 @@
         "Address": "Address",
         "Postal_Code": "Postal code",
         "City": "City",
-        "Date_of_Birth": "Date of birth",
-        "Stage": "Stage",
-        "Pipeline": "Pipeline"
+        "Date_of_Birth": "Date of birth"
       }
     },
     "analysis": {
