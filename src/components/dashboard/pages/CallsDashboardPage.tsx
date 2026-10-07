@@ -23,6 +23,7 @@ import {
   getTooShortAnalysisNotice,
   isCallTooShortForAnalysis,
   getDisplayTranscript,
+  getExecutiveSummaryText,
   needsHarxProspectRescore,
   type CallOutcomeFilter,
 } from '../../../utils/callStatusDisplay';
@@ -1557,9 +1558,7 @@ export default function CallsDashboardPage() {
                             <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-inner">
                               <p className="text-base sm:text-xl font-bold text-slate-800 leading-relaxed italic relative">
                                 <span className="absolute -left-2 -top-4 sm:-left-4 sm:-top-4 text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50">&quot;</span>
-                                {i18n.language === 'en'
-                                  ? (selectedCall.ai_summary_en || selectedCall.ai_call_score?.overall?.feedback_en || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || t('calls.modal.standardPerformance'))
-                                  : (selectedCall.ai_summary_fr || selectedCall.ai_call_score?.overall?.feedback_fr || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || t('calls.modal.standardPerformance'))}
+                                {getExecutiveSummaryText(selectedCall, i18n.language) || t('calls.modal.standardPerformance')}
                                 <span className="text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50 ml-1 leading-none align-bottom">&quot;</span>
                               </p>
                             </div>
