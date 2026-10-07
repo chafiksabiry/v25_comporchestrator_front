@@ -97,6 +97,39 @@ type HarxImportField = (typeof HARX_IMPORT_FIELDS)[number];
 type ColumnMapping = Record<string, string>;
 type FieldVisibilityMap = Record<string, boolean>;
 type LeadFieldVisibility = { company: FieldVisibilityMap; rep: FieldVisibilityMap };
+
+/** Editable HARX fields in lead edit UIs (order + labels). */
+const COMPANY_EDITABLE_HARX_FIELDS: Array<{
+  key: HarxImportField;
+  labelKey: string;
+  inputType?: string;
+}> = [
+  { key: 'Deal_Name', labelKey: 'uploadContacts.mapping.fields.Deal_Name' },
+  { key: 'First_Name', labelKey: 'uploadContacts.preview.firstName' },
+  { key: 'Last_Name', labelKey: 'uploadContacts.preview.lastName' },
+  {
+    key: 'Email_1',
+    labelKey: 'uploadContacts.preview.email',
+    inputType: 'email',
+  },
+  {
+    key: 'Phone',
+    labelKey: 'uploadContacts.preview.phone',
+    inputType: 'tel',
+  },
+  { key: 'Address', labelKey: 'uploadContacts.preview.address' },
+  { key: 'Postal_Code', labelKey: 'uploadContacts.preview.postalCode' },
+  { key: 'City', labelKey: 'uploadContacts.preview.city' },
+  { key: 'Date_of_Birth', labelKey: 'uploadContacts.preview.dob' },
+];
+
+function isCompanyFieldVisible(
+  companyVisible: FieldVisibilityMap | undefined,
+  field: string
+): boolean {
+  if (!companyVisible) return true;
+  return companyVisible[field] !== false;
+}
 /** Saved custom column: source field header + display title shown in UI / scripts. */
 type SavedExtraColumn = { label: string };
 type SavedExtraColumnsMap = Record<string, SavedExtraColumn>;
@@ -349,8 +382,7 @@ function LeadTableRow({
   companyVisible,
   customColumns = [],
 }: LeadTableRowProps) {
-  const show = (field: string) =>
-    !companyVisible || companyVisible[field] !== false;
+  const show = (field: string) => isCompanyFieldVisible(companyVisible, field);
   const { t, i18n } = useTranslation();
   const statusKey = lead.repDisposition || 'to_call';
   const statusLabel = i18n.exists(`calls.disp.${statusKey}`)
@@ -397,13 +429,29 @@ function LeadTableRow({
           </div>
         </div>
       </td>
-      {show('Last_Name') || show('Deal_Name') ? (
+      {show('Deal_Name') ? (
         <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
           <span
             className="block truncate text-xs font-bold text-slate-900"
-            title={lead.Last_Name || lead.Deal_Name || undefined}
+            title={
+              lead.Deal_Name ||
+              `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim() ||
+              undefined
+            }
           >
-            {lead.Last_Name || (show('Deal_Name') ? lead.Deal_Name : '') || LEAD_EMPTY}
+            {lead.Deal_Name ||
+              `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim() ||
+              LEAD_EMPTY}
+          </span>
+        </td>
+      ) : null}
+      {show('Last_Name') ? (
+        <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+          <span
+            className="block truncate text-xs font-bold text-slate-900"
+            title={lead.Last_Name || undefined}
+          >
+            {lead.Last_Name || LEAD_EMPTY}
           </span>
         </td>
       ) : null}
@@ -1157,7 +1205,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
   const leadTableColCount =
     1 + // avatar/select
-    (companyVisible.Last_Name !== false || companyVisible.Deal_Name !== false ? 1 : 0) +
+    (companyVisible.Deal_Name !== false ? 1 : 0) +
+    (companyVisible.Last_Name !== false ? 1 : 0) +
     (companyVisible.First_Name !== false ? 1 : 0) +
     (companyVisible.Phone !== false ? 1 : 0) +
     (companyVisible.Email_1 !== false ? 1 : 0) +
@@ -2865,8 +2914,34 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     setParsedLeads(newLeads);
   };
 
+  const handleEditLeadCustomField = (index: number, header: string, value: string) => {
+    const newLeads = [...parsedLeads];
+    const current = newLeads[index];
+    if (!current) return;
+    const prevCf =
+      current.customFields instanceof Map
+        ? Object.fromEntries(current.customFields.entries())
+        : { ...(current.customFields || {}) };
+    newLeads[index] = {
+      ...current,
+      customFields: { ...prevCf, [header]: value },
+    };
+    setParsedLeads(newLeads);
+  };
+
   const updateSavedLeadDraft = (field: keyof Lead, value: string) => {
     setEditingSavedLead((prev) => (prev ? { ...prev, [field]: value } : null));
+  };
+
+  const updateSavedLeadCustomDraft = (header: string, value: string) => {
+    setEditingSavedLead((prev) => {
+      if (!prev) return null;
+      const prevCf =
+        prev.customFields instanceof Map
+          ? Object.fromEntries(prev.customFields.entries())
+          : { ...(prev.customFields || {}) };
+      return { ...prev, customFields: { ...prevCf, [header]: value } };
+    });
   };
 
   const saveEditedLead = async () => {
@@ -2878,6 +2953,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       const gigId = selectedGigId || editingSavedLead.gigId;
       const phoneRaw = String(editingSavedLead.Phone || '').trim();
       const phone = phoneRaw ? (phoneRaw.startsWith('+') ? phoneRaw : `+${phoneRaw}`) : '';
+      const customFields =
+        editingSavedLead.customFields instanceof Map
+          ? Object.fromEntries(editingSavedLead.customFields.entries())
+          : { ...(editingSavedLead.customFields || {}) };
 
       const payload = {
         First_Name: editingSavedLead.First_Name || '',
@@ -2892,6 +2971,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           editingSavedLead.Deal_Name ||
           `${editingSavedLead.First_Name || ''} ${editingSavedLead.Last_Name || ''}`.trim() ||
           'Unnamed Lead',
+        customFields,
         userId,
         gigId,
       };
@@ -4102,88 +4182,49 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
                               {editingLeadIndex === index ? (
                                 <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
-                                  <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">First Name</label>
-                                    <input
-                                      type="text"
-                                      value={lead.First_Name || ''}
-                                      onChange={(e) => handleEditLead(index, 'First_Name', e.target.value)}
-                                      placeholder="Enter first name"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">Last Name</label>
-                                    <input
-                                      type="text"
-                                      value={lead.Last_Name || ''}
-                                      onChange={(e) => handleEditLead(index, 'Last_Name', e.target.value)}
-                                      placeholder="Enter last name"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">Email</label>
-                                    <input
-                                      type="email"
-                                      value={lead.Email_1 || ''}
-                                      onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
-                                      placeholder="Enter email address"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">Phone</label>
-                                    <input
-                                      type="tel"
-                                      value={lead.Phone || ''}
-                                      onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
-                                      placeholder="Enter phone number"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
-                                    <input
-                                      type="text"
-                                      value={lead.Address || ''}
-                                      onChange={(e) => handleEditLead(index, 'Address', e.target.value)}
-                                      placeholder="Enter address"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                      <label className="block text-xs font-bold text-gray-700 mb-1">{t('uploadContacts.preview.postalCode')}</label>
+                                  {COMPANY_EDITABLE_HARX_FIELDS.filter((field) =>
+                                    isCompanyFieldVisible(companyVisible, field.key)
+                                  ).map((field) => {
+                                    const raw = String((lead as Lead)[field.key] || '');
+                                    const displayValue =
+                                      field.key === 'Deal_Name' && !raw.trim()
+                                        ? `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim()
+                                        : raw;
+                                    return (
+                                      <div key={`preview-edit-${field.key}`}>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                                          {t(field.labelKey)}
+                                        </label>
+                                        <input
+                                          type={field.inputType || 'text'}
+                                          value={displayValue}
+                                          onChange={(e) =>
+                                            handleEditLead(index, field.key, e.target.value)
+                                          }
+                                          className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
+                                        />
+                                      </div>
+                                    );
+                                  })}
+                                  {companyCustomColumns.map((col) => (
+                                    <div key={`preview-edit-custom-${col.header}`}>
+                                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                                        {col.label}
+                                      </label>
                                       <input
                                         type="text"
-                                        value={lead.Postal_Code || ''}
-                                        onChange={(e) => handleEditLead(index, 'Postal_Code', e.target.value)}
-                                        placeholder="Zip code"
+                                        value={getLeadCustomFieldValue(lead, col.header)}
+                                        onChange={(e) =>
+                                          handleEditLeadCustomField(
+                                            index,
+                                            col.header,
+                                            e.target.value
+                                          )
+                                        }
                                         className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                       />
                                     </div>
-                                    <div>
-                                      <label className="block text-xs font-bold text-gray-700 mb-1">{t('uploadContacts.preview.city')}</label>
-                                      <input
-                                        type="text"
-                                        value={lead.City || ''}
-                                        onChange={(e) => handleEditLead(index, 'City', e.target.value)}
-                                        placeholder="City"
-                                        className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">{t('uploadContacts.preview.dob')}</label>
-                                    <input
-                                      type="text"
-                                      value={lead.Date_of_Birth || ''}
-                                      onChange={(e) => handleEditLead(index, 'Date_of_Birth', e.target.value)}
-                                      placeholder="DD/MM/YYYY"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
+                                  ))}
 
                                   <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                                     <button
@@ -4504,11 +4545,14 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         className="h-3.5 w-3.5 rounded border-slate-300 text-harx-600 focus:ring-harx-500 disabled:opacity-40"
                       />
                     </th>
-                    {(companyVisible.Last_Name !== false || companyVisible.Deal_Name !== false) && (
+                    {companyVisible.Deal_Name !== false && (
                       <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
-                        {companyVisible.Last_Name !== false
-                          ? t('uploadContacts.list.table.lastName')
-                          : t('uploadContacts.mapping.fields.Deal_Name')}
+                        {t('uploadContacts.mapping.fields.Deal_Name')}
+                      </th>
+                    )}
+                    {companyVisible.Last_Name !== false && (
+                      <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                        {t('uploadContacts.list.table.lastName')}
                       </th>
                     )}
                     {companyVisible.First_Name !== false && (
@@ -4750,87 +4794,43 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               </button>
             </div>
             <div className="p-5 space-y-3 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
+              {COMPANY_EDITABLE_HARX_FIELDS.filter((field) =>
+                isCompanyFieldVisible(companyVisible, field.key)
+              ).map((field) => {
+                const raw = String(editingSavedLead[field.key] || '');
+                const displayValue =
+                  field.key === 'Deal_Name' && !raw.trim()
+                    ? `${editingSavedLead.First_Name || ''} ${editingSavedLead.Last_Name || ''}`.trim()
+                    : raw;
+                return (
+                  <div key={`saved-edit-${field.key}`}>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
+                      {t(field.labelKey)}
+                    </label>
+                    <input
+                      type={field.inputType || 'text'}
+                      value={displayValue}
+                      onChange={(e) => updateSavedLeadDraft(field.key, e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
+                    />
+                  </div>
+                );
+              })}
+              {companyCustomColumns.map((col) => (
+                <div key={`saved-edit-custom-${col.header}`}>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                    {t('uploadContacts.list.table.firstName')}
+                    {col.label}
                   </label>
                   <input
                     type="text"
-                    value={editingSavedLead.First_Name || ''}
-                    onChange={(e) => updateSavedLeadDraft('First_Name', e.target.value)}
+                    value={getLeadCustomFieldValue(editingSavedLead, col.header)}
+                    onChange={(e) =>
+                      updateSavedLeadCustomDraft(col.header, e.target.value)
+                    }
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                    {t('uploadContacts.list.table.lastName')}
-                  </label>
-                  <input
-                    type="text"
-                    value={editingSavedLead.Last_Name || ''}
-                    onChange={(e) => updateSavedLeadDraft('Last_Name', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                  {t('uploadContacts.list.table.email')}
-                </label>
-                <input
-                  type="email"
-                  value={editingSavedLead.Email_1 || ''}
-                  onChange={(e) => updateSavedLeadDraft('Email_1', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                  {t('uploadContacts.list.table.mobile')}
-                </label>
-                <input
-                  type="tel"
-                  value={editingSavedLead.Phone || ''}
-                  onChange={(e) => updateSavedLeadDraft('Phone', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                  {t('uploadContacts.list.table.address')}
-                </label>
-                <input
-                  type="text"
-                  value={editingSavedLead.Address || ''}
-                  onChange={(e) => updateSavedLeadDraft('Address', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                    {t('uploadContacts.list.table.postalCode')}
-                  </label>
-                  <input
-                    type="text"
-                    value={editingSavedLead.Postal_Code || ''}
-                    onChange={(e) => updateSavedLeadDraft('Postal_Code', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                    {t('uploadContacts.list.table.city')}
-                  </label>
-                  <input
-                    type="text"
-                    value={editingSavedLead.City || ''}
-                    onChange={(e) => updateSavedLeadDraft('City', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                  />
-                </div>
-              </div>
+              ))}
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 bg-gray-50/50">
               <button
