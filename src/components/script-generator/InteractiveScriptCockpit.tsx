@@ -321,20 +321,20 @@ export function InteractiveScriptCockpit({
                   <button
                     key={variable.key}
                     type="button"
-                    title={`${variable.token}${variable.example ? ` — ex: ${variable.example}` : ''}`}
+                    title={`Insère ${variable.token}${variable.example ? ` — ex: ${variable.example}` : ''}`}
                     onClick={() => onInsertVariable?.(variable.token)}
                     disabled={!onInsertVariable}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] font-bold text-slate-700 hover:border-red-300 hover:bg-red-50 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex flex-col items-start gap-0.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-left hover:border-red-300 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <span className="text-slate-400 font-mono text-[8px]">
-                      {variable.source === 'custom' ? 'custom' : 'var'}
+                    <span className="text-[9px] font-bold text-slate-700 hover:text-red-700">
+                      {variable.label}
                     </span>
-                    {variable.label}
+                    <span className="font-mono text-[8px] text-slate-400">{variable.token}</span>
                   </button>
                 ))}
               </div>
               <p className="text-[9px] text-slate-400 font-medium">
-                Cliquez pour insérer un token dans la réplique (ex. {'{{Email_1}}'}).
+                Un clic = un jeton dans la phrase. Exemple : Bonjour {'{{Deal_Name}}'}, ici {'{{repName}}'}…
               </p>
             </div>
           )}
