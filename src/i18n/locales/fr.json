@@ -1911,7 +1911,37 @@
       "fileSubtitle": "Importer et traiter des fichiers de contacts",
       "supportedFiles": "Supporté : CSV, Excel (XLSX, XLS)",
       "processing": "Traitement en cours...",
+      "analyzing": "Analyse des colonnes...",
       "clickToUpload": "Cliquez pour uploader ou glissez-déposez"
+    },
+    "mapping": {
+      "title": "Mapper les colonnes",
+      "subtitle": "Associez chaque colonne du fichier à un champ HARX avant l'import. Les colonnes non mappées sont ignorées.",
+      "fileColumn": "Colonne fichier",
+      "example": "Exemple",
+      "harxField": "Champ HARX",
+      "ignore": "Ignorer",
+      "confirm": "Confirmer le mapping",
+      "cancel": "Annuler",
+      "applying": "Application du mapping...",
+      "requiredHint": "Mappez au moins un téléphone ou un email, et un nom (Deal_Name, Prénom ou Nom).",
+      "missingIdentity": "Téléphone ou email requis",
+      "missingName": "Nom requis",
+      "previewTitle": "Aperçu mappé",
+      "rowsInFile": "{{count}} lignes dans le fichier",
+      "fields": {
+        "Deal_Name": "Nom du lead",
+        "First_Name": "Prénom",
+        "Last_Name": "Nom",
+        "Email_1": "Email",
+        "Phone": "Téléphone",
+        "Address": "Adresse",
+        "Postal_Code": "Code postal",
+        "City": "Ville",
+        "Date_of_Birth": "Date de naissance",
+        "Stage": "Étape",
+        "Pipeline": "Pipeline"
+      }
     },
     "analysis": {
       "title": "Analyse du Traitement IA",
