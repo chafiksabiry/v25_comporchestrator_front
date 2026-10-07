@@ -1223,6 +1223,21 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const headerForHarxField = (field: string) =>
     Object.keys(columnMapping).find((header) => columnMapping[header] === field) || '';
 
+  /** When Prénom + Nom are mapped, Nom complet is auto-built (same as import backend). */
+  const getConcatenatedFullNameExample = () => {
+    const firstHeader = headerForHarxField('First_Name');
+    const lastHeader = headerForHarxField('Last_Name');
+    if (!firstHeader || !lastHeader) return '';
+    const row =
+      mappingSamples.find((r) => {
+        const f = String(r[firstHeader] || '').trim();
+        const l = String(r[lastHeader] || '').trim();
+        return Boolean(f || l);
+      }) || mappingSamples[0];
+    if (!row) return '';
+    return `${String(row[firstHeader] || '').trim()} ${String(row[lastHeader] || '').trim()}`.trim();
+  };
+
   const unmappedHeaders = mappingHeaders.filter((header) => !columnMapping[header]);
 
   const handleDragHeaderStart = (event: React.DragEvent, header: string) => {
@@ -3149,6 +3164,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         const mappedHeader = headerForHarxField(field);
                         const isRequiredSlot = isRequiredHarxSlot(field, columnMapping);
                         const isOver = dragOverField === field;
+                        const concatFullName =
+                          field === 'Deal_Name' && !mappedHeader
+                            ? getConcatenatedFullNameExample()
+                            : '';
+                        const showDerivedFullName = Boolean(concatFullName);
                         return (
                           <div
                             key={field}
@@ -3163,7 +3183,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                             className={`rounded-xl border px-3 py-2.5 transition-all ${
                               isOver
                                 ? 'border-harx-500 bg-harx-50 ring-2 ring-harx-200'
-                                : mappedHeader
+                                : mappedHeader || showDerivedFullName
                                   ? 'border-emerald-200 bg-emerald-50/50'
                                   : isRequiredSlot
                                     ? 'border-dashed border-red-200 bg-red-50/30'
@@ -3173,7 +3193,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                             <div className="flex items-center justify-between gap-2 mb-1.5">
                               <span className="text-xs font-black uppercase tracking-wide text-slate-600">
                                 {t(`uploadContacts.mapping.fields.${field}`, field)}
-                                {isRequiredSlot && !mappedHeader ? (
+                                {isRequiredSlot && !mappedHeader && !showDerivedFullName ? (
                                   <span className="text-red-500 ml-1">*</span>
                                 ) : null}
                               </span>
@@ -3221,6 +3241,18 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                   <X className="h-4 w-4" />
                                 </button>
                               </div>
+                            ) : showDerivedFullName ? (
+                              <div className="rounded-lg border border-emerald-200 bg-white px-2.5 py-2">
+                                <p className="text-[10px] font-black uppercase tracking-wider text-emerald-600">
+                                  {t('uploadContacts.mapping.autoFullName')}
+                                </p>
+                                <p className="text-sm font-bold text-slate-800 truncate">
+                                  {concatFullName}
+                                </p>
+                                <p className="text-[11px] text-slate-500 truncate">
+                                  {t('uploadContacts.mapping.autoFullNameHint')}
+                                </p>
+                              </div>
                             ) : (
                               <p className="text-xs text-slate-400 italic py-1">
                                 {t('uploadContacts.mapping.dropHere')}
@@ -3242,9 +3274,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                       <table className="min-w-full text-xs">
                         <thead>
                           <tr className="text-left text-slate-500">
-                            {HARX_IMPORT_FIELDS.filter((field) =>
-                              Object.values(columnMapping).includes(field)
-                            ).map((field) => (
+                            {HARX_IMPORT_FIELDS.filter((field) => {
+                              if (Object.values(columnMapping).includes(field)) return true;
+                              // Show derived Nom complet when Prénom+Nom are mapped
+                              return (
+                                field === 'Deal_Name' &&
+                                Boolean(headerForHarxField('First_Name')) &&
+                                Boolean(headerForHarxField('Last_Name'))
+                              );
+                            }).map((field) => (
                               <th key={field} className="px-3 py-2 font-bold whitespace-nowrap">
                                 {t(`uploadContacts.mapping.fields.${field}`, field)}
                               </th>
@@ -3254,13 +3292,24 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         <tbody>
                           {mappingSamples.slice(0, 3).map((row, idx) => (
                             <tr key={idx} className="border-t border-slate-100 bg-white/70">
-                              {HARX_IMPORT_FIELDS.filter((field) =>
-                                Object.values(columnMapping).includes(field)
-                              ).map((field) => {
+                              {HARX_IMPORT_FIELDS.filter((field) => {
+                                if (Object.values(columnMapping).includes(field)) return true;
+                                return (
+                                  field === 'Deal_Name' &&
+                                  Boolean(headerForHarxField('First_Name')) &&
+                                  Boolean(headerForHarxField('Last_Name'))
+                                );
+                              }).map((field) => {
                                 const sourceHeader = headerForHarxField(field);
+                                let cell = sourceHeader ? String(row[sourceHeader] || '—') : '—';
+                                if (!sourceHeader && field === 'Deal_Name') {
+                                  const firstH = headerForHarxField('First_Name');
+                                  const lastH = headerForHarxField('Last_Name');
+                                  cell = `${String(row[firstH] || '').trim()} ${String(row[lastH] || '').trim()}`.trim() || '—';
+                                }
                                 return (
                                   <td key={field} className="px-3 py-2 text-slate-700 whitespace-nowrap">
-                                    {sourceHeader ? String(row[sourceHeader] || '—') : '—'}
+                                    {cell}
                                   </td>
                                 );
                               })}
