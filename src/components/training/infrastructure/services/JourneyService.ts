@@ -3,6 +3,7 @@ import { ApiClient } from '../../lib/api';
 import { TrainingJourney, TrainingModule } from '../../types';
 import { extractObjectId, isValidMongoId } from '../../lib/mongoUtils';
 import { markGigStepDone } from '../../../../services/gigSetupSync';
+import { normalizeSectionContentForSave } from '../../utils/resolveSectionMarkdown';
 import React from 'react';
 export interface LaunchJourneyRequest {
   journey: TrainingJourney;
@@ -86,7 +87,7 @@ export class JourneyService {
         title: section.title || section.content?.title || `Section ${sectionIndex + 1}`,
         type: section.type || 'document',
         order: sectionIndex,
-        content: section.content || section,
+        content: normalizeSectionContentForSave(section),
         duration: section.duration || section.estimatedDuration || 0
       }));
 
@@ -270,7 +271,7 @@ export class JourneyService {
         title: section.title || section.content?.title || `Section ${sectionIndex + 1}`,
         type: section.type || 'document',
         order: sectionIndex,
-        content: section.content || section,
+        content: normalizeSectionContentForSave(section),
         duration: section.duration || section.estimatedDuration || 0
       }));
 

@@ -35,6 +35,7 @@ import type { TrainingMethodology } from '../../types/methodology';
 import { buildGigSnapshotForAi, detectOutputLanguageFromGigText } from '../../utils/gigSnapshotForAi';
 import type { TrainingViewerTheme } from '../../utils/trainingViewerTheme';
 import {getModuleColorStyles, getViewerThemeTokens, resolveRepViewerTheme} from '../../utils/trainingViewerTheme';
+import { resolveSectionMarkdown } from '../../utils/resolveSectionMarkdown';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[], fileTrainingUrl?: string) => void;
@@ -6168,7 +6169,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         {String(mod?.title || 'Module')}
                                       </h3>
                                       {showFullDescription ? (
-                                        <div className="prose prose-sm max-w-none text-slate-200">
+                                        <div className="prose prose-sm prose-invert max-w-none text-slate-200">
                                           <ReactMarkdown remarkPlugins={[remarkGfm]}>{desc}</ReactMarkdown>
                                         </div>
                                       ) : sectionCount > 0 ? (
@@ -6179,7 +6180,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                           <div className="mt-4 grid gap-3 sm:grid-cols-2">
                                             {sections.map((sec: any, si: number) => {
                                               const sectionTitle = String(sec?.title || `Section ${si + 1}`).trim();
-                                              const rawContent = String(sec?.content || '').trim();
+                                              const rawContent = resolveSectionMarkdown(sec).trim();
                                               const preview = rawContent
                                                 .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
                                                 .replace(/[*_`#>-]/g, '')
@@ -6275,9 +6276,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   <h3 className="mb-3 text-lg font-bold text-white sm:text-xl">
                                     {String(currentFormationViewerSlide.section?.title || 'Section')}
                                   </h3>
-                                  {String(currentFormationViewerSlide.section?.content || '').trim() ? (
+                                  {resolveSectionMarkdown(currentFormationViewerSlide.section).trim() ? (
                                     <div
-                                      className="rounded-2xl border p-4"
+                                      className="rounded-2xl border p-4 text-slate-200"
                                       style={{
                                         borderColor:
                                           moduleColorStyles[
@@ -6310,6 +6311,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                               </ul>
                                             );
                                           },
+                                          ol: ({ children }) => {
+                                            const modTheme =
+                                              moduleColorStyles[
+                                                currentFormationViewerSlide.moduleIndex % moduleColorStyles.length
+                                              ];
+                                            return (
+                                              <ol
+                                                className="mb-3 list-decimal space-y-2 rounded-xl border p-3 pl-8 last:mb-0 text-slate-200"
+                                                style={{ borderColor: modTheme.border, background: modTheme.softBg }}
+                                              >
+                                                {children}
+                                              </ol>
+                                            );
+                                          },
                                           li: ({ children }) => (
                                             <li className="flex items-start gap-2 text-[14px] leading-6 text-slate-200">
                                               <span
@@ -6322,7 +6337,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                                     ].chipBorder,
                                                 }}
                                               />
-                                              <span className="flex-1">{children}</span>
+                                              <span className="min-w-0 flex-1 break-words text-slate-200">{children}</span>
                                             </li>
                                           ),
                                           strong: ({ children }) => (
@@ -6336,6 +6351,47 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                           ),
                                           h3: ({ children }) => (
                                             <h6 className="mb-2 mt-4 text-base font-bold text-white first:mt-0">{children}</h6>
+                                          ),
+                                          // CRM templates are often fenced/indented → <pre><code>.
+                                          // Default browser styles are dark text → invisible on HARX Night.
+                                          pre: ({ children }) => (
+                                            <pre className="my-3 overflow-x-auto whitespace-pre-wrap break-words rounded-xl border border-white/15 bg-black/35 p-3 text-[13px] leading-6 text-slate-100">
+                                              {children}
+                                            </pre>
+                                          ),
+                                          code: ({ className, children }) => {
+                                            const isBlock =
+                                              Boolean(className?.includes('language-')) ||
+                                              String(children).includes('\n');
+                                            if (isBlock) {
+                                              return (
+                                                <code
+                                                  className={`block whitespace-pre-wrap break-words text-slate-100 ${className || ''}`}
+                                                >
+                                                  {children}
+                                                </code>
+                                              );
+                                            }
+                                            return (
+                                              <code className="rounded-md border border-white/15 bg-black/30 px-1.5 py-0.5 text-[13px] text-rose-100">
+                                                {children}
+                                              </code>
+                                            );
+                                          },
+                                          blockquote: ({ children }) => (
+                                            <blockquote className="my-3 border-l-4 border-rose-400/60 bg-white/5 px-3 py-2 text-slate-200 italic">
+                                              {children}
+                                            </blockquote>
+                                          ),
+                                          a: ({ href, children }) => (
+                                            <a
+                                              href={href}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="font-semibold text-rose-300 underline underline-offset-2 hover:text-rose-200"
+                                            >
+                                              {children}
+                                            </a>
                                           ),
                                           table: ({ children }) => {
                                             const modTheme =
@@ -6392,7 +6448,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                           },
                                         }}
                                       >
-                                        {String(currentFormationViewerSlide.section.content)}
+                                        {resolveSectionMarkdown(currentFormationViewerSlide.section)}
                                       </ReactMarkdown>
                                     </div>
                                   ) : (
