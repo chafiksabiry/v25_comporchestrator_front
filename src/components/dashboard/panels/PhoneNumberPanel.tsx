@@ -226,7 +226,7 @@ export function PhoneNumberPanel() {
   });
 
   const [testNumber, setTestNumber] = useState('');
-  const [testFromNumber, setTestFromNumber] = useState('+33423330953');
+  const [testFromNumber, setTestFromNumber] = useState('');
   const [testingCall, setTestingCall] = useState(false);
   const [rtcClient, setRtcClient] = useState<any>(null);
   const [rtcState, setRtcState] = useState<'idle' | 'connecting' | 'connected' | 'ringing' | 'active'>('idle');
@@ -312,7 +312,11 @@ export function PhoneNumberPanel() {
     const sipPassword = import.meta.env.VITE_TELNYX_SIP_PASSWORD;
 
     if (!sipUser || !sipPassword) {
-      toast.error('Les identifiants SIP (VITE_TELNYX_SIP_USER / PASSWORD) ne sont pas configurés.');
+      toast.error(
+        t('phoneNumberPanel.toasts.softphoneUnavailable', {
+          defaultValue: "Le test micro n'est pas disponible pour le moment.",
+        })
+      );
       return null;
     }
 
@@ -364,11 +368,26 @@ export function PhoneNumberPanel() {
       setRtcState('idle');
       return null;
     }
-  }, []);
+  }, [t]);
+
+  const selectedTestFromLine = useMemo(
+    () => phoneNumbers.find((n) => n.phoneNumber === testFromNumber) || null,
+    [phoneNumbers, testFromNumber]
+  );
 
   const handleTestCallWithMic = async () => {
+    if (!testFromNumber) {
+      toast.error(t('phoneNumberPanel.toasts.testSelectFrom'));
+      return;
+    }
     if (!testNumber) {
-      toast.error('Veuillez entrer un numéro de destination.');
+      toast.error(t('phoneNumberPanel.toasts.testEnterDestination'));
+      return;
+    }
+
+    // Softphone WebRTC is wired to one provider stack; FR (Twilio) lines use API test.
+    if (selectedTestFromLine?.provider === 'twilio') {
+      toast.error(t('phoneNumberPanel.toasts.testMicUnavailableForLine'));
       return;
     }
 
@@ -385,11 +404,10 @@ export function PhoneNumberPanel() {
       return;
     }
 
-    // Demander l'accès au micro
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
-      toast.error('Accès au microphone refusé.');
+      toast.error(t('phoneNumberPanel.toasts.micDenied'));
       setShowSoftphone(false);
       setRtcState(client ? 'connected' : 'idle');
       return;
@@ -398,13 +416,13 @@ export function PhoneNumberPanel() {
     try {
       client.newCall({
         destinationNumber: testNumber,
-        callerNumber: testFromNumber || '+33423330953', // Utilise le numéro renseigné dans l'input
+        callerNumber: testFromNumber,
         audio: true,
-        video: false
+        video: false,
       });
     } catch (err: any) {
       console.error(err);
-      toast.error('Erreur lors de l\'appel sortant.');
+      toast.error(t('phoneNumberPanel.toasts.testCallFailed'));
       setShowSoftphone(false);
       setRtcState('connected');
     }
@@ -555,24 +573,33 @@ export function PhoneNumberPanel() {
   };
 
   const handleTestCall = async () => {
+    if (!testFromNumber) {
+      toast.error(t('phoneNumberPanel.toasts.testSelectFrom'));
+      return;
+    }
+    if (!testNumber?.trim()) {
+      toast.error(t('phoneNumberPanel.toasts.testEnterDestination'));
+      return;
+    }
     setTestingCall(true);
     try {
       const res = await fetch(`${apiBaseUrl}/phone-numbers/test-call`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fromNumber: testFromNumber || '+33423330953',
-          toNumber: testNumber
-        })
+          fromNumber: testFromNumber,
+          toNumber: testNumber.trim(),
+          companyId,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.message || data.error || 'Test call failed');
+        throw new Error(data.message || data.error || t('phoneNumberPanel.toasts.testCallFailed'));
       }
-      toast.success(t('phoneNumberPanel.toasts.testCallSuccess', { defaultValue: "Appel de test lancé avec succès !" }));
+      toast.success(t('phoneNumberPanel.toasts.testCallSuccess'));
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || t('phoneNumberPanel.toasts.testCallFailed', { defaultValue: "Erreur lors du test d'appel" }));
+      toast.error(err.message || t('phoneNumberPanel.toasts.testCallFailed'));
     } finally {
       setTestingCall(false);
     }
@@ -603,6 +630,10 @@ export function PhoneNumberPanel() {
                 undefined,
             }));
           setPhoneNumbers(myLines);
+          setTestFromNumber((prev) => {
+            if (prev && myLines.some((n) => n.phoneNumber === prev)) return prev;
+            return myLines[0]?.phoneNumber || '';
+          });
           // Keep the navbar "LIGNES TÉL." badge in sync
           window.dispatchEvent(new CustomEvent('balanceUpdated', { detail: { escrow: myLines.length } }));
         }
@@ -1838,41 +1869,66 @@ export function PhoneNumberPanel() {
             </div>
             
             <div className="mt-4 p-4 border border-indigo-100 rounded-2xl bg-indigo-50/30">
-              <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700 mb-2">Tester l'appel</p>
-              <div className="flex gap-2 max-w-xl">
-                <input 
-                  type="text" 
+              <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700 mb-2">
+                {t('phoneNumberPanel.myNumbers.testCall.title')}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 max-w-3xl">
+                <select
                   value={testFromNumber}
                   onChange={(e) => setTestFromNumber(e.target.value)}
-                  placeholder="Numéro Appelant (ex: +33...)"
-                  className="flex-1 px-4 py-2.5 bg-white border border-indigo-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-                />
-                <input 
-                  type="text" 
+                  disabled={phoneNumbers.length === 0}
+                  aria-label={t('phoneNumberPanel.myNumbers.testCall.fromLabel')}
+                  className="flex-1 min-w-0 px-4 py-2.5 bg-white border border-indigo-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                >
+                  {phoneNumbers.length === 0 ? (
+                    <option value="">
+                      {t('phoneNumberPanel.myNumbers.testCall.noLines')}
+                    </option>
+                  ) : (
+                    phoneNumbers.map((n) => {
+                      const gigTitle =
+                        gigsAndReps.find((g) => g.gigId === n.gigId)?.title ||
+                        t('phoneNumberPanel.myNumbers.table.unassigned');
+                      return (
+                        <option key={n.phoneNumber} value={n.phoneNumber}>
+                          {n.phoneNumber} — {gigTitle}
+                        </option>
+                      );
+                    })
+                  )}
+                </select>
+                <input
+                  type="tel"
                   value={testNumber}
                   onChange={(e) => setTestNumber(e.target.value)}
-                  placeholder="Numéro Appelé (ex: +212...)"
-                  className="flex-1 px-4 py-2.5 bg-white border border-indigo-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  placeholder={t('phoneNumberPanel.myNumbers.testCall.toPlaceholder')}
+                  aria-label={t('phoneNumberPanel.myNumbers.testCall.toLabel')}
+                  className="flex-1 min-w-0 px-4 py-2.5 bg-white border border-indigo-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                 />
                 <button
                   type="button"
                   onClick={handleTestCall}
-                  disabled={testingCall}
+                  disabled={testingCall || !testFromNumber}
                   className="px-5 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-50"
-                  title="Lancer l'appel de test par API"
+                  title={t('phoneNumberPanel.myNumbers.testCall.apiTitle')}
                 >
                   {testingCall ? <RefreshCw size={14} className="animate-spin" /> : <Phone size={14} />}
-                  <span>Tester (API)</span>
+                  <span>{t('phoneNumberPanel.myNumbers.testCall.api')}</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleTestCallWithMic}
-                  disabled={rtcState === 'connecting' || rtcState === 'ringing' || rtcState === 'active'}
+                  disabled={
+                    rtcState === 'connecting' ||
+                    rtcState === 'ringing' ||
+                    rtcState === 'active' ||
+                    !testFromNumber
+                  }
                   className="px-5 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-50"
-                  title="Tester l'appel avec votre microphone via WebRTC"
+                  title={t('phoneNumberPanel.myNumbers.testCall.micTitle')}
                 >
                   {rtcState === 'connecting' ? <RefreshCw size={14} className="animate-spin" /> : <Radio size={14} />}
-                  <span>Tester (Micro)</span>
+                  <span>{t('phoneNumberPanel.myNumbers.testCall.mic')}</span>
                 </button>
               </div>
 

@@ -195,9 +195,16 @@
       "reassignSuccess": "Number {{number}} reassigned to another gig.",
       "reassignFailed": "Unable to reassign the number.",
       "reassignSameGig": "Choose a different gig from the current assignment.",
-      "terminateConfirm": "Permanently terminate {{number}}? The number will be released at Telnyx/Twilio and removed from HARX. This cannot be undone.",
+      "terminateConfirm": "Permanently terminate {{number}}? The number will be released at the provider and removed from HARX. This cannot be undone.",
       "terminateSuccess": "Number {{number}} terminated at the provider and removed.",
-      "terminateFailed": "Unable to terminate the number."
+      "terminateFailed": "Unable to terminate the number.",
+      "testCallSuccess": "Test call started successfully!",
+      "testCallFailed": "Test call failed.",
+      "testSelectFrom": "Choose a purchased number from the list.",
+      "testEnterDestination": "Enter the destination number to call.",
+      "testMicUnavailableForLine": "Microphone test is not available for this line. Please use the API test.",
+      "softphoneUnavailable": "Microphone test is unavailable right now.",
+      "micDenied": "Microphone access denied."
     },
     "tabs": {
       "myNumbersWithCount": "My Lines ({{count}})",
@@ -247,6 +254,17 @@
         "companyTotalLabel": "Company total",
         "filteredTotalLabel": "Filtered total",
         "paidLinesShort": "paid"
+      },
+      "testCall": {
+        "title": "Test the call",
+        "fromLabel": "Caller number",
+        "toLabel": "Called number",
+        "toPlaceholder": "Called number (e.g. +336…)",
+        "noLines": "No purchased numbers",
+        "api": "Test (API)",
+        "mic": "Test (Mic)",
+        "apiTitle": "Start the test call",
+        "micTitle": "Test the call with your microphone"
       },
       "rowDetail": {
         "label": "Selected line",
