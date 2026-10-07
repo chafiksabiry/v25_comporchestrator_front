@@ -4,6 +4,8 @@
  * Le contenu texte est échappé pour limiter les injections.
  */
 
+import { resolveSectionMarkdown } from './resolveSectionMarkdown';
+
 function escapeHtml(s: string): string {
   return String(s || '')
     .replace(/&/g, '&amp;')
@@ -16,7 +18,8 @@ function escapeHtml(s: string): string {
 function markdownishToPlain(md: string): string {
   return String(md || '')
     .replace(/\r\n/g, '\n')
-    .replace(/```[\s\S]*?```/g, ' ')
+    // Keep fenced CRM templates / examples — strip fences only, not the body
+    .replace(/```[\w-]*\n?([\s\S]*?)```/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/\*([^*]+)\*/g, '$1')
@@ -77,7 +80,7 @@ export function buildRepDeckSlidesForSingleModule(journey: any, moduleIndex: num
 
   const sections = Array.isArray(mod?.sections) ? mod.sections : [];
   sections.forEach((sec: any) => {
-    const body = markdownishToPlain(String(sec?.content || ''));
+    const body = markdownishToPlain(resolveSectionMarkdown(sec));
     slides.push({
       kind: 'section',
       moduleTitle: modTitle,
@@ -606,7 +609,7 @@ export function formationDigestModuleFromRaw(mod: any): FormationDigestForAi['mo
     title: String(mod?.title || 'Module').trim(),
     sections: sections.map((sec: any) => ({
       title: String(sec?.title || '').trim(),
-      contentPlain: markdownishToPlain(String(sec?.content || '')).slice(0, SECTION_BODY_MAX),
+      contentPlain: markdownishToPlain(resolveSectionMarkdown(sec)).slice(0, SECTION_BODY_MAX),
     })),
     quizzes: quizzes.map((qz: any) => ({
       title: String(qz?.title || 'Quiz').trim(),
