@@ -2047,14 +2047,14 @@
         "error": "Unable to update lead"
       },
       "archive": {
-        "one": "Archive",
+        "one": "Delete",
         "selectOne": "Select this lead",
         "selectPage": "Select the leads on this page",
-        "selected": "Archive selection ({{count}})",
-        "all": "Archive all",
-        "confirm": "Archive {{count}} lead(s)? They will be removed from the list.",
-        "confirmAll": "Archive all {{count}} leads of this gig? They will be removed from the list.",
-        "error": "Unable to archive the leads"
+        "selected": "Delete selection ({{count}})",
+        "all": "Delete all",
+        "confirm": "Delete {{count}} lead(s)? They will be removed from the list.",
+        "confirmAll": "Delete all {{count}} leads of this gig? They will be removed from the list.",
+        "error": "Unable to delete the leads"
       },
       "details": {
         "button": "View details",
