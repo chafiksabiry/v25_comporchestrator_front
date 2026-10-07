@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Clock, 
   AlertTriangle, 
@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import {
   renderScript,
+  toFriendlyToken,
   type ScriptVariable,
 } from '../../lib/scriptVariables';
 
@@ -55,8 +56,8 @@ interface InteractiveScriptCockpitProps {
   onStageIndexChange?: (index: number) => void;
   /** Contact-file variables for the current gig (mapped HARX + customFields). */
   contactVariables?: ScriptVariable[];
-  /** Insert a token into the current stage replica (parent owns stage state). */
-  onInsertVariable?: (token: string) => void;
+  /** Parent updates the current stage replica when the user edits or inserts a token. */
+  onReplicaChange?: (stageIndex: number, introReplica: string) => void;
   /** Optional sample lead values for live preview of tokens. */
   previewLead?: Record<string, any> | null;
 }
@@ -75,7 +76,7 @@ export function InteractiveScriptCockpit({
   isInline = false,
   onStageIndexChange,
   contactVariables = [],
-  onInsertVariable,
+  onReplicaChange,
   previewLead = null,
 }: InteractiveScriptCockpitProps) {
   useTranslation();
@@ -92,10 +93,52 @@ export function InteractiveScriptCockpit({
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const [showPreview, setShowPreview] = useState(false);
+  const replicaRef = useRef<HTMLTextAreaElement | null>(null);
+  const cursorRef = useRef<number | null>(null);
   
   // Scoring Simulation States
   const [showScoringSimulation, setShowScoringSimulation] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
+
+  const rememberCursor = () => {
+    const el = replicaRef.current;
+    if (!el) return;
+    cursorRef.current = el.selectionStart ?? el.value.length;
+  };
+
+  const handleReplicaEdit = (value: string) => {
+    onReplicaChange?.(currentStageIdx, value);
+  };
+
+  const insertVariableAtCursor = (variable: ScriptVariable) => {
+    if (showPreview) setShowPreview(false);
+    const token = toFriendlyToken(variable);
+    const current = String(stages[currentStageIdx]?.introReplica || '');
+    const el = replicaRef.current;
+    const pos =
+      cursorRef.current != null
+        ? cursorRef.current
+        : el?.selectionStart != null
+          ? el.selectionStart
+          : current.length;
+    const start = Math.max(0, Math.min(pos, current.length));
+    const end =
+      el && document.activeElement === el && el.selectionEnd != null
+        ? Math.max(start, Math.min(el.selectionEnd, current.length))
+        : start;
+    const next = `${current.slice(0, start)}${token}${current.slice(end)}`;
+    onReplicaChange?.(currentStageIdx, next);
+    const newPos = start + token.length;
+    cursorRef.current = newPos;
+    // Restore caret after React re-render
+    requestAnimationFrame(() => {
+      const area = replicaRef.current;
+      if (!area) return;
+      area.focus();
+      area.setSelectionRange(newPos, newPos);
+      cursorRef.current = newPos;
+    });
+  };
 
   const previewCtx = useMemo(() => {
     const harxExamples: Record<string, string> = {};
@@ -321,36 +364,57 @@ export function InteractiveScriptCockpit({
                   <button
                     key={variable.key}
                     type="button"
-                    title={`Insère ${variable.token}${variable.example ? ` — ex: ${variable.example}` : ''}`}
-                    onClick={() => onInsertVariable?.(variable.token)}
-                    disabled={!onInsertVariable}
-                    className="inline-flex flex-col items-start gap-0.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-left hover:border-red-300 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={
+                      variable.example
+                        ? `Insère {{${variable.label}}} — ex: ${variable.example}`
+                        : `Insère {{${variable.label}}} à la position du curseur`
+                    }
+                    onMouseDown={(e) => {
+                      // Keep textarea focus / cursor; don't steal it before insert
+                      e.preventDefault();
+                    }}
+                    onClick={() => insertVariableAtCursor(variable)}
+                    disabled={!onReplicaChange}
+                    className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[9px] font-bold text-slate-700 hover:border-red-300 hover:bg-red-50 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <span className="text-[9px] font-bold text-slate-700 hover:text-red-700">
-                      {variable.label}
-                    </span>
-                    <span className="font-mono text-[8px] text-slate-400">{variable.token}</span>
+                    {variable.label}
                   </button>
                 ))}
               </div>
               <p className="text-[9px] text-slate-400 font-medium">
-                Un clic = un jeton dans la phrase. Exemple : Bonjour {'{{Deal_Name}}'}, ici {'{{repName}}'}…
+                Placez le curseur dans le texte, puis cliquez une variable → insertion de {'{{Nom du prospect}}'} à cet endroit.
               </p>
             </div>
           )}
 
-          {/* Primary Speech Bubble box */}
+          {/* Primary Speech Bubble box — editable so cursor insert works */}
           <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm relative overflow-hidden">
             <div className={`absolute top-0 bottom-0 left-0 w-1 ${currentColors.dot}`} />
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 pl-1">
               <span className="text-[8px] font-extrabold text-slate-400 uppercase tracking-widest block">
                 {currentStage.introTitle}
               </span>
-              <p className="text-[11.5px] font-bold text-slate-800 leading-relaxed italic select-all">
-                {showPreview
-                  ? renderScript(currentStage.introReplica, previewCtx.lead, previewCtx.ctx)
-                  : currentStage.introReplica}
-              </p>
+              {showPreview ? (
+                <p className="text-[11.5px] font-bold text-slate-800 leading-relaxed italic">
+                  {renderScript(currentStage.introReplica, previewCtx.lead, previewCtx.ctx)}
+                </p>
+              ) : (
+                <textarea
+                  ref={replicaRef}
+                  value={currentStage.introReplica || ''}
+                  onChange={(e) => {
+                    cursorRef.current = e.target.selectionStart;
+                    handleReplicaEdit(e.target.value);
+                  }}
+                  onSelect={rememberCursor}
+                  onClick={rememberCursor}
+                  onKeyUp={rememberCursor}
+                  onBlur={rememberCursor}
+                  rows={5}
+                  className="w-full resize-y rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2 text-[11.5px] font-bold text-slate-800 leading-relaxed italic outline-none focus:border-red-300 focus:bg-white focus:ring-2 focus:ring-red-500/10"
+                  placeholder="Écrivez la réplique… Placez le curseur puis cliquez une variable."
+                />
+              )}
             </div>
           </div>
 
