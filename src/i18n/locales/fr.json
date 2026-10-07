@@ -1916,7 +1916,7 @@
     },
     "mapping": {
       "title": "Mapper les colonnes",
-      "subtitle": "Glissez chaque colonne du fichier vers le champ HARX correspondant. Les colonnes non déposées sont ignorées.",
+      "subtitle": "Glissez chaque colonne du fichier vers le champ HARX. Champs obligatoires : nom (complet ou prénom+nom), email, téléphone, adresse, code postal, ville, date de naissance.",
       "fileColumn": "Colonne fichier",
       "fileColumns": "Colonnes du fichier",
       "harxFields": "Champs HARX",
@@ -1924,19 +1924,25 @@
       "dropHere": "Déposer ici",
       "unmap": "Retirer",
       "allMapped": "Toutes les colonnes sont mappées",
+      "visibleCompany": "Company",
+      "visibleRep": "REP",
+      "visibilityHint": "Cochez les champs visibles dans le tableau company et côté REP.",
+      "saveExtra": "Sauvegarder cette colonne",
+      "saveExtraHint": "{{count}} colonne(s) supplémentaire(s) seront enregistrées avec le lead.",
       "example": "Exemple",
       "harxField": "Champ HARX",
       "ignore": "Ignorer",
       "confirm": "Confirmer le mapping",
       "cancel": "Annuler",
       "applying": "Application du mapping...",
-      "requiredHint": "Mappez au moins un téléphone ou un email, et un nom (Deal_Name, Prénom ou Nom).",
+      "requiredHint": "Mappez email, téléphone, adresse, code postal, ville, date de naissance, et soit un nom complet, soit prénom + nom.",
+      "requiredBadge": "requis",
       "missingIdentity": "Téléphone ou email requis",
-      "missingName": "Nom requis",
+      "missingName": "Nom complet OU prénom + nom requis",
       "previewTitle": "Aperçu mappé",
       "rowsInFile": "{{count}} lignes dans le fichier",
       "fields": {
-        "Deal_Name": "Nom du lead",
+        "Deal_Name": "Nom complet",
         "First_Name": "Prénom",
         "Last_Name": "Nom",
         "Email_1": "Email",
@@ -1944,9 +1950,7 @@
         "Address": "Adresse",
         "Postal_Code": "Code postal",
         "City": "Ville",
-        "Date_of_Birth": "Date de naissance",
-        "Stage": "Étape",
-        "Pipeline": "Pipeline"
+        "Date_of_Birth": "Date de naissance"
       }
     },
     "analysis": {
