@@ -204,6 +204,8 @@ export function formatVariablesForAiPrompt(variables: ScriptVariable[]): string 
     ...lines,
     'Ne remplace pas les tokens par des valeurs figées — garde {{Libellé}} pour le runtime.',
     'Ne jamais utiliser les noms techniques (Deal_Name, Email_1, etc.) — seulement les libellés FR.',
+    "Interdit: [Nom du prospect], [Votre Nom], ou tout placeholder entre crochets — uniquement {{Libellé}}.",
+    "L'ouverture doit contenir {{Nom du prospect}}, {{Votre nom (REP)}} et {{Nom de l'entreprise (vendeur)}} lorsque ces libellés sont dans la liste.",
   ].join('\n');
 }
 
