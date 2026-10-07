@@ -671,6 +671,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [savedExtraColumns, setSavedExtraColumns] = useState<SavedExtraColumnsMap>({});
   /** Persisted display titles for custom fields (list view + remount). */
   const [customFieldLabels, setCustomFieldLabels] = useState<Record<string, string>>({});
+  /** When dropping onto an already-mapped HARX field: Remplacer vs Ajouter. */
+  const [mappingConflict, setMappingConflict] = useState<{
+    header: string;
+    field: string;
+    existingHeader: string;
+  } | null>(null);
   const [isSavingLeads, setIsSavingLeads] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
@@ -1034,6 +1040,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     setDragOverField(null);
     setDraggingHeader(null);
     setSavedExtraColumns({});
+    setMappingConflict(null);
   };
 
   const loadGigFieldVisibility = async (gigId: string) => {
@@ -1457,15 +1464,31 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     setDragOverField(null);
     setDraggingHeader(null);
     if (!header) return;
+
+    const existingHeader = headerForHarxField(field);
+    // Same mapping already in place — nothing to do.
+    if (existingHeader && existingHeader === header) return;
+
+    if (existingHeader) {
+      // Occupied slot: ask replace (move) vs add as custom column.
+      setMappingConflict({ header, field, existingHeader });
+      return;
+    }
+
     handleMappingFieldChange(header, field);
+    removeSavedExtraColumn(header);
   };
 
-  const handleDropOnSavedExtras = (event: React.DragEvent) => {
-    event.preventDefault();
-    const header = event.dataTransfer.getData('text/plain') || draggingHeader;
-    setDragOverField(null);
-    setDraggingHeader(null);
-    if (!header) return;
+  const resolveMappingConflict = (action: 'replace' | 'add') => {
+    if (!mappingConflict) return;
+    const { header, field } = mappingConflict;
+    setMappingConflict(null);
+    if (action === 'replace') {
+      handleMappingFieldChange(header, field);
+      removeSavedExtraColumn(header);
+      return;
+    }
+    // Keep current HARX mapping; save dragged column as custom field.
     saveExtraColumn(header);
   };
 
@@ -3342,38 +3365,6 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         ))
                       )}
                     </div>
-
-                    {/* Names of columns saved as custom (drag to right → appear here) */}
-                    <div className="mt-4 pt-4 border-t border-slate-200/80">
-                      <p className="text-xs font-black uppercase tracking-wider text-harx-600 mb-2">
-                        {t('uploadContacts.mapping.savedNamesLeft')}
-                      </p>
-                      <p className="text-[11px] text-slate-400 mb-2">
-                        {t('uploadContacts.mapping.savedNamesLeftHint')}
-                      </p>
-                      {savedExtraHeaderList.length === 0 ? (
-                        <p className="text-xs text-slate-400 italic py-2">
-                          {t('uploadContacts.mapping.savedNamesEmpty')}
-                        </p>
-                      ) : (
-                        <div className="flex flex-wrap gap-1.5">
-                          {savedExtraHeaderList.map((header) => (
-                            <span
-                              key={`saved-name-${header}`}
-                              className="inline-flex max-w-full flex-col rounded-lg border border-harx-200 bg-harx-50 px-2 py-1 text-harx-800"
-                              title={`${getSavedExtraLabel(header)} ← ${header}`}
-                            >
-                              <span className="truncate text-[11px] font-bold">
-                                {getSavedExtraLabel(header)}
-                              </span>
-                              <span className="truncate text-[9px] font-medium text-harx-600/80">
-                                {header}
-                              </span>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
 
                   {/* HARX fields — drop targets + visibility */}
@@ -3502,136 +3493,167 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                       })}
                     </div>
 
-                    {/* Saved extra columns — drag here, then toggle Company / REP */}
-                    <div
-                      className={`mt-4 pt-4 border-t border-slate-100 ${
-                        dragOverField === '__saved_extras__'
-                          ? 'rounded-xl ring-2 ring-harx-200 bg-harx-50/40'
-                          : ''
-                      }`}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setDragOverField('__saved_extras__');
-                      }}
-                      onDragLeave={() =>
-                        setDragOverField((current) =>
-                          current === '__saved_extras__' ? null : current
-                        )
-                      }
-                      onDrop={handleDropOnSavedExtras}
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <p className="text-xs font-black uppercase tracking-wider text-harx-600">
-                          {t('uploadContacts.mapping.savedExtras')}
-                        </p>
-                        <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
-                          <span className="w-14 text-center text-sky-600">
-                            {t('uploadContacts.mapping.visibleCompany')}
-                          </span>
-                          <span className="w-14 text-center text-emerald-600">
-                            {t('uploadContacts.mapping.visibleRep')}
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-[11px] text-slate-400 mb-3">
-                        {t('uploadContacts.mapping.savedExtrasHint')}
-                      </p>
-                      <div className="flex flex-col gap-2 min-h-[56px]">
-                        {savedExtraHeaderList.length === 0 ? (
-                          <p className="text-xs text-slate-400 italic py-3 text-center rounded-xl border border-dashed border-harx-200 bg-harx-50/30">
-                            {t('uploadContacts.mapping.dropToSave')}
+                    {/* Custom columns added via "Ajouter" on an occupied HARX field */}
+                    {savedExtraHeaderList.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-xs font-black uppercase tracking-wider text-harx-600">
+                            {t('uploadContacts.mapping.savedExtras')}
                           </p>
-                        ) : (
-                          savedExtraHeaderList.map((header) => {
-                            const visKey = customVisibilityKey(header);
-                            const displayTitle = getSavedExtraLabel(header);
-                            return (
-                              <div
-                                key={`extra-${header}`}
-                                className="rounded-xl border border-harx-200 bg-harx-50/40 px-3 py-2.5 space-y-2"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-[10px] font-black uppercase tracking-wider text-harx-600">
-                                    {t('uploadContacts.mapping.savedExtraField')}
-                                  </span>
-                                  <div className="flex items-center gap-3 shrink-0">
-                                    <label
-                                      className="w-14 flex justify-center items-center cursor-pointer"
+                          <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
+                            <span className="w-14 text-center text-sky-600">
+                              {t('uploadContacts.mapping.visibleCompany')}
+                            </span>
+                            <span className="w-14 text-center text-emerald-600">
+                              {t('uploadContacts.mapping.visibleRep')}
+                            </span>
+                          </div>
+                        </div>
+                        {savedExtraHeaderList.map((header) => {
+                          const visKey = customVisibilityKey(header);
+                          const displayTitle = getSavedExtraLabel(header);
+                          return (
+                            <div
+                              key={`extra-${header}`}
+                              className="rounded-xl border border-harx-200 bg-harx-50/40 px-3 py-2.5 space-y-2"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-harx-600">
+                                  {t('uploadContacts.mapping.savedExtraField')}
+                                </span>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  <label
+                                    className="w-14 flex justify-center items-center cursor-pointer"
+                                    title={t('uploadContacts.mapping.visibleCompany')}
+                                  >
+                                    <MappingCheckbox
+                                      checked={fieldVisibility.company[visKey] !== false}
+                                      onChange={() => toggleFieldVisibility('company', visKey)}
+                                      tone="company"
                                       title={t('uploadContacts.mapping.visibleCompany')}
-                                    >
-                                      <MappingCheckbox
-                                        checked={fieldVisibility.company[visKey] !== false}
-                                        onChange={() => toggleFieldVisibility('company', visKey)}
-                                        tone="company"
-                                        title={t('uploadContacts.mapping.visibleCompany')}
-                                        aria-label={`${t('uploadContacts.mapping.visibleCompany')} — ${displayTitle}`}
-                                      />
-                                    </label>
-                                    <label
-                                      className="w-14 flex justify-center items-center cursor-pointer"
+                                      aria-label={`${t('uploadContacts.mapping.visibleCompany')} — ${displayTitle}`}
+                                    />
+                                  </label>
+                                  <label
+                                    className="w-14 flex justify-center items-center cursor-pointer"
+                                    title={t('uploadContacts.mapping.visibleRep')}
+                                  >
+                                    <MappingCheckbox
+                                      checked={fieldVisibility.rep[visKey] !== false}
+                                      onChange={() => toggleFieldVisibility('rep', visKey)}
+                                      tone="rep"
                                       title={t('uploadContacts.mapping.visibleRep')}
-                                    >
-                                      <MappingCheckbox
-                                        checked={fieldVisibility.rep[visKey] !== false}
-                                        onChange={() => toggleFieldVisibility('rep', visKey)}
-                                        tone="rep"
-                                        title={t('uploadContacts.mapping.visibleRep')}
-                                        aria-label={`${t('uploadContacts.mapping.visibleRep')} — ${displayTitle}`}
-                                      />
-                                    </label>
-                                  </div>
-                                </div>
-
-                                <label className="block">
-                                  <span className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">
-                                    {t('uploadContacts.mapping.displayTitle')}
-                                  </span>
-                                  <input
-                                    type="text"
-                                    value={savedExtraColumns[header]?.label ?? displayTitle}
-                                    onChange={(e) => updateSavedExtraLabel(header, e.target.value)}
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => e.stopPropagation()}
-                                    placeholder={t('uploadContacts.mapping.displayTitlePlaceholder')}
-                                    className="w-full rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-sm font-bold text-slate-800 outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-200"
-                                  />
-                                </label>
-
-                                <div className="flex items-center justify-between gap-2 rounded-lg border border-harx-200 bg-white px-2.5 py-2">
-                                  <div
-                                    draggable={!isApplyingMapping}
-                                    onDragStart={(e) => handleDragHeaderStart(e, header)}
-                                    onDragEnd={handleDragHeaderEnd}
-                                    className="min-w-0 flex items-center gap-2 flex-1 cursor-grab active:cursor-grabbing"
-                                  >
-                                    <GripVertical className="h-3.5 w-3.5 text-slate-300 shrink-0" />
-                                    <div className="min-w-0">
-                                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                        {t('uploadContacts.mapping.sourceField')}
-                                      </p>
-                                      <p className="text-sm font-bold text-slate-800 truncate">{header}</p>
-                                      <p className="text-[11px] text-slate-500 truncate">
-                                        {getMappingExample(header)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeSavedExtraColumn(header)}
-                                    className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0"
-                                    aria-label={t('uploadContacts.mapping.unmap')}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </button>
+                                      aria-label={`${t('uploadContacts.mapping.visibleRep')} — ${displayTitle}`}
+                                    />
+                                  </label>
                                 </div>
                               </div>
-                            );
-                          })
-                        )}
+                              <label className="block">
+                                <span className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                  {t('uploadContacts.mapping.displayTitle')}
+                                </span>
+                                <input
+                                  type="text"
+                                  value={savedExtraColumns[header]?.label ?? displayTitle}
+                                  onChange={(e) => updateSavedExtraLabel(header, e.target.value)}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => e.stopPropagation()}
+                                  placeholder={t('uploadContacts.mapping.displayTitlePlaceholder')}
+                                  className="w-full rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-sm font-bold text-slate-800 outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-200"
+                                />
+                              </label>
+                              <div className="flex items-center justify-between gap-2 rounded-lg border border-harx-200 bg-white px-2.5 py-2">
+                                <div className="min-w-0 flex items-center gap-2 flex-1">
+                                  <GripVertical className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                      {t('uploadContacts.mapping.sourceField')}
+                                    </p>
+                                    <p className="text-sm font-bold text-slate-800 truncate">{header}</p>
+                                    <p className="text-[11px] text-slate-500 truncate">
+                                      {getMappingExample(header)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeSavedExtraColumn(header)}
+                                  className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0"
+                                  aria-label={t('uploadContacts.mapping.unmap')}
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {mappingConflict && (
+                  <div
+                    className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="mapping-conflict-title"
+                  >
+                    <button
+                      type="button"
+                      className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]"
+                      aria-label={t('common.close', 'Fermer')}
+                      onClick={() => setMappingConflict(null)}
+                    />
+                    <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-[0_32px_80px_-20px_rgba(0,0,0,0.45)] ring-1 ring-black/5">
+                      <div className="h-1.5 w-full bg-gradient-to-r from-harx-500 via-rose-500 to-orange-400" />
+                      <div className="px-6 pt-6 pb-7">
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-harx-600 mb-2">
+                          {t('uploadContacts.mapping.conflictBadge')}
+                        </p>
+                        <h3
+                          id="mapping-conflict-title"
+                          className="text-lg font-black text-slate-900 tracking-tight"
+                        >
+                          {t('uploadContacts.mapping.conflictTitle')}
+                        </h3>
+                        <p className="mt-2 text-sm font-medium text-slate-500 leading-relaxed">
+                          {t('uploadContacts.mapping.conflictDesc', {
+                            field: t(
+                              `uploadContacts.mapping.fields.${mappingConflict.field}`,
+                              mappingConflict.field
+                            ),
+                            existing: mappingConflict.existingHeader,
+                            incoming: mappingConflict.header,
+                          })}
+                        </p>
+                        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => resolveMappingConflict('replace')}
+                            className="rounded-2xl bg-gradient-to-r from-harx-500 to-rose-600 px-4 py-3 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-harx-500/30 hover:brightness-110"
+                          >
+                            {t('uploadContacts.mapping.conflictReplace')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => resolveMappingConflict('add')}
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50"
+                          >
+                            {t('uploadContacts.mapping.conflictAdd')}
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setMappingConflict(null)}
+                          className="mt-3 w-full text-center text-xs font-bold text-slate-400 hover:text-slate-600"
+                        >
+                          {t('uploadContacts.mapping.conflictCancel')}
+                        </button>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {mappingSamples.length > 0 && Object.values(columnMapping).some(Boolean) && (
                   <div>
