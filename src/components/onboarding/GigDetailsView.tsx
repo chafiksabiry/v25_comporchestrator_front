@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import RepProfileView from '../RepProfileView';
+import { getAgentById } from '../../api/matching';
 import { groupSchedulesByDayRanges, timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
 import { ScheduleSection } from '../gigsaicreation/components/ScheduleSection';
 import { fetchAllCountries, Country } from '../gigsaicreation/lib/api';
@@ -350,19 +351,59 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
     }
   }, [localGig?._id]);
 
-  const handleAgentClick = async (agentId: string) => {
+  const normalizeAgentProfile = (raw: any) => {
+    if (!raw) return null;
+    const name = raw.personalInfo?.name || raw.name;
+    return {
+      ...raw,
+      name,
+      personalInfo: {
+        ...(raw.personalInfo || {}),
+        name,
+      },
+    };
+  };
+
+  const extractEmbeddedProfile = (source: any): any | null => {
+    if (!source) return null;
+    if (source.agentId && typeof source.agentId === 'object' && (source.agentId.personalInfo || source.agentId.name || source.agentId.professionalSummary)) {
+      return source.agentId;
+    }
+    if (source.agent && typeof source.agent === 'object' && (source.agent.personalInfo || source.agent.name)) {
+      return source.agent;
+    }
+    if (source.personalInfo || source.professionalSummary || source.name) {
+      return source;
+    }
+    return null;
+  };
+
+  const handleAgentClick = async (source: any) => {
+    const embedded = extractEmbeddedProfile(source);
+    const agentId = getAgentIdString(source);
+
     try {
       setLoadingProfile(true);
-      const REP_API_URL = 'https://v25repscreationwizardbackend-production.up.railway.app/api';
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${REP_API_URL}/profiles/${agentId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!response.ok) throw new Error('Failed to fetch profile');
-      setSelectedAgentProfile(await response.json());
+
+      if (agentId) {
+        try {
+          const fetched = await getAgentById(agentId);
+          setSelectedAgentProfile(normalizeAgentProfile(fetched));
+          return;
+        } catch (fetchErr) {
+          console.warn('getAgentById failed, falling back to embedded profile:', fetchErr);
+        }
+      }
+
+      if (embedded) {
+        setSelectedAgentProfile(normalizeAgentProfile(embedded));
+        return;
+      }
+
+      throw new Error('Agent profile not found');
     } catch (err) {
       console.error('Error fetching profile:', err);
-      alert("Impossible de charger le profil de l'agent.");
+      alert(g('agents.profileLoadError'));
     } finally {
       setLoadingProfile(false);
     }
@@ -370,7 +411,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
 
   const getAgentStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'accepted': return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' };
+      case 'accepted':
+      case 'enrolled':
+        return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' };
       case 'pending':  return { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200' };
       case 'rejected': return { bg: 'bg-rose-50',    text: 'text-rose-700',    border: 'border-rose-200' };
       default:         return { bg: 'bg-gray-50',    text: 'text-gray-700',    border: 'border-gray-200' };
@@ -379,11 +422,23 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
 
   const getAgentIdString = (agent: any): string => {
     if (!agent) return '';
-    if (typeof agent.agentId === 'string') return agent.agentId;
-    if (agent.agentId && typeof agent.agentId === 'object') return agent.agentId._id || agent.agentId.id || '';
-    if (typeof agent.agent === 'string') return agent.agent;
-    if (agent.agent && typeof agent.agent === 'object') return agent.agent._id || agent.agent.id || '';
-    return agent._id || '';
+    const asId = (value: any): string => {
+      if (!value) return '';
+      if (typeof value === 'string') return value;
+      if (typeof value === 'object') {
+        if (value.$oid) return String(value.$oid);
+        if (value._id) return asId(value._id);
+        if (value.id) return String(value.id);
+      }
+      return '';
+    };
+    const fromAgentId = asId(agent.agentId);
+    if (fromAgentId) return fromAgentId;
+    const fromAgent = asId(agent.agent);
+    if (fromAgent) return fromAgent;
+    // Never use gig-agent document _id as the profile id
+    if (agent.gigId || agent.gig || agent.matchScore != null || agent.emailSent != null) return '';
+    return asId(agent._id);
   };
 
   const getAgentInitials = (agent: any): string => {
@@ -1615,26 +1670,36 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   const score = agent.matchScore || 0.85;
                   const scorePct = Math.round(score * 100);
                   const statusColors = getAgentStatusColor(agent.status || 'accepted');
+                  const canOpenProfile = Boolean(getAgentIdString(agent) || extractEmbeddedProfile(agent));
                   return (
                     <div
                       key={agent._id || index}
-                      className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0 border-b border-slate-100 last:border-b-0 animate-fade-in-row"
+                      role={canOpenProfile ? 'button' : undefined}
+                      tabIndex={canOpenProfile ? 0 : undefined}
+                      onClick={() => { if (canOpenProfile) handleAgentClick(agent); }}
+                      onKeyDown={(e) => {
+                        if (!canOpenProfile) return;
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                      className={`py-4 px-3 -mx-3 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0 border-b border-slate-100 last:border-b-0 animate-fade-in-row transition-colors ${
+                        canOpenProfile ? 'cursor-pointer hover:bg-white hover:shadow-sm' : ''
+                      }`}
                       style={{ animationDelay: `${index * 80}ms` }}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-indigo-600 ring-2 ring-purple-100 text-white font-black text-sm flex items-center justify-center shadow-md uppercase hover:scale-110 hover:rotate-6 transition-transform duration-300">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="h-12 w-12 shrink-0 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-indigo-600 ring-2 ring-purple-100 text-white font-black text-sm flex items-center justify-center shadow-md uppercase hover:scale-110 hover:rotate-6 transition-transform duration-300">
                           {getAgentAvatar(agent) ? (
                             <img src={getAgentAvatar(agent)} alt="Avatar" className="w-full h-full object-cover" />
                           ) : getAgentInitials(agent)}
                         </div>
-                        <div>
-                          <p
-                            className="font-extrabold text-slate-950 text-base flex items-center gap-2 cursor-pointer hover:text-purple-600 transition-colors"
-                            onClick={() => handleAgentClick(getAgentIdString(agent))}
-                          >
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-slate-950 text-base truncate group-hover:text-purple-600 transition-colors">
                             {getAgentName(agent)}
                           </p>
-                          <div className="flex items-center gap-2 mt-2 animate-slide-up" style={{ animationDelay: `${(index * 80) + 100}ms` }}>
+                          <div className="flex items-center gap-2 mt-2 flex-wrap animate-slide-up" style={{ animationDelay: `${(index * 80) + 100}ms` }}>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
                               {agent.status || 'accepted'}
                             </span>
@@ -1646,7 +1711,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-6 self-end md:self-center">
+                      <div className="flex items-center gap-4 self-end md:self-center shrink-0">
                         <div className="text-right">
                           <span className="text-[10px] text-slate-400 font-bold block mb-1">{g('agents.matchScore')}</span>
                           <div className="flex items-center gap-2">
@@ -1661,6 +1726,11 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                             </span>
                           </div>
                         </div>
+                        {canOpenProfile && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1.5 rounded-full">
+                            {g('agents.viewProfile')} <ChevronRight size={12} />
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
@@ -1671,15 +1741,24 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
         </div>
       )}
 
-      {/* Rep Profile overlay */}
+      {/* Rep Profile overlay — above enrolled-agents modal */}
       {selectedAgentProfile && (
-        <RepProfileView profile={selectedAgentProfile} onClose={() => setSelectedAgentProfile(null)} />
+        <div className="fixed inset-0 z-[120] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-y-auto">
+              <RepProfileView profile={selectedAgentProfile} onClose={() => setSelectedAgentProfile(null)} />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Loading Profile */}
       {loadingProfile && (
-        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-xs flex items-center justify-center z-[110] animate-in fade-in duration-200">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600" />
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[130] animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl px-8 py-6 flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-600" />
+            <p className="text-sm font-medium text-slate-600">{g('agents.viewProfile')}…</p>
+          </div>
         </div>
       )}
 
