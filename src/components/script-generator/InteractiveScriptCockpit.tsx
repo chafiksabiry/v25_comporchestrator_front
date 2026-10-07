@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Clock, 
   AlertTriangle, 
@@ -12,6 +12,10 @@ import {
   Award
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import {
+  renderScript,
+  type ScriptVariable,
+} from '../../lib/scriptVariables';
 
 export interface ScriptReminder {
   type: 'warning' | 'clock' | 'info';
@@ -49,6 +53,12 @@ interface InteractiveScriptCockpitProps {
   isInline?: boolean;
   /** Notifies parent when the visible stage index changes (for targeted AI edits). */
   onStageIndexChange?: (index: number) => void;
+  /** Contact-file variables for the current gig (mapped HARX + customFields). */
+  contactVariables?: ScriptVariable[];
+  /** Insert a token into the current stage replica (parent owns stage state). */
+  onInsertVariable?: (token: string) => void;
+  /** Optional sample lead values for live preview of tokens. */
+  previewLead?: Record<string, any> | null;
 }
 
 const cleanTrainingText = (text: string): string => {
@@ -64,6 +74,9 @@ export function InteractiveScriptCockpit({
   isValidating = false,
   isInline = false,
   onStageIndexChange,
+  contactVariables = [],
+  onInsertVariable,
+  previewLead = null,
 }: InteractiveScriptCockpitProps) {
   useTranslation();
   
@@ -78,10 +91,45 @@ export function InteractiveScriptCockpit({
   // Interactive UI States
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [showPreview, setShowPreview] = useState(false);
   
   // Scoring Simulation States
   const [showScoringSimulation, setShowScoringSimulation] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
+
+  const previewCtx = useMemo(() => {
+    const harxExamples: Record<string, string> = {};
+    for (const v of contactVariables) {
+      if (v.example && v.source === 'harx') harxExamples[v.key] = v.example;
+    }
+    const lead = {
+      ...harxExamples,
+      ...(previewLead || {}),
+      customFields: {
+        ...(typeof previewLead?.customFields === 'object' && !(previewLead.customFields instanceof Map)
+          ? previewLead.customFields
+          : {}),
+        ...Object.fromEntries(
+          contactVariables
+            .filter((v) => v.source === 'custom' && v.example)
+            .map((v) => [v.key.replace(/^custom\./, ''), v.example || ''])
+        ),
+      },
+    };
+    return {
+      lead,
+      ctx: {
+        repName: contactVariables.find((v) => v.key === 'repName')?.example || 'Alex Dupont',
+        companyName:
+          contactVariables.find((v) => v.key === 'companyName')?.example || 'DIGITALWORKSCO',
+        prospectName:
+          lead.Deal_Name ||
+          `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim() ||
+          'Marie Martin',
+        emptyFallback: '—',
+      },
+    };
+  }, [contactVariables, previewLead]);
 
   useEffect(() => {
     onStageIndexChange?.(currentStageIdx);
@@ -253,6 +301,44 @@ export function InteractiveScriptCockpit({
             </span>
           </div>
 
+          {/* Contact variables from the imported file */}
+          {contactVariables.length > 0 && (
+            <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                  Variables contact
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowPreview((v) => !v)}
+                  className="text-[8px] font-black uppercase tracking-wider text-red-600 hover:text-red-700"
+                >
+                  {showPreview ? 'Masquer aperçu' : 'Aperçu rempli'}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {contactVariables.map((variable) => (
+                  <button
+                    key={variable.key}
+                    type="button"
+                    title={`${variable.token}${variable.example ? ` — ex: ${variable.example}` : ''}`}
+                    onClick={() => onInsertVariable?.(variable.token)}
+                    disabled={!onInsertVariable}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] font-bold text-slate-700 hover:border-red-300 hover:bg-red-50 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="text-slate-400 font-mono text-[8px]">
+                      {variable.source === 'custom' ? 'custom' : 'var'}
+                    </span>
+                    {variable.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[9px] text-slate-400 font-medium">
+                Cliquez pour insérer un token dans la réplique (ex. {'{{Email_1}}'}).
+              </p>
+            </div>
+          )}
+
           {/* Primary Speech Bubble box */}
           <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm relative overflow-hidden">
             <div className={`absolute top-0 bottom-0 left-0 w-1 ${currentColors.dot}`} />
@@ -261,7 +347,9 @@ export function InteractiveScriptCockpit({
                 {currentStage.introTitle}
               </span>
               <p className="text-[11.5px] font-bold text-slate-800 leading-relaxed italic select-all">
-                {currentStage.introReplica}
+                {showPreview
+                  ? renderScript(currentStage.introReplica, previewCtx.lead, previewCtx.ctx)
+                  : currentStage.introReplica}
               </p>
             </div>
           </div>
