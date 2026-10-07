@@ -679,10 +679,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     field: string;
     existingHeader: string;
   } | null>(null);
-  /** Left-panel header whose → picker is open. */
+  /** Selected HARX destination for one-click → moves (falls back to first empty). */
+  const [selectedHarxTarget, setSelectedHarxTarget] = useState<string | null>(null);
+  /** Left-panel header whose → picker is open (only when no empty/selected target). */
   const [moveRightPickerHeader, setMoveRightPickerHeader] = useState<string | null>(null);
-  /** HARX field whose ← picker (pull from file columns) is open. */
-  const [moveLeftPickerField, setMoveLeftPickerField] = useState<string | null>(null);
   const [isSavingLeads, setIsSavingLeads] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
@@ -1048,8 +1048,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     draggingHeaderRef.current = null;
     setSavedExtraColumns({});
     setMappingConflict(null);
+    setSelectedHarxTarget(null);
     setMoveRightPickerHeader(null);
-    setMoveLeftPickerField(null);
   };
 
   const loadGigFieldVisibility = async (gigId: string) => {
@@ -1518,16 +1518,47 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     removeSavedExtraColumn(trimmed);
   };
 
+  const harxFieldList = mappingFields.length ? mappingFields : HARX_IMPORT_FIELDS;
+
+  const isHarxSlotAssignable = (field: string) => {
+    if (headerForHarxField(field)) return false;
+    // Derived full name occupies the Deal_Name visual slot.
+    if (field === 'Deal_Name' && getConcatenatedFullNameExample()) return false;
+    return true;
+  };
+
+  const findFirstEmptyHarxField = () =>
+    harxFieldList.find((field) => isHarxSlotAssignable(field)) || null;
+
+  const effectiveHarxTarget = selectedHarxTarget || findFirstEmptyHarxField();
+
   const moveHeaderToHarxField = (header: string, field: string) => {
     setMoveRightPickerHeader(null);
-    setMoveLeftPickerField(null);
     assignHeaderToHarxField(header, field);
+    // After a move, prefer the next empty slot as the default target.
+    setSelectedHarxTarget((current) => (current === field ? null : current));
+  };
+
+  /** One-click → : move to selected HARX field, else first empty, else open picker. */
+  const moveHeaderRight = (header: string) => {
+    const target = effectiveHarxTarget;
+    if (target) {
+      moveHeaderToHarxField(header, target);
+      return;
+    }
+    setMoveRightPickerHeader((current) => (current === header ? null : header));
   };
 
   const moveMappedHeaderLeft = (header: string) => {
     setMoveRightPickerHeader(null);
-    setMoveLeftPickerField(null);
     handleMappingFieldChange(header, '');
+  };
+
+  /** One-click ← on empty HARX slot: pull the first available file column. */
+  const moveFirstAvailableIntoField = (field: string) => {
+    const header = availableFileHeaders[0];
+    if (!header) return;
+    moveHeaderToHarxField(header, field);
   };
 
   const handleDropOnHarxField = (event: React.DragEvent, field: string) => {
@@ -3442,10 +3473,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                 onMouseDown={(e) => e.stopPropagation()}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setMoveLeftPickerField(null);
-                                  setMoveRightPickerHeader((current) =>
-                                    current === header ? null : header
-                                  );
+                                  moveHeaderRight(header);
                                 }}
                                 className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-harx-200 bg-harx-50 text-harx-600 hover:bg-harx-100 hover:border-harx-300 disabled:opacity-50"
                                 title={t('uploadContacts.mapping.moveRight')}
@@ -3510,10 +3538,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                       {t('uploadContacts.mapping.visibilityHint')}
                     </p>
                     <div className="flex flex-col gap-2">
-                      {(mappingFields.length ? mappingFields : HARX_IMPORT_FIELDS).map((field) => {
+                      {harxFieldList.map((field) => {
                         const mappedHeader = headerForHarxField(field);
                         const isRequiredSlot = isRequiredHarxSlot(field, columnMapping);
                         const isOver = dragOverField === field;
+                        const isTarget = effectiveHarxTarget === field;
                         const concatFullName =
                           field === 'Deal_Name' && !mappedHeader
                             ? getConcatenatedFullNameExample()
@@ -3522,6 +3551,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         return (
                           <div
                             key={field}
+                            onClick={() => {
+                              if (draggingHeader || isApplyingMapping) return;
+                              setSelectedHarxTarget(field);
+                              setMoveRightPickerHeader(null);
+                            }}
                             onDragEnter={(e) => allowHarxDrop(e, field)}
                             onDragOver={(e) => allowHarxDrop(e, field)}
                             onDragLeave={(e) => {
@@ -3531,10 +3565,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                               setDragOverField((current) => (current === field ? null : current));
                             }}
                             onDrop={(e) => handleDropOnHarxField(e, field)}
-                            className={`relative rounded-xl border px-3 py-2.5 ${
+                            className={`relative rounded-xl border px-3 py-2.5 cursor-pointer ${
                               isOver
                                 ? 'border-harx-500 bg-harx-50 ring-2 ring-harx-200'
-                                : mappedHeader || showDerivedFullName
+                                : isTarget
+                                  ? 'border-harx-400 bg-harx-50/70 ring-2 ring-harx-100'
+                                  : mappedHeader || showDerivedFullName
                                   ? 'border-emerald-200 bg-emerald-50/50'
                                   : isRequiredSlot
                                     ? 'border-dashed border-red-200 bg-red-50/30'
@@ -3650,47 +3686,27 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                 </p>
                               </div>
                             ) : (
-                              <div
-                                className={draggingHeader ? 'pointer-events-none' : ''}
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-xs text-slate-400 italic py-1">
-                                    {t('uploadContacts.mapping.dropHere')}
-                                  </p>
-                                  {availableFileHeaders.length > 0 ? (
-                                    <button
-                                      type="button"
-                                      disabled={isApplyingMapping}
-                                      onClick={() => {
-                                        setMoveRightPickerHeader(null);
-                                        setMoveLeftPickerField((current) =>
-                                          current === field ? null : field
-                                        );
-                                      }}
-                                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-harx-300 hover:text-harx-600"
-                                      title={t('uploadContacts.mapping.moveLeftPick')}
-                                      aria-label={t('uploadContacts.mapping.moveLeftPick')}
-                                    >
-                                      <ChevronLeft className="h-4 w-4" />
-                                    </button>
-                                  ) : null}
-                                </div>
-                                {moveLeftPickerField === field ? (
-                                  <div className="mt-2 rounded-xl border border-slate-200 bg-white p-2 space-y-1 max-h-40 overflow-y-auto">
-                                    <p className="px-1 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
-                                      {t('uploadContacts.mapping.moveLeftPick')}
-                                    </p>
-                                    {availableFileHeaders.map((header) => (
-                                      <button
-                                        key={`${field}-from-${header}`}
-                                        type="button"
-                                        onClick={() => moveHeaderToHarxField(header, field)}
-                                        className="w-full text-left rounded-lg px-2.5 py-2 text-sm font-bold text-slate-800 hover:bg-slate-50"
-                                      >
-                                        {header}
-                                      </button>
-                                    ))}
-                                  </div>
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-xs text-slate-400 italic py-1 pointer-events-none">
+                                  {isTarget
+                                    ? t('uploadContacts.mapping.targetReady')
+                                    : t('uploadContacts.mapping.dropHere')}
+                                </p>
+                                {availableFileHeaders.length > 0 ? (
+                                  <button
+                                    type="button"
+                                    disabled={isApplyingMapping}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedHarxTarget(field);
+                                      moveFirstAvailableIntoField(field);
+                                    }}
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-harx-300 hover:text-harx-600"
+                                    title={t('uploadContacts.mapping.moveLeftPick')}
+                                    aria-label={t('uploadContacts.mapping.moveLeftPick')}
+                                  >
+                                    <ChevronLeft className="h-4 w-4" />
+                                  </button>
                                 ) : null}
                               </div>
                             )}
