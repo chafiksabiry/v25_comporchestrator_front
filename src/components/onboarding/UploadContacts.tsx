@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   FileText,
   RefreshCw,
@@ -322,7 +322,16 @@ type LeadTableRowProps = {
   archiveTitle?: string;
   /** Company-visible contact fields; meta columns (date/status/actions) always shown. */
   companyVisible?: FieldVisibilityMap;
+  /** Custom columns chosen at mapping (Company checkbox), with display titles. */
+  customColumns?: Array<{ header: string; label: string }>;
 };
+
+function getLeadCustomFieldValue(lead: Lead, header: string): string {
+  const cf = lead.customFields;
+  if (!cf) return '';
+  if (cf instanceof Map) return String(cf.get(header) ?? '').trim();
+  return String((cf as Record<string, string>)[header] ?? '').trim();
+}
 
 function LeadTableRow({
   lead,
@@ -338,6 +347,7 @@ function LeadTableRow({
   selectTitle,
   archiveTitle,
   companyVisible,
+  customColumns = [],
 }: LeadTableRowProps) {
   const show = (field: string) =>
     !companyVisible || companyVisible[field] !== false;
@@ -443,6 +453,16 @@ function LeadTableRow({
           </span>
         </td>
       ) : null}
+      {customColumns.map((col) => {
+        const value = getLeadCustomFieldValue(lead, col.header);
+        return (
+          <td key={`custom-${col.header}`} className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+            <span className="block truncate text-xs text-slate-700" title={value || undefined}>
+              {value || LEAD_EMPTY}
+            </span>
+          </td>
+        );
+      })}
       <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
         <span className="block truncate text-xs font-medium tabular-nums text-slate-700" title={addedLabel}>
           {addedLabel}
@@ -647,8 +667,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [fieldVisibility, setFieldVisibility] = useState<LeadFieldVisibility>(() =>
     defaultLeadFieldVisibility()
   );
-  /** Unmapped file headers kept as customFields, with a display title. */
+  /** Unmapped file headers kept as customFields, with a display title (mapping step). */
   const [savedExtraColumns, setSavedExtraColumns] = useState<SavedExtraColumnsMap>({});
+  /** Persisted display titles for custom fields (list view + remount). */
+  const [customFieldLabels, setCustomFieldLabels] = useState<Record<string, string>>({});
   const [isSavingLeads, setIsSavingLeads] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
@@ -1016,6 +1038,43 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
   const loadGigFieldVisibility = async (gigId: string) => {
     try {
+      // Prefer mapping endpoint: visibility + custom field display titles together.
+      const mappingRes = await fetch(
+        `${import.meta.env.VITE_DASHBOARD_API}/file-processing/mapping/${gigId}`,
+        { headers: { Accept: 'application/json' } }
+      );
+      if (mappingRes.ok) {
+        const data = await mappingRes.json();
+        if (data?.success && data?.data) {
+          const visibility = data.data.visibility;
+          if (visibility) {
+            setFieldVisibility({
+              ...defaultLeadFieldVisibility(),
+              company: {
+                ...defaultLeadFieldVisibility().company,
+                ...(visibility.company || {}),
+              },
+              rep: {
+                ...defaultLeadFieldVisibility().rep,
+                ...(visibility.rep || {}),
+              },
+            });
+          }
+          const labels =
+            data.data.customFieldLabels && typeof data.data.customFieldLabels === 'object'
+              ? data.data.customFieldLabels
+              : {};
+          const cleaned: Record<string, string> = {};
+          for (const [header, label] of Object.entries(labels)) {
+            const h = String(header || '').trim();
+            const l = String(label || '').trim();
+            if (h) cleaned[h] = l || h;
+          }
+          setCustomFieldLabels(cleaned);
+          return;
+        }
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_DASHBOARD_API}/file-processing/visibility/${gigId}`,
         { headers: { Accept: 'application/json' } }
@@ -1056,6 +1115,30 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const customVisibilityKey = (header: string) => `custom.${header}`;
 
   const companyVisible = fieldVisibility.company;
+
+  /** Custom columns visible for Company table (chosen at mapping). */
+  const companyCustomColumns = useMemo(() => {
+    const headers = new Set<string>(Object.keys(customFieldLabels));
+    for (const lead of leads.slice(0, 80)) {
+      if (!lead?.customFields || typeof lead.customFields !== 'object') continue;
+      const entries =
+        lead.customFields instanceof Map
+          ? Array.from(lead.customFields.keys())
+          : Object.keys(lead.customFields);
+      for (const h of entries) {
+        const key = String(h || '').trim();
+        if (key) headers.add(key);
+      }
+    }
+    return Array.from(headers)
+      .filter((header) => companyVisible[customVisibilityKey(header)] !== false)
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+      .map((header) => ({
+        header,
+        label: customFieldLabels[header] || header,
+      }));
+  }, [companyVisible, customFieldLabels, leads]);
+
   const leadTableColCount =
     1 + // avatar/select
     (companyVisible.Last_Name !== false || companyVisible.Deal_Name !== false ? 1 : 0) +
@@ -1068,6 +1151,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       ? 1
       : 0) +
     (companyVisible.Date_of_Birth !== false ? 1 : 0) +
+    companyCustomColumns.length +
     3; // addedAt, status, actions
 
   /** Always-required scalar fields (name is handled separately). */
@@ -1442,6 +1526,17 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       setParsedLeads(result.leads);
       safeStorageSet('parsedLeads', result.leads);
       safeStorageSet('validationResults', trimValidation(result.validation));
+
+      // Keep display titles for the company leads table after mapping closes.
+      const labelsFromExtras = Object.fromEntries(
+        Object.entries(savedExtraColumns).map(([header, meta]) => [
+          header,
+          String(meta?.label || header).trim() || header,
+        ])
+      );
+      if (Object.keys(labelsFromExtras).length > 0) {
+        setCustomFieldLabels((prev) => ({ ...prev, ...labelsFromExtras }));
+      }
 
       clearMappingState();
       setShowSaveButton(true);
@@ -4147,22 +4242,14 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         {/* Tableau d'affichage des leads */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
           <div className="flex-1 overflow-auto custom-scrollbar min-h-0">
-            <div className="relative w-full min-w-[1080px] px-2 pb-2">
+            <div
+              className="relative w-full px-2 pb-2"
+              style={{ minWidth: `${Math.max(1080, 720 + leadTableColCount * 90)}px` }}
+            >
               <table className="w-full table-fixed border-separate border-spacing-y-1.5">
-                <colgroup>
-                  <col className="w-[6%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[16%]" />
-                  <col className="w-[12%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[18%]" />
-                  <col className="w-[10%]" />
-                </colgroup>
                 <thead className="sticky top-0 z-[50] bg-white/95 backdrop-blur-sm">
                   <tr>
-                    <th scope="col" className="px-1 py-2 text-center">
+                    <th scope="col" className="w-12 px-1 py-2 text-center">
                       <input
                         type="checkbox"
                         checked={allVisibleSelected}
@@ -4174,7 +4261,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     </th>
                     {(companyVisible.Last_Name !== false || companyVisible.Deal_Name !== false) && (
                       <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
-                        {t('uploadContacts.list.table.lastName')}
+                        {companyVisible.Last_Name !== false
+                          ? t('uploadContacts.list.table.lastName')
+                          : t('uploadContacts.mapping.fields.Deal_Name')}
                       </th>
                     )}
                     {companyVisible.First_Name !== false && (
@@ -4204,13 +4293,23 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         {t('uploadContacts.list.table.dob', t('uploadContacts.mapping.fields.Date_of_Birth'))}
                       </th>
                     )}
+                    {companyCustomColumns.map((col) => (
+                      <th
+                        key={`th-custom-${col.header}`}
+                        scope="col"
+                        className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400"
+                        title={col.header}
+                      >
+                        {col.label}
+                      </th>
+                    ))}
                     <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.addedAt')}
                     </th>
                     <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.status')}
                     </th>
-                    <th scope="col" className="px-1 py-2 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                    <th scope="col" className="w-20 px-1 py-2 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.actions')}
                     </th>
                   </tr>
@@ -4255,6 +4354,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                           selectTitle={t('uploadContacts.list.archive.selectOne')}
                           archiveTitle={t('uploadContacts.list.archive.one')}
                           companyVisible={companyVisible}
+                          customColumns={companyCustomColumns}
                         />
                       ) : null
                     )
@@ -4271,6 +4371,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                           viewTitle={t('uploadContacts.list.details.button')}
                           editTitle={t('uploadContacts.list.edit.button')}
                           companyVisible={companyVisible}
+                          customColumns={companyCustomColumns}
                         />
                       ) : null
                     )
