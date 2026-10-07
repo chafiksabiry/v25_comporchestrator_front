@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import { createPortal } from "react-dom";
-import { ChevronRight, Sparkles, CheckCircle2, X } from "lucide-react";
+import { ChevronRight, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export const ONBOARDING_NEXT_STEP_GATE_EVENT = "onboardingNextStepGate";
@@ -11,119 +11,93 @@ interface Props {
   disabledHint?: string;
 }
 
+/**
+ * Centered completion modal shown when an onboarding step is done.
+ * Replaces the previous top-right toast + floating "Étape suivante" pair.
+ */
 export function OnboardingNextStepButton({
   onClick,
   disabled = false,
   disabledHint,
 }: Props) {
   const { t } = useTranslation();
-  const label = t("companyOnboarding.ui.nextStep");
-  const [alertDismissed, setAlertDismissed] = useState(false);
+  const continueLabel = t("companyOnboarding.ui.nextStepContinue", {
+    defaultValue: t("companyOnboarding.ui.nextStep"),
+  });
 
   const content = (
     <div
-      style={{ position: "fixed", top: "72px", right: "24px", zIndex: 9999 }}
-      aria-live="polite"
-      className="pointer-events-none"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="onboarding-step-complete-title"
+      aria-describedby="onboarding-step-complete-desc"
     >
-      <div className="onboarding-next-step-card pointer-events-auto flex w-max max-w-[min(100vw-2rem,20rem)] flex-col items-stretch gap-3">
+      <div
+        className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]"
+        aria-hidden
+      />
 
-        {/* Success alert banner */}
-        {!alertDismissed && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 px-4 py-2.5 shadow-lg shadow-emerald-500/15 backdrop-blur-md">
-          <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-green-500 shadow-md shadow-emerald-500/30">
-            <CheckCircle2 size={14} strokeWidth={2.5} className="text-white" />
+      <div className="onboarding-step-complete-modal relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-[0_32px_80px_-20px_rgba(0,0,0,0.45)] ring-1 ring-black/5">
+        <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-green-500 to-teal-500" />
+
+        <div className="flex flex-col items-center px-8 pb-8 pt-10 text-center">
+          <span className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-green-600 shadow-lg shadow-emerald-500/35">
+            <CheckCircle2 size={32} strokeWidth={2.25} className="text-white" />
           </span>
-          <div className="flex flex-col leading-tight">
-            <span className="text-[11px] font-black uppercase tracking-widest text-emerald-700">
-              {t("companyOnboarding.ui.completed")}
-            </span>
-            <span className="text-[12px] font-semibold text-emerald-800/80">
-              {t("companyOnboarding.ui.nextStepHint")}
-            </span>
-          </div>
+
+          <p className="mb-2 text-[11px] font-black uppercase tracking-[0.2em] text-emerald-600">
+            {t("companyOnboarding.ui.completed")}
+          </p>
+          <h2
+            id="onboarding-step-complete-title"
+            className="text-xl font-black tracking-tight text-slate-900"
+          >
+            {t("companyOnboarding.ui.stepCompleteTitle", {
+              defaultValue: "Étape terminée",
+            })}
+          </h2>
+          <p
+            id="onboarding-step-complete-desc"
+            className="mt-2 max-w-sm text-sm font-medium leading-relaxed text-slate-500"
+          >
+            {t("companyOnboarding.ui.nextStepHint")}
+          </p>
+
           <button
             type="button"
-            onClick={() => setAlertDismissed(true)}
-            aria-label="Fermer"
-            className="ml-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-emerald-400 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
+            onClick={onClick}
+            disabled={disabled}
+            aria-label={continueLabel}
+            title={disabled && disabledHint ? disabledHint : continueLabel}
+            className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-black uppercase tracking-[0.12em] text-white shadow-[0_10px_28px_rgba(16,185,129,0.45)] transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300/80 ${
+              disabled
+                ? "cursor-not-allowed bg-emerald-400/60 opacity-60"
+                : "bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:scale-[1.02] hover:shadow-[0_14px_36px_rgba(16,185,129,0.55)] active:scale-[0.98]"
+            }`}
           >
-            <X size={12} strokeWidth={2.5} />
+            <span>{continueLabel}</span>
+            <ChevronRight size={18} strokeWidth={3} />
           </button>
+
+          {disabled && disabledHint ? (
+            <p className="mt-3 text-xs font-semibold text-amber-700">{disabledHint}</p>
+          ) : null}
         </div>
-        )}
-
-        {/* Next Step button */}
-        <button
-          type="button"
-          onClick={onClick}
-          disabled={disabled}
-          aria-label={label}
-          title={disabled && disabledHint ? disabledHint : label}
-          className={`onboarding-next-step group relative inline-flex items-center gap-2.5 overflow-hidden rounded-xl px-5 py-3 text-sm font-black uppercase tracking-[0.12em] text-white shadow-[0_8px_32px_rgba(16,185,129,0.50)] ring-1 ring-white/40 transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300/80 ${
-            disabled
-              ? "cursor-not-allowed opacity-55 saturate-50"
-              : "hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(16,185,129,0.70)] active:scale-[0.98]"
-          }`}
-        >
-          <span className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500" />
-          <span className="absolute inset-0 bg-gradient-to-r from-teal-500 via-emerald-400 to-green-600 opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-disabled:opacity-0" />
-          <span className="onboarding-next-step-shine pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-          <span className="onboarding-next-step-ping pointer-events-none absolute -inset-1 rounded-xl bg-emerald-400/35" />
-
-          <span className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 shadow-inner backdrop-blur-sm">
-            <Sparkles
-              size={14}
-              className="text-white drop-shadow-sm transition-transform duration-300 group-hover:rotate-12 group-disabled:rotate-0"
-              strokeWidth={2.5}
-            />
-          </span>
-          <span className="relative">{label}</span>
-          <ChevronRight
-            size={17}
-            strokeWidth={3}
-            className="relative transition-transform duration-300 group-hover:translate-x-1 group-disabled:translate-x-0"
-          />
-        </button>
       </div>
 
       <style>{`
-        @keyframes onboardingNextStepCardIn {
-          0%  { opacity: 0; transform: translateY(-12px) scale(0.96); }
-          100%{ opacity: 1; transform: translateY(0)    scale(1);    }
+        @keyframes onboardingStepCompleteIn {
+          0%   { opacity: 0; transform: translateY(12px) scale(0.96); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .onboarding-next-step-card {
-          animation: onboardingNextStepCardIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
-        }
-        @keyframes onboardingNextStepShine {
-          0%   { transform: translateX(-120%); }
-          100% { transform: translateX(220%);  }
-        }
-        @keyframes onboardingNextStepPing {
-          0%   { opacity: 0.5; transform: scale(0.95); }
-          100% { opacity: 0;   transform: scale(1.4);  }
-        }
-        .onboarding-next-step-shine {
-          animation: onboardingNextStepShine 3s ease-in-out infinite;
-        }
-        .onboarding-next-step-ping {
-          animation: onboardingNextStepPing 2.4s ease-out infinite;
-        }
-        .onboarding-next-step:hover .onboarding-next-step-shine {
-          animation-duration: 1.4s;
-        }
-        .onboarding-next-step:disabled .onboarding-next-step-shine,
-        .onboarding-next-step:disabled .onboarding-next-step-ping {
-          animation: none;
-          opacity: 0;
+        .onboarding-step-complete-modal {
+          animation: onboardingStepCompleteIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
       `}</style>
     </div>
   );
 
-  // Use a portal so the button is rendered directly on document.body.
-  // This guarantees true viewport-fixed positioning regardless of any
-  // overflow:auto / overflow:hidden / transform on ancestor elements.
   if (typeof document === "undefined") return null;
   return createPortal(content, document.body);
 }
