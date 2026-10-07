@@ -628,24 +628,36 @@ const CompanyOnboarding = () => {
 
   const [tourPhase, setTourPhase] = useState<number | null>(null);
 
+  // Phase tour targets (tour-step-*, tour-phase-*) live on the orchestrator
+  // phase cards only — never while a step page (Session Planning, etc.) is open.
+  const isInsideOnboardingStep =
+    activeStep !== null ||
+    showGigDetails ||
+    showGigCreation ||
+    showTelephonySetup ||
+    showKnowledgeBase ||
+    showUploadContacts;
+
   useEffect(() => {
+    // Do not start/advance the phase tour while a step screen is open.
+    if (isInsideOnboardingStep) return;
     if (!hasSeenProductTour(displayedPhase)) {
       // Small delay so the phase content has rendered before we measure elements
       const timer = setTimeout(() => setTourPhase(displayedPhase), 400);
       return () => clearTimeout(timer);
-    } else {
-      setTourPhase(null);
     }
-  }, [displayedPhase]);
+    setTourPhase(null);
+  }, [displayedPhase, isInsideOnboardingStep]);
 
-  const orchestratorGuideLayer = tourPhase !== null && ALL_PHASE_TOURS[tourPhase] ? (
-    <OnboardingProductTour
-      key={tourPhase}
-      tourKey={tourPhase}
-      steps={ALL_PHASE_TOURS[tourPhase]}
-      onDone={() => setTourPhase(null)}
-    />
-  ) : null;
+  const orchestratorGuideLayer =
+    !isInsideOnboardingStep && tourPhase !== null && ALL_PHASE_TOURS[tourPhase] ? (
+      <OnboardingProductTour
+        key={tourPhase}
+        tourKey={tourPhase}
+        steps={ALL_PHASE_TOURS[tourPhase]}
+        onDone={() => setTourPhase(null)}
+      />
+    ) : null;
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
@@ -1925,7 +1937,6 @@ const CompanyOnboarding = () => {
   if (activeComponent) {
     return (
       <>
-        {orchestratorGuideLayer}
         {stepGuideLayer}
         <div className="animate-fade-in relative min-h-[50vh] pb-24">
           {!stepHasOwnBack ? (
