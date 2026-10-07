@@ -282,7 +282,7 @@
         "hintNoHuman": "No confirmation (key 1). This was not a real handset pickup.",
         "hintNeverRang": "The destination did not ring. Check the called number, or that the line is allowed for outbound calls.",
         "stepConnecting": "Connecting",
-        "stepRinging": "Ringing (vibrate)",
+        "stepRinging": "Ringing",
         "stepActive": "Answered / in progress",
         "stepEnded": "Hung up",
         "hangup": "Hang up",
