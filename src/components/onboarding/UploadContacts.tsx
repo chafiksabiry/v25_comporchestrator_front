@@ -78,6 +78,31 @@ interface ApiResponse {
   data: Lead[];
 }
 
+const HARX_IMPORT_FIELDS = [
+  'Deal_Name',
+  'First_Name',
+  'Last_Name',
+  'Email_1',
+  'Phone',
+  'Address',
+  'Postal_Code',
+  'City',
+  'Date_of_Birth',
+  'Stage',
+  'Pipeline',
+] as const;
+
+type HarxImportField = (typeof HARX_IMPORT_FIELDS)[number];
+type ColumnMapping = Record<string, string>;
+
+interface FileColumnAnalyzeResult {
+  headers: string[];
+  sampleRows: Record<string, string>[];
+  suggestedMapping: ColumnMapping;
+  fields?: string[];
+  meta?: { totalRows?: number; fileName?: string };
+}
+
 const PREVIEW_PAGE_SIZE = 25;
 const MAX_VALIDATION_ERRORS = 40;
 
@@ -512,6 +537,14 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [parsedLeads, setParsedLeads] = useState<Lead[]>([]);
   const [showSaveButton, setShowSaveButton] = useState(true);
   const [showFileName, setShowFileName] = useState(true);
+  const [showMappingStep, setShowMappingStep] = useState(false);
+  const [mappingHeaders, setMappingHeaders] = useState<string[]>([]);
+  const [mappingSamples, setMappingSamples] = useState<Record<string, string>[]>([]);
+  const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
+  const [mappingFields, setMappingFields] = useState<string[]>([...HARX_IMPORT_FIELDS]);
+  const [mappingTotalRows, setMappingTotalRows] = useState(0);
+  const [isApplyingMapping, setIsApplyingMapping] = useState(false);
+  const [mappingError, setMappingError] = useState<string | null>(null);
   const [isSavingLeads, setIsSavingLeads] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
@@ -864,91 +897,231 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
 
-  const processFileWithBackend = async (file: File): Promise<{ leads: any[], validation: any }> => {
-    try {
-      // Check if processing was cancelled
-      if (!processingRef.current) {
-        throw new Error('Processing cancelled by user');
-      }
+  const clearMappingState = () => {
+    setShowMappingStep(false);
+    setMappingHeaders([]);
+    setMappingSamples([]);
+    setColumnMapping({});
+    setMappingTotalRows(0);
+    setMappingError(null);
+    setIsApplyingMapping(false);
+  };
 
-      // Create new AbortController for this request
-      abortControllerRef.current = new AbortController();
+  const mappingHasIdentity = (mapping: ColumnMapping) => {
+    const values = Object.values(mapping);
+    return values.includes('Phone') || values.includes('Email_1');
+  };
 
-      const userId = Cookies.get('userId');
-      const gigId = selectedGigId;
-      const companyId = Cookies.get('companyId');
+  const mappingHasName = (mapping: ColumnMapping) => {
+    const values = Object.values(mapping);
+    return (
+      values.includes('Deal_Name') ||
+      values.includes('First_Name') ||
+      values.includes('Last_Name')
+    );
+  };
 
-      if (!gigId) {
-        throw new Error(t('uploadContacts.errors.selectGigFirst'));
-      }
+  const analyzeFileForMapping = async (file: File): Promise<FileColumnAnalyzeResult> => {
+    if (!processingRef.current) {
+      throw new Error('Processing cancelled by user');
+    }
 
-      if (!userId || !companyId) {
-        throw new Error(t('uploadContacts.errors.userIdNotFound'));
-      }
+    abortControllerRef.current = new AbortController();
+    const gigId = selectedGigId;
+    if (!gigId) {
+      throw new Error(t('uploadContacts.errors.selectGigFirst'));
+    }
 
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append('file', file);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('gigId', gigId);
 
-      // Simple progress update
-      updateRealProgress(20, 'Sending file to server...');
+    updateRealProgress(30, t('uploadContacts.import.analyzing'));
 
-      // Send file to backend for processing - optimized request
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process`, {
+    const response = await fetch(
+      `${import.meta.env.VITE_DASHBOARD_API}/file-processing/analyze`,
+      {
         method: 'POST',
         body: formData,
         signal: abortControllerRef.current?.signal,
-        // Add headers for better performance
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
+        headers: { Accept: 'application/json' },
+      }
+    );
 
-      if (!response.ok) {
-        let errorMessage = `Backend error: ${response.status} ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          if (errorData.error) {
-            errorMessage = errorData.error;
+    if (!response.ok) {
+      let errorMessage = `Backend error: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.error) errorMessage = errorData.error;
+      } catch {
+        // keep status text
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    if (!data.success || !data.data?.headers) {
+      throw new Error(data.error || 'Backend analyze failed');
+    }
+
+    updateRealProgress(100, t('uploadContacts.mapping.title'));
+    return data.data as FileColumnAnalyzeResult;
+  };
+
+  const applyColumnMapping = async (
+    file: File,
+    mapping: ColumnMapping
+  ): Promise<{ leads: any[]; validation: any }> => {
+    abortControllerRef.current = new AbortController();
+
+    const userId = Cookies.get('userId');
+    const gigId = selectedGigId;
+    const companyId = Cookies.get('companyId');
+
+    if (!gigId) {
+      throw new Error(t('uploadContacts.errors.selectGigFirst'));
+    }
+    if (!userId || !companyId) {
+      throw new Error(t('uploadContacts.errors.userIdNotFound'));
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mapping', JSON.stringify(mapping));
+    formData.append('gigId', gigId);
+
+    updateRealProgress(40, t('uploadContacts.mapping.applying'));
+
+    const response = await fetch(
+      `${import.meta.env.VITE_DASHBOARD_API}/file-processing/apply-mapping`,
+      {
+        method: 'POST',
+        body: formData,
+        signal: abortControllerRef.current?.signal,
+        headers: { Accept: 'application/json' },
+      }
+    );
+
+    if (!response.ok) {
+      let errorMessage = `Backend error: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.error) errorMessage = errorData.error;
+      } catch {
+        // keep status text
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Backend apply-mapping failed');
+    }
+
+    const result = data.data;
+    if (!result || !Array.isArray(result.leads)) {
+      throw new Error('Invalid response format from backend');
+    }
+
+    const leadsWithIds = result.leads.map((lead: any) => ({
+      ...lead,
+      userId: { $oid: userId },
+      companyId: { $oid: companyId },
+      gigId: { $oid: gigId },
+    }));
+
+    updateRealProgress(100, 'Processing completed!');
+    return { ...result, leads: leadsWithIds };
+  };
+
+  const handleMappingFieldChange = (header: string, field: string) => {
+    setColumnMapping((prev) => {
+      const next: ColumnMapping = { ...prev };
+      // Ensure one HARX field is only used once
+      if (field) {
+        for (const key of Object.keys(next)) {
+          if (key !== header && next[key] === field) {
+            next[key] = '';
           }
-        } catch (e) {
-          // Use status text if we can't parse error
         }
-        throw new Error(errorMessage);
+      }
+      next[header] = field;
+      return next;
+    });
+    setMappingError(null);
+  };
+
+  const handleCancelMapping = () => {
+    clearMappingState();
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setUploadError(null);
+    setIsProcessing(false);
+    document.body.removeAttribute('data-processing');
+    processingRef.current = false;
+    localStorage.removeItem('uploadProcessing');
+    sessionStorage.removeItem('uploadProcessing');
+  };
+
+  const handleConfirmMapping = async () => {
+    if (!selectedFile) return;
+
+    if (!mappingHasIdentity(columnMapping) || !mappingHasName(columnMapping)) {
+      setMappingError(t('uploadContacts.mapping.requiredHint'));
+      return;
+    }
+
+    setIsApplyingMapping(true);
+    setMappingError(null);
+    setIsProcessing(true);
+    setUploadProgress(20);
+    processingRef.current = true;
+    document.body.setAttribute('data-processing', 'true');
+
+    try {
+      const result = await applyColumnMapping(selectedFile, columnMapping);
+
+      if (result.leads.length === 0) {
+        toast.error(t('uploadContacts.errors.noValidLeads'));
+        setUploadError(t('uploadContacts.errors.noValidLeads'));
+        setIsProcessing(false);
+        setIsApplyingMapping(false);
+        setUploadProgress(0);
+        return;
       }
 
-      // Parse response immediately
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Backend processing failed');
+      if (result.validation) {
+        setValidationResults(trimValidation(result.validation));
       }
 
-      const result = data.data;
+      setPreviewCount(PREVIEW_PAGE_SIZE);
+      setParsedLeads(result.leads);
+      safeStorageSet('parsedLeads', result.leads);
+      safeStorageSet('validationResults', trimValidation(result.validation));
 
-      if (!result || !result.leads || !Array.isArray(result.leads)) {
-        throw new Error('Invalid response format from backend');
-      }
+      clearMappingState();
+      setShowSaveButton(true);
+      setIsProcessing(false);
+      setUploadProgress(100);
+      document.body.removeAttribute('data-processing');
+      processingRef.current = false;
+      localStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('uploadProcessing');
 
-      // Add IDs to each lead on the frontend
-      const leadsWithIds = result.leads.map((lead: any) => ({
-        ...lead,
-        userId: { $oid: userId },
-        companyId: { $oid: companyId },
-        gigId: { $oid: gigId }
-      }));
-
-      // Final progress update
-      updateRealProgress(100, 'Processing completed!');
-
-      return {
-        ...result,
-        leads: leadsWithIds
-      };
-
-    } catch (error) {
-      console.error('ÔØî Error in processFileWithBackend:', error);
-      throw error;
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+    } catch (error: any) {
+      console.error('Error applying mapping:', error);
+      const errorMessage = error.message || t('uploadContacts.errors.uploadError');
+      setMappingError(errorMessage);
+      toast.error(errorMessage);
+      setIsProcessing(false);
+      setIsApplyingMapping(false);
+      setUploadProgress(0);
+      document.body.removeAttribute('data-processing');
+      processingRef.current = false;
+      localStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('uploadProcessing');
     }
   };
 
@@ -984,6 +1157,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       setShowSaveButton(true);
       setShowFileName(true);
       setSelectedFile(file);
+      clearMappingState();
 
       // Reset OpenAI processing progress
       resetProgress();
@@ -1009,38 +1183,27 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           return;
         }
 
-        // Process with backend - optimized
-        const result = await processFileWithBackend(file);
+        // Analyze columns first — user confirms mapping before import
+        const analyzeResult = await analyzeFileForMapping(file);
+        const headers = analyzeResult.headers || [];
+        const suggested = analyzeResult.suggestedMapping || {};
+        const initialMapping: ColumnMapping = {};
+        headers.forEach((header) => {
+          initialMapping[header] = suggested[header] || '';
+        });
 
-        if (result.leads.length === 0) {
-          toast.error(t('uploadContacts.errors.noValidLeads'));
-          setUploadError(t('uploadContacts.errors.noValidLeads'));
-          setIsProcessing(false);
-          setUploadProgress(0);
-          return;
-        }
+        setMappingHeaders(headers);
+        setMappingSamples(analyzeResult.sampleRows || []);
+        setColumnMapping(initialMapping);
+        setMappingFields(
+          Array.isArray(analyzeResult.fields) && analyzeResult.fields.length
+            ? analyzeResult.fields
+            : [...HARX_IMPORT_FIELDS]
+        );
+        setMappingTotalRows(Number(analyzeResult.meta?.totalRows || 0));
+        setShowMappingStep(true);
 
-        // Show validation results
-        if (result.validation) {
-          setValidationResults(trimValidation(result.validation));
-        }
-
-        setPreviewCount(PREVIEW_PAGE_SIZE);
-        setParsedLeads(result.leads);
-
-        // Store results safely - only if not too large
-        const leadsStored = safeStorageSet('parsedLeads', result.leads);
-        const validationStored = safeStorageSet('validationResults', trimValidation(result.validation));
-
-        if (!leadsStored) {
-          console.warn('ÔÜá´©Å Could not save leads to storage - data too large, keeping in memory only');
-          setDataTooLarge(true);
-        }
-        if (!validationStored) {
-          console.warn('ÔÜá´©Å Could not save validation results to storage - data too large');
-        }
-
-        // Restore existing leads after processing
+        // Restore existing leads after analyze
         if (currentLeads.length > 0) {
           setLeads(currentLeads);
           setFilteredLeads(currentFilteredLeads);
@@ -1049,13 +1212,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         setIsProcessing(false);
         setUploadProgress(100);
 
-        // Remove processing indicator
         document.body.removeAttribute('data-processing');
         processingRef.current = false;
         localStorage.removeItem('uploadProcessing');
         sessionStorage.removeItem('uploadProcessing');
 
-        // Reset file input AFTER processing so the same filename can be re-selected
         const fileInput = document.getElementById('file-upload') as HTMLInputElement;
         if (fileInput) {
           fileInput.value = '';
@@ -2531,10 +2692,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <label htmlFor="file-upload" className="cursor-pointer flex items-center justify-center w-full">
                   <FileSpreadsheet className="h-5 w-5 mr-3 text-white" />
                   <span className="text-base">
-                    {isProcessing ? (
+                    {isProcessing || isApplyingMapping ? (
                       <div className="flex items-center font-black">
                         <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
-                        {t('uploadContacts.import.processing')}
+                        {isApplyingMapping
+                          ? t('uploadContacts.mapping.applying')
+                          : t('uploadContacts.import.analyzing')}
                       </div>
                     ) : (
                       t('uploadContacts.import.clickToUpload')
@@ -2546,7 +2709,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     className="hidden"
                     accept=".csv,.xlsx,.xls"
                     onChange={handleFileSelect}
-                    disabled={isProcessing}
+                    disabled={isProcessing || isApplyingMapping || showMappingStep}
                   />
                 </label>
               </div>
@@ -2564,12 +2727,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <span className="font-medium text-gray-900">{selectedFile.name}</span>
               </div>
               <button onClick={() => {
-                setSelectedFile(null);
-                setUploadProgress(0);
-                setUploadError(null);
-                setUploadSuccess(false);
+                handleCancelMapping();
                 setParsedLeads([]);
                 setValidationResults(null);
+                setUploadSuccess(false);
               }}>
                 <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
               </button>
@@ -2597,17 +2758,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <span>{Math.round(selectedFile.size / 1024)} KB</span>
               </div>
 
-              {/* Real-time Progress Status for OpenAI Processing */}
-              {isProcessing && !uploadError && !uploadSuccess && (
+              {/* Real-time Progress Status */}
+              {isProcessing && !uploadError && !uploadSuccess && !showMappingStep && (
                 <div className="mt-6 p-6 bg-harx-50/50 border border-harx-100 rounded-2xl relative overflow-hidden group">
                   <div className="absolute top-0 right-0 -mt-4 -mr-4 w-16 h-16 bg-harx-100 rounded-full blur-2xl animate-pulse"></div>
                   <div className="flex items-center justify-between text-base relative z-10">
                     <span className="text-harx-700 font-bold tracking-tight">
-                      {processingProgress.status || 'AI Orchestrator at work...'}
+                      {processingProgress.status ||
+                        (isApplyingMapping
+                          ? t('uploadContacts.mapping.applying')
+                          : t('uploadContacts.import.analyzing'))}
                     </span>
                   </div>
 
-                  {/* Animated activity indicator */}
                   <div className="mt-6 flex items-center space-x-3 relative z-10">
                     <div className="flex space-x-2">
                       {[0, 1, 2].map((i) => (
@@ -2621,7 +2784,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         />
                       ))}
                     </div>
-                    <span className="text-base text-harx-600 font-bold ml-2">Syncing database...</span>
+                    <span className="text-base text-harx-600 font-bold ml-2">
+                      {isApplyingMapping
+                        ? t('uploadContacts.mapping.applying')
+                        : t('uploadContacts.import.analyzing')}
+                    </span>
                   </div>
                 </div>
               )}
@@ -2638,7 +2805,167 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 File uploaded successfully!
               </div>
             )}
-            {parsedLeads.length > 0 && !uploadSuccess && !isProcessing && showSaveButton && (
+
+            {showMappingStep && selectedFile && (
+              <div className="mt-4 rounded-2xl border border-harx-100 bg-white p-5 shadow-sm space-y-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <Settings className="h-5 w-5 text-harx-500" />
+                      {t('uploadContacts.mapping.title')}
+                    </h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {t('uploadContacts.mapping.subtitle')}
+                    </p>
+                    {mappingTotalRows > 0 && (
+                      <p className="text-xs font-semibold text-harx-600 mt-1">
+                        {t('uploadContacts.mapping.rowsInFile', { count: mappingTotalRows })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-xs font-bold">
+                  {!mappingHasIdentity(columnMapping) && (
+                    <span className="rounded-full bg-red-50 text-red-600 border border-red-100 px-2.5 py-1">
+                      {t('uploadContacts.mapping.missingIdentity')}
+                    </span>
+                  )}
+                  {!mappingHasName(columnMapping) && (
+                    <span className="rounded-full bg-red-50 text-red-600 border border-red-100 px-2.5 py-1">
+                      {t('uploadContacts.mapping.missingName')}
+                    </span>
+                  )}
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-slate-100">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+                      <tr>
+                        <th className="px-3 py-2.5 font-bold">{t('uploadContacts.mapping.fileColumn')}</th>
+                        <th className="px-3 py-2.5 font-bold">{t('uploadContacts.mapping.example')}</th>
+                        <th className="px-3 py-2.5 font-bold">{t('uploadContacts.mapping.harxField')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mappingHeaders.map((header) => {
+                        const example =
+                          mappingSamples.find((row) => String(row[header] || '').trim())?.[header] ||
+                          mappingSamples[0]?.[header] ||
+                          '—';
+                        return (
+                          <tr key={header} className="border-t border-slate-100">
+                            <td className="px-3 py-2.5 font-semibold text-slate-800 whitespace-nowrap">
+                              {header}
+                            </td>
+                            <td className="px-3 py-2.5 text-slate-500 max-w-[220px] truncate" title={String(example)}>
+                              {String(example)}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <select
+                                value={columnMapping[header] || ''}
+                                onChange={(e) => handleMappingFieldChange(header, e.target.value)}
+                                className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-medium text-slate-800 focus:border-harx-400 focus:outline-none focus:ring-2 focus:ring-harx-200"
+                              >
+                                <option value="">{t('uploadContacts.mapping.ignore')}</option>
+                                {mappingFields.map((field) => (
+                                  <option key={field} value={field}>
+                                    {t(`uploadContacts.mapping.fields.${field}`, field)}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {mappingSamples.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      {t('uploadContacts.mapping.previewTitle')}
+                    </p>
+                    <div className="overflow-x-auto rounded-xl border border-slate-100 bg-slate-50/60">
+                      <table className="min-w-full text-xs">
+                        <thead>
+                          <tr className="text-left text-slate-500">
+                            {HARX_IMPORT_FIELDS.filter((field) =>
+                              Object.values(columnMapping).includes(field)
+                            ).map((field) => (
+                              <th key={field} className="px-3 py-2 font-bold whitespace-nowrap">
+                                {t(`uploadContacts.mapping.fields.${field}`, field)}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {mappingSamples.slice(0, 3).map((row, idx) => (
+                            <tr key={idx} className="border-t border-slate-100 bg-white/70">
+                              {HARX_IMPORT_FIELDS.filter((field) =>
+                                Object.values(columnMapping).includes(field)
+                              ).map((field) => {
+                                const sourceHeader =
+                                  Object.keys(columnMapping).find(
+                                    (h) => columnMapping[h] === field
+                                  ) || '';
+                                return (
+                                  <td key={field} className="px-3 py-2 text-slate-700 whitespace-nowrap">
+                                    {sourceHeader ? String(row[sourceHeader] || '—') : '—'}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {mappingError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
+                    {mappingError}
+                  </div>
+                )}
+
+                <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={handleCancelMapping}
+                    disabled={isApplyingMapping}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {t('uploadContacts.mapping.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmMapping}
+                    disabled={
+                      isApplyingMapping ||
+                      !mappingHasIdentity(columnMapping) ||
+                      !mappingHasName(columnMapping)
+                    }
+                    className="px-5 py-2.5 rounded-xl bg-gradient-harx text-white text-sm font-black shadow-lg shadow-harx-500/20 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isApplyingMapping ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        {t('uploadContacts.mapping.applying')}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        {t('uploadContacts.mapping.confirm')}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {parsedLeads.length > 0 && !uploadSuccess && !isProcessing && showSaveButton && !showMappingStep && (
               <div className="mt-3 space-y-3">
                 {validationResults && (
                     <div className="bg-gradient-to-r from-harx-50 to-harx-100/50 border border-harx-100 rounded-2xl p-4 shadow-sm">
