@@ -56,7 +56,9 @@ interface InteractiveScriptCockpitProps {
   onStageIndexChange?: (index: number) => void;
   /** Contact-file variables for the current gig (mapped HARX + customFields). */
   contactVariables?: ScriptVariable[];
-  /** Parent updates the current stage replica when the user edits or inserts a token. */
+  /** Parent updates the current stage when the user edits text or inserts a token. */
+  onStageChange?: (stageIndex: number, stage: InteractiveStage) => void;
+  /** @deprecated use onStageChange — still supported for replica-only edits */
   onReplicaChange?: (stageIndex: number, introReplica: string) => void;
   /** Optional sample lead values for live preview of tokens. */
   previewLead?: Record<string, any> | null;
@@ -76,6 +78,7 @@ export function InteractiveScriptCockpit({
   isInline = false,
   onStageIndexChange,
   contactVariables = [],
+  onStageChange,
   onReplicaChange,
   previewLead = null,
 }: InteractiveScriptCockpitProps) {
@@ -95,10 +98,24 @@ export function InteractiveScriptCockpit({
   const [showPreview, setShowPreview] = useState(false);
   const replicaRef = useRef<HTMLTextAreaElement | null>(null);
   const cursorRef = useRef<number | null>(null);
+  const canEdit = Boolean(onStageChange || onReplicaChange);
   
   // Scoring Simulation States
   const [showScoringSimulation, setShowScoringSimulation] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
+
+  const patchCurrentStage = (patch: Partial<InteractiveStage>) => {
+    const current = stages[currentStageIdx];
+    if (!current) return;
+    const next = { ...current, ...patch };
+    if (onStageChange) {
+      onStageChange(currentStageIdx, next);
+      return;
+    }
+    if (onReplicaChange && typeof patch.introReplica === 'string') {
+      onReplicaChange(currentStageIdx, patch.introReplica);
+    }
+  };
 
   const rememberCursor = () => {
     const el = replicaRef.current;
@@ -107,11 +124,10 @@ export function InteractiveScriptCockpit({
   };
 
   const handleReplicaEdit = (value: string) => {
-    onReplicaChange?.(currentStageIdx, value);
+    patchCurrentStage({ introReplica: value });
   };
 
   const insertVariableAtCursor = (variable: ScriptVariable) => {
-    if (showPreview) setShowPreview(false);
     const token = toFriendlyToken(variable);
     const current = String(stages[currentStageIdx]?.introReplica || '');
     const el = replicaRef.current;
@@ -127,7 +143,7 @@ export function InteractiveScriptCockpit({
         ? Math.max(start, Math.min(el.selectionEnd, current.length))
         : start;
     const next = `${current.slice(0, start)}${token}${current.slice(end)}`;
-    onReplicaChange?.(currentStageIdx, next);
+    patchCurrentStage({ introReplica: next });
     const newPos = start + token.length;
     cursorRef.current = newPos;
     // Restore caret after React re-render
@@ -374,7 +390,7 @@ export function InteractiveScriptCockpit({
                       e.preventDefault();
                     }}
                     onClick={() => insertVariableAtCursor(variable)}
-                    disabled={!onReplicaChange}
+                    disabled={!canEdit}
                     className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[9px] font-bold text-slate-700 hover:border-red-300 hover:bg-red-50 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {variable.label}
@@ -382,43 +398,59 @@ export function InteractiveScriptCockpit({
                 ))}
               </div>
               <p className="text-[9px] text-slate-400 font-medium">
-                Placez le curseur dans le texte, puis cliquez une variable → insertion de {'{{Nom du prospect}}'} à cet endroit.
+                Tapez directement dans le texte ci-dessous, ou placez le curseur puis cliquez une variable.
               </p>
             </div>
           )}
 
-          {/* Primary Speech Bubble box — editable so cursor insert works */}
+          {/* Primary Speech Bubble — always editable manually */}
           <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm relative overflow-hidden">
             <div className={`absolute top-0 bottom-0 left-0 w-1 ${currentColors.dot}`} />
             <div className="space-y-1.5 pl-1">
-              <span className="text-[8px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                {currentStage.introTitle}
-              </span>
-              {showPreview ? (
-                <p className="text-[11.5px] font-bold text-slate-800 leading-relaxed italic">
-                  {renderScript(currentStage.introReplica, previewCtx.lead, previewCtx.ctx)}
-                </p>
-              ) : (
-                <textarea
-                  ref={replicaRef}
-                  value={currentStage.introReplica || ''}
-                  onChange={(e) => {
-                    cursorRef.current = e.target.selectionStart;
-                    handleReplicaEdit(e.target.value);
-                  }}
-                  onSelect={rememberCursor}
-                  onClick={rememberCursor}
-                  onKeyUp={rememberCursor}
-                  onBlur={rememberCursor}
-                  rows={5}
-                  className="w-full resize-y rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2 text-[11.5px] font-bold text-slate-800 leading-relaxed italic outline-none focus:border-red-300 focus:bg-white focus:ring-2 focus:ring-red-500/10"
-                  placeholder="Écrivez la réplique… Placez le curseur puis cliquez une variable."
-                />
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[8px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                  {currentStage.introTitle}
+                </span>
+                {canEdit && (
+                  <span className="text-[8px] font-black uppercase tracking-wider text-emerald-600">
+                    Modifiable
+                  </span>
+                )}
+              </div>
+              <textarea
+                ref={replicaRef}
+                value={currentStage.introReplica || ''}
+                onChange={(e) => {
+                  cursorRef.current = e.target.selectionStart;
+                  handleReplicaEdit(e.target.value);
+                }}
+                onSelect={rememberCursor}
+                onClick={rememberCursor}
+                onKeyUp={rememberCursor}
+                onBlur={rememberCursor}
+                readOnly={!canEdit}
+                rows={6}
+                className={`w-full resize-y rounded-lg border px-3 py-2 text-[11.5px] font-bold text-slate-800 leading-relaxed outline-none ${
+                  canEdit
+                    ? 'border-slate-200 bg-white italic focus:border-red-300 focus:ring-2 focus:ring-red-500/10 cursor-text'
+                    : 'border-slate-100 bg-slate-50/60 italic cursor-default'
+                }`}
+                placeholder="Modifiez librement la réplique ici…"
+              />
+              {showPreview && (
+                <div className="rounded-lg border border-emerald-100 bg-emerald-50/40 px-3 py-2">
+                  <p className="mb-1 text-[8px] font-black uppercase tracking-widest text-emerald-600">
+                    Aperçu rempli
+                  </p>
+                  <p className="text-[11px] font-bold text-slate-700 leading-relaxed italic">
+                    {renderScript(currentStage.introReplica, previewCtx.lead, previewCtx.ctx)}
+                  </p>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Alert messages & reminders list */}
+          {/* Alert messages & reminders list — editable */}
           {currentStage.reminders && currentStage.reminders.length > 0 && (
             <div className="space-y-1.5 shrink-0">
               {currentStage.reminders.map((rem, idx) => (
@@ -435,7 +467,20 @@ export function InteractiveScriptCockpit({
                   {rem.type === 'warning' && <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />}
                   {rem.type === 'clock' && <Clock className="w-3.5 h-3.5 text-orange-500 shrink-0 mt-0.5" />}
                   {rem.type === 'info' && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5 border border-emerald-500 rounded-full p-0.5" />}
-                  <p className="text-[9.5px] font-bold leading-normal">{cleanTrainingText(rem.text)}</p>
+                  {canEdit && onStageChange ? (
+                    <textarea
+                      value={rem.text || ''}
+                      rows={2}
+                      onChange={(e) => {
+                        const reminders = [...(currentStage.reminders || [])];
+                        reminders[idx] = { ...reminders[idx], text: e.target.value };
+                        patchCurrentStage({ reminders });
+                      }}
+                      className="flex-1 resize-y rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[9.5px] font-bold leading-normal outline-none focus:border-slate-200 focus:bg-white/80"
+                    />
+                  ) : (
+                    <p className="text-[9.5px] font-bold leading-normal">{cleanTrainingText(rem.text)}</p>
+                  )}
                 </div>
               ))}
             </div>
@@ -452,6 +497,7 @@ export function InteractiveScriptCockpit({
                 {currentStage.options.map((opt) => (
                   <button
                     key={opt.id}
+                    type="button"
                     onClick={() => setSelectedOptionId(opt.id)}
                     className={`p-3 rounded-lg border text-left transition-all duration-200 outline-none flex flex-col justify-between cursor-pointer ${
                       selectedOptionId === opt.id
@@ -459,12 +505,42 @@ export function InteractiveScriptCockpit({
                         : 'bg-white border-slate-200/80 hover:bg-slate-50'
                     }`}
                   >
-                    <span className="text-[10px] font-black text-slate-800 flex items-center gap-1">
-                      {opt.id === 'prospect_confirms' ? '✓' : '↻'} {opt.label}
-                    </span>
-                    <span className="text-[9px] text-slate-500 font-bold mt-0.5 leading-snug">
-                      {opt.subtext}
-                    </span>
+                    {canEdit && onStageChange ? (
+                      <>
+                        <input
+                          value={opt.label || ''}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            const options = (currentStage.options || []).map((o) =>
+                              o.id === opt.id ? { ...o, label: e.target.value } : o
+                            );
+                            patchCurrentStage({ options });
+                          }}
+                          className="w-full rounded border border-transparent bg-transparent text-[10px] font-black text-slate-800 outline-none focus:border-slate-200 focus:bg-white px-1"
+                        />
+                        <textarea
+                          value={opt.subtext || ''}
+                          rows={2}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            const options = (currentStage.options || []).map((o) =>
+                              o.id === opt.id ? { ...o, subtext: e.target.value } : o
+                            );
+                            patchCurrentStage({ options });
+                          }}
+                          className="mt-0.5 w-full resize-y rounded border border-transparent bg-transparent text-[9px] text-slate-500 font-bold leading-snug outline-none focus:border-slate-200 focus:bg-white px-1"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-[10px] font-black text-slate-800 flex items-center gap-1">
+                          {opt.id === 'prospect_confirms' ? '✓' : '↻'} {opt.label}
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-bold mt-0.5 leading-snug">
+                          {opt.subtext}
+                        </span>
+                      </>
+                    )}
                   </button>
                 ))}
               </div>
@@ -473,11 +549,30 @@ export function InteractiveScriptCockpit({
               {selectedOptionId && (
                 <div className="p-3 bg-emerald-50/40 border border-emerald-100/50 rounded-xl space-y-1 animate-in fade-in duration-200">
                   <span className="text-[8px] font-extrabold text-emerald-600 uppercase tracking-widest block">
-                    Réponse Recommandée
+                    Réponse Recommandée {canEdit ? '· modifiable' : ''}
                   </span>
-                  <p className="text-[10px] font-black text-slate-800 leading-normal italic">
-                    {currentStage.options.find(o => o.id === selectedOptionId)?.recommendedResponse}
-                  </p>
+                  {canEdit && onStageChange ? (
+                    <textarea
+                      value={
+                        currentStage.options.find((o) => o.id === selectedOptionId)
+                          ?.recommendedResponse || ''
+                      }
+                      rows={3}
+                      onChange={(e) => {
+                        const options = (currentStage.options || []).map((o) =>
+                          o.id === selectedOptionId
+                            ? { ...o, recommendedResponse: e.target.value }
+                            : o
+                        );
+                        patchCurrentStage({ options });
+                      }}
+                      className="w-full resize-y rounded-md border border-emerald-100 bg-white px-2 py-1.5 text-[10px] font-black text-slate-800 leading-normal italic outline-none focus:ring-2 focus:ring-emerald-500/15"
+                    />
+                  ) : (
+                    <p className="text-[10px] font-black text-slate-800 leading-normal italic">
+                      {currentStage.options.find(o => o.id === selectedOptionId)?.recommendedResponse}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -505,9 +600,23 @@ export function InteractiveScriptCockpit({
                         onChange={() => setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }))}
                         className="rounded border-slate-300 text-red-600 focus:ring-red-500 h-3.5 w-3.5"
                       />
-                      <span className={`text-[9.5px] font-bold ${isChecked ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                        {item}
-                      </span>
+                      {canEdit && onStageChange ? (
+                        <input
+                          value={item}
+                          onChange={(e) => {
+                            const checklist = [...(currentStage.checklist || [])];
+                            checklist[idx] = e.target.value;
+                            patchCurrentStage({ checklist });
+                          }}
+                          className={`flex-1 rounded border border-transparent bg-transparent px-1 text-[9.5px] font-bold outline-none focus:border-slate-200 focus:bg-white ${
+                            isChecked ? 'text-slate-400 line-through' : 'text-slate-700'
+                          }`}
+                        />
+                      ) : (
+                        <span className={`text-[9.5px] font-bold ${isChecked ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                          {item}
+                        </span>
+                      )}
                     </label>
                   );
                 })}
