@@ -383,26 +383,51 @@ export function shouldHideCallScoring(call: CallLike): boolean {
   return isCallTooShortForAnalysis(call) || isNonEvaluableCall(call);
 }
 
+/** Remove invented call-duration phrases from AI summaries (duration is shown in the player). */
+function stripSummaryDurationText(text: string): string {
+  if (!text) return text;
+  let out = text;
+  out = out.replace(
+    /L['’]appel a duré\s+\d+\s*minutes?\b(?:\s+et\s+\d+\s*secondes?\b)?[.!]?\s*/gi,
+    ''
+  );
+  out = out.replace(
+    /The call lasted\s+\d+\s*minutes?\b(?:\s+and\s+\d+\s*seconds?\b)?[.!]?\s*/gi,
+    ''
+  );
+  out = out.replace(/\ba duré\s+\d+\s*minutes?\b(?:\s+et\s+\d+\s*secondes?\b)?/gi, '');
+  out = out.replace(/\blasted\s+\d+\s*minutes?\b(?:\s+and\s+\d+\s*seconds?\b)?/gi, '');
+  out = out.replace(/\b\d+\s*minutes?\s+et\s+\d+\s*secondes?\b/gi, '');
+  out = out.replace(/\b\d+\s*minutes?\s+and\s+\d+\s*seconds?\b/gi, '');
+  out = out.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1').replace(/^[,:;.\-\s]+/, '').trim();
+  if (out && /^[a-zàâäéèêëïîôùûüç]/.test(out)) {
+    out = out.charAt(0).toUpperCase() + out.slice(1);
+  }
+  return out;
+}
+
 export function getExecutiveSummaryText(call: CallLike, language: string = 'fr'): string {
   const isEn = String(language || '').toLowerCase().startsWith('en');
+  const durationSec = Number(call.duration) || 0;
   if (isCallTooShortForAnalysis(call)) {
-    return getTooShortAnalysisNotice(language, Number(call.duration) || undefined);
+    return getTooShortAnalysisNotice(language, durationSec || undefined);
   }
   if (isCallVoicemail(call)) return getVoicemailCallNotice(language);
   if (isCallFraudDetected(call)) {
     const fromOverall = isEn
       ? (call.ai_call_score?.overall?.feedback_en || call.ai_call_score?.overall?.feedback || '')
       : (call.ai_call_score?.overall?.feedback_fr || call.ai_call_score?.overall?.feedback || '');
-    if (fromOverall.trim()) return fromOverall;
+    if (fromOverall.trim()) return stripSummaryDurationText(fromOverall);
     return getFraudCommissionNotice(language);
   }
   const fromSummary = isEn
     ? (call.ai_summary_en || call.ai_summary || '')
     : (call.ai_summary_fr || call.ai_summary || '');
-  if (fromSummary.trim()) return fromSummary;
-  return isEn
+  if (fromSummary.trim()) return stripSummaryDurationText(fromSummary);
+  const fromOverall = isEn
     ? (call.ai_call_score?.overall?.feedback_en || call.ai_call_score?.overall?.feedback || '')
     : (call.ai_call_score?.overall?.feedback_fr || call.ai_call_score?.overall?.feedback || '');
+  return stripSummaryDurationText(fromOverall);
 }
 
 export function hasAiCallAnalysis(call: CallLike): boolean {
