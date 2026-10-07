@@ -234,12 +234,43 @@ export function PhoneNumberPanel() {
   const [isMuted, setIsMuted] = useState(false);
   const [showSoftphone, setShowSoftphone] = useState(false);
   type CallMonitorStatus = 'connecting' | 'ringing' | 'active' | 'ended' | 'failed';
+  type CallMonitorOutcome =
+    | 'completed'
+    | 'no-answer'
+    | 'busy'
+    | 'failed'
+    | 'canceled'
+    | null;
   const [callMonitorOpen, setCallMonitorOpen] = useState(false);
   const [callMonitorMode, setCallMonitorMode] = useState<'api' | 'mic'>('api');
   const [callMonitorStatus, setCallMonitorStatus] = useState<CallMonitorStatus>('connecting');
+  const [callMonitorOutcome, setCallMonitorOutcome] = useState<CallMonitorOutcome>(null);
+  const [callReachedRinging, setCallReachedRinging] = useState(false);
+  const [callReachedActive, setCallReachedActive] = useState(false);
   const [apiCallId, setApiCallId] = useState<string | null>(null);
   const [apiCallProvider, setApiCallProvider] = useState<'telnyx' | 'twilio' | null>(null);
   const [hangingUp, setHangingUp] = useState(false);
+
+  const applyCallMonitorPayload = useCallback((payload: any) => {
+    if (!payload || typeof payload !== 'object') return;
+    const next = String(payload.status || '') as CallMonitorStatus;
+    if (
+      next === 'connecting' ||
+      next === 'ringing' ||
+      next === 'active' ||
+      next === 'ended' ||
+      next === 'failed'
+    ) {
+      setCallMonitorStatus(next);
+    }
+    if (payload.reachedRinging) setCallReachedRinging(true);
+    if (payload.reachedActive) setCallReachedActive(true);
+    if (payload.outcome) {
+      setCallMonitorOutcome(payload.outcome as CallMonitorOutcome);
+    } else if (next === 'ended' && !payload.reachedActive) {
+      setCallMonitorOutcome(payload.reachedRinging ? 'no-answer' : 'failed');
+    }
+  }, []);
 
   const closeCallMonitor = useCallback(() => {
     setCallMonitorOpen(false);
@@ -247,6 +278,9 @@ export function PhoneNumberPanel() {
     setApiCallProvider(null);
     setHangingUp(false);
     setCallMonitorStatus('ended');
+    setCallMonitorOutcome(null);
+    setCallReachedRinging(false);
+    setCallReachedActive(false);
   }, []);
 
   // Gérer la fin d'un appel WebRTC
@@ -359,10 +393,13 @@ export function PhoneNumberPanel() {
           if (call.state === 'ringing' || call.state === 'new' || call.state === 'trying') {
             setRtcState('ringing');
             setCallMonitorStatus('ringing');
+            setCallReachedRinging(true);
             setActiveCall(call);
           } else if (call.state === 'active') {
             setRtcState('active');
             setCallMonitorStatus('active');
+            setCallReachedRinging(true);
+            setCallReachedActive(true);
             setActiveCall(call);
             const remoteAudio = document.getElementById('remoteMedia') as HTMLAudioElement;
             if (remoteAudio && call.remoteStream) {
@@ -411,6 +448,9 @@ export function PhoneNumberPanel() {
 
     setCallMonitorMode('mic');
     setCallMonitorStatus('connecting');
+    setCallMonitorOutcome(null);
+    setCallReachedRinging(false);
+    setCallReachedActive(false);
     setCallMonitorOpen(true);
     setShowSoftphone(true);
     setRtcState('connecting');
@@ -444,6 +484,7 @@ export function PhoneNumberPanel() {
         video: false,
       });
       setCallMonitorStatus('ringing');
+      setCallReachedRinging(true);
       setRtcState('ringing');
     } catch (err: any) {
       console.error(err);
@@ -451,6 +492,7 @@ export function PhoneNumberPanel() {
       setShowSoftphone(false);
       setRtcState('connected');
       setCallMonitorStatus('failed');
+      setCallMonitorOutcome('failed');
     }
   };
 
@@ -610,6 +652,9 @@ export function PhoneNumberPanel() {
     setTestingCall(true);
     setCallMonitorMode('api');
     setCallMonitorStatus('connecting');
+    setCallMonitorOutcome(null);
+    setCallReachedRinging(false);
+    setCallReachedActive(false);
     setCallMonitorOpen(true);
     setApiCallId(null);
     setApiCallProvider(null);
@@ -631,17 +676,13 @@ export function PhoneNumberPanel() {
       const provider = (data?.data?.provider === 'twilio' ? 'twilio' : 'telnyx') as
         | 'telnyx'
         | 'twilio';
-      const status = (data?.data?.status || 'connecting') as CallMonitorStatus;
       setApiCallId(callId);
       setApiCallProvider(provider);
-      setCallMonitorStatus(
-        status === 'ringing' || status === 'active' || status === 'ended' || status === 'failed'
-          ? status
-          : 'connecting'
-      );
+      applyCallMonitorPayload(data?.data);
     } catch (err: any) {
       console.error(err);
       setCallMonitorStatus('failed');
+      setCallMonitorOutcome('failed');
       toast.error(err.message || t('phoneNumberPanel.toasts.testCallFailed'));
     } finally {
       setTestingCall(false);
@@ -690,10 +731,7 @@ export function PhoneNumberPanel() {
         );
         const data = await safeParseJson(res);
         if (cancelled || !res.ok) return;
-        const next = String(data?.data?.status || '') as CallMonitorStatus;
-        if (next === 'connecting' || next === 'ringing' || next === 'active' || next === 'ended' || next === 'failed') {
-          setCallMonitorStatus(next);
-        }
+        applyCallMonitorPayload(data?.data);
       } catch {
         /* ignore transient poll errors */
       }
@@ -705,7 +743,15 @@ export function PhoneNumberPanel() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [callMonitorOpen, callMonitorMode, apiCallId, apiCallProvider, callMonitorStatus, apiBaseUrl]);
+  }, [
+    callMonitorOpen,
+    callMonitorMode,
+    apiCallId,
+    apiCallProvider,
+    callMonitorStatus,
+    apiBaseUrl,
+    applyCallMonitorPayload,
+  ]);
 
   // Phone vibrator pattern while ringing
   useEffect(() => {
@@ -2140,11 +2186,28 @@ export function PhoneNumberPanel() {
                         t('phoneNumberPanel.myNumbers.testCall.statusRinging')}
                       {callMonitorStatus === 'active' &&
                         t('phoneNumberPanel.myNumbers.testCall.statusActive')}
-                      {callMonitorStatus === 'ended' &&
-                        t('phoneNumberPanel.myNumbers.testCall.statusEnded')}
                       {callMonitorStatus === 'failed' &&
                         t('phoneNumberPanel.myNumbers.testCall.statusFailed')}
+                      {callMonitorStatus === 'ended' &&
+                        (callMonitorOutcome === 'failed'
+                          ? t('phoneNumberPanel.myNumbers.testCall.statusFailed')
+                          : callMonitorOutcome === 'no-answer'
+                            ? t('phoneNumberPanel.myNumbers.testCall.statusNoAnswer')
+                            : callMonitorOutcome === 'busy'
+                              ? t('phoneNumberPanel.myNumbers.testCall.statusBusy')
+                              : callMonitorOutcome === 'canceled'
+                                ? t('phoneNumberPanel.myNumbers.testCall.statusCanceled')
+                                : callReachedActive
+                                  ? t('phoneNumberPanel.myNumbers.testCall.statusEnded')
+                                  : t('phoneNumberPanel.myNumbers.testCall.statusFailed'))}
                     </p>
+
+                    {(callMonitorStatus === 'ended' || callMonitorStatus === 'failed') &&
+                      !callReachedRinging && (
+                        <p className="text-xs text-center text-rose-600 font-bold px-2">
+                          {t('phoneNumberPanel.myNumbers.testCall.hintNeverRang')}
+                        </p>
+                      )}
 
                     <ol className="w-full space-y-2">
                       {(
@@ -2155,37 +2218,44 @@ export function PhoneNumberPanel() {
                           ['ended', t('phoneNumberPanel.myNumbers.testCall.stepEnded')],
                         ] as const
                       ).map(([key, label]) => {
-                        const order = ['connecting', 'ringing', 'active', 'ended'] as const;
-                        const currentIdx =
-                          callMonitorStatus === 'failed'
-                            ? -1
-                            : order.indexOf(
-                                callMonitorStatus === 'ended' ? 'ended' : callMonitorStatus
-                              );
-                        const stepIdx = order.indexOf(key);
-                        const done = currentIdx > stepIdx || (key === 'ended' && callMonitorStatus === 'ended');
-                        const current = key === callMonitorStatus;
+                        const done =
+                          key === 'connecting' ||
+                          (key === 'ringing' && callReachedRinging) ||
+                          (key === 'active' && callReachedActive) ||
+                          (key === 'ended' &&
+                            (callMonitorStatus === 'ended' || callMonitorStatus === 'failed'));
+                        const current =
+                          key === callMonitorStatus ||
+                          (key === 'ended' && callMonitorStatus === 'failed');
+                        const missed =
+                          (callMonitorStatus === 'ended' || callMonitorStatus === 'failed') &&
+                          ((key === 'ringing' && !callReachedRinging) ||
+                            (key === 'active' && !callReachedActive));
                         return (
                           <li
                             key={key}
                             className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold ${
                               current
                                 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100'
-                                : done
+                                : done && !missed
                                   ? 'text-emerald-700'
-                                  : 'text-slate-400'
+                                  : missed
+                                    ? 'text-rose-500'
+                                    : 'text-slate-400'
                             }`}
                           >
                             <span
                               className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${
-                                done
-                                  ? 'bg-emerald-500 text-white'
-                                  : current
-                                    ? 'bg-indigo-600 text-white animate-pulse'
-                                    : 'bg-slate-200 text-slate-500'
+                                missed
+                                  ? 'bg-rose-500 text-white'
+                                  : done
+                                    ? 'bg-emerald-500 text-white'
+                                    : current
+                                      ? 'bg-indigo-600 text-white animate-pulse'
+                                      : 'bg-slate-200 text-slate-500'
                               }`}
                             >
-                              {done ? <Check size={12} /> : stepIdx + 1}
+                              {missed ? <X size={12} /> : done ? <Check size={12} /> : key === 'connecting' ? 1 : key === 'ringing' ? 2 : key === 'active' ? 3 : 4}
                             </span>
                             {label}
                           </li>
