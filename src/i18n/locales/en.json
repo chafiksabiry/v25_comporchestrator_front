@@ -1947,6 +1947,8 @@
       "harxFields": "HARX fields",
       "dragHint": "Drag a column onto a field on the right",
       "dropHere": "Drop here",
+      "autoFullName": "Auto-generated",
+      "autoFullNameHint": "First name + Last name concatenated",
       "unmap": "Remove",
       "allMapped": "All columns are mapped",
       "visibleCompany": "Company",
