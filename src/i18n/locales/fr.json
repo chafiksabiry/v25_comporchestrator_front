@@ -3325,6 +3325,21 @@
       "warningBody": "Votre solde actuel est de {{balance}} €. Alimentez votre compte pour activer ou approuver des gigs. Dans le cas contraire, vos reps ne pourront pas commencer à travailler.",
       "topUp": "Alimenter mon compte"
     },
+    "activeLimit": {
+      "title": "Limite de GIG actifs atteinte",
+      "subtitle": "Votre plan {{plan}} autorise {{max}} GIG actif(s). Pour activer « {{target}} », basculez un GIG déjà actif ou passez au plan supérieur.",
+      "yourPlan": "actuel",
+      "choose": "Choisissez de basculer (désactiver un GIG actif pour en activer un autre) ou d’upgrader votre abonnement.",
+      "activeList": "GIG(s) actuellement actif(s) ({{count}})",
+      "noneListed": "Aucun autre GIG actif listé.",
+      "selectHint": "Sélectionnez au moins {{count}} GIG à désactiver.",
+      "switch": "Basculer",
+      "switching": "Bascule…",
+      "switchSuccess": "GIG basculé : l’ancien est inactif, le nouveau est actif.",
+      "upgrade": "Upgrade {{plan}}",
+      "nextPlan": "au plan suivant",
+      "close": "Fermer"
+    },
     "yearsCount_one": "{{count}} an",
     "yearsCount_other": "{{count}} ans"
   },
