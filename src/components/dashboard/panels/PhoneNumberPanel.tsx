@@ -240,6 +240,7 @@ export function PhoneNumberPanel() {
     | 'busy'
     | 'failed'
     | 'canceled'
+    | 'voicemail'
     | null;
   const [callMonitorOpen, setCallMonitorOpen] = useState(false);
   const [callMonitorMode, setCallMonitorMode] = useState<'api' | 'mic'>('api');
@@ -264,10 +265,10 @@ export function PhoneNumberPanel() {
       setCallMonitorStatus(next);
     }
     if (payload.reachedRinging) setCallReachedRinging(true);
-    if (payload.reachedActive) setCallReachedActive(true);
+    if (payload.reachedActive || payload.humanConfirmed) setCallReachedActive(true);
     if (payload.outcome) {
       setCallMonitorOutcome(payload.outcome as CallMonitorOutcome);
-    } else if (next === 'ended' && !payload.reachedActive) {
+    } else if (next === 'ended' && !(payload.reachedActive || payload.humanConfirmed)) {
       setCallMonitorOutcome(payload.reachedRinging ? 'no-answer' : 'failed');
     }
   }, []);
@@ -2191,21 +2192,45 @@ export function PhoneNumberPanel() {
                       {callMonitorStatus === 'ended' &&
                         (callMonitorOutcome === 'failed'
                           ? t('phoneNumberPanel.myNumbers.testCall.statusFailed')
-                          : callMonitorOutcome === 'no-answer'
-                            ? t('phoneNumberPanel.myNumbers.testCall.statusNoAnswer')
-                            : callMonitorOutcome === 'busy'
-                              ? t('phoneNumberPanel.myNumbers.testCall.statusBusy')
-                              : callMonitorOutcome === 'canceled'
-                                ? t('phoneNumberPanel.myNumbers.testCall.statusCanceled')
-                                : callReachedActive
-                                  ? t('phoneNumberPanel.myNumbers.testCall.statusEnded')
-                                  : t('phoneNumberPanel.myNumbers.testCall.statusFailed'))}
+                          : callMonitorOutcome === 'voicemail'
+                            ? t('phoneNumberPanel.myNumbers.testCall.statusVoicemail')
+                            : callMonitorOutcome === 'no-answer'
+                              ? t('phoneNumberPanel.myNumbers.testCall.statusNoAnswer')
+                              : callMonitorOutcome === 'busy'
+                                ? t('phoneNumberPanel.myNumbers.testCall.statusBusy')
+                                : callMonitorOutcome === 'canceled'
+                                  ? t('phoneNumberPanel.myNumbers.testCall.statusCanceled')
+                                  : callReachedActive
+                                    ? t('phoneNumberPanel.myNumbers.testCall.statusEnded')
+                                    : t('phoneNumberPanel.myNumbers.testCall.statusFailed'))}
                     </p>
+
+                    {callMonitorStatus === 'ringing' && callReachedRinging && !callReachedActive && (
+                      <p className="text-xs text-center text-indigo-700 font-bold px-2">
+                        {t('phoneNumberPanel.myNumbers.testCall.hintPressOne')}
+                      </p>
+                    )}
+
+                    {(callMonitorStatus === 'ended' || callMonitorStatus === 'failed') &&
+                      callMonitorOutcome === 'voicemail' && (
+                        <p className="text-xs text-center text-rose-600 font-bold px-2">
+                          {t('phoneNumberPanel.myNumbers.testCall.hintVoicemail')}
+                        </p>
+                      )}
 
                     {(callMonitorStatus === 'ended' || callMonitorStatus === 'failed') &&
                       !callReachedRinging && (
                         <p className="text-xs text-center text-rose-600 font-bold px-2">
                           {t('phoneNumberPanel.myNumbers.testCall.hintNeverRang')}
+                        </p>
+                      )}
+
+                    {(callMonitorStatus === 'ended' || callMonitorStatus === 'failed') &&
+                      callReachedRinging &&
+                      !callReachedActive &&
+                      callMonitorOutcome !== 'voicemail' && (
+                        <p className="text-xs text-center text-rose-600 font-bold px-2">
+                          {t('phoneNumberPanel.myNumbers.testCall.hintNoHuman')}
                         </p>
                       )}
 
