@@ -118,7 +118,11 @@
       "noGig": "Hors gig / non attribué",
       "empty": "Aucune consommation AI enregistrée pour l’instant.",
       "emptyHint": "Dès qu’un outil AI (formation, script, analyse) est utilisé sur un gig, le détail apparaît ici.",
+      "eventsCount": "{{count}} entrée(s)",
       "colGig": "Gig",
+      "colDate": "Date",
+      "colTime": "Heure",
+      "colQuantity": "Quantité",
       "colTokens": "Tokens",
       "colRequests": "Requêtes",
       "colLast": "Dernier usage"

@@ -118,7 +118,11 @@
       "noGig": "No gig / unassigned",
       "empty": "No AI usage recorded yet.",
       "emptyHint": "Once an AI tool (training, script, analysis) runs on a gig, details show up here.",
+      "eventsCount": "{{count}} entries",
       "colGig": "Gig",
+      "colDate": "Date",
+      "colTime": "Time",
+      "colQuantity": "Quantity",
       "colTokens": "Tokens",
       "colRequests": "Requests",
       "colLast": "Last used"

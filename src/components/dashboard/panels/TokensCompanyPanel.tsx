@@ -34,12 +34,13 @@ type TokensState = {
 
 type DisplayTokenPack = { label: string; tokens: number; priceCents: number };
 
-type GigUsageRow = {
+type GigUsageEvent = {
+  id: string;
   gigId: string | null;
+  gigTitle: string;
   tokensUsed: number;
-  requests: number;
-  lastUsedAt: string | null;
-  title?: string;
+  tool: string | null;
+  createdAt: string | null;
 };
 
 type TokenPurchaseRow = {
@@ -89,7 +90,7 @@ export function TokensCompanyPanel() {
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [displayPacks, setDisplayPacks] = useState<DisplayTokenPack[]>(defaultDisplayPacks);
   const [customRateCents, setCustomRateCents] = useState(0.02);
-  const [gigUsage, setGigUsage] = useState<GigUsageRow[]>([]);
+  const [gigUsageEvents, setGigUsageEvents] = useState<GigUsageEvent[]>([]);
   const [purchases, setPurchases] = useState<TokenPurchaseRow[]>([]);
 
   const companyId = Cookies.get('companyId') || '';
@@ -107,6 +108,28 @@ export function TokensCompanyPanel() {
     });
   };
 
+  const formatUsageDate = (value?: string | null) => {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString(dateLocale, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  const formatUsageTime = (value?: string | null) => {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleTimeString(dateLocale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  };
+
   const fetchData = async (isSilent = false) => {
     if (!companyId) {
       setLoading(false);
@@ -116,7 +139,7 @@ export function TokensCompanyPanel() {
     try {
       const [walletRes, usageRes, purchasesRes, gigs] = await Promise.all([
         fetch(`${apiBaseUrl}/tokens-company/${companyId}`),
-        fetch(`${apiBaseUrl}/tokens-company/${companyId}/usage-by-gig`),
+        fetch(`${apiBaseUrl}/tokens-company/${companyId}/usage?limit=100`),
         fetch(`${apiBaseUrl}/tokens-company/${companyId}/purchases?limit=20`),
         getGigsByCompanyId(companyId).catch(() => [] as any[]),
       ]);
@@ -165,18 +188,24 @@ export function TokensCompanyPanel() {
           const title = String(g?.title || g?.name || '').trim();
           if (id) titleById.set(id, title || id);
         });
-        const rows: GigUsageRow[] = Array.isArray(usageJson?.data)
-          ? usageJson.data.map((row: any) => ({
-              gigId: row.gigId ? String(row.gigId) : null,
-              tokensUsed: Number(row.tokensUsed) || 0,
-              requests: Number(row.requests) || 0,
-              lastUsedAt: row.lastUsedAt || null,
-              title: row.gigId
-                ? titleById.get(String(row.gigId)) || `Gig ${String(row.gigId).slice(-6)}`
-                : t('tokensPanel.usage.noGig', 'Hors gig / non attribué'),
-            }))
+        const rows: GigUsageEvent[] = Array.isArray(usageJson?.data)
+          ? usageJson.data.map((row: any) => {
+              const gigId = row.gigId ? String(row.gigId) : null;
+              return {
+                id: String(row.id || row._id || `${gigId || 'none'}-${row.createdAt || Math.random()}`),
+                gigId,
+                gigTitle: gigId
+                  ? titleById.get(gigId) || `Gig ${gigId.slice(-6)}`
+                  : t('tokensPanel.usage.noGig', 'Hors gig / non attribué'),
+                tokensUsed: Number(row.tokensUsed) || 0,
+                tool: row.tool ? String(row.tool) : null,
+                createdAt: row.createdAt || null,
+              };
+            })
           : [];
-        setGigUsage(rows);
+        setGigUsageEvents(rows);
+      } else {
+        setGigUsageEvents([]);
       }
     } catch (err) {
       console.error('Error loading Tokens Company data:', err);
@@ -494,11 +523,14 @@ export function TokensCompanyPanel() {
             </h2>
           </div>
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-            {gigUsage.length} gig{gigUsage.length > 1 ? 's' : ''}
+            {t('tokensPanel.usage.eventsCount', {
+              count: gigUsageEvents.length,
+              defaultValue: '{{count}} entrée(s)',
+            })}
           </span>
         </div>
 
-        {gigUsage.length === 0 ? (
+        {gigUsageEvents.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center">
             <p className="text-sm font-medium text-slate-500">
               {t('tokensPanel.usage.empty', 'Aucune consommation AI enregistrée pour l’instant.')}
@@ -516,33 +548,35 @@ export function TokensCompanyPanel() {
               <thead>
                 <tr className="border-b border-slate-100 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                   <th className="px-4 py-3">{t('tokensPanel.usage.colGig', 'Gig')}</th>
-                  <th className="px-4 py-3">{t('tokensPanel.usage.colTokens', 'Tokens')}</th>
-                  <th className="px-4 py-3">{t('tokensPanel.usage.colRequests', 'Requêtes')}</th>
+                  <th className="px-4 py-3">{t('tokensPanel.usage.colDate', 'Date')}</th>
+                  <th className="px-4 py-3">{t('tokensPanel.usage.colTime', 'Heure')}</th>
                   <th className="px-4 py-3 text-right">
-                    {t('tokensPanel.usage.colLast', 'Dernier usage')}
+                    {t('tokensPanel.usage.colQuantity', 'Quantité')}
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 text-sm">
-                {gigUsage.map((row) => (
-                  <tr key={row.gigId || 'none'} className="hover:bg-slate-50/80">
+                {gigUsageEvents.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50/80">
                     <td className="px-4 py-3">
-                      <div className="font-medium text-slate-900">{row.title}</div>
-                      {row.gigId && (
-                        <div className="mt-0.5 font-mono text-[10px] text-slate-400">{row.gigId}</div>
+                      <div className="font-medium text-slate-900">{row.gigTitle}</div>
+                      {row.tool && (
+                        <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                          {row.tool}
+                        </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-semibold tabular-nums text-slate-900">
+                    <td className="px-4 py-3 tabular-nums text-slate-700">
+                      {formatUsageDate(row.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-slate-700">
+                      {formatUsageTime(row.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold tabular-nums text-slate-900">
                       {formatAiTokensBalance(row.tokensUsed)}
                       <span className="ml-1 text-[10px] font-normal text-slate-400">
-                        ({row.tokensUsed.toLocaleString('fr-FR')})
+                        ({row.tokensUsed.toLocaleString(dateLocale)})
                       </span>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-slate-600">{row.requests}</td>
-                    <td className="px-4 py-3 text-right text-xs text-slate-500">
-                      {row.lastUsedAt
-                        ? new Date(row.lastUsedAt).toLocaleString('fr-FR')
-                        : '—'}
                     </td>
                   </tr>
                 ))}
