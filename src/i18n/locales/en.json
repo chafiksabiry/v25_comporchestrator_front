@@ -2006,6 +2006,17 @@
         "Date_of_Birth": "Date of birth"
       }
     },
+    "schemaDiff": {
+      "badge": "New file",
+      "title": "Different columns detected",
+      "desc": "This file has {{current}} columns (previously {{previous}}). Added: {{added}} · Missing: {{removed}}.",
+      "added": "{{count}} new",
+      "removed": "{{count}} missing",
+      "leadsSafe": "Already imported leads are not deleted. Merge keeps the previous display schema; Replace rebuilds from this file.",
+      "merge": "Merge",
+      "replace": "Replace schema",
+      "cancel": "Cancel"
+    },
     "analysis": {
       "title": "AI Processing Analysis",
       "totalFound": "Total Found",

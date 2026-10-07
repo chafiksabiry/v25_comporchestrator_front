@@ -199,13 +199,28 @@ function MappingCheckbox({
   );
 }
 
+interface SchemaDiff {
+  hasSavedSchema: boolean;
+  columnsChanged: boolean;
+  added: string[];
+  removed: string[];
+  previousHeaderCount: number;
+  currentHeaderCount: number;
+}
+
 interface FileColumnAnalyzeResult {
   headers: string[];
   sampleRows: Record<string, string>[];
   suggestedMapping: ColumnMapping;
+  savedMapping?: ColumnMapping | null;
+  savedCustomFieldLabels?: Record<string, string>;
+  savedVisibility?: LeadFieldVisibility;
+  schemaDiff?: SchemaDiff;
   fields?: string[];
   meta?: { totalRows?: number; fileName?: string };
 }
+
+type SchemaImportMode = 'merge' | 'replace';
 
 const PREVIEW_PAGE_SIZE = 25;
 const MAX_VALIDATION_ERRORS = 40;
@@ -731,6 +746,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [selectedHarxTarget, setSelectedHarxTarget] = useState<string | null>(null);
   /** Left-panel header whose → picker is open (only when no empty/selected target). */
   const [moveRightPickerHeader, setMoveRightPickerHeader] = useState<string | null>(null);
+  /** Second-file schema strategy when columns differ from the gig's saved schema. */
+  const [schemaImportMode, setSchemaImportMode] = useState<SchemaImportMode>('replace');
+  const [schemaDiffPrompt, setSchemaDiffPrompt] = useState<{
+    diff: SchemaDiff;
+    analyzeResult: FileColumnAnalyzeResult;
+    file: File;
+    preservedLeads: Lead[];
+    preservedFiltered: Lead[];
+  } | null>(null);
   const [isSavingLeads, setIsSavingLeads] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
@@ -1098,6 +1122,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     setMappingConflict(null);
     setSelectedHarxTarget(null);
     setMoveRightPickerHeader(null);
+    setSchemaDiffPrompt(null);
   };
 
   const loadGigFieldVisibility = async (gigId: string) => {
@@ -1353,6 +1378,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     formData.append('visibility', JSON.stringify(fieldVisibility));
     formData.append('extraColumns', JSON.stringify(extraEntries));
     formData.append('extraColumnLabels', JSON.stringify(extraColumnLabels));
+    formData.append('schemaMode', schemaImportMode);
     formData.append('gigId', gigId);
 
     updateRealProgress(40, t('uploadContacts.mapping.applying'));
@@ -1730,6 +1756,89 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
 
+  const openMappingFromAnalyze = (
+    analyzeResult: FileColumnAnalyzeResult,
+    mode: SchemaImportMode,
+    preservedLeads: Lead[],
+    preservedFiltered: Lead[]
+  ) => {
+    const headers = analyzeResult.headers || [];
+    const suggested = analyzeResult.suggestedMapping || {};
+    const allowedFields = new Set<string>(
+      Array.isArray(analyzeResult.fields) && analyzeResult.fields.length
+        ? analyzeResult.fields.filter((f: string) =>
+            (HARX_IMPORT_FIELDS as readonly string[]).includes(f)
+          )
+        : [...HARX_IMPORT_FIELDS]
+    );
+    const initialMapping: ColumnMapping = {};
+    headers.forEach((header) => {
+      const suggestedField = suggested[header] || '';
+      initialMapping[header] = allowedFields.has(suggestedField) ? suggestedField : '';
+    });
+
+    setSchemaImportMode(mode);
+    setMappingHeaders(headers);
+    setMappingSamples(analyzeResult.sampleRows || []);
+    setColumnMapping(initialMapping);
+    setMappingFields([...allowedFields]);
+    setMappingTotalRows(Number(analyzeResult.meta?.totalRows || 0));
+
+    const savedLabels =
+      analyzeResult.savedCustomFieldLabels &&
+      typeof analyzeResult.savedCustomFieldLabels === 'object'
+        ? analyzeResult.savedCustomFieldLabels
+        : {};
+    const savedVis = analyzeResult.savedVisibility;
+
+    if (mode === 'merge') {
+      if (savedVis) {
+        setFieldVisibility({
+          ...defaultLeadFieldVisibility(),
+          company: {
+            ...defaultLeadFieldVisibility().company,
+            ...(savedVis.company || {}),
+          },
+          rep: {
+            ...defaultLeadFieldVisibility().rep,
+            ...(savedVis.rep || {}),
+          },
+        });
+      }
+      // Restore extras for columns still present in this file and not HARX-mapped.
+      const restoredExtras: SavedExtraColumnsMap = {};
+      for (const [header, label] of Object.entries(savedLabels)) {
+        const h = String(header || '').trim();
+        if (!h || !headers.includes(h)) continue;
+        if (initialMapping[h]) continue;
+        restoredExtras[h] = {
+          label: String(label || defaultExtraDisplayTitle(h)).trim() || h,
+        };
+      }
+      setSavedExtraColumns(restoredExtras);
+      setCustomFieldLabels((prev) => ({ ...prev, ...savedLabels }));
+    } else {
+      // Replace schema display settings for this import session.
+      setFieldVisibility(defaultLeadFieldVisibility());
+      setSavedExtraColumns({});
+      // Keep existing labels in memory for already-imported leads until save overwrites.
+    }
+
+    setShowMappingStep(true);
+    setSchemaDiffPrompt(null);
+
+    if (preservedLeads.length > 0) {
+      setLeads(preservedLeads);
+      setFilteredLeads(preservedFiltered);
+    }
+  };
+
+  const resolveSchemaDiffPrompt = (mode: SchemaImportMode) => {
+    if (!schemaDiffPrompt) return;
+    const { analyzeResult, preservedLeads, preservedFiltered } = schemaDiffPrompt;
+    openMappingFromAnalyze(analyzeResult, mode, preservedLeads, preservedFiltered);
+  };
+
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -1760,6 +1869,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       setShowFileName(true);
       setSelectedFile(file);
       clearMappingState();
+      setSchemaImportMode('replace');
 
       // Reset OpenAI processing progress
       resetProgress();
@@ -1787,37 +1897,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
         // Analyze columns first — user confirms mapping before import
         const analyzeResult = await analyzeFileForMapping(file);
-        const headers = analyzeResult.headers || [];
-        const suggested = analyzeResult.suggestedMapping || {};
-        const allowedFields = new Set<string>(
-          Array.isArray(analyzeResult.fields) && analyzeResult.fields.length
-            ? analyzeResult.fields.filter((f: string) =>
-                (HARX_IMPORT_FIELDS as readonly string[]).includes(f)
-              )
-            : [...HARX_IMPORT_FIELDS]
-        );
-        const initialMapping: ColumnMapping = {};
-        headers.forEach((header) => {
-          const suggestedField = suggested[header] || '';
-          initialMapping[header] = allowedFields.has(suggestedField) ? suggestedField : '';
-        });
-
-        setMappingHeaders(headers);
-        setMappingSamples(analyzeResult.sampleRows || []);
-        setColumnMapping(initialMapping);
-        setMappingFields([...allowedFields]);
-        setMappingTotalRows(Number(analyzeResult.meta?.totalRows || 0));
-        setShowMappingStep(true);
-
-        // Restore existing leads after analyze
-        if (currentLeads.length > 0) {
-          setLeads(currentLeads);
-          setFilteredLeads(currentFilteredLeads);
-        }
+        const diff = analyzeResult.schemaDiff;
 
         setIsProcessing(false);
         setUploadProgress(100);
-
         document.body.removeAttribute('data-processing');
         processingRef.current = false;
         localStorage.removeItem('uploadProcessing');
@@ -1827,6 +1910,25 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         if (fileInput) {
           fileInput.value = '';
         }
+
+        if (diff?.columnsChanged) {
+          setSchemaDiffPrompt({
+            diff,
+            analyzeResult,
+            file,
+            preservedLeads: currentLeads,
+            preservedFiltered: currentFilteredLeads,
+          });
+          return;
+        }
+
+        // Same columns (or first import): merge suggestions silently when a schema exists.
+        openMappingFromAnalyze(
+          analyzeResult,
+          diff?.hasSavedSchema ? 'merge' : 'replace',
+          currentLeads,
+          currentFilteredLeads
+        );
       } catch (error: any) {
         console.error('Error uploading file:', error);
         const errorMessage = error.message || t('uploadContacts.errors.uploadError');
@@ -4774,6 +4876,126 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             setViewingLeadDetail(null);
           }}
         />
+      )}
+
+      {/* Second-file schema: Fusionner vs Remplacer */}
+      {schemaDiffPrompt && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="schema-diff-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]"
+            aria-label={t('common.close', 'Fermer')}
+            onClick={() => {
+              setSchemaDiffPrompt(null);
+              setSelectedFile(null);
+              setShowFileName(false);
+            }}
+          />
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-[0_32px_80px_-20px_rgba(0,0,0,0.45)] ring-1 ring-black/5">
+            <div className="h-1.5 w-full bg-gradient-to-r from-harx-500 via-rose-500 to-orange-400" />
+            <div className="px-6 pt-6 pb-7">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-harx-600 mb-2">
+                {t('uploadContacts.schemaDiff.badge')}
+              </p>
+              <h3
+                id="schema-diff-title"
+                className="text-lg font-black text-slate-900 tracking-tight"
+              >
+                {t('uploadContacts.schemaDiff.title')}
+              </h3>
+              <p className="mt-2 text-sm font-medium text-slate-500 leading-relaxed">
+                {t('uploadContacts.schemaDiff.desc', {
+                  previous: schemaDiffPrompt.diff.previousHeaderCount,
+                  current: schemaDiffPrompt.diff.currentHeaderCount,
+                  added: schemaDiffPrompt.diff.added.length,
+                  removed: schemaDiffPrompt.diff.removed.length,
+                })}
+              </p>
+              {(schemaDiffPrompt.diff.added.length > 0 ||
+                schemaDiffPrompt.diff.removed.length > 0) && (
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {schemaDiffPrompt.diff.added.length > 0 && (
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                      <p className="font-black uppercase tracking-wider text-emerald-700 mb-1.5">
+                        {t('uploadContacts.schemaDiff.added', {
+                          count: schemaDiffPrompt.diff.added.length,
+                        })}
+                      </p>
+                      <ul className="space-y-1 text-slate-600 max-h-28 overflow-y-auto">
+                        {schemaDiffPrompt.diff.added.slice(0, 8).map((h) => (
+                          <li key={`added-${h}`} className="truncate" title={h}>
+                            + {h}
+                          </li>
+                        ))}
+                        {schemaDiffPrompt.diff.added.length > 8 ? (
+                          <li className="text-slate-400">
+                            +{schemaDiffPrompt.diff.added.length - 8}…
+                          </li>
+                        ) : null}
+                      </ul>
+                    </div>
+                  )}
+                  {schemaDiffPrompt.diff.removed.length > 0 && (
+                    <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3">
+                      <p className="font-black uppercase tracking-wider text-amber-700 mb-1.5">
+                        {t('uploadContacts.schemaDiff.removed', {
+                          count: schemaDiffPrompt.diff.removed.length,
+                        })}
+                      </p>
+                      <ul className="space-y-1 text-slate-600 max-h-28 overflow-y-auto">
+                        {schemaDiffPrompt.diff.removed.slice(0, 8).map((h) => (
+                          <li key={`removed-${h}`} className="truncate" title={h}>
+                            − {h}
+                          </li>
+                        ))}
+                        {schemaDiffPrompt.diff.removed.length > 8 ? (
+                          <li className="text-slate-400">
+                            +{schemaDiffPrompt.diff.removed.length - 8}…
+                          </li>
+                        ) : null}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+              <p className="mt-4 text-xs text-slate-400 leading-relaxed">
+                {t('uploadContacts.schemaDiff.leadsSafe')}
+              </p>
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => resolveSchemaDiffPrompt('merge')}
+                  className="rounded-2xl bg-gradient-to-r from-harx-500 to-rose-600 px-4 py-3 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-harx-500/30 hover:brightness-110"
+                >
+                  {t('uploadContacts.schemaDiff.merge')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => resolveSchemaDiffPrompt('replace')}
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50"
+                >
+                  {t('uploadContacts.schemaDiff.replace')}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSchemaDiffPrompt(null);
+                  setSelectedFile(null);
+                  setShowFileName(false);
+                }}
+                className="mt-3 w-full text-center text-xs font-bold text-slate-400 hover:text-slate-600"
+              >
+                {t('uploadContacts.schemaDiff.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Edit lead modal */}
