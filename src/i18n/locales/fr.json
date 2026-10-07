@@ -282,7 +282,7 @@
         "hintNoHuman": "Aucune confirmation (touche 1). Ce n’était pas un vrai décroché sur le téléphone.",
         "hintNeverRang": "Le destinataire n'a pas sonné. Vérifiez le numéro appelé, ou que la ligne est bien autorisée pour les appels sortants.",
         "stepConnecting": "Connexion",
-        "stepRinging": "Sonnerie (vibreur)",
+        "stepRinging": "Sonnerie",
         "stepActive": "Décroché / en cours",
         "stepEnded": "Raccroché",
         "hangup": "Raccrocher",
