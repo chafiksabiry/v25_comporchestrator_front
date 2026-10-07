@@ -1938,7 +1938,7 @@
       "requiredHint": "Mappez email, téléphone, adresse, code postal, ville, date de naissance, et soit un nom complet, soit prénom + nom.",
       "requiredBadge": "requis",
       "missingIdentity": "Téléphone ou email requis",
-      "missingName": "Nom complet OU prénom + nom requis",
+      "missingName": "Nom complet OU (prénom + nom) requis — avec prénom+nom, le nom complet est généré automatiquement",
       "previewTitle": "Aperçu mappé",
       "rowsInFile": "{{count}} lignes dans le fichier",
       "fields": {

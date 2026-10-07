@@ -1038,13 +1038,24 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     if (REQUIRED_SCALAR_FIELDS.includes(field as (typeof REQUIRED_SCALAR_FIELDS)[number])) {
       return true;
     }
-    // Name: Deal_Name alone OR First+Last pair
+    // Name: Deal_Name alone OR First+Last pair.
+    // When empty, only mark Deal_Name as required (primary path) so First/Last
+    // are not all three screaming "*". Once one of First/Last is mapped,
+    // require the other of the pair instead.
+    const fields = mappedFieldSet(mapping);
+    const hasFullName = fields.has('Deal_Name');
+    const hasFirstLast = fields.has('First_Name') && fields.has('Last_Name');
+
     if (field === 'Deal_Name') {
-      const fields = mappedFieldSet(mapping);
-      return !(fields.has('First_Name') && fields.has('Last_Name'));
+      return !hasFirstLast;
     }
-    if (field === 'First_Name' || field === 'Last_Name') {
-      return !mappedFieldSet(mapping).has('Deal_Name');
+    if (field === 'First_Name') {
+      if (hasFullName) return false;
+      return fields.has('Last_Name') && !fields.has('First_Name');
+    }
+    if (field === 'Last_Name') {
+      if (hasFullName) return false;
+      return fields.has('First_Name') && !fields.has('Last_Name');
     }
     return false;
   };
@@ -1507,7 +1518,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         companyId: lead.companyId?.$oid || currentCompanyId,
         gigId: lead.gigId?.$oid || currentGigId,
         Last_Activity_Time: lead.Last_Activity_Time || null,
-        Deal_Name: lead.Deal_Name || "Unnamed Lead",
+        First_Name: lead.First_Name || '',
+        Last_Name: lead.Last_Name || '',
+        Deal_Name:
+          lead.Deal_Name ||
+          `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim() ||
+          'Unnamed Lead',
         Email_1: lead.Email_1 || "no-email@placeholder.com",
         Phone: (() => {
           const raw = lead.Phone;
@@ -1520,8 +1536,6 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         Activity_Tag: lead.Activity_Tag || '',
         Telephony: lead.Telephony || '',
         Project_Tags: lead.Project_Tags || [],
-        First_Name: lead.First_Name || '',
-        Last_Name: lead.Last_Name || '',
         Address: lead.Address || '',
         Postal_Code: lead.Postal_Code || '',
         City: lead.City || '',
