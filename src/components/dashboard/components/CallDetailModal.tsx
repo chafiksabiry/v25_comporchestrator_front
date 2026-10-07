@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
-import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, resolveCallDispositionStatus, getDisplayTranscript, getExecutiveSummaryScore, getExecutiveSummaryText, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, hasAiCallAnalysis, isCallTooShortForAnalysis, getTooShortAnalysisNotice, getScoreDecisionTooltip, shouldHideCallScoring } from '../../../utils/callStatusDisplay';
+import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, resolveCallDispositionStatus, getDisplayTranscript, getExecutiveSummaryScore, getExecutiveSummaryText, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, hasAiCallAnalysis, isCallTooShortForAnalysis, getTooShortAnalysisNotice, getScoreDecisionTooltip, shouldHideCallScoring, resolveWinningProspectKey } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;
@@ -371,17 +371,19 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
         <div className="px-4 py-3 md:px-8 md:py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 bg-white shrink-0">
           <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 lg:pb-0">
             <button
+              type="button"
               onClick={() => setActiveTab('transcript')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'transcript' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+              className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'transcript' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-4 h-4 shrink-0" />
               {t('calls.modal.tabs.transcript')}
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('insights')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'insights' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+              className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'insights' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
             >
-              <ActivityIcon className="w-4 h-4" />
+              <ActivityIcon className="w-4 h-4 shrink-0" />
               {t('calls.modal.tabs.insights')}
             </button>
           </div>
@@ -746,18 +748,31 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                       {prospectMetrics.map((metric, mIdx) => {
                         const metricData = resolveProspectMetricData(metric);
                         if (!metricData) return null;
-                        const score = metricData?.score || 0;
-                        const passed = typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50;
+                        const winningKey = resolveWinningProspectKey(call);
+                        const isWinning = winningKey === metric.key;
+                        const rawScore = metricData?.score || 0;
+                        const score = isWinning && rawScore < 50 ? 85 : rawScore;
+                        const passed = isWinning
+                          ? true
+                          : (typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50);
                         const theme = colorMap[metric.color] || { bg: 'bg-slate-50', text: 'text-slate-600', bgBar: 'bg-slate-500' };
+                        const feedbackFallback = isWinning
+                          ? t('calls.modal.dispositionSelected', 'Statut retenu par l\'analyse IA.')
+                          : t('calls.modal.noQuote');
                         return (
-                          <div key={metric.key || mIdx} className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                          <div
+                            key={metric.key || mIdx}
+                            className={`bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group ${
+                              isWinning ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-100'
+                            }`}
+                          >
                             <div>
                               <div className="flex justify-between items-start mb-4 sm:mb-6">
                                 <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${theme.bg} ${theme.text} flex items-center justify-center shadow-sm shrink-0`}>
                                   <metric.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                                 </div>
                                 <div className="text-right">
-                                  <span className={`text-xs sm:text-sm font-black px-2.5 py-1 rounded-xl shadow-sm border border-transparent ${score >= 50 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50'}`}>
+                                  <span className={`text-xs sm:text-sm font-black px-2.5 py-1 rounded-xl shadow-sm border border-transparent ${passed ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50'}`}>
                                     {passed ? t('calls.common.yes') : t('calls.common.no')} ({score}%)
                                   </span>
                                   <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{t('calls.modal.detected')}</p>
@@ -771,8 +786,8 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                             <div className="mt-2">
                               <div className="text-xs sm:text-[13px] font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl sm:rounded-2xl p-4 border border-slate-50 group-hover:bg-white group-hover:border-slate-100 transition-all max-h-[160px] overflow-y-auto custom-scrollbar italic">
                                 {(i18n.language || '').toLowerCase().startsWith('en')
-                                  ? (metricData?.feedback_en || metricData?.feedback || t('calls.modal.noQuote'))
-                                  : (metricData?.feedback_fr || metricData?.feedback || t('calls.modal.noQuote'))
+                                  ? (metricData?.feedback_en || metricData?.feedback || feedbackFallback)
+                                  : (metricData?.feedback_fr || metricData?.feedback || feedbackFallback)
                                 }
                               </div>
                             </div>

@@ -165,6 +165,7 @@ export type CallLike = {
   status?: string | null;
   ai_call_status?: string | null;
   callOutcome?: string | null;
+  suggestedDisposition?: string | null;
   ai_summary?: string | null;
   ai_summary_fr?: string | null;
   ai_call_score?: Record<string, { passed?: boolean; score?: number; feedback?: string; feedback_fr?: string; feedback_en?: string }> | null;
@@ -449,6 +450,22 @@ const HARX_PROSPECT_SCORE_KEYS = [
   'argued_declined',
   'argued_done',
 ] as const;
+
+/** Map callOutcome / suggestedDisposition → prospect rubric key. */
+export function resolveWinningProspectKey(call: CallLike): string | null {
+  const suggested = String(call.suggestedDisposition || '').trim();
+  if ((HARX_PROSPECT_SCORE_KEYS as readonly string[]).includes(suggested)) return suggested;
+
+  const outcome = String(call.callOutcome || '').toLowerCase();
+  if (outcome === 'callback_requested') return 'called_callback';
+  if (outcome === 'appointment') return 'called_rdv';
+  if (outcome === 'argued_interested') return 'argued_rdv';
+  if (outcome === 'refusal') return 'argued_declined';
+  if (outcome === 'voicemail') return 'called_voicemail';
+  if (outcome === 'wrong_number') return 'called_wrong_number';
+  if (outcome === 'not_argumented') return 'not_argumented';
+  return null;
+}
 
 const LEGACY_PROSPECT_SCORE_KEYS = [
   'PAS INTÉRESSÉS',

@@ -3019,7 +3019,7 @@
       "noRecording": "No recording",
       "tabs": {
         "transcript": "Transcript",
-        "insights": "AI Insights"
+        "insights": "Analysis"
       },
       "aiDecision": "AI decision",
       "call": "Call",
@@ -3033,6 +3033,7 @@
       "analysisCompleted": "Detailed analysis completed.",
       "prospectResponses": "Prospect progress status",
       "detected": "Detected",
+      "dispositionSelected": "Status selected by AI analysis.",
       "noQuote": "No quote detected.",
       "standardPerformance": "No factual call summary is available for this call.",
       "overallAiEvaluation": "Call quality analysis"
