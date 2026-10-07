@@ -3321,6 +3321,24 @@
         "description": "Healthcare training: patient care, regulations and service quality.",
         "duration": "110+ hours",
         "features": ["Patient care standards", "Healthcare regulations", "Medical terminology", "Service excellence", "Technology systems", "Patient communication"]
+      },
+      "collections": {
+        "name": "Debt collection",
+        "description": "Collections training: legal framework, scripts and negotiation for amicable recovery.",
+        "duration": "70+ hours",
+        "features": ["Legal framework and compliance", "Negotiation techniques", "Objection handling", "Call scripts and process", "Case follow-up", "Ethics and contact-centre quality"]
+      },
+      "satisfaction": {
+        "name": "Satisfaction survey / Poll",
+        "description": "Survey and poll training: active listening, questionnaires and feedback delivery.",
+        "duration": "50+ hours",
+        "features": ["Survey and poll methods", "Active listening and reframing", "Questionnaire administration", "Refusal and objection handling", "Reporting and feedback", "Call quality and compliance"]
+      },
+      "welcomeCall": {
+        "name": "Information / Welcome Call",
+        "description": "Welcome and information call training: client onboarding, clarity and relationship.",
+        "duration": "40+ hours",
+        "features": ["Greeting and first contact", "Information scripts", "Client onboarding", "Needs clarification", "Routing and transfer", "Relationship excellence"]
       }
     }
   },

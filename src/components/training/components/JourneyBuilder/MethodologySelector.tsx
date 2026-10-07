@@ -17,6 +17,9 @@ import {
   Brain,
   BookOpen,
   Zap,
+  HandCoins,
+  ClipboardList,
+  PhoneIncoming,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { TrainingMethodology } from '../../types/methodology';
@@ -67,7 +70,15 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
     const soon = (
       id: string,
       icon: LucideIcon,
-      key: 'auto' | 'property' | 'life' | 'financial' | 'healthcare',
+      key:
+        | 'auto'
+        | 'property'
+        | 'life'
+        | 'financial'
+        | 'healthcare'
+        | 'collections'
+        | 'satisfaction'
+        | 'welcomeCall',
       certificationLevels: number,
     ): IndustryCard => ({
       id,
@@ -111,6 +122,9 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
         duration: t('trainingMethodology.industries.health.duration'),
         certificationLevels: health.certificationPath.levels.length,
       },
+      soon('collections', HandCoins, 'collections', 3),
+      soon('satisfaction-survey', ClipboardList, 'satisfaction', 2),
+      soon('welcome-call', PhoneIncoming, 'welcomeCall', 2),
       soon('auto-insurance', Car, 'auto', 3),
       soon('property-insurance', Home, 'property', 3),
       soon('life-insurance', Shield, 'life', 4),

@@ -3321,6 +3321,24 @@
         "description": "Formation au secteur de la santé : prise en charge, réglementation et qualité de service.",
         "duration": "110+ heures",
         "features": ["Standards de prise en charge", "Réglementation santé", "Terminologie médicale", "Excellence de service", "Systèmes informatiques", "Communication avec le patient"]
+      },
+      "collections": {
+        "name": "Recouvrement",
+        "description": "Formation au recouvrement amiable et contentieux : cadre légal, scripts et négociation.",
+        "duration": "70+ heures",
+        "features": ["Cadre légal et conformité", "Techniques de négociation", "Gestion des objections", "Scripts et process d’appel", "Suivi des dossiers", "Qualité et éthique en centre de contact"]
+      },
+      "satisfaction": {
+        "name": "Enquête de satisfaction / Sondage",
+        "description": "Formation aux enquêtes et sondages : écoute client, questionnaires et restitution.",
+        "duration": "50+ heures",
+        "features": ["Méthodes d’enquête et sondage", "Écoute active et reformulation", "Administration de questionnaires", "Gestion des refus et objections", "Restitution et reporting", "Qualité d’appel et conformité"]
+      },
+      "welcomeCall": {
+        "name": "Information / Welcome Call",
+        "description": "Formation aux appels d’accueil et d’information : onboarding client, clarté et relation.",
+        "duration": "40+ heures",
+        "features": ["Accueil et premier contact", "Scripts d’information", "Onboarding client", "Clarification des besoins", "Orientation et transfert", "Excellence relationnelle"]
       }
     }
   },
