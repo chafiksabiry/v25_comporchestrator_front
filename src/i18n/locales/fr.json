@@ -2006,6 +2006,17 @@
         "Date_of_Birth": "Date de naissance"
       }
     },
+    "schemaDiff": {
+      "badge": "Nouveau fichier",
+      "title": "Colonnes différentes détectées",
+      "desc": "Ce fichier a {{current}} colonnes (auparavant {{previous}}). Ajoutées : {{added}} · Absentes : {{removed}}.",
+      "added": "{{count}} nouvelles",
+      "removed": "{{count}} absentes",
+      "leadsSafe": "Les leads déjà importés ne sont pas effacés. Fusionner garde l’ancien schéma d’affichage ; Remplacer repart sur ce fichier.",
+      "merge": "Fusionner",
+      "replace": "Remplacer le schéma",
+      "cancel": "Annuler"
+    },
     "analysis": {
       "title": "Analyse du Traitement IA",
       "totalFound": "Total Trouvé",
