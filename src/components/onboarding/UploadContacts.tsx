@@ -664,6 +664,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [mappingError, setMappingError] = useState<string | null>(null);
   const [dragOverField, setDragOverField] = useState<string | null>(null);
   const [draggingHeader, setDraggingHeader] = useState<string | null>(null);
+  /** Ref keeps the dragged header across re-renders (HTML5 DnD + React state races). */
+  const draggingHeaderRef = useRef<string | null>(null);
   const [fieldVisibility, setFieldVisibility] = useState<LeadFieldVisibility>(() =>
     defaultLeadFieldVisibility()
   );
@@ -677,6 +679,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     field: string;
     existingHeader: string;
   } | null>(null);
+  /** Left-panel header whose → picker is open. */
+  const [moveRightPickerHeader, setMoveRightPickerHeader] = useState<string | null>(null);
+  /** HARX field whose ← picker (pull from file columns) is open. */
+  const [moveLeftPickerField, setMoveLeftPickerField] = useState<string | null>(null);
   const [isSavingLeads, setIsSavingLeads] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
@@ -1039,8 +1045,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     setIsApplyingMapping(false);
     setDragOverField(null);
     setDraggingHeader(null);
+    draggingHeaderRef.current = null;
     setSavedExtraColumns({});
     setMappingConflict(null);
+    setMoveRightPickerHeader(null);
+    setMoveLeftPickerField(null);
   };
 
   const loadGigFieldVisibility = async (gigId: string) => {
@@ -1447,36 +1456,87 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const getSavedExtraLabel = (header: string) =>
     String(savedExtraColumns[header]?.label || defaultExtraDisplayTitle(header) || header).trim();
 
+  const readDraggedHeader = (event: React.DragEvent) => {
+    const fromTransfer =
+      event.dataTransfer.getData('text/plain') ||
+      event.dataTransfer.getData('text') ||
+      '';
+    return String(fromTransfer || draggingHeaderRef.current || '').trim();
+  };
+
+  const allowHarxDrop = (event: React.DragEvent, field: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+      event.dataTransfer.dropEffect = 'move';
+    } catch {
+      /* ignore */
+    }
+    setDragOverField((current) => (current === field ? current : field));
+  };
+
+  const finishDrag = () => {
+    draggingHeaderRef.current = null;
+    setDraggingHeader(null);
+    setDragOverField(null);
+  };
+
   const handleDragHeaderStart = (event: React.DragEvent, header: string) => {
-    event.dataTransfer.setData('text/plain', header);
-    event.dataTransfer.effectAllowed = 'move';
+    event.stopPropagation();
+    draggingHeaderRef.current = header;
+    try {
+      event.dataTransfer.setData('text/plain', header);
+      event.dataTransfer.setData('text', header);
+      event.dataTransfer.effectAllowed = 'move';
+    } catch {
+      /* ignore */
+    }
+    // Sync state so drop-zone overlays / pointer-events-none apply before the cursor
+    // reaches occupied HARX chips (no scale/transform — that cancels Chrome DnD).
     setDraggingHeader(header);
   };
 
   const handleDragHeaderEnd = () => {
-    setDraggingHeader(null);
-    setDragOverField(null);
+    finishDrag();
+  };
+
+  const assignHeaderToHarxField = (header: string, field: string) => {
+    const trimmed = String(header || '').trim();
+    if (!trimmed || !field) return;
+
+    const existingHeader = headerForHarxField(field);
+    // Same mapping already in place — nothing to do.
+    if (existingHeader && existingHeader === trimmed) return;
+
+    if (existingHeader) {
+      // Occupied slot: ask replace (move) vs add as custom column.
+      setMappingConflict({ header: trimmed, field, existingHeader });
+      return;
+    }
+
+    handleMappingFieldChange(trimmed, field);
+    removeSavedExtraColumn(trimmed);
+  };
+
+  const moveHeaderToHarxField = (header: string, field: string) => {
+    setMoveRightPickerHeader(null);
+    setMoveLeftPickerField(null);
+    assignHeaderToHarxField(header, field);
+  };
+
+  const moveMappedHeaderLeft = (header: string) => {
+    setMoveRightPickerHeader(null);
+    setMoveLeftPickerField(null);
+    handleMappingFieldChange(header, '');
   };
 
   const handleDropOnHarxField = (event: React.DragEvent, field: string) => {
     event.preventDefault();
-    const header = event.dataTransfer.getData('text/plain') || draggingHeader;
-    setDragOverField(null);
-    setDraggingHeader(null);
+    event.stopPropagation();
+    const header = readDraggedHeader(event);
+    finishDrag();
     if (!header) return;
-
-    const existingHeader = headerForHarxField(field);
-    // Same mapping already in place — nothing to do.
-    if (existingHeader && existingHeader === header) return;
-
-    if (existingHeader) {
-      // Occupied slot: ask replace (move) vs add as custom column.
-      setMappingConflict({ header, field, existingHeader });
-      return;
-    }
-
-    handleMappingFieldChange(header, field);
-    removeSavedExtraColumn(header);
+    assignHeaderToHarxField(header, field);
   };
 
   const resolveMappingConflict = (action: 'replace' | 'add') => {
@@ -1494,9 +1554,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
   const handleDropOnUnmapped = (event: React.DragEvent) => {
     event.preventDefault();
-    const header = event.dataTransfer.getData('text/plain') || draggingHeader;
-    setDragOverField(null);
-    setDraggingHeader(null);
+    event.stopPropagation();
+    const header = readDraggedHeader(event);
+    finishDrag();
     if (!header) return;
     handleMappingFieldChange(header, '');
     removeSavedExtraColumn(header);
@@ -3323,9 +3383,20 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     }`}
                     onDragOver={(e) => {
                       e.preventDefault();
-                      setDragOverField('__unmapped__');
+                      try {
+                        e.dataTransfer.dropEffect = 'move';
+                      } catch {
+                        /* ignore */
+                      }
+                      setDragOverField((current) =>
+                        current === '__unmapped__' ? current : '__unmapped__'
+                      );
                     }}
-                    onDragLeave={() => setDragOverField((current) => (current === '__unmapped__' ? null : current))}
+                    onDragLeave={(e) => {
+                      const next = e.relatedTarget as Node | null;
+                      if (next && e.currentTarget.contains(next)) return;
+                      setDragOverField((current) => (current === '__unmapped__' ? null : current));
+                    }}
                     onDrop={handleDropOnUnmapped}
                   >
                     <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
@@ -3346,21 +3417,78 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                             draggable={!isApplyingMapping}
                             onDragStart={(e) => handleDragHeaderStart(e, header)}
                             onDragEnd={handleDragHeaderEnd}
-                            className={`cursor-grab active:cursor-grabbing rounded-xl border bg-white px-3 py-2.5 shadow-sm transition-all ${
+                            className={`select-none rounded-xl border bg-white px-3 py-2.5 shadow-sm ${
                               draggingHeader === header
-                                ? 'border-harx-400 opacity-60 scale-[0.98]'
-                                : 'border-slate-200 hover:border-harx-300 hover:shadow-md'
+                                ? 'border-harx-400 opacity-50'
+                                : moveRightPickerHeader === header
+                                  ? 'border-harx-400 ring-2 ring-harx-100'
+                                  : 'border-slate-200 hover:border-harx-300 hover:shadow-md'
                             }`}
                           >
                             <div className="flex items-start gap-2">
-                              <GripVertical className="h-4 w-4 text-slate-300 mt-0.5 shrink-0" />
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold text-slate-800 truncate">{header}</p>
-                                <p className="text-xs text-slate-500 truncate" title={getMappingExample(header)}>
-                                  {t('uploadContacts.mapping.example')}: {getMappingExample(header)}
-                                </p>
+                              <div className="flex items-start gap-2 min-w-0 flex-1 cursor-grab active:cursor-grabbing pointer-events-none">
+                                <GripVertical className="h-4 w-4 text-slate-300 mt-0.5 shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-bold text-slate-800 truncate">{header}</p>
+                                  <p className="text-xs text-slate-500 truncate" title={getMappingExample(header)}>
+                                    {t('uploadContacts.mapping.example')}: {getMappingExample(header)}
+                                  </p>
+                                </div>
                               </div>
+                              <button
+                                type="button"
+                                draggable={false}
+                                disabled={isApplyingMapping}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMoveLeftPickerField(null);
+                                  setMoveRightPickerHeader((current) =>
+                                    current === header ? null : header
+                                  );
+                                }}
+                                className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-harx-200 bg-harx-50 text-harx-600 hover:bg-harx-100 hover:border-harx-300 disabled:opacity-50"
+                                title={t('uploadContacts.mapping.moveRight')}
+                                aria-label={t('uploadContacts.mapping.moveRight')}
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
                             </div>
+                            {moveRightPickerHeader === header ? (
+                              <div
+                                className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-2 space-y-1"
+                                onMouseDown={(e) => e.stopPropagation()}
+                              >
+                                <p className="px-1 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                  {t('uploadContacts.mapping.moveRightPick')}
+                                </p>
+                                {(mappingFields.length ? mappingFields : HARX_IMPORT_FIELDS).map(
+                                  (field) => {
+                                    const occupied = Boolean(headerForHarxField(field));
+                                    return (
+                                      <button
+                                        key={`${header}-to-${field}`}
+                                        type="button"
+                                        draggable={false}
+                                        onClick={() => moveHeaderToHarxField(header, field)}
+                                        className={`w-full text-left rounded-lg px-2.5 py-2 text-sm font-bold transition-colors ${
+                                          occupied
+                                            ? 'text-slate-700 hover:bg-amber-50 hover:text-amber-800'
+                                            : 'text-slate-800 hover:bg-white hover:shadow-sm'
+                                        }`}
+                                      >
+                                        {t(`uploadContacts.mapping.fields.${field}`, field)}
+                                        {occupied ? (
+                                          <span className="ml-2 text-[10px] font-black uppercase tracking-wider text-amber-600">
+                                            {t('uploadContacts.mapping.conflictBadge')}
+                                          </span>
+                                        ) : null}
+                                      </button>
+                                    );
+                                  }
+                                )}
+                              </div>
+                            ) : null}
                           </div>
                         ))
                       )}
@@ -3394,15 +3522,16 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         return (
                           <div
                             key={field}
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                              setDragOverField(field);
+                            onDragEnter={(e) => allowHarxDrop(e, field)}
+                            onDragOver={(e) => allowHarxDrop(e, field)}
+                            onDragLeave={(e) => {
+                              // Ignore leave when moving into a child of this drop zone.
+                              const next = e.relatedTarget as Node | null;
+                              if (next && e.currentTarget.contains(next)) return;
+                              setDragOverField((current) => (current === field ? null : current));
                             }}
-                            onDragLeave={() =>
-                              setDragOverField((current) => (current === field ? null : current))
-                            }
                             onDrop={(e) => handleDropOnHarxField(e, field)}
-                            className={`rounded-xl border px-3 py-2.5 transition-all ${
+                            className={`relative rounded-xl border px-3 py-2.5 ${
                               isOver
                                 ? 'border-harx-500 bg-harx-50 ring-2 ring-harx-200'
                                 : mappedHeader || showDerivedFullName
@@ -3412,7 +3541,20 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                     : 'border-dashed border-slate-200 bg-slate-50/50'
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                            {/* Full-zone catcher: occupied chips / checkboxes must not block drop */}
+                            {draggingHeader ? (
+                              <div
+                                className="absolute inset-0 z-20 rounded-xl"
+                                onDragEnter={(e) => allowHarxDrop(e, field)}
+                                onDragOver={(e) => allowHarxDrop(e, field)}
+                                onDrop={(e) => handleDropOnHarxField(e, field)}
+                              />
+                            ) : null}
+                            <div
+                              className={`flex items-center justify-between gap-2 mb-1.5 ${
+                                draggingHeader ? 'pointer-events-none' : ''
+                              }`}
+                            >
                               <span className="text-xs font-black uppercase tracking-wide text-slate-600">
                                 {t(`uploadContacts.mapping.fields.${field}`, field)}
                                 {isRequiredSlot && !mappedHeader && !showDerivedFullName ? (
@@ -3448,12 +3590,14 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                             </div>
                             {mappedHeader ? (
                               <div
-                                draggable={!isApplyingMapping}
+                                draggable={!isApplyingMapping && !draggingHeader}
                                 onDragStart={(e) => handleDragHeaderStart(e, mappedHeader)}
                                 onDragEnd={handleDragHeaderEnd}
-                                className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-white px-2.5 py-2 cursor-grab active:cursor-grabbing"
+                                className={`flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-white px-2.5 py-2 select-none ${
+                                  draggingHeader ? 'pointer-events-none' : ''
+                                }`}
                               >
-                                <div className="min-w-0 flex items-center gap-2">
+                                <div className="min-w-0 flex items-center gap-2 flex-1 cursor-grab active:cursor-grabbing pointer-events-none">
                                   <GripVertical className="h-3.5 w-3.5 text-slate-300 shrink-0" />
                                   <div className="min-w-0">
                                     <p className="text-sm font-bold text-slate-800 truncate">{mappedHeader}</p>
@@ -3462,17 +3606,39 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                     </p>
                                   </div>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleMappingFieldChange(mappedHeader, '')}
-                                  className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0"
-                                  aria-label={t('uploadContacts.mapping.unmap')}
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    draggable={false}
+                                    disabled={isApplyingMapping}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      moveMappedHeaderLeft(mappedHeader);
+                                    }}
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:border-slate-300"
+                                    title={t('uploadContacts.mapping.moveLeft')}
+                                    aria-label={t('uploadContacts.mapping.moveLeft')}
+                                  >
+                                    <ChevronLeft className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    draggable={false}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      moveMappedHeaderLeft(mappedHeader);
+                                    }}
+                                    className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                    aria-label={t('uploadContacts.mapping.unmap')}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
                               </div>
                             ) : showDerivedFullName ? (
-                              <div className="rounded-lg border border-emerald-200 bg-white px-2.5 py-2">
+                              <div className="rounded-lg border border-emerald-200 bg-white px-2.5 py-2 pointer-events-none">
                                 <p className="text-[10px] font-black uppercase tracking-wider text-emerald-600">
                                   {t('uploadContacts.mapping.autoFullName')}
                                 </p>
@@ -3484,9 +3650,49 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                 </p>
                               </div>
                             ) : (
-                              <p className="text-xs text-slate-400 italic py-1">
-                                {t('uploadContacts.mapping.dropHere')}
-                              </p>
+                              <div
+                                className={draggingHeader ? 'pointer-events-none' : ''}
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-xs text-slate-400 italic py-1">
+                                    {t('uploadContacts.mapping.dropHere')}
+                                  </p>
+                                  {availableFileHeaders.length > 0 ? (
+                                    <button
+                                      type="button"
+                                      disabled={isApplyingMapping}
+                                      onClick={() => {
+                                        setMoveRightPickerHeader(null);
+                                        setMoveLeftPickerField((current) =>
+                                          current === field ? null : field
+                                        );
+                                      }}
+                                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-harx-300 hover:text-harx-600"
+                                      title={t('uploadContacts.mapping.moveLeftPick')}
+                                      aria-label={t('uploadContacts.mapping.moveLeftPick')}
+                                    >
+                                      <ChevronLeft className="h-4 w-4" />
+                                    </button>
+                                  ) : null}
+                                </div>
+                                {moveLeftPickerField === field ? (
+                                  <div className="mt-2 rounded-xl border border-slate-200 bg-white p-2 space-y-1 max-h-40 overflow-y-auto">
+                                    <p className="px-1 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                      {t('uploadContacts.mapping.moveLeftPick')}
+                                    </p>
+                                    {availableFileHeaders.map((header) => (
+                                      <button
+                                        key={`${field}-from-${header}`}
+                                        type="button"
+                                        onClick={() => moveHeaderToHarxField(header, field)}
+                                        className="w-full text-left rounded-lg px-2.5 py-2 text-sm font-bold text-slate-800 hover:bg-slate-50"
+                                      >
+                                        {header}
+                                      </button>
+                                    ))}
+                                  </div>
+                                ) : null}
+                              </div>
                             )}
                           </div>
                         );
