@@ -2822,7 +2822,9 @@
       "enrolledTitle": "Représentants Inscrits",
       "assignedTo": "Agents actuellement assignés à",
       "matchScore": "SCORE DE CORRESPONDANCE",
-      "invited": "Invité"
+      "invited": "Invité",
+      "viewProfile": "Voir le profil",
+      "profileLoadError": "Impossible de charger le profil du représentant."
     }
   },
   "calls": {
