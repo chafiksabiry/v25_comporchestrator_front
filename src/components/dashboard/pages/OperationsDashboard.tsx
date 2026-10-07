@@ -33,6 +33,7 @@ import {
   ChevronDown,
   CreditCard,
   Hash,
+  Zap,
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -307,6 +308,8 @@ type OverviewResourcesSnapshot = {
     purchased: number;
     consumedSeconds: number;
     investedCents: number;
+    planMinutesIncluded?: number;
+    limitReached?: boolean;
   } | null;
   subscription: {
     planName: string;
@@ -675,11 +678,15 @@ export default function OperationsDashboard() {
           const data = json?.data ?? json;
           if (data) {
             const purchased = typeof data.purchasedMinutes === 'number' ? data.purchasedMinutes : 0;
+            const balance = typeof data.minutes === 'number' ? data.minutes : 0;
             minutes = {
-              balance: typeof data.minutes === 'number' ? data.minutes : 0,
+              balance,
               purchased,
               consumedSeconds: typeof data.consumedSeconds === 'number' ? data.consumedSeconds : 0,
               investedCents: computeMinutesPurchaseCents(purchased),
+              planMinutesIncluded:
+                typeof data.planMinutesIncluded === 'number' ? data.planMinutesIncluded : 0,
+              limitReached: Boolean(data.limitReached) || balance <= 0,
             };
           }
         }
@@ -3678,25 +3685,51 @@ function OverviewResourcesSection({
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-indigo-50/50 p-4">
+            <div
+              className={`rounded-2xl border p-4 ${
+                resources.minutes?.limitReached
+                  ? 'border-rose-200 bg-gradient-to-br from-rose-50/90 to-orange-50/50'
+                  : 'border-blue-100 bg-gradient-to-br from-blue-50/80 to-indigo-50/50'
+              }`}
+            >
               <div className="flex items-start justify-between gap-2 mb-3">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-blue-700">
+                <span
+                  className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider ${
+                    resources.minutes?.limitReached ? 'text-rose-700' : 'text-blue-700'
+                  }`}
+                >
                   <Clock size={12} />
                   {t('opsDashboard.overview.resources.minutes', 'Minutes')}
                 </span>
                 <Link
                   to="/dashboard/minutes"
-                  className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-600 hover:text-blue-800"
+                  className={`inline-flex items-center gap-0.5 text-[10px] font-bold ${
+                    resources.minutes?.limitReached
+                      ? 'text-rose-600 hover:text-rose-800'
+                      : 'text-blue-600 hover:text-blue-800'
+                  }`}
                 >
                   {t('opsDashboard.overview.detail', 'Détail')}
                   <ArrowUpRight size={11} />
                 </Link>
               </div>
-              <p className="text-2xl font-black text-slate-900 tabular-nums">
+              <p
+                className={`text-2xl font-black tabular-nums ${
+                  resources.minutes?.limitReached ? 'text-rose-600' : 'text-slate-900'
+                }`}
+              >
                 {resources.minutes
                   ? formatWalletMinutesBalance(resources.minutes.balance)
                   : '—'}
               </p>
+              {resources.minutes && (resources.minutes.planMinutesIncluded || 0) > 0 && (
+                <p className="mt-1 text-[11px] font-bold text-slate-500">
+                  {t('opsDashboard.overview.resources.planIncluded', 'Inclus plan')}:{' '}
+                  <span className="text-slate-800 tabular-nums">
+                    {formatWalletMinutesBalance(resources.minutes.planMinutesIncluded)}
+                  </span>
+                </p>
+              )}
               <p className="mt-1 text-[11px] font-bold text-slate-500">
                 {t('opsDashboard.overview.resources.minutesInvested', 'Investi')}:{' '}
                 <span className="text-slate-800 tabular-nums">
@@ -3709,6 +3742,15 @@ function OverviewResourcesSection({
                   ? formatBilledMinutesFromSeconds(resources.minutes.consumedSeconds)
                   : '—'}
               </p>
+              {resources.minutes?.limitReached && (
+                <Link
+                  to="/dashboard/minutes?buy=1"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-harx-500 to-orange-500 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white shadow-sm transition hover:opacity-95"
+                >
+                  <Zap size={12} />
+                  {t('opsDashboard.overview.resources.buyMinutes', 'Acheter des minutes')}
+                </Link>
+              )}
             </div>
 
             <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/80 to-fuchsia-50/40 p-4">
@@ -3731,6 +3773,14 @@ function OverviewResourcesSection({
                   <span className="inline-flex mt-2 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] font-black uppercase tracking-wider">
                     {resources.subscription.status}
                   </span>
+                  {(resources.minutes?.planMinutesIncluded || 0) > 0 && (
+                    <p className="mt-2 text-[11px] font-bold text-slate-500">
+                      {t('opsDashboard.overview.resources.planIncluded', 'Inclus plan')}:{' '}
+                      <span className="text-slate-800 tabular-nums">
+                        {formatWalletMinutesBalance(resources.minutes?.planMinutesIncluded)}
+                      </span>
+                    </p>
+                  )}
                 </>
               ) : (
                 <>

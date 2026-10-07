@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Clock,
   Zap,
@@ -74,7 +75,10 @@ interface MinutesState {
   companyId: string;
   minutes: number;
   purchasedMinutes?: number;
+  planMinutesIncluded?: number;
+  planName?: string | null;
   consumedSeconds?: number;
+  limitReached?: boolean;
 }
 
 interface CompanyCall {
@@ -261,6 +265,7 @@ function mapApiCallToCompanyCall(raw: Record<string, unknown>): CompanyCall {
 }
 
 export function MinutesCompanyPanel() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [minutesWallet, setMinutesWallet] = useState<MinutesState | null>(null);
   const [calls, setCalls] = useState<CompanyCall[]>([]);
   const [loading, setLoading] = useState(true);
@@ -268,6 +273,7 @@ export function MinutesCompanyPanel() {
 
   // Modals state
   const [showBuyModal, setShowBuyModal] = useState(false);
+  const [buyPromptShown, setBuyPromptShown] = useState(false);
   const [minutesToBuy, setMinutesToBuy] = useState('150');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
   const [submittingBuy, setSubmittingBuy] = useState(false);
@@ -292,11 +298,16 @@ export function MinutesCompanyPanel() {
         const minsData = await minsRes.json();
         if (minsData.success && minsData.data) {
           const data = minsData.data || {};
+          const balance = typeof data.minutes === 'number' ? data.minutes : 0;
           const safeWallet: MinutesState = {
             companyId: data.companyId || companyId,
-            minutes: typeof data.minutes === 'number' ? data.minutes : 0,
+            minutes: balance,
             purchasedMinutes: typeof data.purchasedMinutes === 'number' ? data.purchasedMinutes : 0,
-            consumedSeconds: typeof data.consumedSeconds === 'number' ? data.consumedSeconds : 0
+            planMinutesIncluded:
+              typeof data.planMinutesIncluded === 'number' ? data.planMinutesIncluded : 0,
+            planName: data.planName || null,
+            consumedSeconds: typeof data.consumedSeconds === 'number' ? data.consumedSeconds : 0,
+            limitReached: Boolean(data.limitReached) || balance <= 0,
           };
           setMinutesWallet(safeWallet);
 
@@ -343,6 +354,20 @@ export function MinutesCompanyPanel() {
   useEffect(() => {
     fetchData();
   }, [companyId]);
+
+  // Open buy modal once when navigated with ?buy=1 or when the minute limit is reached.
+  useEffect(() => {
+    if (loading || buyPromptShown) return;
+    const wantBuy = searchParams.get('buy') === '1';
+    if (!wantBuy && !minutesWallet?.limitReached) return;
+    setShowBuyModal(true);
+    setBuyPromptShown(true);
+    if (wantBuy) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('buy');
+      setSearchParams(next, { replace: true });
+    }
+  }, [loading, buyPromptShown, minutesWallet?.limitReached, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!showBuyModal) return;
@@ -466,10 +491,16 @@ export function MinutesCompanyPanel() {
           </button>
           <button
             onClick={() => setShowBuyModal(true)}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-blue-500/20 rounded-2xl transition-all duration-300 active:scale-95 flex items-center gap-2"
+            className={`px-6 py-3 text-white font-bold text-xs uppercase tracking-wider rounded-2xl transition-all duration-300 active:scale-95 flex items-center gap-2 ${
+              minutesWallet?.limitReached
+                ? 'bg-gradient-to-r from-rose-500 to-orange-500 shadow-md shadow-rose-500/25 animate-pulse'
+                : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md shadow-blue-500/20'
+            }`}
           >
             <Zap size={16} />
-            <span>Acheter des Minutes</span>
+            <span>
+              {minutesWallet?.limitReached ? 'Limite atteinte — Acheter' : 'Acheter des Minutes'}
+            </span>
           </button>
         </div>
       </div>
@@ -492,15 +523,25 @@ export function MinutesCompanyPanel() {
               <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
                 Volume d'appels restant
               </span>
-              <span className={`text-5xl font-black tracking-tight block ${(minutesWallet?.minutes ?? 0) < 0 ? 'text-rose-400' : ''}`}>
+              <span className={`text-5xl font-black tracking-tight block ${(minutesWallet?.minutes ?? 0) <= 0 ? 'text-rose-400' : ''}`}>
                 {formatWalletMinutesBalance(minutesWallet?.minutes ?? 0)}
               </span>
-              {(minutesWallet?.minutes ?? 0) < 0 && (
+              {(minutesWallet?.minutes ?? 0) <= 0 && (
                 <span className="text-[10px] text-rose-300 font-bold uppercase tracking-wider mt-1 block">
-                  Surconsommation — rechargez vos minutes
+                  Limite atteinte — achetez des minutes pour continuer
                 </span>
               )}
               <div className="mt-4 flex flex-wrap items-end gap-6">
+                {(minutesWallet?.planMinutesIncluded || 0) > 0 && (
+                  <div>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
+                      Inclus plan{minutesWallet?.planName ? ` ${minutesWallet.planName}` : ''}
+                    </span>
+                    <span className="text-2xl font-black tracking-tight text-emerald-300 tabular-nums">
+                      {formatWalletMinutesBalance(minutesWallet?.planMinutesIncluded ?? 0)}
+                    </span>
+                  </div>
+                )}
                 <div>
                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
                     Minutes achetées
