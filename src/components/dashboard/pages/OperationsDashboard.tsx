@@ -62,6 +62,11 @@ import { computeMinutesPurchaseCents } from '../../../utils/minutesPricing';
 // so swapping the CRUD provider never breaks the charts.
 import { getDashCallsApiBase } from '../lib/callsApiBase';
 import { VoiceAssistantOverviewCard } from '../components/VoiceAssistantOverviewCard';
+import {
+  extractGigAgentList,
+  getActiveAgentsForCompany,
+  getGigAgents,
+} from '../../../api/matching';
 
 // Idempotent: other dashboards already register the same scales, registering
 // again is a no-op so it's safe to keep it co-located with the chart.
@@ -975,6 +980,11 @@ export default function OperationsDashboard() {
     outcomes: AnalyticsOutcome[];
   } | null>(null);
   const [repsMonth, setRepsMonth] = useState<AnalyticsRep[] | null>(null);
+  /** Matching enrollment count (not call analytics). */
+  const [enrolledAgentsCount, setEnrolledAgentsCount] = useState(0);
+  const [enrolledAgentPreviews, setEnrolledAgentPreviews] = useState<
+    Array<{ id: string; name: string; gigId?: string }>
+  >([]);
   const [callbacksStats, setCallbacksStats] = useState<CallbacksStats | null>(null);
   // Diagnostic info shown only when `?debug=1` is appended to the URL —
   // makes it trivial to confirm which company/gig is being queried and
@@ -987,6 +997,120 @@ export default function OperationsDashboard() {
     todayStatus: number | null;
     todayBody: any;
   } | null>(null);
+
+  // Matching enrollments — source of truth for "Enrôlés" / active agents roster
+  // (not call analytics). Falls back to per-gig agents when company endpoint is empty.
+  useEffect(() => {
+    const companyId = Cookies.get('companyId')?.trim();
+    if (!companyId) {
+      setEnrolledAgentsCount(0);
+      setEnrolledAgentPreviews([]);
+      return;
+    }
+    let cancelled = false;
+
+    const resolveAgentId = (a: any): string =>
+      String(
+        a?.agentId?._id ||
+          a?.agentId ||
+          a?.agent?._id ||
+          a?.userId ||
+          a?._id ||
+          ''
+      );
+
+    const resolveAgentName = (a: any): string =>
+      String(
+        a?.agentId?.personalInfo?.name ||
+          a?.agent?.personalInfo?.name ||
+          a?.personalInfo?.name ||
+          a?.name ||
+          a?.agentName ||
+          a?.fullName ||
+          'Agent'
+      );
+
+    const resolveGigId = (a: any): string | undefined => {
+      const gid =
+        typeof a?.gigId === 'string'
+          ? a.gigId
+          : a?.gigId?._id || a?.gig?._id || a?.gig || undefined;
+      return gid ? String(gid) : undefined;
+    };
+
+    const isActiveEnrollment = (a: any): boolean => {
+      const status = String(
+        a?.enrollmentStatus || a?.status || a?.agentResponse || a?.agentInfo?.status || ''
+      ).toLowerCase();
+      if (!status) return true; // active-agents endpoint rows are already filtered
+      return ['active', 'enrolled', 'accepted', 'approved'].includes(status);
+    };
+
+    const toUniqueAgents = (rows: any[], requireActiveStatus: boolean) => {
+      const filtered =
+        selectedGigId && selectedGigId !== 'all'
+          ? rows.filter((a) => resolveGigId(a) === String(selectedGigId))
+          : rows;
+      const byAgent = new Map<string, { id: string; name: string; gigId?: string }>();
+      for (const a of filtered) {
+        if (requireActiveStatus && !isActiveEnrollment(a)) continue;
+        const id = resolveAgentId(a);
+        if (!id || byAgent.has(id)) continue;
+        byAgent.set(id, { id, name: resolveAgentName(a), gigId: resolveGigId(a) });
+      }
+      return byAgent;
+    };
+
+    (async () => {
+      try {
+        let agentsArray = extractGigAgentList(await getActiveAgentsForCompany(companyId));
+        let fromFallback = false;
+
+        // Fallback: company-wide endpoint empty → aggregate per gig (active/enrolled/accepted)
+        if (agentsArray.length === 0 && gigs.length > 0) {
+          fromFallback = true;
+          const gigIds =
+            selectedGigId && selectedGigId !== 'all'
+              ? [selectedGigId]
+              : gigs.map((g) => g._id).filter(Boolean);
+          const batches = await Promise.all(
+            gigIds.map(async (gigId) => {
+              try {
+                const [active, enrolled, accepted] = await Promise.all([
+                  getGigAgents(gigId, 'active').catch(() => []),
+                  getGigAgents(gigId, 'enrolled').catch(() => []),
+                  getGigAgents(gigId, 'accepted').catch(() => []),
+                ]);
+                return [
+                  ...extractGigAgentList(active),
+                  ...extractGigAgentList(enrolled),
+                  ...extractGigAgentList(accepted),
+                ].map((row) => ({ ...row, gigId: row.gigId || gigId }));
+              } catch {
+                return [] as any[];
+              }
+            })
+          );
+          agentsArray = batches.flat();
+        }
+
+        // Trust company active-agents rows; filter status only on gig fallback.
+        const byAgent = toUniqueAgents(agentsArray, fromFallback);
+        if (cancelled) return;
+        setEnrolledAgentsCount(byAgent.size);
+        setEnrolledAgentPreviews(Array.from(byAgent.values()).slice(0, 8));
+      } catch (err) {
+        console.warn('[OperationsDashboard] active-agents fetch failed', err);
+        if (!cancelled) {
+          setEnrolledAgentsCount(0);
+          setEnrolledAgentPreviews([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGigId, gigs]);
 
   useEffect(() => {
     const companyId = Cookies.get('companyId')?.trim();
@@ -1595,7 +1719,11 @@ export default function OperationsDashboard() {
           fmtDuration={fmtDuration}
         />
       ) : tab === 'agents' ? (
-        <TeamView reps={repsMonth} />
+        <TeamView
+          reps={repsMonth}
+          enrolledCount={enrolledAgentsCount}
+          enrolledPreviews={enrolledAgentPreviews}
+        />
       ) : (
         // ── "Vue globale" — top-level KPIs + coverage + outcomes donut. ───
         <OverviewView
@@ -1614,6 +1742,8 @@ export default function OperationsDashboard() {
           selectedPeriodId={selectedPeriodId}
           customPeriodDates={customPeriodDates}
           repsMonth={repsMonth}
+          enrolledCount={enrolledAgentsCount}
+          enrolledPreviews={enrolledAgentPreviews}
           fmtDuration={fmtDuration}
           onSeeLeads={() => setTab('leads')}
           onSeeAgents={() => setTab('agents')}
@@ -2584,7 +2714,15 @@ const TEAM_PALETTE = [
   'bg-rose-500/15 text-rose-700',
 ];
 
-function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
+function TeamView({
+  reps: repsApi,
+  enrolledCount,
+  enrolledPreviews = [],
+}: {
+  reps: AnalyticsRep[] | null;
+  enrolledCount: number;
+  enrolledPreviews?: Array<{ id: string; name: string; gigId?: string }>;
+}) {
   const { t } = useTranslation();
   const [selectedKpi, setSelectedKpi] = useState<
     'enrolled' | 'active' | 'atRisk' | 'avgScore' | 'invitations' | null
@@ -2615,15 +2753,16 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
 
   const teamKpis = useMemo(() => {
     const list = repsApi ?? [];
-    const enrolled = list.length;
+    const enrolled = enrolledCount;
     const active = list.filter((r) => r.total > 0).length;
-    const atRisk = list.filter((r) => r.avgScore < 50).length;
+    const atRisk = list.filter((r) => r.avgScore < 50 && r.total > 0).length;
+    const withScore = list.filter((r) => r.total > 0);
     const avgScore =
-      enrolled > 0
-        ? Math.round(list.reduce((s, r) => s + r.avgScore, 0) / enrolled)
+      withScore.length > 0
+        ? Math.round(withScore.reduce((s, r) => s + r.avgScore, 0) / withScore.length)
         : 0;
     return { enrolled, active, atRisk, avgScore };
-  }, [repsApi]);
+  }, [repsApi, enrolledCount]);
 
   return (
     <>
@@ -2634,14 +2773,14 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           icon={<Users size={14} />}
           label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')}
           value={teamKpis.enrolled.toLocaleString('fr-FR')}
-          sub={t('opsDashboard.team.kpi.enrolledSub', 'reps avec appels')}
+          sub={t('opsDashboard.team.kpi.enrolledSub', 'agents matchés')}
           selected={selectedKpi === 'enrolled'}
           onClick={() => toggleKpi('enrolled')}
         />
         <KpiCard
           tone="default"
           icon={<Activity size={14} className="text-emerald-500" />}
-          label={t('opsDashboard.team.kpi.activeWeek', 'Actifs (MTD)')}
+          label={t('opsDashboard.team.kpi.activeWeek', 'Actifs (période)')}
           value={teamKpis.active.toLocaleString('fr-FR')}
           sub={
             teamKpis.enrolled > 0
@@ -2694,8 +2833,20 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           onClose={() => setSelectedKpi(null)}
         >
           <DetailRow label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')} value={teamKpis.enrolled.toLocaleString('fr-FR')} />
-          <DetailRow label={t('opsDashboard.team.kpi.activeWeek', 'Actifs (MTD)')} value={teamKpis.active.toLocaleString('fr-FR')} />
+          <DetailRow label={t('opsDashboard.team.kpi.activeWeek', 'Actifs (période)')} value={teamKpis.active.toLocaleString('fr-FR')} />
           <DetailRow label={t('opsDashboard.team.kpi.atRisk', 'À risque')} value={teamKpis.atRisk.toLocaleString('fr-FR')} />
+          {enrolledPreviews.length > 0 && (
+            <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                {t('opsDashboard.team.kpi.enrolledList', 'Agents matchés')}
+              </p>
+              {enrolledPreviews.map((a) => (
+                <p key={a.id} className="text-xs font-bold text-slate-700">
+                  {a.name}
+                </p>
+              ))}
+            </div>
+          )}
         </InlineKpiDetailPanel>
       )}
       {selectedKpi === 'active' && (
@@ -2752,15 +2903,48 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
         </header>
 
         {reps.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-            <Trophy size={20} className="text-slate-300" />
-            <p className="text-xs font-bold text-slate-500">
-              {t(
-                'opsDashboard.team.leaderboardEmpty',
-                'Aucun reps avec des transactions ce mois-ci.'
+          enrolledCount > 0 ? (
+            <div className="space-y-3">
+              <p className="text-center text-xs font-bold text-slate-500">
+                {t(
+                  'opsDashboard.team.leaderboardEmptyEnrolled',
+                  'Aucune transaction ce mois — {{count}} agent(s) enrôlé(s).',
+                  { count: enrolledCount }
+                )}
+              </p>
+              {enrolledPreviews.length > 0 && (
+                <ul className="divide-y divide-slate-100">
+                  {enrolledPreviews.map((agent, idx) => (
+                    <li key={agent.id} className="flex items-center gap-3 py-2.5">
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
+                          TEAM_PALETTE[idx % TEAM_PALETTE.length]
+                        }`}
+                      >
+                        {initialsOf(agent.name)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-slate-900">{agent.name}</p>
+                        <p className="text-[11px] font-medium text-emerald-600">
+                          {t('opsDashboard.overview.agents.enrolledStatus', 'Enrôlé · actif matching')}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </p>
-          </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+              <Trophy size={20} className="text-slate-300" />
+              <p className="text-xs font-bold text-slate-500">
+                {t(
+                  'opsDashboard.team.leaderboardEmpty',
+                  'Aucun reps avec des transactions ce mois-ci.'
+                )}
+              </p>
+            </div>
+          )
         ) : (
         <ul className="divide-y divide-slate-100">
           {reps.map((r) => (
@@ -2883,6 +3067,8 @@ function OverviewView({
   selectedPeriodId,
   customPeriodDates,
   repsMonth,
+  enrolledCount = 0,
+  enrolledPreviews = [],
   fmtDuration,
   onSeeLeads,
   onSeeAgents,
@@ -2905,6 +3091,8 @@ function OverviewView({
   selectedPeriodId: DashboardPeriodId;
   customPeriodDates: CustomPeriodDates;
   repsMonth: AnalyticsRep[] | null;
+  enrolledCount?: number;
+  enrolledPreviews?: Array<{ id: string; name: string; gigId?: string }>;
   fmtDuration: (sec: number) => string;
   onSeeLeads: () => void;
   onSeeAgents: () => void;
@@ -3004,7 +3192,7 @@ function OverviewView({
       .slice(0, 5);
   }, [repsMonth]);
 
-  const agentsEnrolled = repsMonth?.length ?? 0;
+  const agentsEnrolled = enrolledCount;
   const agentsActive = repsMonth?.filter((r) => r.total > 0).length ?? 0;
 
   const toggleKpi = (id: OverviewKpiId) => {
@@ -3321,9 +3509,45 @@ function OverviewView({
         </div>
 
         {topAgents.length === 0 ? (
-          <p className="py-6 text-center text-xs font-bold text-slate-400">
-            {t('opsDashboard.overview.agents.empty', 'Aucun agent avec des appels ce mois-ci.')}
-          </p>
+          agentsEnrolled > 0 ? (
+            <div className="space-y-3">
+              <p className="text-center text-xs font-bold text-slate-500">
+                {t(
+                  'opsDashboard.overview.agents.emptyEnrolled',
+                  'Aucun appel sur cette période — {{count}} agent(s) enrôlé(s).',
+                  { count: agentsEnrolled }
+                )}
+              </p>
+              {enrolledPreviews.length > 0 && (
+                <ul className="divide-y divide-slate-100">
+                  {enrolledPreviews.map((agent, idx) => (
+                    <li key={agent.id} className="flex items-center gap-3 py-2.5">
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
+                          TEAM_PALETTE[idx % TEAM_PALETTE.length]
+                        }`}
+                      >
+                        {initialsOf(agent.name)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-slate-900">{agent.name}</p>
+                        <p className="text-[11px] font-medium text-emerald-600">
+                          {t('opsDashboard.overview.agents.enrolledStatus', 'Enrôlé · actif matching')}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : (
+            <p className="py-6 text-center text-xs font-bold text-slate-400">
+              {t(
+                'opsDashboard.overview.agents.empty',
+                'Aucun agent enrôlé pour le moment.'
+              )}
+            </p>
+          )
         ) : (
           <ul className="divide-y divide-slate-100">
             {topAgents.map((r, idx) => {

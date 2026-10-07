@@ -521,6 +521,23 @@
         "seeAllWallet": "View full wallet",
         "deposit": "Deposit",
         "repTx": "Rep"
+      },
+      "agents": {
+        "title": "Agents",
+        "enrolled": "Enrolled",
+        "activeToday": "Active (today)",
+        "activePeriod": {
+          "7d": "Active (7 days)",
+          "30d": "Active (30 days)",
+          "mtd": "Active (this month)",
+          "custom": "Active ({{range}})"
+        },
+        "avgScore": "Avg. score",
+        "empty": "No enrolled agents yet.",
+        "emptyEnrolled": "No calls in this period — {{count}} enrolled agent(s).",
+        "enrolledStatus": "Enrolled · matching active",
+        "transactions": "transactions",
+        "calls": "calls"
       }
     },
     "statusesTitle": "Call statuses",
@@ -670,8 +687,9 @@
     "team": {
       "kpi": {
         "enrolled": "Enrolled",
-        "enrolledSub": "on this gig",
-        "activeWeek": "Active this week",
+        "enrolledSub": "matched agents",
+        "activeWeek": "Active (period)",
+        "enrolledList": "Matched agents",
         "lmsDone": "LMS completed",
         "atRisk": "At risk",
         "atRiskSub": "score < 50",
@@ -681,6 +699,8 @@
         "invitationsSub": "pending"
       },
       "leaderboardTitle": "Leaderboard — transactions this month",
+      "leaderboardEmpty": "No reps with transactions this month.",
+      "leaderboardEmptyEnrolled": "No transactions this month — {{count}} enrolled agent(s).",
       "atRiskInline": "at risk",
       "coveredLeads": "covered leads",
       "onlyWord": "only"
