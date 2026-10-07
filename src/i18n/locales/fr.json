@@ -3328,14 +3328,18 @@
     "activeLimit": {
       "title": "Limite de GIG actifs atteinte",
       "subtitle": "Votre plan {{plan}} autorise {{max}} GIG actif(s). Pour activer « {{target}} », basculez un GIG déjà actif ou passez au plan supérieur.",
+      "reconcileSubtitle": "Votre plan {{plan}} autorise {{max}} GIG actif(s), mais {{count}} sont actuellement actifs. Désactivez le surplus ou passez au plan supérieur.",
       "yourPlan": "actuel",
       "choose": "Choisissez de basculer (désactiver un GIG actif pour en activer un autre) ou d’upgrader votre abonnement.",
+      "reconcileChoose": "Sélectionnez le(s) GIG à désactiver pour respecter votre plan, ou upgrader.",
       "activeList": "GIG(s) actuellement actif(s) ({{count}})",
       "noneListed": "Aucun autre GIG actif listé.",
       "selectHint": "Sélectionnez au moins {{count}} GIG à désactiver.",
       "switch": "Basculer",
+      "reconcileSwitch": "Désactiver la sélection",
       "switching": "Bascule…",
       "switchSuccess": "GIG basculé : l’ancien est inactif, le nouveau est actif.",
+      "reconcileSuccess": "Limite respectée : le(s) GIG sélectionné(s) sont maintenant inactifs.",
       "upgrade": "Upgrade {{plan}}",
       "nextPlan": "au plan suivant",
       "close": "Fermer"
