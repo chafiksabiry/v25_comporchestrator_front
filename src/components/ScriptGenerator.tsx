@@ -15,6 +15,11 @@ import {
   estimateTokensFromText,
   applyBackendAiUsage,
 } from '../lib/aiTokensUsage';
+import {
+  fetchScriptVariables,
+  formatVariablesForAiPrompt,
+  type ScriptVariable,
+} from '../lib/scriptVariables';
 
 interface Gig {
   _id: string;
@@ -206,6 +211,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [input, setInput] = useState('');
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
+  const [contactVariables, setContactVariables] = useState<ScriptVariable[]>([]);
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [gigsError, setGigsError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -333,7 +339,49 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       }
     };
     fetchRelatedTrainings();
-  }, [selectedGig]);;
+  }, [selectedGig]);
+
+  // Contact-file variables for script tokens (mapped HARX + customFields)
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!selectedGig?._id) {
+        setContactVariables([]);
+        return;
+      }
+      try {
+        const vars = await fetchScriptVariables(selectedGig._id);
+        if (!cancelled) setContactVariables(vars);
+      } catch {
+        if (!cancelled) setContactVariables([]);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGig?._id]);
+
+  const contactVariablesPrompt = useMemo(
+    () => formatVariablesForAiPrompt(contactVariables),
+    [contactVariables]
+  );
+
+  const handleInsertContactVariable = (token: string) => {
+    setActiveInteractiveStages((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      const idx = Math.min(Math.max(0, interactiveStageIdx), prev.length - 1);
+      return prev.map((stage, i) => {
+        if (i !== idx) return stage;
+        const base = String(stage.introReplica || '');
+        const needsSpace = base.length > 0 && !/\s$/.test(base);
+        return {
+          ...stage,
+          introReplica: `${base}${needsSpace ? ' ' : ''}${token}`,
+        };
+      });
+    });
+  };
 
   const buildInteractiveStages = (gig: Gig | null, message: ChatMessage): InteractiveStage[] => {
     const title = gig?.title || 'Mission';
@@ -680,14 +728,17 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         }
       }
 
+      const baseContexte =
+        'Générer un script interactif structuré en 8 étapes basées sur la mission.';
       const payload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
         langueTon: 'professionnel et direct',
-        contexte: 'Générer un script interactif structuré en 8 étapes basées sur la mission.',
+        contexte: [baseContexte, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         trainings: currentTrainings,
-        isInteractiveRequest: true
+        isInteractiveRequest: true,
+        contactVariables,
       };
 
       await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
@@ -765,12 +816,13 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         gig: selectedGig,
         typeClient: 'general',
         langueTon: 'professionnel et direct',
-        contexte: promptText,
+        contexte: [promptText, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         trainings: currentTrainings,
         isInteractiveRequest: true,
         editMode: 'targeted',
         targetStageIndex: safeIdx,
         currentStages: activeInteractiveStages,
+        contactVariables,
       };
 
       await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
@@ -987,9 +1039,10 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         gig: selectedGig,
         typeClient: 'general',
         langueTon: 'simple et direct',
-        contexte: regenInstruction,
+        contexte: [regenInstruction, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         currentScript: currentScriptText || undefined,
         currentPlaybook: activeScriptMessage?.playbook || undefined,
+        contactVariables,
         chatHistory: messages
           .filter((m) => m.role === 'user' || m.role === 'assistant')
           .map((m) => ({
@@ -1737,6 +1790,8 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                       onValidate={handleSaveAndValidateInteractiveScript}
                       isValidating={isSending}
                       onStageIndexChange={setInteractiveStageIdx}
+                      contactVariables={contactVariables}
+                      onInsertVariable={handleInsertContactVariable}
                     />
 
                     {/* Beautiful glassmorphic loading overlay over the cockpit when updating */}
