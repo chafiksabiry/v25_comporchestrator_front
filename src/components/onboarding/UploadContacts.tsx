@@ -26,7 +26,8 @@ import {
   MapPin,
   Calendar,
   Users,
-  GripVertical
+  GripVertical,
+  Check,
 } from 'lucide-react';
 import LeadDetailModal from '../dashboard/components/LeadDetailModal';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
@@ -105,6 +106,56 @@ function defaultLeadFieldVisibility(): LeadFieldVisibility {
     rep[field] = true;
   }
   return { company, rep };
+}
+
+type MappingCheckboxTone = 'harx' | 'company' | 'rep';
+
+/** Colored custom checkbox for contact mapping (save-extra / company / REP). */
+function MappingCheckbox({
+  checked,
+  onChange,
+  tone = 'harx',
+  title,
+  'aria-label': ariaLabel,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  tone?: MappingCheckboxTone;
+  title?: string;
+  'aria-label'?: string;
+}) {
+  const toneOn: Record<MappingCheckboxTone, string> = {
+    harx: 'border-harx-600 bg-gradient-to-br from-harx-500 to-rose-600 shadow-md shadow-harx-500/35',
+    company: 'border-sky-600 bg-gradient-to-br from-sky-500 to-indigo-600 shadow-md shadow-sky-500/35',
+    rep: 'border-emerald-600 bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/35',
+  };
+  const toneOff: Record<MappingCheckboxTone, string> = {
+    harx: 'border-slate-300 bg-white hover:border-harx-400 hover:bg-harx-50/50',
+    company: 'border-slate-300 bg-white hover:border-sky-400 hover:bg-sky-50/60',
+    rep: 'border-slate-300 bg-white hover:border-emerald-400 hover:bg-emerald-50/60',
+  };
+
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      title={title}
+      onClick={(e) => {
+        e.stopPropagation();
+        onChange();
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-2 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
+        checked
+          ? `${toneOn[tone]} focus-visible:ring-harx-300 scale-100`
+          : `${toneOff[tone]} focus-visible:ring-slate-300`
+      }`}
+    >
+      {checked ? <Check className="h-3 w-3 text-white" strokeWidth={3.5} /> : null}
+    </button>
+  );
 }
 
 interface FileColumnAnalyzeResult {
@@ -3118,15 +3169,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                   {t('uploadContacts.mapping.example')}: {getMappingExample(header)}
                                 </p>
                                 <label
-                                  className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer"
+                                  className={`mt-2 inline-flex items-center gap-2 text-[11px] font-bold cursor-pointer transition-colors ${
+                                    savedExtraColumns[header]
+                                      ? 'text-harx-700'
+                                      : 'text-slate-600 hover:text-harx-600'
+                                  }`}
                                   onClick={(e) => e.stopPropagation()}
                                   onMouseDown={(e) => e.stopPropagation()}
                                 >
-                                  <input
-                                    type="checkbox"
+                                  <MappingCheckbox
                                     checked={Boolean(savedExtraColumns[header])}
                                     onChange={() => toggleSaveExtraColumn(header)}
-                                    className="h-3.5 w-3.5 rounded border-slate-300 text-harx-600 focus:ring-harx-500"
+                                    tone="harx"
+                                    aria-label={t('uploadContacts.mapping.saveExtra')}
                                   />
                                   {t('uploadContacts.mapping.saveExtra')}
                                 </label>
@@ -3151,9 +3206,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                       <p className="text-xs font-black uppercase tracking-wider text-slate-500">
                         {t('uploadContacts.mapping.harxFields')}
                       </p>
-                      <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                        <span className="w-14 text-center">{t('uploadContacts.mapping.visibleCompany')}</span>
-                        <span className="w-14 text-center">{t('uploadContacts.mapping.visibleRep')}</span>
+                      <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
+                        <span className="w-14 text-center text-sky-600">{t('uploadContacts.mapping.visibleCompany')}</span>
+                        <span className="w-14 text-center text-emerald-600">{t('uploadContacts.mapping.visibleRep')}</span>
                       </div>
                     </div>
                     <p className="text-[11px] text-slate-400 mb-3">
@@ -3198,20 +3253,28 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                 ) : null}
                               </span>
                               <div className="flex items-center gap-3 shrink-0">
-                                <label className="w-14 flex justify-center items-center gap-1 cursor-pointer" title={t('uploadContacts.mapping.visibleCompany')}>
-                                  <input
-                                    type="checkbox"
+                                <label
+                                  className="w-14 flex justify-center items-center cursor-pointer"
+                                  title={t('uploadContacts.mapping.visibleCompany')}
+                                >
+                                  <MappingCheckbox
                                     checked={fieldVisibility.company[field] !== false}
                                     onChange={() => toggleFieldVisibility('company', field)}
-                                    className="h-3.5 w-3.5 rounded border-slate-300 text-harx-600 focus:ring-harx-500"
+                                    tone="company"
+                                    title={t('uploadContacts.mapping.visibleCompany')}
+                                    aria-label={`${t('uploadContacts.mapping.visibleCompany')} — ${t(`uploadContacts.mapping.fields.${field}`, field)}`}
                                   />
                                 </label>
-                                <label className="w-14 flex justify-center items-center gap-1 cursor-pointer" title={t('uploadContacts.mapping.visibleRep')}>
-                                  <input
-                                    type="checkbox"
+                                <label
+                                  className="w-14 flex justify-center items-center cursor-pointer"
+                                  title={t('uploadContacts.mapping.visibleRep')}
+                                >
+                                  <MappingCheckbox
                                     checked={fieldVisibility.rep[field] !== false}
                                     onChange={() => toggleFieldVisibility('rep', field)}
-                                    className="h-3.5 w-3.5 rounded border-slate-300 text-harx-600 focus:ring-harx-500"
+                                    tone="rep"
+                                    title={t('uploadContacts.mapping.visibleRep')}
+                                    aria-label={`${t('uploadContacts.mapping.visibleRep')} — ${t(`uploadContacts.mapping.fields.${field}`, field)}`}
                                   />
                                 </label>
                               </div>
