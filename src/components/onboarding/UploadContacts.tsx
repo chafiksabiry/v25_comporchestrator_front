@@ -25,7 +25,8 @@ import {
   AlertTriangle,
   MapPin,
   Calendar,
-  Users
+  Users,
+  GripVertical
 } from 'lucide-react';
 import LeadDetailModal from '../dashboard/components/LeadDetailModal';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
@@ -545,6 +546,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [mappingTotalRows, setMappingTotalRows] = useState(0);
   const [isApplyingMapping, setIsApplyingMapping] = useState(false);
   const [mappingError, setMappingError] = useState<string | null>(null);
+  const [dragOverField, setDragOverField] = useState<string | null>(null);
+  const [draggingHeader, setDraggingHeader] = useState<string | null>(null);
   const [isSavingLeads, setIsSavingLeads] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
@@ -905,6 +908,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     setMappingTotalRows(0);
     setMappingError(null);
     setIsApplyingMapping(false);
+    setDragOverField(null);
+    setDraggingHeader(null);
   };
 
   const mappingHasIdentity = (mapping: ColumnMapping) => {
@@ -1049,6 +1054,47 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       return next;
     });
     setMappingError(null);
+  };
+
+  const getMappingExample = (header: string) => {
+    const fromFilled =
+      mappingSamples.find((row) => String(row[header] || '').trim())?.[header] ||
+      mappingSamples[0]?.[header];
+    return String(fromFilled || '—');
+  };
+
+  const headerForHarxField = (field: string) =>
+    Object.keys(columnMapping).find((header) => columnMapping[header] === field) || '';
+
+  const unmappedHeaders = mappingHeaders.filter((header) => !columnMapping[header]);
+
+  const handleDragHeaderStart = (event: React.DragEvent, header: string) => {
+    event.dataTransfer.setData('text/plain', header);
+    event.dataTransfer.effectAllowed = 'move';
+    setDraggingHeader(header);
+  };
+
+  const handleDragHeaderEnd = () => {
+    setDraggingHeader(null);
+    setDragOverField(null);
+  };
+
+  const handleDropOnHarxField = (event: React.DragEvent, field: string) => {
+    event.preventDefault();
+    const header = event.dataTransfer.getData('text/plain') || draggingHeader;
+    setDragOverField(null);
+    setDraggingHeader(null);
+    if (!header) return;
+    handleMappingFieldChange(header, field);
+  };
+
+  const handleDropOnUnmapped = (event: React.DragEvent) => {
+    event.preventDefault();
+    const header = event.dataTransfer.getData('text/plain') || draggingHeader;
+    setDragOverField(null);
+    setDraggingHeader(null);
+    if (!header) return;
+    handleMappingFieldChange(header, '');
   };
 
   const handleCancelMapping = () => {
@@ -2808,21 +2854,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
             {showMappingStep && selectedFile && (
               <div className="mt-4 rounded-2xl border border-harx-100 bg-white p-5 shadow-sm space-y-4">
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <Settings className="h-5 w-5 text-harx-500" />
-                      {t('uploadContacts.mapping.title')}
-                    </h4>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {t('uploadContacts.mapping.subtitle')}
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-harx-500" />
+                    {t('uploadContacts.mapping.title')}
+                  </h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {t('uploadContacts.mapping.subtitle')}
+                  </p>
+                  {mappingTotalRows > 0 && (
+                    <p className="text-xs font-semibold text-harx-600 mt-1">
+                      {t('uploadContacts.mapping.rowsInFile', { count: mappingTotalRows })}
                     </p>
-                    {mappingTotalRows > 0 && (
-                      <p className="text-xs font-semibold text-harx-600 mt-1">
-                        {t('uploadContacts.mapping.rowsInFile', { count: mappingTotalRows })}
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-xs font-bold">
@@ -2838,51 +2882,142 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   )}
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-slate-100">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
-                      <tr>
-                        <th className="px-3 py-2.5 font-bold">{t('uploadContacts.mapping.fileColumn')}</th>
-                        <th className="px-3 py-2.5 font-bold">{t('uploadContacts.mapping.example')}</th>
-                        <th className="px-3 py-2.5 font-bold">{t('uploadContacts.mapping.harxField')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mappingHeaders.map((header) => {
-                        const example =
-                          mappingSamples.find((row) => String(row[header] || '').trim())?.[header] ||
-                          mappingSamples[0]?.[header] ||
-                          '—';
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Unmapped file columns — drag source */}
+                  <div
+                    className={`rounded-2xl border p-4 transition-colors ${
+                      dragOverField === '__unmapped__'
+                        ? 'border-harx-400 bg-harx-50/60'
+                        : 'border-slate-200 bg-slate-50/70'
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverField('__unmapped__');
+                    }}
+                    onDragLeave={() => setDragOverField((current) => (current === '__unmapped__' ? null : current))}
+                    onDrop={handleDropOnUnmapped}
+                  >
+                    <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
+                      {t('uploadContacts.mapping.fileColumns')}
+                    </p>
+                    <p className="text-xs text-slate-500 mb-3">
+                      {t('uploadContacts.mapping.dragHint')}
+                    </p>
+                    <div className="flex flex-col gap-2 min-h-[120px]">
+                      {unmappedHeaders.length === 0 ? (
+                        <p className="text-sm text-slate-400 italic py-6 text-center">
+                          {t('uploadContacts.mapping.allMapped')}
+                        </p>
+                      ) : (
+                        unmappedHeaders.map((header) => (
+                          <div
+                            key={header}
+                            draggable={!isApplyingMapping}
+                            onDragStart={(e) => handleDragHeaderStart(e, header)}
+                            onDragEnd={handleDragHeaderEnd}
+                            className={`cursor-grab active:cursor-grabbing rounded-xl border bg-white px-3 py-2.5 shadow-sm transition-all ${
+                              draggingHeader === header
+                                ? 'border-harx-400 opacity-60 scale-[0.98]'
+                                : 'border-slate-200 hover:border-harx-300 hover:shadow-md'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <GripVertical className="h-4 w-4 text-slate-300 mt-0.5 shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-slate-800 truncate">{header}</p>
+                                <p className="text-xs text-slate-500 truncate" title={getMappingExample(header)}>
+                                  {t('uploadContacts.mapping.example')}: {getMappingExample(header)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* HARX fields — drop targets */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
+                      {t('uploadContacts.mapping.harxFields')}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {(mappingFields.length ? mappingFields : HARX_IMPORT_FIELDS).map((field) => {
+                        const mappedHeader = headerForHarxField(field);
+                        const isRequiredSlot =
+                          field === 'Phone' ||
+                          field === 'Email_1' ||
+                          field === 'Deal_Name' ||
+                          field === 'First_Name' ||
+                          field === 'Last_Name';
+                        const isOver = dragOverField === field;
                         return (
-                          <tr key={header} className="border-t border-slate-100">
-                            <td className="px-3 py-2.5 font-semibold text-slate-800 whitespace-nowrap">
-                              {header}
-                            </td>
-                            <td className="px-3 py-2.5 text-slate-500 max-w-[220px] truncate" title={String(example)}>
-                              {String(example)}
-                            </td>
-                            <td className="px-3 py-2.5">
-                              <select
-                                value={columnMapping[header] || ''}
-                                onChange={(e) => handleMappingFieldChange(header, e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-medium text-slate-800 focus:border-harx-400 focus:outline-none focus:ring-2 focus:ring-harx-200"
+                          <div
+                            key={field}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              setDragOverField(field);
+                            }}
+                            onDragLeave={() =>
+                              setDragOverField((current) => (current === field ? null : current))
+                            }
+                            onDrop={(e) => handleDropOnHarxField(e, field)}
+                            className={`rounded-xl border px-3 py-2.5 transition-all ${
+                              isOver
+                                ? 'border-harx-500 bg-harx-50 ring-2 ring-harx-200'
+                                : mappedHeader
+                                  ? 'border-emerald-200 bg-emerald-50/50'
+                                  : isRequiredSlot
+                                    ? 'border-dashed border-red-200 bg-red-50/30'
+                                    : 'border-dashed border-slate-200 bg-slate-50/50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <span className="text-xs font-black uppercase tracking-wide text-slate-600">
+                                {t(`uploadContacts.mapping.fields.${field}`, field)}
+                                {isRequiredSlot && !mappedHeader ? (
+                                  <span className="text-red-500 ml-1">*</span>
+                                ) : null}
+                              </span>
+                            </div>
+                            {mappedHeader ? (
+                              <div
+                                draggable={!isApplyingMapping}
+                                onDragStart={(e) => handleDragHeaderStart(e, mappedHeader)}
+                                onDragEnd={handleDragHeaderEnd}
+                                className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-white px-2.5 py-2 cursor-grab active:cursor-grabbing"
                               >
-                                <option value="">{t('uploadContacts.mapping.ignore')}</option>
-                                {mappingFields.map((field) => (
-                                  <option key={field} value={field}>
-                                    {t(`uploadContacts.mapping.fields.${field}`, field)}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                          </tr>
+                                <div className="min-w-0 flex items-center gap-2">
+                                  <GripVertical className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold text-slate-800 truncate">{mappedHeader}</p>
+                                    <p className="text-[11px] text-slate-500 truncate">
+                                      {getMappingExample(mappedHeader)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMappingFieldChange(mappedHeader, '')}
+                                  className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0"
+                                  aria-label={t('uploadContacts.mapping.unmap')}
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-slate-400 italic py-1">
+                                {t('uploadContacts.mapping.dropHere')}
+                              </p>
+                            )}
+                          </div>
                         );
                       })}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
                 </div>
 
-                {mappingSamples.length > 0 && (
+                {mappingSamples.length > 0 && Object.values(columnMapping).some(Boolean) && (
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                       {t('uploadContacts.mapping.previewTitle')}
@@ -2906,10 +3041,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                               {HARX_IMPORT_FIELDS.filter((field) =>
                                 Object.values(columnMapping).includes(field)
                               ).map((field) => {
-                                const sourceHeader =
-                                  Object.keys(columnMapping).find(
-                                    (h) => columnMapping[h] === field
-                                  ) || '';
+                                const sourceHeader = headerForHarxField(field);
                                 return (
                                   <td key={field} className="px-3 py-2 text-slate-700 whitespace-nowrap">
                                     {sourceHeader ? String(row[sourceHeader] || '—') : '—'}
