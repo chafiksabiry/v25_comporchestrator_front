@@ -3372,14 +3372,14 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             )}
 
             {showMappingStep && selectedFile && (
-              <div className="mt-4 rounded-2xl border border-harx-100 bg-white p-5 shadow-sm space-y-4">
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-3">
                 <div>
                   <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                     <Settings className="h-5 w-5 text-harx-500" />
                     {t('uploadContacts.mapping.title')}
                   </h4>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {t('uploadContacts.mapping.subtitle')}
+                  <p className="text-sm text-slate-500 mt-1">
+                    {t('uploadContacts.mapping.dragHint')}
                   </p>
                   {mappingTotalRows > 0 && (
                     <p className="text-xs font-semibold text-harx-600 mt-1">
@@ -3404,13 +3404,21 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {(() => {
+                  const mappedHarxCount = harxFieldList.filter((field) => {
+                    if (headerForHarxField(field)) return true;
+                    return (
+                      field === 'Deal_Name' && Boolean(getConcatenatedFullNameExample())
+                    );
+                  }).length;
+
+                  return (
+                <div className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50/40">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 lg:divide-x divide-y lg:divide-y-0 divide-slate-200">
                   {/* Unmapped file columns — drag source */}
                   <div
-                    className={`rounded-2xl border p-4 transition-colors ${
-                      dragOverField === '__unmapped__'
-                        ? 'border-harx-400 bg-harx-50/60'
-                        : 'border-slate-200 bg-slate-50/70'
+                    className={`flex flex-col min-h-0 ${
+                      dragOverField === '__unmapped__' ? 'bg-harx-50/50' : ''
                     }`}
                     onDragOver={(e) => {
                       e.preventDefault();
@@ -3430,15 +3438,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     }}
                     onDrop={handleDropOnUnmapped}
                   >
-                    <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
-                      {t('uploadContacts.mapping.fileColumns')}
-                    </p>
-                    <p className="text-xs text-slate-500 mb-3">
-                      {t('uploadContacts.mapping.dragHint')}
-                    </p>
-                    <div className="flex flex-col gap-2 min-h-[120px]">
+                    <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-3 py-2.5 backdrop-blur-sm">
+                      <p className="text-xs font-black uppercase tracking-wider text-slate-600">
+                        {t('uploadContacts.mapping.fileColumns')}
+                      </p>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                        {t('uploadContacts.mapping.fileColumnsCount', {
+                          count: availableFileHeaders.length,
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1.5 p-2.5 max-h-[60vh] overflow-y-auto min-h-[140px]">
                       {availableFileHeaders.length === 0 ? (
-                        <p className="text-sm text-slate-400 italic py-6 text-center">
+                        <p className="text-sm text-slate-400 italic py-8 text-center">
                           {t('uploadContacts.mapping.allMapped')}
                         </p>
                       ) : (
@@ -3448,23 +3460,26 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                             draggable={!isApplyingMapping}
                             onDragStart={(e) => handleDragHeaderStart(e, header)}
                             onDragEnd={handleDragHeaderEnd}
-                            className={`select-none rounded-xl border bg-white px-3 py-2.5 shadow-sm ${
+                            className={`select-none rounded-lg border bg-white px-2.5 py-2 ${
                               draggingHeader === header
                                 ? 'border-harx-400 opacity-50'
                                 : moveRightPickerHeader === header
-                                  ? 'border-harx-400 ring-2 ring-harx-100'
-                                  : 'border-slate-200 hover:border-harx-300 hover:shadow-md'
+                                  ? 'border-harx-400 ring-1 ring-harx-200'
+                                  : 'border-slate-200 hover:border-slate-300'
                             }`}
                           >
-                            <div className="flex items-start gap-2">
-                              <div className="flex items-start gap-2 min-w-0 flex-1 cursor-grab active:cursor-grabbing pointer-events-none">
-                                <GripVertical className="h-4 w-4 text-slate-300 mt-0.5 shrink-0" />
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-bold text-slate-800 truncate">{header}</p>
-                                  <p className="text-xs text-slate-500 truncate" title={getMappingExample(header)}>
-                                    {t('uploadContacts.mapping.example')}: {getMappingExample(header)}
-                                  </p>
-                                </div>
+                            <div className="flex items-center gap-2">
+                              <GripVertical className="h-3.5 w-3.5 text-slate-300 shrink-0 pointer-events-none" />
+                              <div className="min-w-0 flex-1 cursor-grab active:cursor-grabbing pointer-events-none">
+                                <p className="text-sm font-semibold text-slate-800 truncate leading-tight">
+                                  {header}
+                                </p>
+                                <p
+                                  className="text-[11px] text-slate-400 truncate leading-tight"
+                                  title={getMappingExample(header)}
+                                >
+                                  {getMappingExample(header)}
+                                </p>
                               </div>
                               <button
                                 type="button"
@@ -3475,46 +3490,45 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                   e.stopPropagation();
                                   moveHeaderRight(header);
                                 }}
-                                className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-harx-200 bg-harx-50 text-harx-600 hover:bg-harx-100 hover:border-harx-300 disabled:opacity-50"
+                                className="shrink-0 inline-flex items-center gap-1 rounded-md bg-slate-900 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-slate-800 disabled:opacity-50"
                                 title={t('uploadContacts.mapping.moveRight')}
-                                aria-label={t('uploadContacts.mapping.moveRight')}
+                                aria-label={t('uploadContacts.mapping.assign')}
                               >
-                                <ChevronRight className="h-4 w-4" />
+                                {t('uploadContacts.mapping.assign')}
+                                <ChevronRight className="h-3.5 w-3.5" />
                               </button>
                             </div>
                             {moveRightPickerHeader === header ? (
                               <div
-                                className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-2 space-y-1"
+                                className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-1.5 space-y-0.5"
                                 onMouseDown={(e) => e.stopPropagation()}
                               >
-                                <p className="px-1 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                <p className="px-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                                   {t('uploadContacts.mapping.moveRightPick')}
                                 </p>
-                                {(mappingFields.length ? mappingFields : HARX_IMPORT_FIELDS).map(
-                                  (field) => {
-                                    const occupied = Boolean(headerForHarxField(field));
-                                    return (
-                                      <button
-                                        key={`${header}-to-${field}`}
-                                        type="button"
-                                        draggable={false}
-                                        onClick={() => moveHeaderToHarxField(header, field)}
-                                        className={`w-full text-left rounded-lg px-2.5 py-2 text-sm font-bold transition-colors ${
-                                          occupied
-                                            ? 'text-slate-700 hover:bg-amber-50 hover:text-amber-800'
-                                            : 'text-slate-800 hover:bg-white hover:shadow-sm'
-                                        }`}
-                                      >
-                                        {t(`uploadContacts.mapping.fields.${field}`, field)}
-                                        {occupied ? (
-                                          <span className="ml-2 text-[10px] font-black uppercase tracking-wider text-amber-600">
-                                            {t('uploadContacts.mapping.conflictBadge')}
-                                          </span>
-                                        ) : null}
-                                      </button>
-                                    );
-                                  }
-                                )}
+                                {harxFieldList.map((field) => {
+                                  const occupied = Boolean(headerForHarxField(field));
+                                  return (
+                                    <button
+                                      key={`${header}-to-${field}`}
+                                      type="button"
+                                      draggable={false}
+                                      onClick={() => moveHeaderToHarxField(header, field)}
+                                      className={`w-full text-left rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
+                                        occupied
+                                          ? 'text-slate-600 hover:bg-amber-50'
+                                          : 'text-slate-800 hover:bg-white'
+                                      }`}
+                                    >
+                                      {t(`uploadContacts.mapping.fields.${field}`, field)}
+                                      {occupied ? (
+                                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                                          {t('uploadContacts.mapping.conflictBadge')}
+                                        </span>
+                                      ) : null}
+                                    </button>
+                                  );
+                                })}
                               </div>
                             ) : null}
                           </div>
@@ -3524,20 +3538,34 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   </div>
 
                   {/* HARX fields — drop targets + visibility */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <p className="text-xs font-black uppercase tracking-wider text-slate-500">
-                        {t('uploadContacts.mapping.harxFields')}
-                      </p>
-                      <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
-                        <span className="w-14 text-center text-sky-600">{t('uploadContacts.mapping.visibleCompany')}</span>
-                        <span className="w-14 text-center text-emerald-600">{t('uploadContacts.mapping.visibleRep')}</span>
+                  <div className="flex flex-col min-h-0 bg-white">
+                    <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-3 py-2.5 backdrop-blur-sm">
+                      <div className="min-w-0">
+                        <p className="text-xs font-black uppercase tracking-wider text-slate-600">
+                          {t('uploadContacts.mapping.harxFields')}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {t('uploadContacts.mapping.visibilityHint')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                          {t('uploadContacts.mapping.harxMappedCount', {
+                            mapped: mappedHarxCount,
+                            total: harxFieldList.length,
+                          })}
+                        </span>
+                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+                          <span className="w-8 text-center text-sky-600">
+                            {t('uploadContacts.mapping.visibleCompany')}
+                          </span>
+                          <span className="w-8 text-center text-emerald-600">
+                            {t('uploadContacts.mapping.visibleRep')}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-[11px] text-slate-400 mb-3">
-                      {t('uploadContacts.mapping.visibilityHint')}
-                    </p>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1.5 p-2.5 max-h-[60vh] overflow-y-auto">
                       {harxFieldList.map((field) => {
                         const mappedHeader = headerForHarxField(field);
                         const isRequiredSlot = isRequiredHarxSlot(field, columnMapping);
@@ -3548,6 +3576,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                             ? getConcatenatedFullNameExample()
                             : '';
                         const showDerivedFullName = Boolean(concatFullName);
+                        const isFilled = Boolean(mappedHeader || showDerivedFullName);
                         return (
                           <div
                             key={field}
@@ -3559,90 +3588,62 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                             onDragEnter={(e) => allowHarxDrop(e, field)}
                             onDragOver={(e) => allowHarxDrop(e, field)}
                             onDragLeave={(e) => {
-                              // Ignore leave when moving into a child of this drop zone.
                               const next = e.relatedTarget as Node | null;
                               if (next && e.currentTarget.contains(next)) return;
                               setDragOverField((current) => (current === field ? null : current));
                             }}
                             onDrop={(e) => handleDropOnHarxField(e, field)}
-                            className={`relative rounded-xl border px-3 py-2.5 cursor-pointer ${
+                            className={`relative flex items-center gap-2 rounded-lg border px-2.5 py-2 cursor-pointer ${
                               isOver
-                                ? 'border-harx-500 bg-harx-50 ring-2 ring-harx-200'
+                                ? 'border-harx-500 bg-harx-50 ring-1 ring-harx-200'
                                 : isTarget
-                                  ? 'border-harx-400 bg-harx-50/70 ring-2 ring-harx-100'
-                                  : mappedHeader || showDerivedFullName
-                                  ? 'border-emerald-200 bg-emerald-50/50'
-                                  : isRequiredSlot
-                                    ? 'border-dashed border-red-200 bg-red-50/30'
-                                    : 'border-dashed border-slate-200 bg-slate-50/50'
+                                  ? 'border-harx-400 bg-harx-50/60 ring-1 ring-harx-100'
+                                  : isFilled
+                                    ? 'border-emerald-200 bg-emerald-50/40'
+                                    : isRequiredSlot
+                                      ? 'border-dashed border-red-200 bg-red-50/20'
+                                      : 'border-dashed border-slate-200 bg-slate-50/40'
                             }`}
                           >
-                            {/* Full-zone catcher: occupied chips / checkboxes must not block drop */}
                             {draggingHeader ? (
                               <div
-                                className="absolute inset-0 z-20 rounded-xl"
+                                className="absolute inset-0 z-20 rounded-lg"
                                 onDragEnter={(e) => allowHarxDrop(e, field)}
                                 onDragOver={(e) => allowHarxDrop(e, field)}
                                 onDrop={(e) => handleDropOnHarxField(e, field)}
                               />
                             ) : null}
-                            <div
-                              className={`flex items-center justify-between gap-2 mb-1.5 ${
-                                draggingHeader ? 'pointer-events-none' : ''
-                              }`}
-                            >
-                              <span className="text-xs font-black uppercase tracking-wide text-slate-600">
-                                {t(`uploadContacts.mapping.fields.${field}`, field)}
-                                {isRequiredSlot && !mappedHeader && !showDerivedFullName ? (
-                                  <span className="text-red-500 ml-1">*</span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="text-[11px] font-black uppercase tracking-wide text-slate-500 truncate">
+                                  {t(`uploadContacts.mapping.fields.${field}`, field)}
+                                  {isRequiredSlot && !isFilled ? (
+                                    <span className="text-red-500 ml-0.5">*</span>
+                                  ) : null}
+                                </span>
+                                {isTarget && !isFilled ? (
+                                  <span className="shrink-0 rounded bg-harx-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-harx-700">
+                                    {t('uploadContacts.mapping.targetBadge')}
+                                  </span>
                                 ) : null}
-                              </span>
-                              <div className="flex items-center gap-3 shrink-0">
-                                <label
-                                  className="w-14 flex justify-center items-center cursor-pointer"
-                                  title={t('uploadContacts.mapping.visibleCompany')}
-                                >
-                                  <MappingCheckbox
-                                    checked={fieldVisibility.company[field] !== false}
-                                    onChange={() => toggleFieldVisibility('company', field)}
-                                    tone="company"
-                                    title={t('uploadContacts.mapping.visibleCompany')}
-                                    aria-label={`${t('uploadContacts.mapping.visibleCompany')} — ${t(`uploadContacts.mapping.fields.${field}`, field)}`}
-                                  />
-                                </label>
-                                <label
-                                  className="w-14 flex justify-center items-center cursor-pointer"
-                                  title={t('uploadContacts.mapping.visibleRep')}
-                                >
-                                  <MappingCheckbox
-                                    checked={fieldVisibility.rep[field] !== false}
-                                    onChange={() => toggleFieldVisibility('rep', field)}
-                                    tone="rep"
-                                    title={t('uploadContacts.mapping.visibleRep')}
-                                    aria-label={`${t('uploadContacts.mapping.visibleRep')} — ${t(`uploadContacts.mapping.fields.${field}`, field)}`}
-                                  />
-                                </label>
                               </div>
-                            </div>
-                            {mappedHeader ? (
-                              <div
-                                draggable={!isApplyingMapping && !draggingHeader}
-                                onDragStart={(e) => handleDragHeaderStart(e, mappedHeader)}
-                                onDragEnd={handleDragHeaderEnd}
-                                className={`flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-white px-2.5 py-2 select-none ${
-                                  draggingHeader ? 'pointer-events-none' : ''
-                                }`}
-                              >
-                                <div className="min-w-0 flex items-center gap-2 flex-1 cursor-grab active:cursor-grabbing pointer-events-none">
-                                  <GripVertical className="h-3.5 w-3.5 text-slate-300 shrink-0" />
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-bold text-slate-800 truncate">{mappedHeader}</p>
-                                    <p className="text-[11px] text-slate-500 truncate">
+                              {mappedHeader ? (
+                                <div
+                                  draggable={!isApplyingMapping && !draggingHeader}
+                                  onDragStart={(e) => handleDragHeaderStart(e, mappedHeader)}
+                                  onDragEnd={handleDragHeaderEnd}
+                                  className={`flex items-center gap-2 ${
+                                    draggingHeader ? 'pointer-events-none' : ''
+                                  }`}
+                                >
+                                  <div className="min-w-0 flex-1 pointer-events-none">
+                                    <p className="text-sm font-semibold text-slate-800 truncate leading-tight">
+                                      {mappedHeader}
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 truncate leading-tight">
                                       {getMappingExample(mappedHeader)}
                                     </p>
                                   </div>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
                                   <button
                                     type="button"
                                     draggable={false}
@@ -3652,167 +3653,167 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                                       e.stopPropagation();
                                       moveMappedHeaderLeft(mappedHeader);
                                     }}
-                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:border-slate-300"
+                                    className="shrink-0 inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
                                     title={t('uploadContacts.mapping.moveLeft')}
-                                    aria-label={t('uploadContacts.mapping.moveLeft')}
+                                    aria-label={t('uploadContacts.mapping.removeMapping')}
                                   >
-                                    <ChevronLeft className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    draggable={false}
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      moveMappedHeaderLeft(mappedHeader);
-                                    }}
-                                    className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50"
-                                    aria-label={t('uploadContacts.mapping.unmap')}
-                                  >
-                                    <X className="h-4 w-4" />
+                                    <ChevronLeft className="h-3.5 w-3.5" />
+                                    {t('uploadContacts.mapping.removeMapping')}
                                   </button>
                                 </div>
-                              </div>
-                            ) : showDerivedFullName ? (
-                              <div className="rounded-lg border border-emerald-200 bg-white px-2.5 py-2 pointer-events-none">
-                                <p className="text-[10px] font-black uppercase tracking-wider text-emerald-600">
-                                  {t('uploadContacts.mapping.autoFullName')}
-                                </p>
-                                <p className="text-sm font-bold text-slate-800 truncate">
-                                  {concatFullName}
-                                </p>
-                                <p className="text-[11px] text-slate-500 truncate">
-                                  {t('uploadContacts.mapping.autoFullNameHint')}
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-xs text-slate-400 italic py-1 pointer-events-none">
-                                  {isTarget
-                                    ? t('uploadContacts.mapping.targetReady')
-                                    : t('uploadContacts.mapping.dropHere')}
-                                </p>
-                                {availableFileHeaders.length > 0 ? (
-                                  <button
-                                    type="button"
-                                    disabled={isApplyingMapping}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedHarxTarget(field);
-                                      moveFirstAvailableIntoField(field);
-                                    }}
-                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-harx-300 hover:text-harx-600"
-                                    title={t('uploadContacts.mapping.moveLeftPick')}
-                                    aria-label={t('uploadContacts.mapping.moveLeftPick')}
-                                  >
-                                    <ChevronLeft className="h-4 w-4" />
-                                  </button>
-                                ) : null}
-                              </div>
-                            )}
+                              ) : showDerivedFullName ? (
+                                <div className="pointer-events-none">
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                                    {t('uploadContacts.mapping.autoFullName')}
+                                  </p>
+                                  <p className="text-sm font-semibold text-slate-800 truncate">
+                                    {concatFullName}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-xs text-slate-400 italic pointer-events-none">
+                                    {t('uploadContacts.mapping.dropHere')}
+                                  </p>
+                                  {availableFileHeaders.length > 0 ? (
+                                    <button
+                                      type="button"
+                                      disabled={isApplyingMapping}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedHarxTarget(field);
+                                        moveFirstAvailableIntoField(field);
+                                      }}
+                                      className="shrink-0 inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
+                                      title={t('uploadContacts.mapping.moveLeftPick')}
+                                      aria-label={t('uploadContacts.mapping.moveLeftPick')}
+                                    >
+                                      <ChevronLeft className="h-3.5 w-3.5" />
+                                      {t('uploadContacts.mapping.assign')}
+                                    </button>
+                                  ) : null}
+                                </div>
+                              )}
+                            </div>
+                            <div
+                              className={`flex items-center gap-2 shrink-0 ${
+                                draggingHeader ? 'pointer-events-none' : ''
+                              }`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <label
+                                className="w-8 flex justify-center items-center cursor-pointer"
+                                title={t('uploadContacts.mapping.visibleCompany')}
+                              >
+                                <MappingCheckbox
+                                  checked={fieldVisibility.company[field] !== false}
+                                  onChange={() => toggleFieldVisibility('company', field)}
+                                  tone="company"
+                                  title={t('uploadContacts.mapping.visibleCompany')}
+                                  aria-label={`${t('uploadContacts.mapping.visibleCompany')} — ${t(`uploadContacts.mapping.fields.${field}`, field)}`}
+                                />
+                              </label>
+                              <label
+                                className="w-8 flex justify-center items-center cursor-pointer"
+                                title={t('uploadContacts.mapping.visibleRep')}
+                              >
+                                <MappingCheckbox
+                                  checked={fieldVisibility.rep[field] !== false}
+                                  onChange={() => toggleFieldVisibility('rep', field)}
+                                  tone="rep"
+                                  title={t('uploadContacts.mapping.visibleRep')}
+                                  aria-label={`${t('uploadContacts.mapping.visibleRep')} — ${t(`uploadContacts.mapping.fields.${field}`, field)}`}
+                                />
+                              </label>
+                            </div>
                           </div>
                         );
                       })}
-                    </div>
 
-                    {/* Custom columns added via "Ajouter" on an occupied HARX field */}
-                    {savedExtraHeaderList.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-xs font-black uppercase tracking-wider text-harx-600">
+                      {/* Custom columns — flattened */}
+                      {savedExtraHeaderList.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 space-y-1.5">
+                          <p className="px-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">
                             {t('uploadContacts.mapping.savedExtras')}
+                            <span className="ml-1.5 font-bold text-slate-400 normal-case tracking-normal">
+                              ({savedExtraHeaderList.length})
+                            </span>
                           </p>
-                          <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
-                            <span className="w-14 text-center text-sky-600">
-                              {t('uploadContacts.mapping.visibleCompany')}
-                            </span>
-                            <span className="w-14 text-center text-emerald-600">
-                              {t('uploadContacts.mapping.visibleRep')}
-                            </span>
-                          </div>
-                        </div>
-                        {savedExtraHeaderList.map((header) => {
-                          const visKey = customVisibilityKey(header);
-                          const displayTitle = getSavedExtraLabel(header);
-                          return (
-                            <div
-                              key={`extra-${header}`}
-                              className="rounded-xl border border-harx-200 bg-harx-50/40 px-3 py-2.5 space-y-2"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-[10px] font-black uppercase tracking-wider text-harx-600">
-                                  {t('uploadContacts.mapping.savedExtraField')}
-                                </span>
-                                <div className="flex items-center gap-3 shrink-0">
-                                  <label
-                                    className="w-14 flex justify-center items-center cursor-pointer"
-                                    title={t('uploadContacts.mapping.visibleCompany')}
-                                  >
-                                    <MappingCheckbox
-                                      checked={fieldVisibility.company[visKey] !== false}
-                                      onChange={() => toggleFieldVisibility('company', visKey)}
-                                      tone="company"
-                                      title={t('uploadContacts.mapping.visibleCompany')}
-                                      aria-label={`${t('uploadContacts.mapping.visibleCompany')} — ${displayTitle}`}
+                          {savedExtraHeaderList.map((header) => {
+                            const visKey = customVisibilityKey(header);
+                            const displayTitle = getSavedExtraLabel(header);
+                            return (
+                              <div
+                                key={`extra-${header}`}
+                                className="rounded-lg border border-slate-200 bg-slate-50/80 px-2.5 py-2"
+                              >
+                                <div className="flex items-start gap-2">
+                                  <div className="min-w-0 flex-1 space-y-1">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                      {t('uploadContacts.mapping.savedExtraField')}
+                                    </span>
+                                    <input
+                                      type="text"
+                                      value={savedExtraColumns[header]?.label ?? displayTitle}
+                                      onChange={(e) => updateSavedExtraLabel(header, e.target.value)}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onClick={(e) => e.stopPropagation()}
+                                      placeholder={t('uploadContacts.mapping.displayTitlePlaceholder')}
+                                      className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm font-semibold text-slate-800 outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-200"
                                     />
-                                  </label>
-                                  <label
-                                    className="w-14 flex justify-center items-center cursor-pointer"
-                                    title={t('uploadContacts.mapping.visibleRep')}
-                                  >
-                                    <MappingCheckbox
-                                      checked={fieldVisibility.rep[visKey] !== false}
-                                      onChange={() => toggleFieldVisibility('rep', visKey)}
-                                      tone="rep"
-                                      title={t('uploadContacts.mapping.visibleRep')}
-                                      aria-label={`${t('uploadContacts.mapping.visibleRep')} — ${displayTitle}`}
-                                    />
-                                  </label>
-                                </div>
-                              </div>
-                              <label className="block">
-                                <span className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">
-                                  {t('uploadContacts.mapping.displayTitle')}
-                                </span>
-                                <input
-                                  type="text"
-                                  value={savedExtraColumns[header]?.label ?? displayTitle}
-                                  onChange={(e) => updateSavedExtraLabel(header, e.target.value)}
-                                  onMouseDown={(e) => e.stopPropagation()}
-                                  onClick={(e) => e.stopPropagation()}
-                                  placeholder={t('uploadContacts.mapping.displayTitlePlaceholder')}
-                                  className="w-full rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-sm font-bold text-slate-800 outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-200"
-                                />
-                              </label>
-                              <div className="flex items-center justify-between gap-2 rounded-lg border border-harx-200 bg-white px-2.5 py-2">
-                                <div className="min-w-0 flex items-center gap-2 flex-1">
-                                  <GripVertical className="h-3.5 w-3.5 text-slate-300 shrink-0" />
-                                  <div className="min-w-0">
-                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                      {t('uploadContacts.mapping.sourceField')}
-                                    </p>
-                                    <p className="text-sm font-bold text-slate-800 truncate">{header}</p>
-                                    <p className="text-[11px] text-slate-500 truncate">
-                                      {getMappingExample(header)}
+                                    <p className="text-[11px] text-slate-400 truncate" title={header}>
+                                      {t('uploadContacts.mapping.sourceField')}: {header}
                                     </p>
                                   </div>
+                                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                    <div className="flex items-center gap-2">
+                                      <label
+                                        className="w-8 flex justify-center items-center cursor-pointer"
+                                        title={t('uploadContacts.mapping.visibleCompany')}
+                                      >
+                                        <MappingCheckbox
+                                          checked={fieldVisibility.company[visKey] !== false}
+                                          onChange={() => toggleFieldVisibility('company', visKey)}
+                                          tone="company"
+                                          title={t('uploadContacts.mapping.visibleCompany')}
+                                          aria-label={`${t('uploadContacts.mapping.visibleCompany')} — ${displayTitle}`}
+                                        />
+                                      </label>
+                                      <label
+                                        className="w-8 flex justify-center items-center cursor-pointer"
+                                        title={t('uploadContacts.mapping.visibleRep')}
+                                      >
+                                        <MappingCheckbox
+                                          checked={fieldVisibility.rep[visKey] !== false}
+                                          onChange={() => toggleFieldVisibility('rep', visKey)}
+                                          tone="rep"
+                                          title={t('uploadContacts.mapping.visibleRep')}
+                                          aria-label={`${t('uploadContacts.mapping.visibleRep')} — ${displayTitle}`}
+                                        />
+                                      </label>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeSavedExtraColumn(header)}
+                                      className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
+                                      aria-label={t('uploadContacts.mapping.removeMapping')}
+                                    >
+                                      <ChevronLeft className="h-3.5 w-3.5" />
+                                      {t('uploadContacts.mapping.removeMapping')}
+                                    </button>
+                                  </div>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => removeSavedExtraColumn(header)}
-                                  className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0"
-                                  aria-label={t('uploadContacts.mapping.unmap')}
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
                               </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   </div>
                 </div>
+                  );
+                })()}
 
                 {mappingConflict && (
                   <div
