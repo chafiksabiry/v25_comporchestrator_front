@@ -367,13 +367,11 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     [contactVariables]
   );
 
-  const handleReplicaChange = (stageIndex: number, introReplica: string) => {
+  const handleStageChange = (stageIndex: number, stage: InteractiveStage) => {
     setActiveInteractiveStages((prev) => {
       if (!prev || prev.length === 0) return prev;
       if (stageIndex < 0 || stageIndex >= prev.length) return prev;
-      return prev.map((stage, i) =>
-        i === stageIndex ? { ...stage, introReplica } : stage
-      );
+      return prev.map((s, i) => (i === stageIndex ? stage : s));
     });
   };
 
@@ -1785,7 +1783,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                       isValidating={isSending}
                       onStageIndexChange={setInteractiveStageIdx}
                       contactVariables={contactVariables}
-                      onReplicaChange={handleReplicaChange}
+                      onStageChange={handleStageChange}
                     />
 
                     {/* Beautiful glassmorphic loading overlay over the cockpit when updating */}
