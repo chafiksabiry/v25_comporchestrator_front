@@ -349,10 +349,11 @@ export const phoneNumberService = {
         payload.requirementGroupId = requirementGroupId;
       }
 
+      if (paymentId) payload.paymentId = paymentId;
+
       if (resolved === 'twilio') {
         if (bundleSid) payload.bundleSid = bundleSid;
         if (addressSid) payload.addressSid = addressSid;
-        if (paymentId) payload.paymentId = paymentId;
       }
 
       const response = await api.post<PhoneNumber>(endpoint, payload);
