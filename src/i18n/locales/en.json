@@ -2213,6 +2213,8 @@
     "urlDetected": "URL detected — we will analyze the page and generate the profile.",
     "searchBtn": "Search",
     "scrapeBtn": "Generate",
+    "backToSearch": "Back to search",
+    "publishHint": "Review the information below, then click Publish to save the company. You can go back without publishing.",
     "manual": {
       "openBtn": "Create manually",
       "noWebsite": "No website? Create the company manually.",

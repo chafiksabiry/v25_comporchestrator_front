@@ -168,7 +168,10 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <OnboardingBackButton
             variant="cta"
-            label={t("searchCompanyWizard.backToSearch", "Retour à la recherche")}
+            label={t(
+              "searchCompanyWizard.backToSearch",
+              uiLanguage === "fr" ? "Retour à la recherche" : "Back to search"
+            )}
             onClick={() => {
               // Discard unpublished draft and return to search / URL step.
               setProfile(null);
@@ -178,7 +181,9 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
           <div className="flex-1 min-w-[220px] rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             {t(
               "searchCompanyWizard.publishHint",
-              "Vérifiez les informations ci-dessous puis cliquez sur Publier pour enregistrer la société. Vous pouvez revenir en arrière sans publier."
+              uiLanguage === "fr"
+                ? "Vérifiez les informations ci-dessous puis cliquez sur Publier pour enregistrer la société. Vous pouvez revenir en arrière sans publier."
+                : "Review the information below, then click Publish to save the company. You can go back without publishing."
             )}
           </div>
         </div>
@@ -207,7 +212,10 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
         <div className="mb-4">
           <OnboardingBackButton
             variant="cta"
-            label={t("searchCompanyWizard.backToSearch", "Retour à la recherche")}
+            label={t(
+              "searchCompanyWizard.backToSearch",
+              uiLanguage === "fr" ? "Retour à la recherche" : "Back to search"
+            )}
             onClick={() => setManualMode(false)}
           />
         </div>
