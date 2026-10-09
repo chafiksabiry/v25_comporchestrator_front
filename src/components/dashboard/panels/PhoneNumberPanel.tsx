@@ -1061,6 +1061,14 @@ export function PhoneNumberPanel() {
 
       if (!purchaseRes.ok) {
         const err = await purchaseRes.json().catch(() => ({}));
+        if (purchaseRes.status === 402) {
+          setCheckoutNumber(numberToBuy);
+          setCheckoutProvider(provider);
+          setCheckoutMethod('stripe');
+          setCheckoutStep('select');
+          setCheckoutPaymentId(null);
+          return;
+        }
         throw new Error(err?.message || err?.error || t('phoneNumberPanel.toasts.purchaseFailed'));
       }
 
@@ -1100,8 +1108,10 @@ export function PhoneNumberPanel() {
       }
     }
 
-    // Bypass payment modal if requirements are not used (i.e. hasRequirements is false)
-    if (!requirementStatus.hasRequirements) {
+    // The first company line is a free trial and can be provisioned directly.
+    // Every following line (US Telnyx included) needs a confirmed payment.
+    // Missing regulatory requirements does not mean the line is free.
+    if (phoneNumbers.length === 0) {
       void handleDirectPurchase(numberToBuy, provider);
       return;
     }
