@@ -161,10 +161,13 @@ export default function CompanyMembersPage() {
       });
       if (result.emailSent) {
         setSuccess(`Invitation envoyée à ${form.email.trim()}.`);
-      } else if (result.temporaryPassword) {
-        setSuccess(`Compte créé. E-mail non envoyé. Mot de passe temporaire : ${result.temporaryPassword}`);
       } else {
-        setSuccess(result.emailError || 'Membre ajouté.');
+        setError(
+          `E-mail non envoyé à ${form.email.trim()}. ${result.emailError || 'Vérifiez la configuration Brevo.'}`
+        );
+        if (result.temporaryPassword) {
+          setSuccess(`Mot de passe temporaire : ${result.temporaryPassword}`);
+        }
       }
       setForm({ firstName: '', lastName: '', email: '', phone: '' });
       setShowForm(false);
@@ -214,10 +217,11 @@ export default function CompanyMembersPage() {
       if (result.emailSent) {
         setSuccess(`Invitation renvoyée à ${email}.`);
         setReinviteId(null);
-      } else if (result.temporaryPassword) {
-        setSuccess(`E-mail non envoyé à ${email}. Mot de passe temporaire : ${result.temporaryPassword}`);
       } else {
-        setError(result.emailError || 'Renvoi impossible.');
+        setError(`E-mail non envoyé à ${email}. ${result.emailError || 'Vérifiez la configuration Brevo.'}`);
+        if (result.temporaryPassword) {
+          setSuccess(`Mot de passe temporaire : ${result.temporaryPassword}`);
+        }
       }
       await load();
     } catch (err: any) {
