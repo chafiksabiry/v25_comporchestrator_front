@@ -366,6 +366,8 @@ const CompanyOnboarding = () => {
   const [nextStepGate, setNextStepGate] = useState<{ disabled: boolean; hint?: string }>({
     disabled: false,
   });
+  // "Revoir l'étape" reopens a step that is already done — do not replay the completion modal.
+  const [openedAsReview, setOpenedAsReview] = useState(false);
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [stepGuide, setStepGuide] = useState<{
@@ -1348,6 +1350,7 @@ const CompanyOnboarding = () => {
     try {
       // Vérifier si le step est déjà complété
       const isStepCompleted = completedSteps.includes(stepId);
+      setOpenedAsReview(isStepCompleted);
 
       // Si le step est déjà complété, ne pas changer son statut
       if (isStepCompleted) {
@@ -1404,6 +1407,7 @@ const CompanyOnboarding = () => {
   };
 
   const executeReviewStep = async (stepId: number) => {
+    setOpenedAsReview(true);
     try {
       const allSteps = phases.flatMap((phase) => phase.steps);
       const step = allSteps.find((s) => s.id === stepId);
@@ -1645,6 +1649,7 @@ const CompanyOnboarding = () => {
   }, []);
 
   const handleBackToOnboarding = async () => {
+    setOpenedAsReview(false);
     // If UploadContacts is showing, cancel processing and return immediately
     if (showUploadContacts) {
       
@@ -1767,6 +1772,7 @@ const CompanyOnboarding = () => {
   }, []);
 
   const handleStepClick = (stepId: number) => {
+    setOpenedAsReview(completedSteps.includes(stepId));
     const allSteps = phases.flatMap((phase) => phase.steps);
     const step = allSteps.find((s) => s.id === stepId);
     const currentPhaseSteps = phases[currentPhase - 1].steps;
@@ -1958,7 +1964,8 @@ const CompanyOnboarding = () => {
             ? (kbHasContent || stepStatuses[7] === 'completed')
             : (showGigDetails || showGigCreation)
               ? (hasGigs || stepStatuses[3] === 'completed')
-              : stepStatuses[getFocusedStepId() ?? -1] === 'completed') && (
+              : stepStatuses[getFocusedStepId() ?? -1] === 'completed') &&
+            !openedAsReview && (
             <OnboardingNextStepButton
               onClick={() => {
                 void handleOnboardingNextStep();
