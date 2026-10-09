@@ -33,7 +33,9 @@ import {
 } from '../../../lib/paypalCheckout';
 import { getCallsApiBase } from '../lib/callsApiBase';
 import {
+  billedMinutesFromSeconds,
   formatBilledMinutesFromSeconds,
+  formatTalkDuration,
   formatWalletMinutesBalance
 } from '../../../utils/billingMinutes';
 import {
@@ -71,12 +73,20 @@ function computeDisplayPriceCents(
   return 0;
 }
 
+interface MinuteCredit {
+  at: string;
+  minutes: number;
+  planName?: string;
+  kind: 'plan' | 'recharge' | string;
+}
+
 interface MinutesState {
   companyId: string;
   minutes: number;
   purchasedMinutes?: number;
   planMinutesIncluded?: number;
   planName?: string | null;
+  credits?: MinuteCredit[];
   consumedSeconds?: number;
   limitReached?: boolean;
 }
@@ -306,6 +316,7 @@ export function MinutesCompanyPanel() {
             planMinutesIncluded:
               typeof data.planMinutesIncluded === 'number' ? data.planMinutesIncluded : 0,
             planName: data.planName || null,
+            credits: Array.isArray(data.credits) ? data.credits : [],
             consumedSeconds: typeof data.consumedSeconds === 'number' ? data.consumedSeconds : 0,
             limitReached: Boolean(data.limitReached) || balance <= 0,
           };
@@ -568,7 +579,7 @@ export function MinutesCompanyPanel() {
             <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Décompte automatique à chaque appel — sans validation IA</span>
+                <span>Seule la durée décrochée est facturée. La sonnerie n'est pas comptée. Chaque minute entamée est due.</span>
               </div>
             </div>
           </div>
@@ -600,6 +611,51 @@ export function MinutesCompanyPanel() {
           </div>
         </div>
       </div>
+
+      {(minutesWallet?.credits || []).length > 0 && (
+        <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-4">
+          <h3 className="text-base font-black text-slate-800 tracking-tight">Minutes créditées</h3>
+          <div className="overflow-auto rounded-2xl border border-gray-50">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Type</th>
+                  <th className="py-3 px-4">Détail</th>
+                  <th className="py-3 px-4 text-right">Minutes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 text-xs">
+                {(minutesWallet?.credits || []).map((credit, index) => {
+                  const isPlan = credit.kind === 'plan';
+                  return (
+                    <tr key={`${credit.at}-${credit.kind}-${index}`}>
+                      <td className="py-3 px-4 text-gray-500">
+                        {credit.at ? new Date(credit.at).toLocaleString('fr-FR') : '—'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full border font-bold text-[9px] uppercase tracking-wider ${
+                          isPlan
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                            : 'bg-blue-50 text-blue-700 border-blue-100'
+                        }`}>
+                          {isPlan ? 'Inclus plan' : 'Recharge'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-bold text-slate-800">
+                        {isPlan ? (credit.planName || minutesWallet?.planName || 'Plan') : 'Achat de minutes'}
+                      </td>
+                      <td className="py-3 px-4 text-right font-black text-emerald-700 tabular-nums">
+                        +{formatWalletMinutesBalance(credit.minutes)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Calling History Logs list */}
       <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
@@ -680,7 +736,7 @@ export function MinutesCompanyPanel() {
                       {new Date(call.startTime).toLocaleString('fr-FR')}
                     </td>
                     <td className="py-4 px-4 text-slate-900 font-bold tabular-nums">
-                      {formatBilledMinutesFromSeconds(call.duration)}
+                      {formatTalkDuration(call.duration)}
                     </td>
                     <td className="py-4 px-4">
                       {(() => {
@@ -698,7 +754,7 @@ export function MinutesCompanyPanel() {
                     <td className="py-4 px-4">
                       {(call.duration || 0) > 0 ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[9px] uppercase tracking-wider">
-                          <CheckCircle2 size={10} /> Minutes débitées
+                          <CheckCircle2 size={10} /> {billedMinutesFromSeconds(call.duration)} min débitées
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-100 font-bold text-[9px] uppercase tracking-wider">
