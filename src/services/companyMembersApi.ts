@@ -29,6 +29,8 @@ export type CompanyMember = {
   isOwner: boolean;
   preset: PresetId;
   status: 'pending' | 'invited' | 'active' | string;
+  online?: boolean;
+  lastSeenAt?: string | null;
   permissions: PermissionMap;
   invitedAt?: string | null;
 };
@@ -56,6 +58,15 @@ export async function getMyCompanyAccess(): Promise<CompanyAccess | null> {
   });
   const json = await parse(res);
   return json.data || null;
+}
+
+export async function touchCompanyPresence(): Promise<void> {
+  const res = await fetch(`${getRegistrationBackendBase()}/api/company-members/presence`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: '{}',
+  });
+  await parse(res);
 }
 
 export async function listCompanyMembers(companyId: string): Promise<CompanyMember[]> {

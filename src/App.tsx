@@ -53,7 +53,7 @@ import StripeContainer from './components/stripe/StripeContainer';
 import DashboardApp from './components/dashboard/App';
 import PremiumDashboard from './components/training/components/Dashboard/PremiumDashboard';
 import MasterSidebar from './components/layout/MasterSidebar';
-import { getMyCompanyAccess } from './services/companyMembersApi';
+import { getMyCompanyAccess, touchCompanyPresence } from './services/companyMembersApi';
 import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwitch';
 import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
 import Subscription from './components/Subscription';
@@ -177,6 +177,25 @@ function AppContent() {
   const [escrow, setEscrow] = useState<number>(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let timer = 0;
+    let stopped = false;
+    getMyCompanyAccess()
+      .then((access) => {
+        if (stopped || !access || access.isOwner) return;
+        const beat = () => {
+          touchCompanyPresence().catch(() => {});
+        };
+        beat();
+        timer = window.setInterval(beat, 25000);
+      })
+      .catch(() => {});
+    return () => {
+      stopped = true;
+      if (timer) window.clearInterval(timer);
+    };
+  }, []);
+
   useEffect(() => {
     if (!isProfileDropdownOpen) return;
     const handleClickOutside = (e: MouseEvent) => {

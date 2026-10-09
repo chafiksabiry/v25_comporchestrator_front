@@ -25,7 +25,7 @@ const PRESETS: { id: Exclude<PresetId, 'owner' | 'custom'>; label: string; hint:
 
 function statusLabel(status: string) {
   if (status === 'invited') return 'Invité';
-  if (status === 'active') return 'Actif';
+  if (status === 'active') return 'Membre';
   if (status === 'pending') return 'E-mail en attente';
   return status || '—';
 }
@@ -117,25 +117,32 @@ export default function CompanyMembersPage() {
   const [reinviteId, setReinviteId] = useState<string | null>(null);
   const [reinviteEmail, setReinviteEmail] = useState('');
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     if (!companyId) {
       setError('Aucune entreprise associée à ce compte.');
       setLoading(false);
       return;
     }
-    setLoading(true);
-    setError(null);
+    if (!silent) setLoading(true);
+    if (!silent) setError(null);
     try {
       setMembers(await listCompanyMembers(companyId));
     } catch (e: any) {
-      setError(e?.message || 'Impossible de charger l\'équipe.');
+      if (!silent) setError(e?.message || 'Impossible de charger l\'équipe.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [companyId]);
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void load(true);
+    }, 15000);
+    return () => window.clearInterval(timer);
   }, [load]);
 
   const applyPreset = (id: Exclude<PresetId, 'owner' | 'custom'>) => {
@@ -405,9 +412,23 @@ export default function CompanyMembersPage() {
                       <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-600">
                         {member.isOwner ? 'Propriétaire' : member.preset}
                       </span>
-                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                        member.isOwner || member.status === 'active'
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                          : 'border-amber-200 bg-amber-50 text-amber-800'
+                      }`}>
                         {member.isOwner ? 'Actif' : statusLabel(member.status)}
                       </span>
+                      {!member.isOwner && member.status === 'active' ? (
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                          member.online
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                            : 'border-slate-200 bg-slate-50 text-slate-500'
+                        }`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${member.online ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                          {member.online ? 'En ligne' : 'Hors ligne'}
+                        </span>
+                      ) : null}
                     </div>
                     <p className="mt-1 text-xs font-medium text-slate-500">{member.email}</p>
                   </div>
