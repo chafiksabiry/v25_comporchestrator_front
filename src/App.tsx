@@ -418,6 +418,7 @@ function AppContent() {
 
           // Fetch company details for logo
           const companyApiUrl = import.meta.env.VITE_COMPANY_API_URL;
+          let invitedMember = false;
           if (companyApiUrl) {
             const companyId = Cookies.get('companyId');
             let companyResponse;
@@ -485,8 +486,11 @@ function AppContent() {
                 if (access?.companyId) {
                   Cookies.set('companyId', access.companyId, { path: '/' });
                   localStorage.setItem('companyId', access.companyId);
+                  localStorage.setItem('userType', 'company');
+                  localStorage.removeItem('callCenterStaff');
                   window.dispatchEvent(new CustomEvent('harx:company-ready'));
                   if (!access.isOwner) {
+                    invitedMember = true;
                     setOnboardingComplete(true);
                     markGuideComplete();
                   }
@@ -498,7 +502,7 @@ function AppContent() {
           }
 
           const cookieCompanyId = Cookies.get('companyId');
-          if (cookieCompanyId) {
+          if (cookieCompanyId && !invitedMember) {
             const steps = await syncOnboardingProgressFromApi(cookieCompanyId);
             const complete = isOnboardingFullyCompleted(steps);
             setOnboardingComplete(complete);

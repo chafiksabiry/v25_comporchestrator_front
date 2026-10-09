@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -34,8 +35,18 @@ interface ApiUserResponse {
 
 type Section = 'profile' | 'email' | 'password' | 'phone';
 
+function mustSetPassword() {
+  if (typeof window === 'undefined') return false;
+  return (
+    localStorage.getItem('mustChangePassword') === '1' ||
+    window.location.hash.includes('changePassword=1')
+  );
+}
+
 function AccountSettingsPanel() {
-  const [section, setSection] = useState<Section>('profile');
+  const navigate = useNavigate();
+  const [forcePassword, setForcePassword] = useState(mustSetPassword);
+  const [section, setSection] = useState<Section>(mustSetPassword() ? 'password' : 'profile');
 
   const [loadingUser, setLoadingUser] = useState(true);
   const [email, setEmail] = useState('');
@@ -500,7 +511,83 @@ function AccountSettingsPanel() {
           )}
 
           {/* PASSWORD */}
-          {section === 'password' && (
+          {section === 'password' && forcePassword && (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (pwdNew.length < 8) {
+                  toast.error('Le nouveau mot de passe doit contenir au moins 8 caractères.');
+                  return;
+                }
+                if (pwdNew !== pwdConfirm) {
+                  toast.error('Les deux mots de passe ne correspondent pas.');
+                  return;
+                }
+                setPwdLoading(true);
+                try {
+                  const token = localStorage.getItem('token') || Cookies.get('token') || '';
+                  await axios.post(
+                    `${backendUrl}/api/auth/change-password`,
+                    { newPassword: pwdNew },
+                    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+                  );
+                  localStorage.removeItem('mustChangePassword');
+                  setForcePassword(false);
+                  setPwdNew('');
+                  setPwdConfirm('');
+                  toast.success('Mot de passe modifié. Vous êtes dans l\'espace entreprise.');
+                  navigate('/dashboard/main');
+                } catch (err) {
+                  toast.error(extractError(err, 'Échec du changement de mot de passe.'));
+                } finally {
+                  setPwdLoading(false);
+                }
+              }}
+              className="space-y-5 max-w-xl"
+            >
+              <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex gap-2.5 text-[11px] text-emerald-800 font-bold leading-relaxed">
+                <ShieldCheck size={16} className="shrink-0 text-emerald-600" />
+                <span>
+                  Votre entreprise a créé ce compte avec un mot de passe temporaire. Choisissez-en un nouveau pour accéder à l'espace entreprise, avec les droits qui vous ont été donnés.
+                </span>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">
+                  Nouveau mot de passe
+                </label>
+                <input
+                  type={showNew ? 'text' : 'password'}
+                  value={pwdNew}
+                  onChange={(e) => setPwdNew(e.target.value)}
+                  required
+                  minLength={8}
+                  className="w-full px-3 py-3 bg-white border border-gray-200 focus:border-harx-500 rounded-xl font-bold text-sm focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">
+                  Confirmer le mot de passe
+                </label>
+                <input
+                  type="password"
+                  value={pwdConfirm}
+                  onChange={(e) => setPwdConfirm(e.target.value)}
+                  required
+                  minLength={8}
+                  className="w-full px-3 py-3 bg-white border border-gray-200 focus:border-harx-500 rounded-xl font-bold text-sm focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={pwdLoading}
+                className="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-xs uppercase tracking-wider disabled:opacity-60"
+              >
+                {pwdLoading ? 'Enregistrement…' : 'Enregistrer le mot de passe'}
+              </button>
+            </form>
+          )}
+
+          {section === 'password' && !forcePassword && (
             <div className="space-y-5 max-w-xl">
               <div className="p-3 bg-blue-50/60 border border-blue-100 rounded-xl flex gap-2.5 text-[10px] text-blue-800/80 font-bold leading-relaxed">
                 <ShieldCheck size={16} className="shrink-0 text-blue-600" />
