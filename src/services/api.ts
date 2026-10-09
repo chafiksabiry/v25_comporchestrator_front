@@ -321,14 +321,6 @@ export const phoneNumberService = {
         ? 'twilio'
         : provider;
 
-    // Vérifier le requirementGroupId pour Telnyx
-    if (resolved === 'telnyx' && !requirementGroupId) {
-      throw new PhoneNumberServiceError(
-        'requirementGroupId is required for Telnyx numbers',
-        'MISSING_PARAMETER'
-      );
-    }
-
     try {
       const endpoint = resolved === 'twilio'
         ? '/phone-numbers/purchase/twilio'
@@ -342,7 +334,9 @@ export const phoneNumberService = {
         companyId: data.companyId,
       };
 
-      if (resolved === 'telnyx') {
+      // Only regulated Telnyx countries have a requirement group.
+      // US (and any market with no ordering requirements) provisions without one.
+      if (resolved === 'telnyx' && requirementGroupId) {
         payload.requirementGroupId = requirementGroupId;
       }
 
