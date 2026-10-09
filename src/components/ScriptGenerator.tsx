@@ -194,6 +194,22 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
   return parsed;
 };
 
+function scriptGigId(script: { gigId?: unknown; gig?: { _id?: string } | string }): string {
+  const attached = script?.gig;
+  if (attached && typeof attached === 'object' && attached._id) return String(attached._id);
+  const raw = script?.gigId as any;
+  if (raw && typeof raw === 'object') return String(raw._id || raw.$oid || '');
+  return raw ? String(raw) : '';
+}
+
+function scriptsForGig<T extends { gigId?: unknown; gig?: { _id?: string } | string }>(
+  scripts: T[],
+  gigId: string
+): T[] {
+  const id = String(gigId);
+  return scripts.filter((script) => scriptGigId(script) === id);
+}
+
 const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { t } = useTranslation();
   // `useLocation` lets us know whether ScriptGenerator is mounted under
@@ -245,6 +261,8 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   /** Controls whether fetchSavedScripts opens an existing script or starts a fresh generation. */
   const scriptLoadIntentRef = useRef<'new' | 'open' | null>(null);
   const pendingOpenScriptRef = useRef<SavedScript | null>(null);
+  const scriptApplySeqRef = useRef(0);
+  const selectedGigIdRef = useRef<string | null>(null);
   /** Script currently being edited — re-save updates instead of creating duplicates. */
   const currentScriptIdRef = useRef<string | null>(null);
 
@@ -667,14 +685,21 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   };
 
   const startNewScriptForGig = (gig: Gig) => {
-    scriptLoadIntentRef.current = 'new';
-    currentScriptIdRef.current = null;
+    const existing = scriptsForGig(allSavedScripts, gig._id);
+    const saved = existing.find((script) => script.isActive) || existing[0];
+    currentScriptIdRef.current = saved?._id || null;
     setShowNewScriptSelection(false);
-    setActiveInteractiveStages(null);
-    setActiveInteractiveTitle('');
+    if (saved) {
+      scriptLoadIntentRef.current = 'open';
+      pendingOpenScriptRef.current = saved;
+    } else {
+      scriptLoadIntentRef.current = 'new';
+      pendingOpenScriptRef.current = null;
+      setActiveInteractiveStages(null);
+      setActiveInteractiveTitle('');
+    }
 
     if (selectedGig?._id === gig._id) {
-      handleStartNewChat();
       fetchSavedScripts(gig._id);
       return;
     }
@@ -688,9 +713,15 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   };
 
   useEffect(() => {
+    selectedGigIdRef.current = selectedGig?._id ? String(selectedGig._id) : null;
+  }, [selectedGig?._id]);
+
+  useEffect(() => {
     if (!selectedGig) return;
     setIsGigScriptsDropdownOpen(false);
-    handleStartNewChat();
+    if (scriptLoadIntentRef.current !== 'open') {
+      handleStartNewChat();
+    }
     fetchSavedScripts(selectedGig._id);
   }, [selectedGig?._id]);
 
@@ -699,6 +730,8 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     if (scriptLoadIntentRef.current === 'new') {
       currentScriptIdRef.current = null;
     }
+    const gigIdAtStart = String(selectedGig._id);
+    const applySeq = scriptApplySeqRef.current;
     setIsSending(true);
     setError(null);
     try {
@@ -738,6 +771,9 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
       const { data } = await apiClient.post('/rag/generate-script', payload);
       const generatedStages = data?.stages || data?.data?.stages;
+      if (scriptApplySeqRef.current !== applySeq || selectedGigIdRef.current !== gigIdAtStart) {
+        return;
+      }
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
         setActiveInteractiveStages(generatedStages);
         setActiveInteractiveTitle(selectedGig.title || "Script Interactif");
@@ -1168,19 +1204,21 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         return;
       }
 
-      if (intent === 'new' || items.length === 0) {
+      if (items.length === 0) {
         setIsAutoGenerateWizardActive(true);
         handleGenerateInteractiveScriptFromScratch();
         return;
       }
 
-      // Default: gig switch — open the active script for context
-      const activeItem = items.find((item: any) => item.isActive);
+      if (intent === 'new') {
+        const kept = items.find((item: any) => item.isActive) || items[0];
+        openSavedScript(kept);
+        return;
+      }
+
+      const activeItem = items.find((item: any) => item.isActive) || items[0];
       if (activeItem) {
         openSavedScript(activeItem);
-      } else {
-        setIsAutoGenerateWizardActive(true);
-        handleGenerateInteractiveScriptFromScratch();
       }
     } catch (err: any) {
       setSavedScripts([]);
@@ -1191,6 +1229,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   };
 
   const openSavedScript = (item: SavedScript) => {
+    scriptApplySeqRef.current += 1;
     currentScriptIdRef.current = item._id;
     const normalizedText = normalizeScriptText(item?.script);
     const message: ChatMessage = {
@@ -1996,6 +2035,32 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   </div>
                 ) : (
                   <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 custom-scrollbar text-left">
+                    {gigs
+                      .filter((gig) => scriptsForGig(allSavedScripts, gig._id).length === 0)
+                      .map((gig) => (
+                        <div
+                          key={`gig-${gig._id}`}
+                          className="p-3 bg-white hover:bg-red-50/10 border border-dashed border-slate-200 hover:border-red-500 rounded-xl transition-all duration-200 flex items-center justify-between gap-4"
+                        >
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <span className="px-2 py-0.5 bg-slate-50 text-slate-500 rounded text-[8px] font-black uppercase tracking-widest border border-slate-200">
+                              {gig.category || 'Général'}
+                            </span>
+                            <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight truncate">
+                              {gig.title}
+                            </h4>
+                            <p className="text-[10px] text-slate-500 font-semibold truncate">
+                              Aucun script enregistré pour cette mission
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => startNewScriptForGig(gig)}
+                            className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:border-red-500 hover:text-red-600 font-extrabold text-[9px] rounded-lg transition-all duration-200 uppercase tracking-wider shadow-sm active:scale-95"
+                          >
+                            Créer
+                          </button>
+                        </div>
+                      ))}
                     {allSavedScripts.map((script) => (
                       <div
                         key={script._id}
@@ -2092,9 +2157,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 {/* Gigs grid — plusieurs scripts possibles par mission */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
                   {gigs.map((gig) => {
-                    const existingCount = allSavedScripts.filter(
-                      (s) => String(s.gigId) === String(gig._id)
-                    ).length;
+                    const existingCount = scriptsForGig(allSavedScripts, gig._id).length;
                     return (
                       <button
                         key={gig._id}
