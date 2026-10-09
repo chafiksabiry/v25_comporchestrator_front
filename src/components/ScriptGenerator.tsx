@@ -230,6 +230,8 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [isAutoGenerateWizardActive, setIsAutoGenerateWizardActive] = useState(true);
   const [activeToolkitView, setActiveToolkitView] = useState<'chat' | 'expert'>('chat');
   const [activeInteractiveStages, setActiveInteractiveStages] = useState<InteractiveStage[] | null>(null);
+  const interactiveStagesRef = useRef(activeInteractiveStages);
+  interactiveStagesRef.current = activeInteractiveStages;
   const [activeInteractiveTitle, setActiveInteractiveTitle] = useState<string>('');
   const [interactiveStageIdx, setInteractiveStageIdx] = useState(0);
   const [relatedTrainings, setRelatedTrainings] = useState<any[]>([]);
@@ -844,6 +846,57 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         err?.code === 'insufficient_tokens' || err?.response?.data?.error === 'insufficient_tokens'
           ? err?.response?.data?.message || err.message
           : err?.response?.data?.error || err?.message || 'Échec du raffinement du script'
+      );
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleStageCommit = async (stageIndex: number) => {
+    const stages = interactiveStagesRef.current;
+    if (!stages || stages.length === 0 || !selectedGig || isSending) return;
+    if (stageIndex < 0 || stageIndex >= stages.length - 1) return;
+    setIsSending(true);
+    setError(null);
+    try {
+      const companyId = getCompanyId();
+      const payload = {
+        companyId,
+        gig: selectedGig,
+        typeClient: 'general',
+        langueTon: 'professionnel et direct',
+        contexte: 'The user edited this stage. Keep it exactly. Realign only the later stages that no longer follow it.',
+        trainings: relatedTrainings,
+        isInteractiveRequest: true,
+        editMode: 'realign',
+        targetStageIndex: stageIndex,
+        currentStages: stages,
+        contactVariables,
+      };
+      await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
+      const { data } = await apiClient.post('/rag/generate-script', payload);
+      const generatedStages = data?.stages || data?.data?.stages;
+      if (Array.isArray(generatedStages) && generatedStages.length > 0) {
+        setActiveInteractiveStages(generatedStages);
+        const backendBilled = applyBackendAiUsage(data?.usage, companyId);
+        if (!backendBilled) {
+          void chargeCompanyAiUsage({
+            usageId: `script-realign-${selectedGig._id}-${stageIndex}-${Date.now()}`,
+            tokensUsed: Math.max(
+              1200,
+              estimateTokensFromText(JSON.stringify(payload), JSON.stringify(generatedStages))
+            ),
+            tool: 'script.refine_stage',
+            companyId,
+            skipIfFirstGigFree: true,
+          }).catch(() => undefined);
+        }
+      }
+    } catch (err: any) {
+      setError(
+        err?.code === 'insufficient_tokens' || err?.response?.data?.error === 'insufficient_tokens'
+          ? err?.response?.data?.message || err.message
+          : err?.response?.data?.error || err?.message || 'Échec du réajustement du script'
       );
     } finally {
       setIsSending(false);
@@ -1784,6 +1837,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                       onStageIndexChange={setInteractiveStageIdx}
                       contactVariables={contactVariables}
                       onStageChange={handleStageChange}
+                      onStageCommit={handleStageCommit}
                     />
 
                     {/* Beautiful glassmorphic loading overlay over the cockpit when updating */}

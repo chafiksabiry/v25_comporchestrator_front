@@ -58,6 +58,8 @@ interface InteractiveScriptCockpitProps {
   contactVariables?: ScriptVariable[];
   /** Parent updates the current stage when the user edits text or inserts a token. */
   onStageChange?: (stageIndex: number, stage: InteractiveStage) => void;
+  /** After the user leaves a stage they changed, later stages can be realigned. */
+  onStageCommit?: (stageIndex: number) => void;
   /** @deprecated use onStageChange — still supported for replica-only edits */
   onReplicaChange?: (stageIndex: number, introReplica: string) => void;
   /** Optional sample lead values for live preview of tokens. */
@@ -79,6 +81,7 @@ export function InteractiveScriptCockpit({
   onStageIndexChange,
   contactVariables = [],
   onStageChange,
+  onStageCommit,
   onReplicaChange,
   previewLead = null,
 }: InteractiveScriptCockpitProps) {
@@ -98,6 +101,8 @@ export function InteractiveScriptCockpit({
   const [showPreview, setShowPreview] = useState(false);
   const replicaRef = useRef<HTMLTextAreaElement | null>(null);
   const cursorRef = useRef<number | null>(null);
+  const enteredSnapshot = useRef('');
+  const committedIndex = useRef<number | null>(null);
   const canEdit = Boolean(onStageChange || onReplicaChange);
   
   // Scoring Simulation States
@@ -192,7 +197,23 @@ export function InteractiveScriptCockpit({
 
   useEffect(() => {
     onStageIndexChange?.(currentStageIdx);
+    enteredSnapshot.current = JSON.stringify(stages[currentStageIdx] || null);
   }, [currentStageIdx, onStageIndexChange]);
+
+  useEffect(() => {
+    if (committedIndex.current == null || committedIndex.current === currentStageIdx) return;
+    enteredSnapshot.current = JSON.stringify(stages[currentStageIdx] || null);
+    committedIndex.current = null;
+  }, [stages, currentStageIdx]);
+
+  const commitIfEdited = (index: number) => {
+    if (index >= stages.length - 1) return;
+    const now = JSON.stringify(stages[index] || null);
+    if (now === enteredSnapshot.current) return;
+    committedIndex.current = index;
+    enteredSnapshot.current = now;
+    onStageCommit?.(index);
+  };
 
   // Keep index in range when stages are replaced after a targeted refine
   useEffect(() => {
@@ -236,6 +257,7 @@ export function InteractiveScriptCockpit({
 
   const handleNext = () => {
     if (currentStageIdx < stages.length - 1) {
+      commitIfEdited(currentStageIdx);
       setHistory(prev => [...prev, currentStageIdx]);
       setCurrentStageIdx(prev => prev + 1);
     }
@@ -243,6 +265,7 @@ export function InteractiveScriptCockpit({
 
   const handlePrev = () => {
     if (currentStageIdx > 0) {
+      commitIfEdited(currentStageIdx);
       setCurrentStageIdx(prev => prev - 1);
     } else if (history.length > 0) {
       const lastIdx = history[history.length - 1];
