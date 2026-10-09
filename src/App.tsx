@@ -53,6 +53,7 @@ import StripeContainer from './components/stripe/StripeContainer';
 import DashboardApp from './components/dashboard/App';
 import PremiumDashboard from './components/training/components/Dashboard/PremiumDashboard';
 import MasterSidebar from './components/layout/MasterSidebar';
+import { getMyCompanyAccess } from './services/companyMembersApi';
 import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwitch';
 import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
 import Subscription from './components/Subscription';
@@ -475,6 +476,23 @@ function AppContent() {
                 const complete = isOnboardingFullyCompleted(steps);
                 setOnboardingComplete(complete);
                 if (complete) markGuideComplete();
+              }
+            } else {
+              // Invited teammates do not own a company document. Attach them
+              // to the company they were invited into.
+              try {
+                const access = await getMyCompanyAccess();
+                if (access?.companyId) {
+                  Cookies.set('companyId', access.companyId, { path: '/' });
+                  localStorage.setItem('companyId', access.companyId);
+                  window.dispatchEvent(new CustomEvent('harx:company-ready'));
+                  if (!access.isOwner) {
+                    setOnboardingComplete(true);
+                    markGuideComplete();
+                  }
+                }
+              } catch {
+                // Membership API may be unavailable; keep the owner flow unchanged.
               }
             }
           }

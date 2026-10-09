@@ -25,6 +25,7 @@ import CompanyDashboardPage from './pages/CompanyDashboardPage';
 import PremiumDashboardPage from './pages/PremiumDashboardPage';
 import CallsDashboardPage from './pages/CallsDashboardPage';
 import CallCenterAgentsPage from './pages/CallCenterAgentsPage';
+import CompanyMembersPage from './pages/CompanyMembersPage';
 import { CompanyPerformanceDashboard } from './pages/CompanyPerformanceDashboard';
 import { WalletCompanyPanel } from './panels/WalletCompanyPanel';
 import { MinutesCompanyPanel } from './panels/MinutesCompanyPanel';
@@ -55,6 +56,7 @@ function App() {
         <Route path="/dashboard/leads" element={<LeadManagementPanel />} />
         <Route path="/dashboard/rep-matching" element={<RepMatchingPanel />} />
         <Route path="/dashboard/agents" element={<CallCenterAgentsPage />} />
+        <Route path="/dashboard/team" element={<CompanyMembersPage />} />
         <Route path="/dashboard/scheduler" element={<SchedulerPanel />} />
         <Route path="/dashboard/calls" element={<CallsDashboardPage />} />
         <Route path="/dashboard/script-generator" element={<ScriptGenerator />} />

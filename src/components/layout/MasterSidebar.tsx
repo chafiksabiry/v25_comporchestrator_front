@@ -15,6 +15,7 @@ import {
   ScrollText,
   UserPlus,
   UserCheck,
+  UserCog,
   Building2,
   Calendar,
   Book,
@@ -37,6 +38,8 @@ import type { ProjectView } from '../ProjectViewSwitch';
 import { useTranslation } from 'react-i18next';
 import { goToCompanyOnboardingTab } from '../../hooks/useOnboardingGlobalBack';
 import { isCallCenterWorkspace } from '../../utils/callCenterWorkspace';
+import { getMyCompanyAccess } from '../../services/companyMembersApi';
+import { SIDEBAR_PERMISSION } from '../../constants/companyPermissions';
 
 interface MasterSidebarProps {
   isCollapsed: boolean;
@@ -69,6 +72,7 @@ export function MasterSidebar({
   const [hasKb, setHasKb] = useState(false);
   const [hasRepMatching, setHasRepMatching] = useState(false);
   const [openGroups, setOpenGroups] = useState<number[]>([1, 2, 3]); // All open by default
+  const [memberAccess, setMemberAccess] = useState<{ isOwner: boolean; permissions: Record<string, boolean> } | null>(null);
   const { t } = useTranslation();
   const isCallCenter = isCallCenterWorkspace();
 
@@ -138,9 +142,25 @@ export function MasterSidebar({
     checkOnboardingStatus();
   }, [location.pathname, activeProject]);
 
+  useEffect(() => {
+    let cancelled = false;
+    getMyCompanyAccess()
+      .then((access) => {
+        if (cancelled || !access) return;
+        setMemberAccess({ isOwner: access.isOwner, permissions: access.permissions || {} });
+      })
+      .catch(() => {
+        if (!cancelled) setMemberAccess(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const dashboardItems = [
     // Group 1
     { icon: <LayoutDashboard size={20} />, label: t('sidebar.dashboard'), path: '/dashboard/main', key: 'premium-dashboard', alwaysShow: true, groupId: 1 },
+    { icon: <UserCog size={20} />, label: t('sidebar.team', 'Équipe'), path: '/dashboard/team', key: 'team', requiresCompany: true, groupId: 1 },
 
     // Group 2
     { icon: <Phone size={20} />, label: t('sidebar.calls'), path: '/dashboard/calls', key: 'calls', alwaysShow: true, groupId: 2 },
@@ -196,9 +216,16 @@ export function MasterSidebar({
     { id: 3, label: t('sidebar.groupOrchestrator') },
   ];
 
+  const visibleDashboardItems = filteredDashboardItems.filter((item) => {
+    if (!memberAccess || memberAccess.isOwner || !memberAccess.permissions) return true;
+    const needed = SIDEBAR_PERMISSION[item.key];
+    if (!needed) return true;
+    return Boolean(memberAccess.permissions[needed]);
+  });
+
   const groupedItems = groups.map(group => ({
     ...group,
-    items: filteredDashboardItems.filter(item => item.groupId === group.id)
+    items: visibleDashboardItems.filter(item => item.groupId === group.id)
   })).filter(g => g.items.length > 0);
 
   const handleLinkClick = (key: string) => {
