@@ -139,11 +139,31 @@ export default function CompanyMembersPage() {
   }, [load]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      void load(true);
-    }, 15000);
-    return () => window.clearInterval(timer);
-  }, [load]);
+    const onPresence = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        userId?: string;
+        online?: boolean;
+        status?: string;
+        onlineUserIds?: string[];
+      }>).detail;
+      if (!detail) return;
+      if (Array.isArray(detail.onlineUserIds)) {
+        const online = new Set(detail.onlineUserIds);
+        setMembers((prev) => prev.map((member) => (
+          member.isOwner ? member : { ...member, online: online.has(member.userId), status: online.has(member.userId) ? 'active' : member.status }
+        )));
+        return;
+      }
+      if (!detail.userId) return;
+      setMembers((prev) => prev.map((member) => (
+        member.userId === detail.userId
+          ? { ...member, online: Boolean(detail.online), status: detail.status || member.status }
+          : member
+      )));
+    };
+    window.addEventListener('harx:team-presence', onPresence);
+    return () => window.removeEventListener('harx:team-presence', onPresence);
+  }, []);
 
   const applyPreset = (id: Exclude<PresetId, 'owner' | 'custom'>) => {
     setPreset(id);
