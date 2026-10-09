@@ -247,8 +247,17 @@ export const phoneNumberService = {
   }> => {
     try {
       const response = await api.post<any>('/phone-numbers/checkout/init', data);
-      return response.data;
+      const body = response.data || {};
+      if (response.status >= 400 || body.success === false) {
+        const err: any = new Error(body.message || body.error || 'Failed to start checkout');
+        if (body.code) err.code = body.code;
+        throw err;
+      }
+      return body;
     } catch (error) {
+      if (error instanceof Error && error.message && !(error as any).response) {
+        throw error;
+      }
       handleApiError(error, 'initLineCheckout');
       throw error;
     }

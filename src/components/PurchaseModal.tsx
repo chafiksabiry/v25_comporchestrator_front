@@ -222,6 +222,9 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
       setPayingWith(null);
       const msg = err?.response?.data?.message || err?.message || 'Failed to start checkout';
       setPaymentError(msg);
+      if (err?.code === 'ACTIVE_LOCAL_NUMBER_LIMIT' || err?.response?.data?.code === 'ACTIVE_LOCAL_NUMBER_LIMIT') {
+        window.location.hash = '#/dashboard/upgrade';
+      }
     }
   };
 
