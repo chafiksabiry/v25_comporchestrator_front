@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { Loader2, Plus, RefreshCw, Shield, Trash2, UserPlus, Users } from 'lucide-react';
+import { Loader2, Mail, Plus, RefreshCw, Shield, Trash2, UserPlus, Users } from 'lucide-react';
 import Cookies from 'js-cookie';
 import {
   PERMISSION_GROUPS,
@@ -11,6 +11,7 @@ import {
 import {
   inviteCompanyMember,
   listCompanyMembers,
+  reinviteCompanyMember,
   removeCompanyMember,
   updateCompanyMember,
   type CompanyMember,
@@ -113,6 +114,8 @@ export default function CompanyMembersPage() {
   const [editRights, setEditRights] = useState<PermissionMap>({});
   const [editPreset, setEditPreset] = useState<string>('custom');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [reinviteId, setReinviteId] = useState<string | null>(null);
+  const [reinviteEmail, setReinviteEmail] = useState('');
 
   const load = useCallback(async () => {
     if (!companyId) {
@@ -174,6 +177,7 @@ export default function CompanyMembersPage() {
   };
 
   const startEdit = (member: CompanyMember) => {
+    setReinviteId(null);
     setEditingId(member.userId);
     setEditRights({ ...emptyPermissions(), ...member.permissions });
     setEditPreset(member.preset || 'custom');
@@ -190,6 +194,34 @@ export default function CompanyMembersPage() {
       await load();
     } catch (err: any) {
       setError(err?.message || 'Mise à jour impossible.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const onReinvite = async (member: CompanyMember) => {
+    if (!companyId) return;
+    const email = reinviteEmail.trim();
+    if (!email) {
+      setError('Indiquez un e-mail.');
+      return;
+    }
+    setBusyId(member.userId);
+    setError(null);
+    setSuccess(null);
+    try {
+      const result = await reinviteCompanyMember(companyId, member.userId, email);
+      if (result.emailSent) {
+        setSuccess(`Invitation renvoyée à ${email}.`);
+        setReinviteId(null);
+      } else if (result.temporaryPassword) {
+        setSuccess(`E-mail non envoyé à ${email}. Mot de passe temporaire : ${result.temporaryPassword}`);
+      } else {
+        setError(result.emailError || 'Renvoi impossible.');
+      }
+      await load();
+    } catch (err: any) {
+      setError(err?.message || 'Renvoi impossible.');
     } finally {
       setBusyId(null);
     }
@@ -377,6 +409,24 @@ export default function CompanyMembersPage() {
                   </div>
                   {!member.isOwner ? (
                     <div className="flex items-center gap-2">
+                      {member.status === 'invited' || member.status === 'pending' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (reinviteId === member.userId) {
+                              setReinviteId(null);
+                              return;
+                            }
+                            setEditingId(null);
+                            setReinviteId(member.userId);
+                            setReinviteEmail(member.email || '');
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                        >
+                          <Mail size={12} />
+                          {reinviteId === member.userId ? 'Fermer' : 'Réinviter'}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => (editing ? setEditingId(null) : startEdit(member))}
@@ -396,6 +446,34 @@ export default function CompanyMembersPage() {
                     </div>
                   ) : null}
                 </div>
+                {reinviteId === member.userId ? (
+                  <form
+                    className="mt-4 flex flex-wrap items-end gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void onReinvite(member);
+                    }}
+                  >
+                    <label className="min-w-[240px] flex-1 text-xs font-bold text-slate-600">
+                      E-mail
+                      <input
+                        required
+                        type="email"
+                        value={reinviteEmail}
+                        onChange={(e) => setReinviteEmail(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900"
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      disabled={busyId === member.userId}
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-black uppercase text-white disabled:opacity-60"
+                    >
+                      {busyId === member.userId ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
+                      Renvoyer
+                    </button>
+                  </form>
+                ) : null}
                 {editing ? (
                   <div className="mt-4 space-y-3">
                     <div className="flex flex-wrap gap-2">

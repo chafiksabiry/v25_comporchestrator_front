@@ -87,6 +87,20 @@ export async function inviteCompanyMember(payload: {
   return json.data;
 }
 
+export async function reinviteCompanyMember(
+  companyId: string,
+  userId: string,
+  email?: string
+): Promise<{ member: CompanyMember; emailSent: boolean; emailError?: string | null; temporaryPassword?: string }> {
+  const res = await fetch(`${getRegistrationBackendBase()}/api/company-members/${userId}/reinvite`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ companyId, ...(email ? { email } : {}) }),
+  });
+  const json = await parse(res);
+  return json.data;
+}
+
 export async function updateCompanyMember(
   companyId: string,
   userId: string,
