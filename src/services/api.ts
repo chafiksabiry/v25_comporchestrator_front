@@ -90,6 +90,16 @@ const handleApiError = (error: unknown, context: string): never => {
     console.error('❌ Response data:', data);
     console.error('❌ Request config:', error.config);
 
+    const serverMessage = typeof data?.message === 'string' ? data.message.trim() : '';
+    if (serverMessage) {
+      throw new PhoneNumberServiceError(
+        serverMessage,
+        data?.code || 'API_ERROR',
+        status,
+        data
+      );
+    }
+
     // Handle specific error cases
     if (status === 404) {
       throw new PhoneNumberServiceError(
