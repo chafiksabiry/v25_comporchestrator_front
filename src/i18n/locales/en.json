@@ -1941,7 +1941,14 @@
       "publishSuccess": "Gig published successfully",
       "updateSuccess": "Gig updated successfully",
       "editTitleCategory": "Title & Category",
-      "editScheduleSlots": "Time slots & availability"
+      "editScheduleSlots": "Time slots & availability",
+      "perCallUnit": "CALL",
+      "perTransactionUnit": "TRANSACTION",
+      "bonus": "BONUS",
+      "bonusEvery": "Every {{count}} {{unit}} / {{period}}",
+      "unitCalls": "calls",
+      "unitTransactions": "transactions",
+      "detailsMissing": "No extra terms were specified."
     }
   },
   "gigActivation": {

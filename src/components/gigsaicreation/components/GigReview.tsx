@@ -22,6 +22,7 @@ import {
   Phone,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { textForLang, uiLangFrom } from "../lib/gigNarrativeI18n";
 import { GigData } from "../types";
 import { predefinedOptions } from "../lib/guidance";
 import { groupSchedules } from "../lib/scheduleUtils";
@@ -67,7 +68,8 @@ export function GigReview({
   isReadOnly = false,
   onEditSection,
 }: GigReviewProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const narrativeLang = uiLangFrom(i18n.language);
   // Compact pencil button rendered next to each section header. Visible
   // whenever `onEditSection` is provided, even in read-only mode.
   const EditSectionBtn = ({ section, label = t('gigCreation.nav.edit') }: { section: string; label?: string }) => {
@@ -536,7 +538,7 @@ export function GigReview({
               {data.category || 'OUTBOUND SALES'}
             </span>
             <h1 className="text-3xl font-black text-gray-900 leading-tight">
-              {data.title || '—'}
+              {textForLang(data.title_i18n, data.title, narrativeLang) || '—'}
             </h1>
           </div>
           <div className="shrink-0">
@@ -553,7 +555,7 @@ export function GigReview({
               <EditSectionBtn section="description" />
             </div>
             <p className="text-gray-600 leading-relaxed font-medium text-lg">
-              {data.description || '—'}
+              {textForLang(data.description_i18n, data.description, narrativeLang) || '—'}
             </p>
             {/* Seniority Tags */}
             <div className="flex flex-wrap gap-2 mt-4">
@@ -582,26 +584,42 @@ export function GigReview({
               <div className="flex flex-wrap gap-3">
                 <div className="px-4 py-2 bg-gradient-to-r from-cyan-400 to-blue-500 text-white rounded-lg text-sm font-black uppercase tracking-tight flex items-center gap-2">
                   <Phone size={14} />
-                  {data.commission?.commission_per_call || 0}{getCurrencySymbol()} / APPEL
+                  {data.commission?.commission_per_call || 0}{getCurrencySymbol()} / {t('gigCreation.review.perCallUnit')}
                 </div>
                 <div className="px-4 py-2 bg-gradient-to-r from-purple-400 to-purple-600 text-white rounded-lg text-sm font-black uppercase tracking-tight flex items-center gap-2">
                   <Repeat size={14} />
-                  {data.commission?.transactionCommission || 0}{getCurrencySymbol()} / TRANSACTION
+                  {data.commission?.transactionCommission || 0}{getCurrencySymbol()} / {t('gigCreation.review.perTransactionUnit')}
                 </div>
               </div>
 
               {/* Bonus Badge */}
               <div className="px-4 py-2 bg-gradient-to-r from-pink-400 to-rose-500 text-white rounded-lg text-sm font-black uppercase tracking-tight inline-flex items-center gap-2">
                 <Star size={14} />
-                +{data.commission?.bonusAmount || 0}{getCurrencySymbol()} BONUS
+                +{data.commission?.bonusAmount || 0}{getCurrencySymbol()} {t('gigCreation.review.bonus')}
                 <span className="text-xs font-medium opacity-80 normal-case ml-1">
-                  Chaque {data.commission?.minimumVolume?.amount || 0} transactions /{data.commission?.minimumVolume?.period || 'mois'}
+                  {t('gigCreation.review.bonusEvery', {
+                    count: data.commission?.minimumVolume?.amount || 0,
+                    unit: String(data.commission?.minimumVolume?.unit || '').toLowerCase() === 'calls'
+                      ? t('gigCreation.review.unitCalls')
+                      : t('gigCreation.review.unitTransactions'),
+                    period: t(
+                      data.commission?.minimumVolume?.period === 'Daily'
+                        ? 'gigCreation.suggestions.periodDaily'
+                        : data.commission?.minimumVolume?.period === 'Weekly'
+                          ? 'gigCreation.suggestions.periodWeekly'
+                          : 'gigCreation.suggestions.periodMonthly'
+                    ),
+                  })}
                 </span>
               </div>
 
               {/* Description Box */}
               <div className="bg-gray-50 rounded-2xl p-6 text-gray-600 text-sm font-medium leading-relaxed italic border border-gray-100">
-                {data.commission?.additionalDetails || "Détails supplémentaires non spécifiés."}
+                {textForLang(
+                  data.commission?.additionalDetails_i18n,
+                  data.commission?.additionalDetails,
+                  narrativeLang,
+                ) || t('gigCreation.review.detailsMissing')}
               </div>
             </div>
           </div>

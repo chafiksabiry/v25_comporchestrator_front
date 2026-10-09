@@ -23,6 +23,7 @@ import {
   getSectorNameById,
 } from '../lib/activitiesIndustries';
 import { fetchAllCountries, Country } from '../lib/api';
+import { addNarrativeItem, listForLang, removeNarrativeItem, textForLang, uiLangFrom } from '../lib/gigNarrativeI18n';
 
 interface BasicSectionProps {
   data: GigData;
@@ -49,6 +50,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
   const { t, i18n } = useTranslation();
   const titleOk = Boolean(String(data.title || '').trim());
   const uiLang = (i18n.language || 'en').slice(0, 2);
+  const narrativeLang = uiLangFrom(i18n.language);
 
   const [activities, setActivities] = useState<Array<{ value: string; label: string; category: string }>>([]);
   const [industries, setIndustries] = useState<Array<{ value: string; label: string }>>([]);
@@ -105,8 +107,8 @@ const BasicSection: React.FC<BasicSectionProps> = ({
   };
 
   const listFor = (field: ChipField): string[] => {
-    if (field === 'highlights') return data.highlights || [];
-    if (field === 'deliverables') return data.deliverables || [];
+    if (field === 'highlights') return listForLang(data.highlights_i18n, data.highlights, narrativeLang);
+    if (field === 'deliverables') return listForLang(data.deliverables_i18n, data.deliverables, narrativeLang);
     if ((data.sectors || []).length) return data.sectors || [];
     return data.category ? [data.category] : [];
   };
@@ -123,11 +125,19 @@ const BasicSection: React.FC<BasicSectionProps> = ({
       setDraft((prev) => ({ ...prev, [field]: '' }));
       return;
     }
-    setList(field, [...current, value]);
+    if (field === 'highlights' || field === 'deliverables') {
+      onChange(addNarrativeItem(data, field, narrativeLang, value) as GigData);
+    } else {
+      setList(field, [...current, value]);
+    }
     setDraft((prev) => ({ ...prev, [field]: '' }));
   };
 
   const removeChip = (field: ChipField, index: number) => {
+    if (field === 'highlights' || field === 'deliverables') {
+      onChange(removeNarrativeItem(data, field, narrativeLang, index) as GigData);
+      return;
+    }
     setList(
       field,
       listFor(field).filter((_, i) => i !== index)
@@ -303,8 +313,19 @@ const BasicSection: React.FC<BasicSectionProps> = ({
               </label>
               <input
                 type="text"
-                value={data.title || ''}
-                onChange={(e) => onChange({ ...data, title: e.target.value })}
+                value={textForLang(data.title_i18n, data.title, narrativeLang)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const current = data.title_i18n || {};
+                  onChange({
+                    ...data,
+                    title: value,
+                    title_i18n: {
+                      en: narrativeLang === 'en' ? value : String(current.en || ''),
+                      fr: narrativeLang === 'fr' ? value : String(current.fr || ''),
+                    },
+                  });
+                }}
                 className={`w-full px-4 py-3 bg-gradient-to-r from-harx-50 to-harx-alt-50 border-2 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all ${
                   errors.title ? 'border-red-300 focus:ring-red-300' : 'border-harx-200'
                 }`}
@@ -320,8 +341,19 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 {t('gigCreation.suggestions.jobDescription')}
               </label>
               <textarea
-                value={data.description || ''}
-                onChange={(e) => onChange({ ...data, description: e.target.value })}
+                value={textForLang(data.description_i18n, data.description, narrativeLang)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const current = data.description_i18n || {};
+                  onChange({
+                    ...data,
+                    description: value,
+                    description_i18n: {
+                      en: narrativeLang === 'en' ? value : String(current.en || ''),
+                      fr: narrativeLang === 'fr' ? value : String(current.fr || ''),
+                    },
+                  });
+                }}
                 rows={5}
                 className={`w-full px-4 py-3 bg-gradient-to-r from-harx-50 to-harx-alt-50 border-2 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all resize-none ${
                   errors.description ? 'border-red-300 focus:ring-red-300' : 'border-harx-200'

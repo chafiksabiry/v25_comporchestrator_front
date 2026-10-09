@@ -159,6 +159,7 @@ export interface GigData {
       reward: string;
     }[];
     additionalDetails?: string;
+    additionalDetails_i18n?: LocalizedString;
   };
   leads: {
     types: Array<{
@@ -386,6 +387,7 @@ export interface GigSuggestion {
     };
     transactionCommission: number;
     additionalDetails: string;
+    additionalDetails_i18n?: LocalizedString;
   };
   activity: {
     options: Array<{

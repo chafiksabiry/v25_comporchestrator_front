@@ -1312,12 +1312,18 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         prev.description || prev.jobDescription,
         uiLang,
       );
+      const commissionDetails = textForLang(
+        prev.commission?.additionalDetails_i18n,
+        prev.commission?.additionalDetails,
+        uiLang,
+      );
       const same =
         (prev.jobTitles || []).join('\u0001') === jobTitles.join('\u0001') &&
         (prev.highlights || []).join('\u0001') === highlights.join('\u0001') &&
         (prev.deliverables || []).join('\u0001') === deliverables.join('\u0001') &&
         (prev.description || '') === description &&
-        (prev.jobDescription || '') === description;
+        (prev.jobDescription || '') === description &&
+        (prev.commission?.additionalDetails || '') === commissionDetails;
       if (same) return prev;
       return {
         ...prev,
@@ -1327,6 +1333,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         description,
         jobDescription: description,
         title: jobTitles[0] || prev.title,
+        commission: prev.commission
+          ? { ...prev.commission, additionalDetails: commissionDetails }
+          : prev.commission,
       };
     });
   }, [uiLang]);
@@ -1561,6 +1570,11 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           : rawCurrency
             ? String(rawCurrency)
             : '';
+      commission.additionalDetails = textForLang(
+        commission.additionalDetails_i18n,
+        commission.additionalDetails,
+        uiLang,
+      );
       if (currencyId) {
         commission.currency = currencyId;
         const currency = currencies.find(
@@ -4411,14 +4425,27 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     </div>
 
                     <textarea
-                      value={option.additionalDetails || ""}
-                      onChange={(e) =>
-                        updateCommissionOption(
-                          0,
-                          "additionalDetails",
-                          e.target.value
-                        )
-                      }
+                      value={textForLang(
+                        option.additionalDetails_i18n,
+                        option.additionalDetails,
+                        uiLang,
+                      )}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const current = option.additionalDetails_i18n || {};
+                        const bundle = {
+                          en: uiLang === 'en' ? value : String(current.en || ''),
+                          fr: uiLang === 'fr' ? value : String(current.fr || ''),
+                        };
+                        setSuggestions((prev) => prev ? {
+                          ...prev,
+                          commission: {
+                            ...prev.commission,
+                            additionalDetails: value,
+                            additionalDetails_i18n: bundle,
+                          },
+                        } : prev);
+                      }}
                       placeholder={t('gigCreation.suggestions.commissionDetailsPlaceholder')}
                       rows={4}
                       className="w-full px-4 py-3 bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-3 focus:ring-gray-300 focus:border-gray-400 transition-all resize-none"

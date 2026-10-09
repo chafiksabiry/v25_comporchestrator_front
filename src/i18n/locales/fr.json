@@ -1941,7 +1941,14 @@
       "publishSuccess": "Gig publié avec succès",
       "updateSuccess": "Gig mis à jour avec succès",
       "editTitleCategory": "Titre et catégorie",
-      "editScheduleSlots": "Plages horaires et disponibilité"
+      "editScheduleSlots": "Plages horaires et disponibilité",
+      "perCallUnit": "APPEL",
+      "perTransactionUnit": "TRANSACTION",
+      "bonus": "BONUS",
+      "bonusEvery": "Chaque {{count}} {{unit}} / {{period}}",
+      "unitCalls": "appels",
+      "unitTransactions": "transactions",
+      "detailsMissing": "Aucune condition supplémentaire n'a été indiquée."
     }
   },
   "gigActivation": {
