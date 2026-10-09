@@ -56,6 +56,15 @@ import { LanguageSelector } from './LanguageSelector';
 import { scrollPageToTop } from '../../../utils/scrollPageToTop';
 import { useTranslation } from 'react-i18next';
 import {
+  addNarrativeItem,
+  listForLang,
+  removeNarrativeItem,
+  textForLang,
+  uiLangFrom,
+  updateNarrativeItem,
+  writeNarrativeText,
+} from '../lib/gigNarrativeI18n';
+import {
   MultiRangeScheduleGroup,
   TimeRange,
   findOverlappingRangeIndexes,
@@ -231,7 +240,8 @@ const FLEXIBILITY_SELECT_OPTIONS = [
 ];
 
 export const Suggestions: React.FC<SuggestionsProps> = (props) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const uiLang = uiLangFrom(i18n.language);
   const [suggestions, setSuggestions] = useState<GigSuggestion | null>(props.initialSuggestions || null);
   const [loading, setLoading] = useState(!props.initialSuggestions);
   const [error, setError] = useState<string | null>(null);
@@ -285,6 +295,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
   // States for selection
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
+  const selectedTitleIndexRef = React.useRef(0);
 
   // States for skill adding interface
   const [showAddSkillInterface, setShowAddSkillInterface] = useState<{ [key: string]: boolean }>({
@@ -1280,11 +1291,62 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
   // Auto-select first job title when suggestions are loaded (only on initial load)
   useEffect(() => {
-    if (suggestions?.jobTitles && suggestions.jobTitles.length > 0 && !selectedJobTitle) {
-      // Only auto-select if no manual selection has been made
-      setSelectedJobTitle(suggestions.jobTitles[0]);
+    const titles = suggestions
+      ? listForLang(suggestions.jobTitles_i18n, suggestions.jobTitles, uiLang)
+      : [];
+    if (titles.length > 0 && !selectedJobTitle) {
+      selectedTitleIndexRef.current = 0;
+      setSelectedJobTitle(titles[0]);
     }
   }, [suggestions?.jobTitles]); // Remove selectedJobTitle from dependencies to prevent re-triggering
+
+  // Menu language switches the stored narrative without a new generation.
+  useEffect(() => {
+    setSuggestions((prev) => {
+      if (!prev) return prev;
+      const jobTitles = listForLang(prev.jobTitles_i18n, prev.jobTitles, uiLang);
+      const highlights = listForLang(prev.highlights_i18n, prev.highlights, uiLang);
+      const deliverables = listForLang(prev.deliverables_i18n, prev.deliverables, uiLang);
+      const description = textForLang(
+        prev.description_i18n || prev.jobDescription_i18n,
+        prev.description || prev.jobDescription,
+        uiLang,
+      );
+      const same =
+        (prev.jobTitles || []).join('\u0001') === jobTitles.join('\u0001') &&
+        (prev.highlights || []).join('\u0001') === highlights.join('\u0001') &&
+        (prev.deliverables || []).join('\u0001') === deliverables.join('\u0001') &&
+        (prev.description || '') === description &&
+        (prev.jobDescription || '') === description;
+      if (same) return prev;
+      return {
+        ...prev,
+        jobTitles,
+        highlights,
+        deliverables,
+        description,
+        jobDescription: description,
+        title: jobTitles[0] || prev.title,
+      };
+    });
+  }, [uiLang]);
+
+  const suggestionsLangRef = useRef(suggestions);
+  suggestionsLangRef.current = suggestions;
+  const prevNarrativeLangRef = useRef(uiLang);
+  useEffect(() => {
+    if (prevNarrativeLangRef.current === uiLang) return;
+    prevNarrativeLangRef.current = uiLang;
+    const prev = suggestionsLangRef.current;
+    if (!prev) return;
+    const titles = listForLang(prev.jobTitles_i18n, prev.jobTitles, uiLang);
+    if (!titles.length) {
+      setSelectedJobTitle(null);
+      return;
+    }
+    const idx = Math.min(selectedTitleIndexRef.current, titles.length - 1);
+    setSelectedJobTitle(titles[idx]);
+  }, [uiLang]);
 
   // Re-validate skills when they are loaded from API
   useEffect(() => {
@@ -1519,10 +1581,30 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         }
       }
 
+      const visibleTitles = listForLang(finalSuggestions.jobTitles_i18n, finalSuggestions.jobTitles, uiLang);
+      const visibleDescription = textForLang(
+        finalSuggestions.description_i18n || finalSuggestions.jobDescription_i18n,
+        finalSuggestions.description || finalSuggestions.jobDescription,
+        uiLang,
+      );
+      const visibleTitle = selectedJobTitle || visibleTitles[0] || undefined;
+      const titleIndex = Math.max(0, visibleTitles.indexOf(visibleTitle || ''));
+      const titleI18n = {
+        en: finalSuggestions.jobTitles_i18n?.en?.[titleIndex] || finalSuggestions.title_i18n?.en || visibleTitle || '',
+        fr: finalSuggestions.jobTitles_i18n?.fr?.[titleIndex] || finalSuggestions.title_i18n?.fr || visibleTitle || '',
+      };
+
       // Add selected job title to the final suggestions
       const suggestionsWithSelectedTitle: GigSuggestion = {
         ...finalSuggestions,
-        selectedJobTitle: selectedJobTitle || undefined,
+        jobTitles: visibleTitles,
+        title_i18n: titleI18n,
+        highlights: listForLang(finalSuggestions.highlights_i18n, finalSuggestions.highlights, uiLang),
+        deliverables: listForLang(finalSuggestions.deliverables_i18n, finalSuggestions.deliverables, uiLang),
+        description: visibleDescription,
+        jobDescription: visibleDescription,
+        title: visibleTitle || finalSuggestions.title,
+        selectedJobTitle: visibleTitle,
         destination_zone: primaryZone || (finalSuggestions as any).destination_zone,
         destination_zone_meta,
         destinationZones: zones,
@@ -1671,20 +1753,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
     switch (section) {
       case "highlights":
-        newSuggestions.highlights = [
-          ...(newSuggestions.highlights || []),
-          item,
-        ];
-        break;
       case "jobTitles":
-        newSuggestions.jobTitles = [...(newSuggestions.jobTitles || []), item];
-        break;
       case "deliverables":
-        newSuggestions.deliverables = [
-          ...(newSuggestions.deliverables || []),
-          item,
-        ];
-        break;
+        setSuggestions(addNarrativeItem(suggestions, section, uiLang, item));
+        return;
       case "industries":
         // Convert industry name to ID
         const industryId = industries.find(i => i.label === item)?.value;
@@ -1798,14 +1870,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
     switch (section) {
       case "highlights":
-        newSuggestions.highlights[index] = newValue;
-        break;
       case "jobTitles":
-        newSuggestions.jobTitles[index] = newValue;
-        break;
       case "deliverables":
-        newSuggestions.deliverables[index] = newValue;
-        break;
+        setSuggestions(updateNarrativeItem(suggestions, section, uiLang, index, newValue));
+        return;
       case "industries":
         // Convert industry name to ID
         const industryId = industries.find(i => i.label === newValue)?.value;
@@ -1899,20 +1967,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
     switch (section) {
       case "highlights":
-        newSuggestions.highlights = newSuggestions.highlights.filter(
-          (_, i) => i !== index
-        );
-        break;
       case "jobTitles":
-        newSuggestions.jobTitles = newSuggestions.jobTitles.filter(
-          (_, i) => i !== index
-        );
-        break;
       case "deliverables":
-        newSuggestions.deliverables = newSuggestions.deliverables.filter(
-          (_, i) => i !== index
-        );
-        break;
+        setSuggestions(removeNarrativeItem(suggestions, section, uiLang, index));
+        return;
       case "industries":
         newSuggestions.industries = newSuggestions.industries.filter(
           (_, i) => i !== index
@@ -3017,42 +3075,42 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     const handleAddJobTitle = () => {
       const value = newJobTitle.trim();
       if (!value) return;
-
-      // Add the job title if it's not already in the list
-      const newSuggestions = { ...suggestions };
-      if (!newSuggestions.jobTitles) newSuggestions.jobTitles = [];
-      if (!newSuggestions.jobTitles.includes(value)) {
-        newSuggestions.jobTitles = [...newSuggestions.jobTitles, value];
-        setSuggestions(newSuggestions);
-        // Auto-select the newly added job title
-        setSelectedJobTitle(value);
-        setNewJobTitle('');
-        setShowJobTitleForm(false);
-      }
+      const current = listForLang(suggestions.jobTitles_i18n, suggestions.jobTitles, uiLang);
+      if (current.includes(value)) return;
+      selectedTitleIndexRef.current = current.length;
+      setSuggestions(addNarrativeItem(suggestions, 'jobTitles', uiLang, value));
+      setSelectedJobTitle(value);
+      setNewJobTitle('');
+      setShowJobTitleForm(false);
     };
 
     const handleUpdateJobTitle = (index: number) => {
       const value = newJobTitle.trim();
       if (!value) return;
-
-      const newSuggestions = { ...suggestions };
-      if (newSuggestions.jobTitles) {
-        const oldTitle = newSuggestions.jobTitles[index];
-        newSuggestions.jobTitles[index] = value;
-        setSuggestions(newSuggestions);
-        // If the old title was selected, update selection to the new title
-        if (selectedJobTitle === oldTitle) {
-          setSelectedJobTitle(value);
-        }
-        setNewJobTitle('');
-        setEditingJobTitleIndex(null);
+      const current = listForLang(suggestions.jobTitles_i18n, suggestions.jobTitles, uiLang);
+      const oldTitle = current[index];
+      setSuggestions(updateNarrativeItem(suggestions, 'jobTitles', uiLang, index, value));
+      if (selectedJobTitle === oldTitle) {
+        selectedTitleIndexRef.current = index;
+        setSelectedJobTitle(value);
       }
+      setNewJobTitle('');
+      setEditingJobTitleIndex(null);
     };
 
-    const handleRemoveJobTitle = (jobTitle: string) => {
-      const newSuggestions = { ...suggestions };
-      newSuggestions.jobTitles = newSuggestions.jobTitles.filter(jt => jt !== jobTitle);
-      setSuggestions(newSuggestions);
+    const handleRemoveJobTitle = (index: number) => {
+      const current = listForLang(suggestions.jobTitles_i18n, suggestions.jobTitles, uiLang);
+      const removed = current[index];
+      if (selectedTitleIndexRef.current > index) {
+        selectedTitleIndexRef.current -= 1;
+      } else if (selectedTitleIndexRef.current === index) {
+        selectedTitleIndexRef.current = 0;
+      }
+      setSuggestions(removeNarrativeItem(suggestions, 'jobTitles', uiLang, index));
+      if (selectedJobTitle === removed) {
+        const next = current.filter((_, i) => i !== index);
+        setSelectedJobTitle(next[0] || null);
+      }
     };
 
     const handleEditClick = (title: string, index: number) => {
@@ -3067,7 +3125,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       setShowJobTitleForm(false);
     };
 
-    const selected = suggestions.jobTitles || [];
+    const selected = listForLang(suggestions.jobTitles_i18n, suggestions.jobTitles, uiLang);
 
     return (
       <div className="space-y-6">
@@ -3154,6 +3212,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      selectedTitleIndexRef.current = selectedJobTitle === title ? 0 : index;
                       setSelectedJobTitle(selectedJobTitle === title ? null : title);
                     }}
                     onDoubleClick={(e) => {
@@ -3183,10 +3242,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleRemoveJobTitle(title);
-                        if (selectedJobTitle === title) {
-                          setSelectedJobTitle(null);
-                        }
+                        handleRemoveJobTitle(index);
                       }}
                       className={`ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity ${selectedJobTitle === title
                         ? 'text-white hover:bg-harx-700'
@@ -3265,34 +3321,23 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     const handleAddHighlight = () => {
       const value = newHighlight.trim();
       if (!value) return;
-
-      const newSuggestions = { ...suggestions };
-      if (!newSuggestions.highlights) newSuggestions.highlights = [];
-      if (!newSuggestions.highlights.includes(value)) {
-        newSuggestions.highlights = [...newSuggestions.highlights, value];
-        setSuggestions(newSuggestions);
-        setNewHighlight('');
-        setShowHighlightForm(false);
-      }
+      const current = listForLang(suggestions.highlights_i18n, suggestions.highlights, uiLang);
+      if (current.includes(value)) return;
+      setSuggestions(addNarrativeItem(suggestions, 'highlights', uiLang, value));
+      setNewHighlight('');
+      setShowHighlightForm(false);
     };
 
     const handleUpdateHighlight = (index: number) => {
       const value = newHighlight.trim();
       if (!value) return;
-
-      const newSuggestions = { ...suggestions };
-      if (newSuggestions.highlights) {
-        newSuggestions.highlights[index] = value;
-        setSuggestions(newSuggestions);
-        setNewHighlight('');
-        setEditingHighlightIndex(null);
-      }
+      setSuggestions(updateNarrativeItem(suggestions, 'highlights', uiLang, index, value));
+      setNewHighlight('');
+      setEditingHighlightIndex(null);
     };
 
-    const handleRemoveHighlight = (highlight: string) => {
-      const newSuggestions = { ...suggestions };
-      newSuggestions.highlights = newSuggestions.highlights.filter(h => h !== highlight);
-      setSuggestions(newSuggestions);
+    const handleRemoveHighlight = (index: number) => {
+      setSuggestions(removeNarrativeItem(suggestions, 'highlights', uiLang, index));
     };
 
     const handleEditClick = (highlight: string, index: number) => {
@@ -3307,7 +3352,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       setShowHighlightForm(false);
     };
 
-    const selected = suggestions.highlights || [];
+    const selected = listForLang(suggestions.highlights_i18n, suggestions.highlights, uiLang);
 
     return (
       <div className="space-y-4">
@@ -3379,7 +3424,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleRemoveHighlight(highlight)}
+                    onClick={() => handleRemoveHighlight(index)}
                     className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
                     title={t('gigCreation.suggestions.remove')}
                   >
@@ -3453,34 +3498,23 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     const handleAddDeliverable = () => {
       const value = newDeliverable.trim();
       if (!value) return;
-
-      const newSuggestions = { ...suggestions };
-      if (!newSuggestions.deliverables) newSuggestions.deliverables = [];
-      if (!newSuggestions.deliverables.includes(value)) {
-        newSuggestions.deliverables = [...newSuggestions.deliverables, value];
-        setSuggestions(newSuggestions);
-        setNewDeliverable('');
-        setShowDeliverableForm(false);
-      }
+      const current = listForLang(suggestions.deliverables_i18n, suggestions.deliverables, uiLang);
+      if (current.includes(value)) return;
+      setSuggestions(addNarrativeItem(suggestions, 'deliverables', uiLang, value));
+      setNewDeliverable('');
+      setShowDeliverableForm(false);
     };
 
     const handleUpdateDeliverable = (index: number) => {
       const value = newDeliverable.trim();
       if (!value) return;
-
-      const newSuggestions = { ...suggestions };
-      if (newSuggestions.deliverables) {
-        newSuggestions.deliverables[index] = value;
-        setSuggestions(newSuggestions);
-        setNewDeliverable('');
-        setEditingDeliverableIndex(null);
-      }
+      setSuggestions(updateNarrativeItem(suggestions, 'deliverables', uiLang, index, value));
+      setNewDeliverable('');
+      setEditingDeliverableIndex(null);
     };
 
-    const handleRemoveDeliverable = (deliverable: string) => {
-      const newSuggestions = { ...suggestions };
-      newSuggestions.deliverables = newSuggestions.deliverables.filter(d => d !== deliverable);
-      setSuggestions(newSuggestions);
+    const handleRemoveDeliverable = (index: number) => {
+      setSuggestions(removeNarrativeItem(suggestions, 'deliverables', uiLang, index));
     };
 
     const handleEditClick = (deliverable: string, index: number) => {
@@ -3495,7 +3529,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       setShowDeliverableForm(false);
     };
 
-    const selected = suggestions.deliverables || [];
+    const selected = listForLang(suggestions.deliverables_i18n, suggestions.deliverables, uiLang);
 
     return (
       <div className="space-y-4">
@@ -3567,7 +3601,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleRemoveDeliverable(deliverable)}
+                    onClick={() => handleRemoveDeliverable(index)}
                     className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
                     title={t('gigCreation.suggestions.remove')}
                   >
@@ -3966,16 +4000,20 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
   const renderDescriptionSection = () => {
     if (!suggestions) return null;
 
+    const descriptionText = textForLang(
+      suggestions.description_i18n || suggestions.jobDescription_i18n,
+      suggestions.description || suggestions.jobDescription,
+      uiLang,
+    );
+
     const handleDescriptionChange = (newDescription: string) => {
-      const newSuggestions = { ...suggestions };
-      newSuggestions.description = newDescription;
-      setSuggestions(newSuggestions);
+      setSuggestions(writeNarrativeText(suggestions, uiLang, newDescription));
     };
 
     return (
       <div className="mb-8">
         <textarea
-          value={suggestions.description || ""}
+          value={descriptionText}
           onChange={(e) => handleDescriptionChange(e.target.value)}
           placeholder={t('gigCreation.suggestions.descriptionPlaceholder')}
           rows={8}
@@ -3984,7 +4022,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         <div className="mt-3 flex items-center justify-between">
           <div className="text-sm text-gray-500">
-            {t('gigCreation.suggestions.characters', { count: suggestions.description?.length || 0 })}
+            {t('gigCreation.suggestions.characters', { count: descriptionText.length })}
           </div>
           <div className="text-xs text-harx-600 bg-harx-100 px-2 py-1 rounded-full">
             {t('gigCreation.suggestions.descriptionHint')}
