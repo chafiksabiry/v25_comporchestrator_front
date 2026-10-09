@@ -1061,6 +1061,11 @@ export function PhoneNumberPanel() {
 
       if (!purchaseRes.ok) {
         const err = await purchaseRes.json().catch(() => ({}));
+        if (err?.code === 'ACTIVE_LOCAL_NUMBER_LIMIT') {
+          toast.error(err.message || t('phoneNumberPanel.toasts.purchaseFailed'));
+          window.location.hash = '#/dashboard/upgrade';
+          return;
+        }
         if (purchaseRes.status === 402) {
           setCheckoutNumber(numberToBuy);
           setCheckoutProvider(provider);
@@ -1230,8 +1235,10 @@ export function PhoneNumberPanel() {
       });
 
       if (!purchaseRes.ok) {
-        const err = await purchaseRes.json().catch(() => ({}));
-        throw new Error(err?.message || err?.error || t('phoneNumberPanel.toasts.purchaseFailed'));
+        const errBody = await purchaseRes.json().catch(() => ({}));
+        const err: any = new Error(errBody?.message || errBody?.error || t('phoneNumberPanel.toasts.purchaseFailed'));
+        if (errBody?.code) err.code = errBody.code;
+        throw err;
       }
     },
     [apiBaseUrl, checkoutNumber, checkoutProvider, requirementStatus, companyId, selectedGigIdForNumber, t]
@@ -1309,9 +1316,12 @@ export function PhoneNumberPanel() {
       console.error(err);
       // Regulatory pre-payment block: close the whole modal — no payment can
       // proceed for this number until the bundle is approved.
-      if (err?.code === 'REGULATORY_BUNDLE_REQUIRED') {
+      if (err?.code === 'ACTIVE_LOCAL_NUMBER_LIMIT' || err?.code === 'REGULATORY_BUNDLE_REQUIRED') {
         toast.error(err.message, { duration: 8000 });
         closeCheckoutModal();
+        if (err?.code === 'ACTIVE_LOCAL_NUMBER_LIMIT') {
+          window.location.hash = '#/dashboard/upgrade';
+        }
         return;
       }
       toast.error(err?.message || t('phoneNumberPanel.toasts.paypalStartFailed'));
@@ -1364,9 +1374,12 @@ export function PhoneNumberPanel() {
       finishSuccessfulPurchase('stripe');
     } catch (err: any) {
       console.error(err);
-      if (err?.code === 'REGULATORY_BUNDLE_REQUIRED') {
+      if (err?.code === 'ACTIVE_LOCAL_NUMBER_LIMIT' || err?.code === 'REGULATORY_BUNDLE_REQUIRED') {
         toast.error(err.message, { duration: 8000 });
         closeCheckoutModal();
+        if (err?.code === 'ACTIVE_LOCAL_NUMBER_LIMIT') {
+          window.location.hash = '#/dashboard/upgrade';
+        }
         return;
       }
       toast.error(err?.message || t('phoneNumberPanel.toasts.paymentError'));

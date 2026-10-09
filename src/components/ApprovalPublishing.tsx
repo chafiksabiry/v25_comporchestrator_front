@@ -45,6 +45,7 @@ import ActiveGigLimitModal, {
   type ActiveGigLimitMode,
 } from './ActiveGigLimitModal';
 import { getOrchestratorApiBase } from '../lib/paypalCheckout';
+import { limitsFromSubscriptionPayload } from '../lib/planMetadata';
 
 interface Gig {
   _id: string;
@@ -607,13 +608,6 @@ const ApprovalPublishing = () => {
     planName: string | null;
     nextPlanHint: string | null;
   }> => {
-    const FALLBACKS: Record<string, number> = {
-      STARTER: 1,
-      RUNNER: 10,
-      GROWTH: 10,
-      SCALER: 30,
-      SCALE: 30,
-    };
     const NEXT: Record<string, string> = {
       STARTER: 'RUNNER',
       RUNNER: 'SCALER',
@@ -625,19 +619,11 @@ const ApprovalPublishing = () => {
         `${apiBase}/subscriptions/current/${companyId}`,
         { timeout: 8000 }
       );
-      const sub = (response.data as any)?.data;
-      const plan = sub?.planId || {};
-      const name = String(plan.name || '').toUpperCase() || null;
-      let maxGigs = Number(plan.maxGigs);
-      const ceiling = name ? FALLBACKS[name] : undefined;
-      if (!Number.isFinite(maxGigs) || maxGigs < 0) {
-        maxGigs = ceiling ?? 1;
-      } else if (ceiling != null) {
-        // Never let Stripe metadata exceed the known plan ceiling (STARTER=1).
-        maxGigs = Math.min(Math.round(maxGigs), ceiling);
-      } else {
-        maxGigs = Math.round(maxGigs);
-      }
+      const body = response.data as any;
+      const plan = body?.data?.planId || {};
+      const limits = limitsFromSubscriptionPayload(body);
+      const name = String(limits.planName || plan.name || '').toUpperCase() || null;
+      const maxGigs = limits.maxGigs ?? 1;
       return {
         maxGigs,
         planName: name,

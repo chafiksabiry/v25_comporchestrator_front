@@ -2711,7 +2711,16 @@
       "reservedSlots": "Créneaux Réservés",
       "gigHours": "Heures de Gig"
     },
-    "legalLunch": "Appels interdits de 13h à 14h"
+    "legalLunch": "Appels interdits de 13h à 14h",
+    "repLimit": {
+      "banner": "Plan {{plan}} — {{max}} REP actif maximum",
+      "title": "Limite de REPs actifs",
+      "body": "Le plan {{plan}} autorise {{max}} REP actif sur la planification. Réduisez ce nombre, ou passez au plan {{next}}.",
+      "upgrade": "Changer de plan",
+      "close": "Modifier la planification",
+      "yourPlan": "actuel",
+      "higherPlan": "supérieur"
+    }
   },
   "orchestratorGuide": {
     "intro": {

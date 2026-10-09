@@ -1,12 +1,16 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { enUS } from 'date-fns/locale';
+import Cookies from 'js-cookie';
 import { TimeSlot, Rep } from '../../types/scheduler';
-import { Clock, Calendar, Save } from 'lucide-react';
+import { Clock, Calendar, Save, AlertTriangle, ArrowUpRight, X } from 'lucide-react';
 import { schedulerApi } from '../../services/schedulerService';
 import { markGigStepDone } from '../../services/gigSetupSync';
 import { timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
+import { getOrchestratorApiBase } from '../../lib/paypalCheckout';
+import { limitsFromSubscriptionPayload } from '../../lib/planMetadata';
 
 interface PlanningMatrixProps {
     selectedDate: Date;
@@ -30,6 +34,25 @@ function getDateForDayInWeek(anchor: Date, dayName: (typeof DAYS)[number]): Date
 
 /** France: commercial calls are forbidden 13:00–14:00, not 12:00–13:00. */
 const FR_LUNCH_BLOCK_HOUR = 13;
+
+const NEXT_PLAN: Record<string, string> = {
+    STARTER: 'RUNNER',
+    RUNNER: 'SCALER',
+    GROWTH: 'SCALER',
+};
+
+type RepQuota = {
+    maxReps: number | null;
+    planName: string | null;
+    nextPlan: string | null;
+};
+
+function resolveRepQuota(payload: any): RepQuota {
+    const limits = limitsFromSubscriptionPayload(payload);
+    const key = (limits.planName || '').toUpperCase();
+    const nextPlan = NEXT_PLAN[key] || Object.entries(NEXT_PLAN).find(([name]) => key.includes(name))?.[1] || null;
+    return { maxReps: limits.maxReps, planName: limits.planName, nextPlan };
+}
 const WEEKDAYS = new Set(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
 
 function minutesOf(time: string): number {
@@ -70,6 +93,28 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
     const [isSaving, setIsSaving] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [dragValue, setDragValue] = useState<number | null>(null);
+    const [repQuota, setRepQuota] = useState<RepQuota>({ maxReps: null, planName: null, nextPlan: null });
+    const [upgradeOpen, setUpgradeOpen] = useState(false);
+    const quotaWarned = useRef(false);
+
+    useEffect(() => {
+        const companyId = Cookies.get('companyId');
+        if (!companyId) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(`${getOrchestratorApiBase()}/subscriptions/current/${encodeURIComponent(companyId)}`);
+                const json = await res.json();
+                if (cancelled || !json?.success) return;
+                setRepQuota(resolveRepQuota(json));
+            } catch (error) {
+                console.warn('[PlanningMatrix] plan metadata unavailable', error);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     /** Multiple plages per weekday (same day can appear several times). */
     const availabilityByDay = useMemo(() => {
@@ -179,18 +224,47 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
     }, [slots, gigId, availabilitySchedule, availabilityByDay, hoursList, isHourAvailable]);
     // Removed old sync logic
 
+    const capacityOverPlan = useCallback((maxReps: number) => {
+        return DAYS.some((dayName) =>
+            hoursList.some((hour) => {
+                if (!isHourAvailable(dayName, hour)) return false;
+                return Number(localMatrix[dayName]?.[hour]) > maxReps;
+            })
+        );
+    }, [hoursList, isHourAvailable, localMatrix]);
+
+    useEffect(() => {
+        if (quotaWarned.current || repQuota.maxReps == null) return;
+        if (!capacityOverPlan(repQuota.maxReps)) return;
+        quotaWarned.current = true;
+        setUpgradeOpen(true);
+    }, [repQuota.maxReps, capacityOverPlan]);
+
+    const openUpgrade = () => setUpgradeOpen(true);
+
     const handleCellChange = (dateStr: string, hour: number, value: string) => {
-        const numValue = parseInt(value) || 0;
+        const numValue = Math.max(0, parseInt(value, 10) || 0);
+        const maxReps = repQuota.maxReps;
+        if (maxReps != null && numValue > maxReps) {
+            openUpgrade();
+        }
+        const next = maxReps != null ? Math.min(numValue, maxReps) : numValue;
         setLocalMatrix(prev => ({
             ...prev,
             [dateStr]: {
                 ...prev[dateStr],
-                [hour]: Math.max(0, numValue)
+                [hour]: next
             }
         }));
     };
 
     const handleSave = async () => {
+        const maxReps = repQuota.maxReps;
+        if (maxReps != null && capacityOverPlan(maxReps)) {
+            openUpgrade();
+            return;
+        }
+
         setIsSaving(true);
         try {
             const slotsToUpdate: Partial<TimeSlot>[] = [];
@@ -275,6 +349,14 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                         <p className="text-harx-100 text-sm opacity-90">
                             General Weekly Schedule
                         </p>
+                        {repQuota.maxReps != null && (
+                            <p className="text-[11px] text-white/90 font-semibold mt-0.5">
+                                {t('sessionPlanning.repLimit.banner', {
+                                    plan: repQuota.planName || t('sessionPlanning.repLimit.yourPlan'),
+                                    max: repQuota.maxReps,
+                                })}
+                            </p>
+                        )}
                         {onSelectDay && (
                             <p className="text-[11px] text-white/85 font-semibold mt-0.5">
                                 Reservations:{' '}
@@ -410,6 +492,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                                             <input
                                                 type="number"
                                                 min="0"
+                                                max={repQuota.maxReps ?? undefined}
                                                 value={isAvailable && value > 0 ? value : ''}
                                                 placeholder=""
                                                 disabled={!isAvailable}
@@ -431,6 +514,54 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                     </tbody>
                 </table>
             </div>
+            {upgradeOpen && createPortal(
+                <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4" onClick={() => setUpgradeOpen(false)}>
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-gray-100 p-5"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2 text-harx-700">
+                                <AlertTriangle className="w-5 h-5 shrink-0" />
+                                <h3 className="text-base font-bold">{t('sessionPlanning.repLimit.title')}</h3>
+                            </div>
+                            <button type="button" onClick={() => setUpgradeOpen(false)} className="text-gray-400 hover:text-gray-700" aria-label={t('sessionPlanning.repLimit.close')}>
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+                            {t('sessionPlanning.repLimit.body', {
+                                plan: repQuota.planName || t('sessionPlanning.repLimit.yourPlan'),
+                                max: repQuota.maxReps ?? 1,
+                                next: repQuota.nextPlan || t('sessionPlanning.repLimit.higherPlan'),
+                            })}
+                        </p>
+                        <div className="mt-5 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setUpgradeOpen(false)}
+                                className="px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100"
+                            >
+                                {t('sessionPlanning.repLimit.close')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setUpgradeOpen(false);
+                                    window.location.hash = '#/dashboard/upgrade';
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold bg-harx-600 text-white hover:bg-harx-700"
+                            >
+                                {t('sessionPlanning.repLimit.upgrade')}
+                                <ArrowUpRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }

@@ -2711,7 +2711,16 @@
       "reservedSlots": "Reserved Slots",
       "gigHours": "Gig Hours"
     },
-    "legalLunch": "Calls forbidden from 13:00 to 14:00"
+    "legalLunch": "Calls forbidden from 13:00 to 14:00",
+    "repLimit": {
+      "banner": "Plan {{plan}} — {{max}} active REP maximum",
+      "title": "Active REP limit",
+      "body": "The {{plan}} plan allows {{max}} active REP on the planning grid. Lower this number, or upgrade to {{next}}.",
+      "upgrade": "Change plan",
+      "close": "Edit planning",
+      "yourPlan": "current",
+      "higherPlan": "a higher plan"
+    }
   },
   "orchestratorGuide": {
     "intro": {
