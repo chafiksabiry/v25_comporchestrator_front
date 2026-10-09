@@ -448,6 +448,11 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
   }) => {
     const isEditing = editingField === field;
     const canSave = tempValue.trim().length > 0;
+    const isLongText =
+      field === "overview" ||
+      field === "mission" ||
+      field === "companyIntro" ||
+      value.length > 140;
 
     if (variant === "contact" && isEditing) {
       return (
@@ -548,14 +553,48 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
     return (
       <div className={`group relative ${className}`}>
         {isEditing ? (
-          <div className="flex items-center gap-2">
+          isLongText ? (
+            <div className="w-full space-y-2">
+              <textarea
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value)}
+                placeholder={placeholder}
+                rows={Math.min(14, Math.max(6, Math.ceil(tempValue.length / 90)))}
+                className="w-full min-h-[10rem] resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-base leading-relaxed text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") cancelEdit();
+                }}
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => commitEdit(field)}
+                  disabled={!canSave}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-harx-600 text-white hover:bg-harx-700 disabled:bg-slate-200 disabled:text-slate-400"
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={cancelEdit}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          ) : (
+          <div className="flex w-full items-center gap-2">
             <input
               type="text"
               inputMode={type === "tel" ? "tel" : type === "email" ? "email" : "text"}
               value={tempValue}
               onChange={(e) => setTempValue(e.target.value)}
               placeholder={placeholder}
-              className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-base text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
               onKeyDown={(e) => {
                 if (e.key === "Enter") commitEdit(field);
                 if (e.key === "Escape") cancelEdit();
@@ -581,6 +620,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
               <X size={15} />
             </button>
           </div>
+          )
         ) : (
           <div className="flex items-center gap-2">
             {Icon && <Icon size={18} className="text-gray-600" />}
@@ -1133,7 +1173,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
                       <div className="w-12 h-12 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
                         <Target className="text-white" size={24} />
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <h3 className="text-xl font-bold text-harx-700 mb-3">{t('searchCompanyWizard.profile.ourMission')}</h3>
                         <EditableField key={`mission-${uiLang}`} value={profile.mission} field="mission" className="text-gray-700" />
                       </div>
