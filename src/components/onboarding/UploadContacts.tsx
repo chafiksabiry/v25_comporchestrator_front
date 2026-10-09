@@ -35,6 +35,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
+import ZohoFieldMappingModal from './ZohoFieldMappingModal';
 import { markGigStepDone } from '../../services/gigSetupSync';
 import { useTranslation } from 'react-i18next';
 
@@ -787,6 +788,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
+  const [zohoMappingOpen, setZohoMappingOpen] = useState(false);
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
   const [showLeadsPreview, setShowLeadsPreview] = useState(true);
@@ -3333,9 +3335,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         {/* Import Methods Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Zoho Import Card - DISABLED FOR NOW */}
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-2xl p-6 flex flex-col h-full grayscale opacity-60 pointer-events-none relative overflow-hidden group">
-            {/* Overlay to ensure it's not clickable and shows disabled cursor */}
-            <div className="absolute inset-0 z-10 cursor-not-allowed" title="Zoho CRM Integration is currently disabled" />
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-2xl p-6 flex flex-col h-full relative overflow-hidden group">
             {/* Header */}
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-gray-100 shadow-sm relative z-20">
@@ -3384,15 +3384,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             {/* Action Button - Pushed to bottom */}
             <div className="mt-auto relative z-20">
               <button
-                onClick={async () => {
+                onClick={() => {
                   if (!selectedGigId) {
                     toast.error('Please select a gig first');
                     return;
                   }
-                  await handleImportFromZoho();
+                  setZohoMappingOpen(true);
                 }}
                 disabled={!hasZohoAccessToken || isImportingZoho}
-                className="w-full bg-gray-200 text-gray-500 font-black py-4 px-6 rounded-xl transition-all duration-500"
+                className="w-full bg-gradient-harx text-white font-black py-4 px-6 rounded-xl transition-all duration-500 disabled:opacity-50"
               >
                 {isImportingZoho ? (
                   <>
@@ -4866,6 +4866,16 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           </div>
         </div>
       )}
+
+      <ZohoFieldMappingModal
+        open={zohoMappingOpen}
+        gigId={selectedGigId || ''}
+        onClose={() => setZohoMappingOpen(false)}
+        onSaved={() => {
+          setZohoMappingOpen(false);
+          void handleImportFromZoho();
+        }}
+      />
 
       {viewingLeadDetail && (
         <LeadDetailModal
