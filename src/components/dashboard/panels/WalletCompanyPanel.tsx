@@ -17,7 +17,6 @@ import {
   Brain,
   MessageSquare,
   Plus,
-  Clock,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -31,8 +30,6 @@ import {
   runPaypalCheckoutFlow,
   runStripeCheckoutFlow
 } from '../../../lib/paypalCheckout';
-import { formatWalletMinutesBalance } from '../../../utils/billingMinutes';
-import { computeMinutesPurchaseCents } from '../../../utils/minutesPricing';
 
 interface WalletState {
   companyId: string;
@@ -207,9 +204,6 @@ export function WalletCompanyPanel() {
   const [agentWithdrawals, setAgentWithdrawals] = useState<AgentWithdrawal[]>([]);
   const [repTransactions, setRepTransactions] = useState<RepTransactionRow[]>([]);
   const [walletEntries, setWalletEntries] = useState<WalletEntryRow[]>([]);
-  const [purchasedMinutes, setPurchasedMinutes] = useState(0);
-  const [phoneLinesCount, setPhoneLinesCount] = useState(0);
-  const [phoneLinesSpendCents, setPhoneLinesSpendCents] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCall, setSelectedCall] = useState<CompanyCallRow | null>(null);
@@ -298,41 +292,6 @@ export function WalletCompanyPanel() {
         if (agentData.success && agentData.data) {
           setAgentWithdrawals(agentData.data);
         }
-      }
-
-      // 5. Minutes purchased (volume + invested amount)
-      try {
-        const minsRes = await fetch(`${apiBaseUrl}/minutes-company/${companyId}`);
-        if (minsRes.ok) {
-          const minsData = await minsRes.json();
-          const data = minsData?.data ?? minsData;
-          setPurchasedMinutes(
-            typeof data?.purchasedMinutes === 'number' ? data.purchasedMinutes : 0
-          );
-        }
-      } catch (e) {
-        console.warn('minutes-company unavailable', e);
-      }
-
-      // 6. Phone numbers purchased (count + spend)
-      try {
-        const phoneRes = await fetch(`${apiBaseUrl}/phone-numbers`);
-        if (phoneRes.ok) {
-          const phoneData = await phoneRes.json();
-          const list = Array.isArray(phoneData) ? phoneData : [];
-          const mine = list.filter((n: any) => String(n.companyId) === String(companyId));
-          setPhoneLinesCount(mine.length);
-          let spendCents = 0;
-          mine.forEach((n: any) => {
-            if (n.isTrial) return;
-            if (typeof n.price === 'number' && n.price > 0) {
-              spendCents += Math.round(n.price * 100);
-            }
-          });
-          setPhoneLinesSpendCents(spendCents);
-        }
-      } catch (e) {
-        console.warn('phone-numbers unavailable', e);
       }
 
     } catch (err) {
@@ -493,8 +452,9 @@ export function WalletCompanyPanel() {
   };
 
   const unifiedMovements = React.useMemo(() => {
+    const remunerationTypes = new Set(['call_validated', 'transaction', 'bonus']);
     const reps = repTransactions
-      .filter((tx) => tx.status !== 'reversed' && tx.status !== 'refused')
+      .filter((tx) => remunerationTypes.has(tx.type) && tx.status !== 'reversed' && tx.status !== 'refused')
       .map((tx) => ({
         kind: 'rep' as const,
         id: tx._id,
@@ -502,7 +462,7 @@ export function WalletCompanyPanel() {
         raw: tx,
       }));
     const deposits = walletEntries
-      .filter((e) => e.direction === 'credit' && e.status !== 'failed')
+      .filter((e) => e.type === 'deposit' && e.direction === 'credit' && e.status !== 'failed')
       .map((entry) => ({
         kind: 'wallet' as const,
         id: entry._id,
@@ -582,8 +542,8 @@ export function WalletCompanyPanel() {
       </div>
 
       {/* Main Stats Card */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1 relative overflow-hidden rounded-[2rem] bg-slate-950 p-8 text-white shadow-xl border border-white/5">
+      <div className="grid grid-cols-1 gap-6 max-w-xl">
+        <div className="relative overflow-hidden rounded-[2rem] bg-slate-950 p-8 text-white shadow-xl border border-white/5">
           <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 h-64 w-64 rounded-full bg-orange-500/10 blur-3xl" />
           <div className="absolute left-1/4 bottom-0 h-48 w-48 rounded-full bg-rose-500/10 blur-3xl" />
 
@@ -612,58 +572,6 @@ export function WalletCompanyPanel() {
             </div>
           </div>
         </div>
-
-        <div className="bg-white rounded-[2rem] border border-gray-100 p-8 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-blue-500 font-bold text-xs uppercase tracking-wider mb-4">
-              <Clock size={16} />
-              <span>Minutes achetées</span>
-            </div>
-            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">Volume acheté</h3>
-            <span className="text-3xl font-black text-slate-900 block mb-2 tabular-nums">
-              {formatWalletMinutesBalance(purchasedMinutes)}
-            </span>
-            <p className="text-xs text-gray-500">
-              Total des minutes rechargées pour les campagnes d&apos;appels.
-            </p>
-          </div>
-          <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
-            <span>Montant investi</span>
-            <span className="font-bold text-slate-700 tabular-nums">
-              {(computeMinutesPurchaseCents(purchasedMinutes) / 100).toLocaleString('fr-FR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}{' '}
-              €
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-[2rem] border border-gray-100 p-8 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-violet-500 font-bold text-xs uppercase tracking-wider mb-4">
-              <Phone size={16} />
-              <span>Numéros achetés</span>
-            </div>
-            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">Lignes actives</h3>
-            <span className="text-3xl font-black text-slate-900 block mb-2 tabular-nums">
-              {phoneLinesCount}
-            </span>
-            <p className="text-xs text-gray-500">
-              Lignes téléphoniques provisionnées pour vos gigs.
-            </p>
-          </div>
-          <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
-            <span>Montant dépensé</span>
-            <span className="font-bold text-slate-700 tabular-nums">
-              {(phoneLinesSpendCents / 100).toLocaleString('fr-FR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}{' '}
-              €
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Wallet ledger — credits (deposits) + debits (commissions) */}
@@ -673,7 +581,7 @@ export function WalletCompanyPanel() {
             Mouvements du portefeuille
           </h3>
           <p className="text-xs text-gray-500 mt-1">
-            Commissions (débits, 70% rep / 30% HARX) et dépôts (crédits) du compte cash. Les appels en attente sont gérés depuis la page Appels.
+            Alimentations en cash et retraits de rémunération : appel, transaction et bonus.
           </p>
         </div>
 
