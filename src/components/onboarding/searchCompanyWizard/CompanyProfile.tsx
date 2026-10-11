@@ -30,6 +30,7 @@ import { extractApiError, publishCompanyData } from "./api/companyApi";
 import type { CompanyProfileData } from "./api/openai";
 import { uploadImage } from "./api/uploads";
 import { redirectToCompanyOnboarding } from "./navigation";
+import { OnboardingBackButton } from "./OnboardingBackButton";
 import { LucideProps } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -40,27 +41,56 @@ type CompanyProfileType = CompanyProfileData & {
   website?: string;
   metaDescription?: string;
   description?: string;
+  overview_i18n?: { en?: string; fr?: string };
+  mission_i18n?: { en?: string; fr?: string };
+  industry_i18n?: { en?: string; fr?: string };
 };
+
+type I18nBundle = { en: string; fr: string };
+
+function pickLocalized(
+  plain: string | undefined,
+  i18n: { en?: string; fr?: string } | undefined,
+  lang: "fr" | "en"
+): string {
+  const preferred = String((lang === "fr" ? i18n?.fr : i18n?.en) || "").trim();
+  if (preferred) return preferred;
+  const other = String((lang === "fr" ? i18n?.en : i18n?.fr) || "").trim();
+  return other || String(plain || "").trim();
+}
+
+function toI18nBundle(
+  plain: string | undefined,
+  i18n: { en?: string; fr?: string } | undefined
+): I18nBundle {
+  return {
+    en: String(i18n?.en || "").trim(),
+    fr: String(i18n?.fr || "").trim(),
+  };
+}
 
 interface Props {
   profile: CompanyProfileType;
+  /** Discard unpublished draft and go back to search/URL step */
+  onBack?: () => void;
   /** When set (embedded in Company Onboarding), called instead of a full-page redirect */
   onPublished?: (companyId: string) => void;
 }
 
 const userId = Cookies.get("userId");
 
-export function CompanyProfile({ profile: initialProfile, onPublished }: Props) {
-  const { t } = useTranslation();
+export function CompanyProfile({ profile: initialProfile, onBack, onPublished }: Props) {
+  const { t, i18n } = useTranslation();
+  const uiLang: "fr" | "en" = i18n.language?.startsWith("fr") ? "fr" : "en";
   const defaultProfile = {
     userId: userId || "",
     name: initialProfile.name || "",
     logo: initialProfile.logo || "",
-    industry: initialProfile.industry || "",
+    industry: pickLocalized(initialProfile.industry, initialProfile.industry_i18n, uiLang),
     founded: initialProfile.founded || "",
     headquarters: initialProfile.headquarters || "",
-    overview: initialProfile.overview || "",
-    mission: initialProfile.mission || "",
+    overview: pickLocalized(initialProfile.overview, initialProfile.overview_i18n, uiLang),
+    mission: pickLocalized(initialProfile.mission, initialProfile.mission_i18n, uiLang),
     culture: {
       values: initialProfile.culture?.values || [],
       benefits: initialProfile.culture?.benefits || [],
@@ -91,6 +121,11 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
   };
 
   const [profile, setProfile] = useState(defaultProfile);
+  const [i18nBundles, setI18nBundles] = useState({
+    overview: toI18nBundle(initialProfile.overview, initialProfile.overview_i18n),
+    mission: toI18nBundle(initialProfile.mission, initialProfile.mission_i18n),
+    industry: toI18nBundle(initialProfile.industry, initialProfile.industry_i18n),
+  });
   const [editMode, setEditMode] = useState(true);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState("");
@@ -102,6 +137,22 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+
+  // Language switch → show the matching EN/FR text from bilingual bundles.
+  useEffect(() => {
+    setEditingField(null);
+    setTempValue("");
+    setProfile((prev) => ({
+      ...prev,
+      overview:
+        pickLocalized(prev.overview, i18nBundles.overview, uiLang) || prev.overview,
+      mission:
+        pickLocalized(prev.mission, i18nBundles.mission, uiLang) || prev.mission,
+      industry:
+        pickLocalized(prev.industry, i18nBundles.industry, uiLang) || prev.industry,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-localize when UI language changes
+  }, [uiLang]);
 
   const applyLogo = (url: string) => {
     setLogoUrl(url);
@@ -184,7 +235,48 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
       (typeof data.description === "string" && data.description.trim()) ||
       (typeof data.metaDescription === "string" && data.metaDescription.trim()) ||
       `Profil généré depuis ${data.website || "le site web"}.`;
-    return { ...data, name, overview };
+
+    // Keep bilingual fields from live bundles; sync edited UI text into active language.
+    const overview_i18n = {
+      en: uiLang === "en" ? overview : i18nBundles.overview.en || overview,
+      fr: uiLang === "fr" ? overview : i18nBundles.overview.fr || overview,
+    };
+    const missionText = String(data.mission || "").trim();
+    const mission_i18n = {
+      en: uiLang === "en" ? missionText : i18nBundles.mission.en || missionText,
+      fr: uiLang === "fr" ? missionText : i18nBundles.mission.fr || missionText,
+    };
+    const industryText = String(data.industry || "").trim();
+    const industry_i18n = {
+      en: uiLang === "en" ? industryText : i18nBundles.industry.en || industryText,
+      fr: uiLang === "fr" ? industryText : i18nBundles.industry.fr || industryText,
+    };
+
+    return {
+      ...data,
+      name,
+      overview,
+      overview_i18n,
+      mission_i18n,
+      industry_i18n,
+      companyIntro_i18n: (initialProfile as any).companyIntro_i18n,
+      culture: {
+        ...data.culture,
+        values_i18n: (initialProfile as any).culture?.values_i18n,
+        benefits_i18n: (initialProfile as any).culture?.benefits_i18n,
+        workEnvironment_i18n: (initialProfile as any).culture?.workEnvironment_i18n,
+      } as any,
+      opportunities: {
+        ...data.opportunities,
+        roles_i18n: (initialProfile as any).opportunities?.roles_i18n,
+        growthPotential_i18n: (initialProfile as any).opportunities?.growthPotential_i18n,
+        training_i18n: (initialProfile as any).opportunities?.training_i18n,
+      } as any,
+      technology: {
+        ...data.technology,
+        innovation_i18n: (initialProfile as any).technology?.innovation_i18n,
+      } as any,
+    };
   };
 
   const markStepCompleted = async (companyId: string) => {
@@ -307,6 +399,12 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
 
     const fieldPath = field.split(".");
     setProfile(updateProfile(fieldPath, trimmed));
+    if (field === "overview" || field === "mission" || field === "industry") {
+      setI18nBundles((prev) => ({
+        ...prev,
+        [field]: { ...prev[field as keyof typeof prev], [uiLang]: trimmed },
+      }));
+    }
     cancelEdit();
   };
 
@@ -350,6 +448,11 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
   }) => {
     const isEditing = editingField === field;
     const canSave = tempValue.trim().length > 0;
+    const isLongText =
+      field === "overview" ||
+      field === "mission" ||
+      field === "companyIntro" ||
+      value.length > 140;
 
     if (variant === "contact" && isEditing) {
       return (
@@ -450,14 +553,48 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
     return (
       <div className={`group relative ${className}`}>
         {isEditing ? (
-          <div className="flex items-center gap-2">
+          isLongText ? (
+            <div className="w-full space-y-2">
+              <textarea
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value)}
+                placeholder={placeholder}
+                rows={Math.min(14, Math.max(6, Math.ceil(tempValue.length / 90)))}
+                className="w-full min-h-[10rem] resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-base leading-relaxed text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") cancelEdit();
+                }}
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => commitEdit(field)}
+                  disabled={!canSave}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-harx-600 text-white hover:bg-harx-700 disabled:bg-slate-200 disabled:text-slate-400"
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={cancelEdit}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          ) : (
+          <div className="flex w-full items-center gap-2">
             <input
               type="text"
               inputMode={type === "tel" ? "tel" : type === "email" ? "email" : "text"}
               value={tempValue}
               onChange={(e) => setTempValue(e.target.value)}
               placeholder={placeholder}
-              className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-base text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
               onKeyDown={(e) => {
                 if (e.key === "Enter") commitEdit(field);
                 if (e.key === "Escape") cancelEdit();
@@ -483,6 +620,7 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
               <X size={15} />
             </button>
           </div>
+          )
         ) : (
           <div className="flex items-center gap-2">
             {Icon && <Icon size={18} className="text-gray-600" />}
@@ -762,8 +900,17 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
             <style>{`@keyframes shine {0% { transform: translateX(-200%);}100% { transform: translateX(200%);}}`}</style>
           </div>
 
-          {/* Edit / Done toggle — always visible in the hero */}
-          <div className="absolute top-4 right-4 z-20">
+          {/* Back (no publish) + Edit / Done — always visible in the hero */}
+          <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between gap-3">
+            {onBack ? (
+              <OnboardingBackButton
+                variant="icon"
+                label={t("searchCompanyWizard.backToSearch", "Retour à la recherche")}
+                onClick={onBack}
+              />
+            ) : (
+              <span />
+            )}
             <button
               type="button"
               onClick={() => setEditMode((v) => !v)}
@@ -988,10 +1135,10 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
               </div>
 
               <div>
-                <EditableField value={profile.name} field="name" className="text-5xl font-bold text-white mb-2 tracking-tight" />
+                <EditableField key={`name-${uiLang}`} value={profile.name} field="name" className="text-5xl font-bold text-white mb-2 tracking-tight" />
                 <div className="flex flex-wrap gap-6 text-white/90">
                   {profile.industry && (
-                    <EditableField value={profile.industry} field="industry" icon={Factory} className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/10" />
+                    <EditableField key={`industry-${uiLang}`} value={profile.industry} field="industry" icon={Factory} className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/10" />
                   )}
                   {profile.founded && (
                     <EditableField value={profile.founded} field="founded" icon={Calendar} className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm" />
@@ -1016,7 +1163,7 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
                   </div>
                   <div className="flex-1">
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('searchCompanyWizard.profile.companyOverview')}</h2>
-                    <EditableField value={profile.overview} field="overview" className="text-gray-700 leading-relaxed text-lg" />
+                    <EditableField key={`overview-${uiLang}`} value={profile.overview} field="overview" className="text-gray-700 leading-relaxed text-lg" />
                   </div>
                 </div>
 
@@ -1026,9 +1173,9 @@ export function CompanyProfile({ profile: initialProfile, onPublished }: Props) 
                       <div className="w-12 h-12 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
                         <Target className="text-white" size={24} />
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <h3 className="text-xl font-bold text-harx-700 mb-3">{t('searchCompanyWizard.profile.ourMission')}</h3>
-                        <EditableField value={profile.mission} field="mission" className="text-gray-700" />
+                        <EditableField key={`mission-${uiLang}`} value={profile.mission} field="mission" className="text-gray-700" />
                       </div>
                     </div>
                   </div>

@@ -39,13 +39,16 @@ export const STEP_ID_TO_FIELD: Record<number, SetupStepField> = {
   12: 'gigActivation',
 };
 
+/** Knowledge base improves answers. It is not required to activate a gig. */
+export const OPTIONAL_SETUP_STEPS: SetupStepField[] = ['knowledgeBase'];
+
 /** Sequential order in which the rep should complete each step.
  *  Used by `getNextStepRoute` to drive the "Continue →" CTA after
- *  every successful action. Activation comes last. */
+ *  every successful action. Activation comes last. Knowledge base
+ *  stays in the flow as an optional improvement, not a gate. */
 export const STEP_FIELD_ORDER: SetupStepField[] = [
   'telephony',
   'uploadContacts',
-  'knowledgeBase',
   'repOnboarding',
   'callScript',
   'sessionPlanning',
@@ -63,6 +66,22 @@ export const STEP_FIELD_TO_ROUTE: Record<SetupStepField, string> = {
   sessionPlanning: '/dashboard/scheduler',
   gigActivation: '/dashboard/gig-activation',
 };
+
+/** After creating a gig, land on telephony so the user continues the funnel. */
+export function getPostCreateGigRoute(gigId: string): string {
+  const id = encodeURIComponent(gigId);
+  return `/dashboard/telephony?action=buy&gigId=${id}`;
+}
+
+/** Persist selected gig for in-flow onboarding steps (telephony, etc.). */
+export function rememberCreatedGigId(gigId: string) {
+  try {
+    localStorage.setItem('selectedGigId', gigId);
+    localStorage.setItem('gigId', gigId);
+  } catch {
+    /* ignore */
+  }
+}
 
 /** Returns the dashboard route the rep should land on after completing
  *  the given step. Falls back to the gigs list once every step is done. */

@@ -9,6 +9,16 @@ export function billedMinutesFromSeconds(seconds?: number | null): number {
   return Math.ceil(s / 60);
 }
 
+/** Connected talk time, with seconds. Ringing is not included. */
+export function formatTalkDuration(seconds?: number | null): string {
+  const s = Math.max(0, Math.floor(Number(seconds) || 0));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  if (m === 0) return `${r} s`;
+  if (r === 0) return `${m} min`;
+  return `${m} min ${String(r).padStart(2, '0')}`;
+}
+
 /** Display call duration as billed minutes only (no seconds). */
 export function formatBilledMinutesFromSeconds(seconds?: number | null): string {
   const m = billedMinutesFromSeconds(seconds);

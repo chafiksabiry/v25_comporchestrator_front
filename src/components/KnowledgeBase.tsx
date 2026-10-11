@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Trash2, Video, LayoutGrid } from 'lucide-react';
+import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Trash2, Video, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
@@ -8,7 +8,8 @@ import apiClient from '../api/knowledgeClient';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { OnboardingService } from './training/infrastructure/services/OnboardingService';
-import { markGigStepDone } from '../services/gigSetupSync';
+import { markCompanyGigsStepDone, markGigStepDone } from '../services/gigSetupSync';
+import DocumentViewer from './training/components/DocumentViewer/DocumentViewer';
 
 interface DocumentAnalysis {
   summary: string;
@@ -101,8 +102,13 @@ const dropdownStyles = `
 `;
 
 const KnowledgeBase: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{
+    fileUrl: string;
+    name: string;
+    fileType?: string;
+  } | null>(null);
   const [uploadGigId, setUploadGigId] = useState<string>('');
   const [isUploadGigDropdownOpen, setIsUploadGigDropdownOpen] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
@@ -126,6 +132,7 @@ const KnowledgeBase: React.FC = () => {
   const [showTranscription, setShowTranscription] = useState<{ [key: string]: boolean }>({});
   const [translatedAnalysis, setTranslatedAnalysis] = useState<{ [key: string]: DocumentAnalysis }>({});
   const [translatingDocument, setTranslatingDocument] = useState<string | null>(null);
+  const frenchTranslationStarted = useRef<Set<string>>(new Set());
   const [gigs, setGigs] = useState<any[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'document' | 'video' | 'audio'>('all');
@@ -301,6 +308,13 @@ const KnowledgeBase: React.FC = () => {
       setKnowledgeItems(documents);
 
       if (documents.length > 0) {
+        const gigForStep = String(gigId || selectedGigId || '').trim();
+        const companyId = Cookies.get('companyId') || '';
+        if (gigForStep) {
+          markGigStepDone(gigForStep, 'knowledgeBase', true);
+        } else if (companyId) {
+          markCompanyGigsStepDone(companyId, 'knowledgeBase', true);
+        }
         updateOnboardingProgress().catch(err => console.error('Failed auto-completion on fetch:', err));
       }
 
@@ -484,8 +498,11 @@ const KnowledgeBase: React.FC = () => {
       // Persist `setupSteps.knowledgeBase` for the targeted gig so the
       // dashboard checklist reflects progress immediately. We only mark
       // it when the user picked a specific gig (not the "all" bucket).
+      const companyId = Cookies.get('companyId') || '';
       if (uploadGigId && uploadGigId !== 'all') {
         markGigStepDone(uploadGigId, 'knowledgeBase', true);
+      } else if (companyId) {
+        markCompanyGigsStepDone(companyId, 'knowledgeBase', true);
       }
 
       setUploadFiles([]);
@@ -767,19 +784,22 @@ const KnowledgeBase: React.FC = () => {
     });
   };
 
-  // Translation helpers
-  const isTextInEnglish = (text: string): boolean => {
-    if (!text) return true;
-    const englishWords = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
-    const words = text.toLowerCase().split(/\s+/);
-    const englishWordCount = words.filter(word => englishWords.includes(word)).length;
-    const englishRatio = englishWordCount / Math.min(words.length, 20);
-    return englishRatio > 0.2;
-  };
+  // French when the switcher is French, or when the browser language is French.
+  const wantsFrenchContent = (() => {
+    const ui = (i18n.language || '').toLowerCase();
+    if (ui.startsWith('fr')) return true;
+    if (typeof navigator === 'undefined') return false;
+    const browserLangs = [navigator.language, ...(navigator.languages || [])];
+    return browserLangs.some((lang) => String(lang || '').toLowerCase().startsWith('fr'));
+  })();
 
-  const needsTranslation = (analysis: DocumentAnalysis): boolean => {
-    const textSample = `${analysis.summary} ${analysis.domain} ${analysis.theme}`.substring(0, 200);
-    return !isTextInEnglish(textSample);
+  const isTextInEnglish = (text: string): boolean => {
+    if (!text) return false;
+    const englishWords = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
+    const words = text.toLowerCase().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return false;
+    const englishWordCount = words.filter((word) => englishWords.includes(word)).length;
+    return englishWordCount / Math.min(words.length, 40) > 0.08;
   };
 
   const translateAnalysis = async (documentId: string, analysis: DocumentAnalysis) => {
@@ -797,19 +817,37 @@ const KnowledgeBase: React.FC = () => {
       };
       const response = await apiClient.post('/rag/translate-analysis', {
         analysis: textToTranslate,
-        targetLanguage: 'English'
+        targetLanguage: 'French'
       });
-      setTranslatedAnalysis(prev => ({
-        ...prev,
-        [documentId]: (response.data as any).translatedAnalysis
-      }));
-    } catch (error: any) {
+      const translated = (response.data as { translatedAnalysis?: DocumentAnalysis }).translatedAnalysis;
+      if (translated?.summary) {
+        setTranslatedAnalysis((prev) => ({
+          ...prev,
+          [documentId]: translated
+        }));
+      }
+    } catch (error: unknown) {
       console.error('Error translating analysis:', error);
-      alert('Failed to translate analysis. Please try again.');
     } finally {
       setTranslatingDocument(null);
     }
   };
+
+  useEffect(() => {
+    if (!wantsFrenchContent || translatingDocument) return;
+    const pending = Object.entries(documentAnalysis).find(([id, analysis]) => {
+      if (!analysis || !('domain' in analysis)) return false;
+      if (translatedAnalysis[id]) return false;
+      if (frenchTranslationStarted.current.has(id)) return false;
+      const doc = analysis as DocumentAnalysis;
+      const sample = `${doc.summary || ''} ${doc.domain || ''} ${doc.theme || ''}`;
+      return isTextInEnglish(sample);
+    });
+    if (!pending) return;
+    const [id, analysis] = pending;
+    frenchTranslationStarted.current.add(id);
+    void translateAnalysis(id, analysis as DocumentAnalysis);
+  }, [wantsFrenchContent, translatingDocument, documentAnalysis, translatedAnalysis]);
 
   // Create unified items list
   const getUnifiedItems = () => {
@@ -869,54 +907,21 @@ const KnowledgeBase: React.FC = () => {
   const renderAnalysisContent = (analysis: AnalysisResult, documentId?: string) => {
     if ('domain' in analysis) {
       const docAnalysis = analysis as DocumentAnalysis;
-      const hasTranslation = documentId && translatedAnalysis[documentId];
-      const displayAnalysis = hasTranslation ? translatedAnalysis[documentId] : docAnalysis;
-      const showTranslateButton = documentId && needsTranslation(docAnalysis) && !hasTranslation;
+      const frenchVersion = documentId ? translatedAnalysis[documentId] : undefined;
+      const displayAnalysis = wantsFrenchContent && frenchVersion ? frenchVersion : docAnalysis;
+      const waitingForFrench =
+        wantsFrenchContent &&
+        !!documentId &&
+        !frenchVersion &&
+        translatingDocument === documentId;
 
       return (
         <div className="space-y-10">
-          {documentId && (hasTranslation || showTranslateButton) && (
-            <div className="flex items-center justify-between bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-harx-100 shadow-sm sticky top-0 z-10 mb-8">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-harx-50 rounded-lg">
-                  <Languages size={18} className="text-harx-500" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest">{t('knowledgeBase.analysis.languageHub')}</h4>
-                  <p className="text-[10px] text-gray-500 font-bold italic">
-                    {hasTranslation ? t('knowledgeBase.analysis.viewInEnglish') : t('knowledgeBase.analysis.needTranslation')}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {showTranslateButton && (
-                  <button
-                    onClick={() => translateAnalysis(documentId, docAnalysis)}
-                    disabled={translatingDocument === documentId}
-                    className="flex items-center px-4 py-2 bg-harx-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-600 shadow-lg shadow-harx-500/20 transition-all disabled:opacity-50"
-                  >
-                    {translatingDocument === documentId ? (
-                      <><RefreshCw size={14} className="mr-2 animate-spin" />{t('knowledgeBase.analysis.translating')}</>
-                    ) : (
-                      <><Languages size={14} className="mr-2" />{t('knowledgeBase.analysis.translateToEnglish')}</>
-                    )}
-                  </button>
-                )}
-                {hasTranslation && (
-                  <button
-                    onClick={() => setTranslatedAnalysis(prev => {
-                      const newState = { ...prev };
-                      delete newState[documentId];
-                      return newState;
-                    })}
-                    className="text-[10px] font-black text-harx-500 uppercase tracking-widest hover:underline px-2"
-                  >
-                    {t('knowledgeBase.analysis.showOriginal')}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+          {waitingForFrench ? (
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              {t('knowledgeBase.analysis.translating')}
+            </p>
+          ) : null}
 
           <div className="space-y-8 text-left">
             {/* Executive Summary Section */}
@@ -1256,15 +1261,20 @@ const KnowledgeBase: React.FC = () => {
                     <div className="flex justify-between items-start gap-3 mb-2">
                       <h3 className="text-lg font-black text-gray-900 truncate tracking-tight uppercase flex-1 min-w-0 pr-2">{item.name}</h3>
                       <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                        <a
-                          href={item.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewDoc({
+                              fileUrl: item.fileUrl,
+                              name: item.name,
+                              fileType: (item as any).fileType,
+                            })
+                          }
                           className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex"
                           title="View file"
                         >
                           <Eye size={18} />
-                        </a>
+                        </button>
                         <button type="button" onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex" title="AI analysis">
                           <Brain size={18} />
                         </button>
@@ -1308,8 +1318,8 @@ const KnowledgeBase: React.FC = () => {
               {/* Expansion Area for Analysis */}
               {isCallRecording ? (
                 selectedItem?.id === item.id && (
-                  <div className="bg-harx-50/10 backdrop-blur-md border border-harx-100/50 p-8 rounded-[2.5rem] shadow-xl ml-4 mb-8 animate-in slide-in-from-top-4 duration-500">
-                    <div className="flex justify-between items-start mb-8">
+                  <div className="bg-harx-50/10 backdrop-blur-md border border-harx-100/50 p-8 lg:pr-80 rounded-[2.5rem] shadow-xl ml-4 mb-8 animate-in slide-in-from-top-4 duration-500">
+                    <div className="flex flex-wrap justify-between items-start gap-4 mb-8">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-white rounded-2xl shadow-sm border border-harx-50">
                           <Brain size={24} className="text-harx-500" />
@@ -1322,15 +1332,20 @@ const KnowledgeBase: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <a 
-                          href={item.fileUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewDoc({
+                              fileUrl: item.fileUrl,
+                              name: item.name,
+                              fileType: (item as any).fileType || item.callData?.fileType,
+                            })
+                          }
                           className="flex items-center gap-2 px-4 py-2 bg-white text-harx-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-50 border border-harx-100 transition-all shadow-sm"
                         >
                           <Eye size={14} />
                           {t('knowledgeBase.intelligenceDashboard.viewFile')}
-                        </a>
+                        </button>
                         <button onClick={() => setSelectedItem(null)} className="p-2 hover:bg-white rounded-xl transition-colors text-gray-400 hover:text-harx-500"><X size={24} /></button>
                       </div>
                     </div>
@@ -1399,8 +1414,8 @@ const KnowledgeBase: React.FC = () => {
                 )
               ) : (
                 selectedDocumentForAnalysis?.id === item.id && (
-                  <div className="bg-white border border-harx-100 p-8 rounded-3xl shadow-2xl ml-4 mb-8">
-                    <div className="flex justify-between items-start mb-8">
+                  <div className="bg-white border border-harx-100 p-8 lg:pr-80 rounded-3xl shadow-2xl ml-4 mb-8">
+                    <div className="flex flex-wrap justify-between items-start gap-4 mb-8">
                       <div className="flex flex-col">
                         <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">{t('knowledgeBase.analysisOutput.title')}</h3>
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest italic leading-none mt-1">
@@ -1408,15 +1423,20 @@ const KnowledgeBase: React.FC = () => {
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                         <a 
-                            href={item.fileUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="flex items-center gap-2 px-4 py-2 bg-harx-50 text-harx-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-100 transition-all"
-                          >
-                            <Eye size={14} />
-                            {t('knowledgeBase.analysisOutput.viewSourceFile')}
-                          </a>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewDoc({
+                              fileUrl: item.fileUrl,
+                              name: item.name,
+                              fileType: (item as any).fileType,
+                            })
+                          }
+                          className="flex items-center gap-2 px-4 py-2 bg-harx-50 text-harx-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-100 transition-all"
+                        >
+                          <Eye size={14} />
+                          {t('knowledgeBase.analysisOutput.viewSourceFile')}
+                        </button>
                         <button onClick={() => setSelectedDocumentForAnalysis(null)} className="text-gray-400 hover:text-harx-500 transition-colors"><X size={24} /></button>
                       </div>
                     </div>
@@ -1503,6 +1523,46 @@ const KnowledgeBase: React.FC = () => {
           </div>
         )}
       </div>
+    );
+  };
+
+  const renderPreviewModal = () => {
+    if (!previewDoc?.fileUrl) return null;
+    return createPortal(
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        onClick={() => setPreviewDoc(null)}
+        role="dialog"
+        aria-modal="true"
+        aria-label={previewDoc.name || 'Document preview'}
+      >
+        <div
+          className="bg-white rounded-[2rem] shadow-2xl w-full max-w-5xl h-[85vh] overflow-hidden flex flex-col animate-fade-in"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-5 border-b border-gray-100 flex justify-between items-center gap-3 shrink-0">
+            <h3 className="text-lg font-black text-gray-900 tracking-tight uppercase truncate">
+              {previewDoc.name || 'Document'}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setPreviewDoc(null)}
+              className="text-gray-400 hover:text-gray-600 focus:outline-none p-2 rounded-xl hover:bg-gray-50"
+              aria-label="Close"
+            >
+              <X size={22} />
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 p-2 bg-gray-50">
+            <DocumentViewer
+              fileUrl={previewDoc.fileUrl}
+              fileName={previewDoc.name}
+              mimeType={previewDoc.fileType}
+            />
+          </div>
+        </div>
+      </div>,
+      document.body
     );
   };
 
@@ -1719,6 +1779,7 @@ const KnowledgeBase: React.FC = () => {
 
       {renderContent()}
       {renderUploadModal()}
+      {renderPreviewModal()}
       <style>{dropdownStyles}</style>
       </div>
     </div>

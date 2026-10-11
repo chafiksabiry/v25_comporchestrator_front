@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   FileText,
   RefreshCw,
@@ -25,7 +25,9 @@ import {
   AlertTriangle,
   MapPin,
   Calendar,
-  Users
+  Users,
+  GripVertical,
+  Check,
 } from 'lucide-react';
 import LeadDetailModal from '../dashboard/components/LeadDetailModal';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
@@ -33,6 +35,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
+import ZohoFieldMappingModal from './ZohoFieldMappingModal';
 import { markGigStepDone } from '../../services/gigSetupSync';
 import { useTranslation } from 'react-i18next';
 
@@ -53,6 +56,10 @@ interface Lead {
   Postal_Code?: string;
   City?: string;
   Date_of_Birth?: string;
+  Created_Time?: string;
+  createdAt?: string;
+  repDisposition?: string | null;
+  customFields?: Record<string, string>;
   __v?: number;
   _isPlaceholder?: boolean;
   hasBeenCalled?: boolean;
@@ -73,6 +80,160 @@ interface ApiResponse {
   totalPages: number;
   currentPage: number;
   data: Lead[];
+}
+
+const HARX_IMPORT_FIELDS = [
+  'Deal_Name',
+  'First_Name',
+  'Last_Name',
+  'Email_1',
+  'Phone',
+  'Address',
+  'Postal_Code',
+  'City',
+  'Date_of_Birth',
+] as const;
+
+type HarxImportField = (typeof HARX_IMPORT_FIELDS)[number];
+type ColumnMapping = Record<string, string>;
+type FieldVisibilityMap = Record<string, boolean>;
+type LeadFieldVisibility = { company: FieldVisibilityMap; rep: FieldVisibilityMap };
+
+/** Editable HARX fields in lead edit UIs (order + labels). */
+const COMPANY_EDITABLE_HARX_FIELDS: Array<{
+  key: HarxImportField;
+  labelKey: string;
+  inputType?: string;
+}> = [
+  { key: 'Deal_Name', labelKey: 'uploadContacts.mapping.fields.Deal_Name' },
+  { key: 'First_Name', labelKey: 'uploadContacts.preview.firstName' },
+  { key: 'Last_Name', labelKey: 'uploadContacts.preview.lastName' },
+  {
+    key: 'Email_1',
+    labelKey: 'uploadContacts.preview.email',
+    inputType: 'email',
+  },
+  {
+    key: 'Phone',
+    labelKey: 'uploadContacts.preview.phone',
+    inputType: 'tel',
+  },
+  { key: 'Address', labelKey: 'uploadContacts.preview.address' },
+  { key: 'Postal_Code', labelKey: 'uploadContacts.preview.postalCode' },
+  { key: 'City', labelKey: 'uploadContacts.preview.city' },
+  { key: 'Date_of_Birth', labelKey: 'uploadContacts.preview.dob' },
+];
+
+function isCompanyFieldVisible(
+  companyVisible: FieldVisibilityMap | undefined,
+  field: string
+): boolean {
+  if (!companyVisible) return true;
+  return companyVisible[field] !== false;
+}
+/** Saved custom column: source field header + display title shown in UI / scripts. */
+type SavedExtraColumn = { label: string };
+type SavedExtraColumnsMap = Record<string, SavedExtraColumn>;
+
+/** Default display title = exact column name; user can edit afterward. */
+function defaultExtraDisplayTitle(header: string): string {
+  return String(header || '').trim();
+}
+
+function defaultLeadFieldVisibility(): LeadFieldVisibility {
+  const company: FieldVisibilityMap = {};
+  const rep: FieldVisibilityMap = {};
+  for (const field of HARX_IMPORT_FIELDS) {
+    company[field] = true;
+    rep[field] = true;
+  }
+  return { company, rep };
+}
+
+type MappingCheckboxTone = 'harx' | 'company' | 'rep';
+
+/** Colored custom checkbox for contact mapping (save-extra / company / REP). */
+function MappingCheckbox({
+  checked,
+  onChange,
+  tone = 'harx',
+  title,
+  'aria-label': ariaLabel,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  tone?: MappingCheckboxTone;
+  title?: string;
+  'aria-label'?: string;
+}) {
+  const toneOn: Record<MappingCheckboxTone, string> = {
+    harx: 'border-harx-600 bg-gradient-to-br from-harx-500 to-rose-600 shadow-md shadow-harx-500/35',
+    company: 'border-sky-600 bg-gradient-to-br from-sky-500 to-indigo-600 shadow-md shadow-sky-500/35',
+    rep: 'border-emerald-600 bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/35',
+  };
+  const toneOff: Record<MappingCheckboxTone, string> = {
+    harx: 'border-slate-300 bg-white hover:border-harx-400 hover:bg-harx-50/50',
+    company: 'border-slate-300 bg-white hover:border-sky-400 hover:bg-sky-50/60',
+    rep: 'border-slate-300 bg-white hover:border-emerald-400 hover:bg-emerald-50/60',
+  };
+
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      title={title}
+      onClick={(e) => {
+        e.stopPropagation();
+        onChange();
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-2 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
+        checked
+          ? `${toneOn[tone]} focus-visible:ring-harx-300 scale-100`
+          : `${toneOff[tone]} focus-visible:ring-slate-300`
+      }`}
+    >
+      {checked ? <Check className="h-3 w-3 text-white" strokeWidth={3.5} /> : null}
+    </button>
+  );
+}
+
+interface SchemaDiff {
+  hasSavedSchema: boolean;
+  columnsChanged: boolean;
+  added: string[];
+  removed: string[];
+  previousHeaderCount: number;
+  currentHeaderCount: number;
+}
+
+interface FileColumnAnalyzeResult {
+  headers: string[];
+  sampleRows: Record<string, string>[];
+  suggestedMapping: ColumnMapping;
+  savedMapping?: ColumnMapping | null;
+  savedCustomFieldLabels?: Record<string, string>;
+  savedVisibility?: LeadFieldVisibility;
+  schemaDiff?: SchemaDiff;
+  fields?: string[];
+  meta?: { totalRows?: number; fileName?: string };
+}
+
+type SchemaImportMode = 'merge' | 'replace';
+
+const PREVIEW_PAGE_SIZE = 25;
+const MAX_VALIDATION_ERRORS = 40;
+
+function trimValidation(validation: any) {
+  if (!validation || typeof validation !== 'object') return validation;
+  const errors = Array.isArray(validation.errors) ? validation.errors : [];
+  return {
+    ...validation,
+    errors: errors.slice(0, MAX_VALIDATION_ERRORS),
+    errorTotal: typeof validation.errorTotal === 'number' ? validation.errorTotal : errors.length,
+  };
 }
 
 interface UploadContactsProps {
@@ -160,8 +321,30 @@ function LeadStatChip({
   );
 }
 
-const LEAD_TABLE_COL_COUNT = 7;
 const LEAD_EMPTY = '\u2014';
+
+function leadAddedDate(lead: Lead): Date | null {
+  const raw = lead.Created_Time || lead.createdAt;
+  if (raw) {
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  if (lead._id && /^[a-f0-9]{24}$/i.test(lead._id)) {
+    const seconds = Number.parseInt(lead._id.slice(0, 8), 16);
+    if (Number.isFinite(seconds)) return new Date(seconds * 1000);
+  }
+  return null;
+}
+
+function formatLeadAddedAt(lead: Lead, language: string): string {
+  const date = leadAddedDate(lead);
+  if (!date) return LEAD_EMPTY;
+  return date.toLocaleDateString(language.toLowerCase().startsWith('en') ? 'en-GB' : 'fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
 
 function formatLeadLocation(lead: Lead): string {
   const cp = lead.Postal_Code?.trim();
@@ -176,22 +359,52 @@ const LEAD_ROW_CELL =
 type LeadTableRowProps = {
   lead: Lead;
   variant?: 'default' | 'realtime';
+  selected?: boolean;
+  onToggleSelect?: (leadId: string) => void;
+  onArchive?: (leadId: string) => void;
   onView: (lead: Lead) => void;
   onEdit: (lead: Lead) => void;
   calledBadgeTitle: string;
   viewTitle: string;
   editTitle: string;
+  selectTitle?: string;
+  archiveTitle?: string;
+  /** Company-visible contact fields; meta columns (date/status/actions) always shown. */
+  companyVisible?: FieldVisibilityMap;
+  /** Custom columns chosen at mapping (Company checkbox), with display titles. */
+  customColumns?: Array<{ header: string; label: string }>;
 };
+
+function getLeadCustomFieldValue(lead: Lead, header: string): string {
+  const cf = lead.customFields;
+  if (!cf) return '';
+  if (cf instanceof Map) return String(cf.get(header) ?? '').trim();
+  return String((cf as Record<string, string>)[header] ?? '').trim();
+}
 
 function LeadTableRow({
   lead,
   variant = 'default',
+  selected = false,
+  onToggleSelect,
+  onArchive,
   onView,
   onEdit,
   calledBadgeTitle,
   viewTitle,
   editTitle,
+  selectTitle,
+  archiveTitle,
+  companyVisible,
+  customColumns = [],
 }: LeadTableRowProps) {
+  const show = (field: string) => isCompanyFieldVisible(companyVisible, field);
+  const { t, i18n } = useTranslation();
+  const statusKey = lead.repDisposition || 'to_call';
+  const statusLabel = i18n.exists(`calls.disp.${statusKey}`)
+    ? t(`calls.disp.${statusKey}`)
+    : (lead.Stage || t('calls.disp.to_call'));
+  const addedLabel = formatLeadAddedAt(lead, i18n.language);
   const isPlaceholder = Boolean((lead as Lead & { _isPlaceholder?: boolean })._isPlaceholder);
   const rowBorder =
     variant === 'realtime'
@@ -205,7 +418,16 @@ function LeadTableRow({
           isPlaceholder ? 'border-l-4 border-l-amber-400' : ''
         }`}
       >
-        <div className="flex justify-center">
+        <div className="flex items-center justify-center gap-1">
+          {onToggleSelect && lead._id ? (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggleSelect(lead._id as string)}
+              aria-label={selectTitle}
+              className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-harx-600 focus:ring-harx-500"
+            />
+          ) : null}
           <div className="relative">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${getLeadAvatarGradient(lead)} text-[10px] font-black text-white shadow-sm group-hover:scale-105 transition-transform duration-300`}
@@ -223,41 +445,102 @@ function LeadTableRow({
           </div>
         </div>
       </td>
+      {show('Deal_Name') ? (
+        <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+          <span
+            className="block truncate text-xs font-bold text-slate-900"
+            title={
+              lead.Deal_Name ||
+              `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim() ||
+              undefined
+            }
+          >
+            {lead.Deal_Name ||
+              `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim() ||
+              LEAD_EMPTY}
+          </span>
+        </td>
+      ) : null}
+      {show('Last_Name') ? (
+        <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+          <span
+            className="block truncate text-xs font-bold text-slate-900"
+            title={lead.Last_Name || undefined}
+          >
+            {lead.Last_Name || LEAD_EMPTY}
+          </span>
+        </td>
+      ) : null}
+      {show('First_Name') ? (
+        <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+          <span className="block truncate text-xs font-semibold text-slate-700" title={lead.First_Name || undefined}>
+            {lead.First_Name || LEAD_EMPTY}
+          </span>
+        </td>
+      ) : null}
+      {show('Phone') ? (
+        <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+          <span
+            className="block truncate text-xs font-medium tabular-nums text-slate-800"
+            title={lead.Phone || undefined}
+          >
+            {lead.Phone || LEAD_EMPTY}
+          </span>
+        </td>
+      ) : null}
+      {show('Email_1') ? (
+        <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+          <span
+            className="block truncate text-xs text-slate-600 group-hover:text-harx-600 transition-colors"
+            title={lead.Email_1 || undefined}
+          >
+            {lead.Email_1 || LEAD_EMPTY}
+          </span>
+        </td>
+      ) : null}
+      {show('Address') || show('Postal_Code') || show('City') ? (
+        <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+          <span
+            className="block truncate text-xs text-slate-600"
+            title={[lead.Address, formatLeadLocation(lead)].filter(Boolean).join(' — ') || undefined}
+          >
+            {show('Address') && lead.Address
+              ? `${lead.Address}${formatLeadLocation(lead) !== LEAD_EMPTY ? ` · ${formatLeadLocation(lead)}` : ''}`
+              : formatLeadLocation(lead)}
+          </span>
+        </td>
+      ) : null}
+      {show('Date_of_Birth') ? (
+        <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+          <span className="block truncate text-xs text-slate-600" title={lead.Date_of_Birth || undefined}>
+            {lead.Date_of_Birth || LEAD_EMPTY}
+          </span>
+        </td>
+      ) : null}
+      {customColumns.map((col) => {
+        const value = getLeadCustomFieldValue(lead, col.header);
+        return (
+          <td key={`custom-${col.header}`} className={`${LEAD_ROW_CELL} ${rowBorder}`}>
+            <span className="block truncate text-xs text-slate-700" title={value || undefined}>
+              {value || LEAD_EMPTY}
+            </span>
+          </td>
+        );
+      })}
       <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
-        <span className="block truncate text-xs font-bold text-slate-900" title={lead.Last_Name || undefined}>
-          {lead.Last_Name || LEAD_EMPTY}
-        </span>
-      </td>
-      <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
-        <span className="block truncate text-xs font-semibold text-slate-700" title={lead.First_Name || undefined}>
-          {lead.First_Name || LEAD_EMPTY}
+        <span className="block truncate text-xs font-medium tabular-nums text-slate-700" title={addedLabel}>
+          {addedLabel}
         </span>
       </td>
       <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
         <span
-          className="block truncate text-xs font-medium tabular-nums text-slate-800"
-          title={lead.Phone || undefined}
+          className="inline-flex max-w-full truncate rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold leading-snug text-slate-700"
+          title={statusLabel}
         >
-          {lead.Phone || LEAD_EMPTY}
+          {statusLabel}
         </span>
       </td>
-      <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
-        <span
-          className="block truncate text-xs text-slate-600 group-hover:text-harx-600 transition-colors"
-          title={lead.Email_1 || undefined}
-        >
-          {lead.Email_1 || LEAD_EMPTY}
-        </span>
-      </td>
-      <td className={`${LEAD_ROW_CELL} ${rowBorder}`}>
-        <span
-          className="block truncate text-xs text-slate-600"
-          title={[lead.Address, formatLeadLocation(lead)].filter(Boolean).join(' — ') || undefined}
-        >
-          {formatLeadLocation(lead)}
-        </span>
-      </td>
-      <td className={`${LEAD_ROW_CELL} rounded-r-2xl border-r px-1 ${rowBorder}`}>
+      <td className={`whitespace-nowrap px-1 py-2.5 align-middle border-y bg-white/80 rounded-r-2xl border-r ${rowBorder}`}>
         <div className="flex items-center justify-center gap-0.5">
           <button
             type="button"
@@ -275,6 +558,16 @@ function LeadTableRow({
           >
             <Edit className="h-3 w-3" />
           </button>
+          {onArchive && lead._id ? (
+            <button
+              type="button"
+              onClick={() => onArchive(lead._id as string)}
+              className="inline-flex items-center justify-center rounded-md border border-slate-200/80 bg-white p-1 text-slate-400 transition-all duration-200 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+              title={archiveTitle}
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          ) : null}
         </div>
       </td>
     </tr>
@@ -425,6 +718,44 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [parsedLeads, setParsedLeads] = useState<Lead[]>([]);
   const [showSaveButton, setShowSaveButton] = useState(true);
   const [showFileName, setShowFileName] = useState(true);
+  const [showMappingStep, setShowMappingStep] = useState(false);
+  const [mappingHeaders, setMappingHeaders] = useState<string[]>([]);
+  const [mappingSamples, setMappingSamples] = useState<Record<string, string>[]>([]);
+  const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
+  const [mappingFields, setMappingFields] = useState<string[]>([...HARX_IMPORT_FIELDS]);
+  const [mappingTotalRows, setMappingTotalRows] = useState(0);
+  const [isApplyingMapping, setIsApplyingMapping] = useState(false);
+  const [mappingError, setMappingError] = useState<string | null>(null);
+  const [dragOverField, setDragOverField] = useState<string | null>(null);
+  const [draggingHeader, setDraggingHeader] = useState<string | null>(null);
+  /** Ref keeps the dragged header across re-renders (HTML5 DnD + React state races). */
+  const draggingHeaderRef = useRef<string | null>(null);
+  const [fieldVisibility, setFieldVisibility] = useState<LeadFieldVisibility>(() =>
+    defaultLeadFieldVisibility()
+  );
+  /** Unmapped file headers kept as customFields, with a display title (mapping step). */
+  const [savedExtraColumns, setSavedExtraColumns] = useState<SavedExtraColumnsMap>({});
+  /** Persisted display titles for custom fields (list view + remount). */
+  const [customFieldLabels, setCustomFieldLabels] = useState<Record<string, string>>({});
+  /** When dropping onto an already-mapped HARX field: Remplacer vs Ajouter. */
+  const [mappingConflict, setMappingConflict] = useState<{
+    header: string;
+    field: string;
+    existingHeader: string;
+  } | null>(null);
+  /** Selected HARX destination for one-click → moves (falls back to first empty). */
+  const [selectedHarxTarget, setSelectedHarxTarget] = useState<string | null>(null);
+  /** Left-panel header whose → picker is open (only when no empty/selected target). */
+  const [moveRightPickerHeader, setMoveRightPickerHeader] = useState<string | null>(null);
+  /** Second-file schema strategy when columns differ from the gig's saved schema. */
+  const [schemaImportMode, setSchemaImportMode] = useState<SchemaImportMode>('replace');
+  const [schemaDiffPrompt, setSchemaDiffPrompt] = useState<{
+    diff: SchemaDiff;
+    analyzeResult: FileColumnAnalyzeResult;
+    file: File;
+    preservedLeads: Lead[];
+    preservedFiltered: Lead[];
+  } | null>(null);
   const [isSavingLeads, setIsSavingLeads] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
@@ -441,6 +772,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [isImportingZoho, setIsImportingZoho] = useState(false);
   const [isDisconnectingZoho, setIsDisconnectingZoho] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [isArchivingLeads, setIsArchivingLeads] = useState(false);
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [isLoadingLeads, setIsLoadingLeads] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -455,9 +788,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
+  const [zohoMappingOpen, setZohoMappingOpen] = useState(false);
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
   const [showLeadsPreview, setShowLeadsPreview] = useState(true);
+  const [previewCount, setPreviewCount] = useState(PREVIEW_PAGE_SIZE);
   const [validationResults, setValidationResults] = useState<any>(null);
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
   const [editingSavedLead, setEditingSavedLead] = useState<Lead | null>(null);
@@ -707,7 +1042,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       }
 
       if (savedValidationResults && !validationResults) {
-        setValidationResults(savedValidationResults);
+        setValidationResults(trimValidation(savedValidationResults));
       }
 
       dataRestoredRef.current = true;
@@ -715,28 +1050,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   }, []);
 
-  // Add a protection effect that runs on every render to prevent data loss
+  // Persist a small sample once per import. Never rewrite the full list:
+  // cloning 15k leads on every render freezes the page.
   useEffect(() => {
-    // If we have parsed leads in state but they're about to be lost, save them
-    if (parsedLeads.length > 0) {
-      // Only save if data is not too large
-      const success = safeStorageSet('parsedLeads', parsedLeads);
-      if (!success) {
-        console.warn('ÔÜá´©Å Could not save parsed leads to storage - keeping in memory only');
-        // Set a flag to indicate data is only in memory
-        setParsedLeads(prev => prev.map(lead => ({ ...lead, _memoryOnly: true })));
-      }
+    if (parsedLeads.length === 0) return;
+    const success = safeStorageSet('parsedLeads', parsedLeads);
+    if (!success) {
+      setDataTooLarge(true);
     }
+  }, [parsedLeads]);
 
-    // Ensure cancelProcessing function is always available
-    if (!(window as any).cancelUploadProcessing) {
-      (window as any).cancelUploadProcessing = cancelProcessing;
-    }
-
-    // Ensure emergency cancel function is always available
-    if (!(window as any).emergencyCancelUpload) {
-      (window as any).emergencyCancelUpload = emergencyCancel;
-    }
+  useEffect(() => {
+    (window as any).cancelUploadProcessing = cancelProcessing;
+    (window as any).emergencyCancelUpload = emergencyCancel;
   });
 
   // Add a protection effect to prevent component re-mounting
@@ -783,96 +1109,737 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
 
-  const processFileWithBackend = async (file: File): Promise<{ leads: any[], validation: any }> => {
+  const clearMappingState = () => {
+    setShowMappingStep(false);
+    setMappingHeaders([]);
+    setMappingSamples([]);
+    setColumnMapping({});
+    setMappingTotalRows(0);
+    setMappingError(null);
+    setIsApplyingMapping(false);
+    setDragOverField(null);
+    setDraggingHeader(null);
+    draggingHeaderRef.current = null;
+    setSavedExtraColumns({});
+    setMappingConflict(null);
+    setSelectedHarxTarget(null);
+    setMoveRightPickerHeader(null);
+    setSchemaDiffPrompt(null);
+  };
+
+  const loadGigFieldVisibility = async (gigId: string) => {
     try {
-      // Check if processing was cancelled
-      if (!processingRef.current) {
-        throw new Error('Processing cancelled by user');
+      // Prefer mapping endpoint: visibility + custom field display titles together.
+      const mappingRes = await fetch(
+        `${import.meta.env.VITE_DASHBOARD_API}/file-processing/mapping/${gigId}`,
+        { headers: { Accept: 'application/json' } }
+      );
+      if (mappingRes.ok) {
+        const data = await mappingRes.json();
+        if (data?.success && data?.data) {
+          const visibility = data.data.visibility;
+          if (visibility) {
+            setFieldVisibility({
+              ...defaultLeadFieldVisibility(),
+              company: {
+                ...defaultLeadFieldVisibility().company,
+                ...(visibility.company || {}),
+              },
+              rep: {
+                ...defaultLeadFieldVisibility().rep,
+                ...(visibility.rep || {}),
+              },
+            });
+          }
+          const labels =
+            data.data.customFieldLabels && typeof data.data.customFieldLabels === 'object'
+              ? data.data.customFieldLabels
+              : {};
+          const cleaned: Record<string, string> = {};
+          for (const [header, label] of Object.entries(labels)) {
+            const h = String(header || '').trim();
+            const l = String(label || '').trim();
+            if (h) cleaned[h] = l || h;
+          }
+          setCustomFieldLabels(cleaned);
+          return;
+        }
       }
 
-      // Create new AbortController for this request
-      abortControllerRef.current = new AbortController();
-
-      const userId = Cookies.get('userId');
-      const gigId = selectedGigId;
-      const companyId = Cookies.get('companyId');
-
-      if (!gigId) {
-        throw new Error(t('uploadContacts.errors.selectGigFirst'));
+      const response = await fetch(
+        `${import.meta.env.VITE_DASHBOARD_API}/file-processing/visibility/${gigId}`,
+        { headers: { Accept: 'application/json' } }
+      );
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data?.success && data?.data?.visibility) {
+        setFieldVisibility({
+          ...defaultLeadFieldVisibility(),
+          company: {
+            ...defaultLeadFieldVisibility().company,
+            ...(data.data.visibility.company || {}),
+          },
+          rep: {
+            ...defaultLeadFieldVisibility().rep,
+            ...(data.data.visibility.rep || {}),
+          },
+        });
       }
+    } catch (err) {
+      console.warn('Failed to load lead field visibility', err);
+    }
+  };
 
-      if (!userId || !companyId) {
-        throw new Error(t('uploadContacts.errors.userIdNotFound'));
+  const toggleFieldVisibility = (audience: 'company' | 'rep', field: string) => {
+    setFieldVisibility((prev) => {
+      const currentlyVisible = prev[audience][field] !== false;
+      return {
+        ...prev,
+        [audience]: {
+          ...prev[audience],
+          [field]: !currentlyVisible,
+        },
+      };
+    });
+  };
+
+  const customVisibilityKey = (header: string) => `custom.${header}`;
+
+  const companyVisible = fieldVisibility.company;
+
+  /** Custom columns visible for Company table (chosen at mapping). */
+  const companyCustomColumns = useMemo(() => {
+    const headers = new Set<string>(Object.keys(customFieldLabels));
+    for (const lead of leads.slice(0, 80)) {
+      if (!lead?.customFields || typeof lead.customFields !== 'object') continue;
+      const entries =
+        lead.customFields instanceof Map
+          ? Array.from(lead.customFields.keys())
+          : Object.keys(lead.customFields);
+      for (const h of entries) {
+        const key = String(h || '').trim();
+        if (key) headers.add(key);
       }
+    }
+    return Array.from(headers)
+      .filter((header) => companyVisible[customVisibilityKey(header)] !== false)
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+      .map((header) => ({
+        header,
+        label: customFieldLabels[header] || header,
+      }));
+  }, [companyVisible, customFieldLabels, leads]);
 
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append('file', file);
+  const leadTableColCount =
+    1 + // avatar/select
+    (companyVisible.Deal_Name !== false ? 1 : 0) +
+    (companyVisible.Last_Name !== false ? 1 : 0) +
+    (companyVisible.First_Name !== false ? 1 : 0) +
+    (companyVisible.Phone !== false ? 1 : 0) +
+    (companyVisible.Email_1 !== false ? 1 : 0) +
+    (companyVisible.Address !== false ||
+    companyVisible.Postal_Code !== false ||
+    companyVisible.City !== false
+      ? 1
+      : 0) +
+    (companyVisible.Date_of_Birth !== false ? 1 : 0) +
+    companyCustomColumns.length +
+    3; // addedAt, status, actions
 
-      // Simple progress update
-      updateRealProgress(20, 'Sending file to server...');
+  /** Always-required scalar fields (name is handled separately). */
+  const REQUIRED_SCALAR_FIELDS = [
+    'Email_1',
+    'Phone',
+    'Address',
+    'Postal_Code',
+    'City',
+    'Date_of_Birth',
+  ] as const;
 
-      // Send file to backend for processing - optimized request
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process`, {
+  const mappedFieldSet = (mapping: ColumnMapping) =>
+    new Set(Object.values(mapping).filter(Boolean));
+
+  /** Name OK if full-name column mapped, OR both first + last mapped. */
+  const mappingHasName = (mapping: ColumnMapping) => {
+    const fields = mappedFieldSet(mapping);
+    if (fields.has('Deal_Name')) return true;
+    return fields.has('First_Name') && fields.has('Last_Name');
+  };
+
+  const missingRequiredScalarFields = (mapping: ColumnMapping) => {
+    const fields = mappedFieldSet(mapping);
+    return REQUIRED_SCALAR_FIELDS.filter((field) => !fields.has(field));
+  };
+
+  const isMappingComplete = (mapping: ColumnMapping) =>
+    mappingHasName(mapping) && missingRequiredScalarFields(mapping).length === 0;
+
+  const isRequiredHarxSlot = (field: string, mapping: ColumnMapping) => {
+    if (REQUIRED_SCALAR_FIELDS.includes(field as (typeof REQUIRED_SCALAR_FIELDS)[number])) {
+      return true;
+    }
+    // Name: Deal_Name alone OR First+Last pair.
+    // When empty, only mark Deal_Name as required (primary path) so First/Last
+    // are not all three screaming "*". Once one of First/Last is mapped,
+    // require the other of the pair instead.
+    const fields = mappedFieldSet(mapping);
+    const hasFullName = fields.has('Deal_Name');
+    const hasFirstLast = fields.has('First_Name') && fields.has('Last_Name');
+
+    if (field === 'Deal_Name') {
+      return !hasFirstLast;
+    }
+    if (field === 'First_Name') {
+      if (hasFullName) return false;
+      return fields.has('Last_Name') && !fields.has('First_Name');
+    }
+    if (field === 'Last_Name') {
+      if (hasFullName) return false;
+      return fields.has('First_Name') && !fields.has('Last_Name');
+    }
+    return false;
+  };
+
+  const analyzeFileForMapping = async (file: File): Promise<FileColumnAnalyzeResult> => {
+    if (!processingRef.current) {
+      throw new Error('Processing cancelled by user');
+    }
+
+    abortControllerRef.current = new AbortController();
+    const gigId = selectedGigId;
+    if (!gigId) {
+      throw new Error(t('uploadContacts.errors.selectGigFirst'));
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('gigId', gigId);
+
+    updateRealProgress(30, t('uploadContacts.import.analyzing'));
+
+    const response = await fetch(
+      `${import.meta.env.VITE_DASHBOARD_API}/file-processing/analyze`,
+      {
         method: 'POST',
         body: formData,
         signal: abortControllerRef.current?.signal,
-        // Add headers for better performance
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        let errorMessage = `Backend error: ${response.status} ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          if (errorData.error) {
-            errorMessage = errorData.error;
-          }
-        } catch (e) {
-          // Use status text if we can't parse error
-        }
-        throw new Error(errorMessage);
+        headers: { Accept: 'application/json' },
       }
+    );
 
-      // Parse response immediately
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Backend processing failed');
+    if (!response.ok) {
+      let errorMessage = `Backend error: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.error) errorMessage = errorData.error;
+      } catch {
+        // keep status text
       }
+      throw new Error(errorMessage);
+    }
 
-      const result = data.data;
+    const data = await response.json();
+    if (!data.success || !data.data?.headers) {
+      throw new Error(data.error || 'Backend analyze failed');
+    }
 
-      if (!result || !result.leads || !Array.isArray(result.leads)) {
-        throw new Error('Invalid response format from backend');
-      }
+    updateRealProgress(100, t('uploadContacts.mapping.title'));
+    return data.data as FileColumnAnalyzeResult;
+  };
 
-      // Add IDs to each lead on the frontend
-      const leadsWithIds = result.leads.map((lead: any) => ({
-        ...lead,
-        userId: { $oid: userId },
-        companyId: { $oid: companyId },
-        gigId: { $oid: gigId }
+  const applyColumnMapping = async (
+    file: File,
+    mapping: ColumnMapping
+  ): Promise<{ leads: any[]; validation: any }> => {
+    abortControllerRef.current = new AbortController();
+
+    const userId = Cookies.get('userId');
+    const gigId = selectedGigId;
+    const companyId = Cookies.get('companyId');
+
+    if (!gigId) {
+      throw new Error(t('uploadContacts.errors.selectGigFirst'));
+    }
+    if (!userId || !companyId) {
+      throw new Error(t('uploadContacts.errors.userIdNotFound'));
+    }
+
+    const extraEntries = Object.entries(savedExtraColumns)
+      .filter(([header, meta]) => Boolean(meta) && !mapping[header])
+      .map(([header, meta]) => ({
+        header,
+        label: String(meta?.label || defaultExtraDisplayTitle(header) || header).trim(),
       }));
+    const extraColumnLabels = Object.fromEntries(
+      extraEntries.map((e) => [e.header, e.label || e.header])
+    );
 
-      // Final progress update
-      updateRealProgress(100, 'Processing completed!');
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mapping', JSON.stringify(mapping));
+    formData.append('visibility', JSON.stringify(fieldVisibility));
+    formData.append('extraColumns', JSON.stringify(extraEntries));
+    formData.append('extraColumnLabels', JSON.stringify(extraColumnLabels));
+    formData.append('schemaMode', schemaImportMode);
+    formData.append('gigId', gigId);
 
+    updateRealProgress(40, t('uploadContacts.mapping.applying'));
+
+    const response = await fetch(
+      `${import.meta.env.VITE_DASHBOARD_API}/file-processing/apply-mapping`,
+      {
+        method: 'POST',
+        body: formData,
+        signal: abortControllerRef.current?.signal,
+        headers: { Accept: 'application/json' },
+      }
+    );
+
+    if (!response.ok) {
+      let errorMessage = `Backend error: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.error) errorMessage = errorData.error;
+      } catch {
+        // keep status text
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Backend apply-mapping failed');
+    }
+
+    const result = data.data;
+    if (!result || !Array.isArray(result.leads)) {
+      throw new Error('Invalid response format from backend');
+    }
+
+    const leadsWithIds = result.leads.map((lead: any) => ({
+      ...lead,
+      userId: { $oid: userId },
+      companyId: { $oid: companyId },
+      gigId: { $oid: gigId },
+    }));
+
+    updateRealProgress(100, 'Processing completed!');
+    return { ...result, leads: leadsWithIds };
+  };
+
+  const handleMappingFieldChange = (header: string, field: string) => {
+    setColumnMapping((prev) => {
+      const next: ColumnMapping = { ...prev };
+      // Ensure one HARX field is only used once
+      if (field) {
+        for (const key of Object.keys(next)) {
+          if (key !== header && next[key] === field) {
+            next[key] = '';
+          }
+        }
+      }
+      next[header] = field;
+      return next;
+    });
+    // A column mapped to HARX is no longer an "extra" column to save separately
+    if (field) {
+      setSavedExtraColumns((prev) => {
+        if (!prev[header]) return prev;
+        const next = { ...prev };
+        delete next[header];
+        return next;
+      });
+    }
+    setMappingError(null);
+  };
+
+  const saveExtraColumn = (header: string) => {
+    if (!header) return;
+    // Dropping on "save" means keep as custom field, not a HARX mapping.
+    setColumnMapping((prev) => {
+      if (!prev[header]) return prev;
+      return { ...prev, [header]: '' };
+    });
+    setSavedExtraColumns((prev) => ({
+      ...prev,
+      [header]: prev[header] || { label: defaultExtraDisplayTitle(header) },
+    }));
+    const visKey = customVisibilityKey(header);
+    setFieldVisibility((prev) => ({
+      company: {
+        ...prev.company,
+        [visKey]: prev.company[visKey] !== false,
+      },
+      rep: {
+        ...prev.rep,
+        [visKey]: prev.rep[visKey] !== false,
+      },
+    }));
+    setMappingError(null);
+  };
+
+  const updateSavedExtraLabel = (header: string, label: string) => {
+    setSavedExtraColumns((prev) => {
+      if (!prev[header]) return prev;
       return {
-        ...result,
-        leads: leadsWithIds
+        ...prev,
+        [header]: { ...prev[header], label },
       };
+    });
+  };
 
-    } catch (error) {
-      console.error('ÔØî Error in processFileWithBackend:', error);
-      throw error;
+  const removeSavedExtraColumn = (header: string) => {
+    setSavedExtraColumns((prev) => {
+      if (!prev[header]) return prev;
+      const next = { ...prev };
+      delete next[header];
+      return next;
+    });
+  };
+
+  const getMappingExample = (header: string) => {
+    const fromFilled =
+      mappingSamples.find((row) => String(row[header] || '').trim())?.[header] ||
+      mappingSamples[0]?.[header];
+    return String(fromFilled || '—');
+  };
+
+  const headerForHarxField = (field: string) =>
+    Object.keys(columnMapping).find((header) => columnMapping[header] === field) || '';
+
+  /** When Prénom + Nom are mapped, Nom complet is auto-built (same as import backend). */
+  const getConcatenatedFullNameExample = () => {
+    const firstHeader = headerForHarxField('First_Name');
+    const lastHeader = headerForHarxField('Last_Name');
+    if (!firstHeader || !lastHeader) return '';
+    const row =
+      mappingSamples.find((r) => {
+        const f = String(r[firstHeader] || '').trim();
+        const l = String(r[lastHeader] || '').trim();
+        return Boolean(f || l);
+      }) || mappingSamples[0];
+    if (!row) return '';
+    return `${String(row[firstHeader] || '').trim()} ${String(row[lastHeader] || '').trim()}`.trim();
+  };
+
+  /** Headers still free: not mapped to HARX and not saved as custom. */
+  const availableFileHeaders = mappingHeaders.filter(
+    (header) => !columnMapping[header] && !savedExtraColumns[header]
+  );
+  /** Extra columns the user chose to keep (shown on the right with visibility). */
+  const savedExtraHeaderList = mappingHeaders.filter(
+    (header) => Boolean(savedExtraColumns[header]) && !columnMapping[header]
+  );
+  const getSavedExtraLabel = (header: string) =>
+    String(savedExtraColumns[header]?.label || defaultExtraDisplayTitle(header) || header).trim();
+
+  const readDraggedHeader = (event: React.DragEvent) => {
+    const fromTransfer =
+      event.dataTransfer.getData('text/plain') ||
+      event.dataTransfer.getData('text') ||
+      '';
+    return String(fromTransfer || draggingHeaderRef.current || '').trim();
+  };
+
+  const allowHarxDrop = (event: React.DragEvent, field: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+      event.dataTransfer.dropEffect = 'move';
+    } catch {
+      /* ignore */
+    }
+    setDragOverField((current) => (current === field ? current : field));
+  };
+
+  const finishDrag = () => {
+    draggingHeaderRef.current = null;
+    setDraggingHeader(null);
+    setDragOverField(null);
+  };
+
+  const handleDragHeaderStart = (event: React.DragEvent, header: string) => {
+    event.stopPropagation();
+    draggingHeaderRef.current = header;
+    try {
+      event.dataTransfer.setData('text/plain', header);
+      event.dataTransfer.setData('text', header);
+      event.dataTransfer.effectAllowed = 'move';
+    } catch {
+      /* ignore */
+    }
+    // Sync state so drop-zone overlays / pointer-events-none apply before the cursor
+    // reaches occupied HARX chips (no scale/transform — that cancels Chrome DnD).
+    setDraggingHeader(header);
+  };
+
+  const handleDragHeaderEnd = () => {
+    finishDrag();
+  };
+
+  const assignHeaderToHarxField = (header: string, field: string) => {
+    const trimmed = String(header || '').trim();
+    if (!trimmed || !field) return;
+
+    const existingHeader = headerForHarxField(field);
+    // Same mapping already in place — nothing to do.
+    if (existingHeader && existingHeader === trimmed) return;
+
+    if (existingHeader) {
+      // Occupied slot: ask replace (move) vs add as custom column.
+      setMappingConflict({ header: trimmed, field, existingHeader });
+      return;
+    }
+
+    handleMappingFieldChange(trimmed, field);
+    removeSavedExtraColumn(trimmed);
+  };
+
+  const harxFieldList = mappingFields.length ? mappingFields : HARX_IMPORT_FIELDS;
+
+  const isHarxSlotAssignable = (field: string) => {
+    if (headerForHarxField(field)) return false;
+    // Derived full name occupies the Deal_Name visual slot.
+    if (field === 'Deal_Name' && getConcatenatedFullNameExample()) return false;
+    return true;
+  };
+
+  const findFirstEmptyHarxField = () =>
+    harxFieldList.find((field) => isHarxSlotAssignable(field)) || null;
+
+  const effectiveHarxTarget = selectedHarxTarget || findFirstEmptyHarxField();
+
+  const moveHeaderToHarxField = (header: string, field: string) => {
+    setMoveRightPickerHeader(null);
+    assignHeaderToHarxField(header, field);
+    // After a move, prefer the next empty slot as the default target.
+    setSelectedHarxTarget((current) => (current === field ? null : current));
+  };
+
+  /** One-click → : move to selected HARX field, else first empty, else open picker. */
+  const moveHeaderRight = (header: string) => {
+    const target = effectiveHarxTarget;
+    if (target) {
+      moveHeaderToHarxField(header, target);
+      return;
+    }
+    setMoveRightPickerHeader((current) => (current === header ? null : header));
+  };
+
+  const moveMappedHeaderLeft = (header: string) => {
+    setMoveRightPickerHeader(null);
+    handleMappingFieldChange(header, '');
+  };
+
+  /** One-click ← on empty HARX slot: pull the first available file column. */
+  const moveFirstAvailableIntoField = (field: string) => {
+    const header = availableFileHeaders[0];
+    if (!header) return;
+    moveHeaderToHarxField(header, field);
+  };
+
+  const handleDropOnHarxField = (event: React.DragEvent, field: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const header = readDraggedHeader(event);
+    finishDrag();
+    if (!header) return;
+    assignHeaderToHarxField(header, field);
+  };
+
+  const resolveMappingConflict = (action: 'replace' | 'add') => {
+    if (!mappingConflict) return;
+    const { header, field } = mappingConflict;
+    setMappingConflict(null);
+    if (action === 'replace') {
+      handleMappingFieldChange(header, field);
+      removeSavedExtraColumn(header);
+      return;
+    }
+    // Keep current HARX mapping; save dragged column as custom field.
+    saveExtraColumn(header);
+  };
+
+  const handleDropOnUnmapped = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const header = readDraggedHeader(event);
+    finishDrag();
+    if (!header) return;
+    handleMappingFieldChange(header, '');
+    removeSavedExtraColumn(header);
+  };
+
+  const handleCancelMapping = () => {
+    clearMappingState();
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setUploadError(null);
+    setIsProcessing(false);
+    document.body.removeAttribute('data-processing');
+    processingRef.current = false;
+    localStorage.removeItem('uploadProcessing');
+    sessionStorage.removeItem('uploadProcessing');
+  };
+
+  const handleConfirmMapping = async () => {
+    if (!selectedFile) return;
+
+    if (!isMappingComplete(columnMapping)) {
+      setMappingError(t('uploadContacts.mapping.requiredHint'));
+      return;
+    }
+
+    setIsApplyingMapping(true);
+    setMappingError(null);
+    setIsProcessing(true);
+    setUploadProgress(20);
+    processingRef.current = true;
+    document.body.setAttribute('data-processing', 'true');
+
+    try {
+      const result = await applyColumnMapping(selectedFile, columnMapping);
+
+      if (result.leads.length === 0) {
+        toast.error(t('uploadContacts.errors.noValidLeads'));
+        setUploadError(t('uploadContacts.errors.noValidLeads'));
+        setIsProcessing(false);
+        setIsApplyingMapping(false);
+        setUploadProgress(0);
+        return;
+      }
+
+      if (result.validation) {
+        setValidationResults(trimValidation(result.validation));
+      }
+
+      setPreviewCount(PREVIEW_PAGE_SIZE);
+      setParsedLeads(result.leads);
+      safeStorageSet('parsedLeads', result.leads);
+      safeStorageSet('validationResults', trimValidation(result.validation));
+
+      // Keep display titles for the company leads table after mapping closes.
+      const labelsFromExtras = Object.fromEntries(
+        Object.entries(savedExtraColumns).map(([header, meta]) => [
+          header,
+          String(meta?.label || header).trim() || header,
+        ])
+      );
+      if (Object.keys(labelsFromExtras).length > 0) {
+        setCustomFieldLabels((prev) => ({ ...prev, ...labelsFromExtras }));
+      }
+
+      clearMappingState();
+      setShowSaveButton(true);
+      setIsProcessing(false);
+      setUploadProgress(100);
+      document.body.removeAttribute('data-processing');
+      processingRef.current = false;
+      localStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('uploadProcessing');
+
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+    } catch (error: any) {
+      console.error('Error applying mapping:', error);
+      const errorMessage = error.message || t('uploadContacts.errors.uploadError');
+      setMappingError(errorMessage);
+      toast.error(errorMessage);
+      setIsProcessing(false);
+      setIsApplyingMapping(false);
+      setUploadProgress(0);
+      document.body.removeAttribute('data-processing');
+      processingRef.current = false;
+      localStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('uploadProcessing');
     }
   };
 
 
 
+
+  const openMappingFromAnalyze = (
+    analyzeResult: FileColumnAnalyzeResult,
+    mode: SchemaImportMode,
+    preservedLeads: Lead[],
+    preservedFiltered: Lead[]
+  ) => {
+    const headers = analyzeResult.headers || [];
+    const suggested = analyzeResult.suggestedMapping || {};
+    const allowedFields = new Set<string>(
+      Array.isArray(analyzeResult.fields) && analyzeResult.fields.length
+        ? analyzeResult.fields.filter((f: string) =>
+            (HARX_IMPORT_FIELDS as readonly string[]).includes(f)
+          )
+        : [...HARX_IMPORT_FIELDS]
+    );
+    const initialMapping: ColumnMapping = {};
+    headers.forEach((header) => {
+      const suggestedField = suggested[header] || '';
+      initialMapping[header] = allowedFields.has(suggestedField) ? suggestedField : '';
+    });
+
+    setSchemaImportMode(mode);
+    setMappingHeaders(headers);
+    setMappingSamples(analyzeResult.sampleRows || []);
+    setColumnMapping(initialMapping);
+    setMappingFields([...allowedFields]);
+    setMappingTotalRows(Number(analyzeResult.meta?.totalRows || 0));
+
+    const savedLabels =
+      analyzeResult.savedCustomFieldLabels &&
+      typeof analyzeResult.savedCustomFieldLabels === 'object'
+        ? analyzeResult.savedCustomFieldLabels
+        : {};
+    const savedVis = analyzeResult.savedVisibility;
+
+    if (mode === 'merge') {
+      if (savedVis) {
+        setFieldVisibility({
+          ...defaultLeadFieldVisibility(),
+          company: {
+            ...defaultLeadFieldVisibility().company,
+            ...(savedVis.company || {}),
+          },
+          rep: {
+            ...defaultLeadFieldVisibility().rep,
+            ...(savedVis.rep || {}),
+          },
+        });
+      }
+      // Restore extras for columns still present in this file and not HARX-mapped.
+      const restoredExtras: SavedExtraColumnsMap = {};
+      for (const [header, label] of Object.entries(savedLabels)) {
+        const h = String(header || '').trim();
+        if (!h || !headers.includes(h)) continue;
+        if (initialMapping[h]) continue;
+        restoredExtras[h] = {
+          label: String(label || defaultExtraDisplayTitle(h)).trim() || h,
+        };
+      }
+      setSavedExtraColumns(restoredExtras);
+      setCustomFieldLabels((prev) => ({ ...prev, ...savedLabels }));
+    } else {
+      // Replace schema display settings for this import session.
+      setFieldVisibility(defaultLeadFieldVisibility());
+      setSavedExtraColumns({});
+      // Keep existing labels in memory for already-imported leads until save overwrites.
+    }
+
+    setShowMappingStep(true);
+    setSchemaDiffPrompt(null);
+
+    if (preservedLeads.length > 0) {
+      setLeads(preservedLeads);
+      setFilteredLeads(preservedFiltered);
+    }
+  };
+
+  const resolveSchemaDiffPrompt = (mode: SchemaImportMode) => {
+    if (!schemaDiffPrompt) return;
+    const { analyzeResult, preservedLeads, preservedFiltered } = schemaDiffPrompt;
+    openMappingFromAnalyze(analyzeResult, mode, preservedLeads, preservedFiltered);
+  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -903,6 +1870,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       setShowSaveButton(true);
       setShowFileName(true);
       setSelectedFile(file);
+      clearMappingState();
+      setSchemaImportMode('replace');
 
       // Reset OpenAI processing progress
       resetProgress();
@@ -928,56 +1897,40 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           return;
         }
 
-        // Process with backend - optimized
-        const result = await processFileWithBackend(file);
-
-        if (result.leads.length === 0) {
-          toast.error(t('uploadContacts.errors.noValidLeads'));
-          setUploadError(t('uploadContacts.errors.noValidLeads'));
-          setIsProcessing(false);
-          setUploadProgress(0);
-          return;
-        }
-
-        // Show validation results
-        if (result.validation) {
-          setValidationResults(result.validation);
-        }
-
-        setParsedLeads(result.leads);
-
-        // Store results safely - only if not too large
-        const leadsStored = safeStorageSet('parsedLeads', result.leads);
-        const validationStored = safeStorageSet('validationResults', result.validation);
-
-        if (!leadsStored) {
-          console.warn('ÔÜá´©Å Could not save leads to storage - data too large, keeping in memory only');
-          setDataTooLarge(true);
-        }
-        if (!validationStored) {
-          console.warn('ÔÜá´©Å Could not save validation results to storage - data too large');
-        }
-
-        // Restore existing leads after processing
-        if (currentLeads.length > 0) {
-          setLeads(currentLeads);
-          setFilteredLeads(currentFilteredLeads);
-        }
+        // Analyze columns first — user confirms mapping before import
+        const analyzeResult = await analyzeFileForMapping(file);
+        const diff = analyzeResult.schemaDiff;
 
         setIsProcessing(false);
         setUploadProgress(100);
-
-        // Remove processing indicator
         document.body.removeAttribute('data-processing');
         processingRef.current = false;
         localStorage.removeItem('uploadProcessing');
         sessionStorage.removeItem('uploadProcessing');
 
-        // Reset file input AFTER processing so the same filename can be re-selected
         const fileInput = document.getElementById('file-upload') as HTMLInputElement;
         if (fileInput) {
           fileInput.value = '';
         }
+
+        if (diff?.columnsChanged) {
+          setSchemaDiffPrompt({
+            diff,
+            analyzeResult,
+            file,
+            preservedLeads: currentLeads,
+            preservedFiltered: currentFilteredLeads,
+          });
+          return;
+        }
+
+        // Same columns (or first import): merge suggestions silently when a schema exists.
+        openMappingFromAnalyze(
+          analyzeResult,
+          diff?.hasSavedSchema ? 'merge' : 'replace',
+          currentLeads,
+          currentFilteredLeads
+        );
       } catch (error: any) {
         console.error('Error uploading file:', error);
         const errorMessage = error.message || t('uploadContacts.errors.uploadError');
@@ -1048,6 +2001,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     // Utiliser la r├®f├®rence pour suivre l'├®tat de traitement de mani├¿re fiable
     processingRef.current = true;
 
+    let didSave = false;
     try {
       // Convert leads to API format
       const currentUserId = Cookies.get('userId');
@@ -1067,7 +2021,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         companyId: lead.companyId?.$oid || currentCompanyId,
         gigId: lead.gigId?.$oid || currentGigId,
         Last_Activity_Time: lead.Last_Activity_Time || null,
-        Deal_Name: lead.Deal_Name || "Unnamed Lead",
+        First_Name: lead.First_Name || '',
+        Last_Name: lead.Last_Name || '',
+        Deal_Name:
+          lead.Deal_Name ||
+          `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim() ||
+          'Unnamed Lead',
         Email_1: lead.Email_1 || "no-email@placeholder.com",
         Phone: (() => {
           const raw = lead.Phone;
@@ -1080,12 +2039,13 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         Activity_Tag: lead.Activity_Tag || '',
         Telephony: lead.Telephony || '',
         Project_Tags: lead.Project_Tags || [],
-        First_Name: lead.First_Name || '',
-        Last_Name: lead.Last_Name || '',
         Address: lead.Address || '',
         Postal_Code: lead.Postal_Code || '',
         City: lead.City || '',
-        Date_of_Birth: lead.Date_of_Birth || ''
+        Date_of_Birth: lead.Date_of_Birth || '',
+        ...(lead.customFields && typeof lead.customFields === 'object'
+          ? { customFields: lead.customFields }
+          : {}),
       }));
 
       // D├®doublonnage c├┤t├® client avant l'envoi : on ne renvoie pas deux fois
@@ -1156,14 +2116,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
         // Les leads sont maintenant ajout├®s, on peut mettre ├á jour l'├®tat local si n├®cessaire
         // Pour l'instant, on se fie au rechargement ou ├á la r├®ponse
-        if (responseData.data && Array.isArray(responseData.data)) {
-          const savedData: any[] = responseData.data;
-          setRecentlySavedLeads(savedData);
-          setLeads(prev => [...prev, ...savedData]);
-          setFilteredLeads(prev => [...prev, ...savedData]);
-          setTotalCount(prev => prev + savedCount);
-          setSavedLeadsCount(savedCount);
-        }
+        didSave = true;
+        setSavedLeadsCount(savedCount);
+        setTotalCount((prev) => prev + savedCount);
 
         // Les leads ont ├®t├® ajout├®s, effacer les leads pars├®s
         setParsedLeads([]);
@@ -1210,6 +2165,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       processingRef.current = false;
       setShowSaveButton(true);
       setShowFileName(true);
+      if (didSave && selectedGigId) {
+        localStorage.removeItem('uploadProcessing');
+        sessionStorage.removeItem('uploadProcessing');
+        void fetchLeads(1);
+      }
 
       // Store timer so a new upload can cancel it before it wipes the new file's state
       (window as any).__leadCleanupTimer = setTimeout(() => {
@@ -1689,14 +2649,83 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   };
 
+  const archiveLeads = async (payload: { ids?: string[]; all?: boolean }) => {
+    if (!selectedGigId || isArchivingLeads) return;
+    const count = payload.all
+      ? (leadQuickStats?.total ?? totalCount)
+      : (payload.ids?.length ?? 0);
+    if (!count) return;
+    const confirmed = window.confirm(
+      payload.all
+        ? t('uploadContacts.list.archive.confirmAll', { count })
+        : t('uploadContacts.list.archive.confirm', { count })
+    );
+    if (!confirmed) return;
+
+    setIsArchivingLeads(true);
+    setError(null);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/leads/archive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gigId: selectedGigId,
+          ids: payload.ids,
+          all: payload.all === true,
+        }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.success) {
+        throw new Error(json.error || 'archive failed');
+      }
+      setSelectedLeadIds(new Set());
+      const nextPage = payload.all ? 1 : currentPage;
+      await fetchLeads(nextPage, searchQuery);
+      await fetchLeadQuickStats(selectedGigId);
+    } catch (err) {
+      console.error('Error archiving leads:', err);
+      const message = t('uploadContacts.list.archive.error');
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsArchivingLeads(false);
+    }
+  };
+
+  const visibleLeadIds = filteredLeads
+    .map((lead) => lead?._id)
+    .filter((id): id is string => Boolean(id));
+  const allVisibleSelected = visibleLeadIds.length > 0 && visibleLeadIds.every((id) => selectedLeadIds.has(id));
+
+  const toggleLeadSelected = (leadId: string) => {
+    setSelectedLeadIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(leadId)) next.delete(leadId);
+      else next.add(leadId);
+      return next;
+    });
+  };
+
+  const toggleVisibleSelected = () => {
+    setSelectedLeadIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) visibleLeadIds.forEach((id) => next.delete(id));
+      else visibleLeadIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
   useEffect(() => {
+    setSelectedLeadIds(new Set());
     if (selectedGigId) {
       setCallFilterGigId(selectedGigId);
       setLeadStatsFilter('all');
       fetchLeadQuickStats(selectedGigId);
+      loadGigFieldVisibility(selectedGigId);
     } else {
       setLeadQuickStats(null);
       setLeadStatsFilter('all');
+      setFieldVisibility(defaultLeadFieldVisibility());
     }
   }, [selectedGigId]);
 
@@ -1989,8 +3018,34 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     setParsedLeads(newLeads);
   };
 
+  const handleEditLeadCustomField = (index: number, header: string, value: string) => {
+    const newLeads = [...parsedLeads];
+    const current = newLeads[index];
+    if (!current) return;
+    const prevCf =
+      current.customFields instanceof Map
+        ? Object.fromEntries(current.customFields.entries())
+        : { ...(current.customFields || {}) };
+    newLeads[index] = {
+      ...current,
+      customFields: { ...prevCf, [header]: value },
+    };
+    setParsedLeads(newLeads);
+  };
+
   const updateSavedLeadDraft = (field: keyof Lead, value: string) => {
     setEditingSavedLead((prev) => (prev ? { ...prev, [field]: value } : null));
+  };
+
+  const updateSavedLeadCustomDraft = (header: string, value: string) => {
+    setEditingSavedLead((prev) => {
+      if (!prev) return null;
+      const prevCf =
+        prev.customFields instanceof Map
+          ? Object.fromEntries(prev.customFields.entries())
+          : { ...(prev.customFields || {}) };
+      return { ...prev, customFields: { ...prevCf, [header]: value } };
+    });
   };
 
   const saveEditedLead = async () => {
@@ -2002,6 +3057,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       const gigId = selectedGigId || editingSavedLead.gigId;
       const phoneRaw = String(editingSavedLead.Phone || '').trim();
       const phone = phoneRaw ? (phoneRaw.startsWith('+') ? phoneRaw : `+${phoneRaw}`) : '';
+      const customFields =
+        editingSavedLead.customFields instanceof Map
+          ? Object.fromEntries(editingSavedLead.customFields.entries())
+          : { ...(editingSavedLead.customFields || {}) };
 
       const payload = {
         First_Name: editingSavedLead.First_Name || '',
@@ -2016,6 +3075,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           editingSavedLead.Deal_Name ||
           `${editingSavedLead.First_Name || ''} ${editingSavedLead.Last_Name || ''}`.trim() ||
           'Unnamed Lead',
+        customFields,
         userId,
         gigId,
       };
@@ -2275,9 +3335,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         {/* Import Methods Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Zoho Import Card - DISABLED FOR NOW */}
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-2xl p-6 flex flex-col h-full grayscale opacity-60 pointer-events-none relative overflow-hidden group">
-            {/* Overlay to ensure it's not clickable and shows disabled cursor */}
-            <div className="absolute inset-0 z-10 cursor-not-allowed" title="Zoho CRM Integration is currently disabled" />
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-2xl p-6 flex flex-col h-full relative overflow-hidden group">
             {/* Header */}
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-gray-100 shadow-sm relative z-20">
@@ -2326,15 +3384,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             {/* Action Button - Pushed to bottom */}
             <div className="mt-auto relative z-20">
               <button
-                onClick={async () => {
+                onClick={() => {
                   if (!selectedGigId) {
                     toast.error('Please select a gig first');
                     return;
                   }
-                  await handleImportFromZoho();
+                  setZohoMappingOpen(true);
                 }}
                 disabled={!hasZohoAccessToken || isImportingZoho}
-                className="w-full bg-gray-200 text-gray-500 font-black py-4 px-6 rounded-xl transition-all duration-500"
+                className="w-full bg-gradient-harx text-white font-black py-4 px-6 rounded-xl transition-all duration-500 disabled:opacity-50"
               >
                 {isImportingZoho ? (
                   <>
@@ -2381,10 +3439,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <label htmlFor="file-upload" className="cursor-pointer flex items-center justify-center w-full">
                   <FileSpreadsheet className="h-5 w-5 mr-3 text-white" />
                   <span className="text-base">
-                    {isProcessing ? (
+                    {isProcessing || isApplyingMapping ? (
                       <div className="flex items-center font-black">
                         <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
-                        {t('uploadContacts.import.processing')}
+                        {isApplyingMapping
+                          ? t('uploadContacts.mapping.applying')
+                          : t('uploadContacts.import.analyzing')}
                       </div>
                     ) : (
                       t('uploadContacts.import.clickToUpload')
@@ -2396,7 +3456,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     className="hidden"
                     accept=".csv,.xlsx,.xls"
                     onChange={handleFileSelect}
-                    disabled={isProcessing}
+                    disabled={isProcessing || isApplyingMapping || showMappingStep}
                   />
                 </label>
               </div>
@@ -2414,12 +3474,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <span className="font-medium text-gray-900">{selectedFile.name}</span>
               </div>
               <button onClick={() => {
-                setSelectedFile(null);
-                setUploadProgress(0);
-                setUploadError(null);
-                setUploadSuccess(false);
+                handleCancelMapping();
                 setParsedLeads([]);
                 setValidationResults(null);
+                setUploadSuccess(false);
               }}>
                 <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
               </button>
@@ -2447,17 +3505,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <span>{Math.round(selectedFile.size / 1024)} KB</span>
               </div>
 
-              {/* Real-time Progress Status for OpenAI Processing */}
-              {isProcessing && !uploadError && !uploadSuccess && (
+              {/* Real-time Progress Status */}
+              {isProcessing && !uploadError && !uploadSuccess && !showMappingStep && (
                 <div className="mt-6 p-6 bg-harx-50/50 border border-harx-100 rounded-2xl relative overflow-hidden group">
                   <div className="absolute top-0 right-0 -mt-4 -mr-4 w-16 h-16 bg-harx-100 rounded-full blur-2xl animate-pulse"></div>
                   <div className="flex items-center justify-between text-base relative z-10">
                     <span className="text-harx-700 font-bold tracking-tight">
-                      {processingProgress.status || 'AI Orchestrator at work...'}
+                      {processingProgress.status ||
+                        (isApplyingMapping
+                          ? t('uploadContacts.mapping.applying')
+                          : t('uploadContacts.import.analyzing'))}
                     </span>
                   </div>
 
-                  {/* Animated activity indicator */}
                   <div className="mt-6 flex items-center space-x-3 relative z-10">
                     <div className="flex space-x-2">
                       {[0, 1, 2].map((i) => (
@@ -2471,7 +3531,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         />
                       ))}
                     </div>
-                    <span className="text-base text-harx-600 font-bold ml-2">Syncing database...</span>
+                    <span className="text-base text-harx-600 font-bold ml-2">
+                      {isApplyingMapping
+                        ? t('uploadContacts.mapping.applying')
+                        : t('uploadContacts.import.analyzing')}
+                    </span>
                   </div>
                 </div>
               )}
@@ -2488,7 +3552,608 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 File uploaded successfully!
               </div>
             )}
-            {parsedLeads.length > 0 && !uploadSuccess && !isProcessing && showSaveButton && (
+
+            {showMappingStep && selectedFile && (
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-3">
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-harx-500" />
+                    {t('uploadContacts.mapping.title')}
+                  </h4>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {t('uploadContacts.mapping.dragHint')}
+                  </p>
+                  {mappingTotalRows > 0 && (
+                    <p className="text-xs font-semibold text-harx-600 mt-1">
+                      {t('uploadContacts.mapping.rowsInFile', { count: mappingTotalRows })}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-xs font-bold">
+                  {!mappingHasName(columnMapping) && (
+                    <span className="rounded-full bg-red-50 text-red-600 border border-red-100 px-2.5 py-1">
+                      {t('uploadContacts.mapping.missingName')}
+                    </span>
+                  )}
+                  {missingRequiredScalarFields(columnMapping).map((field) => (
+                    <span
+                      key={field}
+                      className="rounded-full bg-red-50 text-red-600 border border-red-100 px-2.5 py-1"
+                    >
+                      {t(`uploadContacts.mapping.fields.${field}`, field)} {t('uploadContacts.mapping.requiredBadge')}
+                    </span>
+                  ))}
+                </div>
+
+                {(() => {
+                  const mappedHarxCount = harxFieldList.filter((field) => {
+                    if (headerForHarxField(field)) return true;
+                    return (
+                      field === 'Deal_Name' && Boolean(getConcatenatedFullNameExample())
+                    );
+                  }).length;
+
+                  return (
+                <div className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50/40">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 lg:divide-x divide-y lg:divide-y-0 divide-slate-200">
+                  {/* Unmapped file columns — drag source */}
+                  <div
+                    className={`flex flex-col min-h-0 ${
+                      dragOverField === '__unmapped__' ? 'bg-harx-50/50' : ''
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      try {
+                        e.dataTransfer.dropEffect = 'move';
+                      } catch {
+                        /* ignore */
+                      }
+                      setDragOverField((current) =>
+                        current === '__unmapped__' ? current : '__unmapped__'
+                      );
+                    }}
+                    onDragLeave={(e) => {
+                      const next = e.relatedTarget as Node | null;
+                      if (next && e.currentTarget.contains(next)) return;
+                      setDragOverField((current) => (current === '__unmapped__' ? null : current));
+                    }}
+                    onDrop={handleDropOnUnmapped}
+                  >
+                    <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-3 py-2.5 backdrop-blur-sm">
+                      <p className="text-xs font-black uppercase tracking-wider text-slate-600">
+                        {t('uploadContacts.mapping.fileColumns')}
+                      </p>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                        {t('uploadContacts.mapping.fileColumnsCount', {
+                          count: availableFileHeaders.length,
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1.5 p-2.5 max-h-[60vh] overflow-y-auto min-h-[140px]">
+                      {availableFileHeaders.length === 0 ? (
+                        <p className="text-sm text-slate-400 italic py-8 text-center">
+                          {t('uploadContacts.mapping.allMapped')}
+                        </p>
+                      ) : (
+                        availableFileHeaders.map((header) => (
+                          <div
+                            key={header}
+                            draggable={!isApplyingMapping}
+                            onDragStart={(e) => handleDragHeaderStart(e, header)}
+                            onDragEnd={handleDragHeaderEnd}
+                            className={`select-none rounded-lg border bg-white px-2.5 py-2 ${
+                              draggingHeader === header
+                                ? 'border-harx-400 opacity-50'
+                                : moveRightPickerHeader === header
+                                  ? 'border-harx-400 ring-1 ring-harx-200'
+                                  : 'border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <GripVertical className="h-3.5 w-3.5 text-slate-300 shrink-0 pointer-events-none" />
+                              <div className="min-w-0 flex-1 cursor-grab active:cursor-grabbing pointer-events-none">
+                                <p className="text-sm font-semibold text-slate-800 truncate leading-tight">
+                                  {header}
+                                </p>
+                                <p
+                                  className="text-[11px] text-slate-400 truncate leading-tight"
+                                  title={getMappingExample(header)}
+                                >
+                                  {getMappingExample(header)}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                draggable={false}
+                                disabled={isApplyingMapping}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveHeaderRight(header);
+                                }}
+                                className="shrink-0 inline-flex items-center gap-1 rounded-md bg-slate-900 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-slate-800 disabled:opacity-50"
+                                title={t('uploadContacts.mapping.moveRight')}
+                                aria-label={t('uploadContacts.mapping.assign')}
+                              >
+                                {t('uploadContacts.mapping.assign')}
+                                <ChevronRight className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                            {moveRightPickerHeader === header ? (
+                              <div
+                                className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-1.5 space-y-0.5"
+                                onMouseDown={(e) => e.stopPropagation()}
+                              >
+                                <p className="px-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                                  {t('uploadContacts.mapping.moveRightPick')}
+                                </p>
+                                {harxFieldList.map((field) => {
+                                  const occupied = Boolean(headerForHarxField(field));
+                                  return (
+                                    <button
+                                      key={`${header}-to-${field}`}
+                                      type="button"
+                                      draggable={false}
+                                      onClick={() => moveHeaderToHarxField(header, field)}
+                                      className={`w-full text-left rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
+                                        occupied
+                                          ? 'text-slate-600 hover:bg-amber-50'
+                                          : 'text-slate-800 hover:bg-white'
+                                      }`}
+                                    >
+                                      {t(`uploadContacts.mapping.fields.${field}`, field)}
+                                      {occupied ? (
+                                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                                          {t('uploadContacts.mapping.conflictBadge')}
+                                        </span>
+                                      ) : null}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* HARX fields — drop targets + visibility */}
+                  <div className="flex flex-col min-h-0 bg-white">
+                    <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-3 py-2.5 backdrop-blur-sm">
+                      <div className="min-w-0">
+                        <p className="text-xs font-black uppercase tracking-wider text-slate-600">
+                          {t('uploadContacts.mapping.harxFields')}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {t('uploadContacts.mapping.visibilityHint')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                          {t('uploadContacts.mapping.harxMappedCount', {
+                            mapped: mappedHarxCount,
+                            total: harxFieldList.length,
+                          })}
+                        </span>
+                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+                          <span className="w-8 text-center text-sky-600">
+                            {t('uploadContacts.mapping.visibleCompany')}
+                          </span>
+                          <span className="w-8 text-center text-emerald-600">
+                            {t('uploadContacts.mapping.visibleRep')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5 p-2.5 max-h-[60vh] overflow-y-auto">
+                      {harxFieldList.map((field) => {
+                        const mappedHeader = headerForHarxField(field);
+                        const isRequiredSlot = isRequiredHarxSlot(field, columnMapping);
+                        const isOver = dragOverField === field;
+                        const isTarget = effectiveHarxTarget === field;
+                        const concatFullName =
+                          field === 'Deal_Name' && !mappedHeader
+                            ? getConcatenatedFullNameExample()
+                            : '';
+                        const showDerivedFullName = Boolean(concatFullName);
+                        const isFilled = Boolean(mappedHeader || showDerivedFullName);
+                        return (
+                          <div
+                            key={field}
+                            onClick={() => {
+                              if (draggingHeader || isApplyingMapping) return;
+                              setSelectedHarxTarget(field);
+                              setMoveRightPickerHeader(null);
+                            }}
+                            onDragEnter={(e) => allowHarxDrop(e, field)}
+                            onDragOver={(e) => allowHarxDrop(e, field)}
+                            onDragLeave={(e) => {
+                              const next = e.relatedTarget as Node | null;
+                              if (next && e.currentTarget.contains(next)) return;
+                              setDragOverField((current) => (current === field ? null : current));
+                            }}
+                            onDrop={(e) => handleDropOnHarxField(e, field)}
+                            className={`relative flex items-center gap-2 rounded-lg border px-2.5 py-2 cursor-pointer ${
+                              isOver
+                                ? 'border-harx-500 bg-harx-50 ring-1 ring-harx-200'
+                                : isTarget
+                                  ? 'border-harx-400 bg-harx-50/60 ring-1 ring-harx-100'
+                                  : isFilled
+                                    ? 'border-emerald-200 bg-emerald-50/40'
+                                    : isRequiredSlot
+                                      ? 'border-dashed border-red-200 bg-red-50/20'
+                                      : 'border-dashed border-slate-200 bg-slate-50/40'
+                            }`}
+                          >
+                            {draggingHeader ? (
+                              <div
+                                className="absolute inset-0 z-20 rounded-lg"
+                                onDragEnter={(e) => allowHarxDrop(e, field)}
+                                onDragOver={(e) => allowHarxDrop(e, field)}
+                                onDrop={(e) => handleDropOnHarxField(e, field)}
+                              />
+                            ) : null}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="text-[11px] font-black uppercase tracking-wide text-slate-500 truncate">
+                                  {t(`uploadContacts.mapping.fields.${field}`, field)}
+                                  {isRequiredSlot && !isFilled ? (
+                                    <span className="text-red-500 ml-0.5">*</span>
+                                  ) : null}
+                                </span>
+                                {isTarget && !isFilled ? (
+                                  <span className="shrink-0 rounded bg-harx-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-harx-700">
+                                    {t('uploadContacts.mapping.targetBadge')}
+                                  </span>
+                                ) : null}
+                              </div>
+                              {mappedHeader ? (
+                                <div
+                                  draggable={!isApplyingMapping && !draggingHeader}
+                                  onDragStart={(e) => handleDragHeaderStart(e, mappedHeader)}
+                                  onDragEnd={handleDragHeaderEnd}
+                                  className={`flex items-center gap-2 ${
+                                    draggingHeader ? 'pointer-events-none' : ''
+                                  }`}
+                                >
+                                  <div className="min-w-0 flex-1 pointer-events-none">
+                                    <p className="text-sm font-semibold text-slate-800 truncate leading-tight">
+                                      {mappedHeader}
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 truncate leading-tight">
+                                      {getMappingExample(mappedHeader)}
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    draggable={false}
+                                    disabled={isApplyingMapping}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      moveMappedHeaderLeft(mappedHeader);
+                                    }}
+                                    className="shrink-0 inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
+                                    title={t('uploadContacts.mapping.moveLeft')}
+                                    aria-label={t('uploadContacts.mapping.removeMapping')}
+                                  >
+                                    <ChevronLeft className="h-3.5 w-3.5" />
+                                    {t('uploadContacts.mapping.removeMapping')}
+                                  </button>
+                                </div>
+                              ) : showDerivedFullName ? (
+                                <div className="pointer-events-none">
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                                    {t('uploadContacts.mapping.autoFullName')}
+                                  </p>
+                                  <p className="text-sm font-semibold text-slate-800 truncate">
+                                    {concatFullName}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-xs text-slate-400 italic pointer-events-none">
+                                    {t('uploadContacts.mapping.dropHere')}
+                                  </p>
+                                  {availableFileHeaders.length > 0 ? (
+                                    <button
+                                      type="button"
+                                      disabled={isApplyingMapping}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedHarxTarget(field);
+                                        moveFirstAvailableIntoField(field);
+                                      }}
+                                      className="shrink-0 inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
+                                      title={t('uploadContacts.mapping.moveLeftPick')}
+                                      aria-label={t('uploadContacts.mapping.moveLeftPick')}
+                                    >
+                                      <ChevronLeft className="h-3.5 w-3.5" />
+                                      {t('uploadContacts.mapping.assign')}
+                                    </button>
+                                  ) : null}
+                                </div>
+                              )}
+                            </div>
+                            <div
+                              className={`flex items-center gap-2 shrink-0 ${
+                                draggingHeader ? 'pointer-events-none' : ''
+                              }`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <label
+                                className="w-8 flex justify-center items-center cursor-pointer"
+                                title={t('uploadContacts.mapping.visibleCompany')}
+                              >
+                                <MappingCheckbox
+                                  checked={fieldVisibility.company[field] !== false}
+                                  onChange={() => toggleFieldVisibility('company', field)}
+                                  tone="company"
+                                  title={t('uploadContacts.mapping.visibleCompany')}
+                                  aria-label={`${t('uploadContacts.mapping.visibleCompany')} — ${t(`uploadContacts.mapping.fields.${field}`, field)}`}
+                                />
+                              </label>
+                              <label
+                                className="w-8 flex justify-center items-center cursor-pointer"
+                                title={t('uploadContacts.mapping.visibleRep')}
+                              >
+                                <MappingCheckbox
+                                  checked={fieldVisibility.rep[field] !== false}
+                                  onChange={() => toggleFieldVisibility('rep', field)}
+                                  tone="rep"
+                                  title={t('uploadContacts.mapping.visibleRep')}
+                                  aria-label={`${t('uploadContacts.mapping.visibleRep')} — ${t(`uploadContacts.mapping.fields.${field}`, field)}`}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Custom columns — flattened */}
+                      {savedExtraHeaderList.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 space-y-1.5">
+                          <p className="px-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                            {t('uploadContacts.mapping.savedExtras')}
+                            <span className="ml-1.5 font-bold text-slate-400 normal-case tracking-normal">
+                              ({savedExtraHeaderList.length})
+                            </span>
+                          </p>
+                          {savedExtraHeaderList.map((header) => {
+                            const visKey = customVisibilityKey(header);
+                            const displayTitle = getSavedExtraLabel(header);
+                            return (
+                              <div
+                                key={`extra-${header}`}
+                                className="rounded-lg border border-slate-200 bg-slate-50/80 px-2.5 py-2"
+                              >
+                                <div className="flex items-start gap-2">
+                                  <div className="min-w-0 flex-1 space-y-1">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                      {t('uploadContacts.mapping.savedExtraField')}
+                                    </span>
+                                    <input
+                                      type="text"
+                                      value={savedExtraColumns[header]?.label ?? displayTitle}
+                                      onChange={(e) => updateSavedExtraLabel(header, e.target.value)}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onClick={(e) => e.stopPropagation()}
+                                      placeholder={t('uploadContacts.mapping.displayTitlePlaceholder')}
+                                      className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm font-semibold text-slate-800 outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-200"
+                                    />
+                                    <p className="text-[11px] text-slate-400 truncate" title={header}>
+                                      {t('uploadContacts.mapping.sourceField')}: {header}
+                                    </p>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                    <div className="flex items-center gap-2">
+                                      <label
+                                        className="w-8 flex justify-center items-center cursor-pointer"
+                                        title={t('uploadContacts.mapping.visibleCompany')}
+                                      >
+                                        <MappingCheckbox
+                                          checked={fieldVisibility.company[visKey] !== false}
+                                          onChange={() => toggleFieldVisibility('company', visKey)}
+                                          tone="company"
+                                          title={t('uploadContacts.mapping.visibleCompany')}
+                                          aria-label={`${t('uploadContacts.mapping.visibleCompany')} — ${displayTitle}`}
+                                        />
+                                      </label>
+                                      <label
+                                        className="w-8 flex justify-center items-center cursor-pointer"
+                                        title={t('uploadContacts.mapping.visibleRep')}
+                                      >
+                                        <MappingCheckbox
+                                          checked={fieldVisibility.rep[visKey] !== false}
+                                          onChange={() => toggleFieldVisibility('rep', visKey)}
+                                          tone="rep"
+                                          title={t('uploadContacts.mapping.visibleRep')}
+                                          aria-label={`${t('uploadContacts.mapping.visibleRep')} — ${displayTitle}`}
+                                        />
+                                      </label>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeSavedExtraColumn(header)}
+                                      className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
+                                      aria-label={t('uploadContacts.mapping.removeMapping')}
+                                    >
+                                      <ChevronLeft className="h-3.5 w-3.5" />
+                                      {t('uploadContacts.mapping.removeMapping')}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  </div>
+                </div>
+                  );
+                })()}
+
+                {mappingConflict && (
+                  <div
+                    className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="mapping-conflict-title"
+                  >
+                    <button
+                      type="button"
+                      className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]"
+                      aria-label={t('common.close', 'Fermer')}
+                      onClick={() => setMappingConflict(null)}
+                    />
+                    <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-[0_32px_80px_-20px_rgba(0,0,0,0.45)] ring-1 ring-black/5">
+                      <div className="h-1.5 w-full bg-gradient-to-r from-harx-500 via-rose-500 to-orange-400" />
+                      <div className="px-6 pt-6 pb-7">
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-harx-600 mb-2">
+                          {t('uploadContacts.mapping.conflictBadge')}
+                        </p>
+                        <h3
+                          id="mapping-conflict-title"
+                          className="text-lg font-black text-slate-900 tracking-tight"
+                        >
+                          {t('uploadContacts.mapping.conflictTitle')}
+                        </h3>
+                        <p className="mt-2 text-sm font-medium text-slate-500 leading-relaxed">
+                          {t('uploadContacts.mapping.conflictDesc', {
+                            field: t(
+                              `uploadContacts.mapping.fields.${mappingConflict.field}`,
+                              mappingConflict.field
+                            ),
+                            existing: mappingConflict.existingHeader,
+                            incoming: mappingConflict.header,
+                          })}
+                        </p>
+                        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => resolveMappingConflict('replace')}
+                            className="rounded-2xl bg-gradient-to-r from-harx-500 to-rose-600 px-4 py-3 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-harx-500/30 hover:brightness-110"
+                          >
+                            {t('uploadContacts.mapping.conflictReplace')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => resolveMappingConflict('add')}
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50"
+                          >
+                            {t('uploadContacts.mapping.conflictAdd')}
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setMappingConflict(null)}
+                          className="mt-3 w-full text-center text-xs font-bold text-slate-400 hover:text-slate-600"
+                        >
+                          {t('uploadContacts.mapping.conflictCancel')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {mappingSamples.length > 0 && Object.values(columnMapping).some(Boolean) && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      {t('uploadContacts.mapping.previewTitle')}
+                    </p>
+                    <div className="overflow-x-auto rounded-xl border border-slate-100 bg-slate-50/60">
+                      <table className="min-w-full text-xs">
+                        <thead>
+                          <tr className="text-left text-slate-500">
+                            {HARX_IMPORT_FIELDS.filter((field) => {
+                              if (Object.values(columnMapping).includes(field)) return true;
+                              // Show derived Nom complet when Prénom+Nom are mapped
+                              return (
+                                field === 'Deal_Name' &&
+                                Boolean(headerForHarxField('First_Name')) &&
+                                Boolean(headerForHarxField('Last_Name'))
+                              );
+                            }).map((field) => (
+                              <th key={field} className="px-3 py-2 font-bold whitespace-nowrap">
+                                {t(`uploadContacts.mapping.fields.${field}`, field)}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {mappingSamples.slice(0, 3).map((row, idx) => (
+                            <tr key={idx} className="border-t border-slate-100 bg-white/70">
+                              {HARX_IMPORT_FIELDS.filter((field) => {
+                                if (Object.values(columnMapping).includes(field)) return true;
+                                return (
+                                  field === 'Deal_Name' &&
+                                  Boolean(headerForHarxField('First_Name')) &&
+                                  Boolean(headerForHarxField('Last_Name'))
+                                );
+                              }).map((field) => {
+                                const sourceHeader = headerForHarxField(field);
+                                let cell = sourceHeader ? String(row[sourceHeader] || '—') : '—';
+                                if (!sourceHeader && field === 'Deal_Name') {
+                                  const firstH = headerForHarxField('First_Name');
+                                  const lastH = headerForHarxField('Last_Name');
+                                  cell = `${String(row[firstH] || '').trim()} ${String(row[lastH] || '').trim()}`.trim() || '—';
+                                }
+                                return (
+                                  <td key={field} className="px-3 py-2 text-slate-700 whitespace-nowrap">
+                                    {cell}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {mappingError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
+                    {mappingError}
+                  </div>
+                )}
+
+                <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={handleCancelMapping}
+                    disabled={isApplyingMapping}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {t('uploadContacts.mapping.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmMapping}
+                    disabled={isApplyingMapping || !isMappingComplete(columnMapping)}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-harx text-white text-sm font-black shadow-lg shadow-harx-500/20 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isApplyingMapping ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        {t('uploadContacts.mapping.applying')}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        {t('uploadContacts.mapping.confirm')}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {parsedLeads.length > 0 && !uploadSuccess && !isProcessing && showSaveButton && !showMappingStep && (
               <div className="mt-3 space-y-3">
                 {validationResults && (
                     <div className="bg-gradient-to-r from-harx-50 to-harx-100/50 border border-harx-100 rounded-2xl p-4 shadow-sm">
@@ -2519,14 +4184,21 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         <details className="text-sm group">
                           <summary className="cursor-pointer text-harx-600 hover:text-harx-800 font-bold flex items-center transition-colors duration-300">
                             <span className="bg-harx-100 px-2 py-0.5 rounded-lg mr-2 group-hover:bg-harx-200">{t('uploadContacts.analysis.viewDetails')}</span>
-                            ({validationResults.errors.length} {t('uploadContacts.analysis.issuesIdentified')})
+                            ({validationResults.errorTotal ?? validationResults.errors.length} {t('uploadContacts.analysis.issuesIdentified')})
                           </summary>
                           <div className="mt-3 space-y-2">
-                            {validationResults.errors.map((error: string, index: number) => (
+                            {validationResults.errors.slice(0, MAX_VALIDATION_ERRORS).map((error: string, index: number) => (
                               <div key={index} className="text-red-700 bg-red-50/80 backdrop-blur-sm p-3 rounded-xl border border-red-100 text-xs font-semibold">
                                 ÔÇó {error}
                               </div>
                             ))}
+                            {(validationResults.errorTotal ?? validationResults.errors.length) > validationResults.errors.length && (
+                              <p className="text-xs font-semibold text-red-600">
+                                {t('uploadContacts.analysis.moreIssues', {
+                                  count: (validationResults.errorTotal ?? validationResults.errors.length) - validationResults.errors.length,
+                                })}
+                              </p>
+                            )}
                           </div>
                         </details>
                       </div>
@@ -2568,9 +4240,15 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   {showLeadsPreview && (
                     <>
                       <p className="text-sm text-gray-500 mb-3 font-medium leading-relaxed">{t('uploadContacts.preview.subtitle')}</p>
+                      <p className="text-xs font-semibold text-gray-400 mb-3">
+                        {t('uploadContacts.preview.showing', {
+                          shown: Math.min(previewCount, parsedLeads.length),
+                          total: parsedLeads.length,
+                        })}
+                      </p>
                       <div className="max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                         <div className="space-y-3">
-                          {(parsedLeads || []).map((lead: any, index: number) => lead && (
+                          {(parsedLeads || []).slice(0, previewCount).map((lead: any, index: number) => lead && (
                             <div key={lead._id || `parsed-${index}`} className="bg-gray-50/80 rounded-xl p-3 border border-gray-100 hover:border-harx-200 hover:bg-white transition-all duration-300 group">
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center space-x-2">
@@ -2606,88 +4284,49 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
                               {editingLeadIndex === index ? (
                                 <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
-                                  <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">First Name</label>
-                                    <input
-                                      type="text"
-                                      value={lead.First_Name || ''}
-                                      onChange={(e) => handleEditLead(index, 'First_Name', e.target.value)}
-                                      placeholder="Enter first name"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">Last Name</label>
-                                    <input
-                                      type="text"
-                                      value={lead.Last_Name || ''}
-                                      onChange={(e) => handleEditLead(index, 'Last_Name', e.target.value)}
-                                      placeholder="Enter last name"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">Email</label>
-                                    <input
-                                      type="email"
-                                      value={lead.Email_1 || ''}
-                                      onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
-                                      placeholder="Enter email address"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">Phone</label>
-                                    <input
-                                      type="tel"
-                                      value={lead.Phone || ''}
-                                      onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
-                                      placeholder="Enter phone number"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">Address</label>
-                                    <input
-                                      type="text"
-                                      value={lead.Address || ''}
-                                      onChange={(e) => handleEditLead(index, 'Address', e.target.value)}
-                                      placeholder="Enter address"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                      <label className="block text-xs font-bold text-gray-700 mb-1">{t('uploadContacts.preview.postalCode')}</label>
+                                  {COMPANY_EDITABLE_HARX_FIELDS.filter((field) =>
+                                    isCompanyFieldVisible(companyVisible, field.key)
+                                  ).map((field) => {
+                                    const raw = String((lead as Lead)[field.key] || '');
+                                    const displayValue =
+                                      field.key === 'Deal_Name' && !raw.trim()
+                                        ? `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim()
+                                        : raw;
+                                    return (
+                                      <div key={`preview-edit-${field.key}`}>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                                          {t(field.labelKey)}
+                                        </label>
+                                        <input
+                                          type={field.inputType || 'text'}
+                                          value={displayValue}
+                                          onChange={(e) =>
+                                            handleEditLead(index, field.key, e.target.value)
+                                          }
+                                          className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
+                                        />
+                                      </div>
+                                    );
+                                  })}
+                                  {companyCustomColumns.map((col) => (
+                                    <div key={`preview-edit-custom-${col.header}`}>
+                                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                                        {col.label}
+                                      </label>
                                       <input
                                         type="text"
-                                        value={lead.Postal_Code || ''}
-                                        onChange={(e) => handleEditLead(index, 'Postal_Code', e.target.value)}
-                                        placeholder="Zip code"
+                                        value={getLeadCustomFieldValue(lead, col.header)}
+                                        onChange={(e) =>
+                                          handleEditLeadCustomField(
+                                            index,
+                                            col.header,
+                                            e.target.value
+                                          )
+                                        }
                                         className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                       />
                                     </div>
-                                    <div>
-                                      <label className="block text-xs font-bold text-gray-700 mb-1">{t('uploadContacts.preview.city')}</label>
-                                      <input
-                                        type="text"
-                                        value={lead.City || ''}
-                                        onChange={(e) => handleEditLead(index, 'City', e.target.value)}
-                                        placeholder="City"
-                                        className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">{t('uploadContacts.preview.dob')}</label>
-                                    <input
-                                      type="text"
-                                      value={lead.Date_of_Birth || ''}
-                                      onChange={(e) => handleEditLead(index, 'Date_of_Birth', e.target.value)}
-                                      placeholder="DD/MM/YYYY"
-                                      className="w-full px-3 py-2 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
-                                    />
-                                  </div>
+                                  ))}
 
                                   <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                                     <button
@@ -2739,6 +4378,17 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                           ))}
                         </div>
                       </div>
+                      {previewCount < parsedLeads.length && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewCount((count) => Math.min(count + PREVIEW_PAGE_SIZE, parsedLeads.length))}
+                          className="mt-3 w-full rounded-xl border border-harx-200 bg-harx-50 px-4 py-2 text-sm font-bold text-harx-700 hover:bg-harx-100"
+                        >
+                          {t('uploadContacts.preview.showMore', {
+                            count: Math.min(PREVIEW_PAGE_SIZE, parsedLeads.length - previewCount),
+                          })}
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
@@ -2935,7 +4585,24 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 )}
               </div>
             </div>
-            <div className="flex items-center justify-end shrink-0">
+            <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => archiveLeads({ ids: Array.from(selectedLeadIds) })}
+                disabled={isArchivingLeads || selectedLeadIds.size === 0 || !selectedGigId}
+                className="flex items-center rounded-2xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-bold text-rose-600 shadow-sm hover:bg-rose-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t('uploadContacts.list.archive.selected', { count: selectedLeadIds.size })}
+              </button>
+              <button
+                type="button"
+                onClick={() => archiveLeads({ all: true })}
+                disabled={isArchivingLeads || !selectedGigId || (leadQuickStats?.total ?? totalCount) === 0}
+                className="flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {t('uploadContacts.list.archive.all')}
+              </button>
               <button
                 onClick={() => {
                   setSearchQuery('');
@@ -2962,37 +4629,78 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         </div>
         {/* Tableau d'affichage des leads */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
-          <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar min-h-0">
-            <div className="relative w-full min-w-0 px-2 pb-2">
+          <div className="flex-1 overflow-auto custom-scrollbar min-h-0">
+            <div
+              className="relative w-full px-2 pb-2"
+              style={{ minWidth: `${Math.max(1080, 720 + leadTableColCount * 90)}px` }}
+            >
               <table className="w-full table-fixed border-separate border-spacing-y-1.5">
-                <colgroup>
-                  <col className="w-[4%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[14%]" />
-                  <col className="w-[28%]" />
-                  <col className="w-[24%]" />
-                  <col className="w-[8%]" />
-                </colgroup>
                 <thead className="sticky top-0 z-[50] bg-white/95 backdrop-blur-sm">
                   <tr>
-                    <th scope="col" className="px-1 py-2 text-left" aria-hidden="true" />
+                    <th scope="col" className="w-12 px-1 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={allVisibleSelected}
+                        onChange={toggleVisibleSelected}
+                        disabled={visibleLeadIds.length === 0}
+                        aria-label={t('uploadContacts.list.archive.selectPage')}
+                        className="h-3.5 w-3.5 rounded border-slate-300 text-harx-600 focus:ring-harx-500 disabled:opacity-40"
+                      />
+                    </th>
+                    {companyVisible.Deal_Name !== false && (
+                      <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                        {t('uploadContacts.mapping.fields.Deal_Name')}
+                      </th>
+                    )}
+                    {companyVisible.Last_Name !== false && (
+                      <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                        {t('uploadContacts.list.table.lastName')}
+                      </th>
+                    )}
+                    {companyVisible.First_Name !== false && (
+                      <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                        {t('uploadContacts.list.table.firstName')}
+                      </th>
+                    )}
+                    {companyVisible.Phone !== false && (
+                      <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                        {t('uploadContacts.list.table.mobile')}
+                      </th>
+                    )}
+                    {companyVisible.Email_1 !== false && (
+                      <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                        {t('uploadContacts.list.table.email')}
+                      </th>
+                    )}
+                    {(companyVisible.Address !== false ||
+                      companyVisible.Postal_Code !== false ||
+                      companyVisible.City !== false) && (
+                      <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                        {t('uploadContacts.list.table.location')}
+                      </th>
+                    )}
+                    {companyVisible.Date_of_Birth !== false && (
+                      <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                        {t('uploadContacts.list.table.dob', t('uploadContacts.mapping.fields.Date_of_Birth'))}
+                      </th>
+                    )}
+                    {companyCustomColumns.map((col) => (
+                      <th
+                        key={`th-custom-${col.header}`}
+                        scope="col"
+                        className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400"
+                        title={col.header}
+                      >
+                        {col.label}
+                      </th>
+                    ))}
                     <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
-                      {t('uploadContacts.list.table.lastName')}
+                      {t('uploadContacts.list.table.addedAt')}
                     </th>
                     <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
-                      {t('uploadContacts.list.table.firstName')}
+                      {t('uploadContacts.list.table.status')}
                     </th>
-                    <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
-                      {t('uploadContacts.list.table.mobile')}
-                    </th>
-                    <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
-                      {t('uploadContacts.list.table.email')}
-                    </th>
-                    <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
-                      {t('uploadContacts.list.table.location', 'Localisation')}
-                    </th>
-                    <th scope="col" className="px-1 py-2 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                    <th scope="col" className="w-20 px-1 py-2 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.actions')}
                     </th>
                   </tr>
@@ -3000,7 +4708,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <tbody>
                   {error ? (
                     <tr>
-                      <td colSpan={LEAD_TABLE_COL_COUNT} className="px-6 py-12 text-center">
+                      <td colSpan={leadTableColCount} className="px-6 py-12 text-center">
                         <div className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-rose-50 text-rose-600 text-sm font-semibold border border-rose-100">
                           {error}
                         </div>
@@ -3009,7 +4717,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   ) : isLoadingLeads ? (
                     Array.from({ length: 6 }).map((_, i) => (
                       <tr key={`skeleton-${i}`}>
-                        <td colSpan={LEAD_TABLE_COL_COUNT} className="px-2 py-1">
+                        <td colSpan={leadTableColCount} className="px-2 py-1">
                           <div className="flex items-center gap-4 p-4 bg-white/70 rounded-2xl border border-slate-100 animate-pulse">
                             <div className="w-10 h-10 rounded-xl bg-slate-100 shrink-0" />
                             <div className="flex-1 space-y-2">
@@ -3026,11 +4734,18 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         <LeadTableRow
                           key={lead._id || `filtered-${index}`}
                           lead={lead}
+                          selected={Boolean(lead._id && selectedLeadIds.has(lead._id))}
+                          onToggleSelect={toggleLeadSelected}
+                          onArchive={(leadId) => archiveLeads({ ids: [leadId] })}
                           onView={setViewingLeadDetail}
                           onEdit={setEditingSavedLead}
                           calledBadgeTitle={t('uploadContacts.list.calledBadge')}
                           viewTitle={t('uploadContacts.list.details.button')}
                           editTitle={t('uploadContacts.list.edit.button')}
+                          selectTitle={t('uploadContacts.list.archive.selectOne')}
+                          archiveTitle={t('uploadContacts.list.archive.one')}
+                          companyVisible={companyVisible}
+                          customColumns={companyCustomColumns}
                         />
                       ) : null
                     )
@@ -3046,12 +4761,14 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                           calledBadgeTitle={t('uploadContacts.list.calledBadge')}
                           viewTitle={t('uploadContacts.list.details.button')}
                           editTitle={t('uploadContacts.list.edit.button')}
+                          companyVisible={companyVisible}
+                          customColumns={companyCustomColumns}
                         />
                       ) : null
                     )
                   ) : (
                     <tr>
-                      <td colSpan={LEAD_TABLE_COL_COUNT} className="px-6 py-4 text-center">
+                      <td colSpan={leadTableColCount} className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center justify-center py-16">
                           <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-50 to-harx-50/50 flex items-center justify-center mb-4 border border-slate-100 shadow-inner">
                             <Users className="h-10 w-10 text-slate-300" />
@@ -3150,6 +4867,16 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         </div>
       )}
 
+      <ZohoFieldMappingModal
+        open={zohoMappingOpen}
+        gigId={selectedGigId || ''}
+        onClose={() => setZohoMappingOpen(false)}
+        onSaved={() => {
+          setZohoMappingOpen(false);
+          void handleImportFromZoho();
+        }}
+      />
+
       {viewingLeadDetail && (
         <LeadDetailModal
           lead={viewingLeadDetail}
@@ -3159,6 +4886,126 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             setViewingLeadDetail(null);
           }}
         />
+      )}
+
+      {/* Second-file schema: Fusionner vs Remplacer */}
+      {schemaDiffPrompt && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="schema-diff-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]"
+            aria-label={t('common.close', 'Fermer')}
+            onClick={() => {
+              setSchemaDiffPrompt(null);
+              setSelectedFile(null);
+              setShowFileName(false);
+            }}
+          />
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-[0_32px_80px_-20px_rgba(0,0,0,0.45)] ring-1 ring-black/5">
+            <div className="h-1.5 w-full bg-gradient-to-r from-harx-500 via-rose-500 to-orange-400" />
+            <div className="px-6 pt-6 pb-7">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-harx-600 mb-2">
+                {t('uploadContacts.schemaDiff.badge')}
+              </p>
+              <h3
+                id="schema-diff-title"
+                className="text-lg font-black text-slate-900 tracking-tight"
+              >
+                {t('uploadContacts.schemaDiff.title')}
+              </h3>
+              <p className="mt-2 text-sm font-medium text-slate-500 leading-relaxed">
+                {t('uploadContacts.schemaDiff.desc', {
+                  previous: schemaDiffPrompt.diff.previousHeaderCount,
+                  current: schemaDiffPrompt.diff.currentHeaderCount,
+                  added: schemaDiffPrompt.diff.added.length,
+                  removed: schemaDiffPrompt.diff.removed.length,
+                })}
+              </p>
+              {(schemaDiffPrompt.diff.added.length > 0 ||
+                schemaDiffPrompt.diff.removed.length > 0) && (
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {schemaDiffPrompt.diff.added.length > 0 && (
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                      <p className="font-black uppercase tracking-wider text-emerald-700 mb-1.5">
+                        {t('uploadContacts.schemaDiff.added', {
+                          count: schemaDiffPrompt.diff.added.length,
+                        })}
+                      </p>
+                      <ul className="space-y-1 text-slate-600 max-h-28 overflow-y-auto">
+                        {schemaDiffPrompt.diff.added.slice(0, 8).map((h) => (
+                          <li key={`added-${h}`} className="truncate" title={h}>
+                            + {h}
+                          </li>
+                        ))}
+                        {schemaDiffPrompt.diff.added.length > 8 ? (
+                          <li className="text-slate-400">
+                            +{schemaDiffPrompt.diff.added.length - 8}…
+                          </li>
+                        ) : null}
+                      </ul>
+                    </div>
+                  )}
+                  {schemaDiffPrompt.diff.removed.length > 0 && (
+                    <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3">
+                      <p className="font-black uppercase tracking-wider text-amber-700 mb-1.5">
+                        {t('uploadContacts.schemaDiff.removed', {
+                          count: schemaDiffPrompt.diff.removed.length,
+                        })}
+                      </p>
+                      <ul className="space-y-1 text-slate-600 max-h-28 overflow-y-auto">
+                        {schemaDiffPrompt.diff.removed.slice(0, 8).map((h) => (
+                          <li key={`removed-${h}`} className="truncate" title={h}>
+                            − {h}
+                          </li>
+                        ))}
+                        {schemaDiffPrompt.diff.removed.length > 8 ? (
+                          <li className="text-slate-400">
+                            +{schemaDiffPrompt.diff.removed.length - 8}…
+                          </li>
+                        ) : null}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+              <p className="mt-4 text-xs text-slate-400 leading-relaxed">
+                {t('uploadContacts.schemaDiff.leadsSafe')}
+              </p>
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => resolveSchemaDiffPrompt('merge')}
+                  className="rounded-2xl bg-gradient-to-r from-harx-500 to-rose-600 px-4 py-3 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-harx-500/30 hover:brightness-110"
+                >
+                  {t('uploadContacts.schemaDiff.merge')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => resolveSchemaDiffPrompt('replace')}
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50"
+                >
+                  {t('uploadContacts.schemaDiff.replace')}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSchemaDiffPrompt(null);
+                  setSelectedFile(null);
+                  setShowFileName(false);
+                }}
+                className="mt-3 w-full text-center text-xs font-bold text-slate-400 hover:text-slate-600"
+              >
+                {t('uploadContacts.schemaDiff.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Edit lead modal */}
@@ -3179,87 +5026,43 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               </button>
             </div>
             <div className="p-5 space-y-3 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
+              {COMPANY_EDITABLE_HARX_FIELDS.filter((field) =>
+                isCompanyFieldVisible(companyVisible, field.key)
+              ).map((field) => {
+                const raw = String(editingSavedLead[field.key] || '');
+                const displayValue =
+                  field.key === 'Deal_Name' && !raw.trim()
+                    ? `${editingSavedLead.First_Name || ''} ${editingSavedLead.Last_Name || ''}`.trim()
+                    : raw;
+                return (
+                  <div key={`saved-edit-${field.key}`}>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
+                      {t(field.labelKey)}
+                    </label>
+                    <input
+                      type={field.inputType || 'text'}
+                      value={displayValue}
+                      onChange={(e) => updateSavedLeadDraft(field.key, e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
+                    />
+                  </div>
+                );
+              })}
+              {companyCustomColumns.map((col) => (
+                <div key={`saved-edit-custom-${col.header}`}>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                    {t('uploadContacts.list.table.firstName')}
+                    {col.label}
                   </label>
                   <input
                     type="text"
-                    value={editingSavedLead.First_Name || ''}
-                    onChange={(e) => updateSavedLeadDraft('First_Name', e.target.value)}
+                    value={getLeadCustomFieldValue(editingSavedLead, col.header)}
+                    onChange={(e) =>
+                      updateSavedLeadCustomDraft(col.header, e.target.value)
+                    }
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                    {t('uploadContacts.list.table.lastName')}
-                  </label>
-                  <input
-                    type="text"
-                    value={editingSavedLead.Last_Name || ''}
-                    onChange={(e) => updateSavedLeadDraft('Last_Name', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                  {t('uploadContacts.list.table.email')}
-                </label>
-                <input
-                  type="email"
-                  value={editingSavedLead.Email_1 || ''}
-                  onChange={(e) => updateSavedLeadDraft('Email_1', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                  {t('uploadContacts.list.table.mobile')}
-                </label>
-                <input
-                  type="tel"
-                  value={editingSavedLead.Phone || ''}
-                  onChange={(e) => updateSavedLeadDraft('Phone', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                  {t('uploadContacts.list.table.address')}
-                </label>
-                <input
-                  type="text"
-                  value={editingSavedLead.Address || ''}
-                  onChange={(e) => updateSavedLeadDraft('Address', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                    {t('uploadContacts.list.table.postalCode')}
-                  </label>
-                  <input
-                    type="text"
-                    value={editingSavedLead.Postal_Code || ''}
-                    onChange={(e) => updateSavedLeadDraft('Postal_Code', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">
-                    {t('uploadContacts.list.table.city')}
-                  </label>
-                  <input
-                    type="text"
-                    value={editingSavedLead.City || ''}
-                    onChange={(e) => updateSavedLeadDraft('City', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                  />
-                </div>
-              </div>
+              ))}
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 bg-gray-50/50">
               <button

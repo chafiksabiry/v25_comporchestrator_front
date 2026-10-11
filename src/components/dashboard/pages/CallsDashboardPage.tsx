@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
-import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck, BellRing } from 'lucide-react';
+import { Phone, MessageSquare, Star, Activity as ActivityIcon, Clock, Search, Filter, ChevronDown, Download, ExternalLink, Globe, Shield, ShieldAlert, ShieldCheck, X, Check, TrendingUp, Brain, CreditCard, Calendar, Briefcase, ArrowRight, PhoneIncoming, PhoneOutgoing, BadgeCheck, BellRing, Bot, Sparkles, PhoneMissed, Voicemail, PhoneOff, Repeat2, CalendarCheck, Handshake, Ban, PartyPopper } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import CallDetailModal, { type NormalizedCall, companyTransactionCanValidate } from '../components/CallDetailModal';
 import {
@@ -17,6 +17,15 @@ import {
   isCallVoicemail,
   matchesCallOutcomeFilter,
   resolveUnvalidatedTransactionStatus,
+  resolveCallDispositionStatus,
+  getDisplayOverallScore,
+  getScoreDecisionTooltip,
+  getTooShortAnalysisNotice,
+  isCallTooShortForAnalysis,
+  getDisplayTranscript,
+  getExecutiveSummaryText,
+  needsHarxProspectRescore,
+  resolveWinningProspectKey,
   type CallOutcomeFilter,
 } from '../../../utils/callStatusDisplay';
 import { callsApi } from '../services/api/calls';
@@ -36,6 +45,39 @@ const CALL_OUTCOME_FILTERS = new Set<CallOutcomeFilter>([
   'wrong_number',
   'too_short',
 ]);
+
+/** Gig commission of 0€ is valid — never treat it as missing (|| would fall back to 4/30). */
+function resolveGigCommissionAmount(
+  primary: unknown,
+  secondary: unknown,
+  fallback: number
+): number {
+  const candidates = [primary, secondary];
+  for (const c of candidates) {
+    if (typeof c === 'number' && Number.isFinite(c)) return c;
+    if (c && typeof c === 'object' && typeof (c as { amount?: unknown }).amount === 'number') {
+      const amount = (c as { amount: number }).amount;
+      if (Number.isFinite(amount)) return amount;
+    }
+  }
+  return fallback;
+}
+
+function callCommissionDisplayAmount(call: any): string {
+  return resolveGigCommissionAmount(
+    call?.lead?.gigId?.commission?.commission_per_call,
+    call?.lead?.gigId?.rewardPerCall,
+    4
+  ).toFixed(2);
+}
+
+function transactionCommissionDisplayAmount(call: any): string {
+  return resolveGigCommissionAmount(
+    call?.lead?.gigId?.commission?.transactionCommission,
+    call?.lead?.gigId?.rewardPerSale,
+    30
+  ).toFixed(2);
+}
 
 function readUrlOutcomeFilter(): CallOutcomeFilter {
   try {
@@ -85,6 +127,7 @@ export default function CallsDashboardPage() {
   };
 
   const pendingCallHandledRef = useRef(false);
+  const autoRescoredCallIdsRef = useRef<Set<string>>(new Set());
 
   const openCallDetails = useCallback((call: any, tab: 'transcript' | 'insights') => {
     setSelectedCall(call);
@@ -243,6 +286,14 @@ export default function CallsDashboardPage() {
   };
 
   const handleAnalyzeCall = async (callId: string, options?: { force?: boolean }) => {
+    const target = calls.find((c) => normalizeCallId(c) === callId) || selectedCall;
+    // Block too-short calls unless force=true (company can override for legacy
+    // calls whose stored duration was wrong — backend will recalculate from
+    // endTime-startTime and bypass the gate if a transcript already exists).
+    if (!options?.force && target && isCallTooShortForAnalysis(target)) {
+      toast.error(getTooShortAnalysisNotice(i18n.language, Number(target.duration) || undefined));
+      return;
+    }
     try {
       setAnalyzingCallId(callId);
       setAnalysisError(null);
@@ -281,6 +332,7 @@ export default function CallsDashboardPage() {
         const message = getCallAnalyzeErrorMessage(result);
         setAnalysisError({ callId, message });
         toast.error(message);
+        if (options?.force) autoRescoredCallIdsRef.current.delete(callId);
         if (selectedCall && selectedCall._id === callId) {
           setSelectedCall({ ...selectedCall, ai_call_status: 'error' });
         }
@@ -292,6 +344,7 @@ export default function CallsDashboardPage() {
       const message = getCallAnalyzeErrorMessage(error);
       setAnalysisError({ callId, message });
       toast.error(message);
+      if (options?.force) autoRescoredCallIdsRef.current.delete(callId);
       if (selectedCall && selectedCall._id === callId) {
         setSelectedCall({ ...selectedCall, ai_call_status: 'error' });
       }
@@ -302,6 +355,48 @@ export default function CallsDashboardPage() {
     } finally {
       setAnalyzingCallId(null);
     }
+  };
+
+  // À l'ouverture d'un détail : relancer automatiquement si le scoring est encore
+  // en ancien format (PAS INTÉRESSÉS / …) pour basculer sur la liste HARX.
+  useEffect(() => {
+    if (!selectedCall) return;
+    const callId = normalizeCallId(selectedCall);
+    if (!callId) return;
+    if (autoRescoredCallIdsRef.current.has(callId)) return;
+    if (analyzingCallId === callId) return;
+    if (selectedCall.ai_call_status === 'processing') return;
+    if (isCallVoicemail(selectedCall)) return;
+    if (!needsHarxProspectRescore(selectedCall.ai_call_score)) return;
+
+    autoRescoredCallIdsRef.current.add(callId);
+    void handleAnalyzeCall(callId, { force: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot per call id on open
+  }, [selectedCall?._id]);
+
+  const handleCalibrateScore = async (
+    callId: string,
+    payload: { verdict: 'up' | 'down'; explanation?: string }
+  ) => {
+    const result = await callsApi.calibrateScore(callId, {
+      ...payload,
+      companyId: companyId || undefined,
+    });
+    if (!result?.success) {
+      throw new Error(result?.message || t('calls.calibration.saveError'));
+    }
+    const next = result.data?.scoreCalibration || {
+      verdict: payload.verdict,
+      explanation: payload.explanation || null,
+      calibratedAt: new Date().toISOString(),
+    };
+    setCalls((prev) =>
+      prev.map((c) => (normalizeCallId(c) === callId ? { ...c, scoreCalibration: next } : c))
+    );
+    setSelectedCall((prev: any) =>
+      prev && normalizeCallId(prev) === callId ? { ...prev, scoreCalibration: next } : prev
+    );
+    toast.success(t('calls.calibration.saved'));
   };
 
   const handleUpdateTransactionValidation = async (callId: string, currentStatus: boolean | null, clickedStatus: boolean) => {
@@ -354,6 +449,52 @@ export default function CallsDashboardPage() {
     }
   };
 
+  const handleConfirmDisposition = async (leadId: string, approve: boolean) => {
+    try {
+      const dashboardBase = String(import.meta.env.VITE_DASHBOARD_API || '').replace(/\/$/, '');
+      if (!dashboardBase || !leadId) return;
+
+      const response = await fetch(`${dashboardBase}/leads/${leadId}/disposition/confirm`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId, approve }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) {
+        toast.error(data.error || t('calls.disposition.confirmError', 'Impossible de confirmer le statut'));
+        return;
+      }
+
+      const updatedLead = data.data || {};
+      const patchLead = (lead: any) => {
+        if (!lead) return lead;
+        const id = lead._id || lead.id;
+        if (String(id) !== String(leadId)) return lead;
+        return {
+          ...lead,
+          repDisposition: updatedLead.repDisposition ?? lead.repDisposition,
+          repDispositionAt: updatedLead.repDispositionAt ?? lead.repDispositionAt,
+          pendingDisposition: updatedLead.pendingDisposition ?? null,
+          pendingDispositionAt: updatedLead.pendingDispositionAt ?? null,
+          pendingDispositionBy: updatedLead.pendingDispositionBy ?? null,
+          assignedRepId: updatedLead.assignedRepId ?? lead.assignedRepId,
+        };
+      };
+
+      setCalls((prev) => prev.map((c) => ({ ...c, lead: patchLead(c.lead) })));
+      setSelectedCall((prev: any) => (prev ? { ...prev, lead: patchLead(prev.lead) } : prev));
+
+      toast.success(
+        approve
+          ? t('calls.disposition.approved', 'Statut confirmé')
+          : t('calls.disposition.rejected', 'Proposition de statut refusée')
+      );
+    } catch (error) {
+      console.error('Error confirming disposition:', error);
+      toast.error(t('calls.disposition.confirmError', 'Impossible de confirmer le statut'));
+    }
+  };
+
   const callGigId = (call: any): string => {
     const raw =
       call?.lead?.gigId?._id ||
@@ -389,7 +530,13 @@ export default function CallsDashboardPage() {
     return t('calls.fallback.lead');
   };
 
+  const isVoicebotCall = (call: any): boolean =>
+    Boolean(call?.aiVoice?.enabled || call?.aiVoice?.source === 'voicebot');
+
   const callAgentName = (call: any): string => {
+    if (isVoicebotCall(call)) {
+      return t('calls.voicebot', 'Assistant vocal IA');
+    }
     const agent = call?.agent;
     if (agent && typeof agent === 'object') {
       const n =
@@ -544,7 +691,7 @@ export default function CallsDashboardPage() {
               <option value="completed">{t('calls.status.completed', 'Terminé')}</option>
               <option value="missed">{t('calls.status.missed', 'Manqué')}</option>
               <option value="failed">{t('calls.status.failed', 'Échoué')}</option>
-              <option value="voicemail">{t('calls.status.voicemail', 'Messagerie')}</option>
+              <option value="voicemail">{t('calls.disp.called_voicemail', 'Appelé – Répondeur')}</option>
             </select>
           </div>
         </div>
@@ -673,6 +820,7 @@ export default function CallsDashboardPage() {
               {filteredCalls.map((call, idx) => {
                 const callId = call._id || idx;
                 const isInbound = String(call.direction || '').toLowerCase().startsWith('inbound');
+                const isVoicebot = isVoicebotCall(call);
                 const agentName = callAgentName(call);
                 const leadName = callLeadName(call);
                 const fromName = isInbound ? leadName : agentName;
@@ -704,14 +852,28 @@ export default function CallsDashboardPage() {
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
                         <div
-                          title={isInbound ? t('calls.direction.inbound') : t('calls.direction.outbound')}
+                          title={
+                            isVoicebot
+                              ? t('calls.voicebot', 'Assistant vocal IA')
+                              : isInbound
+                                ? t('calls.direction.inbound')
+                                : t('calls.direction.outbound')
+                          }
                           className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform flex-shrink-0 ${
-                            isInbound
-                              ? 'bg-blue-50 text-blue-600'
-                              : 'bg-violet-50 text-violet-600'
+                            isVoicebot
+                              ? 'bg-teal-50 text-teal-600'
+                              : isInbound
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'bg-violet-50 text-violet-600'
                           }`}
                         >
-                          {isInbound ? <PhoneIncoming className="w-6 h-6" /> : <PhoneOutgoing className="w-6 h-6" />}
+                          {isVoicebot ? (
+                            <Bot className="w-6 h-6" />
+                          ) : isInbound ? (
+                            <PhoneIncoming className="w-6 h-6" />
+                          ) : (
+                            <PhoneOutgoing className="w-6 h-6" />
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap text-sm">
@@ -730,6 +892,12 @@ export default function CallsDashboardPage() {
                             </span>
                           </div>
                           <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                            {isVoicebot && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-50 text-teal-700 border border-teal-200">
+                                <Bot className="w-3 h-3" />
+                                {t('calls.voicebotBadge', 'Voicebot')}
+                              </span>
+                            )}
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm border ${call.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 'bg-rose-50 text-rose-600 border-rose-100/50'}`}>
                               {t(`calls.status.${String(call.status || '').toLowerCase()}`, call.status)}
                             </span>
@@ -784,12 +952,32 @@ export default function CallsDashboardPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-4 xl:gap-6">
-                        {call.ai_call_score?.overall?.score !== undefined && (
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-full border border-amber-100/50 shadow-sm">
+                        {(() => {
+                          const displayScore = getDisplayOverallScore(call);
+                          if (displayScore === null) {
+                            if (isCallTooShortForAnalysis(call)) {
+                              const disposition = resolveCallDispositionStatus(call);
+                              return (
+                                <div
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm ${disposition.tone}`}
+                                  title={disposition.title}
+                                >
+                                  <span className="text-[10px] font-black uppercase tracking-widest">{disposition.label}</span>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }
+                          return (
+                          <div className="relative group/score flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-full border border-amber-100/50 shadow-sm cursor-help">
                             <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                            <span className="text-xs font-black">{call.ai_call_score.overall.score}%</span>
+                            <span className="text-xs font-black">{displayScore}%</span>
+                            <div className="pointer-events-none absolute right-0 top-full z-30 mt-2 hidden w-72 rounded-2xl border border-slate-200 bg-slate-900 px-4 py-3 text-left text-[11px] font-medium leading-relaxed text-white shadow-xl group-hover/score:block whitespace-pre-line">
+                              {getScoreDecisionTooltip(call, i18n.language)}
+                            </div>
                           </div>
-                        )}
+                          );
+                        })()}
 
                         {call.status?.toLowerCase() === 'completed' ? (
                           <>
@@ -801,7 +989,7 @@ export default function CallsDashboardPage() {
                               {isCallApprovedByAI(call) ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
-                                  {t('calls.ai.approvedWithAmount', { amount: (call.lead?.gigId?.commission?.commission_per_call || call.lead?.gigId?.rewardPerCall || 4).toFixed(2) })}
+                                  {t('calls.ai.approvedWithAmount', { amount: callCommissionDisplayAmount(call) })}
                                 </span>
                               ) : isCallRejectedByAI(call) ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
@@ -824,7 +1012,7 @@ export default function CallsDashboardPage() {
                               {call.transaction?.validByCompany === true ? (
                                 <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100/40 shadow-sm w-36 whitespace-nowrap">
                                   <Check className="w-3.5 h-3.5" />
-                                  {t('calls.transaction.signedWithAmount', { amount: (call.lead?.gigId?.commission?.transactionCommission || call.lead?.gigId?.rewardPerSale || 30).toFixed(2) })}
+                                  {t('calls.transaction.signedWithAmount', { amount: transactionCommissionDisplayAmount(call) })}
                                 </span>
                               ) : isCallRejectedByAI(call) ? (
                                 (() => {
@@ -939,6 +1127,17 @@ export default function CallsDashboardPage() {
           callOutcome: selectedCall.callOutcome,
           flags: selectedCall.flags,
           transaction: selectedCall.transaction,
+          duration: selectedCall.duration,
+          ai_call_status: selectedCall.ai_call_status,
+          status: selectedCall.status,
+          answeredBy: selectedCall.answeredBy,
+          scoreCalibration: selectedCall.scoreCalibration,
+          leadId:
+            typeof selectedCall.lead?._id === 'object'
+              ? (selectedCall.lead?._id as any)?.$oid
+              : selectedCall.lead?._id || selectedCall.lead?.id || null,
+          repDisposition: selectedCall.lead?.repDisposition || null,
+          pendingDisposition: selectedCall.lead?.pendingDisposition || null,
         };
         const selectedAgentFraudCount =
           agentFraudCountById.get(callAgentId(selectedCall)) ||
@@ -955,6 +1154,8 @@ export default function CallsDashboardPage() {
             analyzingCallId={analyzingCallId}
             analysisError={selectedCallAnalysisError}
             onValidateTransaction={(callId, current, next) => handleUpdateTransactionValidation(callId, current, next)}
+            onCalibrateScore={handleCalibrateScore}
+            onConfirmDisposition={handleConfirmDisposition}
           />
         );
       })()}
@@ -1063,7 +1264,7 @@ export default function CallsDashboardPage() {
                     {selectedCall.transaction?.validByCompany === true ? (
                       <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">
                         <Check className="w-3 h-3" />
-                        -{(selectedCall.lead?.gigId?.commission?.transactionCommission || selectedCall.lead?.gigId?.rewardPerSale || 30).toFixed(2)}€
+                        -{transactionCommissionDisplayAmount(selectedCall)}€
                       </span>
                     ) : selectedCall.transaction?.validByCompany === false ? (
                       <span className="inline-flex items-center justify-center p-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100" title={t('calls.status.rejected')}>
@@ -1117,22 +1318,25 @@ export default function CallsDashboardPage() {
               {activeTab === 'transcript' ? (
                 <div className="max-w-4xl mx-auto space-y-6">
                   {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
-                    selectedCall.transcript.map((t: any, i: number) => (
-                      <div key={i} className={`flex gap-4 ${t.speaker?.toLowerCase().includes('agent') ? 'flex-row' : 'flex-row-reverse'}`}>
-                        <div className={`flex flex-col max-w-[75%] ${t.speaker?.toLowerCase().includes('agent') ? 'items-start' : 'items-end'}`}>
-                          <div className="flex items-center gap-2 mb-1.5 px-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.speaker}</span>
-                            <span className="text-[9px] font-bold text-slate-300">{t.timestamp}</span>
-                          </div>
-                          <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${t.speaker?.toLowerCase().includes('agent')
-                            ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm'
-                            : 'bg-gradient-harx text-white rounded-tr-none shadow-lg shadow-harx-500/20'
-                            }`}>
-                            {t.text}
+                    getDisplayTranscript(selectedCall.transcript, selectedCall.ai_call_score).map((t, i: number) => {
+                      const isAgent = t.speaker?.toLowerCase().includes('agent') || t.speaker?.toLowerCase() === 'rep';
+                      return (
+                        <div key={i} className={`flex gap-4 ${isAgent ? 'flex-row' : 'flex-row-reverse'}`}>
+                          <div className={`flex flex-col max-w-[75%] ${isAgent ? 'items-start' : 'items-end'}`}>
+                            <div className="flex items-center gap-2 mb-1.5 px-2">
+                              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t.speaker}</span>
+                              <span className="text-[9px] font-bold text-slate-300">{t.timestamp || t.start}</span>
+                            </div>
+                            <div className={`px-5 py-4 rounded-3xl text-sm font-medium leading-relaxed ${isAgent
+                              ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm'
+                              : 'bg-gradient-harx text-white rounded-tr-none shadow-lg shadow-harx-500/20'
+                              }`}>
+                              {t.text}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                       {renderAnalysisErrorBanner()}
@@ -1236,6 +1440,40 @@ export default function CallsDashboardPage() {
                           <div className="h-px flex-1 bg-slate-200/60"></div>
                         </div>
 
+                        {/* Disposition suggérée par l'IA — bannière HARX */}
+                        {(() => {
+                          const HARX_DISP_CONF: Record<string, { label: string; Icon: React.ComponentType<{ className?: string }>; bg: string; text: string; border: string; dot: string }> = {
+                            to_call:             { label: t('calls.disp.to_call',             'À appeler'),                                         Icon: Phone,         bg: 'bg-gray-50',    text: 'text-gray-600',    border: 'border-gray-200',    dot: 'bg-gray-400'    },
+                            called_unreachable:  { label: t('calls.disp.called_unreachable',  'Appelé – Injoignable'),                               Icon: PhoneMissed,   bg: 'bg-orange-50',  text: 'text-orange-600',  border: 'border-orange-200',  dot: 'bg-orange-500'  },
+                            called_voicemail:    { label: t('calls.disp.called_voicemail',    'Appelé – Répondeur'),                                 Icon: Voicemail,     bg: 'bg-orange-50',  text: 'text-orange-500',  border: 'border-orange-200',  dot: 'bg-orange-400'  },
+                            called_wrong_number: { label: t('calls.disp.called_wrong_number', 'Appelé – Numéro non attribué'),                       Icon: PhoneOff,      bg: 'bg-red-50',     text: 'text-red-600',     border: 'border-red-200',     dot: 'bg-red-500'     },
+                            called_callback:     { label: t('calls.disp.called_callback',     'Appelé – Souhaite être rappelé'),                     Icon: Repeat2,       bg: 'bg-amber-50',   text: 'text-amber-600',   border: 'border-amber-200',   dot: 'bg-amber-500'   },
+                            called_rdv:          { label: t('calls.disp.called_rdv',          'Appelé – RDV pris pour rappel'),                      Icon: CalendarCheck,  bg: 'bg-violet-50',  text: 'text-violet-600',  border: 'border-violet-200',  dot: 'bg-violet-500'  },
+                            argued_rdv:          { label: t('calls.disp.argued_rdv',          'Appel argumenté – RDV pris / délai de réflexion'),    Icon: Handshake,     bg: 'bg-indigo-50',  text: 'text-indigo-600',  border: 'border-indigo-200',  dot: 'bg-indigo-500'  },
+                            argued_declined:     { label: t('calls.disp.argued_declined',     'Appel argumenté – Transaction déclinée'),             Icon: Ban,           bg: 'bg-rose-50',    text: 'text-rose-600',    border: 'border-rose-200',    dot: 'bg-rose-500'    },
+                            argued_done:         { label: t('calls.disp.argued_done',         'Appel argumenté – Transaction aboutie'),              Icon: PartyPopper,   bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+                          };
+                          const disp = selectedCall.suggestedDisposition;
+                          const conf = disp ? HARX_DISP_CONF[disp] : null;
+                          if (!conf) return null;
+                          const { Icon } = conf;
+                          return (
+                            <div className={`flex items-center gap-4 px-5 py-4 rounded-2xl border ${conf.border} ${conf.bg} shadow-sm`}>
+                              <div className={`w-10 h-10 rounded-xl ${conf.bg} ${conf.text} flex items-center justify-center shrink-0 border ${conf.border}`}>
+                                <Icon className="w-5 h-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                                  <Sparkles className="w-3 h-3" />
+                                  {t('calls.suggestedDisposition', 'Disposition suggérée par l\'IA')}
+                                </p>
+                                <p className={`text-sm font-black uppercase tracking-wide ${conf.text} mt-0.5`}>{conf.label}</p>
+                              </div>
+                              <span className={`w-2.5 h-2.5 rounded-full ${conf.dot} shrink-0`} />
+                            </div>
+                          );
+                        })()}
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                           {(() => {
                             const colorMap: Record<string, { bg: string, text: string, bgBar: string }> = {
@@ -1247,22 +1485,34 @@ export default function CallsDashboardPage() {
                             };
 
                             return [
-                              { label: t('calls.prospectMetrics.notInterested'), key: "PAS INTÉRESSÉS", icon: ShieldAlert, color: 'rose' },
-                              { label: t('calls.prospectMetrics.notAware'), key: "PAS AU COURANT", icon: Globe, color: 'blue' },
-                              { label: t('calls.prospectMetrics.alreadyEquipped'), key: "DÉJÀ ÉQUIPÉS", icon: ShieldCheck, color: 'indigo' },
-                              { label: t('calls.prospectMetrics.appointment'), key: "RDV", icon: Calendar, color: 'emerald' },
-                              { label: t('calls.prospectMetrics.callback'), key: "A plus tard", icon: Clock, color: 'amber' }
+                              { label: t('calls.disp.called_unreachable', 'Appelé – Injoignable'), key: 'called_unreachable', legacyKeys: [] as string[], icon: PhoneMissed, color: 'amber' },
+                              { label: t('calls.disp.called_voicemail', 'Appelé – Répondeur'), key: 'called_voicemail', legacyKeys: [] as string[], icon: Voicemail, color: 'amber' },
+                              { label: t('calls.disp.called_wrong_number', 'Appelé – Numéro non attribué'), key: 'called_wrong_number', legacyKeys: ['PAS AU COURANT'], icon: PhoneOff, color: 'rose' },
+                              { label: t('calls.disp.called_callback', 'Appelé – Souhaite être rappelé'), key: 'called_callback', legacyKeys: ['A plus tard'], icon: Repeat2, color: 'amber' },
+                              { label: t('calls.disp.called_rdv', 'Appelé – RDV pris pour rappel'), key: 'called_rdv', legacyKeys: [] as string[], icon: CalendarCheck, color: 'indigo' },
+                              { label: t('calls.disp.argued_rdv', 'Appel argumenté – RDV pris / délai de réflexion'), key: 'argued_rdv', legacyKeys: ['RDV'], icon: Handshake, color: 'indigo' },
+                              { label: t('calls.disp.argued_declined', 'Appel argumenté – Transaction déclinée'), key: 'argued_declined', legacyKeys: ['PAS INTÉRESSÉS', 'DÉJÀ ÉQUIPÉS'], icon: Ban, color: 'rose' },
+                              { label: t('calls.disp.argued_done', 'Appel argumenté – Transaction aboutie'), key: 'argued_done', legacyKeys: [] as string[], icon: PartyPopper, color: 'emerald' },
                             ].map((metric, mIdx) => {
-                              const metricData = selectedCall.ai_call_score?.[metric.key];
+                              const metricData =
+                                selectedCall.ai_call_score?.[metric.key] ||
+                                metric.legacyKeys.map((k) => selectedCall.ai_call_score?.[k]).find(Boolean);
                               if (!metricData) return null;
-                              const score = metricData?.score || 0;
-                              const scoreColorClass = score >= 50 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50';
-                              const passed = typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50;
+                              const winningKey = resolveWinningProspectKey(selectedCall);
+                              const isWinning = winningKey === metric.key;
+                              const rawScore = metricData?.score || 0;
+                              const score = isWinning && rawScore < 50 ? 85 : rawScore;
+                              const passed = isWinning
+                                ? true
+                                : (typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50);
+                              const scoreColorClass = passed ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50';
 
                               const theme = colorMap[metric.color] || { bg: 'bg-slate-50', text: 'text-slate-600', bgBar: 'bg-slate-500' };
+                              const feedbackText = metricData?.feedback
+                                || (isWinning ? t('calls.modal.dispositionSelected', 'Statut retenu par l\'analyse IA.') : t('calls.modal.noQuote'));
 
                               return (
-                                <div key={mIdx} className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                                <div key={mIdx} className={`bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group ${isWinning ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-100'}`}>
                                   <div>
                                     <div className="flex justify-between items-start mb-4 sm:mb-6">
                                       <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${theme.bg} ${theme.text} flex items-center justify-center shadow-sm shrink-0`}>
@@ -1282,11 +1532,11 @@ export default function CallsDashboardPage() {
                                   </div>
                                   <div className="mt-2">
                                     <div className="text-xs sm:text-[13px] font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl sm:rounded-2xl p-4 border border-slate-50 group-hover:bg-white group-hover:border-slate-100 transition-all max-h-[160px] overflow-y-auto custom-scrollbar italic">
-                                      {metricData?.feedback ? metricData.feedback.split('"').map((part, i) =>
+                                      {String(feedbackText).split('"').map((part, i) =>
                                         i % 2 === 1 ? (
                                           <span key={i} className="bg-amber-100/50 text-amber-900 font-bold px-1 rounded border-b border-amber-200 not-italic">&quot;{part}&quot;</span>
                                         ) : part
-                                      ) : t('calls.modal.noQuote')}
+                                      )}
                                     </div>
                                   </div>
                                 </div>
@@ -1316,9 +1566,7 @@ export default function CallsDashboardPage() {
                             <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-inner">
                               <p className="text-base sm:text-xl font-bold text-slate-800 leading-relaxed italic relative">
                                 <span className="absolute -left-2 -top-4 sm:-left-4 sm:-top-4 text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50">&quot;</span>
-                                {i18n.language === 'en'
-                                  ? (selectedCall.ai_summary_en || selectedCall.ai_call_score?.overall?.feedback_en || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || t('calls.modal.standardPerformance'))
-                                  : (selectedCall.ai_summary_fr || selectedCall.ai_call_score?.overall?.feedback_fr || selectedCall.ai_summary || selectedCall.ai_call_score?.overall?.feedback || t('calls.modal.standardPerformance'))}
+                                {getExecutiveSummaryText(selectedCall, i18n.language) || t('calls.modal.standardPerformance')}
                                 <span className="text-emerald-200 text-4xl sm:text-6xl font-serif opacity-50 ml-1 leading-none align-bottom">&quot;</span>
                               </p>
                             </div>

@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, MessageSquare, Activity as ActivityIcon, Globe, ShieldAlert, ShieldCheck,
   TrendingUp, Star, Clock, Phone, CreditCard, Check, Brain, Calendar, RefreshCw,
+  ThumbsUp, ThumbsDown, Sparkles, PhoneMissed, Voicemail, PhoneOff, Repeat2,
+  CalendarCheck, Handshake, Ban, PartyPopper,
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
-import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, getDisplayTranscript, getExecutiveSummaryScore, getExecutiveSummaryText, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, getDisplayOverallScore, hasAiCallAnalysis } from '../../../utils/callStatusDisplay';
+import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, resolveCallDispositionStatus, getDisplayTranscript, getExecutiveSummaryScore, getExecutiveSummaryText, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, hasAiCallAnalysis, isCallTooShortForAnalysis, getTooShortAnalysisNotice, getScoreDecisionTooltip, shouldHideCallScoring, resolveWinningProspectKey } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;
@@ -24,6 +26,19 @@ export interface NormalizedCall {
   callOutcome?: string | null;
   flags?: { fraud?: boolean; selfCall?: boolean };
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null };
+  duration?: number | null;
+  ai_call_status?: string | null;
+  status?: string | null;
+  answeredBy?: string | null;
+  scoreCalibration?: {
+    verdict?: 'up' | 'down' | null;
+    explanation?: string | null;
+    calibratedAt?: string | null;
+  } | null;
+  suggestedDisposition?: string | null;
+  leadId?: string | null;
+  repDisposition?: string | null;
+  pendingDisposition?: string | null;
 }
 
 /** L'entreprise peut valider/refuser dès que l'appel est analysé (transaction optionnelle). */
@@ -51,13 +66,28 @@ interface Props {
   analyzingCallId?: string | null;
   analysisError?: string | null;
   onValidateTransaction?: (callId: string, current: boolean | null, next: boolean) => void;
+  onCalibrateScore?: (callId: string, payload: { verdict: 'up' | 'down'; explanation?: string }) => Promise<void> | void;
+  onConfirmDisposition?: (leadId: string, approve: boolean) => Promise<void> | void;
 }
 
-export default function CallDetailModal({ call, agentFraudCount = 0, onClose, onAnalyze, analyzingCallId, analysisError, onValidateTransaction }: Props) {
+export default function CallDetailModal({ call, agentFraudCount = 0, onClose, onAnalyze, analyzingCallId, analysisError, onValidateTransaction, onCalibrateScore, onConfirmDisposition }: Props) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'transcript' | 'insights'>('transcript');
+  const [calibrationVerdict, setCalibrationVerdict] = useState<'up' | 'down' | null>(call.scoreCalibration?.verdict || null);
+  const [calibrationExplanation, setCalibrationExplanation] = useState(call.scoreCalibration?.explanation || '');
+  const [calibrationSaving, setCalibrationSaving] = useState(false);
+  const [calibrationError, setCalibrationError] = useState<string | null>(null);
+  const [dispositionConfirming, setDispositionConfirming] = useState(false);
   const isFraud = isCallFraudDetected(call);
   const isVoicemail = isCallVoicemail(call);
+  const isTooShort = isCallTooShortForAnalysis(call);
+  const hideScoring = shouldHideCallScoring(call);
+
+  useEffect(() => {
+    setCalibrationVerdict(call.scoreCalibration?.verdict || null);
+    setCalibrationExplanation(call.scoreCalibration?.explanation || '');
+    setCalibrationError(null);
+  }, [call.id, call.scoreCalibration?.verdict, call.scoreCalibration?.explanation]);
 
   const recordingUrl = call.recording_url_cloudinary || call.recording_url;
   const finalUrl = recordingUrl
@@ -71,6 +101,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
     indigo:  { bg: 'bg-indigo-50',  text: 'text-indigo-600',  bgBar: 'bg-indigo-500'  },
     amber:   { bg: 'bg-amber-50',   text: 'text-amber-600',   bgBar: 'bg-amber-500'   },
     violet:  { bg: 'bg-violet-50',  text: 'text-violet-600',  bgBar: 'bg-violet-500'  },
+    orange:  { bg: 'bg-orange-50',  text: 'text-orange-600',  bgBar: 'bg-orange-500'  },
   };
 
   const primaryMetrics = [
@@ -83,12 +114,38 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
   ];
 
   const prospectMetrics = [
-    { label: t('calls.prospectMetrics.notInterested'), key: 'PAS INTÉRESSÉS', icon: ShieldAlert, color: 'rose' },
-    { label: t('calls.prospectMetrics.notAware'), key: 'PAS AU COURANT', icon: Globe, color: 'blue' },
-    { label: t('calls.prospectMetrics.alreadyEquipped'), key: 'DÉJÀ ÉQUIPÉS', icon: ShieldCheck, color: 'indigo' },
-    { label: t('calls.prospectMetrics.appointment'), key: 'RDV', icon: Calendar, color: 'emerald' },
-    { label: t('calls.prospectMetrics.callback'), key: 'A plus tard', icon: Clock, color: 'amber' },
+    { label: t('calls.disp.called_unreachable', 'Appelé – Injoignable'), key: 'called_unreachable', legacyKeys: [] as string[], icon: PhoneMissed, color: 'amber' },
+    { label: t('calls.disp.called_voicemail', 'Appelé – Répondeur'), key: 'called_voicemail', legacyKeys: [] as string[], icon: Voicemail, color: 'orange' },
+    { label: t('calls.disp.called_wrong_number', 'Appelé – Numéro non attribué'), key: 'called_wrong_number', legacyKeys: ['PAS AU COURANT'], icon: PhoneOff, color: 'rose' },
+    { label: t('calls.disp.called_callback', 'Appelé – Souhaite être rappelé'), key: 'called_callback', legacyKeys: ['A plus tard'], icon: Repeat2, color: 'amber' },
+    { label: t('calls.disp.called_rdv', 'Appelé – RDV pris pour rappel'), key: 'called_rdv', legacyKeys: [], icon: CalendarCheck, color: 'violet' },
+    { label: t('calls.disp.argued_rdv', 'Appel argumenté – RDV pris / délai de réflexion'), key: 'argued_rdv', legacyKeys: ['RDV'], icon: Handshake, color: 'indigo' },
+    { label: t('calls.disp.argued_declined', 'Appel argumenté – Transaction déclinée'), key: 'argued_declined', legacyKeys: ['PAS INTÉRESSÉS', 'DÉJÀ ÉQUIPÉS'], icon: Ban, color: 'rose' },
+    { label: t('calls.disp.argued_done', 'Appel argumenté – Transaction aboutie'), key: 'argued_done', legacyKeys: [], icon: PartyPopper, color: 'emerald' },
   ];
+
+  const resolveProspectMetricData = (metric: { key: string; legacyKeys?: string[] }) => {
+    const scores = call.ai_call_score || {};
+    if (scores[metric.key]) return scores[metric.key];
+    for (const legacy of metric.legacyKeys || []) {
+      if (scores[legacy]) return scores[legacy];
+    }
+    return null;
+  };
+
+  // HARX 9-status disposition config for AI suggestion banner
+  type DispConf = { label: string; Icon: React.ComponentType<{ className?: string }>; bg: string; text: string; border: string; dot: string };
+  const HARX_DISP_CONF: Record<string, DispConf> = {
+    to_call:             { label: t('calls.disp.to_call',             'À appeler'),                                        Icon: Phone,        bg: 'bg-gray-50',    text: 'text-gray-600',    border: 'border-gray-200',    dot: 'bg-gray-400'    },
+    called_unreachable:  { label: t('calls.disp.called_unreachable',  'Appelé – Injoignable'),                              Icon: PhoneMissed,  bg: 'bg-orange-50',  text: 'text-orange-600',  border: 'border-orange-200',  dot: 'bg-orange-500'  },
+    called_voicemail:    { label: t('calls.disp.called_voicemail',    'Appelé – Répondeur'),                                Icon: Voicemail,    bg: 'bg-orange-50',  text: 'text-orange-500',  border: 'border-orange-200',  dot: 'bg-orange-400'  },
+    called_wrong_number: { label: t('calls.disp.called_wrong_number', 'Appelé – Numéro non attribué'),                      Icon: PhoneOff,     bg: 'bg-red-50',     text: 'text-red-600',     border: 'border-red-200',     dot: 'bg-red-500'     },
+    called_callback:     { label: t('calls.disp.called_callback',     'Appelé – Souhaite être rappelé'),                    Icon: Repeat2,      bg: 'bg-amber-50',   text: 'text-amber-600',   border: 'border-amber-200',   dot: 'bg-amber-500'   },
+    called_rdv:          { label: t('calls.disp.called_rdv',          'Appelé – RDV pris pour rappel'),                     Icon: CalendarCheck, bg: 'bg-violet-50', text: 'text-violet-600',  border: 'border-violet-200',  dot: 'bg-violet-500'  },
+    argued_rdv:          { label: t('calls.disp.argued_rdv',          'Appel argumenté – RDV pris / délai de réflexion'),   Icon: Handshake,    bg: 'bg-indigo-50',  text: 'text-indigo-600',  border: 'border-indigo-200',  dot: 'bg-indigo-500'  },
+    argued_declined:     { label: t('calls.disp.argued_declined',     'Appel argumenté – Transaction déclinée'),            Icon: Ban,          bg: 'bg-rose-50',    text: 'text-rose-600',    border: 'border-rose-200',    dot: 'bg-rose-500'    },
+    argued_done:         { label: t('calls.disp.argued_done',         'Appel argumenté – Transaction aboutie'),             Icon: PartyPopper,  bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+  };
 
   const renderAnalysisErrorBanner = () =>
     analysisError ? (
@@ -101,8 +158,111 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
       </div>
     ) : null;
 
+  const handleSaveCalibration = async () => {
+    if (!onCalibrateScore || !calibrationVerdict) return;
+    if (calibrationVerdict === 'down' && calibrationExplanation.trim().length < 3) {
+      setCalibrationError(t('calls.calibration.explanationRequired'));
+      return;
+    }
+    setCalibrationSaving(true);
+    setCalibrationError(null);
+    try {
+      await onCalibrateScore(call.id, {
+        verdict: calibrationVerdict,
+        explanation: calibrationExplanation.trim(),
+      });
+    } catch (err: unknown) {
+      setCalibrationError((err as { message?: string })?.message || t('calls.calibration.saveError'));
+    } finally {
+      setCalibrationSaving(false);
+    }
+  };
+
+  const showCalibration = Boolean(onCalibrateScore) && hasAiCallAnalysis(call) && !isTooShort;
+
+  const renderCalibrationPanel = () => {
+    if (!showCalibration || !onCalibrateScore) return null;
+    return (
+      <div className="px-4 py-4 md:px-8 border-b border-violet-100 bg-violet-50/40 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div>
+            <h5 className="text-sm font-black uppercase tracking-widest text-violet-700">
+              {t('calls.calibration.title')}
+            </h5>
+            <p className="text-xs font-medium text-slate-500 mt-1">
+              {t('calls.calibration.subtitle')}
+            </p>
+          </div>
+          {call.scoreCalibration?.calibratedAt ? (
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full self-start">
+              {t('calls.calibration.recorded')}
+            </span>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap gap-3 mb-3">
+          <button
+            type="button"
+            onClick={() => setCalibrationVerdict('up')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
+              calibrationVerdict === 'up'
+                ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/25'
+                : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+            }`}
+          >
+            <ThumbsUp className="w-4 h-4" />
+            {t('calls.calibration.thumbsUp')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCalibrationVerdict('down')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
+              calibrationVerdict === 'down'
+                ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/25'
+                : 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50'
+            }`}
+          >
+            <ThumbsDown className="w-4 h-4" />
+            {t('calls.calibration.thumbsDown')}
+          </button>
+        </div>
+        <label className="block space-y-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            {t('calls.calibration.explanationLabel')}
+          </span>
+          <textarea
+            value={calibrationExplanation}
+            onChange={(e) => setCalibrationExplanation(e.target.value)}
+            rows={2}
+            placeholder={t('calls.calibration.explanationPlaceholder')}
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 resize-y min-h-[72px]"
+          />
+        </label>
+        {calibrationError ? (
+          <p className="text-xs font-semibold text-rose-600 mt-2">{calibrationError}</p>
+        ) : null}
+        <div className="flex justify-end mt-3">
+          <button
+            type="button"
+            disabled={!calibrationVerdict || calibrationSaving}
+            onClick={() => void handleSaveCalibration()}
+            className="px-5 py-2.5 rounded-2xl bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-black uppercase tracking-widest shadow-md shadow-violet-500/20 transition-all"
+          >
+            {calibrationSaving ? t('calls.calibration.saving') : t('calls.calibration.submit')}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const isAutoRefused = call.ai_call_status === 'auto_refused';
+  // Show relaunch button for: scored calls, auto_refused (REP may now be
+  // eligible), and too_short only when the call has no transcript (if a
+  // transcript exists the dedicated force-button inside the too_short block
+  // is displayed instead).
+  const canRelaunch = !isTooShort || isAutoRefused;
+
   const renderRelaunchButton = (className = '') =>
-    onAnalyze ? (
+    onAnalyze && canRelaunch ? (
       <button
         type="button"
         onClick={() => onAnalyze(call.id, { force: true })}
@@ -194,21 +354,36 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
           </div>
         )}
 
+        {isTooShort && (
+          <div className="px-4 md:px-8 py-3 border-b border-amber-100 bg-amber-50/70 shrink-0">
+            <p className="text-[11px] font-bold text-amber-800 leading-relaxed flex items-start gap-2">
+              <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+              <span>
+                {getTooShortAnalysisNotice(i18n.language, Number(call.duration) || undefined)}
+              </span>
+            </p>
+          </div>
+        )}
+
+        {renderCalibrationPanel()}
+
         {/* ── Tabs + AI decision ── */}
         <div className="px-4 py-3 md:px-8 md:py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 bg-white shrink-0">
           <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 lg:pb-0">
             <button
+              type="button"
               onClick={() => setActiveTab('transcript')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'transcript' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+              className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'transcript' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-4 h-4 shrink-0" />
               {t('calls.modal.tabs.transcript')}
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('insights')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'insights' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+              className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'insights' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
             >
-              <ActivityIcon className="w-4 h-4" />
+              <ActivityIcon className="w-4 h-4 shrink-0" />
               {t('calls.modal.tabs.insights')}
             </button>
           </div>
@@ -273,6 +448,65 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
               </div>
             )}
           </div>
+
+          {call.pendingDisposition && call.leadId && onConfirmDisposition && (() => {
+            const pendingConf = HARX_DISP_CONF[call.pendingDisposition];
+            const currentConf = call.repDisposition ? HARX_DISP_CONF[call.repDisposition] : null;
+            return (
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-2xl border border-amber-200 bg-amber-50/70">
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-1">
+                    {t('calls.disposition.pendingTitle', 'Statut proposé par le REP')}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {currentConf && (
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${currentConf.bg} ${currentConf.text} ${currentConf.border}`}>
+                        {t('calls.disposition.current', 'Actuel')}: {currentConf.label}
+                      </span>
+                    )}
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${pendingConf?.bg || 'bg-amber-50'} ${pendingConf?.text || 'text-amber-700'} ${pendingConf?.border || 'border-amber-200'}`}>
+                      <Clock className="w-3 h-3" />
+                      {pendingConf?.label || call.pendingDisposition}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    disabled={dispositionConfirming}
+                    onClick={async () => {
+                      setDispositionConfirming(true);
+                      try {
+                        await onConfirmDisposition(call.leadId!, true);
+                      } finally {
+                        setDispositionConfirming(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100/60 hover:bg-emerald-100/60 transition-all shadow-sm text-[9px] font-black uppercase tracking-widest disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {t('calls.actions.validate')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={dispositionConfirming}
+                    onClick={async () => {
+                      setDispositionConfirming(true);
+                      try {
+                        await onConfirmDisposition(call.leadId!, false);
+                      } finally {
+                        setDispositionConfirming(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-50 text-slate-600 border border-slate-200/60 hover:bg-slate-100/60 transition-all shadow-sm text-[9px] font-black uppercase tracking-widest disabled:opacity-50"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    {t('calls.actions.reject')}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* ── Body ── */}
@@ -321,7 +555,11 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                         className="flex items-center gap-2 px-6 py-3 bg-harx-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-harx-600 transition-all shadow-lg shadow-harx-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Brain className={`w-4 h-4 ${analyzingCallId === call.id ? 'animate-spin' : ''}`} />
-                        {analyzingCallId === call.id ? t('calls.actions.analyzing') : t('calls.actions.analyzeTranscribe')}
+                        {analyzingCallId === call.id
+                          ? t('calls.actions.analyzing')
+                          : isTooShort
+                            ? t('calls.actions.transcribeOnly', 'Transcrire l’appel')
+                            : t('calls.actions.analyzeTranscribe')}
                       </button>
                     )}
                   </div>
@@ -330,7 +568,45 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
             </div>
           ) : (
             <div className="max-w-5xl mx-auto space-y-4 pb-2">
-              {(!call.ai_call_score || !hasAiCallAnalysis(call)) ? (
+              {isTooShort ? (
+                <div className="py-12 text-center flex flex-col items-center justify-center gap-4 px-6">
+                  {(() => {
+                    const disposition = resolveCallDispositionStatus(call);
+                    return (
+                      <span
+                        className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest border ${disposition.tone}`}
+                        title={disposition.title}
+                      >
+                        {disposition.label}
+                      </span>
+                    );
+                  })()}
+                  <p className="text-sm font-medium text-slate-500 max-w-lg leading-relaxed">
+                    {getTooShortAnalysisNotice(i18n.language, Number(call.duration) || undefined)}
+                  </p>
+                  {/* If the call already has a transcript the duration stored was
+                      wrong — offer a force re-analysis that recalculates from
+                      endTime-startTime on the backend */}
+                  {onAnalyze && call.transcript && call.transcript.length > 0 && (
+                    <div className="flex flex-col items-center gap-2 mt-2">
+                      <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">
+                        {t('calls.actions.transcriptExistsHint', 'Une transcription existe — la durée stockée semble incorrecte.')}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => onAnalyze(call.id, { force: true })}
+                        disabled={analyzingCallId === call.id}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${analyzingCallId === call.id ? 'animate-spin' : ''}`} />
+                        {analyzingCallId === call.id
+                          ? t('calls.actions.analyzing')
+                          : t('calls.actions.forceReanalyze', 'Forcer l\'analyse IA')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (!call.ai_call_score || !hasAiCallAnalysis(call)) ? (
                 <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                   {renderAnalysisErrorBanner()}
                   <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">{t('calls.modal.analysisUnavailable')}</p>
@@ -359,11 +635,12 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                               <Star className="w-6 h-6 sm:w-8 sm:h-8" />
                             </div>
                             <div>
-                              <h4 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-widest">{t('calls.executiveSummary', 'Executive Summary')}</h4>
-                              <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">{t('calls.globalAudit', 'Audit Global de Performance')}</p>
+                              <h4 className="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-widest">{t('calls.executiveSummary', "Résumé de l'appel")}</h4>
+                              <p className="text-[10px] sm:text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5 sm:mt-1 opacity-80">{t('calls.globalAudit', "Analyse qualité · Centre d'appel")}</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4 bg-slate-50/80 px-4 py-3 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm self-start sm:self-auto">
+                          {!hideScoring && (
+                          <div className="relative group/score flex items-center gap-4 bg-slate-50/80 px-4 py-3 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm self-start sm:self-auto cursor-help">
                             <div className="text-right">
                               <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{t('calls.modal.overallScore')}</p>
                               <div className="text-2xl sm:text-4xl font-black text-slate-900 leading-none">
@@ -373,7 +650,11 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
                               <TrendingUp className={`w-5 h-5 sm:w-6 sm:h-6 ${getExecutiveSummaryScore(call) >= 70 ? 'text-emerald-500' : 'text-rose-500'}`} />
                             </div>
+                            <div className="pointer-events-none absolute right-0 top-full z-30 mt-2 hidden w-72 rounded-2xl border border-slate-200 bg-slate-900 px-4 py-3 text-left text-[11px] font-medium leading-relaxed text-white shadow-xl group-hover/score:block whitespace-pre-line">
+                              {getScoreDecisionTooltip(call, i18n.language)}
+                            </div>
                           </div>
+                          )}
                         </div>
                         <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] sm:rounded-[32px] p-5 sm:p-8 border border-slate-100 shadow-inner">
                           <p className="text-base sm:text-xl font-bold text-slate-800 leading-relaxed italic relative">
@@ -386,7 +667,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                     </div>
                   </div>
 
-                  {!isNonEvaluableCall(call) && (
+                  {!isNonEvaluableCall(call) && !isTooShort && (
                 <>
                   {/* Primary metric cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -439,22 +720,59 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                       <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">{t('calls.modal.prospectResponses')}</h5>
                       <div className="h-px flex-1 bg-slate-200/60" />
                     </div>
+
+                    {/* Disposition suggérée par l'IA */}
+                    {(() => {
+                      const disp = call.suggestedDisposition;
+                      const conf = disp ? HARX_DISP_CONF[disp] : null;
+                      if (!conf) return null;
+                      const { Icon } = conf;
+                      return (
+                        <div className={`flex items-center gap-4 px-5 py-4 rounded-2xl border ${conf.border} ${conf.bg} shadow-sm`}>
+                          <div className={`w-10 h-10 rounded-xl ${conf.bg} ${conf.text} flex items-center justify-center shrink-0 border ${conf.border}`}>
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                              <Sparkles className="w-3 h-3" />
+                              {t('calls.suggestedDisposition', 'Disposition suggérée par l\'IA')}
+                            </p>
+                            <p className={`text-sm font-black uppercase tracking-wide ${conf.text} mt-0.5`}>{conf.label}</p>
+                          </div>
+                          <span className={`w-2.5 h-2.5 rounded-full ${conf.dot} shrink-0`} />
+                        </div>
+                      );
+                    })()}
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                       {prospectMetrics.map((metric, mIdx) => {
-                        const metricData = call.ai_call_score?.[metric.key];
+                        const metricData = resolveProspectMetricData(metric);
                         if (!metricData) return null;
-                        const score = metricData?.score || 0;
-                        const passed = typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50;
+                        const winningKey = resolveWinningProspectKey(call);
+                        const isWinning = winningKey === metric.key;
+                        const rawScore = metricData?.score || 0;
+                        const score = isWinning && rawScore < 50 ? 85 : rawScore;
+                        const passed = isWinning
+                          ? true
+                          : (typeof metricData?.passed === 'boolean' ? metricData.passed : score >= 50);
                         const theme = colorMap[metric.color] || { bg: 'bg-slate-50', text: 'text-slate-600', bgBar: 'bg-slate-500' };
+                        const feedbackFallback = isWinning
+                          ? t('calls.modal.dispositionSelected', 'Statut retenu par l\'analyse IA.')
+                          : t('calls.modal.noQuote');
                         return (
-                          <div key={mIdx} className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                          <div
+                            key={metric.key || mIdx}
+                            className={`bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 border shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group ${
+                              isWinning ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-100'
+                            }`}
+                          >
                             <div>
                               <div className="flex justify-between items-start mb-4 sm:mb-6">
                                 <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${theme.bg} ${theme.text} flex items-center justify-center shadow-sm shrink-0`}>
                                   <metric.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                                 </div>
                                 <div className="text-right">
-                                  <span className={`text-xs sm:text-sm font-black px-2.5 py-1 rounded-xl shadow-sm border border-transparent ${score >= 50 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50'}`}>
+                                  <span className={`text-xs sm:text-sm font-black px-2.5 py-1 rounded-xl shadow-sm border border-transparent ${passed ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 bg-slate-50'}`}>
                                     {passed ? t('calls.common.yes') : t('calls.common.no')} ({score}%)
                                   </span>
                                   <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{t('calls.modal.detected')}</p>
@@ -467,13 +785,10 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                             </div>
                             <div className="mt-2">
                               <div className="text-xs sm:text-[13px] font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl sm:rounded-2xl p-4 border border-slate-50 group-hover:bg-white group-hover:border-slate-100 transition-all max-h-[160px] overflow-y-auto custom-scrollbar italic">
-                                {metricData?.feedback
-                                  ? metricData.feedback.split('"').map((part: string, i: number) =>
-                                    i % 2 === 1
-                                      ? <span key={i} className="bg-amber-100/50 text-amber-900 font-bold px-1 rounded border-b border-amber-200 not-italic">&quot;{part}&quot;</span>
-                                      : part
-                                  )
-                                  : t('calls.modal.noQuote')}
+                                {(i18n.language || '').toLowerCase().startsWith('en')
+                                  ? (metricData?.feedback_en || metricData?.feedback || feedbackFallback)
+                                  : (metricData?.feedback_fr || metricData?.feedback || feedbackFallback)
+                                }
                               </div>
                             </div>
                           </div>

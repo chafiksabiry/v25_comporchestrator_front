@@ -90,6 +90,16 @@ const handleApiError = (error: unknown, context: string): never => {
     console.error('❌ Response data:', data);
     console.error('❌ Request config:', error.config);
 
+    const serverMessage = typeof data?.message === 'string' ? data.message.trim() : '';
+    if (serverMessage) {
+      throw new PhoneNumberServiceError(
+        serverMessage,
+        data?.code || 'API_ERROR',
+        status,
+        data
+      );
+    }
+
     // Handle specific error cases
     if (status === 404) {
       throw new PhoneNumberServiceError(
@@ -166,13 +176,16 @@ export const phoneNumberService = {
     provider: 'telnyx' | 'twilio' = 'telnyx'
   ): Promise<AvailablePhoneNumber[]> => {
     try {
-      const endpoint = provider === 'twilio'
+      // France is Twilio-only
+      const resolved: 'telnyx' | 'twilio' =
+        String(countryCode || '').toUpperCase() === 'FR' ? 'twilio' : provider;
+      const endpoint = resolved === 'twilio'
         ? '/phone-numbers/search/twilio'
         : '/phone-numbers/search';
       
 
       const response = await api.get<AvailablePhoneNumber[]>(endpoint, {
-        params: { countryCode }
+        params: { countryCode, limit: 50 }
       });
 
       // Handle empty or invalid response.
@@ -201,7 +214,7 @@ export const phoneNumberService = {
         })
         .map((number: any) => ({
           ...number,
-          provider
+          provider: resolved
         }));
 
       return numbers;
@@ -244,8 +257,17 @@ export const phoneNumberService = {
   }> => {
     try {
       const response = await api.post<any>('/phone-numbers/checkout/init', data);
-      return response.data;
+      const body = response.data || {};
+      if (response.status >= 400 || body.success === false) {
+        const err: any = new Error(body.message || body.error || 'Failed to start checkout');
+        if (body.code) err.code = body.code;
+        throw err;
+      }
+      return body;
     } catch (error) {
+      if (error instanceof Error && error.message && !(error as any).response) {
+        throw error;
+      }
       handleApiError(error, 'initLineCheckout');
       throw error;
     }
@@ -312,32 +334,36 @@ export const phoneNumberService = {
       );
     }
 
-    // Vérifier le requirementGroupId pour Telnyx
-    if (provider === 'telnyx' && !requirementGroupId) {
-      throw new PhoneNumberServiceError(
-        'requirementGroupId is required for Telnyx numbers',
-        'MISSING_PARAMETER'
-      );
-    }
+    // France / +33 → Twilio only
+    const resolved: 'telnyx' | 'twilio' =
+      String(phoneNumber || '').replace(/[^\d+]/g, '').startsWith('+33')
+        ? 'twilio'
+        : provider;
 
     try {
-      const endpoint = provider === 'twilio'
+      const endpoint = resolved === 'twilio'
         ? '/phone-numbers/purchase/twilio'
         : '/phone-numbers/purchase';
       
 
       const payload: any = {
         phoneNumber,
-        provider,
+        provider: resolved,
         gigId,
         companyId: data.companyId,
-        requirementGroupId
       };
 
-      if (provider === 'twilio') {
+      // Only regulated Telnyx countries have a requirement group.
+      // US (and any market with no ordering requirements) provisions without one.
+      if (resolved === 'telnyx' && requirementGroupId) {
+        payload.requirementGroupId = requirementGroupId;
+      }
+
+      if (paymentId) payload.paymentId = paymentId;
+
+      if (resolved === 'twilio') {
         if (bundleSid) payload.bundleSid = bundleSid;
         if (addressSid) payload.addressSid = addressSid;
-        if (paymentId) payload.paymentId = paymentId;
       }
 
       const response = await api.post<PhoneNumber>(endpoint, payload);

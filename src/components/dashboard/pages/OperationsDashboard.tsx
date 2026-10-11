@@ -33,6 +33,7 @@ import {
   ChevronDown,
   CreditCard,
   Hash,
+  Zap,
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -49,6 +50,7 @@ import {
 import { Chart, Doughnut } from 'react-chartjs-2';
 import Cookies from 'js-cookie';
 import { useTranslation } from 'react-i18next';
+import { isCallCenterWorkspace } from '../../../utils/callCenterWorkspace';
 import type { TFunction } from 'i18next';
 import {
   billedMinutesFromSeconds,
@@ -60,6 +62,12 @@ import { computeMinutesPurchaseCents } from '../../../utils/minutesPricing';
 // ignore VITE_API_URL_CALL (which targets the CRUD dashboard backend)
 // so swapping the CRUD provider never breaks the charts.
 import { getDashCallsApiBase } from '../lib/callsApiBase';
+import { VoiceAssistantOverviewCard } from '../components/VoiceAssistantOverviewCard';
+import {
+  extractGigAgentList,
+  getActiveAgentsForCompany,
+  getGigAgents,
+} from '../../../api/matching';
 
 // Idempotent: other dashboards already register the same scales, registering
 // again is a no-op so it's safe to keep it co-located with the chart.
@@ -226,43 +234,61 @@ type RecentCallApi = {
   score?: number | null;
   repName?: string | null;
   leadName?: string | null;
+  aiVoiceEnabled?: boolean;
 };
 
 type CallbacksStats = { today: number; week: number; appointmentsConfirmed: number };
 
-/** Map persisted / derived callOutcome → UI tag on recent-call rows. */
+/** Same ladder the reps record on a lead (`repDisposition`). */
+const REP_CALL_STATUSES: Array<{
+  key: string;
+  outcomes: string[];
+  bar: string;
+  dot: string;
+  pill: string;
+}> = [
+  { key: 'called_unreachable', outcomes: ['no_answer', 'busy'], bar: 'bg-amber-400', dot: 'bg-amber-400', pill: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { key: 'called_voicemail', outcomes: ['voicemail'], bar: 'bg-orange-400', dot: 'bg-orange-400', pill: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { key: 'called_wrong_number', outcomes: ['wrong_number'], bar: 'bg-rose-400', dot: 'bg-rose-400', pill: 'bg-rose-50 text-rose-700 border-rose-200' },
+  { key: 'called_callback', outcomes: ['callback_requested'], bar: 'bg-amber-500', dot: 'bg-amber-500', pill: 'bg-amber-50 text-amber-800 border-amber-200' },
+  { key: 'called_rdv', outcomes: ['appointment'], bar: 'bg-violet-500', dot: 'bg-violet-500', pill: 'bg-violet-50 text-violet-700 border-violet-200' },
+  { key: 'argued_rdv', outcomes: ['argued_interested'], bar: 'bg-indigo-500', dot: 'bg-indigo-500', pill: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  { key: 'argued_declined', outcomes: ['refusal', 'not_interested', 'already_equipped'], bar: 'bg-rose-500', dot: 'bg-rose-500', pill: 'bg-rose-50 text-rose-700 border-rose-200' },
+  { key: 'argued_done', outcomes: ['transaction'], bar: 'bg-emerald-500', dot: 'bg-emerald-500', pill: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+];
+
+const CALL_OUTCOME_TO_REP_STATUS: Record<string, string> = {};
+for (const row of REP_CALL_STATUSES) {
+  for (const outcome of row.outcomes) CALL_OUTCOME_TO_REP_STATUS[outcome] = row.key;
+}
+
+/** Map persisted / derived callOutcome → the rep disposition label. */
 function outcomeTag(
   outcome: string | null | undefined,
   t: TFunction
 ): RecentCall['tag'] | undefined {
   if (!outcome) return undefined;
-  const map: Record<string, RecentCall['tag']> = {
-    transaction: { label: t('opsDashboard.tags.transaction', 'transaction'), tone: 'emerald' },
-    appointment: { label: t('opsDashboard.tags.appointment', 'RDV fixé'), tone: 'violet' },
-    callback_requested: { label: t('opsDashboard.tags.callbackJ2', 'rappel'), tone: 'amber' },
-    fraud: { label: t('opsDashboard.tags.fraud', 'fraude'), tone: 'rose' },
-    voicemail: {
-      label: t('opsDashboard.statuses.voicemail', 'messagerie vocale'),
-      tone: 'slate',
-    },
-    no_answer: {
-      label: t('opsDashboard.statuses.unreachable', 'injoignable').toLowerCase(),
-      tone: 'amber',
-    },
-    busy: {
-      label: t('opsDashboard.statuses.unreachable', 'injoignable').toLowerCase(),
-      tone: 'amber',
-    },
-    wrong_number: { label: t('opsDashboard.statuses.wrongNumber', 'faux numéro'), tone: 'rose' },
-    argued_interested: { label: t('opsDashboard.results.issues.argued', 'Argumenté'), tone: 'emerald' },
-    refusal: { label: t('opsDashboard.results.issues.refusal', 'Refus'), tone: 'rose' },
-    not_interested: { label: t('opsDashboard.results.issues.notInterested', 'Pas intéressé'), tone: 'amber' },
-    already_equipped: {
-      label: t('opsDashboard.results.issues.alreadyEquipped', 'Déjà équipé'),
-      tone: 'slate',
-    },
-  };
-  return map[outcome];
+  const disposition = CALL_OUTCOME_TO_REP_STATUS[outcome];
+  if (disposition) {
+    const tone: NonNullable<RecentCall['tag']>['tone'] =
+      disposition === 'argued_done' || disposition === 'argued_rdv'
+        ? 'emerald'
+        : disposition === 'called_rdv'
+          ? 'violet'
+          : disposition === 'called_wrong_number' || disposition === 'argued_declined'
+            ? 'rose'
+            : disposition === 'called_voicemail'
+              ? 'slate'
+              : 'amber';
+    return { label: t(`calls.disp.${disposition}`), tone };
+  }
+  if (outcome === 'fraud') {
+    return { label: t('calls.statusBadges.fraud', 'Fraude'), tone: 'rose' };
+  }
+  if (outcome === 'too_short' || outcome === 'connected_no_sale') {
+    return { label: t('calls.statusBadges.connectedNoSale', 'Sans suite'), tone: 'slate' };
+  }
+  return undefined;
 }
 
 type TabId = 'overview' | 'leads' | 'calls' | 'agents' | 'wallet';
@@ -282,6 +308,8 @@ type OverviewResourcesSnapshot = {
     purchased: number;
     consumedSeconds: number;
     investedCents: number;
+    planMinutesIncluded?: number;
+    limitReached?: boolean;
   } | null;
   subscription: {
     planName: string;
@@ -359,6 +387,7 @@ interface RecentCall {
  *  6 KPI tiles + statuses panel + recent calls panel + MTD analysis grid. */
 export default function OperationsDashboard() {
   const { t, i18n } = useTranslation();
+  const isOpsConsole = isCallCenterWorkspace();
   const [tab, setTab] = useState<TabId>('overview');
   // Friendly greeting: use the user's first name if we can find one. Falls
   // back to "there" when nothing is stored yet (e.g. a fresh login).
@@ -649,11 +678,15 @@ export default function OperationsDashboard() {
           const data = json?.data ?? json;
           if (data) {
             const purchased = typeof data.purchasedMinutes === 'number' ? data.purchasedMinutes : 0;
+            const balance = typeof data.minutes === 'number' ? data.minutes : 0;
             minutes = {
-              balance: typeof data.minutes === 'number' ? data.minutes : 0,
+              balance,
               purchased,
               consumedSeconds: typeof data.consumedSeconds === 'number' ? data.consumedSeconds : 0,
               investedCents: computeMinutesPurchaseCents(purchased),
+              planMinutesIncluded:
+                typeof data.planMinutesIncluded === 'number' ? data.planMinutesIncluded : 0,
+              limitReached: Boolean(data.limitReached) || balance <= 0,
             };
           }
         }
@@ -954,6 +987,11 @@ export default function OperationsDashboard() {
     outcomes: AnalyticsOutcome[];
   } | null>(null);
   const [repsMonth, setRepsMonth] = useState<AnalyticsRep[] | null>(null);
+  /** Matching enrollment count (not call analytics). */
+  const [enrolledAgentsCount, setEnrolledAgentsCount] = useState(0);
+  const [enrolledAgentPreviews, setEnrolledAgentPreviews] = useState<
+    Array<{ id: string; name: string; gigId?: string }>
+  >([]);
   const [callbacksStats, setCallbacksStats] = useState<CallbacksStats | null>(null);
   // Diagnostic info shown only when `?debug=1` is appended to the URL —
   // makes it trivial to confirm which company/gig is being queried and
@@ -966,6 +1004,120 @@ export default function OperationsDashboard() {
     todayStatus: number | null;
     todayBody: any;
   } | null>(null);
+
+  // Matching enrollments — source of truth for "Enrôlés" / active agents roster
+  // (not call analytics). Falls back to per-gig agents when company endpoint is empty.
+  useEffect(() => {
+    const companyId = Cookies.get('companyId')?.trim();
+    if (!companyId) {
+      setEnrolledAgentsCount(0);
+      setEnrolledAgentPreviews([]);
+      return;
+    }
+    let cancelled = false;
+
+    const resolveAgentId = (a: any): string =>
+      String(
+        a?.agentId?._id ||
+          a?.agentId ||
+          a?.agent?._id ||
+          a?.userId ||
+          a?._id ||
+          ''
+      );
+
+    const resolveAgentName = (a: any): string =>
+      String(
+        a?.agentId?.personalInfo?.name ||
+          a?.agent?.personalInfo?.name ||
+          a?.personalInfo?.name ||
+          a?.name ||
+          a?.agentName ||
+          a?.fullName ||
+          'Agent'
+      );
+
+    const resolveGigId = (a: any): string | undefined => {
+      const gid =
+        typeof a?.gigId === 'string'
+          ? a.gigId
+          : a?.gigId?._id || a?.gig?._id || a?.gig || undefined;
+      return gid ? String(gid) : undefined;
+    };
+
+    const isActiveEnrollment = (a: any): boolean => {
+      const status = String(
+        a?.enrollmentStatus || a?.status || a?.agentResponse || a?.agentInfo?.status || ''
+      ).toLowerCase();
+      if (!status) return true; // active-agents endpoint rows are already filtered
+      return ['active', 'enrolled', 'accepted', 'approved'].includes(status);
+    };
+
+    const toUniqueAgents = (rows: any[], requireActiveStatus: boolean) => {
+      const filtered =
+        selectedGigId && selectedGigId !== 'all'
+          ? rows.filter((a) => resolveGigId(a) === String(selectedGigId))
+          : rows;
+      const byAgent = new Map<string, { id: string; name: string; gigId?: string }>();
+      for (const a of filtered) {
+        if (requireActiveStatus && !isActiveEnrollment(a)) continue;
+        const id = resolveAgentId(a);
+        if (!id || byAgent.has(id)) continue;
+        byAgent.set(id, { id, name: resolveAgentName(a), gigId: resolveGigId(a) });
+      }
+      return byAgent;
+    };
+
+    (async () => {
+      try {
+        let agentsArray = extractGigAgentList(await getActiveAgentsForCompany(companyId));
+        let fromFallback = false;
+
+        // Fallback: company-wide endpoint empty → aggregate per gig (active/enrolled/accepted)
+        if (agentsArray.length === 0 && gigs.length > 0) {
+          fromFallback = true;
+          const gigIds =
+            selectedGigId && selectedGigId !== 'all'
+              ? [selectedGigId]
+              : gigs.map((g) => g._id).filter(Boolean);
+          const batches = await Promise.all(
+            gigIds.map(async (gigId) => {
+              try {
+                const [active, enrolled, accepted] = await Promise.all([
+                  getGigAgents(gigId, 'active').catch(() => []),
+                  getGigAgents(gigId, 'enrolled').catch(() => []),
+                  getGigAgents(gigId, 'accepted').catch(() => []),
+                ]);
+                return [
+                  ...extractGigAgentList(active),
+                  ...extractGigAgentList(enrolled),
+                  ...extractGigAgentList(accepted),
+                ].map((row) => ({ ...row, gigId: row.gigId || gigId }));
+              } catch {
+                return [] as any[];
+              }
+            })
+          );
+          agentsArray = batches.flat();
+        }
+
+        // Trust company active-agents rows; filter status only on gig fallback.
+        const byAgent = toUniqueAgents(agentsArray, fromFallback);
+        if (cancelled) return;
+        setEnrolledAgentsCount(byAgent.size);
+        setEnrolledAgentPreviews(Array.from(byAgent.values()).slice(0, 8));
+      } catch (err) {
+        console.warn('[OperationsDashboard] active-agents fetch failed', err);
+        if (!cancelled) {
+          setEnrolledAgentsCount(0);
+          setEnrolledAgentPreviews([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGigId, gigs]);
 
   useEffect(() => {
     const companyId = Cookies.get('companyId')?.trim();
@@ -1134,66 +1286,20 @@ export default function OperationsDashboard() {
   const statuses: StatusBucket[] = useMemo(() => {
     const pct = (n: number) =>
       stats.total > 0 ? Math.round((n / stats.total) * 1000) / 10 : 0;
-    const wrong = countByOutcome.wrong_number ?? 0;
-    const hangup = countByOutcome.too_short ?? 0;
 
-    return [
-      {
-        key: 'serious',
-        label: t('opsDashboard.statuses.serious', 'Sérieux — argumenté'),
-        count: stats.serious,
-        pct: stats.pctSerious,
-        bar: 'bg-emerald-500',
-        dot: 'bg-emerald-500',
-        pill: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      },
-      {
-        key: 'voicemail',
-        label: t('opsDashboard.statuses.voicemail', 'Messagerie vocale'),
-        count: stats.voicemail,
-        pct: stats.pctVoicemail,
-        bar: 'bg-slate-400',
-        dot: 'bg-slate-400',
-        pill: 'bg-slate-100 text-slate-600 border-slate-200',
-      },
-      {
-        key: 'unreachable',
-        label: t('opsDashboard.statuses.unreachable', 'Injoignable'),
-        count: stats.unreachable,
-        pct: stats.pctUnreachable,
-        bar: 'bg-amber-400',
-        dot: 'bg-amber-400',
-        pill: 'bg-amber-50 text-amber-700 border-amber-200',
-      },
-      {
-        key: 'wrong-number',
-        label: t('opsDashboard.statuses.wrongNumber', 'Faux numéro'),
-        count: wrong,
-        pct: pct(wrong),
-        bar: 'bg-rose-400',
-        dot: 'bg-rose-400',
-        pill: 'bg-rose-50 text-rose-700 border-rose-200',
-      },
-      {
-        key: 'fraud',
-        label: t('opsDashboard.statuses.fraud', 'Fraude'),
-        count: stats.fraud,
-        pct: pct(stats.fraud),
-        bar: 'bg-rose-600',
-        dot: 'bg-rose-600',
-        pill: 'bg-rose-50 text-rose-700 border-rose-200',
-      },
-      {
-        key: 'hangup',
-        label: t('opsDashboard.statuses.hangup', 'Raccrochage immédiat'),
-        count: hangup,
-        pct: pct(hangup),
-        bar: 'bg-slate-300',
-        dot: 'bg-slate-300',
-        pill: 'bg-slate-100 text-slate-500 border-slate-200',
-      },
-    ];
-  }, [stats, countByOutcome, t]);
+    return REP_CALL_STATUSES.map((row) => {
+      const count = row.outcomes.reduce((sum, outcome) => sum + (countByOutcome[outcome] ?? 0), 0);
+      return {
+        key: row.key,
+        label: t(`calls.disp.${row.key}`),
+        count,
+        pct: pct(count),
+        bar: row.bar,
+        dot: row.dot,
+        pill: row.pill,
+      };
+    });
+  }, [stats.total, countByOutcome, t]);
 
   const recentCalls: RecentCall[] = useMemo(() => {
     if (!recentCallsApi?.length) return [];
@@ -1204,11 +1310,16 @@ export default function OperationsDashboard() {
         billedMin > 0
           ? `${billedMin} min${c.score != null ? ` · ${Math.round(c.score)}%` : ''}`
           : '';
+      const isVoicebot = Boolean(c.aiVoiceEnabled);
       return {
         score: c.score ?? null,
-        agent: c.repName || t('opsDashboard.recent.unknownRep', 'Rep'),
+        agent: isVoicebot
+          ? t('calls.voicebot', 'Assistant vocal IA')
+          : c.repName || t('opsDashboard.recent.unknownRep', 'Rep'),
         lead: (c.leadName || '').trim() || t('opsDashboard.recent.unknownLead', 'Lead'),
-        meta,
+        meta: isVoicebot
+          ? [t('calls.voicebotBadge', 'Voicebot'), meta].filter(Boolean).join(' · ')
+          : meta,
         tag: outcomeTag(c.outcome, t),
         when: timeAgo(c.createdAt),
       };
@@ -1280,23 +1391,19 @@ export default function OperationsDashboard() {
   }, [countByOutcome, stats.total, series7dChart, repsMonth, selectedPeriodId]);
 
   // ────────────────────────────────────────────────────────────────────
-  //  "Résultats d'appels (aujourd'hui)" — donut chart data.
-  //  We collapse the raw `callOutcome` enum into 8 user-facing buckets
-  //  (transaction, RDV, argumenté, rappel, refus, msg vocale, injoignable,
-  //  faux numéro). Each bucket has a stable colour so legend ↔ slice ↔
-  //  underlying bar charts stay visually consistent across the dashboard.
+  //  "Résultats d'appels" — same 8 dispositions the reps record.
   // ────────────────────────────────────────────────────────────────────
   const outcomeBuckets = useMemo(() => {
     const c = countByOutcome;
     const buckets = [
-      { key: 'transaction', label: t('opsDashboard.overview.donut.transaction', 'Transaction'), color: '#10b981', count: c.transaction ?? 0 },
-      { key: 'appointment', label: t('opsDashboard.overview.donut.appointment', 'RDV'),         color: '#8b5cf6', count: c.appointment ?? 0 },
-      { key: 'argued',      label: t('opsDashboard.overview.donut.argued', 'Argumenté'),        color: '#3b82f6', count: c.argued_interested ?? 0 },
-      { key: 'callback',    label: t('opsDashboard.overview.donut.callback', 'Rappel'),         color: '#f59e0b', count: c.callback_requested ?? 0 },
-      { key: 'refusal',     label: t('opsDashboard.overview.donut.refusal', 'Refus'),           color: '#ef4444', count: (c.refusal ?? 0) + (c.not_interested ?? 0) + (c.already_equipped ?? 0) },
-      { key: 'voicemail',   label: t('opsDashboard.overview.donut.voicemail', 'Msg vocale'),    color: '#14b8a6', count: c.voicemail ?? 0 },
-      { key: 'unreachable', label: t('opsDashboard.overview.donut.unreachable', 'Injoignable'), color: '#94a3b8', count: (c.no_answer ?? 0) + (c.busy ?? 0) + (c.too_short ?? 0) },
-      { key: 'wrong',       label: t('opsDashboard.overview.donut.wrongNumber', 'Faux numéro'), color: '#f9a8d4', count: c.wrong_number ?? 0 },
+      { key: 'argued_done', label: t('calls.disp.argued_done'), color: '#10b981', count: c.transaction ?? 0 },
+      { key: 'called_rdv', label: t('calls.disp.called_rdv'), color: '#8b5cf6', count: c.appointment ?? 0 },
+      { key: 'argued_rdv', label: t('calls.disp.argued_rdv'), color: '#6366f1', count: c.argued_interested ?? 0 },
+      { key: 'called_callback', label: t('calls.disp.called_callback'), color: '#f59e0b', count: c.callback_requested ?? 0 },
+      { key: 'argued_declined', label: t('calls.disp.argued_declined'), color: '#ef4444', count: (c.refusal ?? 0) + (c.not_interested ?? 0) + (c.already_equipped ?? 0) },
+      { key: 'called_voicemail', label: t('calls.disp.called_voicemail'), color: '#fb923c', count: c.voicemail ?? 0 },
+      { key: 'called_unreachable', label: t('calls.disp.called_unreachable'), color: '#fbbf24', count: (c.no_answer ?? 0) + (c.busy ?? 0) },
+      { key: 'called_wrong_number', label: t('calls.disp.called_wrong_number'), color: '#f43f5e', count: c.wrong_number ?? 0 },
     ];
     const total = buckets.reduce((sum, b) => sum + b.count, 0);
     return buckets.map((b) => ({
@@ -1318,11 +1425,30 @@ export default function OperationsDashboard() {
   const fmtDuration = (sec: number) => formatBilledMinutesFromSeconds(sec);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5 pb-12 animate-in fade-in duration-500">
+    <div
+      className={`max-w-7xl mx-auto animate-in fade-in duration-500 ${
+        isOpsConsole ? 'space-y-5 pb-10' : 'space-y-5 pb-12'
+      }`}
+    >
       {/* ---------- Brand header ---------- */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">
+      <div
+        className={`flex items-center justify-between gap-4 ${
+          isOpsConsole
+            ? 'rounded-2xl border border-harx-border bg-white px-5 py-4 shadow-harx'
+            : ''
+        }`}
+      >
+        <div className="flex flex-col min-w-0">
+          {isOpsConsole ? (
+            <span className="mb-1 text-[10px] font-black uppercase tracking-[0.18em] text-harx-orange">
+              {t('opsDashboard.header.callCenterBoard', 'Call center board')}
+            </span>
+          ) : null}
+          <h1
+            className={`font-black tracking-tight text-slate-900 ${
+              isOpsConsole ? 'text-2xl' : 'text-2xl'
+            }`}
+          >
             {t('opsDashboard.header.welcome', { name: userName, defaultValue: 'Welcome, {{name}}' })}
           </h1>
           <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
@@ -1354,7 +1480,7 @@ export default function OperationsDashboard() {
             </button>
 
             {gigDropdownOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 z-[200] mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {t('opsDashboard.header.pickGig', 'Sélectionner un gig')}
                 </div>
@@ -1424,7 +1550,7 @@ export default function OperationsDashboard() {
             </button>
 
             {periodDropdownOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 z-[200] mt-2 w-72 origin-top-right overflow-hidden rounded-harx border border-harx-border bg-white shadow-harx-md animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {t('opsDashboard.header.pickPeriod', 'Période')}
                 </div>
@@ -1556,7 +1682,7 @@ export default function OperationsDashboard() {
         )}
 
       {/* ---------- Section tabs ---------- */}
-      <div className="flex flex-wrap gap-2">
+      <div className={`flex flex-wrap ${isOpsConsole ? 'gap-2' : 'gap-2'}`}>
         {tabs.map((tabItem) => {
           const active = tab === tabItem.id;
           return (
@@ -1600,7 +1726,11 @@ export default function OperationsDashboard() {
           fmtDuration={fmtDuration}
         />
       ) : tab === 'agents' ? (
-        <TeamView reps={repsMonth} />
+        <TeamView
+          reps={repsMonth}
+          enrolledCount={enrolledAgentsCount}
+          enrolledPreviews={enrolledAgentPreviews}
+        />
       ) : (
         // ── "Vue globale" — top-level KPIs + coverage + outcomes donut. ───
         <OverviewView
@@ -1619,10 +1749,14 @@ export default function OperationsDashboard() {
           selectedPeriodId={selectedPeriodId}
           customPeriodDates={customPeriodDates}
           repsMonth={repsMonth}
+          enrolledCount={enrolledAgentsCount}
+          enrolledPreviews={enrolledAgentPreviews}
           fmtDuration={fmtDuration}
           onSeeLeads={() => setTab('leads')}
           onSeeAgents={() => setTab('agents')}
           onSeeWallet={() => setTab('wallet')}
+          selectedGigId={selectedGigId}
+          gigs={gigs}
         />
       )}
     </div>
@@ -2587,7 +2721,15 @@ const TEAM_PALETTE = [
   'bg-rose-500/15 text-rose-700',
 ];
 
-function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
+function TeamView({
+  reps: repsApi,
+  enrolledCount,
+  enrolledPreviews = [],
+}: {
+  reps: AnalyticsRep[] | null;
+  enrolledCount: number;
+  enrolledPreviews?: Array<{ id: string; name: string; gigId?: string }>;
+}) {
   const { t } = useTranslation();
   const [selectedKpi, setSelectedKpi] = useState<
     'enrolled' | 'active' | 'atRisk' | 'avgScore' | 'invitations' | null
@@ -2618,15 +2760,16 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
 
   const teamKpis = useMemo(() => {
     const list = repsApi ?? [];
-    const enrolled = list.length;
+    const enrolled = enrolledCount;
     const active = list.filter((r) => r.total > 0).length;
-    const atRisk = list.filter((r) => r.avgScore < 50).length;
+    const atRisk = list.filter((r) => r.avgScore < 50 && r.total > 0).length;
+    const withScore = list.filter((r) => r.total > 0);
     const avgScore =
-      enrolled > 0
-        ? Math.round(list.reduce((s, r) => s + r.avgScore, 0) / enrolled)
+      withScore.length > 0
+        ? Math.round(withScore.reduce((s, r) => s + r.avgScore, 0) / withScore.length)
         : 0;
     return { enrolled, active, atRisk, avgScore };
-  }, [repsApi]);
+  }, [repsApi, enrolledCount]);
 
   return (
     <>
@@ -2637,14 +2780,14 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           icon={<Users size={14} />}
           label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')}
           value={teamKpis.enrolled.toLocaleString('fr-FR')}
-          sub={t('opsDashboard.team.kpi.enrolledSub', 'reps avec appels')}
+          sub={t('opsDashboard.team.kpi.enrolledSub', 'agents matchés')}
           selected={selectedKpi === 'enrolled'}
           onClick={() => toggleKpi('enrolled')}
         />
         <KpiCard
           tone="default"
           icon={<Activity size={14} className="text-emerald-500" />}
-          label={t('opsDashboard.team.kpi.activeWeek', 'Actifs (MTD)')}
+          label={t('opsDashboard.team.kpi.activeWeek', 'Actifs (période)')}
           value={teamKpis.active.toLocaleString('fr-FR')}
           sub={
             teamKpis.enrolled > 0
@@ -2697,8 +2840,20 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
           onClose={() => setSelectedKpi(null)}
         >
           <DetailRow label={t('opsDashboard.team.kpi.enrolled', 'Enrollés')} value={teamKpis.enrolled.toLocaleString('fr-FR')} />
-          <DetailRow label={t('opsDashboard.team.kpi.activeWeek', 'Actifs (MTD)')} value={teamKpis.active.toLocaleString('fr-FR')} />
+          <DetailRow label={t('opsDashboard.team.kpi.activeWeek', 'Actifs (période)')} value={teamKpis.active.toLocaleString('fr-FR')} />
           <DetailRow label={t('opsDashboard.team.kpi.atRisk', 'À risque')} value={teamKpis.atRisk.toLocaleString('fr-FR')} />
+          {enrolledPreviews.length > 0 && (
+            <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                {t('opsDashboard.team.kpi.enrolledList', 'Agents matchés')}
+              </p>
+              {enrolledPreviews.map((a) => (
+                <p key={a.id} className="text-xs font-bold text-slate-700">
+                  {a.name}
+                </p>
+              ))}
+            </div>
+          )}
         </InlineKpiDetailPanel>
       )}
       {selectedKpi === 'active' && (
@@ -2755,15 +2910,48 @@ function TeamView({ reps: repsApi }: { reps: AnalyticsRep[] | null }) {
         </header>
 
         {reps.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-            <Trophy size={20} className="text-slate-300" />
-            <p className="text-xs font-bold text-slate-500">
-              {t(
-                'opsDashboard.team.leaderboardEmpty',
-                'Aucun reps avec des transactions ce mois-ci.'
+          enrolledCount > 0 ? (
+            <div className="space-y-3">
+              <p className="text-center text-xs font-bold text-slate-500">
+                {t(
+                  'opsDashboard.team.leaderboardEmptyEnrolled',
+                  'Aucune transaction ce mois — {{count}} agent(s) enrôlé(s).',
+                  { count: enrolledCount }
+                )}
+              </p>
+              {enrolledPreviews.length > 0 && (
+                <ul className="divide-y divide-slate-100">
+                  {enrolledPreviews.map((agent, idx) => (
+                    <li key={agent.id} className="flex items-center gap-3 py-2.5">
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
+                          TEAM_PALETTE[idx % TEAM_PALETTE.length]
+                        }`}
+                      >
+                        {initialsOf(agent.name)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-slate-900">{agent.name}</p>
+                        <p className="text-[11px] font-medium text-emerald-600">
+                          {t('opsDashboard.overview.agents.enrolledStatus', 'Enrôlé · actif matching')}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </p>
-          </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+              <Trophy size={20} className="text-slate-300" />
+              <p className="text-xs font-bold text-slate-500">
+                {t(
+                  'opsDashboard.team.leaderboardEmpty',
+                  'Aucun reps avec des transactions ce mois-ci.'
+                )}
+              </p>
+            </div>
+          )
         ) : (
         <ul className="divide-y divide-slate-100">
           {reps.map((r) => (
@@ -2886,10 +3074,14 @@ function OverviewView({
   selectedPeriodId,
   customPeriodDates,
   repsMonth,
+  enrolledCount = 0,
+  enrolledPreviews = [],
   fmtDuration,
   onSeeLeads,
   onSeeAgents,
   onSeeWallet,
+  selectedGigId,
+  gigs,
 }: {
   stats: OverviewKpiStats;
   leadStats: OverviewLeadStatsFull | null;
@@ -2906,10 +3098,14 @@ function OverviewView({
   selectedPeriodId: DashboardPeriodId;
   customPeriodDates: CustomPeriodDates;
   repsMonth: AnalyticsRep[] | null;
+  enrolledCount?: number;
+  enrolledPreviews?: Array<{ id: string; name: string; gigId?: string }>;
   fmtDuration: (sec: number) => string;
   onSeeLeads: () => void;
   onSeeAgents: () => void;
   onSeeWallet: () => void;
+  selectedGigId: string;
+  gigs: Array<{ _id: string; title: string }>;
 }) {
   const { t, i18n } = useTranslation();
   const [selectedKpi, setSelectedKpi] = useState<OverviewKpiId | null>(null);
@@ -3003,7 +3199,7 @@ function OverviewView({
       .slice(0, 5);
   }, [repsMonth]);
 
-  const agentsEnrolled = repsMonth?.length ?? 0;
+  const agentsEnrolled = enrolledCount;
   const agentsActive = repsMonth?.filter((r) => r.total > 0).length ?? 0;
 
   const toggleKpi = (id: OverviewKpiId) => {
@@ -3194,6 +3390,8 @@ function OverviewView({
         />
       )}
 
+      <VoiceAssistantOverviewCard selectedGigId={selectedGigId} gigs={gigs} />
+
       {/* ---------- Couverture leads + Résultats d'appels (donut) ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Couverture leads */}
@@ -3267,12 +3465,12 @@ function OverviewView({
             <ul className="grid grid-cols-1 gap-2 text-[11px] font-bold text-slate-700">
               {outcomeBuckets.map((b) => (
                 <li key={b.key} className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 truncate">
+                  <span className="flex min-w-0 items-center gap-2">
                     <span
                       className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
                       style={{ backgroundColor: b.color }}
                     />
-                    <span className="truncate">{b.label}</span>
+                    <span className="leading-snug">{b.label}</span>
                   </span>
                   <span className="shrink-0 text-slate-500 tabular-nums">
                     {b.pct.toFixed(0)}%
@@ -3318,9 +3516,45 @@ function OverviewView({
         </div>
 
         {topAgents.length === 0 ? (
-          <p className="py-6 text-center text-xs font-bold text-slate-400">
-            {t('opsDashboard.overview.agents.empty', 'Aucun agent avec des appels ce mois-ci.')}
-          </p>
+          agentsEnrolled > 0 ? (
+            <div className="space-y-3">
+              <p className="text-center text-xs font-bold text-slate-500">
+                {t(
+                  'opsDashboard.overview.agents.emptyEnrolled',
+                  'Aucun appel sur cette période — {{count}} agent(s) enrôlé(s).',
+                  { count: agentsEnrolled }
+                )}
+              </p>
+              {enrolledPreviews.length > 0 && (
+                <ul className="divide-y divide-slate-100">
+                  {enrolledPreviews.map((agent, idx) => (
+                    <li key={agent.id} className="flex items-center gap-3 py-2.5">
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
+                          TEAM_PALETTE[idx % TEAM_PALETTE.length]
+                        }`}
+                      >
+                        {initialsOf(agent.name)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-slate-900">{agent.name}</p>
+                        <p className="text-[11px] font-medium text-emerald-600">
+                          {t('opsDashboard.overview.agents.enrolledStatus', 'Enrôlé · actif matching')}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : (
+            <p className="py-6 text-center text-xs font-bold text-slate-400">
+              {t(
+                'opsDashboard.overview.agents.empty',
+                'Aucun agent enrôlé pour le moment.'
+              )}
+            </p>
+          )
         ) : (
           <ul className="divide-y divide-slate-100">
             {topAgents.map((r, idx) => {
@@ -3451,25 +3685,51 @@ function OverviewResourcesSection({
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-indigo-50/50 p-4">
+            <div
+              className={`rounded-2xl border p-4 ${
+                resources.minutes?.limitReached
+                  ? 'border-rose-200 bg-gradient-to-br from-rose-50/90 to-orange-50/50'
+                  : 'border-blue-100 bg-gradient-to-br from-blue-50/80 to-indigo-50/50'
+              }`}
+            >
               <div className="flex items-start justify-between gap-2 mb-3">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-blue-700">
+                <span
+                  className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider ${
+                    resources.minutes?.limitReached ? 'text-rose-700' : 'text-blue-700'
+                  }`}
+                >
                   <Clock size={12} />
                   {t('opsDashboard.overview.resources.minutes', 'Minutes')}
                 </span>
                 <Link
                   to="/dashboard/minutes"
-                  className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-600 hover:text-blue-800"
+                  className={`inline-flex items-center gap-0.5 text-[10px] font-bold ${
+                    resources.minutes?.limitReached
+                      ? 'text-rose-600 hover:text-rose-800'
+                      : 'text-blue-600 hover:text-blue-800'
+                  }`}
                 >
                   {t('opsDashboard.overview.detail', 'Détail')}
                   <ArrowUpRight size={11} />
                 </Link>
               </div>
-              <p className="text-2xl font-black text-slate-900 tabular-nums">
+              <p
+                className={`text-2xl font-black tabular-nums ${
+                  resources.minutes?.limitReached ? 'text-rose-600' : 'text-slate-900'
+                }`}
+              >
                 {resources.minutes
                   ? formatWalletMinutesBalance(resources.minutes.balance)
                   : '—'}
               </p>
+              {resources.minutes && (resources.minutes.planMinutesIncluded || 0) > 0 && (
+                <p className="mt-1 text-[11px] font-bold text-slate-500">
+                  {t('opsDashboard.overview.resources.planIncluded', 'Inclus plan')}:{' '}
+                  <span className="text-slate-800 tabular-nums">
+                    {formatWalletMinutesBalance(resources.minutes.planMinutesIncluded)}
+                  </span>
+                </p>
+              )}
               <p className="mt-1 text-[11px] font-bold text-slate-500">
                 {t('opsDashboard.overview.resources.minutesInvested', 'Investi')}:{' '}
                 <span className="text-slate-800 tabular-nums">
@@ -3482,6 +3742,15 @@ function OverviewResourcesSection({
                   ? formatBilledMinutesFromSeconds(resources.minutes.consumedSeconds)
                   : '—'}
               </p>
+              {resources.minutes?.limitReached && (
+                <Link
+                  to="/dashboard/minutes?buy=1"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-harx-500 to-orange-500 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white shadow-sm transition hover:opacity-95"
+                >
+                  <Zap size={12} />
+                  {t('opsDashboard.overview.resources.buyMinutes', 'Acheter des minutes')}
+                </Link>
+              )}
             </div>
 
             <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/80 to-fuchsia-50/40 p-4">
@@ -3504,6 +3773,14 @@ function OverviewResourcesSection({
                   <span className="inline-flex mt-2 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] font-black uppercase tracking-wider">
                     {resources.subscription.status}
                   </span>
+                  {(resources.minutes?.planMinutesIncluded || 0) > 0 && (
+                    <p className="mt-2 text-[11px] font-bold text-slate-500">
+                      {t('opsDashboard.overview.resources.planIncluded', 'Inclus plan')}:{' '}
+                      <span className="text-slate-800 tabular-nums">
+                        {formatWalletMinutesBalance(resources.minutes?.planMinutesIncluded)}
+                      </span>
+                    </p>
+                  )}
                 </>
               ) : (
                 <>
@@ -3791,16 +4068,16 @@ function OverviewKpiDetail({
             <DetailRow label={t('opsDashboard.overview.detail.seriousCount', 'Appels sérieux')} value={fmtNum(stats.serious)} />
             <DetailRow label={t('opsDashboard.overview.detail.seriousRate', 'Taux sur total')} value={`${stats.pctSerious.toFixed(1)}%`} />
             <DetailRow
-              label={t('opsDashboard.overview.donut.argued', 'Argumentés')}
-              value={fmtNum(bucketCount('argued'))}
+              label={t('calls.disp.argued_rdv')}
+              value={fmtNum(bucketCount('argued_rdv'))}
             />
             <DetailRow
-              label={t('opsDashboard.overview.donut.appointment', 'RDV')}
-              value={fmtNum(bucketCount('appointment'))}
+              label={t('calls.disp.called_rdv')}
+              value={fmtNum(bucketCount('called_rdv'))}
             />
             <DetailRow
-              label={t('opsDashboard.overview.donut.callback', 'Rappels')}
-              value={fmtNum(bucketCount('callback'))}
+              label={t('calls.disp.called_callback')}
+              value={fmtNum(bucketCount('called_callback'))}
             />
             <DetailRow
               label={t('opsDashboard.kpi.avgDuration', 'Durée moy.')}
@@ -3818,16 +4095,16 @@ function OverviewKpiDetail({
               value={`${fmtNum(transactionsToday)} / ${fmtNum(stats.total)}`}
             />
             <DetailRow
-              label={t('opsDashboard.overview.donut.appointment', 'RDV fixés')}
-              value={fmtNum(bucketCount('appointment'))}
+              label={t('calls.disp.called_rdv')}
+              value={fmtNum(bucketCount('called_rdv'))}
             />
             <DetailRow
-              label={t('opsDashboard.overview.donut.callback', 'Rappels demandés')}
-              value={fmtNum(bucketCount('callback'))}
+              label={t('calls.disp.called_callback')}
+              value={fmtNum(bucketCount('called_callback'))}
             />
             <DetailRow
-              label={t('opsDashboard.overview.donut.refusal', 'Refus')}
-              value={fmtNum(bucketCount('refusal'))}
+              label={t('calls.disp.argued_declined')}
+              value={fmtNum(bucketCount('argued_declined'))}
             />
           </>
         );
@@ -4021,30 +4298,14 @@ function CallsView({
   fmtDuration: (sec: number) => string;
 }) {
   const { t } = useTranslation();
-  const [selectedKpi, setSelectedKpi] = useState<
-    | 'total'
-    | 'serious'
-    | 'voicemail'
-    | 'unreachable'
-    | 'fraud'
-    | 'avgDuration'
-    | 'wrong-number'
-    | 'hangup'
-    | null
-  >(null);
+  const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
   const recentCallsRef = useRef<HTMLElement>(null);
 
-  const toggleKpi = (
-    id: 'total' | 'serious' | 'voicemail' | 'unreachable' | 'fraud' | 'avgDuration' | 'wrong-number' | 'hangup'
-  ) => {
+  const toggleKpi = (id: string) => {
     setSelectedKpi((prev) => (prev === id ? null : id));
   };
 
-  const statusKpiId = (key: string) => {
-    if (key === 'wrong-number') return 'wrong-number' as const;
-    if (key === 'hangup') return 'hangup' as const;
-    return key as 'serious' | 'voicemail' | 'unreachable' | 'fraud';
-  };
+  const selectedStatus = statuses.find((s) => s.key === selectedKpi) ?? null;
 
   const fmtCount = (n: number) => n.toLocaleString('fr-FR');
   const pctLabel = (pct: number) => `${pct.toFixed(1)}%`;
@@ -4171,27 +4432,13 @@ function CallsView({
           <DetailRow label={t('opsDashboard.kpi.totalToday', 'Total du jour')} value={fmtCount(stats.total)} />
         </InlineKpiDetailPanel>
       )}
-      {selectedKpi === 'wrong-number' && (
+      {selectedStatus && (
         <InlineKpiDetailPanel
-          title={t('opsDashboard.statuses.wrongNumber', 'Faux numéro')}
+          title={selectedStatus.label}
           onClose={() => setSelectedKpi(null)}
         >
-          <DetailRow
-            label={t('opsDashboard.statuses.wrongNumber', 'Faux numéro')}
-            value={fmtCount(statuses.find((s) => s.key === 'wrong-number')?.count ?? 0)}
-          />
-          <DetailRow label={t('opsDashboard.mtd.wrongNumbers', 'FAUX NUMÉROS MTD')} value={fmtCount(mtd.wrongNumber)} />
-        </InlineKpiDetailPanel>
-      )}
-      {selectedKpi === 'hangup' && (
-        <InlineKpiDetailPanel
-          title={t('opsDashboard.statuses.hangup', 'Raccrochage immédiat')}
-          onClose={() => setSelectedKpi(null)}
-        >
-          <DetailRow
-            label={t('opsDashboard.statuses.hangup', 'Raccrochage immédiat')}
-            value={fmtCount(statuses.find((s) => s.key === 'hangup')?.count ?? 0)}
-          />
+          <DetailRow label={selectedStatus.label} value={fmtCount(selectedStatus.count)} />
+          <DetailRow label={t('opsDashboard.overview.kpi.rate', 'Taux')} value={pctLabel(selectedStatus.pct)} />
         </InlineKpiDetailPanel>
       )}
 
@@ -4213,14 +4460,14 @@ function CallsView({
               <button
                 key={s.key}
                 type="button"
-                onClick={() => toggleKpi(statusKpiId(s.key))}
+                onClick={() => toggleKpi(s.key)}
                 className={`w-full rounded-xl text-left transition-colors hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/30 px-1 -mx-1 ${
-                  selectedKpi === statusKpiId(s.key) ? 'bg-harx-50/60' : ''
+                  selectedKpi === s.key ? 'bg-harx-50/60' : ''
                 }`}
               >
-                <div className="mb-1 flex items-center justify-between">
+                <div className="mb-1 flex items-start justify-between gap-3">
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold ${s.pill}`}
+                    className={`inline-flex max-w-[16rem] items-center rounded-md border px-2 py-0.5 text-left text-[11px] font-bold leading-snug ${s.pill}`}
                   >
                     {s.label}
                   </span>

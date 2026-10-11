@@ -11,12 +11,17 @@ import { X, ShieldCheck, Sparkles, Check, Loader2 } from 'lucide-react';
 interface ApiPlan {
   _id: string;
   name: string;
+  /** Exact Stripe unit_amount (integer cents) — prefer this for display. */
+  priceCents?: number;
   price: number;
   currency: string;
   stripePriceId: string;
   description?: string;
   features?: string[];
+  metadata?: Record<string, string>;
   isPopular?: boolean;
+  maxGigs?: number;
+  maxReps?: number;
 }
 
 interface ActiveSubscription {
@@ -57,16 +62,48 @@ function isActivePlan(plan: ApiPlan, active: ActiveSubscription | null): boolean
   return Boolean(a && b && a === b);
 }
 
-function formatPrice(amount: number, currency: string): string {
+/** Format from Stripe cents — no Math.round on euros. */
+function formatPrice(plan: Pick<ApiPlan, 'price' | 'priceCents' | 'currency'>): string {
+  const currency = (plan.currency || 'EUR').toUpperCase();
+  let cents: number;
+  if (Number.isFinite(plan.priceCents)) {
+    cents = Math.trunc(Number(plan.priceCents));
+  } else {
+    // Derive cents from a decimal string to avoid float drift (29.99 → 2999).
+    const raw = Number(plan.price);
+    if (!Number.isFinite(raw)) return '—';
+    const [whole, frac = ''] = raw.toFixed(2).split('.');
+    cents = Math.trunc(Number(whole) * 100) + Math.trunc(Number(frac.padEnd(2, '0').slice(0, 2)));
+    if (raw < 0) cents = -Math.abs(cents);
+  }
+  const neg = cents < 0;
+  const abs = Math.abs(cents);
+  const amount = `${neg ? '-' : ''}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, '0')}`;
   try {
     return new Intl.NumberFormat(undefined, {
       style: 'currency',
-      currency: (currency || 'EUR').toUpperCase(),
-      maximumFractionDigits: 0,
-    }).format(amount);
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(amount));
   } catch {
-    return `${amount} ${currency?.toUpperCase() || 'EUR'}`;
+    return `${amount} ${currency}`;
   }
+}
+
+/** Stripe product metadata → display lines (keys may differ per plan). */
+function metadataLines(meta?: Record<string, string> | null): Array<{ key: string; value: string }> {
+  if (!meta || typeof meta !== 'object') return [];
+  return Object.entries(meta)
+    .filter(([k, v]) => {
+      const key = k.toLowerCase();
+      return (
+        key !== 'features' &&
+        !/^feature[_-]?\d+$/i.test(k) &&
+        String(v ?? '').trim().length > 0
+      );
+    })
+    .map(([k, v]) => ({ key: k, value: String(v).trim() }));
 }
 
 const EmbeddedSubscriptionFlow: React.FC<Props> = ({
@@ -312,23 +349,51 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
               )}
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-3xl font-black text-gray-900 tracking-tight">
-                  {formatPrice(plan.price, plan.currency)}
+                  {formatPrice(plan)}
                 </span>
                 <span className="text-xs font-bold text-gray-400">/ month</span>
               </div>
-              {Array.isArray(plan.features) && plan.features.length > 0 && (
-                <ul className="mt-4 space-y-2 flex-1">
-                  {plan.features.slice(0, 6).map((feat, i) => (
-                    <li
-                      key={`${plan._id}-feat-${i}`}
-                      className="flex items-start gap-2 text-xs text-gray-700 font-medium"
-                    >
-                      <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
-                      <span>{feat}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {(() => {
+                const meta = metadataLines(plan.metadata);
+                const feats = Array.isArray(plan.features) ? plan.features : [];
+                if (!meta.length && !feats.length) return null;
+                return (
+                  <div className="mt-4 flex-1 space-y-3">
+                    {meta.length > 0 && (
+                      <ul className="space-y-2">
+                        {meta.map(({ key, value }) => (
+                          <li
+                            key={`${plan._id}-meta-${key}`}
+                            className="flex items-start gap-2 text-xs text-gray-800 font-semibold"
+                          >
+                            <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
+                            <span>
+                              <span className="text-gray-500 font-bold uppercase tracking-wide text-[10px]">
+                                {key}
+                              </span>
+                              {': '}
+                              <span className="text-gray-900">{value}</span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {feats.length > 0 && (
+                      <ul className="space-y-2">
+                        {feats.map((feat, i) => (
+                          <li
+                            key={`${plan._id}-feat-${i}`}
+                            className="flex items-start gap-2 text-xs text-gray-700 font-medium"
+                          >
+                            <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
+                            <span>{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })()}
               <button
                 onClick={() => !isCurrent && openSubscribe(plan)}
                 disabled={
@@ -379,7 +444,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
                     </h2>
                     <p className="text-xs font-bold text-gray-500 truncate">
                       {selectedPlan.name} —{' '}
-                      {formatPrice(selectedPlan.price, selectedPlan.currency)} / month
+                      {formatPrice(selectedPlan)} / month
                     </p>
                   </div>
                 </div>

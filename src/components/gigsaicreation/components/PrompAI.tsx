@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Brain, HelpCircle, PlusCircle, ArrowUp } from 'lucide-react';
 import { Suggestions } from './Suggestions';
 import { SectionContent } from './SectionContent';
+import { AudioBriefRecorder } from './AudioBriefRecorder';
 import { GigData, GigSuggestion } from '../types';
 import { predefinedOptions } from '../lib/guidance';
-import { mapGeneratedDataToGigData } from '../lib/ai';
+import { mapGeneratedDataToGigData, asTextList } from '../lib/ai';
 import Cookies from 'js-cookie';
 import {
   Briefcase,
@@ -14,27 +15,61 @@ import {
   Award,
   ClipboardList
 } from "lucide-react";
-
-const sections = [
-  { id: 'basic', label: 'Basic Information', icon: Briefcase },
-  { id: 'schedule', label: 'Schedule', icon: Calendar },
-  { id: 'commission', label: 'Commission', icon: DollarSign },
-  { id: 'skills', label: 'Skills', icon: Award },
-  { id: 'team', label: 'Team', icon: Users },
-  { id: 'review', label: 'Review', icon: ClipboardList }
-];
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import { getPostCreateGigRoute, rememberCreatedGigId } from '../../../services/gigSetupSync';
+import { scrollPageToTop } from '../../../utils/scrollPageToTop';
+import { assertCompanyHasAiTokens } from '../../../lib/aiTokensUsage';
 
 interface PrompAIProps {
   onBack?: () => void; // Existing back (Back to AI Assistant or original onBack)
   onBackToGigs?: () => void;
   onBackToOnboarding?: () => void;
+  /** After create: continue funnel (receives new gigId). */
+  onPublishSuccess?: (gigId?: string) => void | Promise<void>;
 }
 
-const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboarding }) => {
+const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboarding, onPublishSuccess }) => {
+  const { t } = useTranslation();
+  const sections = useMemo(
+    () => [
+      { id: 'basic', label: t('gigCreation.sections.basic'), icon: Briefcase },
+      { id: 'schedule', label: t('gigCreation.sections.schedule'), icon: Calendar },
+      { id: 'commission', label: t('gigCreation.sections.commission'), icon: DollarSign },
+      { id: 'skills', label: t('gigCreation.sections.skills'), icon: Award },
+      { id: 'team', label: t('gigCreation.sections.team'), icon: Users },
+      { id: 'review', label: t('gigCreation.sections.review'), icon: ClipboardList },
+    ],
+    [t]
+  );
+
   const backToOnboarding = onBackToOnboarding ?? onBack;
+  const handlePublishSuccess =
+    onPublishSuccess ??
+    ((gigId?: string) => {
+      if (gigId) {
+        rememberCreatedGigId(gigId);
+        window.location.hash = `#${getPostCreateGigRoute(gigId)}`;
+        return;
+      }
+      backToOnboarding?.();
+    });
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const [audioPanelHost, setAudioPanelHost] = useState<HTMLDivElement | null>(null);
+  /** Last caret/selection while the textarea is focused. */
+  const selectionRef = React.useRef({ start: 0, end: 0 });
+  /** Frozen range for the current take — used to replace after Whisper returns. */
+  const lockedSelectionRef = React.useRef<{ start: number; end: number } | null>(null);
+  /** Snapshot of the field when recording starts (for live preview + cancel restore). */
+  const audioSessionRef = React.useRef<{
+    before: string;
+    after: string;
+    original: string;
+  } | null>(null);
   const [input, setInput] = useState("");
+  const [audioReplaceSnippet, setAudioReplaceSnippet] = useState<string | null>(null);
+  const [isLiveDictating, setIsLiveDictating] = useState(false);
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -57,6 +92,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     destinationZones: [],
     callTypes: [],
     highlights: [],
+    deliverables: [],
+    sectors: [],
     industries: [],
     activities: [],
     status: 'to_activate',
@@ -131,10 +168,10 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     }
   });
 
-  // Scroll to top when section changes
+  // Scroll to top when section changes (dashboard uses <main overflow-y-auto>)
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [currentSection]);
+    scrollPageToTop();
+  }, [currentSection, showReview, confirmedSuggestions, isManualMode]);
 
   // Check for edit mode parameters on component mount
   // Auto-resize textarea
@@ -200,6 +237,12 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
           destinationZones: data.destinationZones || [],
           callTypes: data.callTypes || [],
           highlights: data.highlights || [],
+          deliverables: data.deliverables || [],
+          sectors: Array.isArray(data.sectors)
+            ? data.sectors
+            : data.category
+              ? [data.category]
+              : [],
           industries: Array.isArray(data.industries)
             ? data.industries.map((industry: { _id: any; }) =>
               typeof industry === 'object' && industry?._id
@@ -452,7 +495,17 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     }
   };
 
-  const handleGenerateSuggestions = () => {
+  const handleGenerateSuggestions = async () => {
+    try {
+      await assertCompanyHasAiTokens(1, undefined, { allowFirstGigFree: true });
+    } catch (err: any) {
+      window.alert(
+        err?.code === 'insufficient_tokens'
+          ? err.message || t('gigCreation.prompt.insufficientTokens')
+          : err?.message || t('gigCreation.prompt.tokenCheckFailed')
+      );
+      return;
+    }
     setIsAnalyzing(true);
     setShowAIDialog(false);
     // Simuler le temps d'analyse
@@ -462,6 +515,124 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     }, 1500);
   };
 
+  const saveSelection = () => {
+    const el = textareaRef.current;
+    // Only capture while focused — after blur browsers often collapse the range to 0.
+    if (!el || document.activeElement !== el) return;
+    selectionRef.current = {
+      start: el.selectionStart ?? 0,
+      end: el.selectionEnd ?? 0,
+    };
+  };
+
+  /** Call from mic mousedown (before focus leaves the textarea). */
+  const lockSelectionForAudio = () => {
+    const el = textareaRef.current;
+    let start = selectionRef.current.start;
+    let end = selectionRef.current.end;
+    if (el && document.activeElement === el) {
+      start = el.selectionStart ?? 0;
+      end = el.selectionEnd ?? 0;
+      selectionRef.current = { start, end };
+    }
+    start = Math.max(0, Math.min(start, input.length));
+    end = Math.max(start, Math.min(end, input.length));
+    lockedSelectionRef.current = { start, end };
+    audioSessionRef.current = {
+      before: input.slice(0, start),
+      after: input.slice(end),
+      original: input,
+    };
+    if (start !== end) {
+      setAudioReplaceSnippet(input.slice(start, end));
+    } else {
+      setAudioReplaceSnippet(null);
+    }
+    setIsLiveDictating(true);
+  };
+
+  const handleLiveTranscript = (payload: { finals: string; interim: string }) => {
+    const session = audioSessionRef.current;
+    if (!session) return;
+    const live = `${payload.finals}${payload.interim ? ` ${payload.interim}` : ''}`.trim();
+    // Keep spacing when inserting into existing text without a selection.
+    const locked = lockedSelectionRef.current;
+    const hasSelection = Boolean(locked && locked.start !== locked.end);
+    let middle = live;
+    if (!hasSelection && session.before && live && !/\s$/.test(session.before)) {
+      middle = ` ${live}`;
+    }
+    setInput(session.before + middle + session.after);
+  };
+
+  const handleAudioTranscript = (text: string) => {
+    const piece = text.trim();
+    const session = audioSessionRef.current;
+    audioSessionRef.current = null;
+    setIsLiveDictating(false);
+    setAudioReplaceSnippet(null);
+
+    if (!piece) {
+      lockedSelectionRef.current = null;
+      return;
+    }
+
+    // Prefer session snapshot (stable during live updates).
+    if (session) {
+      const locked = lockedSelectionRef.current;
+      lockedSelectionRef.current = null;
+      const hasSelection = Boolean(locked && locked.start !== locked.end);
+      let insert = piece;
+      if (!hasSelection && session.before && !/\s$/.test(session.before)) {
+        insert = ` ${piece}`;
+      }
+      const next = session.before + insert + session.after;
+      setInput(next);
+      const cursor = session.before.length + insert.length;
+      selectionRef.current = { start: cursor, end: cursor };
+      window.requestAnimationFrame(() => {
+        const ta = textareaRef.current;
+        if (!ta) return;
+        ta.focus();
+        ta.setSelectionRange(cursor, cursor);
+        ta.style.height = 'auto';
+        ta.style.height = `${ta.scrollHeight}px`;
+      });
+      toast.success(
+        hasSelection
+          ? t('gigCreation.prompt.dictationReplaced')
+          : t('gigCreation.prompt.dictationDone')
+      );
+      return;
+    }
+
+    // Fallback if session missing
+    const current = input;
+    let start = lockedSelectionRef.current?.start ?? selectionRef.current.start;
+    let end = lockedSelectionRef.current?.end ?? selectionRef.current.end;
+    lockedSelectionRef.current = null;
+    start = Math.max(0, Math.min(start, current.length));
+    end = Math.max(start, Math.min(end, current.length));
+    const hasSelection = start !== end;
+    let insert = piece;
+    if (!hasSelection && start > 0 && !/\s$/.test(current.slice(0, start))) {
+      insert = ` ${piece}`;
+    }
+    const next = current.slice(0, start) + insert + current.slice(end);
+    setInput(next);
+    toast.success(t('gigCreation.prompt.dictationDone'));
+  };
+
+  const handleAudioCancel = () => {
+    const session = audioSessionRef.current;
+    if (session) setInput(session.original);
+    audioSessionRef.current = null;
+    lockedSelectionRef.current = null;
+    setAudioReplaceSnippet(null);
+    setIsLiveDictating(false);
+    toast(t('gigCreation.prompt.dictationCancelled'));
+  };
+
   const handleConfirmSuggestions = (suggestions: GigSuggestion) => {
     setConfirmedSuggestions(suggestions);
     setShowSuggestions(false);
@@ -469,9 +640,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
 
     // Map the generated data to the initialized structure
     const mappedData = mapGeneratedDataToGigData(suggestions);
-    
-    
-    
+    const prefer = (mapped?: string[], raw?: string[]) =>
+      mapped && mapped.length ? mapped : raw && raw.length ? raw : mapped || raw || [];
 
     // Update the gig data with the mapped suggestions
     setGigData((prevData: GigData) => ({
@@ -479,6 +649,35 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       ...mappedData,
       // Use selected job title as the main title
       title: suggestions.selectedJobTitle || mappedData.title || prevData.title,
+      title_i18n: mappedData.title_i18n || suggestions.title_i18n || prevData.title_i18n,
+      description_i18n:
+        mappedData.description_i18n ||
+        suggestions.description_i18n ||
+        suggestions.jobDescription_i18n ||
+        prevData.description_i18n,
+      highlights: prefer(
+        mappedData.highlights,
+        asTextList(suggestions.highlights, (suggestions as any).keyPoints, (suggestions as any).key_points)
+      ),
+      highlights_i18n: mappedData.highlights_i18n || suggestions.highlights_i18n || prevData.highlights_i18n,
+      deliverables: prefer(
+        mappedData.deliverables,
+        asTextList(suggestions.deliverables, (suggestions as any).livrables)
+      ),
+      deliverables_i18n:
+        mappedData.deliverables_i18n || suggestions.deliverables_i18n || prevData.deliverables_i18n,
+      sectors: prefer(
+        mappedData.sectors,
+        asTextList(suggestions.sectors, suggestions.category)
+      ),
+      destinationZones: prefer(
+        mappedData.destinationZones,
+        asTextList(
+          suggestions.destinationZones,
+          suggestions.destination_zone,
+          (suggestions as any).destination_zone_meta
+        )
+      ),
       // Preserve any existing data that wasn't in the suggestions
       userId: prevData.userId,
       companyId: prevData.companyId,
@@ -488,10 +687,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   };
 
   const handleSectionChange = (sectionId: string) => {
-    
-    
-    
     setCurrentSection(sectionId);
+    scrollPageToTop();
   };
 
   const handleGigDataChange = (newData: GigData) => {
@@ -529,7 +726,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading gig data for editing...</p>
+          <p className="text-gray-600">{t('gigCreation.prompt.loadingEdit')}</p>
         </div>
       </div>
     );
@@ -557,7 +754,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   isAIMode={!!confirmedSuggestions}
                   isEditMode={isEditMode}
                   editGigId={editGigId}
-                  onPublishSuccess={onBackToOnboarding}
+                  onPublishSuccess={handlePublishSuccess}
                 />
               </div>
             </div>
@@ -590,17 +787,17 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
-                  {isEditMode ? 'Back' : 'Back to AI Assistant'}
+                  {isEditMode ? t('gigCreation.nav.back') : t('gigCreation.prompt.backToAi')}
                 </button>
               </div>
               <div className="text-center mt-2">
                 <div className="flex items-center justify-center space-x-3 mb-2">
                   <h1 className="text-4xl font-black bg-gradient-harx bg-clip-text text-transparent">
-                    {isEditMode ? 'Edit Gig' : 'Create Gig Manually'}
+                    {isEditMode ? t('gigCreation.prompt.editTitle') : t('gigCreation.prompt.createTitle')}
                   </h1>
                 </div>
                 <p className="text-lg text-gray-500 font-medium">
-                  {isEditMode ? 'Modify the sections below to update your gig' : 'Fill out the sections below to create your gig'}
+                  {isEditMode ? t('gigCreation.prompt.editSubtitle') : t('gigCreation.prompt.createSubtitle')}
                 </p>
               </div>
             </div>
@@ -644,7 +841,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 isAIMode={!!confirmedSuggestions}
                 isEditMode={isEditMode}
                 editGigId={editGigId}
-                onPublishSuccess={onBackToOnboarding}
+                onPublishSuccess={handlePublishSuccess}
               />
             </div>
           </div>
@@ -665,7 +862,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white/80 hover:text-harx-500 transition-all duration-300 shadow-sm"
               >
                 <Briefcase className="w-4 h-4" />
-                Back to Gigs
+                {t('gigCreation.prompt.backToGigs')}
               </button>
             )}
           </div>
@@ -681,7 +878,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   htmlFor="description"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Describe your needs naturally
+                  {t('gigCreation.prompt.describeNeeds')}
                 </label>
                 <div className="flex items-center space-x-4">
                   <button
@@ -690,7 +887,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                     className="text-harx-500 hover:text-harx-600 flex items-center text-sm font-bold"
                   >
                     <HelpCircle className="w-4 h-4 mr-1" />
-                    Writing Tips
+                    {t('gigCreation.prompt.writingTips')}
                   </button>
                   <button
                     type="button"
@@ -698,20 +895,20 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                     className="text-gray-400 flex items-center text-sm cursor-not-allowed"
                   >
                     <PlusCircle className="w-5 h-5 mr-1 text-gray-400" />
-                    <span>Create Manually</span>
+                    <span>{t('gigCreation.prompt.createManually')}</span>
                   </button>
                 </div>
               </div>
 
               {showGuidance && (
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h3 className="text-sm font-medium text-blue-800 mb-2">Writing Tips</h3>
+                  <h3 className="text-sm font-medium text-blue-800 mb-2">{t('gigCreation.prompt.writingTips')}</h3>
                   <ul className="text-sm text-blue-600 space-y-2">
-                    <li>• Be specific about your target audience and location</li>
-                    <li>• Mention key requirements and qualifications</li>
-                    <li>• Include details about schedule and availability</li>
-                    <li>• Specify any technical requirements or tools needed</li>
-                    <li>• Describe the compensation structure if possible</li>
+                    <li>• {t('gigCreation.prompt.tipAudience')}</li>
+                    <li>• {t('gigCreation.prompt.tipRequirements')}</li>
+                    <li>• {t('gigCreation.prompt.tipSchedule')}</li>
+                    <li>• {t('gigCreation.prompt.tipTools')}</li>
+                    <li>• {t('gigCreation.prompt.tipCompensation')}</li>
                   </ul>
                 </div>
               )}
@@ -721,19 +918,74 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   ref={textareaRef}
                   id="description"
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    const ta = e.target;
+                    selectionRef.current = {
+                      start: ta.selectionStart,
+                      end: ta.selectionEnd,
+                    };
+                  }}
+                  onSelect={saveSelection}
+                  onKeyUp={saveSelection}
+                  onMouseUp={saveSelection}
+                  onClick={saveSelection}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (input.trim() && !isAnalyzing && !isLiveDictating) {
+                        handleGenerateSuggestions();
+                      }
+                    }
+                  }}
                   rows={1}
-                  placeholder="Example: I need a sales campaign targeting Spanish-speaking customers in Europe, with a focus on insurance products..."
-                  className="w-full min-h-[120px] max-h-[220px] pl-6 pr-14 py-5 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none shadow-sm overflow-y-auto"
+                  placeholder={t('gigCreation.prompt.placeholder')}
+                  className={`w-full min-h-[120px] max-h-[220px] pl-6 py-5 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none shadow-sm overflow-y-auto ${
+                    isLiveDictating ? 'pr-6' : 'pr-28'
+                  }`}
                 />
-                <button
-                  type="submit"
-                  disabled={!input.trim()}
-                  className="absolute bottom-4 right-4 p-4 bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-gray-200 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-harx-500/20"
-                >
-                  <ArrowUp className="w-7 h-7 stroke-[3]" />
-                </button>
+                <AudioBriefRecorder
+                  disabled={isAnalyzing}
+                  language="fr"
+                  maxSeconds={120}
+                  replaceSnippet={audioReplaceSnippet}
+                  panelHost={audioPanelHost}
+                  onActiveChange={setIsLiveDictating}
+                  onLiveTranscript={handleLiveTranscript}
+                  onTranscript={handleAudioTranscript}
+                  onCancel={handleAudioCancel}
+                  onError={(message) => toast.error(message)}
+                  onBeforeStart={lockSelectionForAudio}
+                />
+                {!isLiveDictating ? (
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || isAnalyzing}
+                    title={t('gigCreation.prompt.sendTitle')}
+                    aria-label={t('gigCreation.prompt.sendAria')}
+                    className="absolute bottom-4 right-4 p-4 bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-gray-200 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-harx-500/20"
+                  >
+                    <ArrowUp className="w-7 h-7 stroke-[3]" />
+                  </button>
+                ) : null}
               </div>
+
+              <div ref={setAudioPanelHost} />
+
+              {audioReplaceSnippet && !isLiveDictating ? (
+                <p className="mt-2 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                  {t('gigCreation.prompt.audioReplaceLabel')} «{' '}
+                  {audioReplaceSnippet.length > 80
+                    ? `${audioReplaceSnippet.slice(0, 80)}…`
+                    : audioReplaceSnippet}{' '}
+                  »
+                </p>
+              ) : null}
+              <p className="mt-3 text-xs font-medium text-gray-500">
+                {isLiveDictating
+                  ? t('gigCreation.prompt.dictatingHint')
+                  : t('gigCreation.prompt.nonDictatingHint')}
+              </p>
             </div>
           </form>
         </div>

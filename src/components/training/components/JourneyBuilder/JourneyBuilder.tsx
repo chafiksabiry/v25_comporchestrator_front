@@ -10,6 +10,7 @@ import { TrainingMethodology } from '../../types/methodology';
 import { DraftService } from '../../infrastructure/services/DraftService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { scrollJourneyMainToTop } from './journeyScroll';
+import '../../training-layout.css';
 
 interface JourneyBuilderProps {
   onComplete: (journey: TrainingJourney, modules: TrainingModule[], enrolledReps: Rep[]) => void;
@@ -17,6 +18,7 @@ interface JourneyBuilderProps {
   repOnboardingLayout?: boolean;
   startWithRepViewer?: boolean;
   onExitToTrainingList?: () => void;
+  onFormationValidated?: () => void;
   initialStep?: number;
   initialJourneyId?: string;
   initialGigId?: string;
@@ -28,6 +30,7 @@ export default function JourneyBuilder({
   repOnboardingLayout = false,
   startWithRepViewer = false,
   onExitToTrainingList,
+  onFormationValidated,
   initialStep = 0,
   initialJourneyId,
   initialGigId = null,
@@ -363,6 +366,7 @@ export default function JourneyBuilder({
             repOnboardingLayout={repOnboardingLayout}
             autoOpenFormationViewer={startWithRepViewer}
             onExitToTrainingList={onExitToTrainingList}
+            onFormationValidated={onFormationValidated}
             onForkNewJourneyTraining={company ? handleForkNewJourneyTraining : undefined}
           />
         );
@@ -425,6 +429,7 @@ export default function JourneyBuilder({
       ref={mainScrollRef}
       data-journey-main-scroll
       {...(documentScroll ? { 'data-journey-document-scroll': '' } : {})}
+      className="harx-training-page"
       style={
         documentScroll
           ? {
@@ -432,21 +437,31 @@ export default function JourneyBuilder({
               flexDirection: 'column',
               flex: 1,
               width: '100%',
-              minHeight: '100%',
+              minWidth: 0,
+              minHeight: 0,
               height: '100%',
-              overflow: 'visible',
+              overflow: 'hidden',
             }
           : {
               display: 'flex',
               flexDirection: 'column',
               flex: 1,
+              minWidth: 0,
               minHeight: 0,
               height: '100%',
-              overflow: currentStep === 0 ? 'hidden' : 'auto',
+              overflow: 'auto',
             }
       }
     >
-      {renderCurrentStep()}
+      <div
+        className={
+          documentScroll
+            ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
+            : 'min-h-0 min-w-0 flex-1'
+        }
+      >
+        {renderCurrentStep()}
+      </div>
     </div>
   );
 }

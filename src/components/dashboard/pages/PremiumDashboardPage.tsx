@@ -3,8 +3,10 @@ import PremiumDashboard from '../../training/components/Dashboard/PremiumDashboa
 import { getActiveAgentsForCompany } from '../../../api/matching';
 import OperationsDashboard from './OperationsDashboard';
 import Cookies from 'js-cookie';
+import { isCallCenterWorkspace } from '../../../utils/callCenterWorkspace';
 
 export default function PremiumDashboardPage() {
+  const isOpsConsole = isCallCenterWorkspace();
   const [profileData, setProfileData] = useState<any>(null);
 
   useEffect(() => {
@@ -20,7 +22,13 @@ export default function PremiumDashboardPage() {
 
   const companyName = localStorage.getItem('companyName');
   const userRole = localStorage.getItem('role') || localStorage.getItem('userType');
-  const userType = userRole === 'company' || userRole === 'admin' || (Cookies.get('companyId') && !Cookies.get('agentId')) ? 'company' : 'rep';
+  const userType =
+    userRole === 'company' ||
+    userRole === 'call-center' ||
+    userRole === 'admin' ||
+    (Cookies.get('companyId') && !Cookies.get('agentId'))
+      ? 'company'
+      : 'rep';
   const companyId = Cookies.get('companyId');
   const userId = Cookies.get('userId');
 
@@ -161,14 +169,14 @@ export default function PremiumDashboardPage() {
 
   if (userType === 'company') {
     return (
-      <div className="p-8">
+      <div className={isOpsConsole ? 'ops-console-board p-6 md:p-8' : 'p-8'}>
         <OperationsDashboard />
       </div>
     );
   }
 
   return (
-    <div className="p-8">
+    <div className={isOpsConsole ? 'ops-console-board p-6 md:p-8' : 'p-8'}>
       <PremiumDashboard 
         profile={profileData} 
         companyName={companyName} 

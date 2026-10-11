@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { saveCompanyData } from "./api/companyApi";
+import { publishCompanyData } from "./api/companyApi";
 import { uploadImage } from "./api/uploads";
 import { redirectToCompanyOnboarding } from "./navigation";
 
@@ -219,8 +219,8 @@ export function ManualCompanyForm({ onClose, onPublished }: Props) {
       });
       if (Object.keys(socialMedia).length > 0) payload.socialMedia = socialMedia;
 
-      const response: any = await saveCompanyData(payload);
-      const newCompanyId = response?.data?._id ?? response?._id;
+      const response = await publishCompanyData(payload);
+      const newCompanyId = response._id;
       if (!newCompanyId) {
         throw new Error("Company ID missing from API response");
       }

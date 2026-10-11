@@ -53,7 +53,7 @@ export interface Call {
     validByCompany: boolean | null;
     valid: boolean | null;
   } | null;
-
+  suggestedDisposition?: string | null;
 }
 
 export const callsApi = {
@@ -182,4 +182,22 @@ getCallDetails:async (callSid: string, ) => {
     }
   },
 
+  calibrateScore: async (
+    id: string,
+    payload: { verdict: 'up' | 'down'; explanation?: string; companyId?: string }
+  ) => {
+    const response = await dashCallsApi.post<{
+      success: boolean;
+      data?: { scoreCalibration?: NormalizedScoreCalibration };
+      message?: string;
+    }>(`/api/calls/${id}/calibrate-score`, payload);
+    return response.data;
+  },
+
 }
+
+export type NormalizedScoreCalibration = {
+  verdict?: 'up' | 'down' | null;
+  explanation?: string | null;
+  calibratedAt?: string | null;
+};

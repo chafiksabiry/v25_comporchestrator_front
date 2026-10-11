@@ -1,10 +1,94 @@
+import Cookies from 'js-cookie';
 import { GigData, GigSuggestion } from '../types';
+import { applyBackendAiUsage } from '../../../lib/aiTokensUsage';
 import { generateMockGigSuggestions } from './mockData';
+import {
+  convertActivityNamesToIds,
+  convertIndustryNamesToIds,
+  getActivityById,
+  getIndustryById,
+} from './activitiesIndustries';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
 
 // Configuration pour activer/désactiver le mode mock
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true' || false;
+
+function getCompanyId(): string | undefined {
+  const id = Cookies.get('companyId');
+  return id ? String(id).trim() : undefined;
+}
+
+function asText(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'object') {
+    const row = value as Record<string, unknown>;
+    const nested =
+      row.text ?? row.label ?? row.name ?? row.value ?? row.title ?? row.highlight ?? row.deliverable;
+    if (typeof nested === 'string') return nested.trim();
+    if (nested && typeof nested === 'object') {
+      const named = nested as { common?: unknown };
+      if (typeof named.common === 'string') return named.common.trim();
+    }
+  }
+  return '';
+}
+
+/** First non-empty text list among aliases. Empty arrays do not block later sources. */
+export function asTextList(...sources: unknown[]): string[] {
+  const out: string[] = [];
+  const push = (value: unknown) => {
+    if (Array.isArray(value)) {
+      value.forEach(push);
+      return;
+    }
+    const text = asText(value);
+    if (text && !out.includes(text)) out.push(text);
+  };
+  sources.forEach(push);
+  return out;
+}
+
+function asZoneId(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'object') {
+    const row = value as { _id?: unknown; $oid?: unknown; id?: unknown };
+    const id = row._id ?? row.$oid ?? row.id;
+    if (typeof id === 'string' && id.trim()) return id.trim();
+    if (id && typeof id === 'object' && '$oid' in (id as object)) {
+      const oid = (id as { $oid?: unknown }).$oid;
+      if (typeof oid === 'string') return oid.trim();
+    }
+  }
+  return asText(value);
+}
+
+function asZoneList(...sources: unknown[]): string[] {
+  const out: string[] = [];
+  const push = (value: unknown) => {
+    if (Array.isArray(value)) {
+      value.forEach(push);
+      return;
+    }
+    const id = asZoneId(value);
+    if (id && !out.includes(id)) out.push(id);
+  };
+  sources.forEach(push);
+  return out;
+}
+
+function throwInsufficientTokens(data: any, status?: number): never {
+  const err = new Error(
+    String(data?.message || data?.error || 'Solde de tokens AI insuffisant. Rechargez pour continuer.')
+  ) as Error & { code?: string; tokens?: number };
+  err.code = 'insufficient_tokens';
+  err.tokens = data?.data?.tokens ?? 0;
+  if (status) (err as any).status = status;
+  throw err;
+}
 
 // Helper function to validate and clean territory IDs
 // Removes timezone IDs that might have been incorrectly included in territories
@@ -22,10 +106,62 @@ function validateTerritories(territories: string[], timezoneId?: string): string
   });
 }
 
-export async function generateGigSuggestions(description: string): Promise<GigSuggestion> {
+export async function transcribeGigAudio(
+  blob: Blob,
+  options?: { language?: string; filename?: string; signal?: AbortSignal; companyId?: string }
+): Promise<string> {
+  const form = new FormData();
+  const ext = blob.type.includes('mp4')
+    ? 'mp4'
+    : blob.type.includes('wav')
+      ? 'wav'
+      : blob.type.includes('mpeg') || blob.type.includes('mp3')
+        ? 'mp3'
+        : 'webm';
+  form.append('audio', blob, options?.filename || `gig-brief.${ext}`);
+  if (options?.language) {
+    form.append('language', options.language);
+  }
+  const companyId = options?.companyId || getCompanyId();
+  if (companyId) {
+    form.append('companyId', companyId);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/ai/transcribe-audio`, {
+    method: 'POST',
+    body: form,
+    signal: options?.signal,
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (response.status === 402 || data?.error === 'insufficient_tokens') {
+    throwInsufficientTokens(data, response.status);
+  }
+  if (!response.ok) {
+    throw new Error(
+      String(data.message || data.error || `Transcription failed (${response.status})`)
+    );
+  }
+
+  applyBackendAiUsage(data?.usage, companyId);
+
+  const transcript = String(data.transcript || '').trim();
+  if (!transcript) {
+    throw new Error('Empty transcription');
+  }
+  return transcript;
+}
+
+export async function generateGigSuggestions(
+  description: string,
+  language: 'fr' | 'en' = 'fr'
+): Promise<GigSuggestion> {
   if (!description) {
     throw new Error('Description is required');
   }
+
+  // PRODUCT: first gig AI draft is free (backend). From the 2nd gig → tokens required.
+  // Narrative fields are bilingual FR+EN (*_i18n); plain fields follow UI language.
 
   // Si le mode mock est activé, utiliser les données mockées
   if (USE_MOCK_DATA) {
@@ -34,22 +170,32 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
   }
 
   try {
-    
+    const companyId = getCompanyId();
     const response = await fetch(`${API_BASE_URL}/ai/generate-gig-suggestions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        description: description
+        description,
+        companyId: companyId || undefined,
+        language,
       })
     });
 
-    if (!response.ok) {
-      throw new Error(`Backend API error: ${response.statusText}`);
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 402 || data?.error === 'insufficient_tokens') {
+      throwInsufficientTokens(data, response.status);
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        String(data?.message || data?.error || `Backend API error: ${response.statusText}`)
+      );
+    }
+
+    applyBackendAiUsage(data?.usage, companyId);
 
     // Log the backend response for debugging
     
@@ -68,9 +214,10 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
 
     const transformedData = {
       jobTitles: data.jobTitles || [],
+      jobTitles_i18n: data.jobTitles_i18n || undefined,
       jobDescription: data.jobDescription || '',
+      jobDescription_i18n: data.jobDescription_i18n || undefined,
       category: data.category || '',
-      destination_zone: data.destination_zone || '',
       destination_zone_meta: data.destination_zone_meta,
       activities: data.activities || [],
       industries: data.industries || [],
@@ -116,10 +263,14 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       },
 
       // Missing fields required by GigSuggestion interface
-      title: data.jobTitles?.[0] || '',
-      description: data.jobDescription || '',
-      highlights: data.highlights || [],
-      deliverables: data.deliverables || [],
+      title: data.title || data.jobTitles?.[0] || '',
+      title_i18n: data.title_i18n || undefined,
+      description: data.description || data.jobDescription || '',
+      description_i18n: data.description_i18n || data.jobDescription_i18n || undefined,
+      highlights: asTextList(data.highlights, data.keyPoints, data.key_points, data.pointsCles),
+      highlights_i18n: data.highlights_i18n || undefined,
+      deliverables: asTextList(data.deliverables, data.livrables),
+      deliverables_i18n: data.deliverables_i18n || undefined,
       requirements: { essential: [], preferred: [] },
       timeframes: [],
       benefits: [],
@@ -127,8 +278,14 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       leads: { types: [], sources: [], distribution: { method: '', rules: [] }, qualificationCriteria: [] },
       documentation: { templates: {}, reference: {}, product: [], process: [], training: [] },
       selectedJobTitle: data.jobTitles?.[0] || '',
-      sectors: data.category ? [data.category] : [],
-      destinationZones: data.destination_zone ? [data.destination_zone] : [],
+      sectors: asTextList(data.sectors, data.category),
+      destination_zone: asZoneId(data.destination_zone) || asZoneId(data.destination_zone_meta) || '',
+      destinationZones: asZoneList(
+        data.destinationZones,
+        data.destination_zones,
+        data.destination_zone,
+        data.destination_zone_meta
+      ),
 
       // Schedule mapping
       schedule: {
@@ -181,41 +338,152 @@ export function mapGigDataToSuggestions(gigData: GigData): any {
     commission: gigData.commission || {},
     team: gigData.team || { size: 1, structure: [], territories: [] },
     highlights: gigData.highlights || [],
+    deliverables: gigData.deliverables || [],
+    sectors: gigData.sectors || [],
     requirements: gigData.requirements || { essential: [], preferred: [] },
     benefits: gigData.benefits || [],
-    callTypes: gigData.callTypes || []
+    callTypes: gigData.callTypes || [],
+    selectedJobTitle: gigData.title || undefined,
+    destination_zone: gigData.destination_zone || '',
+    destination_zone_meta: gigData.destination_zone_meta,
   };
 }
 
 // Keep the mapGeneratedDataToGigData function for compatibility
 export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> {
-  
-  
-  
-  
+  const unwrapId = (val: any): string => {
+    if (!val) return '';
+    if (typeof val === 'object' && val.$oid) return String(val.$oid);
+    if (typeof val === 'object' && val._id) return String(val._id);
+    return String(val);
+  };
 
-  const mappedDestinationZone = generatedData.destination_zone || generatedData.destinationZones?.[0] || '';
-  
+  // Prefer user-edited destinationZones chips over stale AI destination_zone.
+  // Empty arrays must not hide destination_zone / destination_zone_meta.
+  const zones = asZoneList(
+    generatedData.destinationZones,
+    generatedData.destination_zones,
+    generatedData.destination_zone,
+    generatedData.destination_zone_meta
+  );
+  const mappedDestinationZone =
+    zones[0] || unwrapId(generatedData.destination_zone) || '';
+
+  let destination_zone_meta = generatedData.destination_zone_meta;
+  if (destination_zone_meta) {
+    const metaId = unwrapId(destination_zone_meta._id || destination_zone_meta);
+    if (!mappedDestinationZone || (metaId && metaId !== mappedDestinationZone)) {
+      destination_zone_meta = undefined;
+    }
+  }
+
+  const schedule = generatedData.schedule || {
+    schedules: [],
+    time_zone: '',
+    timeZones: [],
+    flexibility: [],
+    minimumHours: {}
+  };
+  // Mirror edited schedule into availability so SectionContent / save never
+  // rehydrate deleted plages from a stale availability.schedule.
+  const mirroredScheduleEntries = Array.isArray(schedule.schedules)
+    ? schedule.schedules.map((s: any) => ({
+        day: s.day,
+        hours: s.hours ? { start: s.hours.start, end: s.hours.end } : s.hours,
+      }))
+    : [];
+
+  const commission = { ...(generatedData.commission || {}) } as any;
+  const currencyId = unwrapId(commission.currency);
+  if (currencyId) {
+    commission.currency = currencyId;
+  }
+  if (commission.currency_meta) {
+    const metaCurrencyId = unwrapId(commission.currency_meta._id || commission.currency_meta);
+    if (!currencyId || (metaCurrencyId && metaCurrencyId !== currencyId)) {
+      delete commission.currency_meta;
+    }
+  }
+
+  // Industries / activities may arrive as names (AI) or IDs (Suggestions UI)
+  const normalizeRefIds = (
+    values: any[],
+    getById: (id: string) => unknown,
+    convertNames: (names: string[]) => string[]
+  ): string[] => {
+    if (!Array.isArray(values) || values.length === 0) return [];
+    const raw = values.map(unwrapId).filter(Boolean);
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const v of raw) {
+      const id = getById(v) ? v : (convertNames([v])[0] || v);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+    return out;
+  };
+
+  const selectedTitle =
+    generatedData.selectedJobTitle || generatedData.jobTitles?.[0] || '';
+  const titleI18n = generatedData.title_i18n || {
+    en: generatedData.jobTitles_i18n?.en?.[0] || selectedTitle,
+    fr: generatedData.jobTitles_i18n?.fr?.[0] || selectedTitle,
+  };
+  const description =
+    generatedData.description || generatedData.jobDescription || '';
+  const descriptionI18n =
+    generatedData.description_i18n ||
+    generatedData.jobDescription_i18n || {
+      en: description,
+      fr: description,
+    };
 
   return {
-    title: generatedData.jobTitles?.[0] || '',
-    description: generatedData.description || '',
-    category: generatedData.category || '',
+    title: selectedTitle,
+    title_i18n: titleI18n,
+    description,
+    description_i18n: descriptionI18n,
+    category: generatedData.category || generatedData.sectors?.[0] || '',
     seniority: generatedData.seniority || { level: '', yearsExperience: 0 },
-    activities: generatedData.activities || [],
-    industries: generatedData.industries || [],
+    activities: normalizeRefIds(
+      generatedData.activities || [],
+      getActivityById,
+      convertActivityNamesToIds
+    ),
+    industries: normalizeRefIds(
+      generatedData.industries || [],
+      getIndustryById,
+      convertIndustryNamesToIds
+    ),
+    highlights: asTextList(
+      generatedData.highlights,
+      generatedData.keyPoints,
+      generatedData.key_points,
+      generatedData.pointsCles
+    ),
+    highlights_i18n: generatedData.highlights_i18n,
+    deliverables: asTextList(generatedData.deliverables, generatedData.livrables),
+    deliverables_i18n: generatedData.deliverables_i18n,
+    sectors: asTextList(generatedData.sectors, generatedData.category),
     skills: generatedData.skills || { languages: [], soft: [], professional: [], technical: [] } as any,
-    availability: generatedData.availability || {},
-    schedule: generatedData.schedule || {
-      schedules: [],
-      time_zone: '',
-      timeZones: [],
-      flexibility: [],
-      minimumHours: {}
+    availability: {
+      ...(generatedData.availability || {}),
+      schedule: mirroredScheduleEntries,
+      time_zone: schedule.time_zone || generatedData.availability?.time_zone || '',
+      timeZones: schedule.timeZones || generatedData.availability?.timeZones || [],
+      flexibility: schedule.flexibility || generatedData.availability?.flexibility || [],
+      minimumHours: schedule.minimumHours || generatedData.availability?.minimumHours || {},
     },
-    commission: generatedData.commission || {} as any,
+    schedule,
+    commission,
     team: generatedData.team || { size: 1, structure: [], territories: [] },
     destination_zone: mappedDestinationZone,
-    destination_zone_meta: generatedData.destination_zone_meta,
+    destination_zone_meta,
+    destinationZones: zones.length
+      ? zones
+      : mappedDestinationZone
+        ? [mappedDestinationZone]
+        : [],
   };
 }

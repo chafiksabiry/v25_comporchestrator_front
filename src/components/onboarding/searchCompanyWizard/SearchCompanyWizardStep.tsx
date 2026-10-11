@@ -13,6 +13,8 @@ import { CompanyLogo } from "./CompanyLogo";
 import { CompanyProfile } from "./CompanyProfile";
 import ManualCompanyForm from "./ManualCompanyForm";
 import ExistingCompanyProfile from "../CompanyProfile";
+import { OnboardingBackButton } from "./OnboardingBackButton";
+import { clearStaleCompanyClientState } from "../../../utils/companyClientState";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -23,7 +25,8 @@ interface Props {
 }
 
 export default function SearchCompanyWizardStep({ onBack, companyId, onStepComplete }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const uiLanguage = i18n.language?.startsWith("fr") ? "fr" : "en";
 
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,6 +59,8 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
         await axios.get(`${apiBase}/companies/${fallbackCompanyId}/details`);
         setExistingCompanyId(fallbackCompanyId);
       } catch {
+        // Deleted company still in cookie/localStorage — clear so Publish can create again.
+        clearStaleCompanyClientState();
         setExistingCompanyId(null);
       } finally {
         setCheckingExisting(false);
@@ -84,7 +89,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     setError(null);
     setResults([]);
     try {
-      const data = await googleApi.search(trimmedQuery);
+      const data = await googleApi.search(trimmedQuery, uiLanguage);
       setResults(data);
     } catch (e: any) {
       setError(e?.message || t('searchCompanyWizard.errors.searchFailed'));
@@ -98,7 +103,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     setError(null);
     setResults([]);
     try {
-      const generated = await generateCompanyProfileFromUrl(trimmedQuery);
+      const generated = await generateCompanyProfileFromUrl(trimmedQuery, undefined, uiLanguage);
       setProfile(generated);
     } catch (e: any) {
       setError(e?.response?.data?.message || e?.message || t('searchCompanyWizard.errors.generateFailed'));
@@ -132,7 +137,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
 
       if (result.link) {
         try {
-          const generated = await generateCompanyProfileFromUrl(result.link, logoUrl);
+          const generated = await generateCompanyProfileFromUrl(result.link, logoUrl, uiLanguage);
           if (!generated.logo && logoUrl) generated.logo = logoUrl;
           setProfile(generated);
           return;
@@ -147,7 +152,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
         `Description: ${result.snippet}`,
       ].join("\n");
 
-      const generated = await generateCompanyProfile(companyInfo, logoUrl);
+      const generated = await generateCompanyProfile(companyInfo, logoUrl, uiLanguage);
       if (!generated.logo && logoUrl) generated.logo = logoUrl;
       setProfile(generated);
     } catch (e: any) {
@@ -160,14 +165,34 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   if (profile) {
     return (
       <div className="w-full p-6">
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {t(
-            "searchCompanyWizard.publishHint",
-            "Vérifiez les informations ci-dessous puis cliquez sur Publier pour enregistrer la société."
-          )}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <OnboardingBackButton
+            variant="cta"
+            label={t(
+              "searchCompanyWizard.backToSearch",
+              uiLanguage === "fr" ? "Retour à la recherche" : "Back to search"
+            )}
+            onClick={() => {
+              // Discard unpublished draft and return to search / URL step.
+              setProfile(null);
+              setError(null);
+            }}
+          />
+          <div className="flex-1 min-w-[220px] rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {t(
+              "searchCompanyWizard.publishHint",
+              uiLanguage === "fr"
+                ? "Vérifiez les informations ci-dessous puis cliquez sur Publier pour enregistrer la société. Vous pouvez revenir en arrière sans publier."
+                : "Review the information below, then click Publish to save the company. You can go back without publishing."
+            )}
+          </div>
         </div>
         <CompanyProfile
           profile={profile}
+          onBack={() => {
+            setProfile(null);
+            setError(null);
+          }}
           onPublished={(newCompanyId) => {
             setProfile(null);
             if (onStepComplete) {
@@ -184,17 +209,27 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   if (manualMode) {
     return (
       <div className="w-full p-6">
-      <ManualCompanyForm
-        onClose={() => setManualMode(false)}
-        onPublished={(newCompanyId) => {
-          setManualMode(false);
-          if (onStepComplete) {
-            onStepComplete(newCompanyId);
-          } else {
-            onBack?.();
-          }
-        }}
-      />
+        <div className="mb-4">
+          <OnboardingBackButton
+            variant="cta"
+            label={t(
+              "searchCompanyWizard.backToSearch",
+              uiLanguage === "fr" ? "Retour à la recherche" : "Back to search"
+            )}
+            onClick={() => setManualMode(false)}
+          />
+        </div>
+        <ManualCompanyForm
+          onClose={() => setManualMode(false)}
+          onPublished={(newCompanyId) => {
+            setManualMode(false);
+            if (onStepComplete) {
+              onStepComplete(newCompanyId);
+            } else {
+              onBack?.();
+            }
+          }}
+        />
       </div>
     );
   }
@@ -208,6 +243,11 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
       </div>
 
       <div className="relative z-10">
+        {onBack ? (
+          <div className="mb-6">
+            <OnboardingBackButton variant="cta" onClick={onBack} />
+          </div>
+        ) : null}
         {!loading && (
         <div className="manual-cta-sticker absolute right-0 top-0 flex flex-col items-end gap-2 select-none">
           <div className="manual-cta-bubble relative flex items-center gap-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-3.5 py-2 shadow-md shadow-amber-500/10">

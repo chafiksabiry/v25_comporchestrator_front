@@ -130,8 +130,8 @@ export const getUserId = (): string | null => {
 };
 
 /**
- * Get user type (typeUser) from registration API
- * Returns 'company', 'rep', or null
+ * Get user type (typeUser) from registration API.
+ * Call-center is treated as company-like for product surfaces.
  */
 export const getUserType = async (): Promise<'company' | 'rep' | null> => {
   try {
@@ -143,9 +143,11 @@ export const getUserType = async (): Promise<'company' | 'rep' | null> => {
 
     // Try to get from cache first (localStorage)
     const cachedType = localStorage.getItem('userType');
-    if (cachedType === 'company' || cachedType === 'rep') {
-      
-      return cachedType as 'company' | 'rep';
+    if (cachedType === 'company' || cachedType === 'call-center') {
+      return 'company';
+    }
+    if (cachedType === 'rep') {
+      return 'rep';
     }
 
     // Fetch from registration API
@@ -166,11 +168,9 @@ export const getUserType = async (): Promise<'company' | 'rep' | null> => {
     const data = await response.json();
     const userType = data.userType || data.typeUser;
 
-    if (userType === 'company' || userType === 'rep') {
-      // Cache the result
+    if (userType === 'company' || userType === 'call-center' || userType === 'rep') {
       localStorage.setItem('userType', userType);
-      
-      return userType;
+      return userType === 'rep' ? 'rep' : 'company';
     }
 
     console.warn('[UserUtils] Invalid user type received:', userType);

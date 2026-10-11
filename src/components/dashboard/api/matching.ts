@@ -237,6 +237,17 @@ export const getInvitedAgentsForCompany = async (companyId: string): Promise<any
   }
 };
 
+const extractGigAgentList = (payload: unknown): any[] => {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  const data = payload as { data?: unknown; agents?: unknown; gigs?: unknown; results?: unknown };
+  if (Array.isArray(data.data)) return data.data;
+  if (Array.isArray(data.agents)) return data.agents;
+  if (Array.isArray(data.gigs)) return data.gigs;
+  if (Array.isArray(data.results)) return data.results;
+  return [];
+};
+
 export const getActiveAgentsForCompany = async (companyId: string): Promise<any[]> => {
   try {
     const response = await fetch(`${MATCHING_API_URL}/gig-agents/active-agents/company/${companyId}`);
@@ -246,8 +257,7 @@ export const getActiveAgentsForCompany = async (companyId: string): Promise<any[
     }
     
     const data = await response.json();
-    
-    return data;
+    return extractGigAgentList(data);
   } catch (error) {
     console.error('Error fetching active agents for company:', error);
     throw error;

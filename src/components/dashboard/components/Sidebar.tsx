@@ -52,9 +52,10 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
       try {
         // 1. Check if user has a company
         const companyRes = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/companies/user/${userId}`);
-        if (companyRes.ok) {
-          const companyData = await companyRes.json();
-          const companyExists = companyData.success && companyData.data;
+        // 200 + data:null (or legacy 404) = no company yet — optional.
+        if (companyRes.ok || companyRes.status === 404) {
+          const companyData = companyRes.ok ? await companyRes.json() : { success: true, data: null };
+          const companyExists = !!(companyData.success && companyData.data);
           setHasCompany(companyExists);
 
           // 2. If they have a company, check the full onboarding progress

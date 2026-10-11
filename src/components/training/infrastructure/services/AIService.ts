@@ -1,4 +1,10 @@
 import { ApiClient } from '../../lib/api';
+import {
+  assertCompanyHasAiTokens,
+  chargeCompanyAiUsage,
+  estimateTokensFromText,
+  applyBackendAiUsage,
+} from '../../../../lib/aiTokensUsage';
 import type { RepDeckSlide } from '../../utils/buildRepInteractivePresentationHtml';
 import {
   buildFormationDigestForRepPresentation,
@@ -306,6 +312,8 @@ export class AIService {
     metadata?: { gigId?: string; companyId?: string }
   ): Promise<DocumentAnalysis> {
     try {
+      await assertCompanyHasAiTokens(1, metadata?.companyId, { allowFirstGigFree: true });
+
       const formData = new FormData();
       formData.append('file', file);
       if (metadata?.gigId) formData.append('gigId', metadata.gigId);
@@ -336,6 +344,25 @@ export class AIService {
         improvementSuggestions: analysis.improvementSuggestions || [],
         mediaRecommendations: analysis.mediaRecommendations || []
       };
+
+      const backendBilled = applyBackendAiUsage((response.data as any)?.usage, metadata?.companyId);
+      if (!backendBilled) {
+        const usageId = `analyze-doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const estimated = estimateTokensFromText(
+          file.name,
+          JSON.stringify(safeAnalysis.keyTopics || []),
+          JSON.stringify(safeAnalysis.learningObjectives || []),
+          String((safeAnalysis as any).summary || '')
+        );
+        void chargeCompanyAiUsage({
+          usageId,
+          tokensUsed: Math.max(800, estimated),
+          tool: 'training.analyze_document',
+          companyId: metadata?.companyId,
+          meta: { fileName: file.name },
+          skipIfFirstGigFree: true,
+        }).catch((e) => console.warn('[tokens] analyzeDocument charge failed', e));
+      }
 
       return safeAnalysis;
     } catch (error: any) {
@@ -526,6 +553,7 @@ export class AIService {
     context: string = '',
     extras?: { maxTokens?: number; purpose?: string }
   ): Promise<string> {
+    await assertCompanyHasAiTokens(1, undefined, { allowFirstGigFree: true });
     const payload: Record<string, unknown> = { message, context };
     if (extras?.maxTokens != null && Number.isFinite(extras.maxTokens)) {
       payload.maxTokens = extras.maxTokens;
@@ -539,7 +567,19 @@ export class AIService {
       throw new Error(response.data.error || 'Chat failed');
     }
 
-    return response.data.response || '';
+    const text = response.data.response || '';
+    const backendBilled = applyBackendAiUsage((response.data as any)?.usage);
+    if (!backendBilled) {
+      const usageId = `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      void chargeCompanyAiUsage({
+        usageId,
+        tokensUsed: estimateTokensFromText(message, context, text),
+        tool: extras?.purpose || 'training.chat',
+        skipIfFirstGigFree: true,
+      }).catch((e) => console.warn('[tokens] chat charge failed', e));
+    }
+
+    return text;
   }
 
   /**
@@ -1194,6 +1234,8 @@ ${scopeJson}`;
     onChunk: (chunk: string) => void,
     options?: { gigId?: string; companyId?: string; sessionId?: string; signal?: AbortSignal }
   ): Promise<{ text: string; sessionId?: string; planSaved?: boolean; journeyId?: string }> {
+    await assertCompanyHasAiTokens(1, options?.companyId, { allowFirstGigFree: true });
+
     const token = ApiClient.getToken();
     const apiUrl =
       import.meta.env.VITE_API_TRAINING_URL ||
@@ -1218,7 +1260,19 @@ ${scopeJson}`;
     });
 
     if (!response.ok) {
-      throw new Error(`Chat failed (${response.status})`);
+      let message = `Chat failed (${response.status})`;
+      try {
+        const errJson = await response.clone().json();
+        if (errJson?.message) message = errJson.message;
+        if (errJson?.error === 'insufficient_tokens' || response.status === 402) {
+          const err = new Error(message) as Error & { code?: string };
+          err.code = 'insufficient_tokens';
+          throw err;
+        }
+      } catch (e: any) {
+        if (e?.code === 'insufficient_tokens') throw e;
+      }
+      throw new Error(message);
     }
     if (!response.body) {
       throw new Error('Streaming not supported by this response.');
@@ -1238,6 +1292,25 @@ ${scopeJson}`;
       if (!chunk) continue;
       fullText += chunk;
       onChunk(chunk);
+    }
+
+    // Backend bills after stream completes when companyId is present (headers already sent).
+    const companyId = options?.companyId;
+    if (companyId) {
+      applyBackendAiUsage({ billed: true }, companyId);
+    } else {
+      const usageId =
+        sessionId
+          ? `chat-stream-${sessionId}-${Date.now()}`
+          : `chat-stream-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      void chargeCompanyAiUsage({
+        usageId,
+        tokensUsed: estimateTokensFromText(message, context, fullText),
+        tool: 'training.chat_stream',
+        companyId: options?.companyId,
+        meta: { sessionId: sessionId || null },
+        skipIfFirstGigFree: true,
+      }).catch((e) => console.warn('[tokens] chatStream charge failed', e));
     }
 
     return { text: fullText, sessionId, planSaved, journeyId };

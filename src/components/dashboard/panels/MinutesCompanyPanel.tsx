@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Clock,
   Zap,
@@ -32,11 +33,14 @@ import {
 } from '../../../lib/paypalCheckout';
 import { getCallsApiBase } from '../lib/callsApiBase';
 import {
+  billedMinutesFromSeconds,
   formatBilledMinutesFromSeconds,
+  formatTalkDuration,
   formatWalletMinutesBalance
 } from '../../../utils/billingMinutes';
 import {
   MINUTE_PACKS,
+  computeMinutesPurchaseCents,
   formatMinutesPurchasePrice,
 } from '../../../utils/minutesPricing';
 
@@ -69,11 +73,22 @@ function computeDisplayPriceCents(
   return 0;
 }
 
+interface MinuteCredit {
+  at: string;
+  minutes: number;
+  planName?: string;
+  kind: 'plan' | 'recharge' | string;
+}
+
 interface MinutesState {
   companyId: string;
   minutes: number;
   purchasedMinutes?: number;
+  planMinutesIncluded?: number;
+  planName?: string | null;
+  credits?: MinuteCredit[];
   consumedSeconds?: number;
+  limitReached?: boolean;
 }
 
 interface CompanyCall {
@@ -260,6 +275,7 @@ function mapApiCallToCompanyCall(raw: Record<string, unknown>): CompanyCall {
 }
 
 export function MinutesCompanyPanel() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [minutesWallet, setMinutesWallet] = useState<MinutesState | null>(null);
   const [calls, setCalls] = useState<CompanyCall[]>([]);
   const [loading, setLoading] = useState(true);
@@ -267,6 +283,7 @@ export function MinutesCompanyPanel() {
 
   // Modals state
   const [showBuyModal, setShowBuyModal] = useState(false);
+  const [buyPromptShown, setBuyPromptShown] = useState(false);
   const [minutesToBuy, setMinutesToBuy] = useState('150');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
   const [submittingBuy, setSubmittingBuy] = useState(false);
@@ -291,11 +308,17 @@ export function MinutesCompanyPanel() {
         const minsData = await minsRes.json();
         if (minsData.success && minsData.data) {
           const data = minsData.data || {};
+          const balance = typeof data.minutes === 'number' ? data.minutes : 0;
           const safeWallet: MinutesState = {
             companyId: data.companyId || companyId,
-            minutes: typeof data.minutes === 'number' ? data.minutes : 0,
+            minutes: balance,
             purchasedMinutes: typeof data.purchasedMinutes === 'number' ? data.purchasedMinutes : 0,
-            consumedSeconds: typeof data.consumedSeconds === 'number' ? data.consumedSeconds : 0
+            planMinutesIncluded:
+              typeof data.planMinutesIncluded === 'number' ? data.planMinutesIncluded : 0,
+            planName: data.planName || null,
+            credits: Array.isArray(data.credits) ? data.credits : [],
+            consumedSeconds: typeof data.consumedSeconds === 'number' ? data.consumedSeconds : 0,
+            limitReached: Boolean(data.limitReached) || balance <= 0,
           };
           setMinutesWallet(safeWallet);
 
@@ -342,6 +365,20 @@ export function MinutesCompanyPanel() {
   useEffect(() => {
     fetchData();
   }, [companyId]);
+
+  // Open buy modal once when navigated with ?buy=1 or when the minute limit is reached.
+  useEffect(() => {
+    if (loading || buyPromptShown) return;
+    const wantBuy = searchParams.get('buy') === '1';
+    if (!wantBuy && !minutesWallet?.limitReached) return;
+    setShowBuyModal(true);
+    setBuyPromptShown(true);
+    if (wantBuy) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('buy');
+      setSearchParams(next, { replace: true });
+    }
+  }, [loading, buyPromptShown, minutesWallet?.limitReached, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!showBuyModal) return;
@@ -465,10 +502,16 @@ export function MinutesCompanyPanel() {
           </button>
           <button
             onClick={() => setShowBuyModal(true)}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-blue-500/20 rounded-2xl transition-all duration-300 active:scale-95 flex items-center gap-2"
+            className={`px-6 py-3 text-white font-bold text-xs uppercase tracking-wider rounded-2xl transition-all duration-300 active:scale-95 flex items-center gap-2 ${
+              minutesWallet?.limitReached
+                ? 'bg-gradient-to-r from-rose-500 to-orange-500 shadow-md shadow-rose-500/25 animate-pulse'
+                : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md shadow-blue-500/20'
+            }`}
           >
             <Zap size={16} />
-            <span>Acheter des Minutes</span>
+            <span>
+              {minutesWallet?.limitReached ? 'Limite atteinte — Acheter' : 'Acheter des Minutes'}
+            </span>
           </button>
         </div>
       </div>
@@ -491,20 +534,52 @@ export function MinutesCompanyPanel() {
               <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
                 Volume d'appels restant
               </span>
-              <span className={`text-5xl font-black tracking-tight block ${(minutesWallet?.minutes ?? 0) < 0 ? 'text-rose-400' : ''}`}>
+              <span className={`text-5xl font-black tracking-tight block ${(minutesWallet?.minutes ?? 0) <= 0 ? 'text-rose-400' : ''}`}>
                 {formatWalletMinutesBalance(minutesWallet?.minutes ?? 0)}
               </span>
-              {(minutesWallet?.minutes ?? 0) < 0 && (
+              {(minutesWallet?.minutes ?? 0) <= 0 && (
                 <span className="text-[10px] text-rose-300 font-bold uppercase tracking-wider mt-1 block">
-                  Surconsommation — rechargez vos minutes
+                  Limite atteinte — achetez des minutes pour continuer
                 </span>
               )}
+              <div className="mt-4 flex flex-wrap items-end gap-6">
+                {(minutesWallet?.planMinutesIncluded || 0) > 0 && (
+                  <div>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
+                      Inclus plan{minutesWallet?.planName ? ` ${minutesWallet.planName}` : ''}
+                    </span>
+                    <span className="text-2xl font-black tracking-tight text-emerald-300 tabular-nums">
+                      {formatWalletMinutesBalance(minutesWallet?.planMinutesIncluded ?? 0)}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
+                    Minutes achetées
+                  </span>
+                  <span className="text-2xl font-black tracking-tight text-white tabular-nums">
+                    {formatWalletMinutesBalance(minutesWallet?.purchasedMinutes ?? 0)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
+                    Montant investi
+                  </span>
+                  <span className="text-2xl font-black tracking-tight text-blue-300 tabular-nums">
+                    {(computeMinutesPurchaseCents(minutesWallet?.purchasedMinutes ?? 0) / 100).toLocaleString('fr-FR', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{' '}
+                    €
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Décompte automatique à chaque appel — sans validation IA</span>
+                <span>Seule la durée décrochée est facturée. La sonnerie n'est pas comptée. Chaque minute entamée est due.</span>
               </div>
             </div>
           </div>
@@ -536,6 +611,51 @@ export function MinutesCompanyPanel() {
           </div>
         </div>
       </div>
+
+      {(minutesWallet?.credits || []).length > 0 && (
+        <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-4">
+          <h3 className="text-base font-black text-slate-800 tracking-tight">Minutes créditées</h3>
+          <div className="overflow-auto rounded-2xl border border-gray-50">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Type</th>
+                  <th className="py-3 px-4">Détail</th>
+                  <th className="py-3 px-4 text-right">Minutes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 text-xs">
+                {(minutesWallet?.credits || []).map((credit, index) => {
+                  const isPlan = credit.kind === 'plan';
+                  return (
+                    <tr key={`${credit.at}-${credit.kind}-${index}`}>
+                      <td className="py-3 px-4 text-gray-500">
+                        {credit.at ? new Date(credit.at).toLocaleString('fr-FR') : '—'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full border font-bold text-[9px] uppercase tracking-wider ${
+                          isPlan
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                            : 'bg-blue-50 text-blue-700 border-blue-100'
+                        }`}>
+                          {isPlan ? 'Inclus plan' : 'Recharge'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-bold text-slate-800">
+                        {isPlan ? (credit.planName || minutesWallet?.planName || 'Plan') : 'Achat de minutes'}
+                      </td>
+                      <td className="py-3 px-4 text-right font-black text-emerald-700 tabular-nums">
+                        +{formatWalletMinutesBalance(credit.minutes)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Calling History Logs list */}
       <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm space-y-6">
@@ -616,7 +736,7 @@ export function MinutesCompanyPanel() {
                       {new Date(call.startTime).toLocaleString('fr-FR')}
                     </td>
                     <td className="py-4 px-4 text-slate-900 font-bold tabular-nums">
-                      {formatBilledMinutesFromSeconds(call.duration)}
+                      {formatTalkDuration(call.duration)}
                     </td>
                     <td className="py-4 px-4">
                       {(() => {
@@ -634,7 +754,7 @@ export function MinutesCompanyPanel() {
                     <td className="py-4 px-4">
                       {(call.duration || 0) > 0 ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[9px] uppercase tracking-wider">
-                          <CheckCircle2 size={10} /> Minutes débitées
+                          <CheckCircle2 size={10} /> {billedMinutesFromSeconds(call.duration)} min débitées
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-100 font-bold text-[9px] uppercase tracking-wider">

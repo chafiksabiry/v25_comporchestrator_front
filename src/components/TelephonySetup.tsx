@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
 import { phoneNumberService, BASE_URL } from '../services/api';
 import { markGigStepDone } from '../services/gigSetupSync';
+import { providerForDestinationCountry } from '../utils/phoneProvider';
 import { requirementService, RequirementDetail } from '../services/requirementService';
 import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
@@ -84,8 +85,8 @@ const TelephonySetup = ({
   companyId?: string | null;
 }): JSX.Element => {
   const { t } = useTranslation();
-  // Provider is enforced to Twilio (UI selector intentionally hidden).
-  const [provider] = useState<'telnyx' | 'twilio'>('twilio');
+  // Provider follows gig destination (hidden from UI).
+  const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(propCompanyId || null);
   const [cookieError, setCookieError] = useState<string | null>(null);
@@ -269,11 +270,20 @@ const TelephonySetup = ({
     checkCompletedSteps();
   }, [companyId]);
 
-  // Auto-sélection du premier gig disponible si aucun n'est sélectionné
+  // Prefer the gig just created in onboarding; otherwise first available.
   useEffect(() => {
-    if (!selectedGigId && Array.isArray(gigs) && gigs.length > 0) {
-      setSelectedGigId(gigs[0]._id);
+    if (selectedGigId || !Array.isArray(gigs) || gigs.length === 0) return;
+    let preferred: string | null = null;
+    try {
+      preferred =
+        localStorage.getItem('selectedGigId') ||
+        localStorage.getItem('gigId') ||
+        null;
+    } catch {
+      preferred = null;
     }
+    const match = preferred ? gigs.find((g) => g._id === preferred) : null;
+    setSelectedGigId(match?._id || gigs[0]._id);
   }, [gigs, selectedGigId]);
 
   // Vérifier l'éligibilité au trial gratuit 15 jours pour la company.
@@ -305,13 +315,14 @@ const TelephonySetup = ({
     }
   }, [selectedGigId]);
 
-  // Mettre à jour la destination zone quand un gig est sélectionné
+  // Mettre à jour la destination zone + provider quand un gig est sélectionné
   useEffect(() => {
     if (selectedGigId && Array.isArray(gigs) && gigs.length > 0) {
       const selectedGig = gigs.find((gig: Gig) => gig._id === selectedGigId);
       if (selectedGig?.destination_zone?.cca2) {
-
-        setDestinationZone(selectedGig.destination_zone.cca2);
+        const cca2 = selectedGig.destination_zone.cca2;
+        setDestinationZone(cca2);
+        setProvider(providerForDestinationCountry(cca2));
       }
     } else {
       setDestinationZone('');
@@ -329,11 +340,9 @@ const TelephonySetup = ({
     }
   }, [phoneNumbers]);
 
-  /* New state for Twilio SIDs */
-  const [twilioRegulatorySids, setTwilioRegulatorySids] = useState<{ bundleSid?: string; addressSid?: string }>({
-    addressSid: 'ADfa022505e9b0433a23c8b4f6e56cf15a', // From Screenshot
-    bundleSid: 'BUf007aeefc1a71ad9ac096a4d205563b0'  // From Screenshot for FR
-  });
+  /* Twilio SIDs come from server env (TWILIO_FRENCH_BUNDLE_SID / ADDRESS_SID).
+     Do not hardcode — wrong SID causes Twilio 21649 on purchase. */
+  const [twilioRegulatorySids, setTwilioRegulatorySids] = useState<{ bundleSid?: string; addressSid?: string }>({});
 
   const checkGigPhoneNumber = async (zoneOverride?: string) => {
     if (!selectedGigId) return false;
@@ -473,9 +482,10 @@ const TelephonySetup = ({
     const destZone = zoneOverride || selectedGig.destination_zone.cca2;
     setDestinationZone(destZone); // Set destination zone for number search
 
-    // Check for available numbers first
+    // Check for available numbers first (provider follows destination country)
     try {
-      const numbers = await phoneNumberService.searchPhoneNumbers(destZone, 'telnyx');
+      const lineProvider = providerForDestinationCountry(destZone);
+      const numbers = await phoneNumberService.searchPhoneNumbers(destZone, lineProvider);
       setAvailableNumbers(Array.isArray(numbers) ? numbers : []);
 
       // If no numbers available, don't proceed with requirements

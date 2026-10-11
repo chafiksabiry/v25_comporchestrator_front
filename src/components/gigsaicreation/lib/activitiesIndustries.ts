@@ -1,14 +1,16 @@
-import { fetchActivities, fetchIndustries, fetchLanguages, fetchSoftSkills, fetchTechnicalSkills, fetchProfessionalSkills } from './api';
-import type { Activity, Industry, Language } from '../types';
+import { fetchActivities, fetchIndustries, fetchLanguages, fetchSectors, fetchSoftSkills, fetchTechnicalSkills, fetchProfessionalSkills } from './api';
+import type { Activity, Industry, Language, Sector } from '../types';
 
 let activitiesCache: Activity[] = [];
 let industriesCache: Industry[] = [];
+let sectorsCache: Sector[] = [];
 let languagesCache: Language[] = [];
 let softSkillsCache: Array<{ _id: string, name: string, description: string, category: string }> = [];
 let technicalSkillsCache: Array<{ _id: string, name: string, description: string, category: string }> = [];
 let professionalSkillsCache: Array<{ _id: string, name: string, description: string, category: string }> = [];
 let isActivitiesLoaded = false;
 let isIndustriesLoaded = false;
+let isSectorsLoaded = false;
 let isLanguagesLoaded = false;
 let isSoftSkillsLoaded = false;
 let isTechnicalSkillsLoaded = false;
@@ -52,6 +54,72 @@ export async function loadIndustries(): Promise<Industry[]> {
   }
 }
 
+export async function loadSectors(): Promise<Sector[]> {
+  if (isSectorsLoaded && sectorsCache.length > 0) {
+    return sectorsCache;
+  }
+  try {
+    const { data, error } = await fetchSectors();
+    if (error) {
+      console.error('❌ Error loading sectors:', error);
+      return [];
+    }
+    sectorsCache = data || [];
+    isSectorsLoaded = true;
+    return sectorsCache;
+  } catch (error) {
+    console.error('❌ Error loading sectors:', error);
+    return [];
+  }
+}
+
+export function getSectorById(id: string): Sector | undefined {
+  return sectorsCache.find((sector) => sector._id === id);
+}
+
+export function getSectorNameById(id: string, lang?: string): string {
+  const raw = String(id || '').trim();
+  if (!raw) return '';
+  if (!/^[a-f0-9]{24}$/i.test(raw)) return raw;
+  const sector = sectorsCache.find((s) => s._id === raw);
+  if (!sector) return '';
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+  return sector.name_i18n?.[code] || sector.name_i18n?.en || sector.name || '';
+}
+
+export function getSectorOptions(lang?: string): Array<{ value: string; label: string }> {
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+  return sectorsCache.map((sector) => ({
+    value: sector._id,
+    label: sector.name_i18n?.[code] || sector.name_i18n?.en || sector.name,
+  }));
+}
+
+export function convertSectorNamesToIds(names: string[]): string[] {
+  const ids: string[] = [];
+  for (const name of names) {
+    const raw = String(name || '').trim();
+    if (!raw) continue;
+    if (/^[a-f0-9]{24}$/i.test(raw)) {
+      ids.push(raw);
+      continue;
+    }
+    const lower = raw.toLowerCase();
+    const sector = sectorsCache.find(
+      (s) =>
+        s.name?.toLowerCase() === lower ||
+        s.name_i18n?.en?.toLowerCase() === lower ||
+        s.name_i18n?.fr?.toLowerCase() === lower
+    );
+    if (sector) {
+      ids.push(sector._id);
+    } else {
+      console.warn(`Sector "${raw}" not found in cache`);
+    }
+  }
+  return ids;
+}
+
 export async function loadLanguages(): Promise<Language[]> {
   if (isLanguagesLoaded && languagesCache.length > 0) {
     return languagesCache;
@@ -76,9 +144,11 @@ export function getActivityById(id: string): Activity | undefined {
   return activitiesCache.find(activity => activity._id === id);
 }
 
-export function getActivityNameById(id: string): string {
+export function getActivityNameById(id: string, lang?: string): string {
   const activity = activitiesCache.find(activity => activity._id === id);
-  return activity ? activity.name : '';
+  if (!activity) return '';
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+  return activity.name_i18n?.[code] || activity.name_i18n?.en || activity.name;
 }
 
 export function convertActivityNamesToIds(names: string[]): string[] {
@@ -94,12 +164,13 @@ export function convertActivityNamesToIds(names: string[]): string[] {
   return ids;
 }
 
-export function getActivityOptions(): Array<{ value: string; label: string; category: string }> {
+export function getActivityOptions(lang?: string): Array<{ value: string; label: string; category: string }> {
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
   const options = activitiesCache
     .filter(activity => activity.isActive)
     .map(activity => ({
       value: activity._id,
-      label: activity.name,
+      label: activity.name_i18n?.[code] || activity.name_i18n?.en || activity.name,
       category: activity.category
     }));
   return options;
@@ -110,9 +181,11 @@ export function getIndustryById(id: string): Industry | undefined {
   return industriesCache.find(industry => industry._id === id);
 }
 
-export function getIndustryNameById(id: string): string {
+export function getIndustryNameById(id: string, lang?: string): string {
   const industry = industriesCache.find(industry => industry._id === id);
-  return industry ? industry.name : '';
+  if (!industry) return '';
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+  return industry.name_i18n?.[code] || industry.name_i18n?.en || industry.name;
 }
 
 export function convertIndustryNamesToIds(names: string[]): string[] {
@@ -128,12 +201,13 @@ export function convertIndustryNamesToIds(names: string[]): string[] {
   return ids;
 }
 
-export function getIndustryOptions(): Array<{ value: string; label: string }> {
+export function getIndustryOptions(lang?: string): Array<{ value: string; label: string }> {
+  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
   const options = industriesCache
     .filter(industry => industry.isActive)
     .map(industry => ({
       value: industry._id,
-      label: industry.name
+      label: industry.name_i18n?.[code] || industry.name_i18n?.en || industry.name
     }));
   return options;
 }

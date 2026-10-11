@@ -1,37 +1,92 @@
+import i18n from '../i18n';
+
 export interface StatusBadge {
   label: string;
   tone: string;
   title?: string;
 }
 
-/** Map `callOutcome` to a short label + tone for disposition pills. */
+function tb(key: string, opts?: Record<string, unknown>): string {
+  return i18n.t(`calls.statusBadges.${key}`, opts);
+}
+
+/** Map `callOutcome` / Twilio signals → HARX ladder labels (9 statuses). */
 export function callOutcomeBadge(outcome: string | null | undefined): StatusBadge | null {
   if (!outcome) return null;
   const map: Record<string, StatusBadge> = {
-    transaction: { label: 'Transaction', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    appointment: { label: 'RDV', tone: 'bg-violet-50 text-violet-700 border-violet-200' },
-    callback_requested: { label: 'Rappel', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-    argued_interested: { label: 'Argumenté', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    refusal: { label: 'Refus', tone: 'bg-rose-50 text-rose-700 border-rose-200' },
-    not_interested: { label: 'Pas intéressé', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-    already_equipped: { label: 'Déjà équipé', tone: 'bg-blue-50 text-blue-700 border-blue-200' },
-    voicemail: { label: 'Messagerie', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-    no_answer: { label: 'Non décroché', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-    busy: { label: 'Occupé', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-    wrong_number: { label: 'Faux numéro', tone: 'bg-rose-50 text-rose-700 border-rose-200' },
-    fraud: { label: 'Fraude', tone: 'bg-rose-100 text-rose-800 border-rose-300' },
-    too_short: { label: 'Trop court', tone: 'bg-slate-50 text-slate-500 border-slate-200' },
-    connected_no_sale: { label: 'Sans suite', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
+    // Twilio / system telephony → HARX
+    voicemail: {
+      label: tb('voicemail'),
+      tone: 'bg-orange-50 text-orange-700 border-orange-200',
+      title: tb('voicemailTitle'),
+    },
+    busy: {
+      label: tb('busy'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+      title: tb('busyTitle'),
+    },
+    no_answer: {
+      label: tb('noAnswer'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+      title: tb('noAnswerTitle'),
+    },
+    wrong_number: {
+      label: tb('wrongNumber'),
+      tone: 'bg-rose-50 text-rose-700 border-rose-200',
+      title: tb('wrongNumberTitle'),
+    },
+    // Commercial ladder
+    callback_requested: {
+      label: tb('callbackRequested'),
+      tone: 'bg-amber-50 text-amber-700 border-amber-200',
+    },
+    appointment: {
+      label: tb('appointment'),
+      tone: 'bg-violet-50 text-violet-700 border-violet-200',
+    },
+    transaction: {
+      label: tb('transaction'),
+      tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    },
+    argued_interested: {
+      label: tb('arguedInterested'),
+      tone: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    },
+    refusal: {
+      label: tb('refusal'),
+      tone: 'bg-rose-50 text-rose-700 border-rose-200',
+    },
+    not_interested: {
+      label: tb('notInterested'),
+      tone: 'bg-rose-50 text-rose-700 border-rose-200',
+    },
+    already_equipped: {
+      label: tb('alreadyEquipped'),
+      tone: 'bg-blue-50 text-blue-700 border-blue-200',
+    },
+    fraud: { label: tb('fraud'), tone: 'bg-rose-100 text-rose-800 border-rose-300' },
+    // Legacy too_short is never shown as a user-facing label — map to sans suite.
+    too_short: {
+      label: tb('connectedNoSale'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+    },
+    connected_no_sale: {
+      label: tb('connectedNoSale'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+    },
   };
   return map[outcome] || { label: outcome.replace(/_/g, ' '), tone: 'bg-slate-50 text-slate-600 border-slate-200' };
 }
 
-const PROSPECT_RUBRICS: Array<{ key: string; label: string; tone: string }> = [
-  { key: 'RDV', label: 'RDV', tone: 'bg-violet-50 text-violet-700 border-violet-200' },
-  { key: 'A plus tard', label: 'Plus tard', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { key: 'PAS INTÉRESSÉS', label: 'Pas intéressé', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { key: 'PAS AU COURANT', label: 'Pas au courant', tone: 'bg-slate-50 text-slate-600 border-slate-200' },
-  { key: 'DÉJÀ ÉQUIPÉS', label: 'Déjà équipé', tone: 'bg-blue-50 text-blue-700 border-blue-200' },
+const PROSPECT_RUBRIC_KEYS: Array<{ key: string; labelKey: string; tone: string; legacyKeys?: string[] }> = [
+  { key: 'called_unreachable', labelKey: 'unreachable', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { key: 'called_voicemail', labelKey: 'voicemail', tone: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { key: 'called_wrong_number', labelKey: 'wrongNumber', tone: 'bg-rose-50 text-rose-700 border-rose-200', legacyKeys: ['PAS AU COURANT'] },
+  { key: 'called_callback', labelKey: 'callbackAsked', tone: 'bg-amber-50 text-amber-700 border-amber-200', legacyKeys: ['A plus tard'] },
+  { key: 'called_rdv', labelKey: 'rdvCallback', tone: 'bg-violet-50 text-violet-700 border-violet-200' },
+  { key: 'argued_rdv', labelKey: 'arguedRdv', tone: 'bg-indigo-50 text-indigo-700 border-indigo-200', legacyKeys: ['RDV'] },
+  { key: 'argued_declined', labelKey: 'arguedDeclined', tone: 'bg-rose-50 text-rose-700 border-rose-200', legacyKeys: ['PAS INTÉRESSÉS', 'DÉJÀ ÉQUIPÉS'] },
+  { key: 'argued_done', labelKey: 'arguedDone', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 ];
 
 /** Rubriques prospect passées — on affiche la plus pertinente (meilleur score). */
@@ -40,21 +95,32 @@ export function getProspectStatusBadge(
 ): StatusBadge | null {
   if (!aiCallScore) return null;
 
-  let best: { rubric: typeof PROSPECT_RUBRICS[number]; score: number } | null = null;
+  let best: { rubric: typeof PROSPECT_RUBRIC_KEYS[number]; score: number } | null = null;
 
-  for (const rubric of PROSPECT_RUBRICS) {
-    const metric = aiCallScore[rubric.key];
-    if (!metric) continue;
-    const passed = typeof metric.passed === 'boolean' ? metric.passed : (metric.score ?? 0) >= 50;
-    if (!passed) continue;
-    const score = metric.score ?? 0;
-    if (!best || score >= best.score) {
-      best = { rubric, score };
+  for (const rubric of PROSPECT_RUBRIC_KEYS) {
+    const keys = [rubric.key, ...(rubric.legacyKeys || [])];
+    for (const key of keys) {
+      const metric = aiCallScore[key];
+      if (!metric) continue;
+      const passed = typeof metric.passed === 'boolean' ? metric.passed : (metric.score ?? 0) >= 50;
+      if (!passed) continue;
+      const score = metric.score ?? 0;
+      if (!best || score >= best.score) {
+        best = { rubric, score };
+      }
     }
   }
 
   if (!best) return null;
-  return { label: best.rubric.label, tone: best.rubric.tone, title: best.rubric.key };
+  const label =
+    i18n.t(`calls.prospectMetrics.${best.rubric.labelKey}`) ||
+    tb(best.rubric.labelKey) ||
+    best.rubric.key;
+  return {
+    label,
+    tone: best.rubric.tone,
+    title: best.rubric.key,
+  };
 }
 
 const PRIORITY_CALLOUTCOMES = new Set([
@@ -65,28 +131,124 @@ const PRIORITY_CALLOUTCOMES = new Set([
   'no_answer',
   'busy',
   'wrong_number',
-  'too_short',
+  'connected_no_sale',
 ]);
+
+/** Twilio / post-analysis badge when callOutcome is missing or legacy `too_short`. */
+export function resolveTwilioOrPostAnalysisBadge(call: CallLike): StatusBadge | null {
+  if (isCallVoicemail(call)) {
+    const badge = callOutcomeBadge('voicemail');
+    return badge ? { ...badge, title: badge.title || tb('voicemailTitle') } : null;
+  }
+
+  const status = String(call.status || '').toLowerCase();
+  if (status === 'busy') return callOutcomeBadge('busy');
+  if (['no-answer', 'noanswer', 'canceled', 'cancelled'].includes(status)) {
+    return callOutcomeBadge('no_answer');
+  }
+  if (status === 'failed') return callOutcomeBadge('wrong_number');
+
+  const outcome = String(call.callOutcome || '').toLowerCase();
+  if (outcome && outcome !== 'too_short') {
+    const badge = callOutcomeBadge(outcome);
+    if (badge) return { ...badge, title: badge.title || tb('outcomeTitle', { outcome }) };
+  }
+
+  // Short connected call (QA skipped) → Sans suite, never « Trop court ».
+  return callOutcomeBadge('connected_no_sale');
+}
 
 export type CallLike = {
   validByAI?: boolean | null;
   valid?: boolean | null;
+  duration?: number | null;
+  status?: string | null;
   ai_call_status?: string | null;
   callOutcome?: string | null;
+  suggestedDisposition?: string | null;
   ai_summary?: string | null;
   ai_summary_fr?: string | null;
   ai_call_score?: Record<string, { passed?: boolean; score?: number; feedback?: string; feedback_fr?: string; feedback_en?: string }> | null;
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null } | null;
+  /** Twilio AMD AnsweredBy */
+  answeredBy?: string | null;
 };
+
+export const MIN_CALL_ANALYSIS_SECONDS = 30;
+
+export function isCallTooShortForAnalysis(
+  call: Pick<CallLike, 'duration' | 'ai_call_status'>
+): boolean {
+  if (call.ai_call_status === 'too_short') return true;
+  const duration = Number(call.duration);
+  return Number.isFinite(duration) && duration > 0 && duration < MIN_CALL_ANALYSIS_SECONDS;
+}
+
+export function getTooShortAnalysisNotice(language: string = 'fr', durationSec?: number): string {
+  const d =
+    typeof durationSec === 'number' && Number.isFinite(durationSec) && durationSec > 0
+      ? ` (${Math.round(durationSec)}s)`
+      : '';
+  return language.toLowerCase().startsWith('en')
+    ? `Call too short${d} — the transcript is kept. QA analysis only runs for calls over ${MIN_CALL_ANALYSIS_SECONDS} seconds.`
+    : `Appel trop court${d} — la retranscription est conservée. L’analyse QA ne se lance qu’au-delà de ${MIN_CALL_ANALYSIS_SECONDS} secondes.`;
+}
+
+const SCORE_RUBRIC_KEYS = [
+  'Agent fluency',
+  'Sentiment analysis',
+  'Fraud detection',
+  'Script coherence',
+  'Argumentation',
+  'Script adherence',
+];
+
+export function getScoreDecisionTooltip(call: CallLike, language: string = 'fr'): string {
+  const isEn = String(language || '').toLowerCase().startsWith('en');
+  const lines: string[] = [];
+  const score = call.ai_call_score?.overall?.score;
+  if (typeof score === 'number') {
+    lines.push(
+      isEn
+        ? `Overall score ${score}% based only on recorded evidence.`
+        : `Score global ${score}% calculé uniquement sur les preuves enregistrées.`
+    );
+  }
+  const duration = Number(call.duration);
+  if (Number.isFinite(duration) && duration > 0) {
+    lines.push(
+      isEn ? `Call duration: ${Math.round(duration)}s.` : `Durée de l’appel : ${Math.round(duration)}s.`
+    );
+  }
+  const bits = SCORE_RUBRIC_KEYS.map((key) => {
+    const metric = call.ai_call_score?.[key];
+    return typeof metric?.score === 'number' ? `${key}: ${metric.score}%` : null;
+  }).filter(Boolean);
+  if (bits.length) {
+    lines.push(isEn ? `Rubrics: ${bits.join(' · ')}` : `Critères : ${bits.join(' · ')}`);
+  }
+  const feedback = isEn
+    ? call.ai_call_score?.overall?.feedback_en || call.ai_call_score?.overall?.feedback || ''
+    : call.ai_call_score?.overall?.feedback_fr || call.ai_call_score?.overall?.feedback || '';
+  if (String(feedback).trim()) lines.push(String(feedback).trim().slice(0, 280));
+  lines.push(
+    isEn
+      ? 'The AI must not invent facts that are absent from the transcript.'
+      : 'L’IA ne doit pas inventer de faits absents de la transcription.'
+  );
+  return lines.join('\n');
+}
 
 const VOICEMAIL_REGEX =
   /messagerie|messagerie\s+(vocale|automatique)|r[ée]pondeur|laissez\s+(votre|un)\s+message|bo[îi]te\s+vocale|voicemail|answering\s+machine|leave\s+(a|your)\s+message|after\s+(the\s+)?(tone|beep)|appel\s+non\s+productif|non\s+productif|aucun(?:e)?\s+(?:interaction|[ée]change)|aucun\s+(?:él|el)[ée]ment\s+exploitable|n['']?est\s+pas\s+disponible|votre\s+correspondant|tombe?\s+(?:imm[ée]diatement\s+)?sur\s+la?\s?messagerie|redirig[ée]\s+vers\s+la?\s?messagerie/i;
 
-/** Messagerie / répondeur — distinct de la fraude. */
+/** Messagerie / répondeur (Twilio AMD) — distinct de la fraude. */
 export function isCallVoicemail(
   call: CallLike & { flags?: { fraud?: boolean; selfCall?: boolean } }
 ): boolean {
   if (call.callOutcome === 'voicemail') return true;
+  const answeredBy = String(call.answeredBy || '').toLowerCase();
+  if (answeredBy.startsWith('machine') || answeredBy === 'fax') return true;
   const feedback = String(
     call.ai_summary_fr ||
       call.ai_summary ||
@@ -96,6 +258,27 @@ export function isCallVoicemail(
       ''
   ).toLowerCase();
   return VOICEMAIL_REGEX.test(feedback);
+}
+
+/** Map Twilio CallStatus / AMD → HARX disposition key. */
+export function harxDispositionFromTwilio(call: CallLike): string | null {
+  if (isCallVoicemail(call)) return 'called_voicemail';
+  const outcome = String(call.callOutcome || '').toLowerCase();
+  const status = String(call.status || '').toLowerCase();
+  if (outcome === 'wrong_number' || status === 'failed') return 'called_wrong_number';
+  if (
+    outcome === 'busy' ||
+    outcome === 'no_answer' ||
+    ['busy', 'no-answer', 'noanswer', 'canceled', 'cancelled'].includes(status)
+  ) {
+    return 'called_unreachable';
+  }
+  if (outcome === 'callback_requested') return 'called_callback';
+  if (outcome === 'appointment') return 'called_rdv';
+  if (outcome === 'transaction') return 'argued_done';
+  if (['refusal', 'not_interested', 'already_equipped'].includes(outcome)) return 'argued_declined';
+  if (outcome === 'argued_interested') return 'argued_rdv';
+  return null;
 }
 
 export function getVoicemailCallNotice(language: string = 'fr'): string {
@@ -183,45 +366,134 @@ export function isNonEvaluableCall(call: CallLike): boolean {
   return isCallVoicemail(call) || isCallFraudDetected(call);
 }
 
-/** Display score: hidden (null) for voicemail/fraud in list badges; otherwise the persisted overall score. */
+/** Display score: hidden (null) for voicemail/fraud/short calls. */
 export function getDisplayOverallScore(call: CallLike): number | null {
-  if (isNonEvaluableCall(call)) return null;
+  if (isCallTooShortForAnalysis(call) || isNonEvaluableCall(call)) return null;
   const raw = call.ai_call_score?.overall?.score;
   return typeof raw === 'number' ? raw : null;
 }
 
-/** Score shown on the executive summary card (0 % for voicemail/fraud). */
+/** Score shown on the executive summary card (0 % for voicemail/fraud/short). */
 export function getExecutiveSummaryScore(call: CallLike): number {
-  if (isNonEvaluableCall(call)) return 0;
+  if (isCallTooShortForAnalysis(call) || isNonEvaluableCall(call)) return 0;
   const raw = call.ai_call_score?.overall?.score;
   return typeof raw === 'number' ? raw : 0;
 }
 
+export function shouldHideCallScoring(call: CallLike): boolean {
+  return isCallTooShortForAnalysis(call) || isNonEvaluableCall(call);
+}
+
+/** Remove invented call-duration phrases from AI summaries (duration is shown in the player). */
+function stripSummaryDurationText(text: string): string {
+  if (!text) return text;
+  let out = text;
+  out = out.replace(
+    /L['’]appel a duré\s+\d+\s*minutes?\b(?:\s+et\s+\d+\s*secondes?\b)?[.!]?\s*/gi,
+    ''
+  );
+  out = out.replace(
+    /The call lasted\s+\d+\s*minutes?\b(?:\s+and\s+\d+\s*seconds?\b)?[.!]?\s*/gi,
+    ''
+  );
+  out = out.replace(/\ba duré\s+\d+\s*minutes?\b(?:\s+et\s+\d+\s*secondes?\b)?/gi, '');
+  out = out.replace(/\blasted\s+\d+\s*minutes?\b(?:\s+and\s+\d+\s*seconds?\b)?/gi, '');
+  out = out.replace(/\b\d+\s*minutes?\s+et\s+\d+\s*secondes?\b/gi, '');
+  out = out.replace(/\b\d+\s*minutes?\s+and\s+\d+\s*seconds?\b/gi, '');
+  out = out.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1').replace(/^[,:;.\-\s]+/, '').trim();
+  if (out && /^[a-zàâäéèêëïîôùûüç]/.test(out)) {
+    out = out.charAt(0).toUpperCase() + out.slice(1);
+  }
+  return out;
+}
+
 export function getExecutiveSummaryText(call: CallLike, language: string = 'fr'): string {
   const isEn = String(language || '').toLowerCase().startsWith('en');
+  const durationSec = Number(call.duration) || 0;
+  if (isCallTooShortForAnalysis(call)) {
+    return getTooShortAnalysisNotice(language, durationSec || undefined);
+  }
   if (isCallVoicemail(call)) return getVoicemailCallNotice(language);
   if (isCallFraudDetected(call)) {
     const fromOverall = isEn
       ? (call.ai_call_score?.overall?.feedback_en || call.ai_call_score?.overall?.feedback || '')
       : (call.ai_call_score?.overall?.feedback_fr || call.ai_call_score?.overall?.feedback || '');
-    if (fromOverall.trim()) return fromOverall;
+    if (fromOverall.trim()) return stripSummaryDurationText(fromOverall);
     return getFraudCommissionNotice(language);
   }
   const fromSummary = isEn
     ? (call.ai_summary_en || call.ai_summary || '')
     : (call.ai_summary_fr || call.ai_summary || '');
-  if (fromSummary.trim()) return fromSummary;
-  return isEn
+  if (fromSummary.trim()) return stripSummaryDurationText(fromSummary);
+  const fromOverall = isEn
     ? (call.ai_call_score?.overall?.feedback_en || call.ai_call_score?.overall?.feedback || '')
     : (call.ai_call_score?.overall?.feedback_fr || call.ai_call_score?.overall?.feedback || '');
+  return stripSummaryDurationText(fromOverall);
 }
 
 export function hasAiCallAnalysis(call: CallLike): boolean {
+  if (isCallTooShortForAnalysis(call)) return false;
   if (typeof call.ai_call_score?.overall?.score === 'number') return true;
   const overall = call.ai_call_score?.overall;
   if (overall?.feedback || overall?.feedback_fr || overall?.feedback_en) return true;
   if (call.ai_summary || call.ai_summary_fr || call.ai_summary_en) return true;
   return isNonEvaluableCall(call);
+}
+
+const HARX_PROSPECT_SCORE_KEYS = [
+  'called_unreachable',
+  'called_voicemail',
+  'called_wrong_number',
+  'called_callback',
+  'called_rdv',
+  'argued_rdv',
+  'argued_declined',
+  'argued_done',
+] as const;
+
+/** Map callOutcome / suggestedDisposition → prospect rubric key. */
+export function resolveWinningProspectKey(call: CallLike): string | null {
+  const suggested = String(call.suggestedDisposition || '').trim();
+  if ((HARX_PROSPECT_SCORE_KEYS as readonly string[]).includes(suggested)) return suggested;
+
+  const outcome = String(call.callOutcome || '').toLowerCase();
+  if (outcome === 'callback_requested') return 'called_callback';
+  if (outcome === 'appointment') return 'called_rdv';
+  if (outcome === 'argued_interested') return 'argued_rdv';
+  if (outcome === 'refusal') return 'argued_declined';
+  if (outcome === 'voicemail') return 'called_voicemail';
+  if (outcome === 'wrong_number') return 'called_wrong_number';
+  if (outcome === 'not_argumented') return 'not_argumented';
+  return null;
+}
+
+const LEGACY_PROSPECT_SCORE_KEYS = [
+  'PAS INTÉRESSÉS',
+  'PAS AU COURANT',
+  'DÉJÀ ÉQUIPÉS',
+  'RDV',
+  'A plus tard',
+] as const;
+
+const QUALITY_SCORE_KEYS = [
+  'Agent fluency',
+  'Sentiment analysis',
+  'Fraud detection',
+  'Script coherence',
+  'Argumentation',
+  'Script adherence',
+  'Transaction analysis',
+  'overall',
+] as const;
+
+/** True when stored scores predate the HARX prospect ladder (needs force re-score). */
+export function needsHarxProspectRescore(
+  aiCallScore?: Record<string, unknown> | null
+): boolean {
+  if (!aiCallScore || typeof aiCallScore !== 'object') return false;
+  if (HARX_PROSPECT_SCORE_KEYS.some((k) => aiCallScore[k] != null)) return false;
+  if (LEGACY_PROSPECT_SCORE_KEYS.some((k) => aiCallScore[k] != null)) return true;
+  return QUALITY_SCORE_KEYS.some((k) => aiCallScore[k] != null);
 }
 
 /** Single-voice self-call: transcript Customer labels were inferred, not real. */
@@ -230,13 +502,59 @@ export function isSingleVoiceSelfCall(aiCallScore?: AiCallScoreWithVoice): boole
   if (typeof fraudScore === 'number' && fraudScore >= 50) return false;
 
   const voiceAnalysis = aiCallScore?.['Fraud detection']?.voiceAnalysis as
-    | { distinctVoices?: number; sameSpeakerSuspected?: boolean; fraudReason?: string }
+    | {
+        distinctVoices?: number;
+        sameSpeakerSuspected?: boolean;
+        fraudReason?: string;
+        confidence?: number;
+      }
     | undefined;
   if (!voiceAnalysis) return typeof fraudScore === 'number' && fraudScore < 50;
 
-  if (voiceAnalysis.distinctVoices === 1) return true;
-  if (voiceAnalysis.sameSpeakerSuspected === true) return true;
-  return ['single_speaker_ai', 'same_voice_ai'].includes(String(voiceAnalysis.fraudReason || ''));
+  const reason = String(voiceAnalysis.fraudReason || '');
+  if (['single_speaker_ai', 'same_voice_ai', 'transcript_no_customer', 'transcript_customer_absent'].includes(reason)) {
+    return true;
+  }
+
+  const confidence = typeof voiceAnalysis.confidence === 'number' ? voiceAnalysis.confidence : 0;
+  // Low-confidence "1 voice" is often a quiet customer / mono mix — not self-call UI.
+  if (voiceAnalysis.distinctVoices === 1 && confidence >= 75) return true;
+  if (voiceAnalysis.sameSpeakerSuspected === true && confidence >= 75) return true;
+  return false;
+}
+
+/**
+ * Normalise generic "Speaker N" labels from legacy transcripts.
+ *
+ * In outbound commercial calls the Agent speaks first — so the FIRST unique
+ * speaker encountered in the transcript is mapped to "Agent" and the second
+ * to "Client". This provides correct bubble styling for transcripts produced
+ * before the prompt used "Agent"/"Client" labels.
+ *
+ * If the transcript already uses meaningful labels (e.g. "Agent", "Client",
+ * "Répondeur", "rep"…) the function is a no-op.
+ */
+function normalizeGenericSpeakers(transcript: TranscriptEntry[]): TranscriptEntry[] {
+  const GENERIC_SPEAKER = /^speaker\s*\d+$/i;
+  const hasGenericLabels = transcript.some((e) => GENERIC_SPEAKER.test(String(e.speaker || '')));
+  if (!hasGenericLabels) return transcript; // already named — nothing to do
+
+  // Build first-seen order for speaker mapping
+  const order: string[] = [];
+  for (const entry of transcript) {
+    const s = String(entry.speaker || '');
+    if (!order.includes(s)) order.push(s);
+    if (order.length >= 2) break;
+  }
+  const speakerMap: Record<string, string> = {};
+  if (order[0]) speakerMap[order[0]] = 'Agent';
+  if (order[1]) speakerMap[order[1]] = 'Client';
+
+  return transcript.map((entry) => {
+    const s = String(entry.speaker || '');
+    const mapped = GENERIC_SPEAKER.test(s) && speakerMap[s] ? speakerMap[s] : s;
+    return mapped !== s ? { ...entry, originalSpeaker: entry.originalSpeaker || s, speaker: mapped } : entry;
+  });
 }
 
 /** Relabel inferred Customer turns for display when audio fraud detected one voice. */
@@ -245,9 +563,14 @@ export function getDisplayTranscript(
   aiCallScore?: AiCallScoreWithVoice
 ): TranscriptEntry[] {
   if (!transcript?.length) return [];
-  if (!isSingleVoiceSelfCall(aiCallScore)) return transcript;
 
-  return transcript.map((entry) => {
+  // Step 1: Normalise generic "Speaker N" labels (legacy transcripts)
+  const normalised = normalizeGenericSpeakers(transcript);
+
+  // Step 2: If self-call fraud — mark customer turns as simulated
+  if (!isSingleVoiceSelfCall(aiCallScore)) return normalised;
+
+  return normalised.map((entry) => {
     const speaker = String(entry.speaker || '');
     if (entry.simulated || isAgentSpeakerLabel(speaker)) return entry;
     return {
@@ -357,24 +680,58 @@ export function computeAgentFraudStats<T extends CallLike>(
   return Array.from(map.values()).sort((a, b) => b.fraudCount - a.fraudCount || a.agentName.localeCompare(b.agentName));
 }
 
+export function getCallRejectedBadge(): StatusBadge {
+  return {
+    label: tb('callRejectedByAi'),
+    tone: 'bg-rose-50 text-rose-700 border-rose-200',
+    title: tb('callRejectedByAiTitle'),
+  };
+}
+
+/** @deprecated use getCallRejectedBadge() — kept for import compatibility */
 export const CALL_REJECTED_BADGE: StatusBadge = {
   label: 'Appel refusé',
   tone: 'bg-rose-50 text-rose-700 border-rose-200',
-  title: 'L\'appel n\'a pas été validé par l\'IA — aucune transaction à traiter',
+  title: "L'appel n'a pas été validé par l'IA — aucune transaction à traiter",
 };
 
 /** Disposition label (pills, modal) when the call itself is still valid. */
 export function resolveCallDispositionStatus(call: CallLike): StatusBadge {
   if (isCallVoicemail(call)) {
     const badge = callOutcomeBadge('voicemail');
-    if (badge) return { ...badge, title: 'Messagerie — aucun échange avec le prospect' };
+    if (badge) return { ...badge, title: badge.title || tb('voicemailTitle') };
   }
 
-  const outcome = call.callOutcome;
+  const outcome = String(call.callOutcome || '').toLowerCase();
+
+  // Legacy / internal too_short → Twilio status or Sans suite (never « Trop court »).
+  if (outcome === 'too_short' || (!outcome && isCallTooShortForAnalysis(call))) {
+    return resolveTwilioOrPostAnalysisBadge(call) || {
+      label: tb('connectedNoSale'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+    };
+  }
+
+  // Prefer Twilio status when outcome missing (Busy / no-answer / failed).
+  const status = String(call.status || '').toLowerCase();
+  if (!call.callOutcome) {
+    if (status === 'busy') {
+      const badge = callOutcomeBadge('busy');
+      if (badge) return badge;
+    }
+    if (['no-answer', 'noanswer', 'canceled', 'cancelled'].includes(status)) {
+      const badge = callOutcomeBadge('no_answer');
+      if (badge) return badge;
+    }
+    if (status === 'failed') {
+      const badge = callOutcomeBadge('wrong_number');
+      if (badge) return badge;
+    }
+  }
 
   if (outcome && PRIORITY_CALLOUTCOMES.has(outcome)) {
     const badge = callOutcomeBadge(outcome);
-    if (badge) return { ...badge, title: `Résultat appel : ${outcome}` };
+    if (badge) return { ...badge, title: badge.title || tb('outcomeTitle', { outcome }) };
   }
 
   const prospect = getProspectStatusBadge(call.ai_call_score);
@@ -382,21 +739,21 @@ export function resolveCallDispositionStatus(call: CallLike): StatusBadge {
 
   const outcomeBadge = callOutcomeBadge(outcome);
   if (outcomeBadge) {
-    return { ...outcomeBadge, title: `Résultat appel : ${outcome}` };
+    return { ...outcomeBadge, title: outcomeBadge.title || tb('outcomeTitle', { outcome }) };
   }
 
   if (call.transaction?.validByAI === false) {
     return {
-      label: 'Pas de vente IA',
+      label: tb('noAiSale'),
       tone: 'bg-slate-50 text-slate-600 border-slate-200',
-      title: 'L\'IA n\'a pas détecté de transaction',
+      title: tb('noAiSaleTitle'),
     };
   }
 
   return {
-    label: 'À confirmer',
+    label: tb('toConfirm'),
     tone: 'bg-blue-50 text-blue-600 border-blue-200',
-    title: 'En attente de validation entreprise',
+    title: tb('toConfirmTitle'),
   };
 }
 
@@ -405,20 +762,46 @@ export function resolveUnvalidatedTransactionStatus(call: CallLike): StatusBadge
   if (isCallVoicemail(call)) {
     const badge = callOutcomeBadge('voicemail');
     return badge
-      ? { ...badge, title: 'Messagerie — aucune commission due' }
-      : { label: 'Messagerie', tone: 'bg-slate-50 text-slate-600 border-slate-200', title: 'Messagerie — aucune commission due' };
+      ? { ...badge, title: tb('voicemailTitle') }
+      : { label: tb('voicemail'), tone: 'bg-slate-50 text-slate-600 border-slate-200', title: tb('voicemailTitle') };
   }
 
-  if (call.transaction?.validByCompany === false) {
+  const outcome = String(call.callOutcome || '').toLowerCase();
+  // Call disposition (Sans suite, busy, …) is NOT a transaction status.
+  // Short / no-sale calls → show « Non validé » on the TRANSACTION badge.
+  if (
+    isCallTooShortForAnalysis(call) ||
+    outcome === 'too_short' ||
+    outcome === 'connected_no_sale' ||
+    outcome === 'busy' ||
+    outcome === 'no_answer' ||
+    outcome === 'wrong_number'
+  ) {
     return {
-      label: 'Call refused',
+      label: tb('notValidated'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+      title: tb('notValidatedTitle'),
+    };
+  }
+
+  // Stale inconsistency: call is AI-valid but transaction still carries an old
+  // AI auto-reject (validByAI=false + validByCompany=false). Ignore it and
+  // fall through to disposition — company "Not signed" keeps validByAI null/true.
+  const staleAiAutoReject =
+    call.validByAI === true &&
+    call.transaction?.validByAI === false &&
+    call.transaction?.validByCompany === false;
+
+  if (call.transaction?.validByCompany === false && !staleAiAutoReject) {
+    return {
+      label: tb('callRefused'),
       tone: 'bg-rose-50 text-rose-700 border-rose-200',
-      title: 'Décision entreprise : refusé',
+      title: tb('companyRefusedTitle'),
     };
   }
 
   if (isCallRejectedByAI(call)) {
-    return CALL_REJECTED_BADGE;
+    return getCallRejectedBadge();
   }
 
   return resolveCallDispositionStatus(call);

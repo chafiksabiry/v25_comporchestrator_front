@@ -4,6 +4,8 @@
  * Le contenu texte est échappé pour limiter les injections.
  */
 
+import { resolveSectionMarkdown } from './resolveSectionMarkdown';
+
 function escapeHtml(s: string): string {
   return String(s || '')
     .replace(/&/g, '&amp;')
@@ -16,7 +18,8 @@ function escapeHtml(s: string): string {
 function markdownishToPlain(md: string): string {
   return String(md || '')
     .replace(/\r\n/g, '\n')
-    .replace(/```[\s\S]*?```/g, ' ')
+    // Keep fenced CRM templates / examples — strip fences only, not the body
+    .replace(/```[\w-]*\n?([\s\S]*?)```/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/\*([^*]+)\*/g, '$1')
@@ -77,7 +80,7 @@ export function buildRepDeckSlidesForSingleModule(journey: any, moduleIndex: num
 
   const sections = Array.isArray(mod?.sections) ? mod.sections : [];
   sections.forEach((sec: any) => {
-    const body = markdownishToPlain(String(sec?.content || ''));
+    const body = markdownishToPlain(resolveSectionMarkdown(sec));
     slides.push({
       kind: 'section',
       moduleTitle: modTitle,
@@ -427,6 +430,7 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
   var i = 0;
   var quizPick = null;
   var quizLocked = false;
+  var quizPassed = false;
 
   function esc(s) {
     return String(s == null ? '' : s)
@@ -437,6 +441,7 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
   function renderSlide() {
     quizPick = null;
     quizLocked = false;
+    quizPassed = false;
     var s = slides[i];
     var deck = document.getElementById('deck');
     if (!s) {
@@ -499,11 +504,20 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
         var fb = document.getElementById('quiz-fb');
         fb.style.display = 'block';
         var ok = quizPick === correct;
+        quizPassed = ok;
         fb.innerHTML = '<strong>' + (ok ? 'Bonne réponse !' : 'Réponse incorrecte.') + '</strong>' +
           (s.explanation ? '<div style="margin-top:8px">' + esc(s.explanation) + '</div>' : '');
         document.getElementById('quiz-check').disabled = true;
+        updateNextEnabled();
       };
     }
+  }
+
+  function updateNextEnabled() {
+    var s = slides[i];
+    var atEnd = i >= slides.length - 1;
+    var blockQuiz = s && s.kind === 'quiz' && !quizPassed;
+    document.getElementById('next').disabled = atEnd || blockQuiz;
   }
 
   function renderDots() {
@@ -527,8 +541,8 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
     document.getElementById('progress-bar').style.width = pct + '%';
     document.getElementById('counter').textContent = (i + 1) + ' / ' + slides.length;
     document.getElementById('prev').disabled = i <= 0;
-    document.getElementById('next').disabled = i >= slides.length - 1;
     renderSlide();
+    updateNextEnabled();
     renderDots();
   }
 
@@ -536,6 +550,8 @@ export function buildRepInteractivePresentationHtmlFromDeck(title: string, slide
     if (i > 0) { i--; sync(); }
   };
   document.getElementById('next').onclick = function () {
+    var s = slides[i];
+    if (s && s.kind === 'quiz' && !quizPassed) return;
     if (i < slides.length - 1) { i++; sync(); }
   };
 
@@ -593,7 +609,7 @@ export function formationDigestModuleFromRaw(mod: any): FormationDigestForAi['mo
     title: String(mod?.title || 'Module').trim(),
     sections: sections.map((sec: any) => ({
       title: String(sec?.title || '').trim(),
-      contentPlain: markdownishToPlain(String(sec?.content || '')).slice(0, SECTION_BODY_MAX),
+      contentPlain: markdownishToPlain(resolveSectionMarkdown(sec)).slice(0, SECTION_BODY_MAX),
     })),
     quizzes: quizzes.map((qz: any) => ({
       title: String(qz?.title || 'Quiz').trim(),

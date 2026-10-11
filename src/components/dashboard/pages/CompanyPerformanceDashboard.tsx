@@ -47,15 +47,22 @@ interface PerformanceStats {
     validNumbers: number;
     callsOver90s: number;
     answeringMachineCalls: number;
-    /** Calls flagged `validByAI === true` (the only authoritative validation signal). */
+    aiEligibleCalls: number;
+    tooShortCalls: number;
+    autoRefusedCalls: number;
+    errorCalls: number;
     validatedCalls: number;
-    /** Calls where a sale / transaction was recorded (rep flag, IA detection, or explicit flag). */
+    aiValidatedCalls: number;
+    calibratedUpCalls: number;
+    calibratedDownCalls: number;
     transactionCalls: number;
-    /** Calls that never reached a human (status ≠ completed). */
     unansweredCalls: number;
     callsByStatus: Record<string, number>;
     registeredReps: number;
 }
+
+/** Minimum call duration (seconds) for AI analysis eligibility. */
+const MIN_AI_ANALYSIS_SECONDS = 60;
 
 interface WindowedStats {
     totalCalls: number;
@@ -63,7 +70,30 @@ interface WindowedStats {
     validNumbers: number;
     callsOver90s: number;
     answeringMachineCalls: number;
+    /** Calls long enough to be eligible for AI analysis (≥ 60 s, not too_short, not auto_refused). */
+    aiEligibleCalls: number;
+    /** Calls explicitly flagged too_short or duration < 60 s. */
+    tooShortCalls: number;
+    /**
+     * Calls refused before analysis because the REP failed the eligibility check
+     * (enrollment / training / reservation).
+     */
+    autoRefusedCalls: number;
+    /** Calls where the analysis pipeline returned an error. */
+    errorCalls: number;
+    /**
+     * Net validated calls:
+     *   = (validByAI OR calibratedUp) AND NOT calibratedDown
+     * calibratedDown always overrides — the company's explicit "Pas d'accord"
+     * removes the call from the validated bucket even if the AI scored it valid.
+     */
     validatedCalls: number;
+    /** Raw AI validation (before calibration override). */
+    aiValidatedCalls: number;
+    /** Calls confirmed by calibration verdict === 'up'. */
+    calibratedUpCalls: number;
+    /** Calls overridden to invalid by calibration verdict === 'down'. */
+    calibratedDownCalls: number;
     transactionCalls: number;
     unansweredCalls: number;
     callsByStatus: Record<string, number>;
@@ -75,28 +105,101 @@ const EMPTY_WINDOW: WindowedStats = {
     validNumbers: 0,
     callsOver90s: 0,
     answeringMachineCalls: 0,
+    aiEligibleCalls: 0,
+    tooShortCalls: 0,
+    autoRefusedCalls: 0,
+    errorCalls: 0,
     validatedCalls: 0,
+    aiValidatedCalls: 0,
+    calibratedUpCalls: 0,
+    calibratedDownCalls: 0,
     transactionCalls: 0,
     unansweredCalls: 0,
     callsByStatus: {}
 };
 
+/**
+ * Resolve the actual call duration in seconds using all available fields.
+ * Same logic as the backend `resolveCallDurationSec()`.
+ */
+function resolveDurationSec(call: any): number {
+    if (call.ai_call_status === 'too_short') return 0; // explicit backend flag
+    const d = Number(call.duration);
+    if (Number.isFinite(d) && d > 0) return d;
+    // Fallback: endTime - startTime
+    if (call.endTime && call.startTime) {
+        const diff = (new Date(call.endTime).getTime() - new Date(call.startTime).getTime()) / 1000;
+        if (Number.isFinite(diff) && diff > 0) return diff;
+    }
+    return 0;
+}
+
+function isTooShort(call: any): boolean {
+    if (call.ai_call_status === 'too_short') return true;
+    const d = resolveDurationSec(call);
+    return d > 0 && d < MIN_AI_ANALYSIS_SECONDS;
+}
+
 function computeWindowedStats(calls: any[]): WindowedStats {
     const w: WindowedStats = { ...EMPTY_WINDOW, callsByStatus: {} };
     for (const call of calls) {
         const status = (call.status || 'Inconnu').toString();
+        const aiStatus = (call.ai_call_status || '').toString();
         w.callsByStatus[status] = (w.callsByStatus[status] || 0) + 1;
         const isCompleted = status === 'completed' || status === 'Completed';
         if (isCompleted) w.contactedLeads++;
         else w.unansweredCalls++;
         if (status !== 'Failed' && status !== 'invalid') w.validNumbers++;
-        if ((call.duration || 0) >= 90) w.callsOver90s++;
+        if (resolveDurationSec(call) >= 90) w.callsOver90s++;
         if (status.toLowerCase().includes('machine')) w.answeringMachineCalls++;
-        if (call.validByAI === true) w.validatedCalls++;
+
+        // ── AI eligibility classification ────────────────────────────────
+        // Priority: too_short > auto_refused > error > eligible
+        if (isTooShort(call)) {
+            w.tooShortCalls++;
+            // too_short calls skip all AI scoring — go to next call
+            continue;
+        }
+        if (aiStatus === 'auto_refused') {
+            // REP failed eligibility (enrollment / training / reservation).
+            // Not a content problem — track separately.
+            w.autoRefusedCalls++;
+            // auto_refused calls also skip AI scoring
+            continue;
+        }
+        if (aiStatus === 'error') {
+            // Analysis pipeline failed; count as eligible but not validated.
+            w.errorCalls++;
+            w.aiEligibleCalls++;
+            continue;
+        }
+
+        // All other calls (scored, processing, null) count as eligible
+        w.aiEligibleCalls++;
+
+        // ── Calibration signals ──────────────────────────────────────────
+        const calibVerdict = call.scoreCalibration?.verdict || null;
+        const calibratedDown = calibVerdict === 'down';
+        const calibratedUp   = calibVerdict === 'up';
+        if (calibratedDown) w.calibratedDownCalls++;
+        if (calibratedUp)   w.calibratedUpCalls++;
+
+        // ── AI validation ────────────────────────────────────────────────
+        const aiValidated = call.validByAI === true;
+        if (aiValidated) w.aiValidatedCalls++;
+
+        // ── Net validated ────────────────────────────────────────────────
+        // calibratedDown ALWAYS overrides — even if AI scored the call valid.
+        // calibratedUp confirms — even if AI didn't flag it as valid.
+        const netValidated = calibratedDown ? false : (aiValidated || calibratedUp);
+        if (netValidated) w.validatedCalls++;
+
+        // ── Transaction signals ──────────────────────────────────────────
         if (
             call.transactionOccurred === true ||
             call.validByReps === true ||
-            call.ai_call_score?.transaction_detected === true
+            call.ai_call_score?.transaction_detected === true ||
+            aiStatus === 'transaction_detected'
         ) w.transactionCalls++;
     }
     w.totalCalls = calls.length;
@@ -143,7 +246,14 @@ export function CompanyPerformanceDashboard() {
         validNumbers: 0,
         callsOver90s: 0,
         answeringMachineCalls: 0,
+        aiEligibleCalls: 0,
+        tooShortCalls: 0,
+        autoRefusedCalls: 0,
+        errorCalls: 0,
         validatedCalls: 0,
+        aiValidatedCalls: 0,
+        calibratedUpCalls: 0,
+        calibratedDownCalls: 0,
         transactionCalls: 0,
         unansweredCalls: 0,
         callsByStatus: {},
@@ -232,7 +342,14 @@ export function CompanyPerformanceDashboard() {
                         validNumbers: agg.validNumbers,
                         callsOver90s: agg.callsOver90s,
                         answeringMachineCalls: agg.answeringMachineCalls,
+                        aiEligibleCalls: agg.aiEligibleCalls,
+                        tooShortCalls: agg.tooShortCalls,
+                        autoRefusedCalls: agg.autoRefusedCalls,
+                        errorCalls: agg.errorCalls,
                         validatedCalls: agg.validatedCalls,
+                        aiValidatedCalls: agg.aiValidatedCalls,
+                        calibratedUpCalls: agg.calibratedUpCalls,
+                        calibratedDownCalls: agg.calibratedDownCalls,
                         transactionCalls: agg.transactionCalls,
                         unansweredCalls: agg.unansweredCalls,
                         callsByStatus: agg.callsByStatus,
@@ -314,17 +431,25 @@ export function CompanyPerformanceDashboard() {
         validNumbers: currentWindow.validNumbers,
         callsOver90s: currentWindow.callsOver90s,
         answeringMachineCalls: currentWindow.answeringMachineCalls,
+        aiEligibleCalls: currentWindow.aiEligibleCalls,
+        tooShortCalls: currentWindow.tooShortCalls,
+        autoRefusedCalls: currentWindow.autoRefusedCalls,
+        errorCalls: currentWindow.errorCalls,
         validatedCalls: currentWindow.validatedCalls,
+        aiValidatedCalls: currentWindow.aiValidatedCalls,
+        calibratedUpCalls: currentWindow.calibratedUpCalls,
+        calibratedDownCalls: currentWindow.calibratedDownCalls,
         transactionCalls: currentWindow.transactionCalls,
         unansweredCalls: currentWindow.unansweredCalls,
         callsByStatus: currentWindow.callsByStatus
     };
 
     // Four rate metrics requested by the company team:
-    //   • Coverage    = total calls / total leads        (call activity vs lead stock)
-    //   • Non-answer  = unanswered  / total calls        (% of calls that never reached a human)
-    //   • Argumentation = validByAI=true / total calls   (validated calls — the audit-passing rate)
-    //   • Conversion  = transactions / total calls       (% of calls that closed a sale)
+    //   • Coverage    = total calls / total leads            (call activity vs lead stock)
+    //   • Non-answer  = unanswered  / total calls            (% of calls that never reached a human)
+    //   • Argumentation = validatedCalls / aiEligibleCalls   (AI-validated or calibrated / calls ≥ 60 s)
+    //                     ↑ denominator excludes too-short calls that were never eligible for AI analysis
+    //   • Conversion  = transactions / total calls           (% of calls that closed a sale)
     // All four are computed from the current time window so the filter
     // (Quotidien / Hebdo / Mensuel / Annuel) actually changes them.
     const rate = (num: number, den: number) => (den > 0 ? (num / den) * 100 : 0);
@@ -336,22 +461,21 @@ export function CompanyPerformanceDashboard() {
         () => rate(displayStats.unansweredCalls, displayStats.totalCalls),
         [displayStats.totalCalls, displayStats.unansweredCalls]
     );
+    // Use aiEligibleCalls as denominator — short calls are excluded because
+    // they never receive AI analysis and would deflate the rate unfairly.
     const argumentationRate = useMemo(
-        () => rate(displayStats.validatedCalls, displayStats.totalCalls),
-        [displayStats.totalCalls, displayStats.validatedCalls]
+        () => rate(displayStats.validatedCalls, displayStats.aiEligibleCalls),
+        [displayStats.aiEligibleCalls, displayStats.validatedCalls]
     );
     const conversionRate = useMemo(
         () => rate(displayStats.transactionCalls, displayStats.totalCalls),
         [displayStats.totalCalls, displayStats.transactionCalls]
     );
 
-    // Previous-window equivalents so each rate card can show a real trend
-    // (period-over-period change). The leads count is a stock, not a flow,
-    // so we reuse the current total — the coverage trend then reflects the
-    // change in *calls* against the same lead inventory.
+    // Previous-window equivalents
     const prevCoverageRate = rate(previousWindow.totalCalls, stats.totalLeads);
     const prevUnansweredRate = rate(previousWindow.unansweredCalls, previousWindow.totalCalls);
-    const prevArgumentationRate = rate(previousWindow.validatedCalls, previousWindow.totalCalls);
+    const prevArgumentationRate = rate(previousWindow.validatedCalls, previousWindow.aiEligibleCalls);
     const prevConversionRate = rate(previousWindow.transactionCalls, previousWindow.totalCalls);
 
     const trendCoverage = computeTrendPct(coverageRate, prevCoverageRate);
@@ -539,7 +663,25 @@ export function CompanyPerformanceDashboard() {
                             icon: <Users className="w-4 h-4" />,
                             trendPct: trendLeads,
                             trendLabel: 'Stock total de leads'
-                        }
+                        },
+                        {
+                            label: t('performanceDashboard.metrics.aiEligibleCalls', 'Analysés IA'),
+                            value: displayStats.aiEligibleCalls,
+                            icon: <Zap className="w-4 h-4" />,
+                            trendPct: null,
+                            trendLabel: [
+                                displayStats.tooShortCalls   > 0 ? `${displayStats.tooShortCalls} trop courts` : '',
+                                displayStats.autoRefusedCalls > 0 ? `${displayStats.autoRefusedCalls} refusés auto` : '',
+                                displayStats.errorCalls       > 0 ? `${displayStats.errorCalls} erreurs IA` : '',
+                            ].filter(Boolean).join(' · ') || 'Appels ≥ 60 s'
+                        },
+                        ...(displayStats.calibratedUpCalls > 0 || displayStats.calibratedDownCalls > 0 ? [{
+                            label: t('performanceDashboard.metrics.calibrations', 'Calibrages'),
+                            value: displayStats.calibratedUpCalls + displayStats.calibratedDownCalls,
+                            icon: <BarChart3 className="w-4 h-4" />,
+                            trendPct: null,
+                            trendLabel: `✓ ${displayStats.calibratedUpCalls} confirmés · ✗ ${displayStats.calibratedDownCalls} rectifiés`
+                        }] : [])
                     ]}
                 />
 
@@ -568,7 +710,16 @@ export function CompanyPerformanceDashboard() {
                         subtitle={t('performanceDashboard.ratios.argumentationSubtitle')}
                         value={argumentationRate}
                         color="blue"
-                        extra={`${displayStats.validatedCalls.toLocaleString()} / ${displayStats.totalCalls.toLocaleString()}`}
+                        extra={`${displayStats.validatedCalls.toLocaleString()} / ${displayStats.aiEligibleCalls.toLocaleString()}`}
+                        extraNote={[
+                            displayStats.tooShortCalls > 0    ? `${displayStats.tooShortCalls} < 30s exclus` : '',
+                            displayStats.autoRefusedCalls > 0 ? `${displayStats.autoRefusedCalls} refusés auto` : '',
+                            displayStats.errorCalls > 0       ? `${displayStats.errorCalls} erreurs IA` : '',
+                        ].filter(Boolean).join(' · ') || undefined}
+                        calibratedExtra={[
+                            displayStats.calibratedUpCalls > 0   ? `✓ ${displayStats.calibratedUpCalls} confirmés` : '',
+                            displayStats.calibratedDownCalls > 0 ? `✗ ${displayStats.calibratedDownCalls} rectifiés` : '',
+                        ].filter(Boolean).join(' · ') || undefined}
                         trendPct={trendArgumentation}
                         trendLabel={periodLabel(timeRange, t)}
                     />
@@ -698,6 +849,8 @@ function RatioCard({
     value,
     color,
     extra,
+    extraNote,
+    calibratedExtra,
     trendPct,
     trendLabel,
     invertTrend
@@ -708,6 +861,10 @@ function RatioCard({
     color: 'harx' | 'blue' | 'emerald' | 'amber';
     /** Optional raw counters shown next to the percentage (e.g. "12 / 50"). */
     extra?: string;
+    /** Small annotation under the counters (e.g. "5 exclus < 60s"). */
+    extraNote?: string;
+    /** Calibration annotation (e.g. "dont 3 calibrés"). */
+    calibratedExtra?: string;
     /** Period-over-period variation in %. `null` => no comparable data. */
     trendPct?: number | null;
     /** Human-readable comparison label, e.g. "vs 30 jours précédents". */
@@ -760,8 +917,20 @@ function RatioCard({
                             {value.toFixed(1)}<span className="text-lg ml-0.5 not-italic">%</span>
                         </div>
                         {extra && (
-                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider tabular-nums pb-1">
-                                {extra}
+                            <div className="text-right">
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider tabular-nums">
+                                    {extra}
+                                </div>
+                                {extraNote && (
+                                    <div className="text-[8px] text-amber-400 font-bold mt-0.5">
+                                        ⚠ {extraNote}
+                                    </div>
+                                )}
+                                {calibratedExtra && (
+                                    <div className="text-[8px] text-blue-400 font-bold mt-0.5">
+                                        ✓ {calibratedExtra}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

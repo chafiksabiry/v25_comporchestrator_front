@@ -1,9 +1,45 @@
 import type { Gig, GigHistory } from './types';
-import { GigData } from '../types';
+import { GigData, type Sector } from '../types';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
+const OBJECT_ID_RE = /^[a-f0-9]{24}$/i;
+
+async function resolveSectorIdsForPayload(sectors: unknown): Promise<string[]> {
+  const list = Array.isArray(sectors) ? sectors.map((s) => String(s || '').trim()).filter(Boolean) : [];
+  if (!list.length) return [];
+  const already = list.filter((s) => OBJECT_ID_RE.test(s));
+  const names = list.filter((s) => !OBJECT_ID_RE.test(s));
+  if (!names.length) return [...new Set(already)];
+
+  const { data } = await fetchSectors();
+  const resolved = names
+    .map((name) => {
+      const lower = name.toLowerCase();
+      const found = (data || []).find(
+        (s) =>
+          s.name?.toLowerCase() === lower ||
+          s.name_i18n?.en?.toLowerCase() === lower ||
+          s.name_i18n?.fr?.toLowerCase() === lower
+      );
+      return found?._id;
+    })
+    .filter((id): id is string => Boolean(id));
+
+  return [...new Set([...already, ...resolved])];
+}
+
 const API_URL = import.meta.env.VITE_API_URL_GIGS || 'http://localhost:3000';
+
+/** Backend often returns `{ message, data: gig }`; accept flat gig too. */
+function unwrapGigPayload(payload: any): any {
+  if (!payload || typeof payload !== 'object') return payload;
+  const nested = payload.data;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested) && (nested._id || nested.id)) {
+    return nested;
+  }
+  return payload;
+}
 
 // Types for countries API
 export interface Country {
@@ -332,11 +368,9 @@ function fixScheduleData(data: GigData): GigData {
   return data;
 }
 
-// Merge availability.schedule and schedule.schedules into a single, deduplicated
-// list. We do this because the UI keeps both fields in parallel and the two
-// can drift out of sync (e.g. after AI generation followed by manual edits),
-// which previously caused only one of the two arrays to be persisted and lost
-// any newly added Schedule Groups (Sat/Sun, etc.).
+// Prefer schedule.schedules (editor source of truth). Only fall back to
+// availability when schedule is missing — never union-merge, or deleted plages
+// resurrect from a stale availability copy after Suggestions edits.
 function mergeAndDedupeSchedule(data: GigData): Array<{ day: string; hours: { start: string; end: string } }> {
   const fromAvailability: any[] = Array.isArray((data as any)?.availability?.schedule)
     ? (data as any).availability.schedule
@@ -345,10 +379,7 @@ function mergeAndDedupeSchedule(data: GigData): Array<{ day: string; hours: { st
     ? (data as any).schedule.schedules
     : [];
 
-  // schedule.schedules is the source of truth in the UI (ScheduleSection
-  // writes to it directly), so we prefer it but fall back to availability for
-  // any entries that may only live there.
-  const ordered = [...fromSchedule, ...fromAvailability];
+  const ordered = fromSchedule.length > 0 ? fromSchedule : fromAvailability;
 
   const seen = new Set<string>();
   const merged: Array<{ day: string; hours: { start: string; end: string } }> = [];
@@ -470,9 +501,11 @@ export async function updateGigData(gigId: string, gigData: GigData): Promise<{ 
 
     // Remove the schedule field and other fields that shouldn't be sent to backend
     const { schedule, time_zone, destinationZones, ...cleanGigData } = fixedGigData;
+    const resolvedSectors = await resolveSectorIdsForPayload((cleanGigData as any).sectors);
 
     const gigDataWithIds = {
       ...cleanGigData,
+      sectors: resolvedSectors,
       userId,
       companyId,
       skills: formattedSkills,
@@ -507,7 +540,7 @@ export async function updateGigData(gigId: string, gigData: GigData): Promise<{ 
     }
 
     try {
-      const data = JSON.parse(responseText);
+      const data = unwrapGigPayload(JSON.parse(responseText));
       return { data, error: undefined };
     } catch (parseError) {
       console.error('Error parsing success response:', parseError);
@@ -624,16 +657,54 @@ export async function saveGigData(gigData: GigData): Promise<{ data: any; error?
     })();
 
     // Remove the schedule field and other fields that shouldn't be sent to backend
-    const { schedule, time_zone, destinationZones, ...cleanGigData } = fixedGigData;
+    const { schedule, time_zone, destinationZones, destination_zone, ...cleanGigData } = fixedGigData as GigData & {
+      time_zone?: string;
+    };
+
+    // Strip invalid ObjectId refs from availability (e.g. "UTC" string)
+    if (formattedAvailability) {
+      const tz = formattedAvailability.time_zone;
+      if (
+        !tz ||
+        typeof tz !== 'string' ||
+        tz.length !== 24 ||
+        !/^[a-f0-9]{24}$/i.test(tz)
+      ) {
+        delete (formattedAvailability as any).time_zone;
+      }
+      if (Array.isArray(formattedAvailability.timeZones)) {
+        formattedAvailability.timeZones = formattedAvailability.timeZones.filter(
+          (z: unknown) =>
+            typeof z === 'string' && z.length === 24 && /^[a-f0-9]{24}$/i.test(z)
+        );
+      }
+    }
+
+    // Omit invalid currency ObjectId (title-only / partial creates)
+    let safeCommission = formattedCommission;
+    if (safeCommission) {
+      const currencyValue = safeCommission.currency as any;
+      const currencyOk =
+        typeof currencyValue === 'string' &&
+        currencyValue.length === 24 &&
+        /^[a-f0-9]{24}$/i.test(currencyValue);
+      if (!currencyOk) {
+        const { currency: _c, ...rest } = safeCommission as any;
+        safeCommission = rest;
+      }
+    }
+
+    const resolvedSectors = await resolveSectorIdsForPayload(cleanGigData.sectors);
 
     const gigDataWithIds = {
       ...cleanGigData,
       userId,
       companyId,
+      sectors: resolvedSectors,
       skills: formattedSkills,
       availability: formattedAvailability,
       ...(formattedDestinationZone && { destination_zone: formattedDestinationZone }),
-      ...(formattedCommission && { commission: formattedCommission })
+      ...(safeCommission && { commission: safeCommission })
     };
 
     const response = await fetch(`${API_URL}/gigs`, {
@@ -657,13 +728,7 @@ export async function saveGigData(gigData: GigData): Promise<{ data: any; error?
     }
 
     try {
-      const data = JSON.parse(responseText);
-
-      // Save gig ID using the new utility function
-      if (data && data._id) {
-        // Gig ID saved successfully
-      }
-
+      const data = unwrapGigPayload(JSON.parse(responseText));
       return { data, error: undefined };
     } catch (parseError) {
       console.error('Error parsing success response:', parseError);
@@ -1027,6 +1092,24 @@ export async function fetchIndustries(): Promise<{ data: Industry[]; error?: Err
     return { data: result.data || [] };
   } catch (error) {
     console.error('Error fetching industries:', error);
+    return { data: [], error: error as Error };
+  }
+}
+
+export async function fetchSectors(): Promise<{ data: Sector[]; error?: Error }> {
+  try {
+    const response = await fetch(`${API_URL}/sectors`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const result = await response.json();
+    if (result?.success === false) {
+      throw new Error(result.message || 'Failed to fetch sectors');
+    }
+    const rows = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+    return { data: rows as Sector[] };
+  } catch (error) {
+    console.error('Error fetching sectors:', error);
     return { data: [], error: error as Error };
   }
 }

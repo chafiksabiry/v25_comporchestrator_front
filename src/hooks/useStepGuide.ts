@@ -1,4 +1,8 @@
 import Cookies from 'js-cookie';
+import {
+  isCallCenterWorkspace,
+  preferCallCenterDashboard,
+} from '../utils/callCenterWorkspace';
 
 export type StepGuidePhase = 'before' | 'inside' | 'all';
 
@@ -6,12 +10,16 @@ const beforeKey = (stepId: number) => `stepGuideBefore_${stepId}`;
 const insideKey = (stepId: number) => `stepGuideInside_${stepId}`;
 
 /**
- * Required onboarding steps (non-disabled only — matches CompanyOnboarding.tsx).
- * Steps 2 (KYC) and 7 (Reporting) are disabled and must not block completion.
+ * Required onboarding steps for company (non-disabled).
+ * Call-center: no steps are mandatory — see isOnboardingFullyCompleted.
+ * Steps 2 (KYC) and 6 (Reporting) are disabled and must not block completion.
  */
 export const REQUIRED_ONBOARDING_STEP_IDS: number[] = [
   1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13,
 ];
+
+/** Call-center: nothing required to unlock the dashboard. */
+export const CALL_CENTER_REQUIRED_ONBOARDING_STEP_IDS: number[] = [];
 
 /** @deprecated use REQUIRED_ONBOARDING_STEP_IDS */
 export const ALL_ONBOARDING_STEP_IDS = REQUIRED_ONBOARDING_STEP_IDS;
@@ -64,8 +72,13 @@ export async function syncOnboardingProgressFromApi(companyId: string): Promise<
 
 /**
  * True when every required (non-disabled) onboarding step is completed.
+ * Call-center: steps are optional — dashboard unlocks only when the user
+ * explicitly chooses "Go to dashboard" (preferCallCenterDashboard flag).
  */
 export function isOnboardingFullyCompleted(completedSteps?: number[]): boolean {
+  if (isCallCenterWorkspace()) {
+    return preferCallCenterDashboard();
+  }
   const steps = completedSteps ?? getCompletedStepsFromStorage();
   if (!steps.length) return false;
   return REQUIRED_ONBOARDING_STEP_IDS.every((id) => steps.includes(id));

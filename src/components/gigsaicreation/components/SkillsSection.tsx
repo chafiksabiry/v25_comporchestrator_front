@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { InfoText } from './InfoText';
 import { Languages, BookOpen, Laptop, Users, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 import { 
@@ -55,6 +56,7 @@ const LANGUAGE_LEVELS = [
 
 
 export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSectionProps) {
+  const { t } = useTranslation();
   // API data states
   const [professionalSkills, setProfessionalSkills] = useState<Array<{_id: string, name: string, description: string, category: string}>>([]);
   const [softSkills, setSoftSkills] = useState<Array<{_id: string, name: string, description: string, category: string}>>([]);
@@ -286,18 +288,20 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
 
     const getLevelLabel = (level: number, type: string) => {
       if (type === "languages") {
-        const labels = ['Beginner', 'Elementary', 'Intermediate', 'Upper Intermediate', 'Advanced', 'Mastery'];
-        return labels[level] || 'Intermediate';
+        const keys = [
+          'beginner',
+          'elementary',
+          'intermediate',
+          'upperIntermediate',
+          'advanced',
+          'mastery',
+        ] as const;
+        const key = keys[level] || 'intermediate';
+        return t(`gigCreation.skills.levels.${key}`);
       } else {
-        // Fix: Use same skill level labels as Suggestions.tsx for consistency
-        const labels = ['', 'Basic', 'Novice', 'Intermediate', 'Advanced', 'Expert'];
-        // Ensure we have a valid level (1-5)
+        const keys = ['', 'basic', 'novice', 'intermediate', 'advanced', 'expert'] as const;
         const validLevel = Math.max(1, Math.min(5, level || 1));
-        // Debug only for actual skill rendering, not hover calculations
-        if (level !== 1) {
-          
-        }
-        return labels[validLevel] || 'Basic';
+        return t(`gigCreation.skills.levels.${keys[validLevel]}`);
       }
     };
 
@@ -346,7 +350,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
             {icon}
             <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
             <span className="text-sm text-gray-500">
-              {skillOptions.length} available
+              {t('gigCreation.skills.availableCount', { count: skillOptions.length })}
             </span>
           </div>
           {!showAddSkillInterface[skillType] && (
@@ -386,7 +390,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                   currentPercentage = ((validLevelIndex + 1) / 6) * 100;
                 }
                 
-                levelName = LANGUAGE_LEVELS[validLevelIndex]?.label.split(' - ')[1] || 'Elementary';
+                levelName = getLevelLabel(validLevelIndex, 'languages');
                 
                 // Debug: Log actual language data structure
                 
@@ -594,7 +598,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                             const hoverPercentage = hoveredExistingLevel[skillType][index] || 0;
                             const levelIndex = Math.floor((hoverPercentage / 100) * LANGUAGE_LEVELS.length);
                             const level = Math.min(levelIndex, LANGUAGE_LEVELS.length - 1);
-                            return LANGUAGE_LEVELS[level]?.label.split(' - ')[1] || 'Elementary';
+                            return getLevelLabel(level, 'languages');
                           })()
                         ) : (
                           (() => {
@@ -612,7 +616,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                         <button
                             onClick={() => deleteSkill(skillType, index)}
                             className="ml-1 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Remove skill"
+                            title={t('gigCreation.skills.removeSkill')}
                         >
                           ×
                         </button>
@@ -652,7 +656,11 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                       }}
                       className="w-full px-2 py-1 text-xs border border-harx-300 rounded-md focus:outline-none focus:ring-2 focus:ring-harx-500"
                     >
-                      <option value="">Select {skillType === 'languages' ? 'language' : 'skill'}...</option>
+                      <option value="">
+                        {skillType === 'languages'
+                          ? t('gigCreation.skills.selectLanguage')
+                          : t('gigCreation.skills.selectSkill')}
+                      </option>
                       {skillOptions.map(option => (
                         <option key={option.id} value={option.id}>
                           {option.name}
@@ -744,7 +752,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                           const hoverPercentage = hoveredLevel[skillType + '_add'] || 0;
                           const levelIndex = Math.floor((hoverPercentage / 100) * LANGUAGE_LEVELS.length);
                           const level = Math.min(levelIndex, LANGUAGE_LEVELS.length - 1);
-                          return LANGUAGE_LEVELS[level]?.label.split(' - ')[1] || 'Elementary';
+                          return getLevelLabel(level, 'languages');
                         })()
                       ) : (
                         (() => {
@@ -754,7 +762,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                         })()
                       )
                     ) : (
-                      skillType === 'languages' ? 'Intermediate' : 'Intermediate'
+                      getLevelLabel(skillType === 'languages' ? 2 : 3, skillType)
                     )}
                   </div>
                 </div>
@@ -770,8 +778,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
       <div className="space-y-8">
         <div className="space-y-6 p-6 bg-gradient-to-br from-slate-50 via-white to-slate-50 rounded-2xl shadow-sm border border-slate-100">
           <InfoText>
-            Define all required skills for the role, including languages, technical tools, and soft skills.
-            Be specific about proficiency levels where applicable.
+            {t('gigCreation.skills.infoBanner')}
           </InfoText>
 
           <div className="grid grid-cols-1 gap-8">
@@ -779,7 +786,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
             {renderSkillCard(
               'languages',
               safeData.languages,
-              'Languages',
+              t('gigCreation.skills.languages'),
               <Languages className="w-5 h-5 text-harx-500" />
             )}
 
@@ -787,7 +794,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
             {renderSkillCard(
               'professional',
               safeData.professional,
-              'Professional Skills',
+              t('gigCreation.skills.professional'),
               <BookOpen className="w-5 h-5 text-harx-500" />
             )}
 
@@ -795,7 +802,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
             {renderSkillCard(
               'technical',
               safeData.technical,
-              'Technical Skills',
+              t('gigCreation.skills.technical'),
               <Laptop className="w-5 h-5 text-purple-500" />
             )}
 
@@ -803,7 +810,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
             {renderSkillCard(
               'soft',
               safeData.soft,
-              'Soft Skills',
+              t('gigCreation.skills.soft'),
               <Users className="w-5 h-5 text-orange-500" />
             )}
           </div>
@@ -816,14 +823,14 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
               >
                 <ArrowLeft className="w-5 h-5" />
-                Previous
+                {t('gigCreation.nav.previous')}
               </button>
             </div>
             <button
               onClick={onNext}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
             >
-              Next
+              {t('gigCreation.nav.next')}
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>

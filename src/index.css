@@ -44,6 +44,36 @@ body {
   .harx-alert-soft {
     @apply rounded-harx border border-harx-orange-500/40 bg-harx-orange-50;
   }
+
+  /* Call-center Option A — light ops console chrome */
+  .ops-console .harx-nav-chip {
+    @apply bg-white border-slate-200 text-slate-800
+      hover:border-slate-300 hover:bg-slate-50;
+  }
+
+  .ops-console .harx-nav-chip-icon {
+    @apply bg-slate-50;
+  }
+}
+
+.ops-console [data-harx-lang-menu] {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.ops-console [data-harx-lang-menu] button {
+  color: #475569;
+}
+
+.ops-console [data-harx-lang-menu] button:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.ops-console [data-harx-lang-menu] button.bg-white\/10,
+.ops-console [data-harx-lang-menu] button[class*='bg-white/10'] {
+  background: #ecfdf5 !important;
+  color: #065f46 !important;
 }
 
 /* Global custom scrollbar styles with HARX branding */

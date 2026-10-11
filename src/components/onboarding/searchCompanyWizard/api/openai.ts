@@ -9,10 +9,13 @@ export interface CompanyProfile {
   name: string;
   logo?: string;
   industry?: string;
+  industry_i18n?: { en?: string; fr?: string };
   founded?: string;
   headquarters?: string;
   overview: string;
+  overview_i18n?: { en?: string; fr?: string };
   mission?: string;
+  mission_i18n?: { en?: string; fr?: string };
   culture: {
     values: string[];
     benefits: string[];
@@ -44,7 +47,8 @@ export interface CompanyProfile {
 
 export async function generateCompanyProfile(
   companyInfo: string,
-  logoUrl?: string
+  logoUrl?: string,
+  language: "fr" | "en" = "fr"
 ): Promise<CompanyProfile> {
   const userId = Cookies.get("userId");
   if (!userId) {
@@ -56,6 +60,7 @@ export async function generateCompanyProfile(
     userId,
     logoUrl,
     persist: false,
+    language,
   });
 
   if (!response.data?.success) {
@@ -84,7 +89,8 @@ export async function generateCompanyProfile(
 
 export async function generateCompanyProfileFromUrl(
   url: string,
-  logoUrl?: string
+  logoUrl?: string,
+  language: "fr" | "en" = "fr"
 ): Promise<CompanyProfile> {
   const userId = Cookies.get("userId");
   if (!userId) {
@@ -95,6 +101,7 @@ export async function generateCompanyProfileFromUrl(
     url,
     userId,
     logoUrl,
+    language,
   });
 
   if (!response.data?.success) {

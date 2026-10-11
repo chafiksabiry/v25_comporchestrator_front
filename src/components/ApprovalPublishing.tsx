@@ -40,6 +40,12 @@ import {
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import WalletTopUpModal from './wallet/WalletTopUpModal';
+import ActiveGigLimitModal, {
+  type ActiveGigLimitItem,
+  type ActiveGigLimitMode,
+} from './ActiveGigLimitModal';
+import { getOrchestratorApiBase } from '../lib/paypalCheckout';
+import { limitsFromSubscriptionPayload } from '../lib/planMetadata';
 
 interface Gig {
   _id: string;
@@ -64,7 +70,7 @@ interface Gig {
  *  `gigActivation` is excluded — it is set by the backend hook as a
  *  side effect of the very action this screen performs. */
 const REQUIRED_SETUP_STEPS: SetupStepField[] = SETUP_STEP_FIELDS.filter(
-  (f) => f !== 'gigActivation'
+  (f) => f !== 'gigActivation' && f !== 'knowledgeBase'
 );
 
 /** Returns the setup steps that are still pending for a given gig.
@@ -171,6 +177,18 @@ const ApprovalPublishing = () => {
   const [balance, setBalance] = useState<number | null>(null);
   const [showBalanceWarning, setShowBalanceWarning] = useState(true);
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [activeLimitModal, setActiveLimitModal] = useState<{
+    mode: ActiveGigLimitMode;
+    gigId: string | null;
+    targetTitle: string;
+    maxGigs: number;
+    planName: string | null;
+    nextPlanHint: string | null;
+    activeGigs: ActiveGigLimitItem[];
+    slotsNeeded: number;
+    blocking: boolean;
+  } | null>(null);
+  const [activeLimitSwitching, setActiveLimitSwitching] = useState(false);
 
   const handleWalletTopUpSuccess = async () => {
     const { refreshAndBroadcastWalletBalance } = await import('../lib/walletBalanceSync');
@@ -390,8 +408,8 @@ const ApprovalPublishing = () => {
             budget: gig.commission?.baseAmount && gig.commission.baseAmount !== '0' ? `$${gig.commission.baseAmount}` : null,
             companyId: gig.companyId,
             companyName: gig.companyName || gig.company?.name || company?.name || t('approvalPublishing.fallback.company'),
-            createdAt: gig.createdAt,
-            updatedAt: gig.updatedAt,
+            createdAt: gig.createdAt || gig.created_at || gig.purchasedAt || gig.purchaseDate || null,
+            updatedAt: gig.updatedAt || gig.updated_at || null,
             submittedBy: gig.submittedBy || gig.companyName || gig.company?.name || company?.name || t('approvalPublishing.fallback.company'),
             issues: gig.issues || [],
             setupSteps: gig.setupSteps || undefined,
@@ -402,6 +420,7 @@ const ApprovalPublishing = () => {
 
         
         setGigs(transformedGigs);
+        void enforceActiveGigQuota(transformedGigs, companyId);
       } else {
         console.warn('⚠️ No data property in API response');
         setGigs([]);
@@ -457,6 +476,28 @@ const ApprovalPublishing = () => {
     return isMatch;
   });
 
+  const resolveGigPurchaseDate = (gig: { _id?: string; createdAt?: string; updatedAt?: string }): Date | null => {
+    for (const raw of [gig.createdAt, gig.updatedAt]) {
+      if (!raw) continue;
+      const parsed = new Date(raw);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    if (gig._id && /^[a-f0-9]{24}$/i.test(gig._id)) {
+      const seconds = Number.parseInt(gig._id.slice(0, 8), 16);
+      if (Number.isFinite(seconds)) return new Date(seconds * 1000);
+    }
+    return null;
+  };
+
+  const formatAbsoluteDate = (date: Date | null) => {
+    if (!date) return t('approvalPublishing.fallback.notAvailable');
+    return date.toLocaleDateString(i18n.language?.toLowerCase().startsWith('en') ? 'en-GB' : 'fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
   const formatDate = (dateString: string) => {
     
 
@@ -473,19 +514,20 @@ const ApprovalPublishing = () => {
         return t('approvalPublishing.dates.invalid');
       }
 
+      // Always show the calendar purchase date; keep relative time as a hint.
+      const absolute = formatAbsoluteDate(date);
       const now = new Date();
       const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
-      let result;
-      if (diffInHours < 1) result = t('approvalPublishing.dates.justNow');
-      else if (diffInHours < 24) result = t('approvalPublishing.dates.hoursAgo', { count: diffInHours });
-      else {
+      let relative = '';
+      if (diffInHours < 1) relative = t('approvalPublishing.dates.justNow');
+      else if (diffInHours < 24) relative = t('approvalPublishing.dates.hoursAgo', { count: diffInHours });
+      else if (diffInHours < 24 * 14) {
         const diffInDays = Math.floor(diffInHours / 24);
-        result = t('approvalPublishing.dates.daysAgo', { count: diffInDays });
+        relative = t('approvalPublishing.dates.daysAgo', { count: diffInDays });
       }
 
-      
-      return result;
+      return relative ? `${absolute} · ${relative}` : absolute;
     } catch (error) {
       console.error('📅 Error formatting date:', error);
       return t('approvalPublishing.dates.invalid');
@@ -559,8 +601,99 @@ const ApprovalPublishing = () => {
     }
   };
 
+  const fetchPlanGigQuota = async (
+    companyId: string
+  ): Promise<{
+    maxGigs: number;
+    planName: string | null;
+    nextPlanHint: string | null;
+  }> => {
+    const NEXT: Record<string, string> = {
+      STARTER: 'RUNNER',
+      RUNNER: 'SCALER',
+      GROWTH: 'SCALER',
+    };
+    try {
+      const apiBase = getOrchestratorApiBase();
+      const response = await axios.get(
+        `${apiBase}/subscriptions/current/${companyId}`,
+        { timeout: 8000 }
+      );
+      const body = response.data as any;
+      const plan = body?.data?.planId || {};
+      const limits = limitsFromSubscriptionPayload(body);
+      const name = String(limits.planName || plan.name || '').toUpperCase() || null;
+      const maxGigs = limits.maxGigs ?? 1;
+      return {
+        maxGigs,
+        planName: name,
+        nextPlanHint: (name && NEXT[name]) || null,
+      };
+    } catch (err) {
+      console.warn('Failed to load plan gig quota:', err);
+      return { maxGigs: 1, planName: 'STARTER', nextPlanHint: 'RUNNER' };
+    }
+  };
+
+  const openActiveLimitModal = (
+    gigId: string | null,
+    opts: {
+      mode?: ActiveGigLimitMode;
+      maxGigs: number;
+      planName: string | null;
+      nextPlanHint: string | null;
+      activeGigs: ActiveGigLimitItem[];
+      blocking?: boolean;
+    }
+  ) => {
+    const mode = opts.mode || 'activate';
+    const target = gigId ? gigs.find((g) => g._id === gigId) : null;
+    const slotsNeeded =
+      mode === 'reconcile'
+        ? Math.max(1, opts.activeGigs.length - opts.maxGigs)
+        : Math.max(1, opts.activeGigs.length - opts.maxGigs + 1);
+    setActiveLimitModal({
+      mode,
+      gigId,
+      targetTitle: target?.title || 'Gig',
+      maxGigs: opts.maxGigs,
+      planName: opts.planName,
+      nextPlanHint: opts.nextPlanHint,
+      activeGigs: opts.activeGigs,
+      slotsNeeded,
+      blocking: Boolean(opts.blocking),
+    });
+  };
+
+  /** Fix legacy over-quota state (e.g. 2 Actif on STARTER) as soon as the list loads. */
+  const enforceActiveGigQuota = async (
+    list: Gig[],
+    companyId: string
+  ) => {
+    const active = list.filter(
+      (g) => String(g.status || '').toLowerCase() === 'active'
+    );
+    if (active.length <= 1) return;
+    const quota = await fetchPlanGigQuota(companyId);
+    if (active.length <= quota.maxGigs) return;
+    openActiveLimitModal(null, {
+      mode: 'reconcile',
+      maxGigs: quota.maxGigs,
+      planName: quota.planName,
+      nextPlanHint: quota.nextPlanHint,
+      activeGigs: active.map((g) => ({
+        _id: g._id,
+        title: g.title || 'Gig',
+      })),
+      blocking: true,
+    });
+  };
+
   // API Functions
-  const approveGig = async (gigId: string) => {
+  const approveGig = async (
+    gigId: string,
+    options?: { deactivateGigIds?: string[]; skipLimitCheck?: boolean }
+  ) => {
     try {
       const gig = gigs.find((g) => g._id === gigId);
       if (gig && !isGigSetupComplete(gig)) {
@@ -578,8 +711,7 @@ const ApprovalPublishing = () => {
         return;
       }
 
-      const isBalanceSufficient = await checkCompanyBalance();
-      if (!isBalanceSufficient) {
+      if (balance !== null && balance <= 0) {
         toast.error(t('approvalPublishing.balance.singleError'), {
           duration: 5000,
           position: 'top-right',
@@ -597,64 +729,203 @@ const ApprovalPublishing = () => {
       const gigIdCookie = Cookies.get('gigId');
 
       if (!companyId || !userId) {
-        throw new Error('Missing authentication tokens');
+        setError(t('approvalPublishing.errors.approveGig'));
+        toast.error(t('approvalPublishing.errors.approveGig'), {
+          duration: 5000,
+          position: 'top-right'
+        });
+        return;
       }
 
+      const deactivateGigIds = (options?.deactivateGigIds || []).filter(
+        (id) => id && id !== gigId
+      );
+      const alreadyActive = String(gig?.status || '').toLowerCase() === 'active';
+
+      if (!options?.skipLimitCheck && !alreadyActive && deactivateGigIds.length === 0) {
+        const otherActive = gigs.filter(
+          (g) =>
+            g._id !== gigId &&
+            String(g.status || '').toLowerCase() === 'active'
+        );
+        const quota = await fetchPlanGigQuota(companyId);
+        if (otherActive.length >= quota.maxGigs) {
+          openActiveLimitModal(gigId, {
+            maxGigs: quota.maxGigs,
+            planName: quota.planName,
+            nextPlanHint: quota.nextPlanHint,
+            activeGigs: otherActive.map((g) => ({
+              _id: g._id,
+              title: g.title || 'Gig',
+            })),
+          });
+          return;
+        }
+      }
+
+      setGigs((prevGigs) =>
+        prevGigs.map((item) => {
+          if (deactivateGigIds.includes(item._id)) {
+            return { ...item, status: 'inactive' };
+          }
+          if (item._id === gigId) {
+            return {
+              ...item,
+              status: 'active',
+              setupSteps: {
+                ...(item.setupSteps || {}),
+                gigActivation: true,
+              },
+            };
+          }
+          return item;
+        })
+      );
+
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
-
-      const requestBody = {
-        status: 'active'
+      const body: { status: string; deactivateGigIds?: string[] } = {
+        status: 'active',
       };
-
+      if (deactivateGigIds.length > 0) {
+        body.deactivateGigIds = deactivateGigIds;
+      }
       const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${gigIdCookie}:${userId}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(20000),
       });
 
       if (!response.ok) {
         let errorMessage = `Failed to approve gig: ${response.status} ${response.statusText}`;
+        let errorPayload: any = null;
         try {
-          const errorData = await response.json();
-          if (errorData && errorData.message) {
-            errorMessage = errorData.message;
+          errorPayload = await response.json();
+          if (errorPayload?.message) {
+            errorMessage = errorPayload.message;
           }
         } catch (_) {}
+
+        if (
+          response.status === 403 &&
+          (errorPayload?.code === 'ACTIVE_GIG_LIMIT' ||
+            /GIG actif/i.test(String(errorPayload?.message || '')))
+        ) {
+          const data = errorPayload?.data || {};
+          openActiveLimitModal(gigId, {
+            maxGigs: Number(data.maxGigs) || 1,
+            planName: data.planName || null,
+            nextPlanHint: data.nextPlanHint || null,
+            activeGigs: Array.isArray(data.activeGigs)
+              ? data.activeGigs
+              : gigs
+                  .filter(
+                    (g) =>
+                      g._id !== gigId &&
+                      String(g.status || '').toLowerCase() === 'active'
+                  )
+                  .map((g) => ({ _id: g._id, title: g.title || 'Gig' })),
+          });
+          // Roll back optimistic UI without generic toast
+          setGigs((prev) =>
+            prev.map((item) => {
+              if (item._id === gigId) {
+                return {
+                  ...item,
+                  status: gig?.status || 'to_activate',
+                  setupSteps: {
+                    ...(item.setupSteps || {}),
+                    gigActivation: false,
+                  },
+                };
+              }
+              if (deactivateGigIds.includes(item._id)) {
+                return { ...item, status: 'active' };
+              }
+              return item;
+            })
+          );
+          return;
+        }
+
         console.error('❌ API Error response:', errorMessage);
         throw new Error(errorMessage);
       }
+      void response.body?.cancel();
 
-      const responseData = await response.json();
-
-      // Update the gig status locally instead of refreshing
-      setGigs(prevGigs => prevGigs.map(gig =>
-        gig._id === gigId
-          ? {
-              ...gig,
-              status: 'active',
-              setupSteps: {
-                ...(gig.setupSteps || {}),
-                gigActivation: true,
-              },
-            }
-          : gig
-      ));
-
+      setActiveLimitModal(null);
       markGigStepDone(gigId, 'gigActivation', true);
-
-      // Mark step 12 (phase 4) as completed since we now have an active gig
-      await markStep12AsCompleted();
+      void markStep12AsCompleted();
+      if (deactivateGigIds.length > 0) {
+        toast.success(t('approvalPublishing.activeLimit.switchSuccess'), {
+          duration: 4000,
+          position: 'top-right',
+        });
+      }
+      return;
     } catch (error) {
       console.error('❌ Error approving gig:', error);
+      const previousStatus = gigs.find((g) => g._id === gigId)?.status || 'to_activate';
+      const deactivateGigIds = (options?.deactivateGigIds || []).filter(
+        (id) => id && id !== gigId
+      );
+      setGigs((prevGigs) =>
+        prevGigs.map((item) => {
+          if (item._id === gigId) {
+            return {
+              ...item,
+              status: previousStatus,
+              setupSteps: {
+                ...(item.setupSteps || {}),
+                gigActivation: false,
+              },
+            };
+          }
+          if (deactivateGigIds.includes(item._id)) {
+            return { ...item, status: 'active' };
+          }
+          return item;
+        })
+      );
       setError(t('approvalPublishing.errors.approveGig'));
       toast.error(t('approvalPublishing.errors.approveGig'), {
         duration: 5000,
         position: 'top-right'
       });
     }
+  };
+
+  const handleActiveLimitSwitch = async (deactivateGigIds: string[]) => {
+    if (!activeLimitModal) return;
+    setActiveLimitSwitching(true);
+    try {
+      if (activeLimitModal.mode === 'reconcile' || !activeLimitModal.gigId) {
+        for (const id of deactivateGigIds) {
+          await rejectGig(id);
+        }
+        setActiveLimitModal(null);
+        toast.success(t('approvalPublishing.activeLimit.reconcileSuccess'), {
+          duration: 4000,
+          position: 'top-right',
+        });
+        await fetchGigs();
+        return;
+      }
+      await approveGig(activeLimitModal.gigId, {
+        deactivateGigIds,
+        skipLimitCheck: true,
+      });
+    } finally {
+      setActiveLimitSwitching(false);
+    }
+  };
+
+  const handleActiveLimitUpgrade = () => {
+    setActiveLimitModal(null);
+    window.location.hash = '#/dashboard/upgrade';
   };
 
   const markStep12AsCompleted = async () => {
@@ -2841,6 +3112,11 @@ const ApprovalPublishing = () => {
                         <p className="text-sm text-gray-500">
                           {gig.category || t('approvalPublishing.fallback.noCategory')}
                           {gig.budget && ` • ${gig.budget}`}
+                          {' · '}
+                          <span className="font-semibold text-slate-600">
+                            {t('approvalPublishing.fields.created')}:{' '}
+                            {formatAbsoluteDate(resolveGigPurchaseDate(gig))}
+                          </span>
                         </p>
                         {!isGigSetupComplete(gig) &&
                           (gig.status === 'pending' ||
@@ -2899,7 +3175,9 @@ const ApprovalPublishing = () => {
                       </div>
                       <div>
                         <p className="text-xs font-medium text-gray-500">{t('approvalPublishing.fields.created')}</p>
-                        <p className="text-sm font-medium text-gray-900">{formatDate(gig.createdAt)}</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {formatAbsoluteDate(resolveGigPurchaseDate(gig))}
+                        </p>
                       </div>
                       <div>
                         <p className="text-xs font-medium text-gray-500">{t('approvalPublishing.fields.status')}</p>
@@ -3148,6 +3426,25 @@ const ApprovalPublishing = () => {
         onClose={() => setShowDepositModal(false)}
         companyId={Cookies.get('companyId')}
         onSuccess={handleWalletTopUpSuccess}
+      />
+      <ActiveGigLimitModal
+        open={Boolean(activeLimitModal)}
+        onClose={() =>
+          !activeLimitSwitching &&
+          !activeLimitModal?.blocking &&
+          setActiveLimitModal(null)
+        }
+        mode={activeLimitModal?.mode || 'activate'}
+        targetGigTitle={activeLimitModal?.targetTitle || ''}
+        maxGigs={activeLimitModal?.maxGigs || 1}
+        planName={activeLimitModal?.planName || null}
+        nextPlanHint={activeLimitModal?.nextPlanHint || null}
+        activeGigs={activeLimitModal?.activeGigs || []}
+        slotsNeeded={activeLimitModal?.slotsNeeded || 1}
+        switching={activeLimitSwitching}
+        blocking={Boolean(activeLimitModal?.blocking)}
+        onSwitch={handleActiveLimitSwitch}
+        onUpgrade={handleActiveLimitUpgrade}
       />
     </div>
   );

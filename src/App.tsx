@@ -17,6 +17,7 @@ import {
   LogOut,
   Settings,
   Menu,
+  Cpu,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
@@ -27,7 +28,14 @@ import { Provider } from 'react-redux';
 import { store } from './components/dashboard/store';
 import { AuthProvider } from './components/dashboard/contexts/AuthContext';
 import Cookies from 'js-cookie';
+import { broadcastAuthChanged } from './lib/authSync';
 import { formatWalletMinutesBalance } from './utils/billingMinutes';
+import { formatAiTokensBalance } from './lib/aiTokensUsage';
+import {
+  isCallCenterWorkspace,
+  isCompanyLikeWorkspace,
+  setPreferCallCenterDashboard,
+} from './utils/callCenterWorkspace';
 import ProfileCreation from './components/ProfileCreation';
 import GigGeneration from './components/GigGeneration';
 import Matching from './components/Matching';
@@ -45,6 +53,8 @@ import StripeContainer from './components/stripe/StripeContainer';
 import DashboardApp from './components/dashboard/App';
 import PremiumDashboard from './components/training/components/Dashboard/PremiumDashboard';
 import MasterSidebar from './components/layout/MasterSidebar';
+import { getMyCompanyAccess } from './services/companyMembersApi';
+import { connectTeamPresenceSocket } from './lib/teamPresenceSocket';
 import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwitch';
 import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
 import Subscription from './components/Subscription';
@@ -164,9 +174,12 @@ function AppContent() {
   const [completedStepIds, setCompletedStepIds] = useState<number[]>(() => getCompletedStepsFromStorage());
   const [balance, setBalance] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
+  const [aiTokens, setAiTokens] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => connectTeamPresenceSocket(), []);
+
   useEffect(() => {
     if (!isProfileDropdownOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -186,9 +199,10 @@ function AppContent() {
     if (!compId) return;
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
     try {
-      const [walletRes, minutesRes, phoneRes] = await Promise.all([
+      const [walletRes, minutesRes, tokensRes, phoneRes] = await Promise.all([
         fetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
         fetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
+        fetch(`${apiBaseUrl}/tokens-company/${compId}`).catch(() => null),
         fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
       ]);
 
@@ -205,6 +219,14 @@ function AppContent() {
         const mins = minutesJson?.data?.minutes ?? minutesJson?.minutes;
         if (typeof mins === 'number') {
           setMinutes(mins);
+        }
+      }
+
+      if (tokensRes?.ok) {
+        const tokensJson = await tokensRes.json();
+        const toks = tokensJson?.data?.tokens ?? tokensJson?.tokens;
+        if (typeof toks === 'number') {
+          setAiTokens(toks);
         }
       }
 
@@ -235,6 +257,9 @@ function AppContent() {
         }
         if (typeof customEvent.detail.minutes === 'number') {
           setMinutes(customEvent.detail.minutes);
+        }
+        if (typeof customEvent.detail.tokens === 'number') {
+          setAiTokens(customEvent.detail.tokens);
         }
         if (typeof customEvent.detail.escrow === 'number') {
           setEscrow(customEvent.detail.escrow);
@@ -302,7 +327,12 @@ function AppContent() {
 
   const handleMinutesClick = () => {
     setActiveProject('dashboard');
-    navigate('/dashboard/minutes');
+    navigate(minutes <= 0 ? '/dashboard/minutes?buy=1' : '/dashboard/minutes');
+  };
+
+  const handleTokensClick = () => {
+    setActiveProject('dashboard');
+    navigate('/dashboard/tokens');
   };
 
   const handleTelephonyClick = () => {
@@ -391,6 +421,7 @@ function AppContent() {
 
           // Fetch company details for logo
           const companyApiUrl = import.meta.env.VITE_COMPANY_API_URL;
+          let invitedMember = false;
           if (companyApiUrl) {
             const companyId = Cookies.get('companyId');
             let companyResponse;
@@ -450,11 +481,31 @@ function AppContent() {
                 setOnboardingComplete(complete);
                 if (complete) markGuideComplete();
               }
+            } else {
+              // Invited teammates do not own a company document. Attach them
+              // to the company they were invited into.
+              try {
+                const access = await getMyCompanyAccess();
+                if (access?.companyId) {
+                  Cookies.set('companyId', access.companyId, { path: '/' });
+                  localStorage.setItem('companyId', access.companyId);
+                  localStorage.setItem('userType', 'company');
+                  localStorage.removeItem('callCenterStaff');
+                  window.dispatchEvent(new CustomEvent('harx:company-ready'));
+                  if (!access.isOwner) {
+                    invitedMember = true;
+                    setOnboardingComplete(true);
+                    markGuideComplete();
+                  }
+                }
+              } catch {
+                // Membership API may be unavailable; keep the owner flow unchanged.
+              }
             }
           }
 
           const cookieCompanyId = Cookies.get('companyId');
-          if (cookieCompanyId) {
+          if (cookieCompanyId && !invitedMember) {
             const steps = await syncOnboardingProgressFromApi(cookieCompanyId);
             const complete = isOnboardingFullyCompleted(steps);
             setOnboardingComplete(complete);
@@ -509,6 +560,9 @@ function AppContent() {
     };
 
     const openCompanyDashboard = () => {
+      if (isCallCenterWorkspace()) {
+        setPreferCallCenterDashboard(true);
+      }
       setActiveProject('dashboard');
       navigate('/dashboard/main');
     };
@@ -743,7 +797,8 @@ function AppContent() {
       try { localStorage.setItem(k, v); } catch { /* ignore quota */ }
     });
 
-    window.location.replace('/auth/signin');
+    broadcastAuthChanged({ token: null, userId: null, source: 'company' });
+    window.location.replace('/');
   };
 
   const renderContent = () => {
@@ -757,7 +812,7 @@ function AppContent() {
             <PremiumDashboard
               profile={{ personalInfo: { name: userFullName }, fullName: userFullName }}
               companyName={companyName}
-              userType={localStorage.getItem('role') === 'company' ? 'company' : 'rep'}
+              userType={isCompanyLikeWorkspace() ? 'company' : 'rep'}
               trainingStats={{ completed: 12, inProgress: 5, pending: 3, totalModules: 20, overallProgress: 65 }}
               companyStats={{ gigs: 8, calls: 142, gigsEnrolled: 12, activeLeads: 45, agentsEnrolled: 0, conversionRate: 0 }}
             />
@@ -782,7 +837,7 @@ function AppContent() {
       <StripeContainer>
         <div className="flex h-screen bg-gray-50">
           <Toaster position="top-right" />
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto" data-harx-scroll-root>
             {renderContent()}
           </main>
         </div>
@@ -826,10 +881,11 @@ function AppContent() {
           />
         </div>
 
-        <div className="flex flex-1 flex-col overflow-hidden relative bg-harx-sidebar">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden relative bg-harx-sidebar">
           {/* Top Navigation / Navbar */}
-          <header className={`bg-harx-sidebar h-16 flex items-center shrink-0 px-4 md:px-5 relative z-20 ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
-            <div className="flex w-full items-center gap-3 min-w-0">
+          {/* z-40 keeps header menus above main; overflow-visible so absolute menus are not clipped */}
+          <header className={`bg-harx-sidebar h-16 flex items-center shrink-0 px-4 md:px-5 relative z-40 overflow-visible ${activeProject === 'dashboard' ? 'shadow-sm' : ''}`}>
+            <div className="flex w-full items-center gap-3 min-w-0 overflow-visible">
               {/* Mobile-only hamburger to open the sidebar drawer. */}
               <button
                 type="button"
@@ -840,70 +896,90 @@ function AppContent() {
                 <Menu size={20} />
               </button>
 
-              {/* Credits, Balance, Upgrade, language, profile — single right-aligned row (no absolute center overlap). */}
-              <div className="ml-auto flex items-center gap-2 min-w-0 overflow-x-auto scrollbar-none">
-                {showActivationNavbarWidgets && (
-                  <div
-                    onClick={handleBalanceClick}
-                    className="harx-nav-chip group"
-                  >
-                    <div className="harx-nav-chip-icon bg-emerald-500/15 border border-emerald-500/25">
-                      <Coins size={14} className="text-emerald-400" />
+              {/* Right cluster: scrollable chips stay separate from dropdowns (overflow-x clips absolute menus). */}
+              <div className="ml-auto flex items-center gap-2 min-w-0 overflow-visible">
+                <div className="flex items-center gap-2 min-w-0 overflow-x-auto scrollbar-none">
+                  {showActivationNavbarWidgets && (
+                    <div
+                      onClick={handleBalanceClick}
+                      className="harx-nav-chip group"
+                    >
+                      <div className="harx-nav-chip-icon bg-emerald-500/15 border border-emerald-500/25">
+                        <Coins size={14} className="text-emerald-400" />
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.myWallet')}</span>
+                        <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{balance.toLocaleString('en-US')} €</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.myWallet')}</span>
-                      <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{balance.toLocaleString('en-US')} €</span>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
-                  <div
-                    onClick={handleMinutesClick}
-                    className="harx-nav-chip group"
-                  >
-                    <div className="harx-nav-chip-icon bg-blue-500/15 border border-blue-500/25">
-                      <Clock size={13} className="text-blue-400" />
+                  {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
+                    <div
+                      onClick={handleMinutesClick}
+                      className={`harx-nav-chip group ${minutes <= 0 ? 'ring-1 ring-rose-400/50' : ''}`}
+                      title={minutes <= 0 ? t('navbar.minutesLimitReached', 'Limite atteinte — acheter des minutes') : undefined}
+                    >
+                      <div className={`harx-nav-chip-icon border ${minutes <= 0 ? 'bg-rose-500/20 border-rose-400/40' : 'bg-blue-500/15 border-blue-500/25'}`}>
+                        <Clock size={13} className={minutes <= 0 ? 'text-rose-400' : 'text-blue-400'} />
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.minutes')}</span>
+                        <span className={`text-sm font-black tabular-nums whitespace-nowrap ${minutes <= 0 ? 'text-rose-300' : 'text-white'}`}>
+                          {formatWalletMinutesBalance(minutes)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.minutes')}</span>
-                      <span className="text-sm font-black text-white tabular-nums whitespace-nowrap">{formatWalletMinutesBalance(minutes)}</span>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {activeProject !== 'comporchestrator' && (
-                  <div
-                    onClick={handleTelephonyClick}
-                    className="harx-nav-chip group"
-                  >
-                    <div className="harx-nav-chip-icon bg-harx-orange/15 border border-harx-orange/30">
-                      <Phone size={13} className="text-harx-orange" strokeWidth={2.5} />
+                  {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
+                    <div
+                      onClick={handleTokensClick}
+                      className="harx-nav-chip group"
+                    >
+                      <div className="harx-nav-chip-icon bg-violet-500/15 border border-violet-500/25">
+                        <Cpu size={13} className="text-violet-400" />
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.aiTokens')}</span>
+                        <span className="text-sm font-black text-white tabular-nums whitespace-nowrap">{formatAiTokensBalance(aiTokens)}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.phoneLines')}</span>
-                      <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveProject('dashboard');
-                      navigate('/dashboard/subscription');
-                    }}
-                    className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-gradient-harx text-white font-black text-[11px] uppercase tracking-[0.12em] hover:opacity-95 active:scale-[0.98] transition-all duration-200 shrink-0"
-                  >
-                    <Sparkles size={13} className="text-white shrink-0" />
-                    <span className="whitespace-nowrap">{t('navbar.upgrade')}</span>
-                  </button>
-                )}
+                  {activeProject !== 'comporchestrator' && (
+                    <div
+                      onClick={handleTelephonyClick}
+                      className="harx-nav-chip group"
+                    >
+                      <div className="harx-nav-chip-icon bg-harx-orange/15 border border-harx-orange/30">
+                        <Phone size={13} className="text-harx-orange" strokeWidth={2.5} />
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.phoneLines')}</span>
+                        <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveProject('dashboard');
+                        navigate('/dashboard/subscription');
+                      }}
+                      className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-gradient-harx text-white font-black text-[11px] uppercase tracking-[0.12em] hover:opacity-95 active:scale-[0.98] transition-all duration-200 shrink-0"
+                    >
+                      <Sparkles size={13} className="text-white shrink-0" />
+                      <span className="whitespace-nowrap">{t('navbar.upgrade')}</span>
+                    </button>
+                  )}
+                </div>
 
                 <LanguageSwitcher />
 
-                <div className="relative shrink-0" ref={profileDropdownRef}>
+                <div className="relative shrink-0 overflow-visible" ref={profileDropdownRef}>
                   <div
                     onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                     className="flex items-center gap-2 bg-harx-chip p-1 pr-3 rounded-xl border border-harx-chip-border cursor-pointer hover:border-white/20 hover:bg-[#222228] transition-colors"
@@ -928,7 +1004,7 @@ function AppContent() {
                   </div>
 
                   {isProfileDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-[#0B0F19] border border-white/10 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-[#0B0F19] border border-white/10 rounded-2xl shadow-xl z-[200] overflow-hidden animate-fade-in">
                       <button
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
@@ -969,7 +1045,10 @@ function AppContent() {
           </header>
 
           {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full bg-harx-bg">
+          <main
+            className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full min-w-0 bg-harx-bg"
+            data-harx-scroll-root
+          >
             <ProjectViewSwitch
               activeView={activeProject}
               dashboard={<DashboardApp />}

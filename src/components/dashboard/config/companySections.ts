@@ -7,7 +7,7 @@ export const COMPANY_ORCHESTRATOR_TAB_TITLES: Record<string, string> = {
   optimization: 'Orchestrator · Optimisation',
   'knowledge-base': 'Orchestrator · Base de connaissances',
   'script-generator': "Orchestrator · Script d'appel",
-  training: 'Orchestrator · Formation',
+  training: 'Orchestrator · HARX Academy',
   dashboard: 'Tableau de bord',
 };
 
@@ -36,7 +36,7 @@ const COMPANY_DASHBOARD_TITLES: Array<{ test: (path: string) => boolean; label: 
   { test: (p) => p.startsWith('/dashboard/calls'), label: 'Appels' },
   { test: (p) => p.startsWith('/dashboard/leads'), label: 'Prospects' },
   { test: (p) => p.startsWith('/dashboard/rep-matching'), label: 'Rep Matching' },
-  { test: (p) => p.startsWith('/dashboard/training'), label: 'Formation' },
+  { test: (p) => p.startsWith('/dashboard/training'), label: 'HARX Academy' },
   { test: (p) => p.startsWith('/dashboard/scheduler'), label: 'Planificateur' },
   { test: (p) => p.startsWith('/dashboard/emails'), label: 'Emails' },
   { test: (p) => p.startsWith('/dashboard/chat'), label: 'Chat en direct' },
@@ -51,6 +51,7 @@ const COMPANY_DASHBOARD_TITLES: Array<{ test: (path: string) => boolean; label: 
   { test: (p) => p.startsWith('/dashboard/analytics'), label: 'Analyses' },
   { test: (p) => p.startsWith('/dashboard/wallet'), label: 'Portefeuille' },
   { test: (p) => p.startsWith('/dashboard/minutes'), label: 'Minutes' },
+  { test: (p) => p.startsWith('/dashboard/tokens'), label: 'Tokens AI' },
   { test: (p) => p.startsWith('/dashboard/subscription'), label: 'Abonnement' },
   { test: (p) => p.startsWith('/dashboard/upgrade'), label: 'Mise à niveau' },
   { test: (p) => p.startsWith('/dashboard/profile'), label: 'Profil entreprise' },

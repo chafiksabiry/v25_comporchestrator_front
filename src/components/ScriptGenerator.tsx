@@ -9,6 +9,17 @@ import { markGigStepDone } from '../services/gigSetupSync';
 import { useTranslation } from 'react-i18next';
 import { InteractiveScriptCockpit, InteractiveStage } from './script-generator/InteractiveScriptCockpit';
 import { JourneyService } from './training/infrastructure/services/JourneyService';
+import {
+  assertCompanyHasAiTokens,
+  chargeCompanyAiUsage,
+  estimateTokensFromText,
+  applyBackendAiUsage,
+} from '../lib/aiTokensUsage';
+import {
+  fetchScriptVariables,
+  formatVariablesForAiPrompt,
+  type ScriptVariable,
+} from '../lib/scriptVariables';
 
 interface Gig {
   _id: string;
@@ -183,7 +194,23 @@ const parseStyledDialogue = (content: string): StyledDialogueLine[] => {
   return parsed;
 };
 
-const ScriptGenerator: React.FC = () => {
+function scriptGigId(script: { gigId?: unknown; gig?: { _id?: string } | string }): string {
+  const attached = script?.gig;
+  if (attached && typeof attached === 'object' && attached._id) return String(attached._id);
+  const raw = script?.gigId as any;
+  if (raw && typeof raw === 'object') return String(raw._id || raw.$oid || '');
+  return raw ? String(raw) : '';
+}
+
+function scriptsForGig<T extends { gigId?: unknown; gig?: { _id?: string } | string }>(
+  scripts: T[],
+  gigId: string
+): T[] {
+  const id = String(gigId);
+  return scripts.filter((script) => scriptGigId(script) === id);
+}
+
+const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { t } = useTranslation();
   // `useLocation` lets us know whether ScriptGenerator is mounted under
   // the dashboard shell (`/dashboard/script-generator`) or inside the
@@ -193,11 +220,14 @@ const ScriptGenerator: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isInDashboard = location.pathname.startsWith('/dashboard');
+  const onBackRef = useRef(onBack);
+  onBackRef.current = onBack;
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
+  const [contactVariables, setContactVariables] = useState<ScriptVariable[]>([]);
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [gigsError, setGigsError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -216,6 +246,8 @@ const ScriptGenerator: React.FC = () => {
   const [isAutoGenerateWizardActive, setIsAutoGenerateWizardActive] = useState(true);
   const [activeToolkitView, setActiveToolkitView] = useState<'chat' | 'expert'>('chat');
   const [activeInteractiveStages, setActiveInteractiveStages] = useState<InteractiveStage[] | null>(null);
+  const interactiveStagesRef = useRef(activeInteractiveStages);
+  interactiveStagesRef.current = activeInteractiveStages;
   const [activeInteractiveTitle, setActiveInteractiveTitle] = useState<string>('');
   const [interactiveStageIdx, setInteractiveStageIdx] = useState(0);
   const [relatedTrainings, setRelatedTrainings] = useState<any[]>([]);
@@ -229,6 +261,8 @@ const ScriptGenerator: React.FC = () => {
   /** Controls whether fetchSavedScripts opens an existing script or starts a fresh generation. */
   const scriptLoadIntentRef = useRef<'new' | 'open' | null>(null);
   const pendingOpenScriptRef = useRef<SavedScript | null>(null);
+  const scriptApplySeqRef = useRef(0);
+  const selectedGigIdRef = useRef<string | null>(null);
   /** Script currently being edited — re-save updates instead of creating duplicates. */
   const currentScriptIdRef = useRef<string | null>(null);
 
@@ -265,7 +299,7 @@ const ScriptGenerator: React.FC = () => {
   // When mounted inside the orchestrator the original behaviour is
   // preserved: dispatch a `tabChange` to return to the onboarding step.
   const handleBackToOrchestrator = () => {
-    if (isInDashboard) {
+    if (isInDashboard || onBack) {
       if (activeScriptMessage) {
         setActiveScriptMessage(null);
         return;
@@ -274,7 +308,11 @@ const ScriptGenerator: React.FC = () => {
         setSelectedGig(null);
         return;
       }
-      navigate('/dashboard/main');
+      if (isInDashboard) {
+        navigate('/dashboard/main');
+        return;
+      }
+      onBack?.();
       return;
     }
 
@@ -321,7 +359,41 @@ const ScriptGenerator: React.FC = () => {
       }
     };
     fetchRelatedTrainings();
-  }, [selectedGig]);;
+  }, [selectedGig]);
+
+  // Contact-file variables for script tokens (mapped HARX + customFields)
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!selectedGig?._id) {
+        setContactVariables([]);
+        return;
+      }
+      try {
+        const vars = await fetchScriptVariables(selectedGig._id);
+        if (!cancelled) setContactVariables(vars);
+      } catch {
+        if (!cancelled) setContactVariables([]);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGig?._id]);
+
+  const contactVariablesPrompt = useMemo(
+    () => formatVariablesForAiPrompt(contactVariables),
+    [contactVariables]
+  );
+
+  const handleStageChange = (stageIndex: number, stage: InteractiveStage) => {
+    setActiveInteractiveStages((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      if (stageIndex < 0 || stageIndex >= prev.length) return prev;
+      return prev.map((s, i) => (i === stageIndex ? stage : s));
+    });
+  };
 
   const buildInteractiveStages = (gig: Gig | null, message: ChatMessage): InteractiveStage[] => {
     const title = gig?.title || 'Mission';
@@ -579,6 +651,10 @@ const ScriptGenerator: React.FC = () => {
       detail: {
         label: 'BACK TO ONBOARDING',
         action: () => {
+          if (onBackRef.current) {
+            onBackRef.current();
+            return;
+          }
           localStorage.setItem('activeTab', 'company-onboarding');
           window.dispatchEvent(
             new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
@@ -609,14 +685,21 @@ const ScriptGenerator: React.FC = () => {
   };
 
   const startNewScriptForGig = (gig: Gig) => {
-    scriptLoadIntentRef.current = 'new';
-    currentScriptIdRef.current = null;
+    const existing = scriptsForGig(allSavedScripts, gig._id);
+    const saved = existing.find((script) => script.isActive) || existing[0];
+    currentScriptIdRef.current = saved?._id || null;
     setShowNewScriptSelection(false);
-    setActiveInteractiveStages(null);
-    setActiveInteractiveTitle('');
+    if (saved) {
+      scriptLoadIntentRef.current = 'open';
+      pendingOpenScriptRef.current = saved;
+    } else {
+      scriptLoadIntentRef.current = 'new';
+      pendingOpenScriptRef.current = null;
+      setActiveInteractiveStages(null);
+      setActiveInteractiveTitle('');
+    }
 
     if (selectedGig?._id === gig._id) {
-      handleStartNewChat();
       fetchSavedScripts(gig._id);
       return;
     }
@@ -630,9 +713,15 @@ const ScriptGenerator: React.FC = () => {
   };
 
   useEffect(() => {
+    selectedGigIdRef.current = selectedGig?._id ? String(selectedGig._id) : null;
+  }, [selectedGig?._id]);
+
+  useEffect(() => {
     if (!selectedGig) return;
     setIsGigScriptsDropdownOpen(false);
-    handleStartNewChat();
+    if (scriptLoadIntentRef.current !== 'open') {
+      handleStartNewChat();
+    }
     fetchSavedScripts(selectedGig._id);
   }, [selectedGig?._id]);
 
@@ -641,6 +730,8 @@ const ScriptGenerator: React.FC = () => {
     if (scriptLoadIntentRef.current === 'new') {
       currentScriptIdRef.current = null;
     }
+    const gigIdAtStart = String(selectedGig._id);
+    const applySeq = scriptApplySeqRef.current;
     setIsSending(true);
     setError(null);
     try {
@@ -664,26 +755,50 @@ const ScriptGenerator: React.FC = () => {
         }
       }
 
+      const baseContexte =
+        'Générer un script interactif structuré en 8 étapes basées sur la mission.';
       const payload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
         langueTon: 'professionnel et direct',
-        contexte: 'Générer un script interactif structuré en 8 étapes basées sur la mission.',
+        contexte: [baseContexte, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         trainings: currentTrainings,
-        isInteractiveRequest: true
+        isInteractiveRequest: true,
+        contactVariables,
       };
 
+      await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
       const { data } = await apiClient.post('/rag/generate-script', payload);
       const generatedStages = data?.stages || data?.data?.stages;
+      if (scriptApplySeqRef.current !== applySeq || selectedGigIdRef.current !== gigIdAtStart) {
+        return;
+      }
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
         setActiveInteractiveStages(generatedStages);
         setActiveInteractiveTitle(selectedGig.title || "Script Interactif");
+        const backendBilled = applyBackendAiUsage(data?.usage, companyId);
+        if (!backendBilled) {
+          void chargeCompanyAiUsage({
+            usageId: `script-interactive-${selectedGig._id}-${Date.now()}`,
+            tokensUsed: Math.max(
+              2000,
+              estimateTokensFromText(JSON.stringify(payload), JSON.stringify(generatedStages))
+            ),
+            tool: 'script.generate_interactive',
+            companyId,
+            skipIfFirstGigFree: true,
+          }).catch(() => undefined);
+        }
       } else {
         throw new Error("Format de script généré incompatible. Veuillez réessayer.");
       }
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Échec de la génération du script');
+      setError(
+        err?.code === 'insufficient_tokens' || err?.response?.data?.error === 'insufficient_tokens'
+          ? err?.response?.data?.message || err.message
+          : err?.response?.data?.error || err?.message || 'Échec de la génération du script'
+      );
     } finally {
       setIsSending(false);
     }
@@ -731,24 +846,94 @@ const ScriptGenerator: React.FC = () => {
         gig: selectedGig,
         typeClient: 'general',
         langueTon: 'professionnel et direct',
-        contexte: promptText,
+        contexte: [promptText, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         trainings: currentTrainings,
         isInteractiveRequest: true,
         editMode: 'targeted',
         targetStageIndex: safeIdx,
         currentStages: activeInteractiveStages,
+        contactVariables,
       };
 
+      await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
       const { data } = await apiClient.post('/rag/generate-script', payload);
       const generatedStages = data?.stages || data?.data?.stages;
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
         setActiveInteractiveStages(generatedStages);
         setActiveInteractiveTitle(selectedGig.title || "Script Interactif");
+        const backendBilled = applyBackendAiUsage(data?.usage, companyId);
+        if (!backendBilled) {
+          void chargeCompanyAiUsage({
+            usageId: `script-refine-${selectedGig._id}-${safeIdx}-${Date.now()}`,
+            tokensUsed: Math.max(
+              1200,
+              estimateTokensFromText(JSON.stringify(payload), JSON.stringify(generatedStages))
+            ),
+            tool: 'script.refine_stage',
+            companyId,
+            skipIfFirstGigFree: true,
+          }).catch(() => undefined);
+        }
       } else {
         throw new Error("Format de script généré incompatible. Veuillez réessayer.");
       }
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Échec du raffinement du script');
+      setError(
+        err?.code === 'insufficient_tokens' || err?.response?.data?.error === 'insufficient_tokens'
+          ? err?.response?.data?.message || err.message
+          : err?.response?.data?.error || err?.message || 'Échec du raffinement du script'
+      );
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleStageCommit = async (stageIndex: number) => {
+    const stages = interactiveStagesRef.current;
+    if (!stages || stages.length === 0 || !selectedGig || isSending) return;
+    if (stageIndex < 0 || stageIndex >= stages.length - 1) return;
+    setIsSending(true);
+    setError(null);
+    try {
+      const companyId = getCompanyId();
+      const payload = {
+        companyId,
+        gig: selectedGig,
+        typeClient: 'general',
+        langueTon: 'professionnel et direct',
+        contexte: 'The user edited this stage. Keep it exactly. Realign only the later stages that no longer follow it.',
+        trainings: relatedTrainings,
+        isInteractiveRequest: true,
+        editMode: 'realign',
+        targetStageIndex: stageIndex,
+        currentStages: stages,
+        contactVariables,
+      };
+      await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
+      const { data } = await apiClient.post('/rag/generate-script', payload);
+      const generatedStages = data?.stages || data?.data?.stages;
+      if (Array.isArray(generatedStages) && generatedStages.length > 0) {
+        setActiveInteractiveStages(generatedStages);
+        const backendBilled = applyBackendAiUsage(data?.usage, companyId);
+        if (!backendBilled) {
+          void chargeCompanyAiUsage({
+            usageId: `script-realign-${selectedGig._id}-${stageIndex}-${Date.now()}`,
+            tokensUsed: Math.max(
+              1200,
+              estimateTokensFromText(JSON.stringify(payload), JSON.stringify(generatedStages))
+            ),
+            tool: 'script.refine_stage',
+            companyId,
+            skipIfFirstGigFree: true,
+          }).catch(() => undefined);
+        }
+      }
+    } catch (err: any) {
+      setError(
+        err?.code === 'insufficient_tokens' || err?.response?.data?.error === 'insufficient_tokens'
+          ? err?.response?.data?.message || err.message
+          : err?.response?.data?.error || err?.message || 'Échec du réajustement du script'
+      );
     } finally {
       setIsSending(false);
     }
@@ -935,9 +1120,10 @@ const ScriptGenerator: React.FC = () => {
         gig: selectedGig,
         typeClient: 'general',
         langueTon: 'simple et direct',
-        contexte: regenInstruction,
+        contexte: [regenInstruction, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         currentScript: currentScriptText || undefined,
         currentPlaybook: activeScriptMessage?.playbook || undefined,
+        contactVariables,
         chatHistory: messages
           .filter((m) => m.role === 'user' || m.role === 'assistant')
           .map((m) => ({
@@ -947,12 +1133,27 @@ const ScriptGenerator: React.FC = () => {
           .filter((m) => m.content),
       };
 
+      await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
       const { data: body } = (await apiClient.post('/rag/generate-script', scriptPayload)) as { data: any };
       const assistantText =
         body?.data?.script || body?.script || body?.response || body?.data?.text || body?.text;
       const generatedPlaybook = body?.data?.playbook;
       const normalizedText = normalizeScriptText(assistantText);
       const assistantTextSafe = normalizedText || 'Je n’ai pas pu générer de réponse.';
+
+      const backendBilled = applyBackendAiUsage(body?.usage, companyId);
+      if (!backendBilled) {
+        void chargeCompanyAiUsage({
+          usageId: `script-chat-${selectedGig?._id || 'gig'}-${Date.now()}`,
+          tokensUsed: Math.max(
+            1500,
+            estimateTokensFromText(JSON.stringify(scriptPayload), assistantTextSafe)
+          ),
+          tool: 'script.generate_chat',
+          companyId,
+          skipIfFirstGigFree: true,
+        }).catch(() => undefined);
+      }
 
       const generatedMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -968,7 +1169,11 @@ const ScriptGenerator: React.FC = () => {
 
       setActiveScriptMessage(generatedMessage);
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || 'Failed to generate response');
+      setError(
+        err?.code === 'insufficient_tokens' || err?.response?.data?.error === 'insufficient_tokens'
+          ? err?.response?.data?.message || err.message
+          : err?.response?.data?.error || err?.message || 'Failed to generate response'
+      );
     } finally {
       setIsSending(false);
     }
@@ -999,19 +1204,21 @@ const ScriptGenerator: React.FC = () => {
         return;
       }
 
-      if (intent === 'new' || items.length === 0) {
+      if (items.length === 0) {
         setIsAutoGenerateWizardActive(true);
         handleGenerateInteractiveScriptFromScratch();
         return;
       }
 
-      // Default: gig switch — open the active script for context
-      const activeItem = items.find((item: any) => item.isActive);
+      if (intent === 'new') {
+        const kept = items.find((item: any) => item.isActive) || items[0];
+        openSavedScript(kept);
+        return;
+      }
+
+      const activeItem = items.find((item: any) => item.isActive) || items[0];
       if (activeItem) {
         openSavedScript(activeItem);
-      } else {
-        setIsAutoGenerateWizardActive(true);
-        handleGenerateInteractiveScriptFromScratch();
       }
     } catch (err: any) {
       setSavedScripts([]);
@@ -1022,6 +1229,7 @@ const ScriptGenerator: React.FC = () => {
   };
 
   const openSavedScript = (item: SavedScript) => {
+    scriptApplySeqRef.current += 1;
     currentScriptIdRef.current = item._id;
     const normalizedText = normalizeScriptText(item?.script);
     const message: ChatMessage = {
@@ -1666,6 +1874,9 @@ const ScriptGenerator: React.FC = () => {
                       onValidate={handleSaveAndValidateInteractiveScript}
                       isValidating={isSending}
                       onStageIndexChange={setInteractiveStageIdx}
+                      contactVariables={contactVariables}
+                      onStageChange={handleStageChange}
+                      onStageCommit={handleStageCommit}
                     />
 
                     {/* Beautiful glassmorphic loading overlay over the cockpit when updating */}
@@ -1824,6 +2035,32 @@ const ScriptGenerator: React.FC = () => {
                   </div>
                 ) : (
                   <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 custom-scrollbar text-left">
+                    {gigs
+                      .filter((gig) => scriptsForGig(allSavedScripts, gig._id).length === 0)
+                      .map((gig) => (
+                        <div
+                          key={`gig-${gig._id}`}
+                          className="p-3 bg-white hover:bg-red-50/10 border border-dashed border-slate-200 hover:border-red-500 rounded-xl transition-all duration-200 flex items-center justify-between gap-4"
+                        >
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <span className="px-2 py-0.5 bg-slate-50 text-slate-500 rounded text-[8px] font-black uppercase tracking-widest border border-slate-200">
+                              {gig.category || 'Général'}
+                            </span>
+                            <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight truncate">
+                              {gig.title}
+                            </h4>
+                            <p className="text-[10px] text-slate-500 font-semibold truncate">
+                              Aucun script enregistré pour cette mission
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => startNewScriptForGig(gig)}
+                            className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:border-red-500 hover:text-red-600 font-extrabold text-[9px] rounded-lg transition-all duration-200 uppercase tracking-wider shadow-sm active:scale-95"
+                          >
+                            Créer
+                          </button>
+                        </div>
+                      ))}
                     {allSavedScripts.map((script) => (
                       <div
                         key={script._id}
@@ -1920,9 +2157,7 @@ const ScriptGenerator: React.FC = () => {
                 {/* Gigs grid — plusieurs scripts possibles par mission */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
                   {gigs.map((gig) => {
-                    const existingCount = allSavedScripts.filter(
-                      (s) => String(s.gigId) === String(gig._id)
-                    ).length;
+                    const existingCount = scriptsForGig(allSavedScripts, gig._id).length;
                     return (
                       <button
                         key={gig._id}

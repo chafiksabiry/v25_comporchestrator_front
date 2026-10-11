@@ -15,7 +15,8 @@ function getApiBaseUrl(): string {
 }
 
 /**
- * Fetch company € balance (authoritative: WalletCompany) plus minutes/lines from escrow wallet.
+ * Fetch company € balance (WalletCompany) plus minutes from MinutesCompany
+ * (plan-included + purchased packs). Escrow is only used for € fallback / line count.
  */
 export async function fetchCompanyWalletSnapshot(
   companyId?: string
@@ -26,13 +27,14 @@ export async function fetchCompanyWalletSnapshot(
   const apiBaseUrl = getApiBaseUrl();
 
   try {
-    const [walletRes, escrowRes] = await Promise.all([
-      fetch(`${apiBaseUrl}/wallet-company/${compId}`),
+    const [walletRes, minutesRes, escrowRes] = await Promise.all([
+      fetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
+      fetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
       fetch(`${apiBaseUrl}/escrow/wallet/${compId}`).catch(() => null),
     ]);
 
     let balance = 0;
-    if (walletRes.ok) {
+    if (walletRes?.ok) {
       const walletJson = await walletRes.json();
       if (walletJson.success && walletJson.data) {
         balance = Number(walletJson.data.balance) || 0;
@@ -45,13 +47,24 @@ export async function fetchCompanyWalletSnapshot(
     }
 
     let minutes: number | undefined;
+    if (minutesRes?.ok) {
+      const minutesJson = await minutesRes.json();
+      const mins = minutesJson?.data?.minutes ?? minutesJson?.minutes;
+      if (typeof mins === 'number') {
+        minutes = mins;
+      }
+    }
+
     let escrow: number | undefined;
     if (escrowRes?.ok) {
       const escrowJson = await escrowRes.json();
       if (escrowJson.success && escrowJson.data) {
-        minutes = Number(escrowJson.data.minutes) || 0;
         escrow = Number(escrowJson.data.escrow) || 0;
-        if (!walletRes.ok) {
+        // Legacy fallback only if minutes-company was unavailable.
+        if (minutes === undefined && typeof escrowJson.data.minutes === 'number') {
+          minutes = Number(escrowJson.data.minutes) || 0;
+        }
+        if (!walletRes?.ok) {
           balance = Number(escrowJson.data.balance) || balance;
         }
       }

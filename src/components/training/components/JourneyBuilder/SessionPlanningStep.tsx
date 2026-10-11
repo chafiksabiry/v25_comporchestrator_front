@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar as LucideCalendar, ArrowLeft, ArrowRight, Save, Clock, Info } from 'lucide-react';
 import { PlanningMatrix } from '../../../onboarding/PlanningMatrix';
 import { TimeSlot, Rep } from '../../../../types/scheduler';
@@ -19,16 +20,52 @@ export default function SessionPlanningStep({
   onComplete,
   onBack
 }: SessionPlanningStepProps) {
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [reps, setReps] = useState<Rep[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [availabilitySchedule, setAvailabilitySchedule] = useState<
+    { day: string; start: string; end: string }[]
+  >([]);
 
   const fetchData = async () => {
     if (!gigId) return;
     setLoading(true);
     try {
+      // Gig availability (multi-plages) for PlanningMatrix open hours
+      try {
+        const GIGS_API =
+          import.meta.env.VITE_API_URL_GIGS ||
+          import.meta.env.VITE_GIGS_API ||
+          'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+        const token = localStorage.getItem('token') || '';
+        const gigRes = await fetch(`${GIGS_API}/gigs/${gigId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (gigRes.ok) {
+          const gigJson = await gigRes.json();
+          const gig = gigJson?.data ?? gigJson;
+          const schedule = Array.isArray(gig?.availability?.schedule)
+            ? gig.availability.schedule
+            : Array.isArray(gig?.schedule?.schedules)
+              ? gig.schedule.schedules
+              : [];
+          setAvailabilitySchedule(
+            schedule
+              .map((entry: any) => ({
+                day: String(entry?.day || '').trim(),
+                start: String(entry?.hours?.start || entry?.start || '').trim(),
+                end: String(entry?.hours?.end || entry?.end || '').trim(),
+              }))
+              .filter((e: any) => e.day && e.start && e.end)
+          );
+        }
+      } catch (e) {
+        console.warn('[SessionPlanningStep] Could not load gig availability', e);
+      }
+
       // Fetch agents for this gig
       const agents = await schedulerApi.getGigAgents(gigId);
       if (agents) {
@@ -89,7 +126,8 @@ export default function SessionPlanningStep({
   }, [gigId]);
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+    <div className="harx-training-step flex h-full min-h-0 flex-col bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-0 flex-1 overflow-auto p-3 sm:p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -103,22 +141,6 @@ export default function SessionPlanningStep({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors font-semibold"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </button>
-            <button
-              onClick={onComplete}
-              className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-bold shadow-lg shadow-blue-200"
-            >
-              Continue to Rehearsal
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
         </div>
 
         {/* Info Card */}
@@ -151,6 +173,7 @@ export default function SessionPlanningStep({
                 reps={reps}
                 onRefresh={fetchData}
                 onSelectDay={setSelectedDate}
+                availabilitySchedule={availabilitySchedule}
               />
             </div>
           ) : (
@@ -163,6 +186,25 @@ export default function SessionPlanningStep({
             </div>
           )}
         </div>
+      </div>
+      </div>
+      <div className="harx-training-actions shrink-0 border-t border-slate-200 px-4 py-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-slate-600 transition-colors hover:bg-slate-100"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t('trainingWizard.back')}
+        </button>
+        <button
+          type="button"
+          onClick={onComplete}
+          className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2 font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700"
+        >
+          {t('trainingWizard.continue')}
+          <ArrowRight className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );

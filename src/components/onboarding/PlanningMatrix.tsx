@@ -1,10 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { enUS } from 'date-fns/locale';
+import Cookies from 'js-cookie';
 import { TimeSlot, Rep } from '../../types/scheduler';
-import { Clock, Calendar, Save } from 'lucide-react';
+import { Clock, Calendar, Save, AlertTriangle, ArrowUpRight, X } from 'lucide-react';
 import { schedulerApi } from '../../services/schedulerService';
 import { markGigStepDone } from '../../services/gigSetupSync';
+import { timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
+import { getOrchestratorApiBase } from '../../lib/paypalCheckout';
+import { limitsFromSubscriptionPayload } from '../../lib/planMetadata';
 
 interface PlanningMatrixProps {
     selectedDate: Date;
@@ -26,29 +32,143 @@ function getDateForDayInWeek(anchor: Date, dayName: (typeof DAYS)[number]): Date
     return addDays(monday, dayIndex);
 }
 
+/** France: commercial calls are forbidden 13:00–14:00, not 12:00–13:00. */
+const FR_LUNCH_BLOCK_HOUR = 13;
+
+const NEXT_PLAN: Record<string, string> = {
+    STARTER: 'RUNNER',
+    RUNNER: 'SCALER',
+    GROWTH: 'SCALER',
+};
+
+type RepQuota = {
+    maxReps: number | null;
+    planName: string | null;
+    nextPlan: string | null;
+};
+
+function resolveRepQuota(payload: any): RepQuota {
+    const limits = limitsFromSubscriptionPayload(payload);
+    const key = (limits.planName || '').toUpperCase();
+    const nextPlan = NEXT_PLAN[key] || Object.entries(NEXT_PLAN).find(([name]) => key.includes(name))?.[1] || null;
+    return { maxReps: limits.maxReps, planName: limits.planName, nextPlan };
+}
+const WEEKDAYS = new Set(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+
+function minutesOf(time: string): number {
+    return timeToMinutes(time);
+}
+
+/**
+ * A morning plage ending at 12:00 and an afternoon plage starting at 13:00
+ * closes 12:00–13:00. That gap is the wrong lunch hour: open 12:00–13:00.
+ */
+function isMisplacedNoonGap(hour: number, ranges: { start: string; end: string }[]): boolean {
+    if (hour !== 12 || !ranges.length) return false;
+    const endsAtNoon = ranges.some((r) => minutesOf(r.end) === 12 * 60);
+    const startsAtOne = ranges.some((r) => minutesOf(r.start) === 13 * 60);
+    return endsAtNoon && startsAtOne;
+}
+
+/** True if [hour, hour+1) overlaps any availability range (supports multi-plages + overnight). */
+function hourOverlapsRanges(
+    hour: number,
+    ranges: { start: string; end: string }[]
+): boolean {
+    if (!ranges.length) return false;
+    const hourStart = hour * 60;
+    const hourEnd = (hour + 1) * 60;
+    return ranges.some(({ start, end }) => {
+        if (!start || !end) return false;
+        const startM = timeToMinutes(start);
+        let endM = timeToMinutes(end);
+        if (endM <= startM) endM += 24 * 60;
+        return hourStart < endM && hourEnd > startM;
+    });
+}
+
 export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelectDay, availabilitySchedule = [] }: PlanningMatrixProps) {
+    const { t } = useTranslation();
     const [localMatrix, setLocalMatrix] = useState<Record<string, Record<number, number>>>({});
     const [isSaving, setIsSaving] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [dragValue, setDragValue] = useState<number | null>(null);
+    const [repQuota, setRepQuota] = useState<RepQuota>({ maxReps: null, planName: null, nextPlan: null });
+    const [upgradeOpen, setUpgradeOpen] = useState(false);
+    const quotaWarned = useRef(false);
+
+    useEffect(() => {
+        const companyId = Cookies.get('companyId');
+        if (!companyId) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(`${getOrchestratorApiBase()}/subscriptions/current/${encodeURIComponent(companyId)}`);
+                const json = await res.json();
+                if (cancelled || !json?.success) return;
+                setRepQuota(resolveRepQuota(json));
+            } catch (error) {
+                console.warn('[PlanningMatrix] plan metadata unavailable', error);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    /** Multiple plages per weekday (same day can appear several times). */
+    const availabilityByDay = useMemo(() => {
+        const map: Record<string, { start: string; end: string }[]> = {};
+        availabilitySchedule.forEach((entry: any) => {
+            const key = String(entry?.day || '').trim().toLowerCase();
+            if (!key) return;
+            const start = String(entry?.start || entry?.hours?.start || '').trim();
+            const end = String(entry?.end || entry?.hours?.end || '').trim();
+            if (!start || !end) return;
+            if (!map[key]) map[key] = [];
+            // Dedupe identical ranges
+            if (!map[key].some((r) => r.start === start && r.end === end)) {
+                map[key].push({ start, end });
+            }
+        });
+        return map;
+    }, [availabilitySchedule]);
+
+    const isHourAvailable = useCallback(
+        (dayName: string, hour: number) => {
+            const ranges = availabilityByDay[String(dayName || '').toLowerCase()] || [];
+            if (WEEKDAYS.has(dayName) && hour === FR_LUNCH_BLOCK_HOUR) return false;
+            if (WEEKDAYS.has(dayName) && isMisplacedNoonGap(hour, ranges)) return true;
+            return hourOverlapsRanges(hour, ranges);
+        },
+        [availabilityByDay]
+    );
 
     const hoursList = useMemo(() => {
-        let minH = 9;
-        let maxH = 23;
-        if (availabilitySchedule && availabilitySchedule.length > 0) {
-            availabilitySchedule.forEach((entry: any) => {
-                const startHour = Number.parseInt(String(entry.start || '').slice(0, 2), 10);
-                const endHour = Number.parseInt(String(entry.end || '').slice(0, 2), 10);
-                if (!Number.isNaN(startHour) && startHour < minH) {
-                    minH = startHour;
-                }
-                if (!Number.isNaN(endHour) && endHour > maxH) {
-                    maxH = endHour;
-                }
-            });
+        if (!availabilitySchedule?.length) {
+            return Array.from({ length: 15 }, (_, i) => i + 9);
         }
-        const length = maxH - minH + 1;
-        return Array.from({ length: length > 0 ? length : 15 }, (_, i) => i + minH);
+        let minH = 23;
+        let maxH = 0;
+        availabilitySchedule.forEach((entry: any) => {
+            const startStr = String(entry.start || entry?.hours?.start || '');
+            const endStr = String(entry.end || entry?.hours?.end || '');
+            const startHour = Number.parseInt(startStr.slice(0, 2), 10);
+            const endHour = Number.parseInt(endStr.slice(0, 2), 10);
+            if (!Number.isNaN(startHour)) minH = Math.min(minH, startHour);
+            if (!Number.isNaN(endHour)) {
+                // Overnight end (e.g. 02:00) — extend grid to 23
+                const startM = timeToMinutes(startStr);
+                const endM = timeToMinutes(endStr);
+                if (endM <= startM) maxH = Math.max(maxH, 23);
+                else maxH = Math.max(maxH, endHour);
+            }
+        });
+        if (minH > maxH) return Array.from({ length: 15 }, (_, i) => i + 9);
+        // Rows from first open hour through last full hour before end (end exclusive)
+        const lastRow = Math.max(minH, maxH - 1);
+        const length = lastRow - minH + 1;
+        return Array.from({ length: length > 0 ? length : 1 }, (_, i) => i + minH);
     }, [availabilitySchedule]);
 
     useEffect(() => {
@@ -66,12 +186,28 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
 
         DAYS.forEach(dayName => {
             matrix[dayName] = {};
+            const ranges = availabilityByDay[dayName.toLowerCase()] || [];
+            const noonWasClosedByOldLunch = WEEKDAYS.has(dayName) && isMisplacedNoonGap(12, ranges);
             hoursList.forEach(hour => {
                 const timeStr = `${hour.toString().padStart(2, '0')}:00`;
                 const slot = slots.find(s => s.date === dayName && s.startTime === timeStr && s.gigId === gigId);
                 const available = isHourAvailable(dayName, hour);
                 // Important: Use + here to ensure it's a number
-                matrix[dayName][hour] = available && slot ? (Number(slot.capacity) || 0) : 0;
+                let capacity = available && slot ? (Number(slot.capacity) || 0) : 0;
+                // Old plages closed 12:00–13:00 and kept capacity on 13:00.
+                // Show that morning capacity on 12:00 so the hole sits on 13:00–14:00.
+                if (available && capacity === 0 && hour === 12 && noonWasClosedByOldLunch) {
+                    for (let earlier = 11; earlier >= 8; earlier -= 1) {
+                        const earlierTime = `${earlier.toString().padStart(2, '0')}:00`;
+                        const earlierSlot = slots.find(s => s.date === dayName && s.startTime === earlierTime && s.gigId === gigId);
+                        const earlierCapacity = Number(earlierSlot?.capacity) || 0;
+                        if (earlierCapacity > 0) {
+                            capacity = earlierCapacity;
+                            break;
+                        }
+                    }
+                }
+                matrix[dayName][hour] = capacity;
             });
         });
 
@@ -85,21 +221,50 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             });
             return next;
         });
-    }, [slots, gigId, availabilitySchedule, hoursList]);
+    }, [slots, gigId, availabilitySchedule, availabilityByDay, hoursList, isHourAvailable]);
     // Removed old sync logic
 
+    const capacityOverPlan = useCallback((maxReps: number) => {
+        return DAYS.some((dayName) =>
+            hoursList.some((hour) => {
+                if (!isHourAvailable(dayName, hour)) return false;
+                return Number(localMatrix[dayName]?.[hour]) > maxReps;
+            })
+        );
+    }, [hoursList, isHourAvailable, localMatrix]);
+
+    useEffect(() => {
+        if (quotaWarned.current || repQuota.maxReps == null) return;
+        if (!capacityOverPlan(repQuota.maxReps)) return;
+        quotaWarned.current = true;
+        setUpgradeOpen(true);
+    }, [repQuota.maxReps, capacityOverPlan]);
+
+    const openUpgrade = () => setUpgradeOpen(true);
+
     const handleCellChange = (dateStr: string, hour: number, value: string) => {
-        const numValue = parseInt(value) || 0;
+        const numValue = Math.max(0, parseInt(value, 10) || 0);
+        const maxReps = repQuota.maxReps;
+        if (maxReps != null && numValue > maxReps) {
+            openUpgrade();
+        }
+        const next = maxReps != null ? Math.min(numValue, maxReps) : numValue;
         setLocalMatrix(prev => ({
             ...prev,
             [dateStr]: {
                 ...prev[dateStr],
-                [hour]: Math.max(0, numValue)
+                [hour]: next
             }
         }));
     };
 
     const handleSave = async () => {
+        const maxReps = repQuota.maxReps;
+        if (maxReps != null && capacityOverPlan(maxReps)) {
+            openUpgrade();
+            return;
+        }
+
         setIsSaving(true);
         try {
             const slotsToUpdate: Partial<TimeSlot>[] = [];
@@ -143,28 +308,6 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
         }
     };
 
-    const availabilityByDay = useMemo(() => {
-        const map: Record<string, { start: string; end: string }> = {};
-        availabilitySchedule.forEach((entry: any) => {
-            const key = String(entry?.day || '').trim().toLowerCase();
-            if (!key) return;
-            map[key] = {
-                start: String(entry?.start || '').trim(),
-                end: String(entry?.end || '').trim()
-            };
-        });
-        return map;
-    }, [availabilitySchedule]);
-
-    const isHourAvailable = (dayName: string, hour: number) => {
-        const row = availabilityByDay[String(dayName || '').toLowerCase()];
-        if (!row?.start || !row?.end) return false;
-        const startHour = Number.parseInt(row.start.slice(0, 2), 10);
-        const endHour = Number.parseInt(row.end.slice(0, 2), 10);
-        if (Number.isNaN(startHour) || Number.isNaN(endHour)) return false;
-        return hour >= startHour && hour < endHour;
-    };
-
     // Calculate totals with explicit casting and memoization
     const dayTotals = useMemo(() => {
         return DAYS.map(dayName => {
@@ -176,7 +319,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                 return sum + val;
             }, 0);
         });
-    }, [localMatrix, availabilitySchedule, hoursList]);
+    }, [localMatrix, hoursList, isHourAvailable]);
 
     const todayWeekdayEnglish = useMemo(
         () => format(new Date(), 'EEEE', { locale: enUS }),
@@ -206,6 +349,14 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                         <p className="text-harx-100 text-sm opacity-90">
                             General Weekly Schedule
                         </p>
+                        {repQuota.maxReps != null && (
+                            <p className="text-[11px] text-white/90 font-semibold mt-0.5">
+                                {t('sessionPlanning.repLimit.banner', {
+                                    plan: repQuota.planName || t('sessionPlanning.repLimit.yourPlan'),
+                                    max: repQuota.maxReps,
+                                })}
+                            </p>
+                        )}
                         {onSelectDay && (
                             <p className="text-[11px] text-white/85 font-semibold mt-0.5">
                                 Reservations:{' '}
@@ -305,7 +456,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                         {hoursList.map(hour => (
                             <tr key={hour} className="group hover:bg-gray-50/50 transition-colors">
                                 <td className="p-1 border-b border-gray-50 text-gray-500 font-bold text-xs">
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1" title={hour === FR_LUNCH_BLOCK_HOUR ? t('sessionPlanning.legalLunch') : undefined}>
                                         <Clock className="w-3 h-3 opacity-40" />
                                         {hour}:00
                                     </div>
@@ -341,6 +492,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                                             <input
                                                 type="number"
                                                 min="0"
+                                                max={repQuota.maxReps ?? undefined}
                                                 value={isAvailable && value > 0 ? value : ''}
                                                 placeholder=""
                                                 disabled={!isAvailable}
@@ -362,6 +514,54 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                     </tbody>
                 </table>
             </div>
+            {upgradeOpen && createPortal(
+                <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4" onClick={() => setUpgradeOpen(false)}>
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-gray-100 p-5"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2 text-harx-700">
+                                <AlertTriangle className="w-5 h-5 shrink-0" />
+                                <h3 className="text-base font-bold">{t('sessionPlanning.repLimit.title')}</h3>
+                            </div>
+                            <button type="button" onClick={() => setUpgradeOpen(false)} className="text-gray-400 hover:text-gray-700" aria-label={t('sessionPlanning.repLimit.close')}>
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+                            {t('sessionPlanning.repLimit.body', {
+                                plan: repQuota.planName || t('sessionPlanning.repLimit.yourPlan'),
+                                max: repQuota.maxReps ?? 1,
+                                next: repQuota.nextPlan || t('sessionPlanning.repLimit.higherPlan'),
+                            })}
+                        </p>
+                        <div className="mt-5 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setUpgradeOpen(false)}
+                                className="px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100"
+                            >
+                                {t('sessionPlanning.repLimit.close')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setUpgradeOpen(false);
+                                    window.location.hash = '#/dashboard/upgrade';
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold bg-harx-600 text-white hover:bg-harx-700"
+                            >
+                                {t('sessionPlanning.repLimit.upgrade')}
+                                <ArrowUpRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }

@@ -930,32 +930,22 @@ export default function ManualTrainingSimulator({
                       <span className="text-xs">Ready to continue</span>
                     </div>
                   )}
-                  {content?.file?.url && (
-                    <a
-                      href={content.file.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg text-sm font-medium transition-all inline-flex items-center space-x-2 backdrop-blur-sm"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                      <span className="text-xs">New Tab</span>
-                    </a>
-                  )}
                 </div>
               </div>
             )}
             {content?.file?.url ? (
-              <div className="flex-1 w-full relative bg-gray-100" style={{ height: '400px' }}>
+              <div
+                className="flex-1 w-full relative bg-gray-100"
+                style={{ height: '400px' }}
+                onContextMenu={(e) => e.preventDefault()}
+              >
                 <iframe
                   key={`iframe-${currentSection?.id}-${iframeKey}`}
-                  src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(content.file.url)}`}
+                  src={`${content.file.url}${content.file.url.includes('#') ? '&' : '#'}toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
                   className="w-full h-full border-0"
                   title={content.file.name || 'Document'}
                   allow="autoplay"
                   onLoad={() => {
-                    
                     setIframeLoaded(true);
                     setIframeError(false);
                   }}
@@ -969,18 +959,7 @@ export default function ManualTrainingSimulator({
                     <div className="text-center max-w-md p-6">
                       <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-700 font-medium mb-2">Unable to load document preview</p>
-                      <p className="text-gray-500 text-sm mb-4">The document cannot be displayed in the browser.</p>
-                      <a
-                        href={content.file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg font-medium transition-all"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                        <span>Open Document in New Tab</span>
-                      </a>
+                      <p className="text-gray-500 text-sm mb-4">Consultation only — download is disabled.</p>
                       <button
                         onClick={() => {
                           setIframeError(false);

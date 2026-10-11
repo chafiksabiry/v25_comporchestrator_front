@@ -5,6 +5,8 @@ export interface Activity {
   description: string;
   category: string;
   isActive: boolean;
+  name_i18n?: { en?: string; fr?: string };
+  description_i18n?: { en?: string; fr?: string };
   __v: number;
   createdAt: string;
   updatedAt: string;
@@ -15,9 +17,22 @@ export interface Industry {
   name: string;
   description: string;
   isActive: boolean;
+  name_i18n?: { en?: string; fr?: string };
+  description_i18n?: { en?: string; fr?: string };
   __v: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Sector {
+  _id: string;
+  name: string;
+  description?: string;
+  name_i18n?: { en?: string; fr?: string };
+  description_i18n?: { en?: string; fr?: string };
+  __v?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Language {
@@ -31,12 +46,17 @@ export interface Language {
   updatedAt: string;
 }
 
+export type LocalizedString = { en?: string; fr?: string };
+export type LocalizedStringList = { en?: string[]; fr?: string[] };
+
 export interface GigData {
   documentation: any;
   userId: string;
   companyId: string;
   title: string;
+  title_i18n?: LocalizedString;
   description: string;
+  description_i18n?: LocalizedString;
   category: string;
   destination_zone: string;
   destination_zone_meta?: {
@@ -49,6 +69,10 @@ export interface GigData {
   destinationZones?: string[];
   callTypes: string[];
   highlights: string[];
+  highlights_i18n?: LocalizedStringList;
+  deliverables?: string[];
+  deliverables_i18n?: LocalizedStringList;
+  sectors?: string[];
   industries: string[]; // Array of industry IDs
   activities: string[]; // Array of activity IDs
   status?: 'to_activate' | 'active' | 'inactive' | 'archived';
@@ -135,6 +159,7 @@ export interface GigData {
       reward: string;
     }[];
     additionalDetails?: string;
+    additionalDetails_i18n?: LocalizedString;
   };
   leads: {
     types: Array<{
@@ -237,12 +262,19 @@ export interface GigData {
 
 export interface GigSuggestion {
   title: string;
+  title_i18n?: LocalizedString;
   description: string;
+  description_i18n?: LocalizedString;
   category: string;
   destination_zone?: string;
   highlights: string[];
+  highlights_i18n?: LocalizedStringList;
   jobTitles: string[];
+  jobTitles_i18n?: LocalizedStringList;
+  jobDescription?: string;
+  jobDescription_i18n?: LocalizedString;
   deliverables: string[];
+  deliverables_i18n?: LocalizedStringList;
   selectedJobTitle?: string;
   sectors: string[];
   industries: string[];
@@ -355,6 +387,7 @@ export interface GigSuggestion {
     };
     transactionCommission: number;
     additionalDetails: string;
+    additionalDetails_i18n?: LocalizedString;
   };
   activity: {
     options: Array<{

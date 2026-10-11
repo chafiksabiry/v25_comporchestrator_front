@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  X, Mail, Phone, MapPin, Calendar, User, Edit, Globe, Hash,
+  X, Mail, Phone, MapPin, Calendar, User, Edit, Globe, Hash, Bot, PhoneOff,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
+import Cookies from 'js-cookie';
+import { hangupAiOutboundCall, startAiOutboundCall } from '../lib/aiVoiceApi';
 
 export interface LeadDetail {
   _id: string;
@@ -19,12 +22,19 @@ export interface LeadDetail {
   Stage?: string;
   Pipeline?: string;
   updatedAt?: string;
+  gigId?: string | { $oid?: string };
+  customFields?: Record<string, string> | Map<string, string>;
 }
 
 interface Props {
   lead: LeadDetail;
   onClose: () => void;
   onEdit?: () => void;
+}
+
+interface ActiveAiCall {
+  callId?: string;
+  callControlId: string;
 }
 
 function getInitials(lead: LeadDetail): string {
@@ -47,6 +57,14 @@ function formatDate(value?: string): string {
   } catch {
     return value;
   }
+}
+
+function resolveGigId(lead: LeadDetail): string | null {
+  const raw = lead.gigId;
+  if (!raw) return null;
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object' && raw.$oid) return raw.$oid;
+  return null;
 }
 
 function DetailRow({
@@ -75,10 +93,67 @@ function DetailRow({
   );
 }
 
+function getCustomFieldEntries(
+  raw?: Record<string, string> | Map<string, string>
+): Array<[string, string]> {
+  if (!raw) return [];
+  const entries =
+    raw instanceof Map ? Array.from(raw.entries()) : Object.entries(raw);
+  return entries
+    .map(([k, v]) => [String(k || '').trim(), String(v ?? '').trim()] as [string, string])
+    .filter(([k, v]) => Boolean(k) && Boolean(v));
+}
+
 export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
   const { t } = useTranslation();
   const initials = getInitials(lead);
   const fullName = getFullName(lead);
+  const customEntries = getCustomFieldEntries(lead.customFields);
+  const [callingAi, setCallingAi] = useState(false);
+  const [endingAi, setEndingAi] = useState(false);
+  const [activeAiCall, setActiveAiCall] = useState<ActiveAiCall | null>(null);
+
+  const startAiCall = async () => {
+    if (!lead._id) return;
+    if (!lead.Phone) {
+      toast.error(t('aiVoice.noPhone', 'Ce lead n’a pas de numéro de téléphone.'));
+      return;
+    }
+    setCallingAi(true);
+    try {
+      const companyId = Cookies.get('companyId');
+      const gigId = resolveGigId(lead) || undefined;
+      const session = await startAiOutboundCall({
+        leadId: lead._id,
+        gigId,
+        companyId: companyId || undefined,
+      });
+      setActiveAiCall(session);
+      toast.success(
+        t('aiVoice.callStarted', 'Appel IA lancé vers {{phone}}', {
+          phone: lead.Phone,
+        })
+      );
+    } catch (err: any) {
+      toast.error(err?.message || t('aiVoice.callFailed', 'Impossible de lancer l’appel IA.'));
+    } finally {
+      setCallingAi(false);
+    }
+  };
+
+  const endAiCall = async () => {
+    if (!activeAiCall?.callControlId && !activeAiCall?.callId) return;
+    setEndingAi(true);
+    try {
+      await hangupAiOutboundCall(activeAiCall);
+      setActiveAiCall(null);
+      toast.success(t('aiVoice.callEnded', 'Appel terminé.'));
+    } catch (err: any) {
+      toast.error(err?.message || t('aiVoice.endCallFailed', 'Impossible de terminer l’appel.'));
+    } finally {
+      setEndingAi(false);
+    }
+  };
 
   return createPortal(
     <div
@@ -150,7 +225,7 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
             </div>
           </div>
 
-          {(lead.Date_of_Birth || lead.updatedAt) && (
+          {(lead.Date_of_Birth || lead.updatedAt || customEntries.length > 0) && (
             <div>
               <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
                 {t('uploadContacts.list.details.additionalInfo')}
@@ -162,13 +237,16 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
                 {lead.updatedAt && (
                   <DetailRow icon={User} label={t('uploadContacts.list.details.lastUpdated')} value={formatDate(lead.updatedAt)} />
                 )}
+                {customEntries.map(([key, value]) => (
+                  <DetailRow key={key} icon={Hash} label={key} value={value} />
+                ))}
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 px-4 pb-4 pt-1 border-t border-slate-100">
+        <div className="flex flex-wrap justify-end gap-2 px-4 pb-4 pt-1 border-t border-slate-100">
           <button
             type="button"
             onClick={onClose}
@@ -176,6 +254,33 @@ export default function LeadDetailModal({ lead, onClose, onEdit }: Props) {
           >
             {t('uploadContacts.list.details.close')}
           </button>
+          {activeAiCall ? (
+            <button
+              type="button"
+              onClick={endAiCall}
+              disabled={endingAi}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-black text-white bg-red-600 border border-red-700 rounded-xl hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-red-500/20"
+              title={t('aiVoice.endCall', 'Terminer l’appel')}
+            >
+              <PhoneOff className="w-3.5 h-3.5" />
+              {endingAi
+                ? t('aiVoice.endingCall', 'Fin d’appel…')
+                : t('aiVoice.endCall', 'Terminer l’appel')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={startAiCall}
+              disabled={callingAi || !lead.Phone}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              title={t('aiVoice.callWithAssistantHint', 'Appel sortant via OpenAI Realtime + Telnyx')}
+            >
+              <Bot className="w-3.5 h-3.5" />
+              {callingAi
+                ? t('aiVoice.calling', 'Appel…')
+                : t('aiVoice.callWithAssistant', 'Appeler avec l’assistant')}
+            </button>
+          )}
           {onEdit && (
             <button
               type="button"

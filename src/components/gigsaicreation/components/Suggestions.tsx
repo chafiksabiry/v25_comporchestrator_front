@@ -18,10 +18,6 @@ import {
   Check,
   Loader2,
   Users,
-  Sun,
-  Sunrise,
-  Sunset,
-  Moon,
   Calendar,
   Search,
   ChevronDown,
@@ -31,6 +27,7 @@ import i18n from "i18n-iso-countries";
 import fr from "i18n-iso-countries/langs/fr.json";
 import en from "i18n-iso-countries/langs/en.json";
 import { generateGigSuggestions } from "../lib/ai";
+import { assertCompanyHasAiTokens } from "../../../lib/aiTokensUsage";
 import { fetchSoftSkills, fetchTechnicalSkills, fetchProfessionalSkills, fetchAllCountries, Country, getCountryNameById, fetchAllCurrencies, Currency, fetchAllTimezones } from "../lib/api";
 import { predefinedOptions } from "../lib/guidance";
 import {
@@ -42,21 +39,44 @@ import {
   getLanguageOptions,
   getActivityNameById,
   getIndustryNameById,
-  getLanguageNameById
+  getLanguageNameById,
+  getActivityById,
+  getIndustryById,
+  convertActivityNamesToIds,
+  convertIndustryNamesToIds,
+  convertSectorNamesToIds,
+  loadSectors,
+  getSectorById,
+  getSectorNameById,
+  getSectorOptions,
 } from '../lib/activitiesIndustries';
 import Logo from "./Logo";
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
+import { scrollPageToTop } from '../../../utils/scrollPageToTop';
+import { useTranslation } from 'react-i18next';
+import {
+  addNarrativeItem,
+  listForLang,
+  removeNarrativeItem,
+  textForLang,
+  uiLangFrom,
+  updateNarrativeItem,
+  writeNarrativeText,
+} from '../lib/gigNarrativeI18n';
+import {
+  MultiRangeScheduleGroup,
+  TimeRange,
+  findOverlappingRangeIndexes,
+  groupSchedulesByDayRanges,
+  rangesOverlap,
+  replaceScheduleGroup,
+} from "../lib/scheduleUtils";
 
 type ScheduleEntry = {
   day: string;
   hours: { start: string; end: string };
   _id?: { $oid: string };
-};
-
-type GroupedSchedule = {
-  hours: { start: string; end: string };
-  days: string[];
 };
 
 // Timezone data type with _id
@@ -157,20 +177,20 @@ const DESTINATION_ZONES: { [key: string]: string } = {
 
 
 const LANGUAGE_LEVELS = [
-  { value: "A1", label: "A1 - Beginner" },
-  { value: "A2", label: "A2 - Elementary" },
-  { value: "B1", label: "B1 - Intermediate" },
-  { value: "B2", label: "B2 - Upper Intermediate" },
-  { value: "C1", label: "C1 - Advanced" },
-  { value: "C2", label: "C2 - Mastery" },
+  { value: "A1", labelKey: "beginner" },
+  { value: "A2", labelKey: "elementary" },
+  { value: "B1", labelKey: "intermediate" },
+  { value: "B2", labelKey: "upperIntermediate" },
+  { value: "C1", labelKey: "advanced" },
+  { value: "C2", labelKey: "mastery" },
 ];
 
 const SKILL_LEVELS = [
-  { value: 1, label: "Basic" },
-  { value: 2, label: "Intermediate" },
-  { value: 3, label: "Advanced" },
-  { value: 4, label: "Expert" },
-  { value: 5, label: "Master" },
+  { value: 1, labelKey: "basic" },
+  { value: 2, labelKey: "intermediate" },
+  { value: 3, labelKey: "advanced" },
+  { value: 4, labelKey: "expert" },
+  { value: 5, labelKey: "master" },
 ];
 
 
@@ -220,6 +240,8 @@ const FLEXIBILITY_SELECT_OPTIONS = [
 ];
 
 export const Suggestions: React.FC<SuggestionsProps> = (props) => {
+  const { t, i18n } = useTranslation();
+  const uiLang = uiLangFrom(i18n.language);
   const [suggestions, setSuggestions] = useState<GigSuggestion | null>(props.initialSuggestions || null);
   const [loading, setLoading] = useState(!props.initialSuggestions);
   const [error, setError] = useState<string | null>(null);
@@ -248,6 +270,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
   const skillsLoadedRef = useRef(false);
   const [activities, setActivities] = useState<Array<{ value: string; label: string; category: string }>>([]);
   const [industries, setIndustries] = useState<Array<{ value: string; label: string }>>([]);
+  const [sectors, setSectors] = useState<Array<{ value: string; label: string }>>([]);
   const [languages, setLanguages] = useState<Array<{ value: string; label: string; code: string }>>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [industriesLoading, setIndustriesLoading] = useState(true);
@@ -272,6 +295,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
   // States for selection
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
+  const selectedTitleIndexRef = React.useRef(0);
 
   // States for skill adding interface
   const [showAddSkillInterface, setShowAddSkillInterface] = useState<{ [key: string]: boolean }>({
@@ -461,11 +485,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         await loadIndustries();
 
+        await loadSectors();
+
         await loadLanguages();
 
         // Get options for UI components
         const activityOptions = getActivityOptions();
         const industryOptions = getIndustryOptions();
+        const sectorOptions = getSectorOptions();
         const languageOptions = getLanguageOptions();
 
 
@@ -480,6 +507,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         setActivities(activityOptions);
         setIndustries(industryOptions);
+        setSectors(sectorOptions);
         setLanguages(languageOptions);
 
 
@@ -957,7 +985,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         lastProcessedInputRef.current = props.input.trim();
         setLoading(true);
         setError(null);
-        const result = await generateGigSuggestions(props.input);
+        await assertCompanyHasAiTokens(1, undefined, { allowFirstGigFree: true });
+        const uiLang = i18n.language?.startsWith('en') ? 'en' : 'fr';
+        const result = await generateGigSuggestions(props.input, uiLang);
 
         // Convert schedules from days array to individual day objects
         if (result.schedule && result.schedule.schedules) {
@@ -1005,19 +1035,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         // Commission data is now used directly as an object (no options array needed)
 
-        // Validate and filter sectors to only allow predefined ones
-        if (result.sectors && result.sectors.length > 0) {
-
-
-          const validSectors = result.sectors.filter(sector => {
-            const isValid = predefinedOptions.sectors.includes(sector);
-            if (!isValid) {
-              console.warn(`❌ Invalid sector "${sector}" - not in allowed list`);
-            }
-            return isValid;
-          });
-
-          result.sectors = validSectors;
+        // Keep every suggested sector. Dropping unknown labels left Infos de base empty.
+        result.sectors = (Array.isArray(result.sectors) ? result.sectors : [])
+          .map((sector: unknown) => (typeof sector === 'string' ? sector.trim() : ''))
+          .filter(Boolean);
+        if (result.sectors.length === 0 && result.category) {
+          result.sectors = [String(result.category)];
         }
 
         // Validate and filter flexibility options to only allow predefined ones
@@ -1127,6 +1150,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         if (result.destinationZones && result.destinationZones.length > 0) {
 
           const convertedZones = await Promise.all(result.destinationZones.map(async (zone) => {
+            if (zone && typeof zone === 'object') {
+              const raw = zone as { _id?: unknown; $oid?: unknown; name?: { common?: string; official?: string } | string };
+              const id = typeof raw._id === 'string' ? raw._id : typeof raw.$oid === 'string' ? raw.$oid : '';
+              if (id) return id;
+              const label = typeof raw.name === 'string' ? raw.name : raw.name?.common || raw.name?.official || '';
+              if (label) zone = label;
+            }
+
             // If it's already a MongoDB ObjectId (24 characters), keep it
             if (typeof zone === 'string' && zone.length === 24) {
               return zone;
@@ -1170,11 +1201,44 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           result.destinationZones = franceCountry ? [franceCountry._id] : [];
         }
 
+        // Ensure ref data is loaded, then normalize names → IDs
+        await Promise.all([loadActivities(), loadIndustries(), loadSectors()]);
+        if (Array.isArray(result.sectors) && result.sectors.length > 0) {
+          result.sectors = [...new Set(result.sectors.map((item: string) => {
+            if (!item) return item;
+            if (getSectorById(item) || /^[a-f0-9]{24}$/i.test(item)) return item;
+            return convertSectorNamesToIds([item])[0] || item;
+          }).filter(Boolean))];
+        }
+        if (Array.isArray(result.industries) && result.industries.length > 0) {
+          result.industries = [...new Set(result.industries.map((item: string) => {
+            if (!item) return item;
+            if (getIndustryById(item)) return item;
+            return convertIndustryNamesToIds([item])[0] || item;
+          }).filter(Boolean))];
+        }
+        if (Array.isArray(result.activities) && result.activities.length > 0) {
+          result.activities = [...new Set(result.activities.map((item: string) => {
+            if (!item) return item;
+            if (getActivityById(item)) return item;
+            return convertActivityNamesToIds([item])[0] || item;
+          }).filter(Boolean))];
+        }
+
         setSuggestions(result);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to generate suggestions"
-        );
+        const msg =
+          err && typeof err === "object" && (err as any).code === "insufficient_tokens"
+            ? (err as Error).message ||
+              "Solde de tokens AI insuffisant. Rechargez pour continuer."
+            : err instanceof Error
+              ? err.message
+              : "Failed to generate suggestions";
+        setError(msg);
+        // Allow retry after token top-up
+        if (err && typeof err === "object" && (err as any).code === "insufficient_tokens") {
+          lastProcessedInputRef.current = "";
+        }
       } finally {
         setLoading(false);
         isGeneratingRef.current = false;
@@ -1227,11 +1291,71 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
   // Auto-select first job title when suggestions are loaded (only on initial load)
   useEffect(() => {
-    if (suggestions?.jobTitles && suggestions.jobTitles.length > 0 && !selectedJobTitle) {
-      // Only auto-select if no manual selection has been made
-      setSelectedJobTitle(suggestions.jobTitles[0]);
+    const titles = suggestions
+      ? listForLang(suggestions.jobTitles_i18n, suggestions.jobTitles, uiLang)
+      : [];
+    if (titles.length > 0 && !selectedJobTitle) {
+      selectedTitleIndexRef.current = 0;
+      setSelectedJobTitle(titles[0]);
     }
   }, [suggestions?.jobTitles]); // Remove selectedJobTitle from dependencies to prevent re-triggering
+
+  // Menu language switches the stored narrative without a new generation.
+  useEffect(() => {
+    setSuggestions((prev) => {
+      if (!prev) return prev;
+      const jobTitles = listForLang(prev.jobTitles_i18n, prev.jobTitles, uiLang);
+      const highlights = listForLang(prev.highlights_i18n, prev.highlights, uiLang);
+      const deliverables = listForLang(prev.deliverables_i18n, prev.deliverables, uiLang);
+      const description = textForLang(
+        prev.description_i18n || prev.jobDescription_i18n,
+        prev.description || prev.jobDescription,
+        uiLang,
+      );
+      const commissionDetails = textForLang(
+        prev.commission?.additionalDetails_i18n,
+        prev.commission?.additionalDetails,
+        uiLang,
+      );
+      const same =
+        (prev.jobTitles || []).join('\u0001') === jobTitles.join('\u0001') &&
+        (prev.highlights || []).join('\u0001') === highlights.join('\u0001') &&
+        (prev.deliverables || []).join('\u0001') === deliverables.join('\u0001') &&
+        (prev.description || '') === description &&
+        (prev.jobDescription || '') === description &&
+        (prev.commission?.additionalDetails || '') === commissionDetails;
+      if (same) return prev;
+      return {
+        ...prev,
+        jobTitles,
+        highlights,
+        deliverables,
+        description,
+        jobDescription: description,
+        title: jobTitles[0] || prev.title,
+        commission: prev.commission
+          ? { ...prev.commission, additionalDetails: commissionDetails }
+          : prev.commission,
+      };
+    });
+  }, [uiLang]);
+
+  const suggestionsLangRef = useRef(suggestions);
+  suggestionsLangRef.current = suggestions;
+  const prevNarrativeLangRef = useRef(uiLang);
+  useEffect(() => {
+    if (prevNarrativeLangRef.current === uiLang) return;
+    prevNarrativeLangRef.current = uiLang;
+    const prev = suggestionsLangRef.current;
+    if (!prev) return;
+    const titles = listForLang(prev.jobTitles_i18n, prev.jobTitles, uiLang);
+    if (!titles.length) {
+      setSelectedJobTitle(null);
+      return;
+    }
+    const idx = Math.min(selectedTitleIndexRef.current, titles.length - 1);
+    setSelectedJobTitle(titles[idx]);
+  }, [uiLang]);
 
   // Re-validate skills when they are loaded from API
   useEffect(() => {
@@ -1411,13 +1535,99 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
       const finalSuggestions = finalMigration();
 
+      // Sync destination / currency from user edits so Review does not keep stale AI metas
+      const zones = Array.isArray(finalSuggestions.destinationZones)
+        ? finalSuggestions.destinationZones
+        : [];
+      const primaryZone = zones[0] ? String(zones[0]) : '';
+      let destination_zone_meta = (finalSuggestions as any).destination_zone_meta;
+      if (primaryZone) {
+        const country = allCountriesFromAPI.find((c) => c._id === primaryZone);
+        if (country) {
+          destination_zone_meta = {
+            _id: country._id,
+            name: {
+              common: country.name?.common || '',
+              official: (country.name as any)?.official || country.name?.common || '',
+            },
+            cca2: country.cca2,
+          };
+        } else if (
+          destination_zone_meta &&
+          String(destination_zone_meta._id || '') !== primaryZone
+        ) {
+          destination_zone_meta = undefined;
+        }
+      } else {
+        destination_zone_meta = undefined;
+      }
+
+      const commission = { ...(finalSuggestions.commission || {}) } as any;
+      const rawCurrency = commission.currency;
+      const currencyId =
+        typeof rawCurrency === 'object' && rawCurrency?.$oid
+          ? String(rawCurrency.$oid)
+          : rawCurrency
+            ? String(rawCurrency)
+            : '';
+      commission.additionalDetails = textForLang(
+        commission.additionalDetails_i18n,
+        commission.additionalDetails,
+        uiLang,
+      );
+      if (currencyId) {
+        commission.currency = currencyId;
+        const currency = currencies.find(
+          (c) => c._id === currencyId || c.code === currencyId
+        );
+        if (currency) {
+          commission.currency_meta = {
+            _id: currency._id,
+            name: currency.name,
+            code: currency.code,
+            symbol: currency.symbol,
+          };
+        } else if (
+          commission.currency_meta &&
+          String(commission.currency_meta._id || '') !== currencyId
+        ) {
+          delete commission.currency_meta;
+        }
+      }
+
+      const visibleTitles = listForLang(finalSuggestions.jobTitles_i18n, finalSuggestions.jobTitles, uiLang);
+      const visibleDescription = textForLang(
+        finalSuggestions.description_i18n || finalSuggestions.jobDescription_i18n,
+        finalSuggestions.description || finalSuggestions.jobDescription,
+        uiLang,
+      );
+      const visibleTitle = selectedJobTitle || visibleTitles[0] || undefined;
+      const titleIndex = Math.max(0, visibleTitles.indexOf(visibleTitle || ''));
+      const titleI18n = {
+        en: finalSuggestions.jobTitles_i18n?.en?.[titleIndex] || finalSuggestions.title_i18n?.en || visibleTitle || '',
+        fr: finalSuggestions.jobTitles_i18n?.fr?.[titleIndex] || finalSuggestions.title_i18n?.fr || visibleTitle || '',
+      };
+
       // Add selected job title to the final suggestions
       const suggestionsWithSelectedTitle: GigSuggestion = {
         ...finalSuggestions,
-        selectedJobTitle: selectedJobTitle || undefined
-      };
+        jobTitles: visibleTitles,
+        title_i18n: titleI18n,
+        highlights: listForLang(finalSuggestions.highlights_i18n, finalSuggestions.highlights, uiLang),
+        deliverables: listForLang(finalSuggestions.deliverables_i18n, finalSuggestions.deliverables, uiLang),
+        description: visibleDescription,
+        jobDescription: visibleDescription,
+        title: visibleTitle || finalSuggestions.title,
+        selectedJobTitle: visibleTitle,
+        destination_zone: primaryZone || (finalSuggestions as any).destination_zone,
+        destination_zone_meta,
+        destinationZones: zones,
+        commission,
+      } as GigSuggestion;
 
       props.onConfirm(suggestionsWithSelectedTitle);
+      // Next step mounts in the dashboard <main> scrollport — scroll it up.
+      scrollPageToTop();
     }
   };
 
@@ -1557,20 +1767,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
     switch (section) {
       case "highlights":
-        newSuggestions.highlights = [
-          ...(newSuggestions.highlights || []),
-          item,
-        ];
-        break;
       case "jobTitles":
-        newSuggestions.jobTitles = [...(newSuggestions.jobTitles || []), item];
-        break;
       case "deliverables":
-        newSuggestions.deliverables = [
-          ...(newSuggestions.deliverables || []),
-          item,
-        ];
-        break;
+        setSuggestions(addNarrativeItem(suggestions, section, uiLang, item));
+        return;
       case "industries":
         // Convert industry name to ID
         const industryId = industries.find(i => i.label === item)?.value;
@@ -1601,14 +1801,18 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           console.warn(`Language "${item}" not found in available options. Skipping.`);
         }
         break;
-      case "sectors":
-        // Validate that the sector is in the allowed list
-        if (predefinedOptions.sectors.includes(item)) {
-          newSuggestions.sectors = [...(newSuggestions.sectors || []), item];
+      case "sectors": {
+        const sectorId =
+          sectors.find((s) => s.label === item)?.value ||
+          convertSectorNamesToIds([item])[0] ||
+          (/^[a-f0-9]{24}$/i.test(item) ? item : '');
+        if (sectorId) {
+          newSuggestions.sectors = [...(newSuggestions.sectors || []), sectorId];
         } else {
           console.warn(`Sector "${item}" is not in the allowed list. Skipping.`);
         }
         break;
+      }
       case "destinationZones":
         // For destination zones, we store the MongoDB ObjectId
 
@@ -1680,14 +1884,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
     switch (section) {
       case "highlights":
-        newSuggestions.highlights[index] = newValue;
-        break;
       case "jobTitles":
-        newSuggestions.jobTitles[index] = newValue;
-        break;
       case "deliverables":
-        newSuggestions.deliverables[index] = newValue;
-        break;
+        setSuggestions(updateNarrativeItem(suggestions, section, uiLang, index, newValue));
+        return;
       case "industries":
         // Convert industry name to ID
         const industryId = industries.find(i => i.label === newValue)?.value;
@@ -1706,14 +1906,18 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           console.warn(`Activity "${newValue}" not found in available options. Skipping update.`);
         }
         break;
-      case "sectors":
-        // Validate that the sector is in the allowed list
-        if (predefinedOptions.sectors.includes(newValue)) {
-          newSuggestions.sectors[index] = newValue;
+      case "sectors": {
+        const sectorId =
+          sectors.find((s) => s.label === newValue)?.value ||
+          convertSectorNamesToIds([newValue])[0] ||
+          (/^[a-f0-9]{24}$/i.test(newValue) ? newValue : '');
+        if (sectorId) {
+          newSuggestions.sectors[index] = sectorId;
         } else {
           console.warn(`Sector "${newValue}" is not in the allowed list. Skipping update.`);
         }
         break;
+      }
       case "destinationZones":
         // For destination zones, we store the MongoDB ObjectId
 
@@ -1777,20 +1981,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
     switch (section) {
       case "highlights":
-        newSuggestions.highlights = newSuggestions.highlights.filter(
-          (_, i) => i !== index
-        );
-        break;
       case "jobTitles":
-        newSuggestions.jobTitles = newSuggestions.jobTitles.filter(
-          (_, i) => i !== index
-        );
-        break;
       case "deliverables":
-        newSuggestions.deliverables = newSuggestions.deliverables.filter(
-          (_, i) => i !== index
-        );
-        break;
+        setSuggestions(removeNarrativeItem(suggestions, section, uiLang, index));
+        return;
       case "industries":
         newSuggestions.industries = newSuggestions.industries.filter(
           (_, i) => i !== index
@@ -1889,7 +2083,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             className="flex items-center space-x-1 text-harx-700 hover:text-harx-900 font-semibold text-sm transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Add</span>
+            <span>{t('gigCreation.suggestions.add')}</span>
           </button>
         </div>
 
@@ -1941,7 +2135,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                               cancelEditing();
                             }
                           }}
-                          placeholder="Type to search countries..."
+                          placeholder={t('gigCreation.suggestions.searchCountries')}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
                           autoFocus
                         />
@@ -1995,17 +2189,29 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
                         autoFocus
                       >
-                        <option value="">Select a {section === "sectors" ? "sector" : section === "industries" ? "industry" : "activity"}...</option>
-                        {(section === "sectors" ? predefinedOptions.sectors : section === "industries" ? predefinedOptions.industries : predefinedOptions.activities).filter((item: string) => {
-                          // When editing, include the current item being edited
-                          if (editingIndex >= 0 && currentItems[editingIndex] === item) {
+                        <option value="">
+                          {t('gigCreation.suggestions.selectGeneric', {
+                            kind:
+                              section === 'sectors'
+                                ? t('gigCreation.suggestions.kindSector')
+                                : section === 'industries'
+                                  ? t('gigCreation.suggestions.kindIndustry')
+                                  : t('gigCreation.suggestions.kindActivity')
+                          })}
+                        </option>
+                        {(section === "sectors"
+                          ? sectors
+                          : section === "industries"
+                            ? industries
+                            : activities
+                        ).filter((opt) => {
+                          if (editingIndex >= 0 && currentItems[editingIndex] === opt.value) {
                             return true;
                           }
-                          // Otherwise, exclude items that are already selected
-                          return !currentItems.includes(item);
-                        }).map((item: string) => (
-                          <option key={item} value={item}>
-                            {item}
+                          return !currentItems.includes(opt.value);
+                        }).map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
                           </option>
                         ))}
                       </select>
@@ -2065,6 +2271,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                               </div>
                             );
                           })()
+                          : section === "sectors"
+                            ? getSectorNameById(item) || item
+                          : section === "industries"
+                            ? getIndustryNameById(item) || item
+                          : section === "activities"
+                            ? getActivityNameById(item) || item
                           : item
                         : item?.skill || item?.language || ""}
                     </div>
@@ -2124,7 +2336,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       cancelEditing();
                     }
                   }}
-                  placeholder="Type to search countries..."
+                  placeholder={t('gigCreation.suggestions.searchCountries')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
                   autoFocus
                 />
@@ -2177,21 +2389,31 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
                 autoFocus
               >
-                <option value="">Select a {section === "sectors" ? "sector" : section === "industries" ? "industry" : "activity"}...</option>
-                {(section === "sectors" ? predefinedOptions.sectors : section === "industries" ? predefinedOptions.industries : predefinedOptions.activities).filter((item: string) => {
-                  // When editing, include the current item being edited
-                  if (editingIndex >= 0 && currentItems[editingIndex] === item) {
+                <option value="">
+                  {t('gigCreation.suggestions.selectGeneric', {
+                    kind:
+                      section === 'sectors'
+                        ? t('gigCreation.suggestions.kindSector')
+                        : section === 'industries'
+                          ? t('gigCreation.suggestions.kindIndustry')
+                          : t('gigCreation.suggestions.kindActivity')
+                  })}
+                </option>
+                {(section === "sectors"
+                  ? sectors
+                  : section === "industries"
+                    ? industries
+                    : activities
+                ).filter((opt) => {
+                  if (editingIndex >= 0 && currentItems[editingIndex] === opt.value) {
                     return true;
                   }
-                  // Otherwise, exclude items that are already selected
-                  return !currentItems.includes(item);
-                }).map(
-                  (item: string) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  )
-                )}
+                  return !currentItems.includes(opt.value);
+                }).map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
             ) : (
               <input
@@ -2236,29 +2458,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     );
   };
 
-  const formatTime24 = (time: string) => {
-    if (!time || !time.includes(":")) return time;
-    let [hoursStr, minutesStr] = time.split(":");
-    return `${hoursStr}h${minutesStr}`;
-  };
-
   const renderEditableSchedules = () => {
     if (!suggestions?.schedule) return null;
-
-    const groupedSchedules = (suggestions.schedule.schedules || []).reduce(
-      (groups, schedule) => {
-        // Ignorer les schedules avec des jours vides
-        if (!schedule.day || schedule.day.trim() === "") return groups;
-
-        const key = `${schedule.hours.start}-${schedule.hours.end}`;
-        if (!groups[key]) {
-          groups[key] = { hours: schedule.hours, days: [] };
-        }
-        groups[key].days.push(schedule.day);
-        return groups;
-      },
-      {} as Record<string, GroupedSchedule>
-    );
 
     const allWeekDays = [
       "Monday",
@@ -2270,257 +2471,184 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       "Sunday",
     ];
 
-    // Trouver les groupes vides (schedules avec des jours vides)
-    const emptySchedules = suggestions.schedule.schedules.filter(
-      schedule => !schedule.day || schedule.day.trim() === ""
-    );
+    const rangeCandidates: TimeRange[] = [
+      { start: "09:00", end: "17:00" },
+      { start: "08:00", end: "13:00" },
+      { start: "14:00", end: "18:00" },
+      { start: "14:00", end: "18:00" },
+      { start: "07:00", end: "15:00" },
+      { start: "11:00", end: "19:00" },
+    ];
 
-    // Vérifier si tous les jours sont déjà sélectionnés
-    const selectedDays = suggestions.schedule.schedules
-      .filter(schedule => schedule.day && schedule.day.trim() !== "")
-      .map(schedule => schedule.day);
+    const pickUnusedRange = (existing: TimeRange[]): TimeRange => {
+      const taken = new Set(existing.map((r) => `${r.start}-${r.end}`));
+      const nonOverlapping = rangeCandidates.find(
+        (c) =>
+          !taken.has(`${c.start}-${c.end}`) &&
+          !existing.some((r) => rangesOverlap(r, c))
+      );
+      if (nonOverlapping) return nonOverlapping;
+      return (
+        rangeCandidates.find((c) => !taken.has(`${c.start}-${c.end}`)) || {
+          start: "18:00",
+          end: "21:00",
+        }
+      );
+    };
 
-    const allDaysSelected = allWeekDays.every(day => selectedDays.includes(day));
+    const schedulePresets: { id: string; hours: TimeRange }[] = [
+      { id: "nineToFive", hours: { start: "09:00", end: "17:00" } },
+      { id: "early", hours: { start: "07:00", end: "15:00" } },
+      { id: "late", hours: { start: "11:00", end: "19:00" } },
+      { id: "evening", hours: { start: "14:00", end: "22:00" } },
+    ];
 
-    const addNewScheduleGroup = () => {
-      if (!suggestions) return;
+    const scheduleGroups = groupSchedulesByDayRanges(suggestions.schedule.schedules);
+    const usedDays = new Set(scheduleGroups.flatMap((g) => g.days));
+    const freeDays = allWeekDays.filter((d) => !usedDays.has(d));
 
-      // Cherche un horaire non utilisé
-      const defaultHoursList = [
-        { start: "09:00", end: "17:00" },
-        { start: "07:00", end: "15:00" },
-        { start: "11:00", end: "19:00" },
-        { start: "14:00", end: "22:00" },
-      ];
-      const usedHours = suggestions.schedule.schedules.map(s => `${s.hours.start}-${s.hours.end}`);
-      const availableHours = defaultHoursList.find(
-        h => !usedHours.includes(`${h.start}-${h.end}`)
-      ) || { start: "09:00", end: "17:00" };
-
-      // Créer un nouveau groupe avec des horaires mais sans jours sélectionnés
-      const newSchedule: ScheduleEntry = {
-        day: "", // Jour vide - aucun jour sélectionné par défaut
-        hours: availableHours,
-        _id: {
-          $oid: `generated_${Date.now()}_${Math.random()
-            .toString(36)
-            .substr(2, 9)}`,
-        },
-      };
-
-      const newSuggestions = {
+    const setSchedules = (next: ScheduleEntry[]) => {
+      const normalized = (next || []).map((s) => ({
+        day: s.day,
+        hours: { start: s.hours.start, end: s.hours.end },
+        ...(s._id ? { _id: s._id } : {}),
+      }));
+      setSuggestions({
         ...suggestions,
         schedule: {
           ...suggestions.schedule,
-          schedules: [...suggestions.schedule.schedules, newSchedule],
+          schedules: normalized,
         },
-      };
-      setSuggestions(newSuggestions);
+        // Keep availability in lockstep so Confirm → Schedule Groups
+        // does not resurrect deleted plages from a stale copy.
+        availability: {
+          ...suggestions.availability,
+          schedule: normalized.map(({ day, hours }) => ({ day, hours })),
+          time_zone:
+            suggestions.schedule?.time_zone ||
+            suggestions.availability?.time_zone ||
+            '',
+          timeZones:
+            suggestions.schedule?.timeZones ||
+            suggestions.availability?.timeZones ||
+            [],
+          flexibility:
+            suggestions.schedule?.flexibility ||
+            suggestions.availability?.flexibility ||
+            [],
+          minimumHours:
+            suggestions.schedule?.minimumHours ||
+            suggestions.availability?.minimumHours ||
+            {},
+        } as any,
+      });
     };
 
-    const handleDayToggle = (
-      dayToToggle: string,
-      groupHours: { start: string; end: string }
+    const commitGroup = (
+      group: MultiRangeScheduleGroup,
+      nextDays: string[],
+      nextRanges: TimeRange[]
     ) => {
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-        (s: ScheduleEntry) => s.day === dayToToggle
+      setSchedules(
+        replaceScheduleGroup(suggestions.schedule.schedules || [], group, nextDays, nextRanges)
       );
-
-      if (scheduleIndex > -1) {
-        const currentHours =
-          newSuggestions.schedule.schedules[scheduleIndex].hours;
-        if (
-          currentHours.start === groupHours.start &&
-          currentHours.end === groupHours.end
-        ) {
-          newSuggestions.schedule.schedules.splice(scheduleIndex, 1);
-        } else {
-          newSuggestions.schedule.schedules[scheduleIndex].hours = groupHours;
-        }
-      } else {
-        newSuggestions.schedule.schedules.push({
-          day: dayToToggle,
-          hours: groupHours,
-          _id: {
-            $oid: `generated_${Date.now()}_${Math.random()
-              .toString(36)
-              .substr(2, 9)}`,
-          },
-        });
-      }
-      setSuggestions(newSuggestions);
     };
 
-    const handleHoursChange = (
-      group: GroupedSchedule,
+    const addNewScheduleGroup = () => {
+      if (freeDays.length === 0) return;
+      const hours = pickUnusedRange(scheduleGroups.flatMap((g) => g.ranges));
+      setSchedules([
+        ...(suggestions.schedule.schedules || []).filter(
+          (s) => s.day && s.day.trim() !== ""
+        ),
+        {
+          day: freeDays[0],
+          hours: { ...hours },
+          _id: {
+            $oid: `generated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          },
+        },
+      ]);
+    };
+
+    const handleDayToggle = (group: MultiRangeScheduleGroup, day: string) => {
+      const isSelected = group.days.includes(day);
+      if (!isSelected && usedDays.has(day)) return;
+      const nextDays = isSelected
+        ? group.days.filter((d) => d !== day)
+        : [...group.days, day];
+      if (nextDays.length === 0) {
+        setSchedules(
+          (suggestions.schedule.schedules || []).filter((s) => !group.days.includes(s.day))
+        );
+        return;
+      }
+      commitGroup(group, nextDays, group.ranges);
+    };
+
+    const handleRangeChange = (
+      group: MultiRangeScheduleGroup,
+      rangeIndex: number,
       field: "start" | "end",
       value: string
     ) => {
-      // Allow free typing, validation happens later
-      // if (field === "end" && value < group.hours.start) return;
-
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-
-      // If Start > End, we will also update End
-      let shouldUpdateEnd = false;
-      if (field === "start" && value > group.hours.end) {
-        shouldUpdateEnd = true;
-      }
-
-      group.days.forEach((day: string) => {
-        const schedule = newSuggestions.schedule.schedules.find(
-          (s: ScheduleEntry) => s.day === day
-        );
-        if (schedule) {
-          schedule.hours[field] = value;
-          if (shouldUpdateEnd) {
-            schedule.hours.end = value;
-          }
-        }
-      });
-      setSuggestions(newSuggestions);
-    };
-
-    const handlePresetClick = (group: GroupedSchedule, preset: string) => {
-      let newHours;
-      switch (preset) {
-        case "9-5":
-          newHours = { start: "09:00", end: "17:00" };
-          break;
-        case "Early":
-          newHours = { start: "07:00", end: "15:00" };
-          break;
-        case "Late":
-          newHours = { start: "11:00", end: "19:00" };
-          break;
-        case "Evening":
-          newHours = { start: "14:00", end: "22:00" };
-          break;
-        default:
-          newHours = group.hours;
-      }
-
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      group.days.forEach((day: string) => {
-        const schedule = newSuggestions.schedule.schedules.find(
-          (s: ScheduleEntry) => s.day === day
-        );
-        if (schedule) {
-          schedule.hours = newHours;
-        }
-      });
-      setSuggestions(newSuggestions);
-    };
-
-    const handleEmptyScheduleDayToggle = (dayToToggle: string, emptySchedule: ScheduleEntry) => {
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-        (s: ScheduleEntry) => s._id?.$oid === emptySchedule._id?.$oid
+      const nextRanges = group.ranges.map((r, i) =>
+        i === rangeIndex ? { ...r, [field]: value } : r
       );
-
-      if (scheduleIndex > -1) {
-        newSuggestions.schedule.schedules[scheduleIndex].day = dayToToggle;
-      }
-      setSuggestions(newSuggestions);
+      commitGroup(group, group.days, nextRanges);
     };
 
-    const handleEmptyScheduleHoursChange = (emptySchedule: ScheduleEntry, field: "start" | "end", value: string) => {
-      // Allow free typing, validation happens on save/confirm if needed
-      // if (field === "end" && value < emptySchedule.hours.start) return;
-
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-        (s: ScheduleEntry) => s._id?.$oid === emptySchedule._id?.$oid
+    const handlePresetClick = (
+      group: MultiRangeScheduleGroup,
+      rangeIndex: number,
+      hours: TimeRange
+    ) => {
+      const nextRanges = group.ranges.map((r, i) =>
+        i === rangeIndex ? { ...hours } : r
       );
-
-      if (scheduleIndex > -1) {
-        newSuggestions.schedule.schedules[scheduleIndex].hours[field] = value;
-        // If Start > End, update End as well
-        if (field === "start" && value > newSuggestions.schedule.schedules[scheduleIndex].hours.end) {
-          newSuggestions.schedule.schedules[scheduleIndex].hours.end = value;
-        }
-      }
-      setSuggestions(newSuggestions);
+      commitGroup(group, group.days, nextRanges);
     };
 
-    const handleEmptySchedulePresetClick = (emptySchedule: ScheduleEntry, preset: string) => {
-      let newHours;
-      switch (preset) {
-        case "9-5":
-          newHours = { start: "09:00", end: "17:00" };
-          break;
-        case "Early":
-          newHours = { start: "07:00", end: "15:00" };
-          break;
-        case "Late":
-          newHours = { start: "11:00", end: "19:00" };
-          break;
-        case "Evening":
-          newHours = { start: "14:00", end: "22:00" };
-          break;
-        default:
-          newHours = emptySchedule.hours;
-      }
-
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-        (s: ScheduleEntry) => s._id?.$oid === emptySchedule._id?.$oid
-      );
-
-      if (scheduleIndex > -1) {
-        newSuggestions.schedule.schedules[scheduleIndex].hours = newHours;
-      }
-      setSuggestions(newSuggestions);
+    const addRangeToGroup = (group: MultiRangeScheduleGroup) => {
+      commitGroup(group, group.days, [...group.ranges, pickUnusedRange(group.ranges)]);
     };
 
-    const deleteEmptySchedule = (emptySchedule: ScheduleEntry) => {
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-        (s: ScheduleEntry) => s._id?.$oid === emptySchedule._id?.$oid
+    const removeRangeFromGroup = (group: MultiRangeScheduleGroup, rangeIndex: number) => {
+      if (group.ranges.length <= 1) return;
+      commitGroup(
+        group,
+        group.days,
+        group.ranges.filter((_, i) => i !== rangeIndex)
       );
-
-      if (scheduleIndex > -1) {
-        newSuggestions.schedule.schedules.splice(scheduleIndex, 1);
-        setSuggestions(newSuggestions);
-      }
     };
 
-    const deleteScheduleGroup = (groupHours: { start: string; end: string }) => {
-      const newSuggestions = JSON.parse(JSON.stringify(suggestions));
-      const schedulesToRemove = newSuggestions.schedule.schedules.filter(
-        (s: ScheduleEntry) => s.hours.start === groupHours.start && s.hours.end === groupHours.end
+    const deleteScheduleGroup = (group: MultiRangeScheduleGroup) => {
+      setSchedules(
+        (suggestions.schedule.schedules || []).filter((s) => !group.days.includes(s.day))
       );
-
-      schedulesToRemove.forEach((schedule: ScheduleEntry) => {
-        const scheduleIndex = newSuggestions.schedule.schedules.findIndex(
-          (s: ScheduleEntry) => s._id?.$oid === schedule._id?.$oid
-        );
-        if (scheduleIndex > -1) {
-          newSuggestions.schedule.schedules.splice(scheduleIndex, 1);
-        }
-      });
-
-      setSuggestions(newSuggestions);
     };
 
     return (
       <div className="space-y-4">
-        {Object.keys(groupedSchedules).length > 0 ? (
-          Object.entries(groupedSchedules).map(([key, group]) => (
+        <p className="text-xs text-gray-500">
+          {t('gigCreation.suggestions.pickDaysHint')}
+        </p>
+
+        {scheduleGroups.length > 0 ? (
+          scheduleGroups.map((group, groupIndex) => (
             <div
-              key={group.days.slice().sort().join('-')}
+              key={`sched-group-${group.days.slice().sort().join('-') || groupIndex}`}
               className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm"
             >
               <div className="flex items-center justify-between mb-3">
                 <h5 className="text-sm font-semibold text-gray-800 flex items-center">
                   <Calendar className="w-4 h-4 mr-2 text-harx-500" />
-                  Working Days
+                  {t('gigCreation.suggestions.workingDays')}
                 </h5>
                 <button
-                  onClick={() => deleteScheduleGroup(group.hours)}
+                  onClick={() => deleteScheduleGroup(group)}
                   className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Delete schedule group"
+                  title={t('gigCreation.suggestions.deleteScheduleGroup')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -2528,245 +2656,135 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <div className="flex gap-1 flex-wrap border-b border-gray-200 pb-2 mb-3">
                 {allWeekDays.map((day) => {
                   const isSelected = group.days.includes(day);
-                  const isInOtherGroup = !isSelected && suggestions.schedule.schedules.some((s) => s.day === day);
+                  const isInOtherGroup = !isSelected && usedDays.has(day);
                   return (
                     <button
                       key={day}
-                      onClick={() => handleDayToggle(day, group.hours)}
+                      type="button"
+                      onClick={() => handleDayToggle(group, day)}
                       disabled={isInOtherGroup}
+                      title={
+                        isInOtherGroup
+                          ? t('gigCreation.suggestions.dayInOtherGroup', {
+                              day: t(`gigCreation.schedule.days.${day.toLowerCase()}`, day)
+                            })
+                          : undefined
+                      }
                       className={`rounded-full px-4 py-1.5 font-semibold text-sm transition-all duration-200 shadow-sm
-                        ${isSelected ? 'bg-harx-alt-600 text-white shadow' : isInOtherGroup ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-harx-alt-100 hover:text-harx-alt-700'}
+                        ${
+                          isSelected
+                            ? "bg-harx-alt-600 text-white shadow"
+                            : isInOtherGroup
+                              ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                              : "bg-gray-100 text-gray-700 hover:bg-harx-alt-100 hover:text-harx-alt-700"
+                        }
                       `}
                     >
-                      {day}
+                      {t(`gigCreation.schedule.days.${day.toLowerCase()}`, day)}
                     </button>
                   );
                 })}
               </div>
 
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-                <h5 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                  <Clock className="w-4 h-4 mr-2 text-harx-600" />
-                  Working Hours
-                </h5>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
-                      <Sunrise className="w-3 h-3 mr-1 text-harx-400" />
-                      Start Time
-                    </label>
-                    <input
-                      type="time"
-                      value={group.hours.start}
-                      onChange={(e) =>
-                        handleHoursChange(group, "start", e.target.value)
-                      }
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
-                      <Sunset className="w-3 h-3 mr-1 text-harx-alt-400" />
-                      End Time
-                    </label>
-                    <input
-                      type="time"
-                      value={group.hours.end}
-                      onChange={(e) =>
-                        handleHoursChange(group, "end", e.target.value)
-                      }
-                      min={group.hours.start}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
-                    />
-                  </div>
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h5 className="text-xs font-semibold text-gray-700 flex items-center">
+                    <Clock className="w-3.5 h-3.5 mr-1.5 text-harx-600" />
+                    {t('gigCreation.suggestions.timeRanges')}
+                  </h5>
+                  <button
+                    type="button"
+                    onClick={() => addRangeToGroup(group)}
+                    className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-harx-700 bg-white border border-harx-200 rounded-md hover:bg-harx-50"
+                  >
+                    <Plus className="w-3 h-3" />
+                    {t('gigCreation.suggestions.add')}
+                  </button>
                 </div>
 
-                <div className="text-center bg-white border border-gray-200 rounded-lg p-2 mb-4">
-                  <span className="font-semibold text-gray-700 text-sm">
-                    {formatTime24(group.hours.start)} -{" "}
-                    {formatTime24(group.hours.end)}
-                  </span>
+                <div className="space-y-1.5">
+                  {(() => {
+                    const conflicts = findOverlappingRangeIndexes(group.ranges);
+                    return (
+                      <>
+                        {group.ranges.map((range, rangeIndex) => {
+                          const hasConflict = conflicts.has(rangeIndex);
+                          const inputCls = hasConflict
+                            ? "flex-1 min-w-0 px-2 py-1.5 text-sm border-2 border-red-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"
+                            : "flex-1 min-w-0 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-harx-500 bg-white";
+                          return (
+                            <div
+                              key={`range-${groupIndex}-${rangeIndex}`}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                type="time"
+                                value={range.start}
+                                onChange={(e) =>
+                                  handleRangeChange(group, rangeIndex, "start", e.target.value)
+                                }
+                                className={inputCls}
+                                aria-label="Start"
+                              />
+                              <span className="text-xs text-gray-400 shrink-0">→</span>
+                              <input
+                                type="time"
+                                value={range.end}
+                                onChange={(e) =>
+                                  handleRangeChange(group, rangeIndex, "end", e.target.value)
+                                }
+                                className={inputCls}
+                                aria-label="End"
+                              />
+                              <button
+                                type="button"
+                                disabled={group.ranges.length <= 1}
+                                onClick={() => removeRangeFromGroup(group, rangeIndex)}
+                                className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md disabled:opacity-25 disabled:cursor-not-allowed shrink-0"
+                                title="Remove range"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                        {conflicts.size > 0 && (
+                          <p className="text-[11px] font-medium text-red-600 bg-red-50 border border-red-100 rounded-md px-2 py-1.5">
+                            {t('gigCreation.suggestions.overlapWarning')}
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <button
-                    onClick={() => handlePresetClick(group, "9-5")}
-                    className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                  >
-                    <Sun className="w-4 h-4 text-yellow-500 mb-1" />
-                    <span className="text-xs font-medium text-gray-600">
-                      9-5
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => handlePresetClick(group, "Early")}
-                    className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                  >
-                    <Sunrise className="w-4 h-4 text-harx-500 mb-1" />
-                    <span className="text-xs font-medium text-gray-600">
-                      Early
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => handlePresetClick(group, "Late")}
-                    className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                  >
-                    <Clock className="w-4 h-4 text-harx-alt-500 mb-1" />
-                    <span className="text-xs font-medium text-gray-600">
-                      Late
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => handlePresetClick(group, "Evening")}
-                    className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                  >
-                    <Moon className="w-4 h-4 text-harx-alt-500 mb-1" />
-                    <span className="text-xs font-medium text-gray-600">
-                      Evening
-                    </span>
-                  </button>
+                <div className="flex flex-wrap gap-1">
+                  {schedulePresets.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() =>
+                        handlePresetClick(group, group.ranges.length - 1, preset.hours)
+                      }
+                      className="px-1.5 py-0.5 text-[10px] font-medium bg-white border border-gray-200 text-gray-600 rounded hover:border-harx-alt-400 hover:text-harx-alt-700"
+                    >
+                      {t(`gigCreation.suggestions.schedulePresets.${preset.id}`)}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
           ))
-        ) : null}
-
-        {/* Afficher les groupes vides */}
-        {emptySchedules.map((emptySchedule, index) => (
-          <div
-            key={`empty-schedule-${index}`}
-            className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h5 className="text-sm font-semibold text-gray-600">
-                New Schedule Group (No days selected)
-              </h5>
-              <button
-                onClick={() => deleteEmptySchedule(emptySchedule)}
-                className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex gap-1 mb-4">
-              {allWeekDays.map((day) => {
-                const isSelected = emptySchedule.day === day;
-                const isInOtherGroup = suggestions.schedule.schedules.some((s) => s.day === day);
-                return (
-                  <button
-                    key={day}
-                    onClick={() => handleEmptyScheduleDayToggle(day, emptySchedule)}
-                    disabled={isInOtherGroup}
-                    className={`rounded-full px-4 py-1.5 font-semibold text-sm transition-all duration-200 shadow-sm
-                      ${isSelected ? 'bg-harx-600 text-white shadow' : isInOtherGroup ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-harx-100 hover:text-harx-700'}
-                    `}
-                  >
-                    {day}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-              <h5 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                <Clock className="w-4 h-4 mr-2 text-harx-600" />
-                Working Hours
-              </h5>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
-                    <Sunrise className="w-3 h-3 mr-1 text-harx-400" />
-                    Start Time
-                  </label>
-                  <input
-                    type="time"
-                    value={emptySchedule.hours.start}
-                    onChange={(e) =>
-                      handleEmptyScheduleHoursChange(emptySchedule, "start", e.target.value)
-                    }
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 flex items-center">
-                    <Sunset className="w-3 h-3 mr-1 text-harx-alt-400" />
-                    End Time
-                  </label>
-                  <input
-                    type="time"
-                    value={emptySchedule.hours.end}
-                    onChange={(e) =>
-                      handleEmptyScheduleHoursChange(emptySchedule, "end", e.target.value)
-                    }
-                    min={emptySchedule.hours.start}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500"
-                  />
-                </div>
-              </div>
-
-              <div className="text-center bg-white border border-gray-200 rounded-lg p-2 mb-4">
-                <span className="font-semibold text-gray-700 text-sm">
-                  {formatTime24(emptySchedule.hours.start)} -{" "}
-                  {formatTime24(emptySchedule.hours.end)}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <button
-                  onClick={() => handleEmptySchedulePresetClick(emptySchedule, "9-5")}
-                  className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                >
-                  <Sun className="w-4 h-4 text-yellow-500 mb-1" />
-                  <span className="text-xs font-medium text-gray-600">
-                    9-5
-                  </span>
-                </button>
-                <button
-                  onClick={() => handleEmptySchedulePresetClick(emptySchedule, "Early")}
-                  className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                >
-                  <Sunrise className="w-4 h-4 text-harx-500 mb-1" />
-                  <span className="text-xs font-medium text-gray-600">
-                    Early
-                  </span>
-                </button>
-                <button
-                  onClick={() => handleEmptySchedulePresetClick(emptySchedule, "Late")}
-                  className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                >
-                  <Clock className="w-4 h-4 text-harx-alt-500 mb-1" />
-                  <span className="text-xs font-medium text-gray-600">
-                    Late
-                  </span>
-                </button>
-                <button
-                  onClick={() => handleEmptySchedulePresetClick(emptySchedule, "Evening")}
-                  className="flex flex-col items-center justify-center py-2 px-1 bg-white rounded-lg border border-gray-200 hover:border-harx-alt-400 hover:bg-harx-alt-50 transition-colors shadow-sm"
-                >
-                  <Moon className="w-4 h-4 text-harx-alt-500 mb-1" />
-                  <span className="text-xs font-medium text-gray-600">
-                    Evening
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Message si aucun planning n'est défini */}
-        {Object.keys(groupedSchedules).length === 0 && emptySchedules.length === 0 && (
+        ) : (
           <div className="text-center py-10">
-            <p className="text-gray-500 mb-4">No schedule defined.</p>
+            <p className="text-gray-500 mb-4">{t('gigCreation.suggestions.noSchedule')}</p>
           </div>
         )}
 
-        {/* Afficher le bouton seulement si tous les jours ne sont pas sélectionnés ET qu'il n'y a pas de groupes vides */}
-        {!allDaysSelected && emptySchedules.length === 0 && (
-          <div className="flex justify-center mt-8">
+        {freeDays.length > 0 && (
+          <div className="flex flex-col items-center mt-8 gap-3">
             <button
+              type="button"
               onClick={addNewScheduleGroup}
               className="group relative inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-harx-alt-600 to-harx-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:from-harx-alt-700 hover:to-harx-700 transform hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-purple-300 focus:ring-opacity-50"
             >
@@ -2775,25 +2793,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <Plus className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-bold">Add Schedule Group</div>
-                  <div className="text-xs text-harx-alt-100 opacity-90">Create a new time slot</div>
+                  <div className="text-sm font-bold">{t('gigCreation.suggestions.addSchedule')}</div>
+                  <div className="text-xs text-harx-alt-100 opacity-90">
+                    {t('gigCreation.suggestions.newGroupRemaining')}
+                  </div>
                 </div>
               </div>
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </button>
-          </div>
-        )}
-
-        {/* Message quand tous les jours sont sélectionnés ET qu'il n'y a pas de groupes vides */}
-        {allDaysSelected && emptySchedules.length === 0 && (
-          <div className="text-center mt-6 p-4 bg-harx-50 border border-harx-200 rounded-lg">
-            <div className="flex items-center justify-center space-x-2 text-harx-700">
-              <CheckCircle className="w-5 h-5" />
-              <span className="font-medium">All week days are scheduled!</span>
-            </div>
-            <p className="text-sm text-green-600 mt-1">
-              You can still modify existing schedules or remove days to add new groups.
-            </p>
           </div>
         )}
       </div>
@@ -2818,7 +2824,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="mb-8">
         <div className="flex items-center space-x-2 mb-4">
           <Clock className="w-5 h-5 text-harx-alt-500" />
-          <h4 className="text-lg font-semibold text-gray-900">Minimum Hours Requirements</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.minHours')}</h4>
         </div>
 
         <div className="space-y-4">
@@ -2827,7 +2833,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Daily Hours */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-700">Daily Hours</label>
+                <label className="text-xs font-medium text-gray-700">{t('gigCreation.schedule.dailyHours')}</label>
                 <div className="relative">
                   <input
                     type="number"
@@ -2846,7 +2852,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
               {/* Weekly Hours */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-700">Weekly Hours</label>
+                <label className="text-xs font-medium text-gray-700">{t('gigCreation.schedule.weeklyHours')}</label>
                 <div className="relative">
                   <input
                     type="number"
@@ -2865,7 +2871,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
               {/* Monthly Hours */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-700">Monthly Hours</label>
+                <label className="text-xs font-medium text-gray-700">{t('gigCreation.schedule.monthlyHours')}</label>
                 <div className="relative">
                   <input
                     type="number"
@@ -2930,7 +2936,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="mb-8">
         <div className="flex items-center space-x-2 mb-4">
           <Globe2 className="w-5 h-5 text-harx-alt-500" />
-          <h4 className="text-lg font-semibold text-gray-900">Time Zone</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.timeZone')}</h4>
         </div>
 
         {/* Search input */}
@@ -2938,7 +2944,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           <div className="mb-3">
             <input
               type="text"
-              placeholder="Search timezones by name, country, or abbreviation..."
+              placeholder={t('gigCreation.suggestions.searchTimezones')}
               value={timezoneSearch}
               onChange={(e) => setTimezoneSearch(e.target.value)}
               className="w-full p-3 rounded-lg border border-purple-300 bg-white text-purple-900 focus:outline-none focus:ring-2 focus:ring-harx-alt-400"
@@ -2952,7 +2958,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           onChange={handleTimezoneChange}
           disabled={timezoneLoading}
         >
-          <option value="">Select a timezone...</option>
+          <option value="">{t('gigCreation.suggestions.selectTimezone')}</option>
           {filteredTimezones.map((tz) => (
             <option key={tz._id} value={tz._id}>
               {tz.name} {tz.countryName ? `- ${tz.countryName}` : ''} (GMT{tz.offset >= 0 ? '+' : ''}{tz.offset})
@@ -2962,11 +2968,16 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         <p className="text-xs text-gray-500 italic text-center mt-2">
           {availableTimezones.length > 0
             ? timezoneSearch
-              ? `Showing ${filteredTimezones.length} of ${availableTimezones.length} timezones`
-              : `${availableTimezones.length} timezones available worldwide`
+              ? t('gigCreation.suggestions.timezonesShowing', {
+                  filtered: filteredTimezones.length,
+                  total: availableTimezones.length
+                })
+              : t('gigCreation.suggestions.timezonesAvailable', {
+                  count: availableTimezones.length
+                })
             : timezoneLoading
-              ? 'Loading timezones from API...'
-              : 'No timezones available'
+              ? t('gigCreation.suggestions.loadingTimezones')
+              : t('gigCreation.suggestions.noTimezones')
           }
         </p>
       </div>
@@ -2990,6 +3001,24 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     const handleRemoveDestinationZone = (zone: string) => {
       const newSuggestions = { ...suggestions };
       newSuggestions.destinationZones = newSuggestions.destinationZones.filter(z => z !== zone);
+      const nextPrimary = newSuggestions.destinationZones[0];
+      if (nextPrimary) {
+        const country = allCountriesFromAPI.find(c => c._id === nextPrimary);
+        (newSuggestions as any).destination_zone = nextPrimary;
+        (newSuggestions as any).destination_zone_meta = country
+          ? {
+              _id: country._id,
+              name: {
+                common: country.name?.common || '',
+                official: (country.name as any)?.official || country.name?.common || '',
+              },
+              cca2: country.cca2,
+            }
+          : undefined;
+      } else {
+        (newSuggestions as any).destination_zone = '';
+        (newSuggestions as any).destination_zone_meta = undefined;
+      }
       setSuggestions(newSuggestions);
     };
 
@@ -3007,7 +3036,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="mb-8">
         <div className="flex items-center space-x-2 mb-4">
           <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Destination Zones</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.destinationZones')}</h4>
         </div>
 
         {/* Select pour ajouter */}
@@ -3018,7 +3047,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           disabled={destinationCountriesLoading}
         >
           <option value="" disabled>
-            {destinationCountriesLoading ? 'Loading countries...' : 'Add destination zone...'}
+            {destinationCountriesLoading ? t('gigCreation.suggestions.loadingCountries') : t('gigCreation.suggestions.addDestinationZone')}
           </option>
           {availableCountries.map(({ code, name }) => (
             <option key={code} value={code}>{name}</option>
@@ -3035,7 +3064,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   type="button"
                   onClick={() => handleRemoveDestinationZone(zone)}
                   className="ml-2 text-white hover:text-harx-200 rounded-full focus:outline-none focus:bg-harx-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Remove"
+                  title={t('gigCreation.suggestions.remove')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
@@ -3046,8 +3075,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         <p className="text-xs text-gray-500 italic text-center mt-2">
           {destinationCountriesLoading
-            ? 'Loading countries from API...'
-            : `${availableCountries.length} countries available for selection`
+            ? t('gigCreation.suggestions.loadingCountries')
+            : t('gigCreation.suggestions.countriesAvailable', { count: availableCountries.length })
           }
         </p>
       </div>
@@ -3060,42 +3089,42 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     const handleAddJobTitle = () => {
       const value = newJobTitle.trim();
       if (!value) return;
-
-      // Add the job title if it's not already in the list
-      const newSuggestions = { ...suggestions };
-      if (!newSuggestions.jobTitles) newSuggestions.jobTitles = [];
-      if (!newSuggestions.jobTitles.includes(value)) {
-        newSuggestions.jobTitles = [...newSuggestions.jobTitles, value];
-        setSuggestions(newSuggestions);
-        // Auto-select the newly added job title
-        setSelectedJobTitle(value);
-        setNewJobTitle('');
-        setShowJobTitleForm(false);
-      }
+      const current = listForLang(suggestions.jobTitles_i18n, suggestions.jobTitles, uiLang);
+      if (current.includes(value)) return;
+      selectedTitleIndexRef.current = current.length;
+      setSuggestions(addNarrativeItem(suggestions, 'jobTitles', uiLang, value));
+      setSelectedJobTitle(value);
+      setNewJobTitle('');
+      setShowJobTitleForm(false);
     };
 
     const handleUpdateJobTitle = (index: number) => {
       const value = newJobTitle.trim();
       if (!value) return;
-
-      const newSuggestions = { ...suggestions };
-      if (newSuggestions.jobTitles) {
-        const oldTitle = newSuggestions.jobTitles[index];
-        newSuggestions.jobTitles[index] = value;
-        setSuggestions(newSuggestions);
-        // If the old title was selected, update selection to the new title
-        if (selectedJobTitle === oldTitle) {
-          setSelectedJobTitle(value);
-        }
-        setNewJobTitle('');
-        setEditingJobTitleIndex(null);
+      const current = listForLang(suggestions.jobTitles_i18n, suggestions.jobTitles, uiLang);
+      const oldTitle = current[index];
+      setSuggestions(updateNarrativeItem(suggestions, 'jobTitles', uiLang, index, value));
+      if (selectedJobTitle === oldTitle) {
+        selectedTitleIndexRef.current = index;
+        setSelectedJobTitle(value);
       }
+      setNewJobTitle('');
+      setEditingJobTitleIndex(null);
     };
 
-    const handleRemoveJobTitle = (jobTitle: string) => {
-      const newSuggestions = { ...suggestions };
-      newSuggestions.jobTitles = newSuggestions.jobTitles.filter(jt => jt !== jobTitle);
-      setSuggestions(newSuggestions);
+    const handleRemoveJobTitle = (index: number) => {
+      const current = listForLang(suggestions.jobTitles_i18n, suggestions.jobTitles, uiLang);
+      const removed = current[index];
+      if (selectedTitleIndexRef.current > index) {
+        selectedTitleIndexRef.current -= 1;
+      } else if (selectedTitleIndexRef.current === index) {
+        selectedTitleIndexRef.current = 0;
+      }
+      setSuggestions(removeNarrativeItem(suggestions, 'jobTitles', uiLang, index));
+      if (selectedJobTitle === removed) {
+        const next = current.filter((_, i) => i !== index);
+        setSelectedJobTitle(next[0] || null);
+      }
     };
 
     const handleEditClick = (title: string, index: number) => {
@@ -3110,7 +3139,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       setShowJobTitleForm(false);
     };
 
-    const selected = suggestions.jobTitles || [];
+    const selected = listForLang(suggestions.jobTitles_i18n, suggestions.jobTitles, uiLang);
 
     return (
       <div className="space-y-6">
@@ -3119,8 +3148,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             <Briefcase className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h4 className="text-xl font-bold bg-gradient-harx bg-clip-text text-transparent">Position Details</h4>
-            <p className="text-sm text-gray-500">Define the role title and main responsibilities</p>
+            <h4 className="text-xl font-bold bg-gradient-harx bg-clip-text text-transparent">{t('gigCreation.suggestions.positionDetails')}</h4>
+            <p className="text-sm text-gray-500">{t('gigCreation.suggestions.positionDetailsSubtitle')}</p>
           </div>
         </div>
 
@@ -3132,7 +3161,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             </div>
             <div>
               <p className="text-sm font-medium text-harx-900">
-                Start by providing the basic information about the contact center role. Be specific and clear about the position's requirements and responsibilities.
+                {t('gigCreation.suggestions.positionDetailsHint')}
               </p>
             </div>
           </div>
@@ -3141,8 +3170,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {/* Job titles list */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h5 className="text-lg font-semibold text-gray-900">Available Job Titles</h5>
-            <span className="text-sm text-gray-500">Click to select your main position</span>
+            <h5 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.jobTitles')}</h5>
+            <span className="text-sm text-gray-500">{t('gigCreation.suggestions.clickSelectMainPosition')}</span>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -3176,14 +3205,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     <button
                       onClick={() => handleUpdateJobTitle(index)}
                       className="p-1 text-green-600 hover:text-harx-700 hover:bg-harx-50 rounded transition-colors"
-                      title="Save"
+                      title={t('gigCreation.suggestions.save')}
                     >
                       <Check className="w-4 h-4" />
                     </button>
                     <button
                       onClick={handleCancelEdit}
                       className="p-1 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Cancel"
+                      title={t('gigCreation.suggestions.cancel')}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -3197,6 +3226,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      selectedTitleIndexRef.current = selectedJobTitle === title ? 0 : index;
                       setSelectedJobTitle(selectedJobTitle === title ? null : title);
                     }}
                     onDoubleClick={(e) => {
@@ -3204,7 +3234,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       e.stopPropagation();
                       // Disable double-click functionality
                     }}
-                    title={selectedJobTitle === title ? "Selected as main job title" : "Click to select as main job title"}
+                    title={selectedJobTitle === title ? t('gigCreation.suggestions.selectedAsMainTitle') : t('gigCreation.suggestions.clickSelectAsMainTitle')}
                   >
                     {selectedJobTitle === title && (
                       <CheckCircle className="w-5 h-5 mr-2" />
@@ -3218,7 +3248,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       }}
                       className={`ml-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 ${selectedJobTitle === title ? 'text-white hover:bg-white/20' : 'text-harx-600 hover:bg-harx-100'
                         }`}
-                      title="Click to edit"
+                      title={t('gigCreation.suggestions.edit')}
                     >
                       <Edit2 className="w-3 h-3" />
                     </button>
@@ -3226,16 +3256,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleRemoveJobTitle(title);
-                        if (selectedJobTitle === title) {
-                          setSelectedJobTitle(null);
-                        }
+                        handleRemoveJobTitle(index);
                       }}
                       className={`ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity ${selectedJobTitle === title
                         ? 'text-white hover:bg-harx-700'
                         : 'text-harx-600 hover:bg-harx-200 hover:text-harx-800'
                         }`}
-                      title="Remove"
+                      title={t('gigCreation.suggestions.remove')}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -3266,7 +3293,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       handleCancelEdit();
                     }
                   }}
-                  placeholder="Enter job title..."
+                  placeholder={t('gigCreation.suggestions.enterJobTitle')}
                   className="bg-transparent border-none outline-none text-sm font-medium text-harx-800 min-w-0 flex-1"
                   style={{ width: `${Math.max(newJobTitle.length || 15, 15)}ch` }}
                   autoFocus
@@ -3282,7 +3309,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 <button
                   onClick={handleCancelEdit}
                   className="text-gray-500 hover:text-gray-700"
-                  title="Cancel"
+                  title={t('gigCreation.suggestions.cancel')}
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -3293,7 +3320,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 className="inline-flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 font-medium text-sm rounded-full transition-colors"
               >
                 <Plus className="w-3 h-3" />
-                <span>Add</span>
+                <span>{t('gigCreation.suggestions.add')}</span>
               </button>
             )}
           </div>
@@ -3308,34 +3335,23 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     const handleAddHighlight = () => {
       const value = newHighlight.trim();
       if (!value) return;
-
-      const newSuggestions = { ...suggestions };
-      if (!newSuggestions.highlights) newSuggestions.highlights = [];
-      if (!newSuggestions.highlights.includes(value)) {
-        newSuggestions.highlights = [...newSuggestions.highlights, value];
-        setSuggestions(newSuggestions);
-        setNewHighlight('');
-        setShowHighlightForm(false);
-      }
+      const current = listForLang(suggestions.highlights_i18n, suggestions.highlights, uiLang);
+      if (current.includes(value)) return;
+      setSuggestions(addNarrativeItem(suggestions, 'highlights', uiLang, value));
+      setNewHighlight('');
+      setShowHighlightForm(false);
     };
 
     const handleUpdateHighlight = (index: number) => {
       const value = newHighlight.trim();
       if (!value) return;
-
-      const newSuggestions = { ...suggestions };
-      if (newSuggestions.highlights) {
-        newSuggestions.highlights[index] = value;
-        setSuggestions(newSuggestions);
-        setNewHighlight('');
-        setEditingHighlightIndex(null);
-      }
+      setSuggestions(updateNarrativeItem(suggestions, 'highlights', uiLang, index, value));
+      setNewHighlight('');
+      setEditingHighlightIndex(null);
     };
 
-    const handleRemoveHighlight = (highlight: string) => {
-      const newSuggestions = { ...suggestions };
-      newSuggestions.highlights = newSuggestions.highlights.filter(h => h !== highlight);
-      setSuggestions(newSuggestions);
+    const handleRemoveHighlight = (index: number) => {
+      setSuggestions(removeNarrativeItem(suggestions, 'highlights', uiLang, index));
     };
 
     const handleEditClick = (highlight: string, index: number) => {
@@ -3350,13 +3366,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       setShowHighlightForm(false);
     };
 
-    const selected = suggestions.highlights || [];
+    const selected = listForLang(suggestions.highlights_i18n, suggestions.highlights, uiLang);
 
     return (
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Key Highlights</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.highlights')}</h4>
         </div>
 
 
@@ -3392,14 +3408,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <button
                     onClick={() => handleUpdateHighlight(index)}
                     className="text-harx-600 hover:text-harx-800"
-                    title="Save"
+                    title={t('gigCreation.suggestions.save')}
                   >
                     <Check className="w-3 h-3" />
                   </button>
                   <button
                     onClick={handleCancelEdit}
                     className="text-gray-500 hover:text-gray-700"
-                    title="Cancel"
+                    title={t('gigCreation.suggestions.cancel')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3416,15 +3432,15 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       handleEditClick(highlight, index);
                     }}
                     className="ml-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/20 text-white"
-                    title="Click to edit"
+                    title={t('gigCreation.suggestions.edit')}
                   >
                     <Edit2 className="w-3 h-3" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleRemoveHighlight(highlight)}
+                    onClick={() => handleRemoveHighlight(index)}
                     className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3455,7 +3471,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     handleCancelEdit();
                   }
                 }}
-                placeholder="Enter highlight..."
+                placeholder={t('gigCreation.suggestions.enterHighlight')}
                 className="bg-transparent border-none outline-none text-sm font-medium text-harx-800 min-w-0 flex-1"
                 style={{ width: `${Math.max(newHighlight.length || 15, 15)}ch` }}
                 autoFocus
@@ -3471,7 +3487,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <button
                 onClick={handleCancelEdit}
                 className="text-gray-500 hover:text-gray-700"
-                title="Cancel"
+                title={t('gigCreation.suggestions.cancel')}
               >
                 <X className="w-3 h-3" />
               </button>
@@ -3482,7 +3498,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               className="inline-flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 font-medium text-sm rounded-full transition-colors"
             >
               <Plus className="w-3 h-3" />
-              <span>Add</span>
+              <span>{t('gigCreation.suggestions.add')}</span>
             </button>
           )}
         </div>
@@ -3496,34 +3512,23 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     const handleAddDeliverable = () => {
       const value = newDeliverable.trim();
       if (!value) return;
-
-      const newSuggestions = { ...suggestions };
-      if (!newSuggestions.deliverables) newSuggestions.deliverables = [];
-      if (!newSuggestions.deliverables.includes(value)) {
-        newSuggestions.deliverables = [...newSuggestions.deliverables, value];
-        setSuggestions(newSuggestions);
-        setNewDeliverable('');
-        setShowDeliverableForm(false);
-      }
+      const current = listForLang(suggestions.deliverables_i18n, suggestions.deliverables, uiLang);
+      if (current.includes(value)) return;
+      setSuggestions(addNarrativeItem(suggestions, 'deliverables', uiLang, value));
+      setNewDeliverable('');
+      setShowDeliverableForm(false);
     };
 
     const handleUpdateDeliverable = (index: number) => {
       const value = newDeliverable.trim();
       if (!value) return;
-
-      const newSuggestions = { ...suggestions };
-      if (newSuggestions.deliverables) {
-        newSuggestions.deliverables[index] = value;
-        setSuggestions(newSuggestions);
-        setNewDeliverable('');
-        setEditingDeliverableIndex(null);
-      }
+      setSuggestions(updateNarrativeItem(suggestions, 'deliverables', uiLang, index, value));
+      setNewDeliverable('');
+      setEditingDeliverableIndex(null);
     };
 
-    const handleRemoveDeliverable = (deliverable: string) => {
-      const newSuggestions = { ...suggestions };
-      newSuggestions.deliverables = newSuggestions.deliverables.filter(d => d !== deliverable);
-      setSuggestions(newSuggestions);
+    const handleRemoveDeliverable = (index: number) => {
+      setSuggestions(removeNarrativeItem(suggestions, 'deliverables', uiLang, index));
     };
 
     const handleEditClick = (deliverable: string, index: number) => {
@@ -3538,13 +3543,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       setShowDeliverableForm(false);
     };
 
-    const selected = suggestions.deliverables || [];
+    const selected = listForLang(suggestions.deliverables_i18n, suggestions.deliverables, uiLang);
 
     return (
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-harx-alt-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Deliverables</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.deliverables')}</h4>
         </div>
 
 
@@ -3580,14 +3585,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <button
                     onClick={() => handleUpdateDeliverable(index)}
                     className="text-harx-alt-600 hover:text-harx-alt-800"
-                    title="Save"
+                    title={t('gigCreation.suggestions.save')}
                   >
                     <Check className="w-3 h-3" />
                   </button>
                   <button
                     onClick={handleCancelEdit}
                     className="text-gray-500 hover:text-gray-700"
-                    title="Cancel"
+                    title={t('gigCreation.suggestions.cancel')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3604,15 +3609,15 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       handleEditClick(deliverable, index);
                     }}
                     className="ml-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/20 text-white"
-                    title="Click to edit"
+                    title={t('gigCreation.suggestions.edit')}
                   >
                     <Edit2 className="w-3 h-3" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleRemoveDeliverable(deliverable)}
+                    onClick={() => handleRemoveDeliverable(index)}
                     className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3643,7 +3648,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     handleCancelEdit();
                   }
                 }}
-                placeholder="Enter deliverable..."
+                placeholder={t('gigCreation.suggestions.enterDeliverable')}
                 className="bg-transparent border-none outline-none text-sm font-medium text-harx-alt-800 min-w-0 flex-1"
                 style={{ width: `${Math.max(newDeliverable.length || 15, 15)}ch` }}
                 autoFocus
@@ -3659,7 +3664,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <button
                 onClick={handleCancelEdit}
                 className="text-gray-500 hover:text-gray-700"
-                title="Cancel"
+                title={t('gigCreation.suggestions.cancel')}
               >
                 <X className="w-3 h-3" />
               </button>
@@ -3670,7 +3675,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               className="inline-flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 font-medium text-sm rounded-full transition-colors"
             >
               <Plus className="w-3 h-3" />
-              <span>Add</span>
+              <span>{t('gigCreation.suggestions.add')}</span>
             </button>
           )}
         </div>
@@ -3701,13 +3706,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     };
 
     const selected = suggestions.sectors || [];
-    const available = predefinedOptions.sectors.filter(sector => !selected.includes(sector));
+    const available = sectors.filter((sector) => !selected.includes(sector.value));
 
     return (
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Sectors</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.sectors')}</h4>
         </div>
 
         {/* Add selector */}
@@ -3716,9 +3721,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           defaultValue=""
           onChange={handleAddSector}
         >
-          <option value="" disabled>Select a sector...</option>
+          <option value="" disabled>{t('gigCreation.suggestions.selectSector')}</option>
           {available.map(sector => (
-            <option key={sector} value={sector}>{sector}</option>
+            <option key={sector.value} value={sector.value}>{sector.label}</option>
           ))}
         </select>
 
@@ -3731,12 +3736,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   key={sector}
                   className="group relative inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-harx-700 text-white border border-harx-600 hover:bg-harx-800 transition-colors"
                 >
-                  {sector}
+                  {getSectorNameById(sector) || sector}
                   <button
                     type="button"
                     onClick={() => handleRemoveSector(sector)}
                     className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3786,14 +3791,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Activities</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.activities')}</h4>
         </div>
 
         {/* Add selector */}
         {activitiesLoading ? (
           <div className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-500 text-center text-sm">
             <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-            Loading activities from API...
+            {t('gigCreation.suggestions.loadingActivities')}
           </div>
         ) : (
           <select
@@ -3801,7 +3806,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             defaultValue=""
             onChange={handleAddActivity}
           >
-            <option value="" disabled>Select an activity...</option>
+            <option value="" disabled>{t('gigCreation.suggestions.selectActivity')}</option>
             {available.map(activity => (
               <option key={activity.value} value={activity.label}>{activity.label}</option>
             ))}
@@ -3810,14 +3815,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         {!activitiesLoading && activities.length === 0 && (
           <div className="text-center py-4 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
-            ⚠️ No activities available. Please check API connection.
+            ⚠️ {t('gigCreation.suggestions.noActivities')}
           </div>
         )}
 
         {/* Available activities */}
         {selected.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-            {selected.map(activityId => {
+            {[...new Set(selected)].map(activityId => {
               const activityName = getActivityNameById(activityId);
               return activityName ? (
                 <span
@@ -3829,7 +3834,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     type="button"
                     onClick={() => handleRemoveActivity(activityId)}
                     className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3879,14 +3884,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-          <h4 className="text-lg font-semibold text-gray-900">Industries</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.industries')}</h4>
         </div>
 
         {/* Add selector */}
         {industriesLoading ? (
           <div className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-500 text-center text-sm">
             <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-            Loading industries from API...
+            {t('gigCreation.suggestions.loadingIndustries')}
           </div>
         ) : (
           <select
@@ -3894,7 +3899,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             defaultValue=""
             onChange={handleAddIndustry}
           >
-            <option value="" disabled>Select an industry...</option>
+            <option value="" disabled>{t('gigCreation.suggestions.selectIndustry')}</option>
             {available.map(industry => (
               <option key={industry.value} value={industry.label}>{industry.label}</option>
             ))}
@@ -3903,14 +3908,14 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         {!industriesLoading && industries.length === 0 && (
           <div className="text-center py-4 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
-            ⚠️ No industries available. Please check API connection.
+            ⚠️ {t('gigCreation.suggestions.noIndustries')}
           </div>
         )}
 
         {/* Selected badges - displayed below the select */}
         {selected.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-            {selected.map(industryId => {
+            {[...new Set(selected)].map(industryId => {
               const industryName = getIndustryNameById(industryId);
               return industryName ? (
                 <span
@@ -3922,7 +3927,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     type="button"
                     onClick={() => handleRemoveIndustry(industryId)}
                     className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-white hover:bg-harx-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-harx-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -3964,7 +3969,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       <div className="mb-8">
         <div className="flex items-center space-x-2 mb-4">
           <Gauge className="w-5 h-5 text-harx-alt-500" />
-          <h4 className="text-lg font-semibold text-gray-900">Schedule Flexibility</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.scheduleFlexibility')}</h4>
         </div>
 
         {/* Select pour ajouter */}
@@ -3973,7 +3978,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           defaultValue=""
           onChange={handleAddFlexibility}
         >
-          <option value="" disabled>Add flexibility option...</option>
+          <option value="" disabled>{t('gigCreation.suggestions.addFlexibility')}</option>
           {available.map(option => (
             <option key={option} value={option}>{option}</option>
           ))}
@@ -3989,7 +3994,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   type="button"
                   onClick={() => handleRemoveFlexibility(option)}
                   className="ml-2 text-white hover:text-purple-200 rounded-full focus:outline-none focus:bg-harx-alt-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Remove"
+                  title={t('gigCreation.suggestions.remove')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
@@ -3999,7 +4004,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         )}
 
         <p className="text-xs text-gray-500 italic text-center mt-2">
-          Select all applicable schedule flexibility options
+          {t('gigCreation.suggestions.flexibilityHint')}
         </p>
       </div>
     );
@@ -4009,28 +4014,32 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
   const renderDescriptionSection = () => {
     if (!suggestions) return null;
 
+    const descriptionText = textForLang(
+      suggestions.description_i18n || suggestions.jobDescription_i18n,
+      suggestions.description || suggestions.jobDescription,
+      uiLang,
+    );
+
     const handleDescriptionChange = (newDescription: string) => {
-      const newSuggestions = { ...suggestions };
-      newSuggestions.description = newDescription;
-      setSuggestions(newSuggestions);
+      setSuggestions(writeNarrativeText(suggestions, uiLang, newDescription));
     };
 
     return (
       <div className="mb-8">
         <textarea
-          value={suggestions.description || ""}
+          value={descriptionText}
           onChange={(e) => handleDescriptionChange(e.target.value)}
-          placeholder="Enter a detailed description of the role, responsibilities, and what success looks like..."
+          placeholder={t('gigCreation.suggestions.descriptionPlaceholder')}
           rows={8}
           className="w-full p-4 bg-white border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500 resize-none text-gray-700 leading-relaxed"
         />
 
         <div className="mt-3 flex items-center justify-between">
           <div className="text-sm text-gray-500">
-            {suggestions.description ? `${suggestions.description.length} characters` : "0 characters"}
+            {t('gigCreation.suggestions.characters', { count: descriptionText.length })}
           </div>
           <div className="text-xs text-harx-600 bg-harx-100 px-2 py-1 rounded-full">
-            Detailed description helps attract the right candidates
+            {t('gigCreation.suggestions.descriptionHint')}
           </div>
         </div>
       </div>
@@ -4082,8 +4091,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <DollarSign className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold bg-gradient-to-r from-harx-700 to-emerald-700 bg-clip-text text-transparent">Commission Structure</h3>
-              <p className="text-sm text-green-600 font-medium">Compensation details and performance incentives</p>
+              <h3 className="text-xl font-bold bg-gradient-to-r from-harx-700 to-emerald-700 bg-clip-text text-transparent">{t('gigCreation.suggestions.commissionStructure')}</h3>
+              <p className="text-sm text-green-600 font-medium">{t('gigCreation.suggestions.commissionSubtitle')}</p>
             </div>
           </div>
         </div> */}
@@ -4103,7 +4112,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
                       Commission Structure
                     </h2>
-                    <p className="text-gray-500 text-sm">Configure compensation and performance incentives</p>
+                    <p className="text-gray-500 text-sm">{t('gigCreation.suggestions.configureCompensation')}</p>
                   </div> */}
 
                   {/* Commission Grid */}
@@ -4116,8 +4125,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           <DollarSign className="w-6 h-6 text-white" />
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-lg font-bold text-gray-900">Currency</h3>
-                          <p className="text-sm text-gray-500">Base currency for payments</p>
+                          <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.currency')}</h3>
+                          <p className="text-sm text-gray-500">{t('gigCreation.suggestions.baseCurrency')}</p>
                         </div>
                       </div>
 
@@ -4139,7 +4148,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                   </span>
                                 );
                               }
-                              return <span className="text-harx-400 font-normal">Select currency...</span>;
+                              return <span className="text-harx-400 font-normal">{t('gigCreation.suggestions.selectCurrency')}</span>;
                             })()}
                           </div>
                           <ChevronDown className={`w-5 h-5 text-harx-400 transition-transform ${isCurrencyDropdownOpen ? 'rotate-180' : ''}`} />
@@ -4153,7 +4162,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                 <input
                                   autoFocus
                                   type="text"
-                                  placeholder="Search currency..."
+                                  placeholder={t('gigCreation.suggestions.searchCurrency')}
                                   value={currencySearchTerm}
                                   onChange={(e) => setCurrencySearchTerm(e.target.value)}
                                   className="w-full pl-9 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-harx-400 focus:border-transparent"
@@ -4179,8 +4188,25 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                       updateCommissionOption(
                                         0,
                                         "currency",
-                                        { $oid: currency._id }
+                                        currency._id
                                       );
+                                      // Keep currency_meta in sync with selection (avoid stale AI EUR meta)
+                                      setSuggestions((prev) => {
+                                        if (!prev) return prev;
+                                        return {
+                                          ...prev,
+                                          commission: {
+                                            ...(prev.commission || {}),
+                                            currency: currency._id,
+                                            currency_meta: {
+                                              _id: currency._id,
+                                              name: currency.name,
+                                              code: currency.code,
+                                              symbol: currency.symbol,
+                                            },
+                                          },
+                                        } as GigSuggestion;
+                                      });
                                       setIsCurrencyDropdownOpen(false);
                                       setCurrencySearchTerm("");
                                     }}
@@ -4204,7 +4230,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                 ))
                               ) : (
                                 <div className="px-4 py-8 text-center">
-                                  <p className="text-gray-400 text-sm">No currencies found matching "{currencySearchTerm}"</p>
+                                  <p className="text-gray-400 text-sm">{t('gigCreation.suggestions.noCurrenciesFound', { term: currencySearchTerm })}</p>
                                 </div>
                               )}
                             </div>
@@ -4215,7 +4241,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                       {currenciesLoading && (
                         <div className="flex items-center mt-3 text-sm text-harx-600">
                           <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Loading currencies...
+                          {t('gigCreation.suggestions.loadingCurrencies')}
                         </div>
                       )}
                     </div>
@@ -4227,8 +4253,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           <Briefcase className="w-6 h-6 text-white" />
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-lg font-bold text-gray-900">Per call compensation</h3>
-                          <p className="text-sm text-gray-500">Base amount per successful call</p>
+                          <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.perCall')}</h3>
+                          <p className="text-sm text-gray-500">{t('gigCreation.suggestions.perCallSubtitle')}</p>
                         </div>
                       </div>
 
@@ -4261,8 +4287,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           <DollarSign className="w-6 h-6 text-white" />
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-lg font-bold text-gray-900">Transaction Commission</h3>
-                          <p className="text-sm text-gray-500">Commission per transaction</p>
+                          <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.transactionCommission')}</h3>
+                          <p className="text-sm text-gray-500">{t('gigCreation.suggestions.transactionSubtitle')}</p>
                         </div>
                       </div>
 
@@ -4295,8 +4321,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           <Award className="w-6 h-6 text-white" />
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-lg font-bold text-gray-900">Bonus & Incentives</h3>
-                          <p className="text-sm text-gray-500">Performance bonus amount</p>
+                          <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.bonus')}</h3>
+                          <p className="text-sm text-gray-500">{t('gigCreation.suggestions.bonusSubtitle')}</p>
                         </div>
                       </div>
 
@@ -4337,8 +4363,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         <Gauge className="w-6 h-6 text-white" />
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-bold text-gray-900">Minimum Volume Requirements For Bonus</h3>
-                        <p className="text-sm text-gray-500">Set minimum performance thresholds</p>
+                        <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.minVolume')}</h3>
+                        <p className="text-sm text-gray-500">{t('gigCreation.suggestions.minVolumeSubtitle')}</p>
                       </div>
                     </div>
 
@@ -4376,10 +4402,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         }
                         className="w-full px-4 py-3 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-xl text-orange-900 font-semibold focus:outline-none focus:ring-3 focus:ring-orange-300 focus:border-harx-400 transition-all"
                       >
-                        <option value="">Select Period</option>
-                        <option value="Daily">Daily</option>
-                        <option value="Weekly">Weekly</option>
-                        <option value="Monthly">Monthly</option>
+                        <option value="">{t('gigCreation.suggestions.selectPeriod')}</option>
+                        <option value="Daily">{t('gigCreation.suggestions.periodDaily')}</option>
+                        <option value="Weekly">{t('gigCreation.suggestions.periodWeekly')}</option>
+                        <option value="Monthly">{t('gigCreation.suggestions.periodMonthly')}</option>
                       </select>
                     </div>
                   </div>
@@ -4393,21 +4419,34 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         </svg>
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-bold text-gray-900">Additional Details</h3>
-                        <p className="text-sm text-gray-500">Terms, conditions and special notes</p>
+                        <h3 className="text-lg font-bold text-gray-900">{t('gigCreation.suggestions.additionalDetails')}</h3>
+                        <p className="text-sm text-gray-500">{t('gigCreation.suggestions.additionalDetailsSubtitle')}</p>
                       </div>
                     </div>
 
                     <textarea
-                      value={option.additionalDetails || ""}
-                      onChange={(e) =>
-                        updateCommissionOption(
-                          0,
-                          "additionalDetails",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Commission details, payment terms, conditions, or special notes..."
+                      value={textForLang(
+                        option.additionalDetails_i18n,
+                        option.additionalDetails,
+                        uiLang,
+                      )}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const current = option.additionalDetails_i18n || {};
+                        const bundle = {
+                          en: uiLang === 'en' ? value : String(current.en || ''),
+                          fr: uiLang === 'fr' ? value : String(current.fr || ''),
+                        };
+                        setSuggestions((prev) => prev ? {
+                          ...prev,
+                          commission: {
+                            ...prev.commission,
+                            additionalDetails: value,
+                            additionalDetails_i18n: bundle,
+                          },
+                        } : prev);
+                      }}
+                      placeholder={t('gigCreation.suggestions.commissionDetailsPlaceholder')}
                       rows={4}
                       className="w-full px-4 py-3 bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-3 focus:ring-gray-300 focus:border-gray-400 transition-all resize-none"
                     />
@@ -4423,7 +4462,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <DollarSign className="w-10 h-10 text-green-600" />
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-3">
-              No Commission Data
+              {t('gigCreation.suggestions.noCommissionData')}
             </h3>
             <p className="text-gray-600 mb-8 w-full mx-auto text-lg leading-relaxed">
               Commission data will be populated automatically from AI suggestions.
@@ -4752,12 +4791,24 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
       const getLevelLabel = (level: number, type: string) => {
         if (type === "languages") {
-          const labels = ['Beginner', 'Elementary', 'Intermediate', 'Upper Intermediate', 'Advanced', 'Mastery'];
-          return labels[level] || 'Intermediate';
-        } else {
-          const labels = ['', 'Basic', 'Novice', 'Intermediate', 'Advanced', 'Expert'];
-          return labels[level] || 'Basic';
+          const keys = ['beginner', 'elementary', 'intermediate', 'upperIntermediate', 'advanced', 'mastery'];
+          const key = keys[level] || 'intermediate';
+          return t(`gigCreation.skills.levels.${key}`);
         }
+        const keys = ['', 'basic', 'novice', 'intermediate', 'advanced', 'expert'];
+        const key = keys[level] || 'basic';
+        return t(`gigCreation.skills.levels.${key}`);
+      };
+
+      const getLanguageLevelLabel = (code?: string) => {
+        const level = LANGUAGE_LEVELS.find((l) => l.value === code);
+        if (!level) return code || 'B1';
+        return `${level.value} - ${t(`gigCreation.skills.levels.${level.labelKey}`)}`;
+      };
+
+      const getLanguageLevelDescription = (code?: string, fallbackKey = 'intermediate') => {
+        const level = LANGUAGE_LEVELS.find((l) => l.value === code);
+        return t(`gigCreation.skills.levels.${level?.labelKey || fallbackKey}`);
       };
 
       // Helper function to get progressive colors for skill levels
@@ -4958,7 +5009,11 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               <button
                 onClick={handleShowAddInterface}
                 className={`w-8 h-8 rounded-full ${skillType === 'professional' ? 'bg-harx-500 hover:bg-green-600' : skillType === 'technical' ? 'bg-harx-alt-500 hover:bg-harx-alt-600' : skillType === 'languages' ? 'bg-harx-500 hover:bg-harx-600' : 'bg-harx-500 hover:bg-orange-600'} text-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group`}
-                title={`Add ${skillType === "languages" ? "language" : "skill"}`}
+                title={t('gigCreation.suggestions.addLanguageOrSkill', {
+                  type: skillType === 'languages'
+                    ? t('gigCreation.suggestions.skillTypeLanguage')
+                    : t('gigCreation.suggestions.skillTypeSkill')
+                })}
               >
                 <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </button>
@@ -4969,7 +5024,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           {skillsLoading && (
             <div className={`w-full px-4 py-3 rounded-lg border ${colors.border} bg-gray-50 text-gray-500 text-center text-sm`}>
               <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-              Loading {skillType} from API...
+              {t('gigCreation.suggestions.loadingSkills', { type: skillType })}
             </div>
           )}
 
@@ -4978,9 +5033,17 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             // Message when no skills
             <div className="text-center py-8">
               <p className="text-gray-500 text-sm">
-                No {skillType === "languages" ? "languages" : "skills"} added yet.
+                {t('gigCreation.suggestions.noSkillsYet', {
+                  type: skillType === 'languages'
+                    ? t('gigCreation.suggestions.skillTypeLanguages')
+                    : t('gigCreation.suggestions.skillTypeSkills')
+                })}
                 <br />
-                Click the + button above to add your first {skillType === "languages" ? "language" : "skill"}.
+                {t('gigCreation.suggestions.addFirstSkill', {
+                  type: skillType === 'languages'
+                    ? t('gigCreation.suggestions.skillTypeLanguage')
+                    : t('gigCreation.suggestions.skillTypeSkill')
+                })}
               </p>
             </div>
           )}
@@ -5002,7 +5065,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           ? "bg-harx-100 text-blue-800"
                           : "bg-yellow-100 text-yellow-800"
                         }`}>
-                        {LANGUAGE_LEVELS.find(l => l.value === item.proficiency)?.label || "B1"}
+                        {getLanguageLevelLabel(item.proficiency)}
                       </span>
                     );
                   } else {
@@ -5084,10 +5147,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                               autoFocus
                             >
                               <option value="">
-                                {skillType === 'languages' ? 'Select a language...' :
-                                  skillType === 'professional' ? 'Select a professional skill...' :
-                                    skillType === 'technical' ? 'Select a technical skill...' :
-                                      'Select a soft skill...'}
+                                {skillType === 'languages'
+                                  ? t('gigCreation.suggestions.selectLanguage')
+                                  : skillType === 'professional'
+                                    ? t('gigCreation.suggestions.selectProfessionalSkill')
+                                    : skillType === 'technical'
+                                      ? t('gigCreation.suggestions.selectTechnicalSkill')
+                                      : t('gigCreation.suggestions.selectSoftSkill')}
                               </option>
                               {editSkillOptions.map(option => (
                                 <option key={option.id} value={option.id}>
@@ -5100,7 +5166,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                             <button
                               onClick={() => handleStartEditSkill(index)}
                               className="font-medium text-xs truncate text-left hover:underline cursor-pointer w-full"
-                              title="Click to edit"
+                              title={t('gigCreation.suggestions.edit')}
                             >
                               {skillName}
                             </button>
@@ -5258,7 +5324,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                   else if (hoveredLevel >= 16.67) languageLevel = LANGUAGE_LEVELS.find(l => l.value === 'A2');
                                   else languageLevel = LANGUAGE_LEVELS.find(l => l.value === 'A1');
                                   // Extraire seulement la description après le " - "
-                                  const description = languageLevel?.label?.split(' - ')[1] || 'Beginner';
+                                  const description = languageLevel
+                                    ? t(`gigCreation.skills.levels.${languageLevel.labelKey}`)
+                                    : t('gigCreation.skills.levels.beginner');
                                   return description;
                                 } else {
                                   // 5 zones : 0-20%, 20-40%, 40-60%, 60-80%, 80-100%
@@ -5273,9 +5341,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                               }
 
                               if (skillType === "languages") {
-                                const currentLevel = LANGUAGE_LEVELS.find(l => l.value === item.proficiency);
-                                const description = currentLevel?.label?.split(' - ')[1] || 'Intermediate';
-                                return description;
+                                return getLanguageLevelDescription(item.proficiency, 'intermediate');
                               } else {
                                 return getLevelLabel(item.level || 1, skillType);
                               }
@@ -5287,7 +5353,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                             type="button"
                             onClick={() => handleRemoveSkill(index)}
                             className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${skillType === 'professional' ? 'bg-emerald-100 hover:bg-emerald-200 text-harx-700' : skillType === 'technical' ? 'bg-violet-100 hover:bg-violet-200 text-violet-700' : skillType === 'languages' ? 'bg-indigo-100 hover:bg-indigo-200 text-harx-700' : 'bg-amber-100 hover:bg-amber-200 text-amber-700'} focus:outline-none opacity-0 group-hover:opacity-100 transition-all duration-200 flex-shrink-0 ml-2 hover:scale-110`}
-                            title="Remove"
+                            title={t('gigCreation.suggestions.remove')}
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -5328,10 +5394,13 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                           className={`w-full px-1 py-0.5 text-xs border ${colors.border} rounded bg-white transition-all duration-200`}
                         >
                           <option value="">
-                            {skillType === "languages" ? "Select a language..." :
-                              skillType === "professional" ? "Select a professional skill..." :
-                                skillType === "technical" ? "Select a technical skill..." :
-                                  "Select a soft skill..."}
+                            {skillType === "languages"
+                              ? t('gigCreation.suggestions.selectLanguage')
+                              : skillType === "professional"
+                                ? t('gigCreation.suggestions.selectProfessionalSkill')
+                                : skillType === "technical"
+                                  ? t('gigCreation.suggestions.selectTechnicalSkill')
+                                  : t('gigCreation.suggestions.selectSoftSkill')}
                           </option>
                           {skillOptions.map(option => (
                             <option key={option.id} value={option.id}>
@@ -5471,8 +5540,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                                 else if (hoveredLevel[skillType] >= 33.33) languageLevel = LANGUAGE_LEVELS.find(l => l.value === 'B1');
                                 else if (hoveredLevel[skillType] >= 16.67) languageLevel = LANGUAGE_LEVELS.find(l => l.value === 'A2');
                                 else languageLevel = LANGUAGE_LEVELS.find(l => l.value === 'A1');
-                                // Extraire seulement la description après le " - "
-                                const description = languageLevel?.label?.split(' - ')[1] || 'Beginner';
+                                const description = languageLevel
+                                  ? t(`gigCreation.skills.levels.${languageLevel.labelKey}`)
+                                  : t('gigCreation.skills.levels.beginner');
                                 return description;
                               } else {
                                 // 5 zones : 0-20%, 20-40%, 40-60%, 60-80%, 80-100%
@@ -5488,8 +5558,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
                             if (skillType === "languages") {
                               const currentLevel = LANGUAGE_LEVELS[selectedLevelToAdd[skillType]];
-                              const description = currentLevel?.label?.split(' - ')[1] || 'Intermediate';
-                              return description;
+                              return currentLevel
+                                ? t(`gigCreation.skills.levels.${currentLevel.labelKey}`)
+                                : t('gigCreation.skills.levels.intermediate');
                             } else {
                               return getLevelLabel(selectedLevelToAdd[skillType] || 1, skillType);
                             }
@@ -5506,7 +5577,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
           {!skillsLoading && skillOptions.length === 0 && currentItems.length === 0 && (
             <div className="text-center py-4 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
-              ⚠️ No {skillType} available. Please check API connection.
+              ⚠️ {t('gigCreation.suggestions.noSkillsAvailable', { type: skillType })}
             </div>
           )}
 
@@ -5519,25 +5590,25 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {renderSkillCard(
           "languages",
           suggestions.skills?.languages || [],
-          "Languages",
+          t('gigCreation.suggestions.languages'),
           <Globe2 className="w-5 h-5 text-harx-500" />
         )}
         {renderSkillCard(
           "professional",
           suggestions.skills?.professional || [],
-          "Professional Skills",
+          t('gigCreation.suggestions.professionalSkills'),
           <Briefcase className="w-5 h-5 text-harx-alt-500" />
         )}
         {renderSkillCard(
           "technical",
           suggestions.skills?.technical || [],
-          "Technical Skills",
+          t('gigCreation.suggestions.technicalSkills'),
           <Target className="w-5 h-5 text-harx-500" />
         )}
         {renderSkillCard(
           "soft",
           suggestions.skills?.soft || [],
-          "Soft Skills",
+          t('gigCreation.suggestions.softSkills'),
           <Users className="w-5 h-5 text-harx-alt-500" />
         )}
       </div>
@@ -5720,9 +5791,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
-              <h4 className="text-lg font-bold bg-gradient-to-r from-harx-600 via-harx-600 to-harx-alt-600 bg-clip-text text-transparent">Team Roles</h4>
+              <h4 className="text-lg font-bold bg-gradient-to-r from-harx-600 via-harx-600 to-harx-alt-600 bg-clip-text text-transparent">{t('gigCreation.suggestions.teamRoles')}</h4>
               <div className="flex items-center space-x-1">
-                <span className="text-sm font-medium text-harx-600">Total:</span>
+                <span className="text-sm font-medium text-harx-600">{t('gigCreation.suggestions.total')}</span>
                 <span className="text-md font-bold text-harx-700 bg-white border border-harx-300 rounded-md px-2 py-1">
                   {suggestions.team?.size || 0}
                 </span>
@@ -5733,7 +5804,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               className="flex items-center space-x-1 bg-gradient-harx hover:opacity-90 text-white font-bold px-3 py-1 rounded-md shadow-md hover:shadow-lg transition-all transform hover:scale-105"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Role</span>
+              <span>{t('gigCreation.suggestions.addRole')}</span>
             </button>
           </div>
 
@@ -5752,7 +5823,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     className="bg-white rounded-lg p-2 border border-harx-500/20 shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] hover:border-harx-500/50"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h5 className="text-md font-bold bg-gradient-harx bg-clip-text text-transparent">Role #{index + 1}</h5>
+                      <h5 className="text-md font-bold bg-gradient-harx bg-clip-text text-transparent">{t('gigCreation.suggestions.roleNumber', { n: index + 1 })}</h5>
                       <button
                         onClick={() => deleteTeamRole(index)}
                         className="p-1 text-red-500 hover:text-white hover:bg-red-500 rounded-md transition-all transform hover:scale-110 shadow-sm"
@@ -5764,7 +5835,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     <div className="space-y-2">
                       <div>
                         <label className="text-xs font-bold text-harx-700 mb-1 block">
-                          Role Type
+                          {t('gigCreation.suggestions.roleType')}
                         </label>
                         <select
                           value={roleId}
@@ -5781,7 +5852,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
                       <div>
                         <label className="text-xs font-bold text-harx-500 mb-1 block">
-                          Number of Members
+                          {t('gigCreation.suggestions.numberOfMembers')}
                         </label>
                         <input
                           type="number"
@@ -5802,17 +5873,17 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 <Users className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-lg font-bold bg-gradient-to-r from-harx-700 via-harx-700 to-violet-700 bg-clip-text text-transparent mb-2">
-                No Team Roles Defined
+                {t('gigCreation.suggestions.noTeamRoles')}
               </h3>
               <p className="text-harx-600 font-medium mb-4 max-w-md mx-auto text-sm">
-                Add team roles to define the structure and responsibilities of your team members.
+                {t('gigCreation.suggestions.noTeamRolesHint')}
               </p>
               <button
                 onClick={addTeamRole}
                 className="inline-flex items-center space-x-2 bg-gradient-to-r from-harx-500 via-harx-alt-500 to-harx-alt-500 hover:from-harx-600 hover:via-harx-600 hover:to-harx-alt-600 text-white font-bold px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
               >
                 <Plus className="w-4 h-4" />
-                <span>Add Team Role</span>
+                <span>{t('gigCreation.suggestions.addTeamRole')}</span>
               </button>
             </div>
           )}
@@ -5821,7 +5892,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         {/* Territories */}
         <div className="bg-gradient-to-br from-harx-50 via-harx-50 to-violet-50 rounded-lg p-3 border border-blue-200 shadow-md mb-4">
           <div className="flex items-center space-x-2 mb-2">
-            <h4 className="text-md font-semibold text-gray-900">Territories</h4>
+            <h4 className="text-md font-semibold text-gray-900">{t('gigCreation.suggestions.territories')}</h4>
           </div>
 
           <select
@@ -5836,7 +5907,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             disabled={territoriesLoading}
           >
             <option value="" disabled>
-              {territoriesLoading ? "Loading territories..." : "Add territory..."}
+              {territoriesLoading ? t('gigCreation.suggestions.loadingTerritories') : t('gigCreation.suggestions.addTerritory')}
             </option>
             {territoriesFromAPI.filter(
               (country: Country) => !suggestions.team?.territories?.includes(country._id)
@@ -5859,7 +5930,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <button
                     onClick={() => removeTerritory(territory)}
                     className="ml-1 text-white hover:text-blue-200 rounded-full focus:outline-none focus:bg-harx-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove"
+                    title={t('gigCreation.suggestions.remove')}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -5872,8 +5943,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
           <p className="text-xs text-gray-500 italic text-center mt-1">
             {territoriesLoading
-              ? 'Loading countries from API...'
-              : `${territoriesFromAPI.filter((country: Country) => !suggestions.team?.territories?.includes(country._id)).length} countries available for selection`
+              ? t('gigCreation.suggestions.loadingCountries')
+              : t('gigCreation.suggestions.countriesAvailable', {
+                  count: territoriesFromAPI.filter(
+                    (country: Country) => !suggestions.team?.territories?.includes(country._id)
+                  ).length
+                })
             }
           </p>
         </div>
@@ -5890,7 +5965,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             <Logo />
           </div>
           <p className="mt-8 text-2xl font-bold bg-gradient-harx bg-clip-text text-transparent animate-pulse tracking-widest drop-shadow-sm border-2 border-harx-200 px-8 py-3 rounded-full shadow-inner bg-white/50 backdrop-blur-md">
-            generating...
+            {t('gigCreation.suggestions.generating')}
           </p>
         </div>
       </div>
@@ -5912,7 +5987,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
             <div className="space-y-3">
               <h2 className="text-2xl font-bold text-gray-900">
-                Error Generating Suggestions
+                {t('gigCreation.suggestions.errorTitle')}
               </h2>
               <p className="text-gray-600 leading-relaxed">
                 {error}
@@ -5925,7 +6000,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 className="inline-flex items-center px-6 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Input
+                {t('gigCreation.suggestions.backToInput')}
               </button>
             </div>
           </div>
@@ -5949,10 +6024,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
             <div className="space-y-3">
               <h2 className="text-2xl font-bold text-gray-900">
-                No Suggestions Available
+                {t('gigCreation.suggestions.emptyTitle')}
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                We couldn't generate suggestions based on your input. Please try again with different requirements.
+                {t('gigCreation.suggestions.emptyBody')}
               </p>
             </div>
 
@@ -5962,7 +6037,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 className="inline-flex items-center px-6 py-2 text-sm font-medium text-white bg-harx-600 border border-transparent rounded-lg hover:bg-harx-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-harx-500 shadow-sm transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Input
+                {t('gigCreation.suggestions.backToInput')}
               </button>
             </div>
           </div>
@@ -5984,12 +6059,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               className="group inline-flex items-center px-6 py-3 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
-              Back to Input
+              {t('gigCreation.suggestions.backToInput')}
             </button>
 
             <div className="text-center">
               <h2 className="text-lg font-semibold text-gray-900">
-                Review & Refine Suggestions
+                {t('gigCreation.suggestions.reviewTitle')}
               </h2>
               {/* Mock Data Indicator */}
               {import.meta.env.VITE_USE_MOCK_DATA === 'true' && (
@@ -6003,7 +6078,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               onClick={handleConfirm}
               className="group inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-harx-500 hover:bg-harx-600 border border-transparent rounded-lg transition-colors shadow-sm"
             >
-              Confirm & Continue
+              {t('gigCreation.suggestions.confirmContinue')}
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
             </button>
           </div>
@@ -6022,8 +6097,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <Briefcase className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Basic Information</h3>
-                  <p className="text-harx-100 text-sm">Core details and requirements for your gig</p>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.basicInformation')}</h3>
+                  <p className="text-harx-100 text-sm">{t('gigCreation.suggestions.coreDetails')}</p>
                 </div>
               </div>
             </div>
@@ -6045,7 +6120,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2 mb-2">
                     <div className="w-2 h-2 bg-harx-500 rounded-full"></div>
-                    <h4 className="text-lg font-semibold text-gray-900">Job Description</h4>
+                    <h4 className="text-lg font-semibold text-gray-900">{t('gigCreation.suggestions.jobDescription')}</h4>
                   </div>
                   {renderDescriptionSection()}
                 </div>
@@ -6094,8 +6169,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <Clock className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Schedule & Availability</h3>
-                  <p className="text-harx-alt-100 text-sm">Working hours, timezones, and flexibility options</p>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.scheduleAvailability')}</h3>
+                  <p className="text-harx-alt-100 text-sm">{t('gigCreation.suggestions.scheduleSectionSubtitle')}</p>
                 </div>
               </div>
             </div>
@@ -6127,8 +6202,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <DollarSign className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Commission Structure</h3>
-                  <p className="text-harx-100 text-sm">Compensation details and performance incentives</p>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.commissionStructure')}</h3>
+                  <p className="text-harx-100 text-sm">{t('gigCreation.suggestions.commissionSubtitle')}</p>
                 </div>
               </div>
             </div>
@@ -6146,8 +6221,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <Award className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Skills & Qualifications</h3>
-                  <p className="text-harx-alt-100 text-sm">Required technical, professional, and soft skills</p>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.skillsQualifications')}</h3>
+                  <p className="text-harx-alt-100 text-sm">{t('gigCreation.suggestions.skillsSectionSubtitle')}</p>
                 </div>
               </div>
             </div>
@@ -6165,8 +6240,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Team Structure</h3>
-                  <p className="text-harx-100 text-sm">Team composition, roles, and territories</p>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.suggestions.teamStructure')}</h3>
+                  <p className="text-harx-100 text-sm">{t('gigCreation.suggestions.teamSectionSubtitle')}</p>
                 </div>
               </div>
             </div>
@@ -6182,7 +6257,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             onClick={handleConfirm}
             className="group inline-flex items-center px-12 py-4 text-lg font-bold text-white bg-harx-500 hover:bg-harx-600 border border-transparent rounded-2xl transition-all shadow-xl shadow-harx-500/25 hover:shadow-harx-500/40 hover:-translate-y-1"
           >
-            Confirm & Continue
+            {t('gigCreation.suggestions.confirmContinue')}
             <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
           </button>
         </div>

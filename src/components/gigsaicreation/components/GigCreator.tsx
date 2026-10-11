@@ -11,7 +11,6 @@ import {
   DollarSign,
   Users,
   Phone,
-  BookOpen,
   GraduationCap,
   Calendar,
   Rocket,
@@ -44,6 +43,8 @@ const initialGigData: GigData = {
   destinationZones: [],
   callTypes: [],
   highlights: [],
+  deliverables: [],
+  sectors: [],
   industries: [],
   status: 'to_activate',
   requirements: {
@@ -177,8 +178,9 @@ export function GigCreator({ children }: GigCreatorProps) {
     // Synchronize time zone selection between schedule and availability
     const selectedTimeZone = newData.schedule?.time_zone || (Array.isArray(newData.schedule?.timeZones) ? newData.schedule.timeZones[0] : undefined);
 
-    // Si les données de schedule ont changé, synchroniser avec availability
-    if (newData.schedule && newData.schedule.schedules) {
+    // Prefer schedule.schedules as source of truth when present — never let a
+    // stale availability.schedule overwrite a deliberate schedule edit/delete.
+    if (newData.schedule && Array.isArray(newData.schedule.schedules)) {
       updatedData = {
         ...updatedData,
         schedule: {
@@ -198,10 +200,7 @@ export function GigCreator({ children }: GigCreatorProps) {
           minimumHours: newData.schedule.minimumHours || {}
         }
       };
-    }
-
-    // Si les données de availability ont changé, synchroniser avec schedule
-    if (newData.availability && newData.availability.schedule) {
+    } else if (newData.availability && newData.availability.schedule) {
       const availTimeZone = newData.availability.time_zone || (Array.isArray(newData.availability.timeZones) ? newData.availability.timeZones[0] : undefined);
       updatedData = {
         ...updatedData,
@@ -574,7 +573,6 @@ export function GigCreator({ children }: GigCreatorProps) {
     { key: 'telephony', icon: Phone },
     { key: 'uploadContacts', icon: Users },
     { key: 'callScript', icon: FileText },
-    { key: 'knowledgeBase', icon: BookOpen },
     { key: 'repOnboarding', icon: GraduationCap },
     { key: 'sessionPlanning', icon: Calendar },
     { key: 'gigActivation', icon: Rocket },

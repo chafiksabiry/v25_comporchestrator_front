@@ -32,6 +32,7 @@ export const aiPrompts = {
 export const predefinedOptions = {
   basic: {
     categories: [
+      'Call Center',
       'Inbound Sales',
       'Outbound Sales',
       'Customer Service',
@@ -59,6 +60,7 @@ export const predefinedOptions = {
       'Multilingual Support'
     ],
     seniorityLevels: [
+      'Call Center',
       'Agent Senior',
       'Agent',
       'Agent Junior',
@@ -176,6 +178,11 @@ export const predefinedOptions = {
   team: {
     roles: [
       {
+        id: 'Call Center',
+        name: 'Call Center',
+        description: 'Call-center agent handling inbound/outbound customer interactions'
+      },
+      {
         id: 'Agent Senior',
         name: 'Agent Senior',
         description: 'Experienced agent with advanced skills and mentoring capabilities'
@@ -254,16 +261,16 @@ export const sectionGuidance = {
   basic: {
     title: 'Basic Information',
     steps: [
-      'Enter a clear and descriptive title for the role',
-      'Select the appropriate category',
-      'Choose the seniority level',
-      'Specify required years of experience'
+      'Enter the job title and description',
+      'Add key highlights and deliverables',
+      'Choose sectors, industries and activities',
+      'Set destination zones'
     ],
     tips: [
-      'Use industry-standard job titles for better visibility',
-      'Be specific about the role category to attract the right candidates',
-      'Match seniority level with experience requirements',
-      'Consider both minimum and preferred experience levels'
+      'A clear title improves visibility for reps',
+      'Highlights help sell the gig quickly',
+      'Align sectors and industries with your target market',
+      'Destination zones guide phone-line matching'
     ]
   },
   availability: {

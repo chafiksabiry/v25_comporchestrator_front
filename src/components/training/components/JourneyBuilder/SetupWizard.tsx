@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { Building2, Loader2, Target, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check, Search, ImagePlus, Brain } from 'lucide-react';
 import axios from 'axios';
@@ -11,7 +12,15 @@ import { OnboardingService } from '../../infrastructure/services/OnboardingServi
 import GigSelector from '../Dashboard/GigSelector';
 import TrainingDetailsForm, { VISION_DURATIONS } from './TrainingDetailsForm';
 import { scrollJourneyMainToTop } from './journeyScroll';
+import '../../training-layout.css';
 import { cloudinaryService } from '../../lib/cloudinaryService';
+import { detectOutputLanguageFromGigText } from '../../utils/gigSnapshotForAi';
+import {
+  assertCompanyHasAiTokens,
+  chargeCompanyAiUsage,
+  estimateTokensFromText,
+  applyBackendAiUsage,
+} from '../../../../lib/aiTokensUsage';
 
 interface SetupWizardProps {
   onComplete: (company: Company, journey: TrainingJourney, methodology?: TrainingMethodology, gigId?: string) => void;
@@ -22,6 +31,7 @@ interface SetupWizardProps {
 }
 
 export default function SetupWizard({ onComplete, repOnboardingLayout = false, forceNew = false }: SetupWizardProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [company, setCompany] = useState<Partial<Company>>({});
   const [companyData, setCompanyData] = useState<any>(null);
@@ -47,6 +57,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const [visionTitleGenerating, setVisionTitleGenerating] = useState(false);
   const [visionDescriptionGenerating, setVisionDescriptionGenerating] = useState(false);
   const autoRolesSuggestionKeyRef = useRef('');
+  /** Avoid re-running AI vision suggest for the same gig. */
+  const visionAutoSuggestKeyRef = useRef('');
 
   const getDraftStorageKey = useCallback((companyId?: string) => {
     const cid = String(companyId || OnboardingService.getCompanyId() || '').trim();
@@ -151,10 +163,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   }, [currentStep, visionSubStep]);
 
   const steps = [
-    { id: 1, label: 'Gig' },
-    { id: 2, label: 'Vision' },
-    { id: 3, label: 'Team' },
-    { id: 4, label: 'Methodology' },
+    { id: 1, label: t('trainingWizard.steps.gig') },
+    { id: 2, label: t('trainingWizard.steps.vision') },
+    { id: 3, label: t('trainingWizard.steps.team') },
+    { id: 4, label: t('trainingWizard.steps.methodology') },
   ];
 
   const handleNext = async () => {
@@ -190,7 +202,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
     } else if (currentStep === 3) {
       setCurrentStep(4);
     } else if (currentStep === 2) {
-      setCurrentStep(3);
+      // Duration + Team are skipped after Vision name/description.
+      setCurrentStep(4);
     } else if (currentStep === 1) {
       setCurrentStep(2);
     } else if (currentStep < steps.length) {
@@ -291,7 +304,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   }, [forceNew, getDraftStorageKey]);
 
   const visionContinueDisabled =
-    visionSubStep === 0 ? !visionName.trim() : !visionDuration;
+    visionSubStep === 0
+      ? !visionName.trim() || visionTitleGenerating || visionDescriptionGenerating
+      : !visionDuration;
   const visionContinueLabel = 'Continue';
 
   const handleVisionFooterBack = () => {
@@ -299,24 +314,41 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
     else setCurrentStep(1);
   };
 
+  /** Persist vision + skip duration (Quick Start) and Team → Methodology. */
+  const commitVisionAndSkipToMethodology = () => {
+    const cleanVisionName = String(visionName || '').trim();
+    if (!cleanVisionName) return;
+    const cleanVisionDesc = String(visionDesc || '').trim();
+    const duration =
+      visionDuration && VISION_DURATIONS.some((d) => d.value === visionDuration)
+        ? visionDuration
+        : VISION_DURATIONS[0].value; // Quick Start
+    const defaultRoles =
+      journey.targetRoles && journey.targetRoles.length > 0
+        ? journey.targetRoles
+        : ['Sales Representatives'];
+
+    setVisionDuration(duration);
+    setTrainingDetails({
+      trainingName: cleanVisionName,
+      trainingDescription: cleanVisionDesc,
+      estimatedDuration: duration,
+    });
+    setJourney((prev) => ({
+      ...prev,
+      name: cleanVisionName || prev.name,
+      description: cleanVisionDesc || prev.description || '',
+      estimatedDuration: duration || prev.estimatedDuration,
+      targetRoles: defaultRoles,
+    }));
+    setCurrentStep(4);
+  };
+
   const handleVisionFooterContinue = () => {
     if (visionSubStep === 0) {
-      if (visionName.trim()) setVisionSubStep(1);
+      commitVisionAndSkipToMethodology();
     } else if (visionDuration) {
-      const cleanVisionName = String(visionName || '').trim();
-      const cleanVisionDesc = String(visionDesc || '').trim();
-      setTrainingDetails({
-        trainingName: cleanVisionName,
-        trainingDescription: cleanVisionDesc,
-        estimatedDuration: visionDuration,
-      });
-      setJourney((prev) => ({
-        ...prev,
-        name: cleanVisionName || prev.name,
-        description: cleanVisionDesc || prev.description || '',
-        estimatedDuration: visionDuration || prev.estimatedDuration,
-      }));
-      setCurrentStep(3);
+      commitVisionAndSkipToMethodology();
     }
   };
 
@@ -349,34 +381,87 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       if (isTitle) setVisionTitleGenerating(true);
       else setVisionDescriptionGenerating(true);
 
+      await assertCompanyHasAiTokens(1, undefined, { allowFirstGigFree: true });
+
       const trainingBackendUrl = getTrainingBackendUrl();
       const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
+      const gigTitle = String(selectedGig.title || '').trim();
+      const gigDescription = String(selectedGig.description || '').trim();
+      const outputLanguage = detectOutputLanguageFromGigText(gigTitle, gigDescription);
+      const languageLabel = outputLanguage === 'fr' ? 'French' : 'English';
       const response = await axios.post(`${baseUrl}/training_journeys/suggest-vision`, {
         target,
         currentTitle: visionName,
         currentDescription: visionDesc,
         industry: industries.find(i => i._id === company.industry)?.name || String(company.industry || ''),
-        gig: selectedGig
+        companyId: company?.id || company?._id || undefined,
+        gig: selectedGig,
+        outputLanguage,
+        contentLanguage: outputLanguage,
+        languageFromGig: {
+          source: 'gig_title_description',
+          titleSample: gigTitle.slice(0, 180) || null,
+          descriptionSample: gigDescription.slice(0, 280) || null,
+          detected: outputLanguage,
+        },
+        languageInstruction: `Write the training ${isTitle ? 'title' : 'description'} in ${languageLabel} only. Match the language of the gig title and description. Do not mix languages.`,
       });
       const data = (response?.data as any)?.data || {};
+      const backendBilled = applyBackendAiUsage((response?.data as any)?.usage);
       if (isTitle) {
         const suggestedTitle = String(data.title || '').trim();
         if (suggestedTitle) setVisionName(suggestedTitle);
+        if (!backendBilled) {
+          void chargeCompanyAiUsage({
+            usageId: `suggest-vision-title-${selectedGig._id || 'gig'}-${Date.now()}`,
+            tokensUsed: estimateTokensFromText(gigTitle, gigDescription, suggestedTitle),
+            tool: 'training.suggest_vision_title',
+            skipIfFirstGigFree: true,
+          }).catch(() => undefined);
+        }
       } else {
         const suggestedDescription = String(data.description || '').trim();
         if (suggestedDescription) setVisionDesc(suggestedDescription);
+        if (!backendBilled) {
+          void chargeCompanyAiUsage({
+            usageId: `suggest-vision-desc-${selectedGig._id || 'gig'}-${Date.now()}`,
+            tokensUsed: Math.max(200, estimateTokensFromText(gigTitle, gigDescription, suggestedDescription)),
+            tool: 'training.suggest_vision_description',
+            skipIfFirstGigFree: true,
+          }).catch(() => undefined);
+        }
       }
     } catch (error: any) {
       const backendMessage =
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        error?.message;
+        error?.code === 'insufficient_tokens' || error?.response?.data?.error === 'insufficient_tokens'
+          ? error?.response?.data?.message || error.message
+          : error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            error?.message;
       alert(backendMessage || 'Could not generate vision suggestion.');
     } finally {
       if (isTitle) setVisionTitleGenerating(false);
       else setVisionDescriptionGenerating(false);
     }
   };
+
+  // Auto-fill Vision title + description when landing on the step (no brain click).
+  useEffect(() => {
+    if (currentStep !== 2 || visionSubStep !== 0 || !selectedGig) return;
+    const gigKey = String(selectedGig._id || selectedGig.title || '').trim();
+    if (!gigKey) return;
+    if (visionAutoSuggestKeyRef.current === gigKey) return;
+    if (String(visionName || '').trim() && String(visionDesc || '').trim()) {
+      visionAutoSuggestKeyRef.current = gigKey;
+      return;
+    }
+    visionAutoSuggestKeyRef.current = gigKey;
+    void Promise.all([
+      handleSuggestVision('title'),
+      handleSuggestVision('description'),
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per gig when entering Vision
+  }, [currentStep, visionSubStep, selectedGig?._id, selectedGig?.title]);
 
   const roleOptions = [
     { role: 'Customer Success Representatives', dept: 'Customer Success', icon: '🎯' },
@@ -423,9 +508,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
     if (!raw) return null;
     const m = parseInt(raw, 10);
     if (Number.isNaN(m)) return raw;
-    if (m >= 1440) return `${Math.round(m / 1440)} day(s)`;
-    if (m >= 60) return `${Math.round(m / 60)} hour(s)`;
-    return `${m} minute(s)`;
+    if (m >= 1440) return t('trainingWizard.days', { count: Math.round(m / 1440) });
+    if (m >= 60) return t('trainingWizard.hours', { count: Math.round(m / 60) });
+    return t('trainingWizard.minutes', { count: m });
   };
 
   const HARX = '#dc2626';
@@ -439,38 +524,30 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const stepperPadding = embedCompact ? '2px 24px 4px' : '8px 24px';
   const bodyPadding = embedCompact
     ? currentStep === 1
-      ? '4px 20px 8px'
+      ? '4px 12px 8px'
       : isVisionStep
-        ? '4px 20px 8px'
+        ? '4px 12px 8px'
         : isTeamStep
-          ? '4px 20px 8px'
-          : '8px 20px 10px'
-    : currentStep === 1
-      ? '12px 28px 8px'
-      : isVisionStep
-        ? '12px 28px 8px'
-        : isTeamStep
-          ? '12px 28px 8px'
-          : '16px 28px';
+          ? '4px 12px 8px'
+          : '8px 12px 10px'
+    : '12px clamp(10px, 1.6vw, 20px) 8px';
 
   const setupContentMaxWidth = '100%';
   const lockBodyScroll = embedCompact && currentStep === 1;
   const headerTitle = isVisionStep
-    ? 'Define your training vision'
+    ? t('trainingWizard.visionTitle')
     : currentStep === 3
-      ? 'Identify your learners'
-      : 'Welcome to your training journey';
+      ? t('trainingWizard.teamTitle')
+      : t('trainingWizard.welcomeTitle');
   const headerSubtitle = isVisionStep
-    ? (visionSubStep === 0
-      ? 'Step 1 of 2 — Name & description'
-      : 'Step 2 of 2 — How long should it run?')
+    ? t('trainingWizard.visionSubtitle')
     : currentStep === 3
-      ? 'Role-based paths · Skill assessments · Personalization'
-      : 'Smart defaults · Compliance';
+      ? t('trainingWizard.teamSubtitle')
+      : t('trainingWizard.welcomeSubtitle');
   const uniformStepBodyMinHeight = embedCompact ? '100%' : '100%';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%', background: WIZARD_BG, borderRadius: 18, overflow: 'hidden' }}>
+    <div className="harx-wizard" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%', background: WIZARD_BG, borderRadius: 18, overflow: 'hidden' }}>
       <style>{`
         @keyframes wizardFadeUp {
           from { opacity: 0; transform: translateY(8px); }
@@ -480,7 +557,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
 
       {/* ── Stepper ── */}
       <div style={{ flexShrink: 0, padding: stepperPadding }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#ffffff', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: 9999, padding: '8px 12px', backdropFilter: 'blur(8px)' }}>
+        <div className="harx-wizard-stepper" style={{ background: '#ffffff', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: 9999, padding: '8px 12px' }}>
           {steps.map((step, i) => {
             const done = currentStep > step.id;
             const active = currentStep === step.id || (currentStep === 5 && step.id === 4);
@@ -507,7 +584,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                   }}>
                     {done ? <Check style={{ width: 11, height: 11 }} /> : step.id}
                   </span>
-                  <span style={{ fontWeight: 700 }}>{step.label}</span>
+                  <span className="harx-wizard-step-label" style={{ fontWeight: 700 }}>{step.label}</span>
                 </button>
                 {i < steps.length - 1 && (
                   <div style={{ width: 22, height: 2, borderRadius: 1, background: done ? '#0f766e' : '#e5e7eb' }} />
@@ -518,7 +595,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
         </div>
       </div>
 
-      <div style={{ flexShrink: 0, textAlign: 'center', padding: embedCompact ? '2px 16px 8px' : '4px 20px 10px' }}>
+      {!isMethodologyStep && (
+      <div style={{ flexShrink: 0, textAlign: 'center', padding: embedCompact ? '2px 16px 8px' : '4px clamp(12px, 2vw, 20px) 10px' }}>
         <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
           {headerTitle}
         </h3>
@@ -526,6 +604,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
           {headerSubtitle}
         </p>
       </div>
+      )}
 
       {/* Body + footer column: footer stays at bottom of card; only the area above scrolls */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -540,12 +619,13 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
           width: '100%',
         }}>
           <div style={{
-            flex: 1,
+            flex: isMethodologyStep ? '0 0 auto' : 1,
             maxWidth: setupContentMaxWidth,
             margin: '0 auto',
             width: '100%',
-            minHeight: uniformStepBodyMinHeight,
-            height: '100%',
+            minWidth: 0,
+            minHeight: isMethodologyStep ? 0 : uniformStepBodyMinHeight,
+            height: isMethodologyStep ? 'auto' : '100%',
             borderRadius: 18,
             border: WIZARD_CARD_BORDER,
             background: WIZARD_CARD_BG,
@@ -820,7 +900,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                       }}
                     >
                       <Target style={{ width: 12, height: 12, color: HARX }} />
-                      Training program
+                      {t('trainingWizard.trainingProgram')}
                     </h5>
                     <p style={{ fontSize: 13, color: '#111827', margin: 0, fontWeight: 600, lineHeight: 1.25 }}>
                       {trainingDetails?.trainingName || selectedGig?.title || 'N/A'}
@@ -844,7 +924,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                     <p style={{ fontSize: 10, color: '#9ca3af', margin: '4px 0 0', fontWeight: 600 }}>
                       {formatVisionDuration(trainingDetails?.estimatedDuration) || journey.estimatedDuration || 'N/A'}
                       {' · '}
-                      {journey.targetRoles?.length || 0} target roles
+                      {t('trainingWizard.targetRoles', { count: journey.targetRoles?.length || 0 })}
                     </p>
                   </div>
 
@@ -875,9 +955,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                         }}
                       >
                         <Sparkles style={{ width: 12, height: 12, color: HARX }} />
-                        Methodology
+                        {t('trainingWizard.methodology')}
                       </h5>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignContent: 'start', flexShrink: 0 }}>
+                      <div className="harx-method-grid" style={{ gap: 4 }}>
                         {(selectedMethodology.components || []).map((c: MethodologyComponent, i: number) => (
                           <div key={c.id || i} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, minWidth: 0 }}>
                             <CheckCircle style={{ width: 11, height: 11, color: '#059669', flexShrink: 0, marginTop: 2 }} />
@@ -908,15 +988,12 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
 
         {/* ── Footer (always bottom of wizard — same bar for all steps) ── */}
         <div
+          className="harx-wizard-footer"
           style={{
             flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: embedCompact ? '8px 20px' : '10px 28px',
+            padding: embedCompact ? '8px 16px' : '10px clamp(12px, 2vw, 28px)',
             borderTop: '1px solid rgba(15,23,42,0.08)',
             background: '#ffffff',
-            backdropFilter: 'blur(10px)',
           }}
         >
           {isVisionStep ? (
@@ -932,9 +1009,11 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 }}
               >
                 <ArrowLeft style={{ width: 14, height: 14 }} />
-                Back
+                {t('trainingWizard.back')}
               </button>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {visionSubStep + 1}/2 · Step 3 of 5</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>
+                {visionTitleGenerating || visionDescriptionGenerating ? t('trainingWizard.generating') : t('trainingWizard.visionNext')}
+              </span>
               <button
                 type="button"
                 onClick={handleVisionFooterContinue}
@@ -955,8 +1034,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
             <>
               <button
                 type="button"
-                onClick={() => { if (currentStep === 5) setCurrentStep(4); else if (currentStep > 1) setCurrentStep(currentStep - 1); }}
-                disabled={currentStep === 1}
+                  onClick={() => { if (currentStep === 5) setCurrentStep(4); else if (currentStep === 4) setCurrentStep(2); else if (currentStep > 1) setCurrentStep(currentStep - 1); }}
+                  disabled={currentStep === 1}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 5,
                   padding: '8px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
@@ -966,10 +1045,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 }}
               >
                 <ArrowLeft style={{ width: 14, height: 14 }} />
-                Back
+                {t('trainingWizard.back')}
               </button>
 
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Step {stepNum} of {steps.length}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>{t('trainingWizard.stepOf', { current: stepNum, total: steps.length })}</span>
 
               <button
                 type="button"
@@ -983,7 +1062,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                   boxShadow: isStepValid() ? '0 6px 16px rgba(185,28,28,0.22)' : 'none',
                 }}
               >
-                {currentStep === 5 ? 'Start building' : 'Continue'}
+                {currentStep === 5 ? t('trainingWizard.startBuilding') : t('trainingWizard.continue')}
                 <ArrowRight style={{ width: 14, height: 14 }} />
               </button>
             </>

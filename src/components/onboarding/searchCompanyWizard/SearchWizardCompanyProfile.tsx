@@ -3,7 +3,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { ArrowLeft, CheckCircle2, Save } from "lucide-react";
 import type { CompanyProfileData } from "./api/openai";
-import { saveCompanyData } from "./api/companyApi";
+import { publishCompanyData } from "./api/companyApi";
 import { redirectToCompanyOnboarding } from "./navigation";
 
 interface Props {
@@ -41,8 +41,8 @@ export default function SearchWizardCompanyProfile({ profile, onBack, onDone }: 
     setSaving(true);
     setError(null);
     try {
-      const response = await saveCompanyData(data);
-      const newCompanyId = response?.data?._id;
+      const response = await publishCompanyData(data);
+      const newCompanyId = response._id;
       if (!newCompanyId) {
         throw new Error("Company ID missing from API response");
       }

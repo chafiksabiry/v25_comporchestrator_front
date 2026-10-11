@@ -1,47 +1,30 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { InfoText } from './InfoText';
-import { predefinedOptions } from '../lib/guidance';
-import { getCountryNameById } from '../lib/api';
 import {
   Briefcase,
-  Globe2,
-  Target,
   ArrowRight,
   ArrowLeft,
-  CheckCircle,
+  Plus,
   X,
-} from "lucide-react";
+  Globe2,
+  Target,
+} from 'lucide-react';
 import { GigData } from '../types';
-import i18n from 'i18n-iso-countries';
-import fr from 'i18n-iso-countries/langs/fr.json';
-import en from 'i18n-iso-countries/langs/en.json';
-import { countryToAlpha2, alpha2ToCountry } from '../lib/countryCodes';
 import {
   loadActivities,
   loadIndustries,
+  loadSectors,
   getActivityOptions,
   getIndustryOptions,
+  getSectorOptions,
   getActivityNameById,
-  getIndustryNameById
+  getIndustryNameById,
+  getSectorNameById,
 } from '../lib/activitiesIndustries';
 import { fetchAllCountries, Country } from '../lib/api';
+import { addNarrativeItem, listForLang, removeNarrativeItem, textForLang, uiLangFrom } from '../lib/gigNarrativeI18n';
 
-// Enregistrement des langues pour la traduction des noms de pays
-i18n.registerLocale(fr);
-i18n.registerLocale(en);
-
-/**
- * Interface définissant les props du composant BasicSection
- * @property {GigData} data - Les données du gig
- * @property {Function} onChange - Callback pour mettre à jour les données
- * @property {Object} errors - Les erreurs de validation
- * @property {Function} onPrevious - Callback pour la navigation précédente
- * @property {Function} onNext - Callback pour la navigation suivante
- * @property {Function} onSave - Callback pour sauvegarder les données
- * @property {Function} onAIAssist - Callback pour l'assistance IA
- * @property {Function} onSectionChange - Callback pour changer de section
- * @property {string} currentSection - La section actuelle
- */
 interface BasicSectionProps {
   data: GigData;
   onChange: (data: GigData) => void;
@@ -54,285 +37,262 @@ interface BasicSectionProps {
   currentSection: string;
 }
 
-/**
- * Composant principal BasicSection
- * Gère l'affichage et la modification des informations de base d'un gig
- */
+type ChipField = 'highlights' | 'deliverables' | 'sectors';
+
 const BasicSection: React.FC<BasicSectionProps> = ({
   data,
   onChange,
   errors,
   onPrevious,
-  onNext
+  onNext,
+  onSectionChange,
 }) => {
-  const [selectedIndustry, setSelectedIndustry] = useState<string>('');
-  const [selectedActivity, setSelectedActivity] = useState<string>('');
+  const { t, i18n } = useTranslation();
+  const titleOk = Boolean(String(data.title || '').trim());
+  const uiLang = (i18n.language || 'en').slice(0, 2);
+  const narrativeLang = uiLangFrom(i18n.language);
+
   const [activities, setActivities] = useState<Array<{ value: string; label: string; category: string }>>([]);
   const [industries, setIndustries] = useState<Array<{ value: string; label: string }>>([]);
+  const [sectors, setSectors] = useState<Array<{ value: string; label: string }>>([]);
   const [countries, setCountries] = useState<Country[]>([]);
-  const [countryName, setCountryName] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [loadingRefs, setLoadingRefs] = useState(true);
+  const [draft, setDraft] = useState<Record<ChipField, string>>({
+    highlights: '',
+    deliverables: '',
+    sectors: '',
+  });
 
-  // Load activities and industries data from external API ONLY
   useEffect(() => {
-    const loadData = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        setIsLoading(true);
-        // Load data from external API with error handling
-        const results = await Promise.all([
-          loadActivities(),
-          loadIndustries(),
-          fetchAllCountries()
-        ]);
-        const countriesData = results[2] as Country[];
-
-        const activityOptions = getActivityOptions();
-        const industryOptions = getIndustryOptions();
-
-        // Validate that we have data
-        if (activityOptions.length === 0) {
-          throw new Error('No activities available from external API');
+        setLoadingRefs(true);
+        await Promise.all([loadActivities(), loadIndustries(), loadSectors()]);
+        const countriesData = await fetchAllCountries();
+        if (cancelled) return;
+        setActivities(getActivityOptions(uiLang));
+        setIndustries(getIndustryOptions(uiLang));
+        setSectors(getSectorOptions(uiLang));
+        setCountries(Array.isArray(countriesData) ? countriesData : []);
+      } catch (err) {
+        console.error('BasicSection: failed to load reference data', err);
+        if (!cancelled) {
+          setActivities([]);
+          setIndustries([]);
+          setSectors([]);
+          setCountries([]);
         }
-        if (industryOptions.length === 0) {
-          throw new Error('No industries available from external API');
-        }
-        if (!countriesData || countriesData.length === 0) {
-          throw new Error('No countries available from external API');
-        }
-
-        setActivities(activityOptions);
-        setIndustries(industryOptions);
-        setCountries(countriesData);
-      } catch (error) {
-        console.error('❌ Critical error loading data from API:', error);
-        // Show user-friendly error message but don't block the UI
-        console.error(`Error loading data: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your internet connection and try again.`);
-        // Set empty arrays to allow the form to work even without external data
-        setActivities([]);
-        setIndustries([]);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setLoadingRefs(false);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
+  }, [uiLang]);
 
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (!data.destinationZones) {
-      onChange({
-        ...data,
-        destinationZones: []
-      });
-    }
-    if (!data.industries) {
-      onChange({
-        ...data,
-        industries: []
-      });
-    }
-    if (!data.activities) {
-      onChange({
-        ...data,
-        activities: []
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    // Récupérer le nom du pays si destination_zone est un ObjectId MongoDB
-    if (data.destination_zone && data.destination_zone.length === 24) {
-      const fetchCountryName = async () => {
-        try {
-          const name = await getCountryNameById(data.destination_zone);
-          setCountryName(name);
-          
-        } catch (error) {
-          console.error('❌ BASIC SECTION - Error fetching country name:', error);
-          setCountryName(data.destination_zone);
-        }
-      };
-      fetchCountryName();
-    } else {
-      setCountryName('');
-    }
-  }, [data.destination_zone]);
-
-  /**
-   * Obtient le nom du pays à partir de l'ID de l'API ou du code alpha-2
-   * @param {string} countryId - L'ID du pays de l'API ou le code alpha-2
-   * @returns {string} - Le nom du pays
-   */
-  const getCountryName = (countryId: string): string => {
-    // D'abord chercher par ID dans l'API
-    const countryFromApi = countries.find(country => country._id === countryId);
-    if (countryFromApi) {
-      
-      return countryFromApi.name.common;
-    }
-
-    
-
-    // Sinon, essayer avec les méthodes existantes (pour la compatibilité)
-    return i18n.getName(countryId, 'en') || alpha2ToCountry[countryId] || countryId;
+  const goNext = () => {
+    if (!titleOk) return;
+    onNext?.();
   };
 
-  /**
-   * Gère la sélection d'un pays
-   * @param {string} countryId - L'ID du pays sélectionné
-   */
-  const handleCountrySelect = (countryId: string) => {
-    if (!countryId) {
-      // Si aucun pays n'est sélectionné, on met à jour uniquement destination_zone
-      onChange({
-        ...data,
-        destination_zone: ''
-      });
+  const goSkipToReview = () => {
+    if (!titleOk) return;
+    if (onSectionChange) {
+      onSectionChange('review');
       return;
     }
+    onNext?.();
+  };
 
-    const country = countries.find(c => c._id === countryId);
+  const listFor = (field: ChipField): string[] => {
+    if (field === 'highlights') return listForLang(data.highlights_i18n, data.highlights, narrativeLang);
+    if (field === 'deliverables') return listForLang(data.deliverables_i18n, data.deliverables, narrativeLang);
+    if ((data.sectors || []).length) return data.sectors || [];
+    return data.category ? [data.category] : [];
+  };
 
-    if (!country) {
-      console.error('Invalid country ID:', countryId);
+  const setList = (field: ChipField, next: string[]) => {
+    onChange({ ...data, [field]: next });
+  };
+
+  const addChip = (field: ChipField) => {
+    const value = draft[field].trim();
+    if (!value) return;
+    const current = listFor(field);
+    if (current.includes(value)) {
+      setDraft((prev) => ({ ...prev, [field]: '' }));
       return;
     }
-
-    
-
-    // Mettre à jour destination_zone et s'assurer que le pays sélectionné est dans destinationZones
-    const updatedDestinationZones = data.destinationZones || [];
-    if (!updatedDestinationZones.includes(countryId)) {
-      // Ajouter le nouveau pays au début de la liste
-      updatedDestinationZones.unshift(countryId);
+    if (field === 'highlights' || field === 'deliverables') {
+      onChange(addNarrativeItem(data, field, narrativeLang, value) as GigData);
+    } else {
+      setList(field, [...current, value]);
     }
+    setDraft((prev) => ({ ...prev, [field]: '' }));
+  };
 
+  const removeChip = (field: ChipField, index: number) => {
+    if (field === 'highlights' || field === 'deliverables') {
+      onChange(removeNarrativeItem(data, field, narrativeLang, index) as GigData);
+      return;
+    }
+    setList(
+      field,
+      listFor(field).filter((_, i) => i !== index)
+    );
+  };
+
+  const addSectorFromSelect = (value: string) => {
+    if (!value) return;
+    const current = data.sectors || [];
+    if (!current.includes(value)) {
+      onChange({ ...data, sectors: [...current, value] });
+    }
+  };
+
+  const addIndustry = (value: string) => {
+    if (!value) return;
+    const current = data.industries || [];
+    if (!current.includes(value)) {
+      onChange({ ...data, industries: [...current, value] });
+    }
+  };
+
+  const removeIndustry = (id: string) => {
     onChange({
       ...data,
-      destination_zone: countryId,
-      destinationZones: updatedDestinationZones
+      industries: (data.industries || []).filter((x) => x !== id),
     });
   };
 
-
-  /**
-   * Effet pour initialiser destination_zone seulement si elle est vide
-   * Basé sur la logique de Suggestions.tsx et api.ts
-   * Gère aussi la compatibilité avec destinationZone (sans underscore)
-   */
-  useEffect(() => {
-    // Gérer la compatibilité entre destination_zone et destinationZone
-    const destinationZoneValue = (data as any).destinationZone || data.destination_zone;
-    const destinationZonesArray = data.destinationZones || [];
-
-    // Si destination_zone est vide mais destinationZone (sans underscore) existe
-    if (!data.destination_zone && destinationZoneValue) {
-      
-      onChange({
-        ...data,
-        destination_zone: destinationZoneValue,
-        destinationZones: destinationZonesArray.length > 0 ? destinationZonesArray : [destinationZoneValue]
-      });
-      return;
+  const addActivity = (value: string) => {
+    if (!value) return;
+    const current = data.activities || [];
+    if (!current.includes(value)) {
+      onChange({ ...data, activities: [...current, value] });
     }
+  };
 
-    // Seulement initialiser si destination_zone est vide et destinationZones contient des données
-    if (!data.destination_zone && destinationZonesArray.length > 0) {
-      const firstDestination = destinationZonesArray[0];
+  const removeActivity = (id: string) => {
+    onChange({
+      ...data,
+      activities: (data.activities || []).filter((x) => x !== id),
+    });
+  };
 
-      
+  const addDestination = (countryId: string) => {
+    if (!countryId) return;
+    const current = data.destinationZones || [];
+    if (current.includes(countryId)) return;
+    const country = countries.find((c) => c._id === countryId);
+    const nextZones = [...current, countryId];
+    onChange({
+      ...data,
+      destinationZones: nextZones,
+      destination_zone: data.destination_zone || countryId,
+      destination_zone_meta: data.destination_zone_meta ||
+        (country
+          ? {
+              _id: country._id,
+              name: {
+                common: country.name?.common || '',
+                official: (country.name as any)?.official || country.name?.common || '',
+              },
+              cca2: country.cca2,
+            }
+          : undefined),
+    });
+  };
 
-      // Si c'est déjà un code de pays (2-3 caractères), l'utiliser directement
-      if (firstDestination && firstDestination.length <= 3) {
-        // Valider que c'est un code de pays valide
-        const countryName = i18n.getName(firstDestination, 'en');
-        if (countryName) {
-          onChange({ ...data, destination_zone: firstDestination });
-        }
-      } else {
-        // Si c'est un MongoDB ObjectId (24 caractères), l'utiliser directement
-        if (firstDestination && firstDestination.length === 24) {
-          onChange({ ...data, destination_zone: firstDestination });
-        } else {
-          // Convertir les noms de pays en codes
-          const countryCode = countryToAlpha2[firstDestination] ||
-            Object.entries(i18n.getNames('en'))
-              .find(([_, name]) => name === firstDestination)?.[0];
-
-          if (countryCode) {
-            onChange({ ...data, destination_zone: countryCode });
+  const removeDestination = (countryId: string) => {
+    const nextZones = (data.destinationZones || []).filter((z) => z !== countryId);
+    const nextPrimary = nextZones[0] || '';
+    const country = countries.find((c) => c._id === nextPrimary);
+    onChange({
+      ...data,
+      destinationZones: nextZones,
+      destination_zone: nextPrimary,
+      destination_zone_meta: country
+        ? {
+            _id: country._id,
+            name: {
+              common: country.name?.common || '',
+              official: (country.name as any)?.official || country.name?.common || '',
+            },
+            cca2: country.cca2,
           }
-        }
-      }
-    } else if (data.destination_zone && destinationZonesArray.length === 0) {
-      // Si destination_zone est défini mais destinationZones est vide, initialiser destinationZones
-      
-      onChange({
-        ...data,
-        destinationZones: [data.destination_zone]
-      });
-    }
-  }, [data.destinationZones, data.destination_zone, (data as any).destinationZone]);
+        : undefined,
+    });
+  };
 
-  /**
-   * Effet pour ajouter les icônes Material Icons
-   */
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/icon?family=Material+Icons';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-    return () => {
-      document.head.removeChild(link);
-    };
-  }, []);
+  const renderChipEditor = (field: ChipField, labelKey: string, placeholderKey: string) => (
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-2">{t(labelKey)}</label>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {listFor(field).map((item, index) => (
+          <span
+            key={`${field}-${index}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-harx-50 text-harx-800 border border-harx-200"
+          >
+            {item}
+            <button
+              type="button"
+              onClick={() => removeChip(field, index)}
+              className="text-harx-500 hover:text-harx-800"
+              title={t('gigCreation.suggestions.remove')}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={draft[field]}
+          onChange={(e) => setDraft((prev) => ({ ...prev, [field]: e.target.value }))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              addChip(field);
+            }
+          }}
+          className="flex-1 px-4 py-2.5 border-2 border-harx-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-harx-300"
+          placeholder={t(placeholderKey)}
+        />
+        <button
+          type="button"
+          onClick={() => addChip(field)}
+          className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-harx-500 text-white text-sm font-bold hover:bg-harx-600"
+        >
+          <Plus className="w-4 h-4" />
+          {t('gigCreation.suggestions.add')}
+        </button>
+      </div>
+    </div>
+  );
 
-  /**
-   * Récupère toutes les catégories disponibles
-   * Inclut les catégories prédéfinies et les nouvelles catégories
-   */
-  const allCategories = useMemo(() => {
-    const categories = new Set(predefinedOptions.basic.categories);
-    if (data.category && !categories.has(data.category)) {
-      categories.add(data.category);
-    }
-    return Array.from(categories);
-  }, [data.category]);
+  const sectorValues = (data.sectors && data.sectors.length
+    ? data.sectors
+    : data.category
+      ? [data.category]
+      : []);
 
-  /**
-   * Gère les changements dans la section séniorité
-   * @param {string} field - Le champ modifié (level, years, yearsExperience)
-   * @param {string} value - La nouvelle valeur
-   */
+  const availableSectors = sectors.filter((s) => !sectorValues.includes(s.value));
 
-  // Log Basic Section data
-  useEffect(() => {
-  }, [data, errors]);
-
-  // Le rendu du composant
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+  const zoneValues = (data.destinationZones && data.destinationZones.length
+    ? data.destinationZones
+    : data.destination_zone
+      ? [String(data.destination_zone)]
+      : []);
 
   return (
     <div className="w-full bg-white py-6">
-
-
       <div className="space-y-8">
-        <InfoText>
-          Start by providing the basic information about the contact center role. Be specific and clear
-          about the position's requirements and responsibilities.
-        </InfoText>
+        <InfoText>{t('gigCreation.basic.infoBannerFull')}</InfoText>
 
-        {/* --- Position Details --- */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-gradient-harx px-6 py-4">
             <div className="flex items-center">
@@ -340,362 +300,307 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 <Briefcase className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">Position Details</h3>
-                <p className="text-white/80 text-sm">Define the role title and main responsibilities</p>
+                <h3 className="text-xl font-bold text-white">{t('gigCreation.basic.sectionTitle')}</h3>
+                <p className="text-white/80 text-sm">{t('gigCreation.basic.titleHint')}</p>
               </div>
             </div>
           </div>
 
           <div className="p-6 space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Job Title</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {t('gigCreation.basic.titleLabel')} <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
-                value={data.title || ''}
-                onChange={(e) => onChange({ ...data, title: e.target.value })}
-                className={`w-full px-4 py-3 bg-gradient-to-r from-harx-50 to-harx-alt-50 border-2 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all ${errors.title ? 'border-red-300 focus:ring-red-300' : 'border-harx-200'}`}
-                placeholder="e.g., Senior Customer Service Representative"
+                value={textForLang(data.title_i18n, data.title, narrativeLang)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const current = data.title_i18n || {};
+                  onChange({
+                    ...data,
+                    title: value,
+                    title_i18n: {
+                      en: narrativeLang === 'en' ? value : String(current.en || ''),
+                      fr: narrativeLang === 'fr' ? value : String(current.fr || ''),
+                    },
+                  });
+                }}
+                className={`w-full px-4 py-3 bg-gradient-to-r from-harx-50 to-harx-alt-50 border-2 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all ${
+                  errors.title ? 'border-red-300 focus:ring-red-300' : 'border-harx-200'
+                }`}
+                placeholder={t('gigCreation.basic.titlePlaceholder')}
               />
-              {errors.title && <p className="mt-2 text-sm text-red-600 font-medium">{errors.title.join(', ')}</p>}
+              {errors.title && (
+                <p className="mt-2 text-sm text-red-600 font-medium">{errors.title.join(', ')}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Job Description</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {t('gigCreation.suggestions.jobDescription')}
+              </label>
               <textarea
-                value={data.description || ''}
-                onChange={(e) => onChange({ ...data, description: e.target.value })}
+                value={textForLang(data.description_i18n, data.description, narrativeLang)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const current = data.description_i18n || {};
+                  onChange({
+                    ...data,
+                    description: value,
+                    description_i18n: {
+                      en: narrativeLang === 'en' ? value : String(current.en || ''),
+                      fr: narrativeLang === 'fr' ? value : String(current.fr || ''),
+                    },
+                  });
+                }}
                 rows={5}
-                className={`w-full px-4 py-3 bg-gradient-to-r from-harx-50 to-harx-alt-50 border-2 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all resize-none ${errors.description ? 'border-red-300 focus:ring-red-300' : 'border-harx-200'}`}
-                placeholder="Describe the role, key responsibilities, and what success looks like in this position. Be specific about daily tasks, required skills, and performance expectations..."
+                className={`w-full px-4 py-3 bg-gradient-to-r from-harx-50 to-harx-alt-50 border-2 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all resize-none ${
+                  errors.description ? 'border-red-300 focus:ring-red-300' : 'border-harx-200'
+                }`}
+                placeholder={t('gigCreation.suggestions.descriptionPlaceholder')}
               />
-              {errors.description && <p className="mt-2 text-sm text-red-600 font-medium">{errors.description.join(', ')}</p>}
+              {errors.description && (
+                <p className="mt-2 text-sm text-red-600 font-medium">{errors.description.join(', ')}</p>
+              )}
             </div>
-          </div>
-        </div>
 
-        {/* --- Role Category --- */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-harx px-6 py-4">
-            <div className="flex items-center">
-              <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-lg mr-3">
-                <Target className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">Role Category</h3>
-                <p className="text-white/80 text-sm">Select the primary focus area</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6">
-            {/* Affichage de la catégorie sélectionnée */}
-            {data.category && (
-              <div className="mb-4 p-3 bg-harx-50 border border-harx-100 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-harx-500" />
-                  <span className="text-sm font-medium text-harx-900">Selected Category:</span>
-                  <span className="text-sm text-harx-700">{data.category}</span>
-                  {!predefinedOptions.basic.categories.includes(data.category) && (
-                    <span className="text-xs text-harx-500 bg-harx-100 px-2 py-1 rounded-full">Custom</span>
-                  )}
-                </div>
-              </div>
+            {renderChipEditor(
+              'highlights',
+              'gigCreation.suggestions.highlights',
+              'gigCreation.suggestions.enterHighlight'
             )}
 
-            {/* Sélecteur de catégorie */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <div className="flex items-center gap-2 relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <Target className="w-5 h-5 text-harx-400" />
-                </span>
-                <select
-                  value={data.category || ''}
-                  onChange={e => onChange({ ...data, category: e.target.value })}
-                  className="block w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-harx-500 focus:border-harx-500 bg-white text-gray-800 appearance-none transition-all"
-                >
-                  <option value="" disabled className="text-gray-400">Select a category</option>
-                  {allCategories.map(category => (
-                    <option key={category} value={category} className="text-gray-800">{category}</option>
-                  ))}
-                </select>
-                {/* Badge Custom à côté du select si catégorie personnalisée */}
-                {data.category && !predefinedOptions.basic.categories.includes(data.category) && (
-                  <span className="text-xs text-harx-500 bg-harx-100 px-2 py-1 rounded-full ml-2">Custom</span>
-                )}
-              </div>
-            </div>
-
-            {/* Ancienne grille de boutons supprimée */}
-            {errors.category && <p className="mt-2 text-sm text-red-600">{errors.category.join(', ')}</p>}
-          </div>
-
-          {/* --- Industries --- */}
-          <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-harx-alt-100 rounded-lg">
-                <Target className="w-5 h-5 text-harx-alt-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Industries</h3>
-                <p className="text-sm text-gray-500">Select relevant industries for this position</p>
-              </div>
-            </div>
-
-            {/* Affichage des industries sélectionnées */}
-            {(data.industries || []).length > 0 && (
-              <div className="mb-4 p-3 bg-harx-alt-50 border border-harx-alt-100 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-4 h-4 text-harx-alt-600" />
-                  <span className="text-sm font-medium text-harx-alt-900">Selected Industries:</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {(data.industries || []).map((industryId, index) => {
-                    const industryName = getIndustryNameById(industryId);
-                    return industryName ? (
-                      <span key={index} className="inline-flex items-center gap-1 px-3 py-1 bg-harx-alt-100 text-harx-alt-700 text-sm rounded-full">
-                        {industryName}
-                        <button
-                          onClick={() => {
-                            const currentIndustries = data.industries || [];
-                            const updatedIndustries = currentIndustries.filter((_, i) => i !== index);
-                            onChange({ ...data, industries: updatedIndustries });
-                          }}
-                          className="ml-1 text-harx-alt-500 hover:text-harx-alt-700"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ) : null;
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Sélecteur d'industrie */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Add Industry
-                {isLoading && <span className="ml-2 text-xs text-gray-500">(Loading...)</span>}
-                {!isLoading && <span className="ml-2 text-xs text-harx-500">({industries.length} available)</span>}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {t('gigCreation.suggestions.sectors')}
               </label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <Target className="w-5 h-5 text-harx-alt-400" />
+              <div className="flex flex-wrap gap-2 mb-3">
+                {sectorValues.map((sector, index) => {
+                  const name = getSectorNameById(sector, uiLang) || sector;
+                  return (
+                  <span
+                    key={`sector-${index}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-violet-50 text-violet-800 border border-violet-200"
+                  >
+                    {name}
+                    <button
+                      type="button"
+                      onClick={() => removeChip('sectors', index)}
+                      className="text-violet-500 hover:text-violet-800"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </span>
-                  <select
-                    value={selectedIndustry}
-                    onChange={e => {
-                      const value = e.target.value;
-                      setSelectedIndustry(value);
-                      if (value && value !== '') {
-                        const currentIndustries = data.industries || [];
-                        if (!currentIndustries.includes(value)) {
-                          const updatedIndustries = [...currentIndustries, value];
-                          onChange({ ...data, industries: updatedIndustries });
-                          setSelectedIndustry(''); // Reset after adding
-                        }
-                      }
-                    }}
-                    className="block w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-harx-alt-500 focus:border-harx-alt-500 bg-white text-gray-800 appearance-none transition-all"
-                  >
-                    <option value="" className="text-gray-400">
-                      {isLoading ? 'Loading industries...' : 'Select an industry'}
-                    </option>
-                    {!isLoading && industries
-                      .filter(industry => !(data.industries || []).includes(industry.value))
-                      .map(industry => (
-                        <option key={industry.value} value={industry.value} className="text-gray-800">{industry.label}</option>
-                      ))}
-                  </select>
-                </div>
-                {(data.industries || []).length > 0 && (
-                  <button
-                    onClick={() => {
-                      onChange({ ...data, industries: [] });
-                      setSelectedIndustry('');
-                    }}
-                    className="px-3 py-2 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
-                  >
-                    Clear All
-                  </button>
-                )}
+                  );
+                })}
               </div>
-              {(data.industries || []).length === 0 && !isLoading && (
-                <p className="mt-2 text-sm text-gray-500">No industries selected yet</p>
-              )}
-              {isLoading && (
-                <p className="mt-2 text-sm text-harx-500">Loading industries from API...</p>
-              )}
-            </div>
-            {errors.industries && <p className="mt-2 text-sm text-red-600">{errors.industries.join(', ')}</p>}
-          </div>
-
-          {/* --- Activities --- */}
-          <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-harx-100 rounded-lg">
-                <Target className="w-5 h-5 text-harx-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Activities</h3>
-                <p className="text-sm text-gray-500">Select relevant activities for this position</p>
-              </div>
-            </div>
-
-            {/* Affichage des activités sélectionnées */}
-            {(data.activities || []).length > 0 && (
-              <div className="mb-4 p-3 bg-harx-50 border border-harx-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-4 h-4 text-harx-600" />
-                  <span className="text-sm font-medium text-harx-800">Selected Activities:</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {(data.activities || []).map((activityId, index) => {
-                    const activityName = getActivityNameById(activityId);
-                    return activityName ? (
-                      <span key={index} className="inline-flex items-center gap-1 px-3 py-1 bg-harx-100 text-harx-700 text-sm rounded-full">
-                        {activityName}
-                        <button
-                          onClick={() => {
-                            const currentActivities = data.activities || [];
-                            const updatedActivities = currentActivities.filter((_, i) => i !== index);
-                            onChange({ ...data, activities: updatedActivities });
-                          }}
-                          className="ml-1 text-harx-500 hover:text-harx-700"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ) : null;
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Sélecteur d'activité */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Add Activity
-                {isLoading && <span className="ml-2 text-xs text-gray-500">(Loading...)</span>}
-                {!isLoading && <span className="ml-2 text-xs text-harx-500">({activities.length} available)</span>}
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <Target className="w-5 h-5 bg-harx-400" />
-                  </span>
-                  <select
-                    value={selectedActivity}
-                    onChange={e => {
-                      const value = e.target.value;
-                      setSelectedActivity(value);
-                      if (value && value !== '') {
-                        const currentActivities = data.activities || [];
-                        if (!currentActivities.includes(value)) {
-                          const updatedActivities = [...currentActivities, value];
-                          onChange({ ...data, activities: updatedActivities });
-                          setSelectedActivity(''); // Reset after adding
-                        }
-                      }
-                    }}
-                    className="block w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-harx-500 focus:border-harx-500 bg-white text-gray-800 appearance-none transition-all"
-                  >
-                    <option value="" className="text-gray-400">
-                      {isLoading ? 'Loading activities...' : 'Select an activity'}
-                    </option>
-                    {!isLoading && activities
-                      .filter(activity => !(data.activities || []).includes(activity.value))
-                      .map(activity => (
-                        <option key={activity.value} value={activity.value} className="text-gray-800">{activity.label}</option>
-                      ))}
-                  </select>
-                </div>
-                {(data.activities || []).length > 0 && (
-                  <button
-                    onClick={() => {
-                      onChange({ ...data, activities: [] });
-                      setSelectedActivity('');
-                    }}
-                    className="px-3 py-2 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
-                  >
-                    Clear All
-                  </button>
-                )}
-              </div>
-              {(data.activities || []).length === 0 && !isLoading && (
-                <p className="mt-2 text-sm text-gray-500">No activities selected yet</p>
-              )}
-              {isLoading && (
-                <p className="mt-2 text-sm text-harx-500">Loading activities from API...</p>
-              )}
-            </div>
-            {errors.activities && <p className="mt-2 text-sm text-red-600">{errors.activities.join(', ')}</p>}
-          </div>
-
-          {/* --- Destination Zone --- */}
-          <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-harx-100 rounded-lg">
-                <Globe2 className="w-5 h-5 text-harx-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Destination Zone</h3>
-                <p className="text-sm text-gray-500">Select the target country</p>
-              </div>
-            </div>
-            <label className="block text-sm font-medium text-gray-700">Country</label>
-            <div className="flex items-center gap-2 relative mb-2">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <Globe2 className="w-5 h-5 text-harx-400" />
-              </span>
-              <select value={data.destination_zone || ''} onChange={(e) => handleCountrySelect(e.target.value)}
-                className="mt-1 block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500 shadow-sm appearance-none transition-all">
-                <option value="" disabled className="text-gray-400">Select a country</option>
-                {countries.length > 0 ? (
-                  countries
-                    .sort((a, b) => a.name.common.localeCompare(b.name.common))
-                    .map((country) => (
-                      <option key={country._id} value={country._id} className="text-gray-800">
-                        {country.name.common}
-                      </option>
-                    ))
-                ) : (
-                  <option disabled>Loading countries...</option>
-                )}
+              <select
+                className="w-full px-4 py-2.5 border-2 border-harx-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-harx-300"
+                defaultValue=""
+                disabled={loadingRefs}
+                onChange={(e) => {
+                  addSectorFromSelect(e.target.value);
+                  e.target.value = '';
+                }}
+              >
+                <option value="" disabled>
+                  {loadingRefs
+                    ? t('gigCreation.suggestions.loadingIndustries')
+                    : t('gigCreation.suggestions.selectSector')}
+                </option>
+                {availableSectors.map((sector) => (
+                  <option key={sector.value} value={sector.value}>
+                    {sector.label}
+                  </option>
+                ))}
               </select>
-              <p className="text-xs text-gray-500 italic text-center mt-2">
-                {countries.length > 0 ? `${countries.length} countries available for selection` : 'Loading countries...'}
-              </p>
             </div>
-            {data.destination_zone && (
-              <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
-                <Globe2 className="w-4 h-4" />
-                <span>Selected: {countryName || getCountryName(data.destination_zone)}</span>
-                {data.destination_zone.length === 24 && !countryName && (
-                  <span className="text-xs text-harx-500">(Loading country name...)</span>
-                )}
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <Target className="w-4 h-4 text-harx-alt-600" />
+                {t('gigCreation.suggestions.industries')}
+              </label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {[...new Set(data.industries || [])].map((id) => {
+                  const name = getIndustryNameById(id, uiLang);
+                  if (!name) return null;
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-harx-alt-50 text-harx-alt-800 border border-harx-alt-200"
+                    >
+                      {name}
+                      <button type="button" onClick={() => removeIndustry(id)}>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  );
+                })}
               </div>
+              <select
+                className="w-full px-4 py-2.5 border-2 border-harx-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-harx-300"
+                defaultValue=""
+                disabled={loadingRefs}
+                onChange={(e) => {
+                  addIndustry(e.target.value);
+                  e.target.value = '';
+                }}
+              >
+                <option value="" disabled>
+                  {loadingRefs
+                    ? t('gigCreation.suggestions.loadingIndustries')
+                    : t('gigCreation.suggestions.selectIndustry')}
+                </option>
+                {industries
+                  .filter((i) => !(data.industries || []).includes(i.value))
+                  .map((industry) => (
+                    <option key={industry.value} value={industry.value}>
+                      {industry.label}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {t('gigCreation.suggestions.activities')}
+              </label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {[...new Set(data.activities || [])].map((id) => {
+                  const name = getActivityNameById(id, uiLang);
+                  if (!name) return null;
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
+                    >
+                      {name}
+                      <button type="button" onClick={() => removeActivity(id)}>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+              <select
+                className="w-full px-4 py-2.5 border-2 border-harx-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-harx-300"
+                defaultValue=""
+                disabled={loadingRefs}
+                onChange={(e) => {
+                  addActivity(e.target.value);
+                  e.target.value = '';
+                }}
+              >
+                <option value="" disabled>
+                  {loadingRefs
+                    ? t('gigCreation.suggestions.loadingActivities')
+                    : t('gigCreation.suggestions.selectActivity')}
+                </option>
+                {activities
+                  .filter((a) => !(data.activities || []).includes(a.value))
+                  .map((activity) => (
+                    <option key={activity.value} value={activity.value}>
+                      {activity.label}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {renderChipEditor(
+              'deliverables',
+              'gigCreation.suggestions.deliverables',
+              'gigCreation.suggestions.enterDeliverable'
             )}
-            {errors.destination_zone && <p className="mt-2 text-sm text-red-600">{errors.destination_zone.join(', ')}</p>}
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <Globe2 className="w-4 h-4 text-harx-600" />
+                {t('gigCreation.suggestions.destinationZones')}
+              </label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {zoneValues.map((id) => {
+                  const country = countries.find((c) => c._id === id);
+                  const name = country?.name?.common || id;
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-800 border border-blue-200"
+                    >
+                      {name}
+                      <button type="button" onClick={() => removeDestination(id)}>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+              <select
+                className="w-full px-4 py-2.5 border-2 border-harx-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-harx-300"
+                defaultValue=""
+                disabled={loadingRefs}
+                onChange={(e) => {
+                  addDestination(e.target.value);
+                  e.target.value = '';
+                }}
+              >
+                <option value="" disabled>
+                  {loadingRefs
+                    ? t('gigCreation.suggestions.loadingCountries')
+                    : t('gigCreation.suggestions.addDestinationZone')}
+                </option>
+                {countries
+                  .filter((c) => !zoneValues.includes(c._id))
+                  .map((country) => (
+                    <option key={country._id} value={country._id}>
+                      {country.name?.common}
+                    </option>
+                  ))}
+              </select>
+              {!loadingRefs && (
+                <p className="mt-2 text-xs text-gray-500 text-center italic">
+                  {t('gigCreation.suggestions.countriesAvailable', {
+                    count: countries.filter((c) => !zoneValues.includes(c._id)).length,
+                  })}
+                </p>
+              )}
+            </div>
+
+            <p className="text-xs text-gray-500">{t('gigCreation.basic.skipTip')}</p>
           </div>
         </div>
 
-        {/* Navigation Buttons */}
         <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={onPrevious}
+            disabled={!onPrevious}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            {t('gigCreation.nav.previous')}
+          </button>
           <div className="flex items-center gap-3">
-            <button onClick={onPrevious} disabled={!onPrevious}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-              Previous
+            <button
+              type="button"
+              onClick={goSkipToReview}
+              disabled={!titleOk}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {t('gigCreation.basic.skipToReview')}
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={!titleOk}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-harx-500 text-white hover:bg-harx-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {t('gigCreation.nav.next')}
+              <ArrowRight className="w-5 h-5" />
             </button>
           </div>
-          <button onClick={onNext}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-harx-500 text-white hover:bg-harx-600 transition-colors">
-            Next
-            <ArrowRight className="w-5 h-5" />
-          </button>
         </div>
       </div>
     </div>

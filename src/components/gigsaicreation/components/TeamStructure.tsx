@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Globe, Users, ArrowLeft, ArrowRight } from 'lucide-react';
 import { predefinedOptions } from '../lib/guidance';
 import { GigData } from '../types';
@@ -53,6 +54,7 @@ const getHeaderGradient = (bgColor: string) => {
 };
 
 export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStructureProps) {
+  const { t } = useTranslation();
   // State for territories from API - now storing full country objects
   const [territoriesFromAPI, setTerritoriesFromAPI] = React.useState<Country[]>([]);
   const [territoriesLoading, setTerritoriesLoading] = React.useState(true);
@@ -209,8 +211,8 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Team Structure</h3>
-                  <p className="text-white/80 text-sm">Define team roles and member count</p>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.team.title')}</h3>
+                  <p className="text-white/80 text-sm">{t('gigCreation.team.titleHint')}</p>
                 </div>
               </div>
             </div>
@@ -218,7 +220,7 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">Team Roles</span>
+                  <span className="text-sm font-medium text-gray-700">{t('gigCreation.suggestions.teamRoles')}</span>
                   <span className="bg-harx-100 text-harx-800 text-xs font-semibold px-2 py-1 rounded-full">
                     {data.team?.structure?.length || 0}
                   </span>
@@ -228,7 +230,7 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                   className="flex items-center gap-2 px-3 py-2 bg-harx-500 text-white rounded-lg hover:bg-harx-600 transition-colors text-sm font-medium shadow-sm hover:shadow-md"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Role
+                  {t('gigCreation.team.addRole')}
                 </button>
               </div>
 
@@ -247,7 +249,7 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                         className="bg-gradient-to-br from-harx-50 to-harx-alt-50 rounded-xl p-4 border-2 border-harx-100 shadow-sm hover:shadow-md transition-all duration-200 group"
                       >
                         <div className="flex items-center justify-between mb-3">
-                          <h5 className="text-sm font-bold text-harx-800">Role #{index + 1}</h5>
+                          <h5 className="text-sm font-bold text-harx-800">{t('gigCreation.team.roleNumber', { n: index + 1 })}</h5>
                           <button
                             onClick={() => deleteTeamRole(index)}
                             className="p-1 text-red-500 hover:text-white hover:bg-red-500 rounded-md transition-all opacity-0 group-hover:opacity-100"
@@ -258,7 +260,7 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
 
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">{t('gigCreation.team.roleLabel')}</label>
                             <select
                               value={roleId}
                               onChange={(e) => updateTeamRole(index, 'roleId', e.target.value)}
@@ -274,7 +276,7 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Count</label>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">{t('gigCreation.team.countLabel')}</label>
                               <input
                                 type="number"
                                 min="1"
@@ -286,7 +288,7 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                             </div>
 
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Experience</label>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">{t('gigCreation.team.yearsLabel')}</label>
                               <input
                                 type="number"
                                 min="0"
@@ -299,17 +301,17 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                           </div>
 
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Seniority Level</label>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">{t('gigCreation.team.seniority')}</label>
                             <select
                               value={seniorityLevel}
                               disabled
                               onChange={(e) => updateTeamRole(index, 'seniority.level', e.target.value)}
                               className="w-full px-3 py-2 text-sm bg-gray-100 border border-harx-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500 cursor-not-allowed opacity-70"
                             >
-                              <option value="Junior">Junior</option>
-                              <option value="Mid-Level">Mid-Level</option>
-                              <option value="Senior">Senior</option>
-                              <option value="Lead">Lead</option>
+                              <option value="Junior">{t('gigCreation.team.junior')}</option>
+                              <option value="Mid-Level">{t('gigCreation.team.mid')}</option>
+                              <option value="Senior">{t('gigCreation.team.senior')}</option>
+                              <option value="Lead">{t('gigCreation.team.lead')}</option>
                               <option value="Manager">Manager</option>
                             </select>
                           </div>
@@ -336,15 +338,15 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                   <Globe className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Territories</h3>
-                  <p className="text-white/80 text-sm">Define operational territories and regions</p>
+                  <h3 className="text-xl font-bold text-white">{t('gigCreation.team.territories')}</h3>
+                  <p className="text-white/80 text-sm">{t('gigCreation.team.territoriesHint')}</p>
                 </div>
               </div>
             </div>
 
             <div className="p-6">
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Add Territory</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('gigCreation.team.addTerritory')}</label>
                 <select
                   onChange={(e) => {
                     if (e.target.value) {
@@ -356,7 +358,9 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                   className="w-full px-4 py-3 bg-gradient-to-r from-harx-50 to-harx-alt-50 border-2 border-harx-200 rounded-xl text-harx-900 font-medium focus:outline-none focus:ring-3 focus:ring-harx-300 focus:border-harx-400 transition-all disabled:opacity-50"
                 >
                   <option value="">
-                    {territoriesLoading ? 'Loading territories...' : 'Select a territory'}
+                    {territoriesLoading
+                      ? t('gigCreation.team.loadingTerritories')
+                      : t('gigCreation.team.selectTerritory')}
                   </option>
                   {territoriesFromAPI
                     .filter(country => !(data.team?.territories || []).includes(country._id))
@@ -405,14 +409,14 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
               >
                 <ArrowLeft className="w-5 h-5" />
-                Previous
+                {t('gigCreation.nav.previous')}
               </button>
             </div>
             <button
               onClick={onNext}
               className="flex items-center gap-2 px-6 py-2 rounded-xl bg-harx-500 text-white hover:bg-harx-600 shadow-md hover:shadow-lg transition-all font-medium"
             >
-              Next
+              {t('gigCreation.nav.next')}
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>

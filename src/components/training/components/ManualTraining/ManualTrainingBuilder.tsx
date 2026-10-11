@@ -296,7 +296,7 @@ export const ManualTrainingBuilder: React.FC<ManualTrainingBuilderProps> = ({
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-xl text-gray-600">No trainings yet</p>
-            <p className="text-gray-500 mt-2">Create your first manual training to get started</p>
+            <p className="text-gray-500 mt-2">Create a manual training to get started</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

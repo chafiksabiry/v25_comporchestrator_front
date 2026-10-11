@@ -80,7 +80,8 @@ export function AppContent({
   startWithRepViewer = false,
   repOnboardingLayout = false,
   onExitToTrainingList,
-  onJourneyLaunch
+  onJourneyLaunch,
+  onFormationValidated
 }: {
   initialJourneyId?: string,
   initialGigId?: string,
@@ -92,7 +93,8 @@ export function AppContent({
   /** Simpler modules + slides only (no PPTX download, fullscreen, or “Continue to AI enhancement”) */
   repOnboardingLayout?: boolean,
   onExitToTrainingList?: () => void,
-  onJourneyLaunch?: () => void
+  onJourneyLaunch?: () => void,
+  onFormationValidated?: () => void
 } = {}) {
   // Get journey ID from route params (inside Router context)
   const { idjourneytraining } = useParams<{ idjourneytraining?: string }>();
@@ -949,7 +951,7 @@ export function AppContent({
         className={
           repOnboardingLayout
             ? 'flex h-full min-h-0 w-full flex-1 min-w-0 flex-col'
-            : 'flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden'
+            : 'harx-training-page flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-auto'
         }
       >
         <JourneyBuilder
@@ -961,6 +963,7 @@ export function AppContent({
           startWithRepViewer={startWithRepViewer}
           repOnboardingLayout={repOnboardingLayout}
           onExitToTrainingList={onExitToTrainingList}
+          onFormationValidated={onFormationValidated}
         />
       </div>
     );

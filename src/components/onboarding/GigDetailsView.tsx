@@ -5,7 +5,10 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import RepProfileView from '../RepProfileView';
-import { groupSchedules } from '../gigsaicreation/lib/scheduleUtils';
+import { getAgentById } from '../../api/matching';
+import { groupSchedulesByDayRanges, timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
+import { ScheduleSection } from '../gigsaicreation/components/ScheduleSection';
+import { fetchAllCountries, Country } from '../gigsaicreation/lib/api';
 
 interface Gig {
   _id: string;
@@ -122,6 +125,7 @@ interface Gig {
     }>;
   };
   destination_zone: {
+    _id?: string;
     name: {
       common: string;
       official: string;
@@ -149,7 +153,6 @@ const selectCls =
 const labelCls = 'block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1';
 
 
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const YEARS_EXPERIENCE = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '10+'];
 const TEAM_SIZES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '20', '25', '30', '50+'];
 
@@ -202,18 +205,6 @@ const LEGACY_PROFICIENCY_MAP: Record<string, string> = {
   intermediate: 'B1', 'upper-intermediate': 'B2',
   advanced: 'C1', fluent: 'C1', native: 'C2', mastery: 'C2',
 };
-const FLEXIBILITY_OPTIONS = [
-  { value: 'Remote',          labelKey: 'remote' },
-  { value: 'Hybrid',          labelKey: 'hybrid' },
-  { value: 'On-site',         labelKey: 'onSite' },
-  { value: 'Full-time',       labelKey: 'fullTime' },
-  { value: 'Part-time',       labelKey: 'partTime' },
-  { value: 'Weekends',        labelKey: 'weekends' },
-  { value: 'Evenings',        labelKey: 'evenings' },
-  { value: 'Flexible hours',  labelKey: 'flexibleHours' },
-  { value: 'Shifts',          labelKey: 'shifts' },
-  { value: 'Night shift',     labelKey: 'nightShift' },
-];
 
 interface EditBtnProps { onClick: () => void }
 const EditBtn: React.FC<EditBtnProps> = ({ onClick }) => {
@@ -280,6 +271,25 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
   const [scheduleDraft, setScheduleDraft] = useState<any>({});
   const [skillsDraft, setSkillsDraft] = useState<any>({});
   const [teamDraft, setTeamDraft] = useState<any>({});
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+
+  const extractCountryId = (value: any): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+      if (value.$oid) return String(value.$oid);
+      if (value._id) return String(typeof value._id === 'object' ? value._id.$oid || value._id : value._id);
+    }
+    return '';
+  };
+
+  const getCountryLabel = (country: Country | any): string => {
+    if (!country) return '';
+    if (typeof country.name === 'string') return country.name;
+    return country.name?.common || country.name?.official || country.cca2 || '';
+  };
 
   // ── DB reference data for skills / languages dropdowns
   const [dbSkills, setDbSkills] = useState<{ professional: any[]; technical: any[]; soft: any[] }>({
@@ -307,6 +317,21 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
     }).finally(() => setLoadingRefs(false));
   }, []);
 
+  useEffect(() => {
+    if (editingSection !== 'team' || countries.length > 0) return;
+    let cancelled = false;
+    setCountriesLoading(true);
+    fetchAllCountries()
+      .then((list) => {
+        if (!cancelled) setCountries(Array.isArray(list) ? list : []);
+      })
+      .catch((err) => console.error('Error fetching countries:', err))
+      .finally(() => {
+        if (!cancelled) setCountriesLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [editingSection, countries.length]);
+
   // ── existing handlers
   const handleMatchingRedirect = () => {
     if (window.location.hash.includes('dashboard') || window.location.pathname.includes('dashboard')) {
@@ -326,19 +351,59 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
     }
   }, [localGig?._id]);
 
-  const handleAgentClick = async (agentId: string) => {
+  const normalizeAgentProfile = (raw: any) => {
+    if (!raw) return null;
+    const name = raw.personalInfo?.name || raw.name;
+    return {
+      ...raw,
+      name,
+      personalInfo: {
+        ...(raw.personalInfo || {}),
+        name,
+      },
+    };
+  };
+
+  const extractEmbeddedProfile = (source: any): any | null => {
+    if (!source) return null;
+    if (source.agentId && typeof source.agentId === 'object' && (source.agentId.personalInfo || source.agentId.name || source.agentId.professionalSummary)) {
+      return source.agentId;
+    }
+    if (source.agent && typeof source.agent === 'object' && (source.agent.personalInfo || source.agent.name)) {
+      return source.agent;
+    }
+    if (source.personalInfo || source.professionalSummary || source.name) {
+      return source;
+    }
+    return null;
+  };
+
+  const handleAgentClick = async (source: any) => {
+    const embedded = extractEmbeddedProfile(source);
+    const agentId = getAgentIdString(source);
+
     try {
       setLoadingProfile(true);
-      const REP_API_URL = 'https://v25repscreationwizardbackend-production.up.railway.app/api';
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${REP_API_URL}/profiles/${agentId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!response.ok) throw new Error('Failed to fetch profile');
-      setSelectedAgentProfile(await response.json());
+
+      if (agentId) {
+        try {
+          const fetched = await getAgentById(agentId);
+          setSelectedAgentProfile(normalizeAgentProfile(fetched));
+          return;
+        } catch (fetchErr) {
+          console.warn('getAgentById failed, falling back to embedded profile:', fetchErr);
+        }
+      }
+
+      if (embedded) {
+        setSelectedAgentProfile(normalizeAgentProfile(embedded));
+        return;
+      }
+
+      throw new Error('Agent profile not found');
     } catch (err) {
       console.error('Error fetching profile:', err);
-      alert("Impossible de charger le profil de l'agent.");
+      alert(g('agents.profileLoadError'));
     } finally {
       setLoadingProfile(false);
     }
@@ -346,7 +411,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
 
   const getAgentStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'accepted': return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' };
+      case 'accepted':
+      case 'enrolled':
+        return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' };
       case 'pending':  return { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200' };
       case 'rejected': return { bg: 'bg-rose-50',    text: 'text-rose-700',    border: 'border-rose-200' };
       default:         return { bg: 'bg-gray-50',    text: 'text-gray-700',    border: 'border-gray-200' };
@@ -355,11 +422,23 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
 
   const getAgentIdString = (agent: any): string => {
     if (!agent) return '';
-    if (typeof agent.agentId === 'string') return agent.agentId;
-    if (agent.agentId && typeof agent.agentId === 'object') return agent.agentId._id || agent.agentId.id || '';
-    if (typeof agent.agent === 'string') return agent.agent;
-    if (agent.agent && typeof agent.agent === 'object') return agent.agent._id || agent.agent.id || '';
-    return agent._id || '';
+    const asId = (value: any): string => {
+      if (!value) return '';
+      if (typeof value === 'string') return value;
+      if (typeof value === 'object') {
+        if (value.$oid) return String(value.$oid);
+        if (value._id) return asId(value._id);
+        if (value.id) return String(value.id);
+      }
+      return '';
+    };
+    const fromAgentId = asId(agent.agentId);
+    if (fromAgentId) return fromAgentId;
+    const fromAgent = asId(agent.agent);
+    if (fromAgent) return fromAgent;
+    // Never use gig-agent document _id as the profile id
+    if (agent.gigId || agent.gig || agent.matchScore != null || agent.emailSent != null) return '';
+    return asId(agent._id);
   };
 
   const getAgentInitials = (agent: any): string => {
@@ -430,19 +509,26 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
         additionalDetails: localGig.commission?.additionalDetails ?? '',
       });
     } else if (section === 'schedule') {
+      const tz: any = localGig.availability?.time_zone;
+      const timeZoneId =
+        (tz && typeof tz === 'object' && (tz._id || tz.id)) ||
+        (typeof tz === 'string' ? tz : '') ||
+        '';
       setScheduleDraft({
-        schedule: (localGig.availability?.schedule || []).map((s: any) => ({
+        schedules: (localGig.availability?.schedule || []).map((s: any) => ({
           day: s.day || 'Monday',
-          start: s.hours?.start || '',
-          end: s.hours?.end || '',
-          _id: s._id,
+          hours: {
+            start: s.hours?.start || '09:00',
+            end: s.hours?.end || '17:00',
+          },
         })),
-        daily: localGig.availability?.minimumHours?.daily ?? '',
-        weekly: localGig.availability?.minimumHours?.weekly ?? '',
-        monthly: localGig.availability?.minimumHours?.monthly ?? '',
-        // flexibility items are stored as strings like "Remote", "Hybrid", etc.
+        minimumHours: {
+          daily: localGig.availability?.minimumHours?.daily,
+          weekly: localGig.availability?.minimumHours?.weekly,
+          monthly: localGig.availability?.minimumHours?.monthly,
+        },
+        time_zone: timeZoneId,
         flexibility: [...(localGig.availability?.flexibility || [])],
-        newFlexibility: '',
       });
     } else if (section === 'skills') {
       const extractId = (v: any) =>
@@ -471,7 +557,14 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
       });
     } else if (section === 'team') {
       // size can be a number — coerce to string for the <select>
-      setTeamDraft({ size: localGig.team?.size != null ? String(localGig.team.size) : '' });
+      setTeamDraft({
+        size: localGig.team?.size != null ? String(localGig.team.size) : '',
+        destinationZoneId: extractCountryId(localGig.destination_zone),
+        territories: (localGig.team?.territories || [])
+          .map((t: any) => extractCountryId(t))
+          .filter(Boolean),
+      });
+      setCountrySearch('');
     }
     setEditingSection(section);
   };
@@ -513,20 +606,30 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
           },
         };
       } else if (section === 'schedule') {
+        const schedules = (scheduleDraft.schedules || [])
+          .filter((s: any) => s?.day && s?.hours?.start && s?.hours?.end)
+          .map((s: any) => ({
+            day: s.day,
+            hours: { start: s.hours.start, end: s.hours.end },
+          }));
         payload = {
           availability: {
             ...localGig.availability,
-            schedule: scheduleDraft.schedule.map((s: any) => ({
-              day: s.day,
-              hours: { start: s.start, end: s.end },
-              ...(s._id ? { _id: s._id } : {}),
-            })),
+            schedule: schedules,
             minimumHours: {
-              daily: Number(scheduleDraft.daily) || 0,
-              weekly: Number(scheduleDraft.weekly) || 0,
-              monthly: Number(scheduleDraft.monthly) || 0,
+              daily: Number(scheduleDraft.minimumHours?.daily) || 0,
+              weekly: Number(scheduleDraft.minimumHours?.weekly) || 0,
+              monthly: Number(scheduleDraft.minimumHours?.monthly) || 0,
             },
-            flexibility: scheduleDraft.flexibility,
+            flexibility: scheduleDraft.flexibility || [],
+            ...(scheduleDraft.time_zone
+              ? { time_zone: scheduleDraft.time_zone }
+              : {}),
+          },
+          // Keep mirrored schedule.schedules in sync (create-flow + AI prompt)
+          schedule: {
+            ...((localGig as any).schedule || {}),
+            schedules,
           },
         };
       } else if (section === 'skills') {
@@ -547,7 +650,18 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
           },
         };
       } else if (section === 'team') {
-        payload = { team: { ...localGig.team, size: teamDraft.size } };
+        const territoryIds = (teamDraft.territories || [])
+          .map((t: any) => extractCountryId(t))
+          .filter(Boolean);
+        const destinationZoneId = extractCountryId(teamDraft.destinationZoneId);
+        payload = {
+          ...(destinationZoneId ? { destination_zone: destinationZoneId } : {}),
+          team: {
+            ...localGig.team,
+            size: teamDraft.size,
+            territories: territoryIds,
+          },
+        };
       }
 
       const res = await fetch(`${API_URL}/gigs/${localGig._id}`, {
@@ -729,7 +843,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   <Star size={14} className="animate-spin-slow" />
                   +{localGig.commission?.bonusAmount ?? '84'}€ BONUS
                   <span className="text-[10px] font-bold opacity-80 normal-case ml-1 tracking-normal bg-black/15 px-2 py-0.5 rounded-md">
-                    Chaque {localGig.commission?.minimumVolume?.amount ?? '25'} appels / {localGig.commission?.minimumVolume?.period ?? 'mois'}
+                    Chaque {localGig.commission?.minimumVolume?.amount ?? '25'} transactions /{localGig.commission?.minimumVolume?.period ?? 'mois'}
                   </span>
                 </div>
                 <div className="bg-slate-50 rounded-2xl p-6 text-slate-600 text-xs font-medium leading-relaxed italic border border-slate-100">
@@ -847,7 +961,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
 
         {/* Team edit form */}
         {editingSection === 'team' ? (
-          <div className="space-y-5">
+          <div className="space-y-6">
             <div className="max-w-xs">
               <label className={labelCls}>{g('fields.allocatedSeats')}</label>
               <select
@@ -859,13 +973,122 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 {TEAM_SIZES.map(s => <option key={s} value={s}>{s} {Number(s) === 1 ? 'agent' : 'agents'}</option>)}
               </select>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={labelCls}>{g('fields.destinationZone')}</label>
+                <input
+                  type="search"
+                  className={inputCls + ' mb-2'}
+                  value={countrySearch}
+                  onChange={(e) => setCountrySearch(e.target.value)}
+                  placeholder={g('placeholders.searchCountry')}
+                />
+                <select
+                  className={selectCls}
+                  value={teamDraft.destinationZoneId || ''}
+                  disabled={countriesLoading}
+                  onChange={(e) =>
+                    setTeamDraft((d: any) => ({ ...d, destinationZoneId: e.target.value }))
+                  }
+                >
+                  <option value="">
+                    {countriesLoading
+                      ? g('placeholders.loadingCountries')
+                      : g('placeholders.selectDestination')}
+                  </option>
+                  {countries
+                    .filter((c) => {
+                      const q = countrySearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return getCountryLabel(c).toLowerCase().includes(q) ||
+                        String(c.cca2 || '').toLowerCase().includes(q);
+                    })
+                    .slice(0, 300)
+                    .map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {getCountryLabel(c)}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelCls}>{g('fields.territories')}</label>
+                <select
+                  className={selectCls}
+                  disabled={countriesLoading}
+                  value=""
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    if (!id) return;
+                    setTeamDraft((d: any) => ({
+                      ...d,
+                      territories: Array.from(new Set([...(d.territories || []), id])),
+                    }));
+                    e.target.value = '';
+                  }}
+                >
+                  <option value="">
+                    {countriesLoading
+                      ? g('placeholders.loadingCountries')
+                      : g('placeholders.addTerritory')}
+                  </option>
+                  {countries
+                    .filter((c) => !(teamDraft.territories || []).includes(c._id))
+                    .map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {getCountryLabel(c)}
+                      </option>
+                    ))}
+                </select>
+
+                {(teamDraft.territories || []).length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(teamDraft.territories as string[]).map((id) => {
+                      const country = countries.find((c) => c._id === id);
+                      const existing = (localGig.team?.territories || []).find(
+                        (t: any) => extractCountryId(t) === id
+                      );
+                      const label =
+                        getCountryLabel(country) ||
+                        (typeof existing === 'object' ? existing?.name?.common : '') ||
+                        id;
+                      return (
+                        <span
+                          key={id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold"
+                        >
+                          {label}
+                          <button
+                            type="button"
+                            className="text-emerald-500 hover:text-red-500"
+                            onClick={() =>
+                              setTeamDraft((d: any) => ({
+                                ...d,
+                                territories: (d.territories || []).filter((t: string) => t !== id),
+                              }))
+                            }
+                            aria-label={g('actions.remove')}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-slate-400 font-medium">{g('display.noTerritories')}</p>
+                )}
+              </div>
+            </div>
           </div>
         ) : (
           /* Team display */
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Team size */}
             <div className="space-y-2.5 hover:scale-[1.02] transition-transform duration-300">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Team Structure</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{g('display.teamStructure')}</span>
               <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 flex items-center gap-4 hover:border-purple-200 transition-colors duration-300">
                 <div className="p-3 bg-purple-100 rounded-xl text-purple-700 shrink-0 animate-bounce" style={{ animationDuration: '3s' }}>
                   <Briefcase className="h-5 w-5" />
@@ -878,9 +1101,9 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
             </div>
 
             {/* Destination zone */}
-            {localGig.destination_zone && (
-              <div className="space-y-2.5 hover:scale-[1.02] transition-transform duration-300">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Target Country</span>
+            <div className="space-y-2.5 hover:scale-[1.02] transition-transform duration-300">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{g('display.targetCountry')}</span>
+              {localGig.destination_zone ? (
                 <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex items-center gap-4 hover:border-emerald-200 transition-colors duration-300">
                   {localGig.destination_zone.flags?.png ? (
                     <img src={localGig.destination_zone.flags.png} alt="" className="w-12 h-8 rounded-lg border border-slate-200 object-cover shrink-0 shadow-sm" />
@@ -894,16 +1117,20 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                       {typeof localGig.destination_zone === 'object' ? localGig.destination_zone.name?.common : localGig.destination_zone}
                     </p>
                     <p className="text-[9px] text-emerald-600 font-black mt-1 uppercase tracking-wider">
-                      {typeof localGig.destination_zone === 'object' ? (localGig.destination_zone.name?.official || 'Territory') : 'Territory'}
+                      {typeof localGig.destination_zone === 'object' ? (localGig.destination_zone.name?.official || g('display.territory')) : g('display.territory')}
                     </p>
                   </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs font-semibold text-slate-400">
+                  {g('display.noDestination')}
+                </div>
+              )}
+            </div>
 
             {/* Enrolled reps */}
             <div className="space-y-2.5">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Assigned Representatives</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{g('display.assignedReps')}</span>
               {enrolledAgents.length > 0 ? (
                 <div
                   onClick={() => setShowAgentsModal(true)}
@@ -941,6 +1168,37 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                 </button>
               )}
             </div>
+
+            {/* Territories list */}
+            <div className="md:col-span-3 space-y-2.5">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{g('fields.territories')}</span>
+              {(localGig.team?.territories || []).length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {(localGig.team.territories as any[]).map((territory, index) => {
+                    const id = extractCountryId(territory);
+                    const label =
+                      typeof territory === 'object'
+                        ? territory?.name?.common || territory?.name?.official || id
+                        : (countries.find((c) => c._id === id)?.name?.common || id);
+                    return (
+                      <span
+                        key={id || index}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold"
+                      >
+                        {typeof territory === 'object' && territory?.flags?.png ? (
+                          <img src={territory.flags.png} alt="" className="w-5 h-3.5 rounded object-cover" />
+                        ) : (
+                          <Globe className="w-3.5 h-3.5" />
+                        )}
+                        {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 font-medium">{g('display.noTerritories')}</p>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -951,17 +1209,17 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
       {(() => {
         const rawSchedule = Array.isArray(localGig.availability?.schedule) ? localGig.availability.schedule : [];
         const grouped = rawSchedule.length > 0
-          ? groupSchedules(rawSchedule.map((s: any) => ({ day: s.day, hours: { start: s.hours?.start, end: s.hours?.end } })))
+          ? groupSchedulesByDayRanges(rawSchedule.map((s: any) => ({ day: s.day, hours: { start: s.hours?.start, end: s.hours?.end } })))
           : [];
 
         const totalMinutes = rawSchedule.reduce((acc: number, s: any) => {
           const start = s?.hours?.start;
           const end = s?.hours?.end;
           if (!start || !end) return acc;
-          const [sh, sm] = start.split(':').map(Number);
-          const [eh, em] = end.split(':').map(Number);
-          if ([sh, sm, eh, em].some((n) => Number.isNaN(n))) return acc;
-          return acc + Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+          const startM = timeToMinutes(start);
+          let endM = timeToMinutes(end);
+          if (endM <= startM) endM += 24 * 60;
+          return acc + Math.max(0, endM - startM);
         }, 0);
         const totalHoursDisplay = totalMinutes > 0
           ? `${Math.floor(totalMinutes / 60)}h${totalMinutes % 60 ? String(totalMinutes % 60).padStart(2, '0') : ''}`
@@ -1020,159 +1278,55 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
               </div>
             </div>
 
-            {/* ── Schedule EDIT form */}
+            {/* ── Schedule EDIT form (same multi-plage UI as gig creation) */}
             {editingSection === 'schedule' ? (
-              <div className="space-y-6">
-                {/* Schedule entries */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={labelCls}>{g('fields.scheduleEntries')}</span>
-                    <button
-                      onClick={() => setScheduleDraft((d: any) => ({
-                        ...d,
-                        schedule: [...d.schedule, { day: 'Monday', start: '09:00', end: '17:00' }],
-                      }))}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full hover:bg-emerald-100 transition-all active:scale-95"
-                    >
-                      <Plus size={11} /> {g('actions.addDay')}
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {scheduleDraft.schedule?.map((entry: any, idx: number) => (
-                      <div key={idx} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
-                        <select
-                          className={selectCls}
-                          value={entry.day}
-                          onChange={e => setScheduleDraft((d: any) => {
-                            const s = [...d.schedule];
-                            s[idx] = { ...s[idx], day: e.target.value };
-                            return { ...d, schedule: s };
-                          })}
-                        >
-                          {DAYS_OF_WEEK.map(day => <option key={day}>{day}</option>)}
-                        </select>
-                        <input
-                          type="time"
-                          className={inputCls + ' w-auto'}
-                          value={entry.start}
-                          onChange={e => setScheduleDraft((d: any) => {
-                            const s = [...d.schedule];
-                            s[idx] = { ...s[idx], start: e.target.value };
-                            return { ...d, schedule: s };
-                          })}
-                        />
-                        <input
-                          type="time"
-                          className={inputCls + ' w-auto'}
-                          value={entry.end}
-                          onChange={e => setScheduleDraft((d: any) => {
-                            const s = [...d.schedule];
-                            s[idx] = { ...s[idx], end: e.target.value };
-                            return { ...d, schedule: s };
-                          })}
-                        />
-                        <button
-                          onClick={() => setScheduleDraft((d: any) => ({
-                            ...d,
-                            schedule: d.schedule.filter((_: any, i: number) => i !== idx),
-                          }))}
-                          className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                    {scheduleDraft.schedule?.length === 0 && (
-                      <p className="text-xs text-slate-400 italic">No entries. Click "Add Day" to start.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Minimum hours */}
-                <div>
-                  <span className={labelCls}>{g('fields.minimumHours')}</span>
-                  <div className="grid grid-cols-3 gap-3">
-                    {(['daily', 'weekly', 'monthly'] as const).map(key => (
-                      <div key={key}>
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">{g(`periods.${key}`)}</label>
-                        <input
-                          type="number"
-                          min="0"
-                          className={inputCls}
-                          value={scheduleDraft[key]}
-                          onChange={e => setScheduleDraft((d: any) => ({ ...d, [key]: e.target.value }))}
-                          placeholder="0"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Flexibility */}
-                <div>
-                  <span className={labelCls}>{g('fields.flexibilityTags')}</span>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {scheduleDraft.flexibility?.map((opt: string, i: number) => (
-                      <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-extrabold text-slate-700">
-                        {g(`flexibility.${FLEXIBILITY_OPTIONS.find(f => f.value === opt)?.labelKey ?? ''}`, opt)}
-                        <button
-                          onClick={() => setScheduleDraft((d: any) => ({ ...d, flexibility: d.flexibility.filter((_: any, fi: number) => fi !== i) }))}
-                          className="text-rose-400 hover:text-rose-600 transition-colors"
-                        >
-                          <X size={11} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      className={selectCls}
-                      value={scheduleDraft.newFlexibility || ''}
-                      onChange={e => setScheduleDraft((d: any) => ({ ...d, newFlexibility: e.target.value }))}
-                    >
-                      <option value="">{g('placeholders.selectFlexibility')}</option>
-                      {FLEXIBILITY_OPTIONS.filter(o => !scheduleDraft.flexibility?.includes(o.value)).map(o => (
-                        <option key={o.value} value={o.value}>{g(`flexibility.${o.labelKey}`)}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => {
-                        if (scheduleDraft.newFlexibility?.trim()) {
-                          setScheduleDraft((d: any) => ({
-                            ...d,
-                            flexibility: [...d.flexibility, d.newFlexibility.trim()],
-                            newFlexibility: '',
-                          }));
-                        }
-                      }}
-                      className="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl text-[11px] font-black hover:bg-indigo-100 transition-all active:scale-95"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <ScheduleSection
+                hideNavigation
+                data={{
+                  schedules: scheduleDraft.schedules || [],
+                  minimumHours: scheduleDraft.minimumHours || {},
+                  time_zone: scheduleDraft.time_zone || '',
+                  flexibility: scheduleDraft.flexibility || [],
+                }}
+                onChange={(next) =>
+                  setScheduleDraft({
+                    schedules: next.schedules || [],
+                    minimumHours: next.minimumHours || {},
+                    time_zone: next.time_zone || '',
+                    flexibility: next.flexibility || [],
+                  })
+                }
+              />
             ) : (
               /* Schedule DISPLAY */
               <>
                 {grouped.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {grouped.map((slot: any, idx: number) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {grouped.map((group, idx) => (
                       <div
-                        key={idx}
-                        className="p-4 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white flex items-center gap-4 hover:shadow-md hover:border-indigo-200 transition-all duration-300 hover:-translate-y-0.5"
+                        key={group.id || idx}
+                        className="p-4 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white flex items-start gap-4 hover:shadow-md hover:border-indigo-200 transition-all duration-300 hover:-translate-y-0.5"
                       >
-                        <div className="p-2.5 bg-white border border-slate-100 rounded-xl shadow-sm">
+                        <div className="p-2.5 bg-white border border-slate-100 rounded-xl shadow-sm shrink-0">
                           <ClockIcon className="w-5 h-5 text-indigo-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">
-                            {slot.days.join(' · ')}
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex flex-wrap gap-x-1.5 gap-y-0.5">
+                            {group.days.map((day, i) => (
+                              <span key={day}>
+                                {day.slice(0, 3)}
+                                {i < group.days.length - 1 ? ' ·' : ''}
+                              </span>
+                            ))}
                           </div>
-                          <div className="text-lg font-black text-slate-900 tabular-nums">
-                            {slot.hours.start}
-                            <span className="text-slate-300 font-bold mx-1.5">→</span>
-                            {slot.hours.end}
+                          <div className="flex flex-col gap-1">
+                            {group.ranges.map((range, ri) => (
+                              <div key={`${range.start}-${range.end}-${ri}`} className="text-lg font-black text-slate-900 tabular-nums">
+                                {range.start}
+                                <span className="text-slate-300 font-bold mx-1.5">→</span>
+                                {range.end}
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
@@ -1516,26 +1670,36 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                   const score = agent.matchScore || 0.85;
                   const scorePct = Math.round(score * 100);
                   const statusColors = getAgentStatusColor(agent.status || 'accepted');
+                  const canOpenProfile = Boolean(getAgentIdString(agent) || extractEmbeddedProfile(agent));
                   return (
                     <div
                       key={agent._id || index}
-                      className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0 border-b border-slate-100 last:border-b-0 animate-fade-in-row"
+                      role={canOpenProfile ? 'button' : undefined}
+                      tabIndex={canOpenProfile ? 0 : undefined}
+                      onClick={() => { if (canOpenProfile) handleAgentClick(agent); }}
+                      onKeyDown={(e) => {
+                        if (!canOpenProfile) return;
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                      className={`py-4 px-3 -mx-3 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0 border-b border-slate-100 last:border-b-0 animate-fade-in-row transition-colors ${
+                        canOpenProfile ? 'cursor-pointer hover:bg-white hover:shadow-sm' : ''
+                      }`}
                       style={{ animationDelay: `${index * 80}ms` }}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-indigo-600 ring-2 ring-purple-100 text-white font-black text-sm flex items-center justify-center shadow-md uppercase hover:scale-110 hover:rotate-6 transition-transform duration-300">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="h-12 w-12 shrink-0 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-indigo-600 ring-2 ring-purple-100 text-white font-black text-sm flex items-center justify-center shadow-md uppercase hover:scale-110 hover:rotate-6 transition-transform duration-300">
                           {getAgentAvatar(agent) ? (
                             <img src={getAgentAvatar(agent)} alt="Avatar" className="w-full h-full object-cover" />
                           ) : getAgentInitials(agent)}
                         </div>
-                        <div>
-                          <p
-                            className="font-extrabold text-slate-950 text-base flex items-center gap-2 cursor-pointer hover:text-purple-600 transition-colors"
-                            onClick={() => handleAgentClick(getAgentIdString(agent))}
-                          >
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-slate-950 text-base truncate group-hover:text-purple-600 transition-colors">
                             {getAgentName(agent)}
                           </p>
-                          <div className="flex items-center gap-2 mt-2 animate-slide-up" style={{ animationDelay: `${(index * 80) + 100}ms` }}>
+                          <div className="flex items-center gap-2 mt-2 flex-wrap animate-slide-up" style={{ animationDelay: `${(index * 80) + 100}ms` }}>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
                               {agent.status || 'accepted'}
                             </span>
@@ -1547,7 +1711,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-6 self-end md:self-center">
+                      <div className="flex items-center gap-4 self-end md:self-center shrink-0">
                         <div className="text-right">
                           <span className="text-[10px] text-slate-400 font-bold block mb-1">{g('agents.matchScore')}</span>
                           <div className="flex items-center gap-2">
@@ -1562,6 +1726,11 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                             </span>
                           </div>
                         </div>
+                        {canOpenProfile && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1.5 rounded-full">
+                            {g('agents.viewProfile')} <ChevronRight size={12} />
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
@@ -1572,15 +1741,24 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
         </div>
       )}
 
-      {/* Rep Profile overlay */}
+      {/* Rep Profile overlay — above enrolled-agents modal */}
       {selectedAgentProfile && (
-        <RepProfileView profile={selectedAgentProfile} onClose={() => setSelectedAgentProfile(null)} />
+        <div className="fixed inset-0 z-[120] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-y-auto">
+              <RepProfileView profile={selectedAgentProfile} onClose={() => setSelectedAgentProfile(null)} />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Loading Profile */}
       {loadingProfile && (
-        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-xs flex items-center justify-center z-[110] animate-in fade-in duration-200">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600" />
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[130] animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl px-8 py-6 flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-600" />
+            <p className="text-sm font-medium text-slate-600">{g('agents.viewProfile')}…</p>
+          </div>
         </div>
       )}
 
