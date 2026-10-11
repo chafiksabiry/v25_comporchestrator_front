@@ -724,7 +724,7 @@ const CompanyOnboarding = () => {
   const userId = Cookies.get("userId");
 
   // Define API URL with fallback
-  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-recette.up.railway.app/api';
 
   // Resolve company ID (optional — new users have none yet → Step 1).
   useEffect(() => {

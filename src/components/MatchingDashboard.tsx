@@ -721,7 +721,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             // When at least one invitation is sent, mark the step as completed
             if (companyId) {
                 try {
-                    const onboardingApiUrl = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+                    const onboardingApiUrl = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-recette.up.railway.app/api';
                     await axios.put(
                         `${onboardingApiUrl}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
                         { status: 'completed' }

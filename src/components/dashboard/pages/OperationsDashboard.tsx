@@ -434,7 +434,7 @@ export default function OperationsDashboard() {
     const gigsApiUrl =
       (import.meta as any).env?.VITE_GIGS_API ||
       (import.meta as any).env?.VITE_API_URL_GIGS ||
-      'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+      'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
     (async () => {
       try {
         const res = await fetch(`${gigsApiUrl}/gigs/company/${companyId}?populate=companyId`);

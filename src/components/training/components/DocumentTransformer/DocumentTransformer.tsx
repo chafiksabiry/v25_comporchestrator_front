@@ -36,7 +36,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
     const customUrl = import.meta.env.VITE_TRAINING_BACKEND_URL;
     const baseUrl = customUrl || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? 'http://localhost:5010'
-      : 'https://v25platformtrainingbackend-production.up.railway.app');
+      : 'https://v25platformtrainingbackend-recette.up.railway.app');
 
     return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
   };

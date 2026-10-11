@@ -843,7 +843,7 @@ export function PhoneNumberPanel() {
       try {
         const gigsApiBase =
           (import.meta as any).env?.VITE_GIGS_API ||
-          'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+          'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
         const rawGigsRes = await fetch(`${gigsApiBase}/gigs/company/${companyId}?populate=companyId`);
         if (rawGigsRes.ok) {
           const rawGigsJson = await rawGigsRes.json();

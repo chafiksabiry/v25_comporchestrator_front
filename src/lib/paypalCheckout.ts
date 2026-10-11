@@ -14,7 +14,7 @@ export function getOrchestratorApiBase(): string {
     import.meta.env.VITE_API_BASE_URL
     || import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL
     || import.meta.env.VITE_COMPANY_ORCHESTRATOR_URL
-    || 'https://v25comporchestratorback-production.up.railway.app/api';
+    || 'https://v25comporchestratorback-recette.up.railway.app/api';
   const base = String(raw).replace(/\/$/, '');
   return base.endsWith('/api') ? base : `${base}/api`;
 }

@@ -222,7 +222,7 @@ function CompanyProfile({
   
 
   // Define API URL with fallback
-  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-recette.up.railway.app/api';
 
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {

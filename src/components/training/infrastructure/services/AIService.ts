@@ -527,7 +527,7 @@ export class AIService {
    */
   static async generateAudio(text: string): Promise<Blob> {
     const token = ApiClient.getToken();
-    const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
+    const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://v25platformtrainingbackend-recette.up.railway.app';
 
     const response = await fetch(`${apiUrl}/api/ai/generate-audio`, {
       method: 'POST',
@@ -1241,7 +1241,7 @@ ${scopeJson}`;
       import.meta.env.VITE_API_TRAINING_URL ||
       import.meta.env.VITE_API_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
-      'https://v25platformtrainingbackend-production.up.railway.app';
+      'https://v25platformtrainingbackend-recette.up.railway.app';
     const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
 
     const requestBody: Record<string, unknown> = { message, context };
@@ -1602,7 +1602,7 @@ ${scopeJson}`;
   static async exportPresentationToPPTX(presentation: any): Promise<void> {
     try {
       const token = ApiClient.getToken();
-      const apiUrl = import.meta.env.VITE_API_TRAINING_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
+      const apiUrl = import.meta.env.VITE_API_TRAINING_URL || 'https://v25platformtrainingbackend-recette.up.railway.app';
       const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
 
       
@@ -1671,7 +1671,7 @@ ${scopeJson}`;
    */
   static async exportToPowerPoint(presentation: any): Promise<Blob> {
     const token = ApiClient.getToken();
-    const apiUrl = import.meta.env.VITE_API_TRAINING_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
+    const apiUrl = import.meta.env.VITE_API_TRAINING_URL || 'https://v25platformtrainingbackend-recette.up.railway.app';
     const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
 
     const response = await fetch(`${baseUrl}/api/ai/export-pptx`, {

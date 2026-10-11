@@ -1135,7 +1135,7 @@ export async function fetchLanguages(): Promise<{ data: Language[]; error?: Erro
 export async function fetchAllCurrencies(): Promise<Currency[]> {
   try {
     
-    const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+    const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
     const response = await fetch(`${apiUrl}/currencies`);
 
     if (!response.ok) {
@@ -1159,7 +1159,7 @@ export async function fetchAllCurrencies(): Promise<Currency[]> {
 export async function fetchCurrencyById(currencyId: string): Promise<Currency | null> {
   try {
     
-    const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+    const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
     const response = await fetch(`${apiUrl}/currencies/id/${currencyId}`);
 
     if (!response.ok) {

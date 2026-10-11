@@ -17,7 +17,7 @@ const getApiBaseUrl = () => {
     return 'http://localhost:5010';
   } else {
     // Environnement production
-    return 'https://v25platformtrainingbackend-production.up.railway.app';
+    return 'https://v25platformtrainingbackend-recette.up.railway.app';
   }
 };
 

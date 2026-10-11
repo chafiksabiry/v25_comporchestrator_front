@@ -343,7 +343,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
 
   useEffect(() => {
     if (localGig?._id) {
-      const MATCHING_API_URL = import.meta.env.VITE_MATCHING_API_URL || 'https://v25matchingbackend-production.up.railway.app/api';
+      const MATCHING_API_URL = import.meta.env.VITE_MATCHING_API_URL || 'https://v25matchingbackend-recette.up.railway.app/api';
       fetch(`${MATCHING_API_URL}/gig-agents/gig/${localGig._id}`)
         .then(res => res.json())
         .then(data => { if (Array.isArray(data)) setEnrolledAgents(data); })

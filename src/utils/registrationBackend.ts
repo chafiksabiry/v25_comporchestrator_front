@@ -12,12 +12,12 @@ export function getRegistrationBackendBase(): string {
     import.meta.env.VITE_REGISTRATION_BACKEND_URL ||
     import.meta.env.VITE_REGISTRATION_BACK_URL ||
     import.meta.env.VITE_REGISTRATION_API_URL ||
-    'https://v25registrationbackend-production.up.railway.app';
+    'https://v25registrationbackend-recette.up.railway.app';
 
   raw = String(raw).replace(/\/$/, '').replace(/\/api$/, '');
 
   if (/v25registrationbackend-development\.up\.railway\.app/i.test(raw)) {
-    return 'https://v25registrationbackend-production.up.railway.app';
+    return 'https://v25registrationbackend-recette.up.railway.app';
   }
 
   return raw;

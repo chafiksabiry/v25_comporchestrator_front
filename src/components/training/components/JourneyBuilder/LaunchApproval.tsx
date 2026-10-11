@@ -95,7 +95,7 @@ export default function LaunchApproval({
     if (import.meta.env.VITE_API_TRAINING_URL) {
       return import.meta.env.VITE_API_TRAINING_URL;
     }
-    return 'https://v25platformtrainingbackend-production.up.railway.app';
+    return 'https://v25platformtrainingbackend-recette.up.railway.app';
   };
   const API_BASE = getApiBaseUrl();
 
@@ -438,7 +438,7 @@ export default function LaunchApproval({
       // Update onboarding progress for Step 11 (REP Onboarding)
       if (companyId) {
         try {
-          const onboardingApiUrl = 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+          const onboardingApiUrl = 'https://v25searchcompanywizardbackend-recette.up.railway.app/api';
           const onboardingEndpoint = `${onboardingApiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/9`;
           
 

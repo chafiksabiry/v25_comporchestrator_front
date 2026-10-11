@@ -111,7 +111,7 @@ const GIGS_API = () =>
     'VITE_API_URL_GIGS',
     envOr(
       'VITE_GIGS_API',
-      'https://v25gigsmanualcreationbackend-production.up.railway.app/api'
+      'https://v25gigsmanualcreationbackend-recette.up.railway.app/api'
     )
   );
 

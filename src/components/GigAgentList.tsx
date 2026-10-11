@@ -19,7 +19,7 @@ const GigAgentList: React.FC<GigAgentListProps> = ({ gigId, agentId }) => {
     const handleAgentClick = async (agentId: string) => {
         try {
             setLoadingProfile(true);
-            const REP_API_URL = 'https://v25repscreationwizardbackend-production.up.railway.app/api';
+            const REP_API_URL = 'https://v25repscreationwizardbackend-recette.up.railway.app/api';
             const token = localStorage.getItem('token');
             const response = await fetch(`${REP_API_URL}/profiles/${agentId}`, {
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
@@ -44,7 +44,7 @@ const GigAgentList: React.FC<GigAgentListProps> = ({ gigId, agentId }) => {
     const fetchGigAgents = async () => {
         try {
             setLoading(true);
-            const MATCHING_API_URL = import.meta.env.VITE_MATCHING_API_URL || 'https://v25matchingbackend-production.up.railway.app/api';
+            const MATCHING_API_URL = import.meta.env.VITE_MATCHING_API_URL || 'https://v25matchingbackend-recette.up.railway.app/api';
 
             let url = `${MATCHING_API_URL}/gig-agents`;
             if (gigId) {

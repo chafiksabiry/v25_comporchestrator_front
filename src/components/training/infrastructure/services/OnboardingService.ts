@@ -2,10 +2,10 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { IndustryApiResponse, GigApiResponse, GigFromApi } from '../../types';
 import React from 'react';
-const REPS_WIZARD_API_URL = 'https://v25repscreationwizardbackend-production.up.railway.app';
+const REPS_WIZARD_API_URL = 'https://v25repscreationwizardbackend-recette.up.railway.app';
 const INDUSTRIES_API_URL = `${REPS_WIZARD_API_URL}/api/industries`;
-const GIGS_API_URL = 'https://v25gigsmanualcreationbackend-production.up.railway.app/api/gigs/company';
-const COMPANY_API_URL = 'https://v25searchcompanywizardbackend-production.up.railway.app/api/companies';
+const GIGS_API_URL = 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api/gigs/company';
+const COMPANY_API_URL = 'https://v25searchcompanywizardbackend-recette.up.railway.app/api/companies';
 
 export const OnboardingService = {
   /**
@@ -157,7 +157,7 @@ export const OnboardingService = {
   async updateOnboardingProgress(companyId: string): Promise<void> {
     const apiUrl =
       import.meta.env.VITE_COMPANY_API_URL ||
-      "https://v25searchcompanywizardbackend-production.up.railway.app/api";
+      "https://v25searchcompanywizardbackend-recette.up.railway.app/api";
     const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding`;
     const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/8`;
 

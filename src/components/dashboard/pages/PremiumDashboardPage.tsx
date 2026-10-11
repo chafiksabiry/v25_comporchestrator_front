@@ -63,7 +63,7 @@ export default function PremiumDashboardPage() {
         try {
           // 1. Fetch Gigs
           try {
-            const gigsApiUrl = import.meta.env.VITE_GIGS_API || import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+            const gigsApiUrl = import.meta.env.VITE_GIGS_API || import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
             const gigsResponse = await fetch(`${gigsApiUrl}/gigs/company/${companyId}?populate=companyId`);
             if (gigsResponse.ok) {
               const gigsData = await gigsResponse.json();
