@@ -311,6 +311,14 @@
         "terminate": "Terminate number",
         "close": "Close"
       },
+      "terminateModal": {
+        "eyebrow": "Cancellation",
+        "title": "Release this line",
+        "body": "The number will be released at the provider and removed from HARX.",
+        "warning": "This cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Terminate permanently"
+      },
       "filters": {
         "searchPlaceholder": "Search a number or gig…",
         "gigLabel": "Filter by gig",
