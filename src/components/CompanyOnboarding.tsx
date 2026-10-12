@@ -809,13 +809,22 @@ const CompanyOnboarding = () => {
 
 
 
-  // Si l'URL contient ?startStep=6 ou si on est sur l'URL spécifique avec session, on lance handleStartStep(6)
+  // Zoho callback lands here when onboarding is still open: #/orchestrator?startStep=5
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    // Vérifier si l'URL contient le paramètre startStep=6
-    if (params.get("session") === "someGeneratedSessionId" && companyId) {
-      handleStartStep(9);
-    }
+    if (!companyId) return;
+    const hash = window.location.hash || '';
+    const query = hash.includes('?')
+      ? hash.slice(hash.indexOf('?') + 1)
+      : window.location.search.replace(/^\?/, '');
+    if (new URLSearchParams(query).get('startStep') !== '5') return;
+
+    const cleanHash = hash.split('?')[0] || '#/orchestrator';
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${window.location.search}${cleanHash}`
+    );
+    handleStartStep(5);
   }, [companyId]);
 
   const gigsApiBase =
