@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { PremiumAudioPlayer } from './PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
-import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, resolveCallDispositionStatus, getDisplayTranscript, getExecutiveSummaryScore, getExecutiveSummaryText, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, hasAiCallAnalysis, isCallTooShortForAnalysis, getTooShortAnalysisNotice, getScoreDecisionTooltip, shouldHideCallScoring, resolveWinningProspectKey } from '../../../utils/callStatusDisplay';
+import { isCallRejectedByAI, isCallFraudDetected, isCallVoicemail, resolveUnvalidatedTransactionStatus, resolveCallDispositionStatus, hasSignableTransaction, getDisplayTranscript, getExecutiveSummaryScore, getExecutiveSummaryText, getFraudCommissionNotice, getCompanyAgentFraudWarning, getSelfCallTranscriptNotice, isSimulatedTranscriptTurn, getVoicemailCallNotice, isNonEvaluableCall, hasAiCallAnalysis, isCallTooShortForAnalysis, getTooShortAnalysisNotice, getScoreDecisionTooltip, shouldHideCallScoring, resolveWinningProspectKey } from '../../../utils/callStatusDisplay';
 
 export interface NormalizedCall {
   id: string;
@@ -41,14 +41,15 @@ export interface NormalizedCall {
   pendingDisposition?: string | null;
 }
 
-/** L'entreprise peut valider/refuser dès que l'appel est analysé (transaction optionnelle). */
+/** L'entreprise signe uniquement une vraie transaction, pas un rappel ni un sans suite. */
 export function companyTransactionCanValidate(
-  call: { validByAI?: boolean | null; status?: string },
+  call: { validByAI?: boolean | null; status?: string; callOutcome?: string | null; suggestedDisposition?: string | null; ai_call_status?: string | null; duration?: number | null; ai_call_score?: Record<string, { passed?: boolean; score?: number }> | null; flags?: { fraud?: boolean; selfCall?: boolean } },
   transaction?: { validByAI?: boolean | null; validByCompany?: boolean | null } | null
 ): boolean {
   if (transaction?.validByCompany === true) return false;
   if (call.status?.toLowerCase() !== 'completed') return false;
-  return call.validByAI === true;
+  if (call.validByAI !== true) return false;
+  return hasSignableTransaction({ ...call, transaction });
 }
 
 /** @deprecated alias */

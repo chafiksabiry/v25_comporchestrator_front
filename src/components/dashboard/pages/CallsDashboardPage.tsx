@@ -11,13 +11,12 @@ import {
   getCompanyAgentFraudWarning,
   getCompanyFraudGlobalWarning,
   getFraudDetectedCountLabel,
-  isCallApprovedByAI,
+  isCallAnalysisPending,
   isCallFraudDetected,
-  isCallRejectedByAI,
   isCallVoicemail,
   matchesCallOutcomeFilter,
-  resolveUnvalidatedTransactionStatus,
-  resolveCallDispositionStatus,
+  resolveCallListStatus,
+  resolveTransactionColumnStatus,
   getDisplayOverallScore,
   getScoreDecisionTooltip,
   getTooShortAnalysisNotice,
@@ -61,14 +60,6 @@ function resolveGigCommissionAmount(
     }
   }
   return fallback;
-}
-
-function callCommissionDisplayAmount(call: any): string {
-  return resolveGigCommissionAmount(
-    call?.lead?.gigId?.commission?.commission_per_call,
-    call?.lead?.gigId?.rewardPerCall,
-    4
-  ).toFixed(2);
 }
 
 function transactionCommissionDisplayAmount(call: any): string {
@@ -954,20 +945,7 @@ export default function CallsDashboardPage() {
                       <div className="flex flex-wrap items-center gap-4 xl:gap-6">
                         {(() => {
                           const displayScore = getDisplayOverallScore(call);
-                          if (displayScore === null) {
-                            if (isCallTooShortForAnalysis(call)) {
-                              const disposition = resolveCallDispositionStatus(call);
-                              return (
-                                <div
-                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm ${disposition.tone}`}
-                                  title={disposition.title}
-                                >
-                                  <span className="text-[10px] font-black uppercase tracking-widest">{disposition.label}</span>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }
+                          if (displayScore === null) return null;
                           return (
                           <div className="relative group/score flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-full border border-amber-100/50 shadow-sm cursor-help">
                             <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
@@ -986,22 +964,19 @@ export default function CallsDashboardPage() {
                             {/* Validation de l'Appel AI */}
                             <div className="flex flex-col items-center gap-1 min-w-[120px]">
                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">{t('calls.modal.call')}</span>
-                              {isCallApprovedByAI(call) ? (
-                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100/40 shadow-sm w-36 whitespace-nowrap">
-                                  <Check className="w-3.5 h-3.5" />
-                                  {t('calls.ai.approvedWithAmount', { amount: callCommissionDisplayAmount(call) })}
-                                </span>
-                              ) : isCallRejectedByAI(call) ? (
-                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100/40 shadow-sm w-32 whitespace-nowrap">
-                                  <X className="w-3.5 h-3.5" />
-                                  {t('calls.ai.rejected')}
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 border border-slate-200/40 shadow-sm w-32 whitespace-nowrap">
-                                  <Clock className="w-3.5 h-3.5 animate-pulse" />
-                                  {t('calls.ai.pendingAnalysis')}
-                                </span>
-                              )}
+                              {(() => {
+                                const callStatus = resolveCallListStatus(call);
+                                const pending = isCallAnalysisPending(call);
+                                return (
+                                  <span
+                                    className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm min-w-[7rem] max-w-[14rem] text-center leading-tight ${callStatus.tone}`}
+                                    title={callStatus.title}
+                                  >
+                                    {pending ? <Clock className="w-3.5 h-3.5 shrink-0 animate-pulse" /> : null}
+                                    {callStatus.label}
+                                  </span>
+                                );
+                              })()}
                             </div>
 
                             <div className="h-8 w-px bg-slate-200/70 hidden xl:block"></div>
@@ -1014,25 +989,12 @@ export default function CallsDashboardPage() {
                                   <Check className="w-3.5 h-3.5" />
                                   {t('calls.transaction.signedWithAmount', { amount: transactionCommissionDisplayAmount(call) })}
                                 </span>
-                              ) : isCallRejectedByAI(call) ? (
-                                (() => {
-                                  const txStatus = resolveUnvalidatedTransactionStatus(call);
-                                  return (
-                                    <span
-                                      className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm min-w-[7rem] max-w-[11rem] text-center leading-tight ${txStatus.tone}`}
-                                      title={txStatus.title}
-                                    >
-                                      <X className="w-3.5 h-3.5 shrink-0" />
-                                      {txStatus.label}
-                                    </span>
-                                  );
-                                })()
-                              ) : !isCallApprovedByAI(call) ? (
+                              ) : isCallAnalysisPending(call) ? (
                                 <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
-                              ) : companyTransactionCanValidate(call, call.transaction) ? (
+                              ) : (
                                 <div className="flex flex-col items-center gap-1.5">
                                   {(() => {
-                                    const txStatus = resolveUnvalidatedTransactionStatus(call);
+                                    const txStatus = resolveTransactionColumnStatus(call);
                                     return (
                                       <span
                                         className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm min-w-[7rem] max-w-[11rem] text-center leading-tight ${txStatus.tone}`}
@@ -1042,6 +1004,7 @@ export default function CallsDashboardPage() {
                                       </span>
                                     );
                                   })()}
+                                  {companyTransactionCanValidate(call, call.transaction) && (
                                   <div className="flex items-center gap-1">
                                     <button
                                       type="button"
@@ -1068,9 +1031,8 @@ export default function CallsDashboardPage() {
                                       {t('calls.actions.notSigned')}
                                     </button>
                                   </div>
+                                  )}
                                 </div>
-                              ) : (
-                                <span className="text-slate-300 font-bold text-sm tracking-widest">-</span>
                               )}
                             </div>
                           </>
@@ -1131,6 +1093,7 @@ export default function CallsDashboardPage() {
           ai_call_status: selectedCall.ai_call_status,
           status: selectedCall.status,
           answeredBy: selectedCall.answeredBy,
+          suggestedDisposition: selectedCall.suggestedDisposition,
           scoreCalibration: selectedCall.scoreCalibration,
           leadId:
             typeof selectedCall.lead?._id === 'object'
