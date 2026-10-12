@@ -638,9 +638,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         if (languageOptions.length > 0) {
         }
 
-        setActivities(activityOptions);
-        setIndustries(industryOptions);
-        setSectors(sectorOptions);
+        setActivities(getActivityOptions(i18n.language));
+        setIndustries(getIndustryOptions(i18n.language));
+        setSectors(getSectorOptions(i18n.language));
         setLanguages(languageOptions);
 
 
@@ -657,6 +657,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
     loadActivitiesIndustriesAndLanguages();
   }, []);
+
+  useEffect(() => {
+    setActivities(getActivityOptions(i18n.language));
+    setIndustries(getIndustryOptions(i18n.language));
+    setSectors(getSectorOptions(i18n.language));
+  }, [i18n.language]);
 
   // Fetch all countries from API for destination zones
   useEffect(() => {

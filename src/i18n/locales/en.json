@@ -1073,6 +1073,11 @@
       "analyzingPlaceholder": "Analyzing documents…",
       "send": "Send",
       "stop": "Stop",
+      "thinking": "Thinking…",
+      "generating": "Generating…",
+      "analyzing": "Analyzing…",
+      "preparing": "HARX assistant is preparing your answer.",
+      "pleaseWait": "Please wait — response will appear below.",
       "stopTooltip": "Stop generation",
       "skip": "Skip",
       "uploadFiles": "Upload files",
@@ -1115,6 +1120,7 @@
         }
       },
       "personalization": {
+        "summaryTitle": "A few questions to personalize your training",
         "source": {
           "question": "What source should we use for this training?",
           "options": {
@@ -3519,5 +3525,28 @@
   },
   "trainingViewer": {
     "validateFormation": "Validate the training"
+  },
+  "subscriptionPlan": {
+    "eyebrow": "Premium Access",
+    "title": "Select Your Plan",
+    "subtitle": "Choose the perfect scale for your AI-powered orchestration engine.",
+    "current": "You are currently subscribed to {{plan}}. You can manage or change your plan below.",
+    "yourPlan": "Your plan",
+    "popular": "Popular",
+    "perMonth": "/ month",
+    "subscribe": "Subscribe",
+    "currentPlan": "Current plan",
+    "opening": "Opening…",
+    "changePlan": "Change plan",
+    "securePayment": "Secure payment",
+    "close": "Close",
+    "loading": "Loading plans…",
+    "empty": "No subscription plan available yet.",
+    "initializing": "Initializing Stripe…",
+    "finalizing": "Finalizing your subscription…",
+    "activeTitle": "Subscription active",
+    "activeBody": "You are now subscribed to {{plan}}.",
+    "continue": "Continue",
+    "confirmFailed": "Subscription confirmation failed"
   }
 }

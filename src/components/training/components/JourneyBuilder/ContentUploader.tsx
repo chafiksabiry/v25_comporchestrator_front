@@ -1117,7 +1117,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
     return () => window.clearInterval(id);
   }, [isChatLoading]);
 
-  const assistantWaitLabels = ['Thinking…', 'Generating…', 'Analyzing…'];
+  const assistantWaitLabels = [
+    t('training.chat.thinking', 'Thinking…'),
+    t('training.chat.generating', 'Generating…'),
+    t('training.chat.analyzing', 'Analyzing…'),
+  ];
   const assistantWaitLabel = assistantWaitLabels[assistantWaitPhase % assistantWaitLabels.length];
 
   const activeChatGigId = selectedChatGigId || (gigId ? String(gigId) : '');
@@ -2800,6 +2804,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
         selectedSource.includes('fichiers téléversés')
       );
     };
+    const answerLabel = (
+      key: 'source' | 'level' | 'objective' | 'format',
+      value?: string
+    ) => {
+      const question = personalizationQuestions.find((item) => item.key === key);
+      return question?.options.find((option) => option.value === value)?.label || value || '';
+    };
     const buildPersonalizationSummary = (answers: {
       source?: string;
       level?: string;
@@ -2807,15 +2818,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
       format?: string;
     }) =>
       [
-        'A few questions to personalize your training',
-        'Q: What source should we use for this training?',
-        `R : ${answers.source}`,
-        'Q: What is your current level?',
-        `R : ${answers.level}`,
-        'Q: What is your main objective?',
-        `R : ${answers.objective}`,
-        'Q: Which format do you prefer?',
-        `R : ${answers.format}`,
+        t('training.chat.personalization.summaryTitle', 'A few questions to personalize your training'),
+        `Q: ${t('training.chat.personalization.source.question')}`,
+        `R : ${answerLabel('source', answers.source)}`,
+        `Q: ${t('training.chat.personalization.level.question')}`,
+        `R : ${answerLabel('level', answers.level)}`,
+        `Q: ${t('training.chat.personalization.objective.question')}`,
+        `R : ${answerLabel('objective', answers.objective)}`,
+        `Q: ${t('training.chat.personalization.format.question')}`,
+        `R : ${answerLabel('format', answers.format)}`,
       ].join('\n');
     const handleSelectKbMode = (mode: KbGenerationMode) => {
       setShowRepSourcePopup(false);
@@ -3796,9 +3807,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         const chatGigRow = companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId));
         const chatGigSnapshot = chatGigRow ? buildGigSnapshotForAi(chatGigRow) : null;
-        const isPostPersonalizationSummary = cleanMessage.startsWith(
-          'A few questions to personalize your training'
-        );
+        const isPostPersonalizationSummary =
+          cleanMessage.startsWith('A few questions to personalize your training') ||
+          cleanMessage.startsWith('Quelques questions pour personnaliser votre formation');
         const isPlanEditIntent =
           /(modifi|modifier|change|changer|ajuste|ajouter|supprim|retir|update|edit|corrig|restructur|reorganis|adapt)/i.test(cleanMessage) &&
           (/\bmodule\s*\d+\b/i.test(cleanMessage) || /\bmodule\b/i.test(cleanMessage));
@@ -6801,7 +6812,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                       <Loader2 className="h-4 w-4 shrink-0 animate-spin text-harx-500" />
                                       {assistantWaitLabel}
                                     </div>
-                                    <p className="text-xs text-slate-500">HARX assistant is preparing your answer.</p>
+                                    <p className="text-xs text-slate-500">{t('training.chat.preparing')}</p>
                                   </div>
                                 );
                               }
@@ -6979,7 +6990,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         </div>
                       ) : (() => {
                         const messageText = String(msg.text || '');
-                        const isPersonalizationSummary = messageText.startsWith('A few questions to personalize your training');
+                        const isPersonalizationSummary =
+                          messageText.startsWith('A few questions to personalize your training') ||
+                          messageText.startsWith('Quelques questions pour personnaliser votre formation');
                         const attachments = Array.isArray(msg.attachments) ? msg.attachments : [];
                         const renderAttachments = () =>
                           attachments.length > 0 ? (
@@ -7234,7 +7247,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <Loader2 className="h-4 w-4 animate-spin text-harx-500" />
                           {assistantWaitLabel}
                         </span>
-                        <span className="text-[11px] font-normal text-slate-500">Please wait — response will appear below.</span>
+                        <span className="text-[11px] font-normal text-slate-500">{t('training.chat.pleaseWait')}</span>
                       </div>
                     </div>
                   )}

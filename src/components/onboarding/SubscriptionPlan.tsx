@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -6,6 +7,7 @@ import EmbeddedSubscriptionFlow from '../stripe/EmbeddedSubscriptionFlow';
 import { markCompanyGigsStepDone } from '../../services/gigSetupSync';
 
 const SubscriptionPlan = () => {
+  const { t } = useTranslation();
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [activePlanName, setActivePlanName] = useState<string | null>(null);
   const companyId = Cookies.get('companyId');
@@ -111,11 +113,11 @@ const SubscriptionPlan = () => {
           <div>
             <div className="flex items-center gap-2 mb-2 text-harx-500">
               <Sparkles className="h-4 w-4" />
-              <span className="text-xs font-black uppercase tracking-[0.2em]">Premium Access</span>
+              <span className="text-xs font-black uppercase tracking-[0.2em]">{t('subscriptionPlan.eyebrow')}</span>
             </div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Select Your Plan</h1>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('subscriptionPlan.title')}</h1>
             <p className="text-gray-500 mt-1 font-medium text-sm">
-              Choose the perfect scale for your AI-powered orchestration engine.
+              {t('subscriptionPlan.subtitle')}
             </p>
           </div>
 
@@ -123,7 +125,7 @@ const SubscriptionPlan = () => {
 
         {activePlanName && (
           <div className="mb-4 p-3 rounded-2xl border border-green-100 bg-green-50/60 text-green-700 text-sm font-bold">
-            You are currently subscribed to <span className="uppercase">{activePlanName}</span>. You can manage or change your plan below.
+            {t('subscriptionPlan.current', { plan: activePlanName })}
           </div>
         )}
 
