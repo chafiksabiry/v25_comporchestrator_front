@@ -2991,13 +2991,18 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     const checkZohoConfig = async () => {
       const zohoService = ZohoService.getInstance();
-      const isConfigured = zohoService.isConfigured();
+      const isConfigured = await zohoService.whenReady();
+      if (cancelled) return;
       setHasZohoAccessToken(isConfigured);
       setHasZohoConfig(isConfigured);
     };
     checkZohoConfig();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Show import choice modal on first visit - DISABLED
@@ -3332,10 +3337,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
         {/* Import Methods Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Zoho Import Card - DISABLED FOR NOW */}
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-2xl p-6 flex flex-col h-full grayscale opacity-60 pointer-events-none relative overflow-hidden group">
-            {/* Overlay to ensure it's not clickable and shows disabled cursor */}
-            <div className="absolute inset-0 z-10 cursor-not-allowed" title="Zoho CRM Integration is currently disabled" />
+          <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-6 flex flex-col h-full relative overflow-hidden group">
             {/* Header */}
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-gray-100 shadow-sm relative z-20">
@@ -3392,7 +3394,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                   await handleImportFromZoho();
                 }}
                 disabled={!hasZohoAccessToken || isImportingZoho}
-                className="w-full bg-gray-200 text-gray-500 font-black py-4 px-6 rounded-xl transition-all duration-500"
+                className={`w-full font-black py-4 px-6 rounded-xl transition-all duration-500 ${
+                  hasZohoAccessToken
+                    ? 'bg-gradient-harx text-white shadow-xl shadow-harx-500/30 hover:brightness-110'
+                    : 'bg-gray-200 text-gray-500'
+                }`}
               >
                 {isImportingZoho ? (
                   <>
