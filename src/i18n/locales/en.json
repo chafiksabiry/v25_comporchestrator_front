@@ -1502,6 +1502,11 @@
       "stepWarningBody_other": "{{count}} gigs still need this step.",
       "stepWarningBody": "{{count}} gig(s) still need this step.",
       "viewAll": "View all",
+      "journeyTitle": "Path to activation",
+      "remainingSteps": "Required steps",
+      "nextStepBtn": "Next step",
+      "finishCurrent": "Finish this step. The Next step button stays on screen afterwards.",
+      "optionalShort": "Optional",
       "steps": {
         "telephony": "Telephony Setup",
         "uploadContacts": "Upload Contacts",
