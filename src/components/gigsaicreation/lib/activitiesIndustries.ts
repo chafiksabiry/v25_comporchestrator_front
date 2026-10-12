@@ -1,5 +1,24 @@
 import { fetchActivities, fetchIndustries, fetchLanguages, fetchSectors, fetchSoftSkills, fetchTechnicalSkills, fetchProfessionalSkills } from './api';
 import type { Activity, Industry, Language, Sector } from '../types';
+import i18n from '../../../i18n';
+import { localizeCatalog } from '../../../i18n/catalogFr';
+
+function resolveLang(lang?: string): 'fr' | 'en' {
+  const raw = String(lang || i18n.resolvedLanguage || i18n.language || 'fr').slice(0, 2).toLowerCase();
+  return raw === 'en' ? 'en' : 'fr';
+}
+
+function localizedEntityName(
+  entity: { name?: string; name_i18n?: { en?: string; fr?: string } } | undefined,
+  lang?: string
+): string {
+  if (!entity) return '';
+  const code = resolveLang(lang);
+  const direct = entity.name_i18n?.[code];
+  if (direct && direct.trim()) return direct;
+  const english = entity.name_i18n?.en || entity.name || '';
+  return code === 'fr' ? localizeCatalog(english, 'fr') : english;
+}
 
 let activitiesCache: Activity[] = [];
 let industriesCache: Industry[] = [];
@@ -80,18 +99,20 @@ export function getSectorById(id: string): Sector | undefined {
 export function getSectorNameById(id: string, lang?: string): string {
   const raw = String(id || '').trim();
   if (!raw) return '';
-  if (!/^[a-f0-9]{24}$/i.test(raw)) return raw;
+  const code = resolveLang(lang);
+  if (!/^[a-f0-9]{24}$/i.test(raw)) {
+    return code === 'fr' ? localizeCatalog(raw, 'fr') : raw;
+  }
   const sector = sectorsCache.find((s) => s._id === raw);
   if (!sector) return '';
-  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
-  return sector.name_i18n?.[code] || sector.name_i18n?.en || sector.name || '';
+  return localizedEntityName(sector, code);
 }
 
 export function getSectorOptions(lang?: string): Array<{ value: string; label: string }> {
-  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+  const code = resolveLang(lang);
   return sectorsCache.map((sector) => ({
     value: sector._id,
-    label: sector.name_i18n?.[code] || sector.name_i18n?.en || sector.name,
+    label: localizedEntityName(sector, code),
   }));
 }
 
@@ -147,8 +168,7 @@ export function getActivityById(id: string): Activity | undefined {
 export function getActivityNameById(id: string, lang?: string): string {
   const activity = activitiesCache.find(activity => activity._id === id);
   if (!activity) return '';
-  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
-  return activity.name_i18n?.[code] || activity.name_i18n?.en || activity.name;
+  return localizedEntityName(activity, resolveLang(lang));
 }
 
 export function convertActivityNamesToIds(names: string[]): string[] {
@@ -165,12 +185,12 @@ export function convertActivityNamesToIds(names: string[]): string[] {
 }
 
 export function getActivityOptions(lang?: string): Array<{ value: string; label: string; category: string }> {
-  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+  const code = resolveLang(lang);
   const options = activitiesCache
     .filter(activity => activity.isActive)
     .map(activity => ({
       value: activity._id,
-      label: activity.name_i18n?.[code] || activity.name_i18n?.en || activity.name,
+      label: localizedEntityName(activity, code),
       category: activity.category
     }));
   return options;
@@ -184,8 +204,7 @@ export function getIndustryById(id: string): Industry | undefined {
 export function getIndustryNameById(id: string, lang?: string): string {
   const industry = industriesCache.find(industry => industry._id === id);
   if (!industry) return '';
-  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
-  return industry.name_i18n?.[code] || industry.name_i18n?.en || industry.name;
+  return localizedEntityName(industry, resolveLang(lang));
 }
 
 export function convertIndustryNamesToIds(names: string[]): string[] {
@@ -202,12 +221,12 @@ export function convertIndustryNamesToIds(names: string[]): string[] {
 }
 
 export function getIndustryOptions(lang?: string): Array<{ value: string; label: string }> {
-  const code = (lang || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+  const code = resolveLang(lang);
   const options = industriesCache
     .filter(industry => industry.isActive)
     .map(industry => ({
       value: industry._id,
-      label: industry.name_i18n?.[code] || industry.name_i18n?.en || industry.name
+      label: localizedEntityName(industry, code)
     }));
   return options;
 }

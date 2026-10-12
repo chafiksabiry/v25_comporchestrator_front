@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { loadStripe, type Stripe } from '@stripe/stripe-js';
@@ -7,6 +8,7 @@ import {
   EmbeddedCheckout,
 } from '@stripe/react-stripe-js';
 import { X, ShieldCheck, Sparkles, Check, Loader2 } from 'lucide-react';
+import { localizeCatalog } from '../../i18n/catalogFr';
 
 interface ApiPlan {
   _id: string;
@@ -112,6 +114,9 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
   apiBaseUrl,
   onSubscribed,
 }) => {
+  const { t, i18n } = useTranslation();
+  const lang = (i18n.resolvedLanguage || i18n.language || 'fr').slice(0, 2);
+  const label = (value: string) => localizeCatalog(value, lang);
   const [plans, setPlans] = useState<ApiPlan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [plansError, setPlansError] = useState<string | null>(null);
@@ -278,7 +283,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
       const message =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
-        (err instanceof Error ? err.message : 'Subscription confirmation failed');
+        (err instanceof Error ? err.message : t('subscriptionPlan.confirmFailed'));
       setInitError(message);
     } finally {
       setConfirming(false);
@@ -290,7 +295,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
       <div className="h-64 flex flex-col items-center justify-center gap-3">
         <Loader2 className="h-8 w-8 text-harx-500 animate-spin" />
         <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-          Loading plans…
+          {t('subscriptionPlan.loading')}
         </p>
       </div>
     );
@@ -307,7 +312,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
   if (!plans.length) {
     return (
       <div className="p-6 rounded-2xl bg-gray-50 border border-gray-100 text-gray-600">
-        <p className="text-sm font-bold">No subscription plan available yet.</p>
+        <p className="text-sm font-bold">{t('subscriptionPlan.empty')}</p>
       </div>
     );
   }
@@ -331,12 +336,12 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
             >
               {isCurrent && (
                 <span className="absolute -top-3 left-6 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow">
-                  <Check className="h-3 w-3" strokeWidth={3} /> Your plan
+                  <Check className="h-3 w-3" strokeWidth={3} /> {t('subscriptionPlan.yourPlan')}
                 </span>
               )}
               {!isCurrent && popular && (
                 <span className="absolute -top-3 left-6 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-harx-500 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow">
-                  <Sparkles className="h-3 w-3" /> Popular
+                  <Sparkles className="h-3 w-3" /> {t('subscriptionPlan.popular')}
                 </span>
               )}
               <h3 className="text-xl font-black text-gray-900 tracking-tight">
@@ -344,14 +349,14 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
               </h3>
               {plan.description && (
                 <p className="text-xs text-gray-500 mt-1 font-medium">
-                  {plan.description}
+                  {label(plan.description)}
                 </p>
               )}
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-3xl font-black text-gray-900 tracking-tight">
                   {formatPrice(plan)}
                 </span>
-                <span className="text-xs font-bold text-gray-400">/ month</span>
+                <span className="text-xs font-bold text-gray-400">{t('subscriptionPlan.perMonth')}</span>
               </div>
               {(() => {
                 const meta = metadataLines(plan.metadata);
@@ -369,10 +374,10 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
                             <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
                             <span>
                               <span className="text-gray-500 font-bold uppercase tracking-wide text-[10px]">
-                                {key}
+                                {label(key)}
                               </span>
                               {': '}
-                              <span className="text-gray-900">{value}</span>
+                              <span className="text-gray-900">{label(value)}</span>
                             </span>
                           </li>
                         ))}
@@ -386,7 +391,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
                             className="flex items-start gap-2 text-xs text-gray-700 font-medium"
                           >
                             <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
-                            <span>{feat}</span>
+                            <span>{label(feat)}</span>
                           </li>
                         ))}
                       </ul>
@@ -409,12 +414,12 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
                 } disabled:opacity-100 disabled:cursor-default`}
               >
                 {isCurrent
-                  ? 'Current plan'
+                  ? t('subscriptionPlan.currentPlan')
                   : initLoading && selectedPlan?._id === plan._id
-                    ? 'Opening…'
+                    ? t('subscriptionPlan.opening')
                     : activeSubscription
-                      ? 'Change plan'
-                      : 'Subscribe'}
+                      ? t('subscriptionPlan.changePlan')
+                      : t('subscriptionPlan.subscribe')}
               </button>
             </div>
           );
@@ -440,11 +445,11 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
                   </div>
                   <div className="min-w-0">
                     <h2 className="text-lg font-black text-gray-900 tracking-tight truncate">
-                      Secure payment
+                      {t('subscriptionPlan.securePayment')}
                     </h2>
                     <p className="text-xs font-bold text-gray-500 truncate">
                       {selectedPlan.name} —{' '}
-                      {formatPrice(selectedPlan)} / month
+                      {formatPrice(selectedPlan)} {t('subscriptionPlan.perMonth')}
                     </p>
                   </div>
                 </div>
@@ -452,7 +457,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
                   onClick={closeModal}
                   disabled={confirming}
                   className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 text-gray-500 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 ml-3"
-                  aria-label="Close"
+                  aria-label={t('subscriptionPlan.close')}
                 >
                   <X size={18} />
                 </button>
@@ -469,7 +474,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
                   <div className="h-64 flex flex-col items-center justify-center gap-4">
                     <Loader2 className="h-8 w-8 text-harx-500 animate-spin" />
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                      Initializing Stripe…
+                      {t('subscriptionPlan.initializing')}
                     </p>
                   </div>
                 )}
@@ -487,7 +492,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
 
                 {confirming && (
                   <div className="mt-4 p-3 bg-blue-50/60 border border-blue-100 rounded-xl text-[11px] text-blue-800/80 font-bold text-center">
-                    Finalizing your subscription…
+                    {t('subscriptionPlan.finalizing')}
                   </div>
                 )}
 
@@ -498,17 +503,17 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
                     </div>
                     <div>
                       <h3 className="text-lg font-black text-gray-900 tracking-tight">
-                        Subscription active
+                        {t('subscriptionPlan.activeTitle')}
                       </h3>
                       <p className="text-xs font-bold text-gray-500 mt-1">
-                        You are now subscribed to {selectedPlan.name}.
+                        {t('subscriptionPlan.activeBody', { plan: selectedPlan.name })}
                       </p>
                     </div>
                     <button
                       onClick={closeModal}
                       className="mt-2 px-6 py-2.5 rounded-xl bg-harx-500 hover:bg-harx-600 text-white text-sm font-black tracking-tight shadow transition-all duration-200"
                     >
-                      Continue
+                      {t('subscriptionPlan.continue')}
                     </button>
                   </div>
                 )}

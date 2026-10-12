@@ -1072,6 +1072,11 @@
       "analyzingPlaceholder": "Analyse des documents en cours…",
       "send": "Envoyer",
       "stop": "Arrêter",
+      "thinking": "Réflexion…",
+      "generating": "Génération…",
+      "analyzing": "Analyse…",
+      "preparing": "L'assistant HARX prépare votre réponse.",
+      "pleaseWait": "Veuillez patienter — la réponse s'affichera ci-dessous.",
       "stopTooltip": "Arrêter la génération",
       "skip": "Passer",
       "uploadFiles": "Téléverser des fichiers",
@@ -1114,6 +1119,7 @@
         }
       },
       "personalization": {
+        "summaryTitle": "Quelques questions pour personnaliser votre formation",
         "source": {
           "question": "Quelle source utiliser pour cette formation ?",
           "options": {
@@ -3473,5 +3479,28 @@
   },
   "trainingViewer": {
     "validateFormation": "Valider la formation"
+  },
+  "subscriptionPlan": {
+    "eyebrow": "Accès premium",
+    "title": "Choisissez votre formule",
+    "subtitle": "Choisissez l'échelle adaptée à votre moteur d'orchestration propulsé par l'IA.",
+    "current": "Vous êtes actuellement abonné à {{plan}}. Vous pouvez gérer ou changer de formule ci-dessous.",
+    "yourPlan": "Votre formule",
+    "popular": "Populaire",
+    "perMonth": "/ mois",
+    "subscribe": "S'abonner",
+    "currentPlan": "Formule actuelle",
+    "opening": "Ouverture…",
+    "changePlan": "Changer de formule",
+    "securePayment": "Paiement sécurisé",
+    "close": "Fermer",
+    "loading": "Chargement des formules…",
+    "empty": "Aucune formule d'abonnement n'est disponible pour le moment.",
+    "initializing": "Initialisation de Stripe…",
+    "finalizing": "Finalisation de votre abonnement…",
+    "activeTitle": "Abonnement actif",
+    "activeBody": "Vous êtes maintenant abonné à {{plan}}.",
+    "continue": "Continuer",
+    "confirmFailed": "La confirmation de l'abonnement a échoué"
   }
 }
