@@ -310,6 +310,14 @@
         "terminate": "Résilier le numéro",
         "close": "Fermer"
       },
+      "terminateModal": {
+        "eyebrow": "Résiliation",
+        "title": "Libérer cette ligne",
+        "body": "Le numéro sera libéré chez le fournisseur et retiré de HARX.",
+        "warning": "Cette action est irréversible.",
+        "cancel": "Annuler",
+        "confirm": "Résilier définitivement"
+      },
       "filters": {
         "searchPlaceholder": "Rechercher un numéro ou un gig…",
         "gigLabel": "Filtrer par gig",

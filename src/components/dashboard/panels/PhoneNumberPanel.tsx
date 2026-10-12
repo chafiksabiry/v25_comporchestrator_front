@@ -203,6 +203,7 @@ export function PhoneNumberPanel() {
   const [assignGigDraft, setAssignGigDraft] = useState<Record<string, string>>({});
   const [assigningNumber, setAssigningNumber] = useState<string | null>(null);
   const [terminatingNumber, setTerminatingNumber] = useState<string | null>(null);
+  const [terminateTarget, setTerminateTarget] = useState<PurchasedNumber | null>(null);
 
   const [showRequirementModal, setShowRequirementModal] = useState(false);
   const [countryReq, setCountryReq] = useState<{
@@ -1009,11 +1010,6 @@ export function PhoneNumberPanel() {
   };
 
   const handleTerminateNumber = async (num: PurchasedNumber) => {
-    const confirmed = window.confirm(
-      t('phoneNumberPanel.toasts.terminateConfirm', { number: num.phoneNumber })
-    );
-    if (!confirmed) return;
-
     setTerminatingNumber(num.phoneNumber);
     try {
       const res = await fetch(`${apiBaseUrl}/phone-numbers/terminate`, {
@@ -1032,6 +1028,7 @@ export function PhoneNumberPanel() {
         );
       }
       toast.success(t('phoneNumberPanel.toasts.terminateSuccess', { number: num.phoneNumber }));
+      setTerminateTarget(null);
       if (selectedPhoneLine === num.phoneNumber) {
         setSelectedPhoneLine(null);
       }
@@ -1043,6 +1040,15 @@ export function PhoneNumberPanel() {
       setTerminatingNumber(null);
     }
   };
+
+  useEffect(() => {
+    if (!terminateTarget || terminatingNumber) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setTerminateTarget(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [terminateTarget, terminatingNumber]);
 
   const handleDirectPurchase = async (numberToBuy: string, provider: 'twilio' | 'telnyx') => {
     setPurchasing(numberToBuy);
@@ -2004,7 +2010,7 @@ export function PhoneNumberPanel() {
                             <button
                               type="button"
                               disabled={isBusy}
-                              onClick={() => void handleTerminateNumber(num)}
+                              onClick={() => setTerminateTarget(num)}
                               title={t('phoneNumberPanel.myNumbers.table.terminate')}
                               aria-label={t('phoneNumberPanel.myNumbers.table.terminate')}
                               className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-rose-700 hover:bg-rose-100 disabled:opacity-40"
@@ -2709,7 +2715,7 @@ export function PhoneNumberPanel() {
               <button
                 type="button"
                 disabled={terminatingNumber === selectedPhoneLineData.phoneNumber}
-                onClick={() => void handleTerminateNumber(selectedPhoneLineData)}
+                onClick={() => setTerminateTarget(selectedPhoneLineData)}
                 className="w-full py-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-40 text-[11px] font-black uppercase tracking-wider transition-colors inline-flex items-center justify-center gap-2"
               >
                 <Trash2 size={14} />
@@ -2941,6 +2947,93 @@ export function PhoneNumberPanel() {
                   ? t('phoneNumberPanel.checkout.ref', { ref: String(checkoutPaymentId).slice(-8) })
                   : t('phoneNumberPanel.checkout.noFee')}
               </p>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {terminateTarget && createPortal(
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4"
+          onClick={() => {
+            if (!terminatingNumber) setTerminateTarget(null);
+          }}
+        >
+          <div
+            className="bg-white rounded-3xl w-full max-w-md overflow-hidden border border-rose-100 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="terminate-line-title"
+          >
+            <div className="relative px-6 py-5 bg-gradient-to-br from-rose-600 via-pink-600 to-orange-500 text-white overflow-hidden">
+              <div className="absolute -right-10 -top-10 h-36 w-36 bg-white/20 rounded-full blur-2xl" />
+              <div className="absolute -left-8 bottom-0 h-24 w-24 bg-orange-300/30 rounded-full blur-2xl" />
+              <button
+                type="button"
+                onClick={() => setTerminateTarget(null)}
+                disabled={Boolean(terminatingNumber)}
+                className="absolute top-4 right-4 z-20 p-1.5 rounded-full hover:bg-white/15 transition disabled:opacity-40"
+                aria-label={t('phoneNumberPanel.myNumbers.terminateModal.cancel')}
+              >
+                <X size={16} />
+              </button>
+              <div className="relative z-10 flex items-start gap-3 pr-8">
+                <span className="p-2.5 rounded-xl bg-white/15 border border-white/30 shrink-0">
+                  <Trash2 size={20} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/80 mb-1">
+                    {t('phoneNumberPanel.myNumbers.terminateModal.eyebrow')}
+                  </p>
+                  <h2 id="terminate-line-title" className="text-xl font-black tracking-tight">
+                    {t('phoneNumberPanel.myNumbers.terminateModal.title')}
+                  </h2>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 pt-5 pb-2">
+              <p className="inline-flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-lg font-black tracking-tight text-slate-900 tabular-nums">
+                <Hash size={16} className="text-rose-500" />
+                {terminateTarget.phoneNumber}
+              </p>
+              <p className="mt-4 text-sm font-medium leading-relaxed text-slate-600">
+                {t('phoneNumberPanel.myNumbers.terminateModal.body')}
+              </p>
+              <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-amber-800">
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                <p className="text-xs font-bold leading-relaxed">
+                  {t('phoneNumberPanel.myNumbers.terminateModal.warning')}
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-5 flex flex-col-reverse sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => setTerminateTarget(null)}
+                disabled={Boolean(terminatingNumber)}
+                className="flex-1 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 text-[11px] font-black uppercase tracking-wider transition-colors"
+              >
+                {t('phoneNumberPanel.myNumbers.terminateModal.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleTerminateNumber(terminateTarget)}
+                disabled={Boolean(terminatingNumber)}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white disabled:opacity-60 text-[11px] font-black uppercase tracking-wider transition-colors inline-flex items-center justify-center gap-2 shadow-lg shadow-rose-200"
+              >
+                {terminatingNumber ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (
+                  <Trash2 size={14} />
+                )}
+                {terminatingNumber
+                  ? t('phoneNumberPanel.myNumbers.table.terminating')
+                  : t('phoneNumberPanel.myNumbers.terminateModal.confirm')}
+              </button>
             </div>
           </div>
         </div>,
