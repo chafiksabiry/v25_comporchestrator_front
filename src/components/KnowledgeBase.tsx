@@ -9,6 +9,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import { OnboardingService } from './training/infrastructure/services/OnboardingService';
 import { markCompanyGigsStepDone, markGigStepDone } from '../services/gigSetupSync';
+import { otherContentLanguage, resolveGigContentLanguage } from './training/utils/gigSnapshotForAi';
 import DocumentViewer from './training/components/DocumentViewer/DocumentViewer';
 
 interface DocumentAnalysis {
@@ -130,9 +131,11 @@ const KnowledgeBase: React.FC = () => {
   const [loadingScoring, setLoadingScoring] = useState<{ [key: string]: boolean }>({});
   const [callDurations, setCallDurations] = useState<{ [id: string]: number }>({});
   const [showTranscription, setShowTranscription] = useState<{ [key: string]: boolean }>({});
-  const [translatedAnalysis, setTranslatedAnalysis] = useState<{ [key: string]: DocumentAnalysis }>({});
+  const [translatedAnalysis, setTranslatedAnalysis] = useState<{
+    [key: string]: Partial<Record<'fr' | 'en', DocumentAnalysis>>;
+  }>({});
   const [translatingDocument, setTranslatingDocument] = useState<string | null>(null);
-  const frenchTranslationStarted = useRef<Set<string>>(new Set());
+  const translationStarted = useRef<Set<string>>(new Set());
   const [gigs, setGigs] = useState<any[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'document' | 'video' | 'audio'>('all');
@@ -784,14 +787,10 @@ const KnowledgeBase: React.FC = () => {
     });
   };
 
-  // French when the switcher is French, or when the browser language is French.
-  const wantsFrenchContent = (() => {
-    const ui = (i18n.language || '').toLowerCase();
-    if (ui.startsWith('fr')) return true;
-    if (typeof navigator === 'undefined') return false;
-    const browserLangs = [navigator.language, ...(navigator.languages || [])];
-    return browserLangs.some((lang) => String(lang || '').toLowerCase().startsWith('fr'));
-  })();
+  const selectedGigForLanguage = gigs.find((gig) => (gig._id || gig.id) === selectedGigId);
+  const displayLanguage = selectedGigForLanguage
+    ? resolveGigContentLanguage(selectedGigForLanguage)
+    : ((i18n.language || '').toLowerCase().startsWith('fr') ? 'fr' : 'en');
 
   const isTextInEnglish = (text: string): boolean => {
     if (!text) return false;
@@ -802,7 +801,16 @@ const KnowledgeBase: React.FC = () => {
     return englishWordCount / Math.min(words.length, 40) > 0.08;
   };
 
-  const translateAnalysis = async (documentId: string, analysis: DocumentAnalysis) => {
+  const analysisLanguage = (analysis: DocumentAnalysis): 'fr' | 'en' => {
+    const sample = `${analysis.summary || ''} ${analysis.domain || ''} ${analysis.theme || ''}`;
+    return isTextInEnglish(sample) ? 'en' : 'fr';
+  };
+
+  const translateAnalysis = async (
+    documentId: string,
+    analysis: DocumentAnalysis,
+    targetLanguage: 'fr' | 'en'
+  ) => {
     try {
       setTranslatingDocument(documentId);
       const textToTranslate = {
@@ -817,13 +825,16 @@ const KnowledgeBase: React.FC = () => {
       };
       const response = await apiClient.post('/rag/translate-analysis', {
         analysis: textToTranslate,
-        targetLanguage: 'French'
+        targetLanguage: targetLanguage === 'fr' ? 'French' : 'English'
       });
       const translated = (response.data as { translatedAnalysis?: DocumentAnalysis }).translatedAnalysis;
       if (translated?.summary) {
         setTranslatedAnalysis((prev) => ({
           ...prev,
-          [documentId]: translated
+          [documentId]: {
+            ...(prev[documentId] || {}),
+            [targetLanguage]: translated
+          }
         }));
       }
     } catch (error: unknown) {
@@ -834,20 +845,27 @@ const KnowledgeBase: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!wantsFrenchContent || translatingDocument) return;
+    if (translatingDocument) return;
     const pending = Object.entries(documentAnalysis).find(([id, analysis]) => {
       if (!analysis || !('domain' in analysis)) return false;
-      if (translatedAnalysis[id]) return false;
-      if (frenchTranslationStarted.current.has(id)) return false;
       const doc = analysis as DocumentAnalysis;
-      const sample = `${doc.summary || ''} ${doc.domain || ''} ${doc.theme || ''}`;
-      return isTextInEnglish(sample);
+      const sourceLang = analysisLanguage(doc);
+      const needed = [displayLanguage, otherContentLanguage(displayLanguage)].filter(
+        (lang) => lang !== sourceLang && !translatedAnalysis[id]?.[lang]
+      );
+      return needed.some((lang) => !translationStarted.current.has(`${id}:${lang}`));
     });
     if (!pending) return;
     const [id, analysis] = pending;
-    frenchTranslationStarted.current.add(id);
-    void translateAnalysis(id, analysis as DocumentAnalysis);
-  }, [wantsFrenchContent, translatingDocument, documentAnalysis, translatedAnalysis]);
+    const doc = analysis as DocumentAnalysis;
+    const sourceLang = analysisLanguage(doc);
+    const target = [displayLanguage, otherContentLanguage(displayLanguage)].find(
+      (lang) => lang !== sourceLang && !translatedAnalysis[id]?.[lang] && !translationStarted.current.has(`${id}:${lang}`)
+    );
+    if (!target) return;
+    translationStarted.current.add(`${id}:${target}`);
+    void translateAnalysis(id, doc, target);
+  }, [displayLanguage, translatingDocument, documentAnalysis, translatedAnalysis]);
 
   // Create unified items list
   const getUnifiedItems = () => {
@@ -907,12 +925,13 @@ const KnowledgeBase: React.FC = () => {
   const renderAnalysisContent = (analysis: AnalysisResult, documentId?: string) => {
     if ('domain' in analysis) {
       const docAnalysis = analysis as DocumentAnalysis;
-      const frenchVersion = documentId ? translatedAnalysis[documentId] : undefined;
-      const displayAnalysis = wantsFrenchContent && frenchVersion ? frenchVersion : docAnalysis;
+      const sourceLang = analysisLanguage(docAnalysis);
+      const zoneVersion = documentId ? translatedAnalysis[documentId]?.[displayLanguage] : undefined;
+      const displayAnalysis = sourceLang === displayLanguage ? docAnalysis : (zoneVersion || docAnalysis);
       const waitingForFrench =
-        wantsFrenchContent &&
+        sourceLang !== displayLanguage &&
         !!documentId &&
-        !frenchVersion &&
+        !zoneVersion &&
         translatingDocument === documentId;
 
       return (

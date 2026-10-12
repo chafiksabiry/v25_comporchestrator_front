@@ -20,6 +20,11 @@ import {
   formatVariablesForAiPrompt,
   type ScriptVariable,
 } from '../lib/scriptVariables';
+import {
+  bilingualGenerationInstruction,
+  resolveGigContentLanguage,
+  scriptChromeLabels,
+} from './training/utils/gigSnapshotForAi';
 
 interface Gig {
   _id: string;
@@ -709,7 +714,15 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
   const handleAutoGenerateInitialScript = () => {
     setIsAutoGenerateWizardActive(false);
-    sendMessageToApi("Génère un script d'appel complet pour cette mission", false);
+    const lang = resolveGigContentLanguage(selectedGig);
+    sendMessageToApi(
+      `${bilingualGenerationInstruction(lang)}\n\n${
+        lang === 'fr'
+          ? "Génère un script d'appel complet pour cette mission."
+          : 'Generate a complete call script for this gig.'
+      }`,
+      false
+    );
   };
 
   useEffect(() => {
@@ -755,13 +768,21 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         }
       }
 
-      const baseContexte =
-        'Générer un script interactif structuré en 8 étapes basées sur la mission.';
+      const scriptLanguage = resolveGigContentLanguage(selectedGig);
+      const baseContexte = [
+        bilingualGenerationInstruction(scriptLanguage),
+        scriptLanguage === 'fr'
+          ? 'Générer un script interactif structuré en 8 étapes basées sur la mission.'
+          : 'Generate an interactive call script in 8 stages based on this gig.',
+      ].join('\n\n');
       const payload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
-        langueTon: 'professionnel et direct',
+        langueTon: scriptLanguage === 'fr' ? 'professionnel et direct' : 'professional and direct',
+        outputLanguage: scriptLanguage,
+        contentLanguage: scriptLanguage,
+        alsoGenerateLanguage: scriptLanguage === 'fr' ? 'en' : 'fr',
         contexte: [baseContexte, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         trainings: currentTrainings,
         isInteractiveRequest: true,
@@ -776,7 +797,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       }
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
         setActiveInteractiveStages(generatedStages);
-        setActiveInteractiveTitle(selectedGig.title || "Script Interactif");
+        setActiveInteractiveTitle(selectedGig.title || scriptChromeLabels(resolveGigContentLanguage(selectedGig)).fallbackTitle);
         const backendBilled = applyBackendAiUsage(data?.usage, companyId);
         if (!backendBilled) {
           void chargeCompanyAiUsage({
@@ -841,12 +862,16 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         activeInteractiveStages.length - 1
       );
 
+      const scriptLanguage = resolveGigContentLanguage(selectedGig);
       const payload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
-        langueTon: 'professionnel et direct',
-        contexte: [promptText, contactVariablesPrompt].filter(Boolean).join('\n\n'),
+        langueTon: scriptLanguage === 'fr' ? 'professionnel et direct' : 'professional and direct',
+        outputLanguage: scriptLanguage,
+        contentLanguage: scriptLanguage,
+        alsoGenerateLanguage: scriptLanguage === 'fr' ? 'en' : 'fr',
+        contexte: [bilingualGenerationInstruction(scriptLanguage), promptText, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         trainings: currentTrainings,
         isInteractiveRequest: true,
         editMode: 'targeted',
@@ -860,7 +885,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       const generatedStages = data?.stages || data?.data?.stages;
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
         setActiveInteractiveStages(generatedStages);
-        setActiveInteractiveTitle(selectedGig.title || "Script Interactif");
+        setActiveInteractiveTitle(selectedGig.title || scriptChromeLabels(resolveGigContentLanguage(selectedGig)).fallbackTitle);
         const backendBilled = applyBackendAiUsage(data?.usage, companyId);
         if (!backendBilled) {
           void chargeCompanyAiUsage({
@@ -1115,12 +1140,16 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           .join('\n\n')
         : trimmedMessage;
 
+      const scriptLanguage = resolveGigContentLanguage(selectedGig);
       const scriptPayload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
-        langueTon: 'simple et direct',
-        contexte: [regenInstruction, contactVariablesPrompt].filter(Boolean).join('\n\n'),
+        langueTon: scriptLanguage === 'fr' ? 'simple et direct' : 'simple and direct',
+        outputLanguage: scriptLanguage,
+        contentLanguage: scriptLanguage,
+        alsoGenerateLanguage: scriptLanguage === 'fr' ? 'en' : 'fr',
+        contexte: [bilingualGenerationInstruction(scriptLanguage), regenInstruction, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         currentScript: currentScriptText || undefined,
         currentPlaybook: activeScriptMessage?.playbook || undefined,
         contactVariables,
@@ -1248,7 +1277,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     const stages = (item.playbook as any)?.stages;
     if (Array.isArray(stages) && stages.length > 0) {
       setActiveInteractiveStages(stages);
-      setActiveInteractiveTitle(item.playbook?.title || selectedGig?.title || "Script Interactif");
+      setActiveInteractiveTitle(item.playbook?.title || selectedGig?.title || scriptChromeLabels(resolveGigContentLanguage(selectedGig)).fallbackTitle);
     } else {
       setActiveInteractiveStages(null);
     }
@@ -1443,6 +1472,8 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     );
   };
 
+  const scriptLabels = scriptChromeLabels(resolveGigContentLanguage(selectedGig));
+
   return (
     <div className="w-full h-[calc(100vh-125px)] flex flex-col px-3 py-1 bg-transparent overflow-hidden">
       <div className="w-full max-w-7xl mx-auto flex flex-col h-full min-h-0 space-y-3">
@@ -1455,9 +1486,9 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div>
-                <h2 className="text-sm font-black text-white uppercase tracking-tight">Script d'Appel Intelligent</h2>
+                <h2 className="text-sm font-black text-white uppercase tracking-tight">{scriptLabels.intelligent}</h2>
                 <p className="text-[10px] font-bold text-slate-400">
-                  Concevez votre script de vente idéal en dialoguant avec l'IA HARX
+                  {scriptLabels.subtitle}
                 </p>
               </div>
             </div>
@@ -1466,7 +1497,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               onClick={handleBackToOrchestrator}
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Retour
+              {scriptLabels.back}
             </button>
           </div>
         </div>
@@ -1868,7 +1899,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 {activeInteractiveStages && activeInteractiveStages.length > 0 ? (
                   <div className="flex-1 overflow-hidden min-h-0 relative">
                     <InteractiveScriptCockpit
-                      scriptTitle={activeInteractiveTitle || selectedGig?.title || "Script d'Appel Interactif"}
+                      scriptTitle={activeInteractiveTitle || selectedGig?.title || scriptLabels.fallbackTitle}
                       stages={activeInteractiveStages}
                       isInline={true}
                       onValidate={handleSaveAndValidateInteractiveScript}
@@ -1902,7 +1933,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     </div>
 
                     <div className="space-y-1.5 max-w-sm">
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Script Interactif Intelligent</h3>
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{scriptLabels.interactive}</h3>
                       <p className="text-[11px] text-slate-500 font-bold leading-normal">
                         Concevez un script structuré en 8 étapes, intégrant la conformité légale et les modules d'apprentissage de votre parcours de formation.
                       </p>
@@ -1946,7 +1977,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4" />
-                          Générer le Script Interactif
+                          {scriptLabels.interactive}
                         </>
                       )}
                     </button>
