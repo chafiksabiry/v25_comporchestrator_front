@@ -14,11 +14,10 @@ class ZohoService {
     isConfigured: false
   };
 
+  private initPromise: Promise<boolean>;
+
   private constructor() {
-    // Initialisation silencieuse
-    this.initializeFromServer().catch(error => {
-      
-    });
+    this.initPromise = this.initializeFromServer().catch(() => false);
   }
 
   public static getInstance(): ZohoService {
@@ -28,12 +27,16 @@ class ZohoService {
     return ZohoService.instance;
   }
 
-  private async initializeFromServer() {
+  /** Resolves once the saved Zoho config has been loaded for this user. */
+  public whenReady(): Promise<boolean> {
+    return this.initPromise;
+  }
+
+  private async initializeFromServer(): Promise<boolean> {
     try {
       const userId = Cookies.get('userId');
       if (!userId) {
-        
-        return;
+        return false;
       }
 
       const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/user/${userId}`, {
@@ -49,16 +52,13 @@ class ZohoService {
           this.config.accessToken = config.access_token;
           this.config.refreshToken = config.refresh_token;
           this.config.tokenExpiry = Date.now() + (config.expires_in * 1000);
-          this.config.isConfigured = true;
-          
+          this.config.isConfigured = Boolean(config.access_token);
+          return this.config.isConfigured;
         }
-      } else if (response.status === 404) {
-        
-      } else {
-        
       }
+      return false;
     } catch (error) {
-      
+      return false;
     }
   }
 

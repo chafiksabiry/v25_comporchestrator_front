@@ -2993,13 +2993,18 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     const checkZohoConfig = async () => {
       const zohoService = ZohoService.getInstance();
-      const isConfigured = zohoService.isConfigured();
+      const isConfigured = await zohoService.whenReady();
+      if (cancelled) return;
       setHasZohoAccessToken(isConfigured);
       setHasZohoConfig(isConfigured);
     };
     checkZohoConfig();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Show import choice modal on first visit - DISABLED
@@ -3334,8 +3339,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
         {/* Import Methods Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Zoho Import Card - DISABLED FOR NOW */}
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-2xl p-6 flex flex-col h-full relative overflow-hidden group">
+          <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-6 flex flex-col h-full relative overflow-hidden group">
             {/* Header */}
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-gray-100 shadow-sm relative z-20">
