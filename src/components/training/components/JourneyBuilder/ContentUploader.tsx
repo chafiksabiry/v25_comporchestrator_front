@@ -30,7 +30,7 @@ import { scrollJourneyMainToTop } from './journeyScroll';
 
 import type { TrainingMethodology } from '../../types/methodology';
 
-import { buildGigSnapshotForAi, detectOutputLanguageFromGigText } from '../../utils/gigSnapshotForAi';
+import { buildGigSnapshotForAi, bilingualGenerationInstruction, planSectionLabels, resolveGigContentLanguage, splitBilingualContent } from '../../utils/gigSnapshotForAi';
 import type { TrainingViewerTheme } from '../../utils/trainingViewerTheme';
 import {getModuleColorStyles, getViewerThemeTokens, resolveRepViewerTheme} from '../../utils/trainingViewerTheme';
 import { resolveSectionMarkdown } from '../../utils/resolveSectionMarkdown';
@@ -1126,8 +1126,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
     setRepSessionAnalyzedFileNames([]);
   }, [activeChatGigId]);
 
+  const activeGigForLanguage = companyGigs.find(
+    (g: any) => String(g?._id || g?.id || '') === String(activeChatGigId)
+  );
+  const gigContentLanguage = resolveGigContentLanguage(
+    activeGigForLanguage,
+    activeGigForLanguage?.title,
+    activeGigForLanguage?.description
+  );
   const activeChatGigTitle =
-    companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId))?.title ||
+    activeGigForLanguage?.title ||
     (activeChatGigId ? `Gig ${activeChatGigId.slice(0, 8)}` : 'No gig');
   const hasActiveGigInOptions = useMemo(
     () =>
@@ -1507,13 +1515,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const script = await AIService.generatePodcastScript({
         trainingDigest: digest,
         trainingTitle,
-        language: 'fr',
+        language: gigContentLanguage,
         journeyId: linkedTrainingJourneyMongoId(),
       });
       setPodcastScript(script);
       lastPodcastGenChatLengthRef.current = chatMessages.length;
       if (!podcastTitle.trim()) {
-        setPodcastTitle(trainingTitle ? `${trainingTitle} - Podcast` : 'Podcast formation');
+        setPodcastTitle(trainingTitle ? `${trainingTitle} - Podcast` : (gigContentLanguage === 'fr' ? 'Podcast formation' : 'Training podcast'));
       }
       if (currentSavedPodcastId) {
         const titleToSave = (podcastTitle.trim() || `${trainingTitle || 'Training podcast'} - Podcast`).slice(0, 240);
@@ -1521,7 +1529,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           title: titleToSave,
           script,
           trainingTitle: trainingTitle || 'Training podcast',
-          language: 'fr',
+          language: gigContentLanguage,
           gigId: activeChatGigId ? String(activeChatGigId) : undefined,
           companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
           chatMessages: [],
@@ -1598,7 +1606,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         title,
         script,
         trainingTitle: fallbackTitle,
-        language: 'fr',
+        language: gigContentLanguage,
         gigId: activeChatGigId ? String(activeChatGigId) : undefined,
         companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
         chatMessages: [],
@@ -1690,7 +1698,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         trainingDigest: digest,
         trainingTitle,
         title: `${trainingTitle} - ${imageRenderMode === 'template_slides' ? 'Slides' : 'Images'}`,
-        language: 'fr',
+        language: gigContentLanguage,
         renderMode: imageRenderMode,
         styleGuidance: imagePrompt.trim() || undefined,
         maxImages: 20,
@@ -1707,7 +1715,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         title: `${trainingTitle} - ${imageRenderMode === 'template_slides' ? 'Slides' : 'Images'}`,
         trainingTitle,
         renderMode: result.renderMode || imageRenderMode,
-        language: 'fr',
+        language: gigContentLanguage,
         items: Array.isArray(result.items) ? result.items : [],
       });
     } catch (e: any) {
@@ -1740,7 +1748,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const data = await AIService.generateTrainingSlidesJson({
         trainingDigest: digest,
         trainingTitle,
-        language: 'fr',
+        language: gigContentLanguage,
         maxSlides: 16,
         generator: 'ai',
         withCoverImage: true,
@@ -1770,7 +1778,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           title: prev?.title || 'Training images',
           trainingTitle: prev?.trainingTitle,
           renderMode: st.renderMode || prev?.renderMode || imageRenderMode,
-          language: prev?.language || 'fr',
+          language: prev?.language || gigContentLanguage,
           items: Array.isArray(st.items) ? st.items : [],
           createdAt: prev?.createdAt,
         }));
@@ -3902,10 +3910,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const gigDescriptionForLanguage = String(
           (chatGigSnapshot as any)?.description || ''
         ).trim();
-        const outputLanguage = detectOutputLanguageFromGigText(
+        const outputLanguage = resolveGigContentLanguage(
+          activeGigForLanguage,
           gigTitleForLanguage,
           gigDescriptionForLanguage
         );
+        const bilingualInstruction = bilingualGenerationInstruction(outputLanguage);
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
           selectedGigId: isUploadsPrimaryMode ? '' : activeChatGigId || '',
@@ -3920,11 +3930,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
           useKnowledgeBase: usesKbForChat,
           useUploadedDocuments: usesUploadsForChat,
           useGigAsSecondaryContext: false,
-          // Language of plan + content follows gig title/description (even in uploads_only)
+          // Visible language follows the destination zone. Both languages are generated.
           outputLanguage,
           contentLanguage: outputLanguage,
+          alsoGenerateLanguage: outputLanguage === 'fr' ? 'en' : 'fr',
           languageFromGig: {
-            source: 'gig_title_description',
+            source: 'destination_zone',
             titleSample: gigTitleForLanguage.slice(0, 180) || null,
             descriptionSample: gigDescriptionForLanguage.slice(0, 280) || null,
             detected: outputLanguage,
@@ -3941,10 +3952,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 primary: 'uploaded_files',
                 secondary: null,
                 instruction:
-                  `Generate the training plan AND all training module content ONLY from analyzed uploaded documents (topics, objectives, summaries, file content). Do NOT use the gig snapshot, product offer, or audience from the gig. Do not use knowledge-base documents. Write the entire plan, all training content, and any training title/description in ${outputLanguage === 'fr' ? 'French' : 'English'} — match the language of the gig title and description (languageFromGig / outputLanguage). If information is missing, infer only from the uploaded files.`,
+                  `Generate the training plan AND all training module content ONLY from analyzed uploaded documents (topics, objectives, summaries, file content). Do NOT use the gig snapshot, product offer, or audience from the gig. Do not use knowledge-base documents. ${bilingualInstruction} If information is missing, infer only from the uploaded files.`,
               }
             : {
-                instruction: `Write the training title, training description, training plan, and all training content in ${outputLanguage === 'fr' ? 'French' : 'English'}, matching the language of the selected gig title and description (languageFromGig / outputLanguage).`,
+                instruction: bilingualInstruction,
               },
           knowledgeBaseDocumentsCount: kbDocsSummary.length,
           knowledgeBaseDocuments: kbDocsSummary,
@@ -4420,7 +4431,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           imageSetId: activeImageSet._id,
           title: String(activeImageSet.title || 'Training images').trim() || 'Training images',
           trainingTitle: activeImageSet.trainingTitle || resolvedTrainingMaterialTitle || undefined,
-          language: activeImageSet.language || 'fr',
+          language: activeImageSet.language || gigContentLanguage,
           renderMode: activeImageSet.renderMode || imageRenderMode,
           gigId: activeChatGigId ? String(activeChatGigId) : undefined,
           companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
@@ -4481,7 +4492,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const saved = await AIService.saveStructuredSlides({
           slidesSetId: structuredSlides._id,
           title: String(structuredSlides.title || resolvedTrainingMaterialTitle || 'Structured slides').trim(),
-          language: structuredSlides.language || 'fr',
+          language: structuredSlides.language || gigContentLanguage,
           theme: structuredSlides.theme,
           slides: Array.isArray(structuredSlides.slides) ? structuredSlides.slides : [],
           gigId: activeChatGigId ? String(activeChatGigId) : undefined,
@@ -4502,7 +4513,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
       rawText: string,
       canGenerateFromPlan: boolean
     ): React.ReactNode | null => {
-      const text = String(rawText || '').trim();
+      const labels = planSectionLabels(gigContentLanguage);
+      const text = splitBilingualContent(String(rawText || '')).visible.trim();
       if (!text) return null;
       const looksLikeModuleContent =
         /###\s*(📚|🧪|✅|📝)\s*|explication\s+d[ée]taill[ée]e|mini\s+quiz|auto[-\s]?[eé]valuation|hands-on\s+exercise/i.test(
@@ -4524,8 +4536,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const usingParsedForCurrentMessage = parsedPlan.modules.length >= 2;
         const usingStructuredPlan = !usingParsedForCurrentMessage && structuredModules.length >= 2;
         const timelineTitle = usingStructuredPlan
-          ? 'Plan de formation (sauvegardé)'
-          : parsedPlan.title || 'Plan de formation';
+          ? labels.planSaved
+          : parsedPlan.title || labels.plan;
         const timelineIntro = usingParsedForCurrentMessage ? parsedPlan.intro : '';
         return (
           <div className="mb-3 rounded-2xl border border-harx-100 bg-white p-3 shadow-sm">
@@ -4615,11 +4627,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     </div>
                     <p className="text-sm font-semibold text-slate-900">{module.title}</p>
                     <div className="mt-2 space-y-3">
-                      {renderSectionWithIndent(module.sections.objectives.slice(0, 10), 'Objectifs', '🎯', 'objectives')}
+                      {renderSectionWithIndent(module.sections.objectives.slice(0, 10), labels.objectives, '🎯', 'objectives')}
                       {module.sections.objectives.length > 0 && module.sections.keyTopics.length > 0 ? (
                         <div className="h-px w-full bg-slate-200/70" />
                       ) : null}
-                      {renderSectionWithIndent(module.sections.keyTopics.slice(0, 14), 'Sujets clés', '📌', 'topics')}
+                      {renderSectionWithIndent(module.sections.keyTopics.slice(0, 14), labels.keyTopics, '📌', 'topics')}
                       {module.sections.objectives.length === 0 &&
                       module.sections.keyTopics.length === 0 ? (
                         <ul className="space-y-0.5 pl-4 text-xs text-slate-700">
@@ -4646,7 +4658,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const sectionHeaderRegex = /^(contenu|format|objectif)s?\s*:?\s*$/i;
 
       const titleCandidate =
-        lines.find((line) => /formation|programme|initiation|atelier|cours/i.test(line)) || 'Plan de formation';
+        lines.find((line) => /formation|programme|initiation|atelier|cours|training|plan/i.test(line)) || labels.plan;
 
       const blocks: Array<{
         title: string;
@@ -6765,9 +6777,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         <div className="max-w-[88%]">
                           <div className="max-w-none text-slate-900">
                             {(() => {
-                              const textWithoutStyle = stripPromptEcho(
-                                stripResourceSections(stripStyleBlueprint(sanitizeAssistantMessage(String(msg.text || ''))))
-                              );
+                              const textWithoutStyle = splitBilingualContent(
+                                stripPromptEcho(
+                                  stripResourceSections(stripStyleBlueprint(sanitizeAssistantMessage(String(msg.text || ''))))
+                                )
+                              ).visible;
                               const styleBlueprint = extractStyleBlueprint(String(msg.text || ''));
                               const contentTheme = styleBlueprint.contentTheme;
                               const typography = styleBlueprint.typography || {

@@ -14,7 +14,7 @@ import TrainingDetailsForm, { VISION_DURATIONS } from './TrainingDetailsForm';
 import { scrollJourneyMainToTop } from './journeyScroll';
 import '../../training-layout.css';
 import { cloudinaryService } from '../../lib/cloudinaryService';
-import { detectOutputLanguageFromGigText } from '../../utils/gigSnapshotForAi';
+import { bilingualGenerationInstruction, resolveGigContentLanguage } from '../../utils/gigSnapshotForAi';
 import {
   assertCompanyHasAiTokens,
   chargeCompanyAiUsage,
@@ -387,8 +387,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
       const gigTitle = String(selectedGig.title || '').trim();
       const gigDescription = String(selectedGig.description || '').trim();
-      const outputLanguage = detectOutputLanguageFromGigText(gigTitle, gigDescription);
-      const languageLabel = outputLanguage === 'fr' ? 'French' : 'English';
+      const outputLanguage = resolveGigContentLanguage(selectedGig, gigTitle, gigDescription);
       const response = await axios.post(`${baseUrl}/training_journeys/suggest-vision`, {
         target,
         currentTitle: visionName,
@@ -398,13 +397,14 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
         gig: selectedGig,
         outputLanguage,
         contentLanguage: outputLanguage,
+        alsoGenerateLanguage: outputLanguage === 'fr' ? 'en' : 'fr',
         languageFromGig: {
-          source: 'gig_title_description',
+          source: 'destination_zone',
           titleSample: gigTitle.slice(0, 180) || null,
           descriptionSample: gigDescription.slice(0, 280) || null,
           detected: outputLanguage,
         },
-        languageInstruction: `Write the training ${isTitle ? 'title' : 'description'} in ${languageLabel} only. Match the language of the gig title and description. Do not mix languages.`,
+        languageInstruction: bilingualGenerationInstruction(outputLanguage),
       });
       const data = (response?.data as any)?.data || {};
       const backendBilled = applyBackendAiUsage((response?.data as any)?.usage);

@@ -78,6 +78,7 @@ export function buildGigSnapshotForAi(gig: unknown): Record<string, unknown> | n
     activities: namesFromList(g.activities, ['name', 'title', 'label']),
     sectors: namesFromList(g.sectors, ['name', 'title', 'label']),
     destinationZone: destinationZone || undefined,
+    destinationLanguage: languageFromDestinationZone(dz) || undefined,
     seniority: seniority?.level || seniority?.yearsExperience ? seniority : undefined,
     highlights: Array.isArray(g.highlights)
       ? g.highlights.filter((x: unknown) => typeof x === 'string').map((x: string) => x.trim()).filter(Boolean).slice(0, 24)
@@ -99,9 +100,140 @@ export function buildGigSnapshotForAi(gig: unknown): Record<string, unknown> | n
   };
 }
 
+const FRENCH_COUNTRY_CODES = new Set([
+  'FR', 'BE', 'CH', 'LU', 'MC', 'SN', 'CI', 'CM', 'MA', 'TN', 'DZ', 'MG',
+  'HT', 'GP', 'MQ', 'RE', 'GF', 'YT', 'PF', 'NC', 'CD', 'CG', 'GA', 'ML',
+  'NE', 'BF', 'BJ', 'TG', 'TD', 'GN', 'RW', 'BI', 'DJ', 'KM',
+]);
+
+function zoneRecord(zone: unknown): Record<string, any> | null {
+  if (!zone || typeof zone !== 'object') return null;
+  return zone as Record<string, any>;
+}
+
+/** Language spoken in the gig destination zone. France → fr, United States → en. */
+export function languageFromDestinationZone(zone: unknown): 'fr' | 'en' | null {
+  if (!zone) return null;
+  if (typeof zone === 'string') {
+    const raw = zone.trim();
+    const lower = raw.toLowerCase();
+    if (/france|belg|suisse|switzerland|luxem|monaco|français|french/.test(lower)) return 'fr';
+    if (/^[a-z]{2}$/i.test(raw)) {
+      return FRENCH_COUNTRY_CODES.has(raw.toUpperCase()) ? 'fr' : 'en';
+    }
+    if (lower) return 'en';
+    return null;
+  }
+  const z = zoneRecord(zone);
+  if (!z) return null;
+  const langs = z.languages;
+  if (langs && typeof langs === 'object' && !Array.isArray(langs)) {
+    const keys = Object.keys(langs).map((key) => key.toLowerCase());
+    const first = keys[0] || '';
+    if (first === 'fra' || first === 'fre' || first === 'fr') return 'fr';
+    if (first === 'eng' || first === 'en') return 'en';
+    const blob = [...keys, ...Object.values(langs).map((value) => String(value).toLowerCase())].join(' ');
+    if (/\b(fra|fre|french|français)\b/.test(blob) && !/\b(eng|english|anglais)\b/.test(blob)) return 'fr';
+    if (/\b(eng|english|anglais)\b/.test(blob)) return 'en';
+  }
+  const code = String(z.cca2 || '').toUpperCase();
+  if (code.length === 2) return FRENCH_COUNTRY_CODES.has(code) ? 'fr' : 'en';
+  const name = String(z.name?.common || z.name?.official || z.name || z.label || '').toLowerCase();
+  if (/france|belgium|belgique|switzerland|suisse|luxembourg|monaco/.test(name)) return 'fr';
+  if (name) return 'en';
+  return null;
+}
+
+export function otherContentLanguage(lang: 'fr' | 'en'): 'fr' | 'en' {
+  return lang === 'fr' ? 'en' : 'fr';
+}
+
+/** Display and generation language: destination zone first, gig text only as a fallback. */
+export function resolveGigContentLanguage(
+  gig: unknown,
+  title?: string | null,
+  description?: string | null
+): 'fr' | 'en' {
+  const row = gig && typeof gig === 'object' ? (gig as Record<string, any>) : null;
+  const fromZone = languageFromDestinationZone(row?.destination_zone);
+  if (fromZone) return fromZone;
+  return detectOutputLanguageFromGigText(title ?? row?.title, description ?? row?.description);
+}
+
+export function languageName(lang: 'fr' | 'en'): string {
+  return lang === 'fr' ? 'French' : 'English';
+}
+
+/** Visible copy in the zone language, plus a fenced translation the UI does not parse as the plan. */
+export function bilingualGenerationInstruction(display: 'fr' | 'en'): string {
+  const other = otherContentLanguage(display);
+  return `The gig destination zone language is ${languageName(display)}. Write the visible title, every section heading, the plan, and all module or script lines ONLY in ${languageName(display)}. Do not mix languages in that visible part. Then append a fenced block containing the full ${languageName(other)} translation:\n\`\`\`translation-${other}\n...\n\`\`\`\nDo not repeat the translation outside that fence.`;
+}
+
+export function splitBilingualContent(text: string): {
+  visible: string;
+  translations: Partial<Record<'fr' | 'en', string>>;
+} {
+  const translations: Partial<Record<'fr' | 'en', string>> = {};
+  const visible = String(text || '').replace(
+    /```translation-(fr|en)\s*([\s\S]*?)```/gi,
+    (_match, lang: string, body: string) => {
+      const key = lang.toLowerCase() === 'fr' ? 'fr' : 'en';
+      translations[key] = String(body || '').trim();
+      return '';
+    }
+  );
+  return { visible: visible.trim(), translations };
+}
+
+export function planSectionLabels(lang: 'fr' | 'en'): {
+  plan: string;
+  planSaved: string;
+  objectives: string;
+  keyTopics: string;
+} {
+  return lang === 'fr'
+    ? {
+        plan: 'Plan de formation',
+        planSaved: 'Plan de formation (sauvegardé)',
+        objectives: 'Objectifs',
+        keyTopics: 'Sujets clés',
+      }
+    : {
+        plan: 'Training plan',
+        planSaved: 'Training plan (saved)',
+        objectives: 'Objectives',
+        keyTopics: 'Key topics',
+      };
+}
+
+export function scriptChromeLabels(lang: 'fr' | 'en'): {
+  intelligent: string;
+  subtitle: string;
+  interactive: string;
+  fallbackTitle: string;
+  back: string;
+} {
+  return lang === 'fr'
+    ? {
+        intelligent: "Script d'Appel Intelligent",
+        subtitle: "Concevez votre script de vente idéal en dialoguant avec l'IA HARX",
+        interactive: 'Script Interactif Intelligent',
+        fallbackTitle: "Script d'Appel Interactif",
+        back: 'Retour',
+      }
+    : {
+        intelligent: 'Intelligent Call Script',
+        subtitle: 'Design the call script for this gig with HARX AI',
+        interactive: 'Intelligent Interactive Script',
+        fallbackTitle: 'Interactive Call Script',
+        back: 'Back',
+      };
+}
+
 /**
  * Infer plan/content output language from gig title + description only.
- * Used even when gig business context is excluded (uploads_only).
+ * Used when the gig has no destination zone.
  */
 export function detectOutputLanguageFromGigText(
   title?: string | null,
