@@ -65,8 +65,12 @@ export function callOutcomeBadge(outcome: string | null | undefined): StatusBadg
       tone: 'bg-blue-50 text-blue-700 border-blue-200',
     },
     fraud: { label: tb('fraud'), tone: 'bg-rose-100 text-rose-800 border-rose-300' },
-    // Legacy too_short is never shown as a user-facing label — map to sans suite.
+    // Legacy too_short / not_argumented are never shown as their own labels — map to sans suite.
     too_short: {
+      label: tb('connectedNoSale'),
+      tone: 'bg-slate-50 text-slate-600 border-slate-200',
+    },
+    not_argumented: {
       label: tb('connectedNoSale'),
       tone: 'bg-slate-50 text-slate-600 border-slate-200',
     },
@@ -127,11 +131,17 @@ const PRIORITY_CALLOUTCOMES = new Set([
   'transaction',
   'fraud',
   'refusal',
+  'callback_requested',
+  'appointment',
+  'argued_interested',
+  'not_interested',
+  'already_equipped',
   'voicemail',
   'no_answer',
   'busy',
   'wrong_number',
   'connected_no_sale',
+  'not_argumented',
 ]);
 
 /** Twilio / post-analysis badge when callOutcome is missing or legacy `too_short`. */
@@ -695,14 +705,94 @@ export const CALL_REJECTED_BADGE: StatusBadge = {
   title: "L'appel n'a pas été validé par l'IA — aucune transaction à traiter",
 };
 
-/** Disposition label (pills, modal) when the call itself is still valid. */
+const SUGGESTED_TO_OUTCOME: Record<string, string> = {
+  called_unreachable: 'no_answer',
+  called_voicemail: 'voicemail',
+  called_wrong_number: 'wrong_number',
+  called_callback: 'callback_requested',
+  called_rdv: 'appointment',
+  argued_rdv: 'argued_interested',
+  argued_declined: 'refusal',
+  argued_done: 'transaction',
+  not_argumented: 'connected_no_sale',
+};
+
+const GENERIC_OUTCOMES = new Set(['', 'too_short', 'connected_no_sale', 'not_argumented']);
+
+/** Commercial ladder key. A generic outcome must not hide a more specific AI disposition. */
+export function commercialCallOutcome(call: CallLike): string {
+  if (isCallVoicemail(call)) return 'voicemail';
+  if (isCallFraudDetected(call)) return 'fraud';
+  const outcome = String(call.callOutcome || '').toLowerCase();
+  const suggested = SUGGESTED_TO_OUTCOME[String(call.suggestedDisposition || '').toLowerCase()] || '';
+  if (GENERIC_OUTCOMES.has(outcome) && suggested && suggested !== 'connected_no_sale') return suggested;
+  if (outcome === 'not_argumented') return 'connected_no_sale';
+  return outcome;
+}
+
+/** QA has not produced a status yet. Short calls and already scored calls are not pending. */
+export function isCallAnalysisPending(call: CallLike): boolean {
+  if (isCallTooShortForAnalysis(call) || isCallVoicemail(call) || isCallFraudDetected(call)) return false;
+  if (isCallApprovedByAI(call) || isCallRejectedByAI(call)) return false;
+  const aiStatus = String(call.ai_call_status || '').toLowerCase();
+  if (['scored', 'auto_refused', 'error', 'too_short'].includes(aiStatus)) return false;
+  if (commercialCallOutcome(call)) return false;
+  if (typeof call.ai_call_score?.overall?.score === 'number') return false;
+  return true;
+}
+
+/** APPEL column: the commercial status, never the commission decision. */
+export function resolveCallListStatus(call: CallLike): StatusBadge {
+  if (isCallAnalysisPending(call)) {
+    return {
+      label: i18n.t('calls.ai.pendingAnalysis'),
+      tone: 'bg-slate-50 text-slate-500 border-slate-200',
+      title: i18n.t('calls.ai.pendingAnalysis'),
+    };
+  }
+  return resolveCallDispositionStatus(call);
+}
+
+/** A sale the company can sign. A callback, a refusal or « sans suite » is not a transaction. */
+export function hasSignableTransaction(call: CallLike): boolean {
+  if (isCallFraudDetected(call) || isCallVoicemail(call) || isCallRejectedByAI(call)) return false;
+  const outcome = commercialCallOutcome(call);
+  if (outcome && outcome !== 'transaction') return false;
+  if (outcome === 'transaction') return true;
+  return call.transaction?.validByAI === true;
+}
+
+/** TRANSACTION column: sale state only. */
+export function resolveTransactionColumnStatus(call: CallLike): StatusBadge {
+  if (hasSignableTransaction(call)) {
+    if (call.transaction?.validByCompany === false) {
+      return {
+        label: tb('notSigned'),
+        tone: 'bg-slate-50 text-slate-600 border-slate-200',
+        title: tb('companyRefusedTitle'),
+      };
+    }
+    return {
+      label: tb('awaitingSignature'),
+      tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      title: tb('toConfirmTitle'),
+    };
+  }
+  return {
+    label: tb('noTransaction'),
+    tone: 'bg-slate-50 text-slate-500 border-slate-200',
+    title: tb('noTransactionTitle'),
+  };
+}
+
+/** Disposition label (pills, modal) — the commercial call status. */
 export function resolveCallDispositionStatus(call: CallLike): StatusBadge {
   if (isCallVoicemail(call)) {
     const badge = callOutcomeBadge('voicemail');
     if (badge) return { ...badge, title: badge.title || tb('voicemailTitle') };
   }
 
-  const outcome = String(call.callOutcome || '').toLowerCase();
+  const outcome = commercialCallOutcome(call);
 
   // Legacy / internal too_short → Twilio status or Sans suite (never « Trop court »).
   if (outcome === 'too_short' || (!outcome && isCallTooShortForAnalysis(call))) {
@@ -757,52 +847,7 @@ export function resolveCallDispositionStatus(call: CallLike): StatusBadge {
   };
 }
 
-/** Transaction column — si l'appel est refusé, pas de statut prospect/transaction. */
+/** Transaction column. A call disposition is never a transaction status. */
 export function resolveUnvalidatedTransactionStatus(call: CallLike): StatusBadge {
-  if (isCallVoicemail(call)) {
-    const badge = callOutcomeBadge('voicemail');
-    return badge
-      ? { ...badge, title: tb('voicemailTitle') }
-      : { label: tb('voicemail'), tone: 'bg-slate-50 text-slate-600 border-slate-200', title: tb('voicemailTitle') };
-  }
-
-  const outcome = String(call.callOutcome || '').toLowerCase();
-  // Call disposition (Sans suite, busy, …) is NOT a transaction status.
-  // Short / no-sale calls → show « Non validé » on the TRANSACTION badge.
-  if (
-    isCallTooShortForAnalysis(call) ||
-    outcome === 'too_short' ||
-    outcome === 'connected_no_sale' ||
-    outcome === 'busy' ||
-    outcome === 'no_answer' ||
-    outcome === 'wrong_number'
-  ) {
-    return {
-      label: tb('notValidated'),
-      tone: 'bg-slate-50 text-slate-600 border-slate-200',
-      title: tb('notValidatedTitle'),
-    };
-  }
-
-  // Stale inconsistency: call is AI-valid but transaction still carries an old
-  // AI auto-reject (validByAI=false + validByCompany=false). Ignore it and
-  // fall through to disposition — company "Not signed" keeps validByAI null/true.
-  const staleAiAutoReject =
-    call.validByAI === true &&
-    call.transaction?.validByAI === false &&
-    call.transaction?.validByCompany === false;
-
-  if (call.transaction?.validByCompany === false && !staleAiAutoReject) {
-    return {
-      label: tb('callRefused'),
-      tone: 'bg-rose-50 text-rose-700 border-rose-200',
-      title: tb('companyRefusedTitle'),
-    };
-  }
-
-  if (isCallRejectedByAI(call)) {
-    return getCallRejectedBadge();
-  }
-
-  return resolveCallDispositionStatus(call);
+  return resolveTransactionColumnStatus(call);
 }
