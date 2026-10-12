@@ -169,6 +169,18 @@ function AppContent() {
   const [onboardingComplete, setOnboardingComplete] = useState(() =>
     isOnboardingFullyCompleted()
   );
+  // Only users who already finished onboarding before this page load are sent
+  // straight to the dashboard. Completing the last step in this session must
+  // not swap the sidebar to the dashboard menu on its own.
+  const onboardingCompleteAtLoad = useRef(isOnboardingFullyCompleted());
+  const onboardingSyncSeen = useRef(false);
+  const applyOnboardingSync = (complete: boolean) => {
+    if (!onboardingSyncSeen.current) {
+      onboardingSyncSeen.current = true;
+      if (complete) onboardingCompleteAtLoad.current = true;
+    }
+    setOnboardingComplete(complete);
+  };
   // `onboardingChecked` was used to gate the welcome modal until the API
   // onboarding sync had completed. The welcome modal no longer depends on
   // onboarding state (it is purely first-visit driven), so the flag was
@@ -502,7 +514,7 @@ function AppContent() {
                 window.dispatchEvent(new CustomEvent('harx:company-ready'));
                 const steps = await syncOnboardingProgressFromApi(finalCompanyId);
                 const complete = isOnboardingFullyCompleted(steps);
-                setOnboardingComplete(complete);
+                applyOnboardingSync(complete);
                 if (complete) markGuideComplete();
               }
             } else {
@@ -532,7 +544,7 @@ function AppContent() {
           if (cookieCompanyId && !invitedMember) {
             const steps = await syncOnboardingProgressFromApi(cookieCompanyId);
             const complete = isOnboardingFullyCompleted(steps);
-            setOnboardingComplete(complete);
+            applyOnboardingSync(complete);
             if (complete) markGuideComplete();
           }
         } catch (error) {
@@ -717,7 +729,7 @@ function AppContent() {
 
   // Returning users with all phases done: never stay on #/orchestrator — go to dashboard.
   useEffect(() => {
-    if (!onboardingComplete || isZohoCallback || isZohoAuth) return;
+    if (!onboardingComplete || !onboardingCompleteAtLoad.current || isZohoCallback || isZohoAuth) return;
 
     const isOrchestratorRoute =
       location.pathname === '/' ||
