@@ -98,7 +98,8 @@
     "linePlural": "Lignes",
     "company": "Entreprise",
     "planning": "Planification",
-    "planningLabel": "Sessions"
+    "planningLabel": "Sessions",
+    "finishOnboardingFirst": "Terminez l'onboarding avant d'ouvrir le tableau de bord."
   },
   "language": {
     "title": "Changer de langue",

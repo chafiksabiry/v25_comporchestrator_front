@@ -19,7 +19,7 @@ import {
   Menu,
   Cpu,
 } from 'lucide-react';
-import { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
 import VisitorTracker from './lib/VisitorTracker';
 import { buildCompanyOrchestratorMeta } from './lib/tracking/pageMeta';
@@ -108,12 +108,14 @@ function AppContent() {
     if (location.pathname.includes('/orchestrator')) {
       return 'comporchestrator';
     }
+    // Dashboard URLs stay closed until every required onboarding step is done.
+    if (!isOnboardingFullyCompleted()) {
+      return 'comporchestrator';
+    }
     if (location.pathname.includes('/dashboard') || location.pathname !== '/' && location.pathname !== '') {
       return 'dashboard';
     }
-    // No path yet: returning users who finished every onboarding phase land on
-    // the dashboard; first-time users still see the orchestrator setup flow.
-    return isOnboardingFullyCompleted() ? 'dashboard' : 'comporchestrator';
+    return 'dashboard';
   });
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -189,6 +191,30 @@ function AppContent() {
   const [showWalletTopUp, setShowWalletTopUp] = useState(false);
 
   const navigate = useNavigate();
+  const dashboardBlockToastAt = useRef(0);
+
+  const explainDashboardBlocked = useCallback(() => {
+    const now = Date.now();
+    if (now - dashboardBlockToastAt.current < 2500) return;
+    dashboardBlockToastAt.current = now;
+    toast.error(t('navbar.finishOnboardingFirst'));
+  }, [t]);
+
+  const openDashboard = useCallback((path: string) => {
+    if (!isOnboardingFullyCompleted()) {
+      setOnboardingComplete(false);
+      setActiveProject('comporchestrator');
+      setActiveTab('company-onboarding');
+      explainDashboardBlocked();
+      if (!location.pathname.includes('/orchestrator')) {
+        navigate('/orchestrator', { replace: true });
+      }
+      return;
+    }
+    setOnboardingComplete(true);
+    setActiveProject('dashboard');
+    navigate(path);
+  }, [explainDashboardBlocked, location.pathname, navigate]);
 
   const fetchNavbarBalances = useCallback(async () => {
     const compId = Cookies.get('companyId');
@@ -304,8 +330,7 @@ function AppContent() {
       setShowWalletTopUp(true);
       return;
     }
-    setActiveProject('dashboard');
-    navigate('/dashboard/wallet');
+    openDashboard('/dashboard/wallet');
   };
 
   const refreshWalletBalance = async () => {
@@ -322,18 +347,15 @@ function AppContent() {
   };
 
   const handleMinutesClick = () => {
-    setActiveProject('dashboard');
-    navigate(minutes <= 0 ? '/dashboard/minutes?buy=1' : '/dashboard/minutes');
+    openDashboard(minutes <= 0 ? '/dashboard/minutes?buy=1' : '/dashboard/minutes');
   };
 
   const handleTokensClick = () => {
-    setActiveProject('dashboard');
-    navigate('/dashboard/tokens');
+    openDashboard('/dashboard/tokens');
   };
 
   const handleTelephonyClick = () => {
-    setActiveProject('dashboard');
-    navigate('/dashboard/telephony');
+    openDashboard('/dashboard/telephony');
   };
 
   const unwrapPayload = (body: any) => {
@@ -387,10 +409,12 @@ function AppContent() {
     // 1. Reset logo error on change
     setLogoError(false);
 
-    // 2. Sync active project based on path (finished onboarding never stays on orchestrator)
+    // Dashboard routes stay on the orchestrator until onboarding is finished.
     if (location.pathname.includes('/dashboard')) {
-      setActiveProject('dashboard');
-    } else if (location.pathname.includes('/orchestrator') && !onboardingComplete) {
+      if (isOnboardingFullyCompleted()) {
+        setActiveProject('dashboard');
+      }
+    } else if (location.pathname.includes('/orchestrator') && !isOnboardingFullyCompleted()) {
       setActiveProject('comporchestrator');
     }
 
@@ -508,6 +532,13 @@ function AppContent() {
       const tab = event.detail?.tab;
       if (!tab) return;
       if (tab === 'dashboard') {
+        if (!isOnboardingFullyCompleted()) {
+          explainDashboardBlocked();
+          setActiveProject('comporchestrator');
+          setActiveTab('company-onboarding');
+          window.location.hash = '#/orchestrator';
+          return;
+        }
         window.location.hash = '#/dashboard/overview';
         return;
       }
@@ -535,6 +566,14 @@ function AppContent() {
     };
 
     const openCompanyDashboard = () => {
+      if (!isOnboardingFullyCompleted()) {
+        explainDashboardBlocked();
+        setActiveProject('comporchestrator');
+        setActiveTab('company-onboarding');
+        navigate('/orchestrator', { replace: true });
+        return;
+      }
+      setOnboardingComplete(true);
       if (isCallCenterWorkspace()) {
         setPreferCallCenterDashboard(true);
       }
@@ -553,7 +592,7 @@ function AppContent() {
       window.removeEventListener('openComporchestrator', openComporchestrator);
       window.removeEventListener('openCompanyDashboard', openCompanyDashboard);
     };
-  }, [location.pathname, isZohoCallback, isZohoAuth, navigate, markGuideComplete]);
+  }, [location.pathname, isZohoCallback, isZohoAuth, navigate, markGuideComplete, explainDashboardBlocked]);
 
   useEffect(() => {
     const onNavigateOpenCall = (event: Event) => {
@@ -571,13 +610,12 @@ function AppContent() {
         'harx:pendingCallOpen',
         JSON.stringify({ callId: detail.callId, tab: detail.tab || 'insights' })
       );
-      setActiveProject('dashboard');
-      navigate('/dashboard/calls');
+      openDashboard('/dashboard/calls');
     };
 
     window.addEventListener(NAVIGATE_OPEN_CALL_EVENT, onNavigateOpenCall);
     return () => window.removeEventListener(NAVIGATE_OPEN_CALL_EVENT, onNavigateOpenCall);
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, openDashboard]);
 
   // Stable listeners — never torn down on navigation changes.
   useEffect(() => {
@@ -630,6 +668,27 @@ function AppContent() {
       })
       .catch(() => {});
   }, []);
+
+  // Incomplete onboarding: a dashboard URL must not open the dashboard.
+  useEffect(() => {
+    if (onboardingComplete || isZohoCallback || isZohoAuth) return;
+    if (!location.pathname.includes('/dashboard') && activeProject !== 'dashboard') return;
+
+    setActiveProject('comporchestrator');
+    setActiveTab('company-onboarding');
+    if (location.pathname.includes('/dashboard')) {
+      explainDashboardBlocked();
+      navigate('/orchestrator', { replace: true });
+    }
+  }, [
+    onboardingComplete,
+    activeProject,
+    location.pathname,
+    navigate,
+    explainDashboardBlocked,
+    isZohoCallback,
+    isZohoAuth,
+  ]);
 
   // Returning users with all phases done: never stay on #/orchestrator — go to dashboard.
   useEffect(() => {
@@ -941,8 +1000,7 @@ function AppContent() {
                     <button
                       type="button"
                       onClick={() => {
-                        setActiveProject('dashboard');
-                        navigate('/dashboard/subscription');
+                        openDashboard('/dashboard/subscription');
                       }}
                       className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-gradient-harx text-white font-black text-[11px] uppercase tracking-[0.12em] hover:opacity-95 active:scale-[0.98] transition-all duration-200 shrink-0"
                     >
@@ -983,8 +1041,7 @@ function AppContent() {
                       <button
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
-                          setActiveProject('dashboard');
-                          navigate('/dashboard/profile');
+                          openDashboard('/dashboard/profile');
                         }}
                         className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
                       >
@@ -994,8 +1051,7 @@ function AppContent() {
                       <button
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
-                          setActiveProject('dashboard');
-                          navigate('/dashboard/account-settings');
+                          openDashboard('/dashboard/account-settings');
                         }}
                         className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
                       >
