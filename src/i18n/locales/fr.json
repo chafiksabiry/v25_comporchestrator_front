@@ -1501,6 +1501,11 @@
       "stepWarningBody_other": "{{count}} gigs nécessitent encore cette étape.",
       "stepWarningBody": "{{count}} gig(s) nécessite(nt) encore cette étape.",
       "viewAll": "Voir tous",
+      "journeyTitle": "Suite jusqu'à l'activation",
+      "remainingSteps": "Étapes obligatoires",
+      "nextStepBtn": "Étape suivante",
+      "finishCurrent": "Terminez cette étape. Le bouton Étape suivante reste affiché ensuite.",
+      "optionalShort": "Optionnelle",
       "steps": {
         "telephony": "Configuration téléphonie",
         "uploadContacts": "Import des contacts",

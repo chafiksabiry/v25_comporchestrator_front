@@ -484,7 +484,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
       { id: 4, label: t('gigDetails.setupBanner.steps.telephony'), icon: Phone, tone: 'sky' as const },
       { id: 5, label: t('gigDetails.setupBanner.steps.uploadContacts'), icon: Users, tone: 'indigo' as const },
       { id: 6, label: t('gigDetails.setupBanner.steps.callScript'), icon: FileText, tone: 'violet' as const },
-      { id: 8, label: t('gigDetails.setupBanner.steps.knowledgeBase'), icon: BookOpen, tone: 'amber' as const, optional: true },
+      { id: 8, label: t('gigDetails.setupBanner.steps.knowledgeBase'), icon: BookOpen, tone: 'amber' as const },
       { id: 9, label: t('gigDetails.setupBanner.steps.repOnboarding'), icon: UserCheck, tone: 'rose' as const },
       { id: 10, label: t('gigDetails.setupBanner.steps.sessionPlanning'), icon: Calendar, tone: 'teal' as const },
       { id: 12, label: t('gigDetails.setupBanner.steps.gigActivation'), icon: Rocket, tone: 'emerald' as const },
@@ -502,114 +502,89 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
   const toggleCollapse = (gigId: string) =>
     setCollapsedGigs((prev) => ({ ...prev, [gigId]: !prev[gigId] }));
 
-  // ────────────────────────────────────────────────────────────────────
-  //  Compact variant — rendered on the dedicated step pages. Lists only
-  //  the gigs that still need THIS specific step, with a small "Continue"
-  //  shortcut. The big banner stays exclusive to the dashboard / gigs.
-  // ────────────────────────────────────────────────────────────────────
+  // On a setup page, keep the remaining required steps and the next
+  // button on screen after the current step is done.
   if (!isFullBannerRoute && currentStepId !== null) {
-    const stepDef = checklist.find((s) => s.id === currentStepId);
-    if (!stepDef) return null;
-    const gigsMissingThisStep = pendingGigs.filter((g) => {
-      const status = gigStepStatus[g._id];
-      return !(status && status[currentStepId]);
-    });
-    if (gigsMissingThisStep.length === 0) return null;
-    const StepIcon = stepDef.icon;
+    const gigIdFromUrl = new URLSearchParams(location.search).get('gigId');
+    const focus =
+      pendingGigs.find((g) => gigIdFromUrl && g._id === gigIdFromUrl) ||
+      pendingGigs.find((g) => {
+        const status = gigStepStatus[g._id];
+        return !(status && status[currentStepId]);
+      }) ||
+      pendingGigs[0];
+    if (!focus) return null;
+    const status = gigStepStatus[focus._id];
+    const isProbing = !status;
+    const missing = checklist.filter((s) => !s.optional && !(status && status[s.id]));
+    if (!isProbing && missing.length === 0) return null;
+    const next = missing[0];
+    const currentDone = !!(status && status[currentStepId]);
+    const showGoNext = !!next && currentDone && next.id !== currentStepId;
+
     return (
       <div
         role="status"
-        className="relative overflow-hidden rounded-harx border border-harx-orange-500/35 bg-harx-orange-50 px-4 py-3 shadow-harx animate-in slide-in-from-top-2 fade-in duration-300"
+        className="relative overflow-hidden rounded-harx border border-harx-orange-500/35 bg-harx-orange-50 px-4 py-3 shadow-harx"
       >
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-harx-orange text-white">
-            <StepIcon className="h-4 w-4" />
-          </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="min-w-0 flex-1">
             <div className="text-[11px] font-black uppercase tracking-wider text-amber-950">
-              {t('gigDetails.setupBanner.stepWarningTitle', {
-                step: stepDef.label,
-                defaultValue: 'Action required: {{step}}',
-              })}
+              {t('gigDetails.setupBanner.journeyTitle')}
             </div>
-            <div className="mt-0.5 text-[10px] font-bold leading-snug text-amber-900/70">
-              {t('gigDetails.setupBanner.stepWarningBody', {
-                count: gigsMissingThisStep.length,
-                step: stepDef.label,
-                defaultValue:
-                  gigsMissingThisStep.length > 1
-                    ? '{{count}} gigs still need this step.'
-                    : '{{count}} gig still needs this step.',
-              })}
+            <div className="mt-0.5 truncate text-[12px] font-black text-harx-ink" title={focus.title}>
+              {focus.title || focus._id}
             </div>
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {gigsMissingThisStep.slice(0, 4).map((g) => (
-                <span
-                  key={g._id}
-                  className="inline-flex items-center rounded-md border border-harx-orange-500/25 bg-white px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-800"
-                  title={g.title}
-                >
-                  <span className="max-w-[160px] truncate">
-                    {g.title || g._id}
+            <div className="mt-2 text-[10px] font-black uppercase tracking-wider text-amber-800">
+              {t('gigDetails.setupBanner.remainingSteps')}
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {checklist.map((step) => {
+                const done = !!(status && status[step.id]);
+                const isNext = !done && step.id === next?.id;
+                return (
+                  <span
+                    key={step.id}
+                    className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-black uppercase tracking-wide ${
+                      done
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                        : isNext
+                        ? 'border-harx-orange-500/50 bg-white text-amber-950 ring-1 ring-harx-orange-500/30'
+                        : 'border-slate-200 bg-white/70 text-slate-500'
+                    }`}
+                  >
+                    {done ? <CheckCircle2 className="h-3 w-3" /> : null}
+                    {step.label}
+                    {step.optional && !done ? (
+                      <span className="font-bold normal-case tracking-normal text-slate-400">
+                        {t('gigDetails.setupBanner.optionalShort')}
+                      </span>
+                    ) : null}
                   </span>
-                </span>
-              ))}
-              {gigsMissingThisStep.length > 4 && (
-                <span className="inline-flex items-center rounded-md border border-harx-orange-500/25 bg-white px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-800">
-                  +{gigsMissingThisStep.length - 4}
-                </span>
-              )}
+                );
+              })}
             </div>
+            {!isProbing && !currentDone ? (
+              <p className="mt-2 text-[11px] font-semibold text-amber-900/80">
+                {t('gigDetails.setupBanner.finishCurrent')}
+              </p>
+            ) : null}
           </div>
-          {STEP_CONTINUE_TARGET[currentStepId] && (
+          {showGoNext && next ? (
             <button
               type="button"
-              onClick={() =>
-                navigate(
-                  // If exactly one gig still needs this step, deep-link
-                  // straight to it so the destination panel auto-selects
-                  // that gig in its dropdown.
-                  getContinueTarget(
-                    currentStepId,
-                    gigsMissingThisStep.length === 1
-                      ? gigsMissingThisStep[0]._id
-                      : undefined
-                  )
-                )
-              }
-              className="hidden shrink-0 items-center gap-1 rounded-lg bg-harx-orange px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-white transition-all hover:bg-harx-orange-600 active:scale-95 sm:inline-flex"
-              title={t('gigDetails.setupBanner.continue', {
-                label: stepDef.label,
-              })}
+              onClick={() => navigate(getContinueTarget(next.id, focus._id))}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-harx-orange px-4 py-3 text-[11px] font-black uppercase tracking-wider text-white shadow-sm transition-all hover:bg-harx-orange-600 active:scale-95"
             >
-              {t('gigDetails.setupBanner.continueBtn')}
-              <ArrowRight className="h-2.5 w-2.5" />
+              <span className="text-left">
+                <span className="block">{t('gigDetails.setupBanner.nextStepBtn')}</span>
+                <span className="mt-0.5 block max-w-[180px] truncate text-[10px] font-bold normal-case tracking-normal text-white/90">
+                  {next.label}
+                </span>
+              </span>
+              <ArrowRight className="h-4 w-4" />
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard/gigs')}
-            className="hidden shrink-0 items-center gap-1 rounded-lg border border-harx-orange-500/30 bg-white px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-800 transition-colors hover:bg-harx-orange-50 sm:inline-flex"
-            title={t('gigDetails.setupBanner.viewAll', {
-              defaultValue: 'View all',
-            })}
-          >
-            {t('gigDetails.setupBanner.viewAll', { defaultValue: 'View all' })}
-            <ArrowRight className="h-2.5 w-2.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleDismiss}
-            className="shrink-0 rounded-lg border border-harx-orange-500/30 bg-white/70 p-1 text-amber-800 transition-colors hover:bg-white hover:text-amber-950"
-            aria-label={t('gigDetails.setupBanner.dismiss', {
-              defaultValue: 'Dismiss',
-            })}
-            title={t('gigDetails.setupBanner.dismiss', {
-              defaultValue: 'Dismiss',
-            })}
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+          ) : null}
         </div>
       </div>
     );
@@ -719,12 +694,14 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                     onClick={() =>
                       navigate(getContinueTarget(nextStep.id, gig._id))
                     }
-                    className="hidden shrink-0 items-center gap-1 rounded-lg bg-harx-orange px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white transition-all hover:bg-harx-orange-600 active:scale-95 sm:inline-flex"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-harx-orange px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white transition-all hover:bg-harx-orange-600 active:scale-95"
                     title={t('gigDetails.setupBanner.continue', {
                       label: nextStep.label,
                     })}
                   >
-                    <span className="max-w-[120px] truncate">{nextStep.label}</span>
+                    <span className="max-w-[140px] truncate">
+                      {t('gigDetails.setupBanner.nextStepBtn')}
+                    </span>
                     <ArrowRight className="h-2.5 w-2.5" />
                   </button>
                 )}
@@ -741,6 +718,11 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
                   )}
                 </button>
               </div>
+              {!isProbing && missing.length > 0 && (
+                <p className="mt-1.5 text-[10px] font-bold leading-snug text-amber-900/80">
+                  {missing.map((step) => step.label).join(' · ')}
+                </p>
+              )}
 
               {/* Per-gig step list — only rendered when the rep expands the
                   card (the row above is already actionable thanks to the

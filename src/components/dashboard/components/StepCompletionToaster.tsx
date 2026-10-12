@@ -95,7 +95,7 @@ const StepCompletionToaster: React.FC = () => {
         ),
         {
           id: 'harx-step-complete',
-          duration: 8000,
+          duration: Infinity,
           position: 'top-right',
         }
       );
