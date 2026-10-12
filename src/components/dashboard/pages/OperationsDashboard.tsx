@@ -67,6 +67,7 @@ import {
   extractGigAgentList,
   getActiveAgentsForCompany,
   getGigAgents,
+  setRepGigStanding,
 } from '../../../api/matching';
 
 // Idempotent: other dashboards already register the same scales, registering
@@ -214,6 +215,7 @@ type AnalyticsOutcome = { outcome: string; count: number; pct: number };
 
 type AnalyticsRep = {
   userId: string;
+  agentId?: string | null;
   name: string;
   total: number;
   transaction: number;
@@ -224,6 +226,15 @@ type AnalyticsRep = {
   serious: number;
   validByAIPct: number;
   avgScore: number;
+  attendance?: number;
+  lastMinuteCancellation?: number;
+  lastMinuteCancellations?: number;
+  quality?: number;
+  fraudScore?: number;
+  fraudCount?: number;
+  callVolume?: number;
+  validatedTransactions?: number;
+  overall?: number;
 };
 
 type RecentCallApi = {
@@ -990,7 +1001,7 @@ export default function OperationsDashboard() {
   /** Matching enrollment count (not call analytics). */
   const [enrolledAgentsCount, setEnrolledAgentsCount] = useState(0);
   const [enrolledAgentPreviews, setEnrolledAgentPreviews] = useState<
-    Array<{ id: string; name: string; gigId?: string }>
+    Array<{ id: string; name: string; gigId?: string; gigStanding?: 'active' | 'paused' }>
   >([]);
   const [callbacksStats, setCallbacksStats] = useState<CallbacksStats | null>(null);
   // Diagnostic info shown only when `?debug=1` is appended to the URL —
@@ -1058,12 +1069,13 @@ export default function OperationsDashboard() {
         selectedGigId && selectedGigId !== 'all'
           ? rows.filter((a) => resolveGigId(a) === String(selectedGigId))
           : rows;
-      const byAgent = new Map<string, { id: string; name: string; gigId?: string }>();
+      const byAgent = new Map<string, { id: string; name: string; gigId?: string; gigStanding?: 'active' | 'paused' }>();
       for (const a of filtered) {
         if (requireActiveStatus && !isActiveEnrollment(a)) continue;
         const id = resolveAgentId(a);
         if (!id || byAgent.has(id)) continue;
-        byAgent.set(id, { id, name: resolveAgentName(a), gigId: resolveGigId(a) });
+        const standing = String(a?.gigStanding || 'active').toLowerCase() === 'paused' ? 'paused' : 'active';
+        byAgent.set(id, { id, name: resolveAgentName(a), gigId: resolveGigId(a), gigStanding: standing });
       }
       return byAgent;
     };
@@ -1730,6 +1742,7 @@ export default function OperationsDashboard() {
           reps={repsMonth}
           enrolledCount={enrolledAgentsCount}
           enrolledPreviews={enrolledAgentPreviews}
+          selectedGigId={selectedGigId}
         />
       ) : (
         // ── "Vue globale" — top-level KPIs + coverage + outcomes donut. ───
@@ -2705,12 +2718,21 @@ interface RepLeaderboard {
   rank: number;
   initials: string;
   name: string;
+  agentId: string;
   score: number;
   convPct: number;
   leadsCovered: number;
   transactions: number;
   avatar: string;
   warn?: boolean;
+  attendance: number;
+  lastMinuteCancellation: number;
+  lastMinuteCancellations: number;
+  quality: number;
+  fraudScore: number;
+  callVolume: number;
+  validatedTransactions: number;
+  gigStanding: 'active' | 'paused';
 }
 
 const TEAM_PALETTE = [
@@ -2725,12 +2747,16 @@ function TeamView({
   reps: repsApi,
   enrolledCount,
   enrolledPreviews = [],
+  selectedGigId,
 }: {
   reps: AnalyticsRep[] | null;
   enrolledCount: number;
-  enrolledPreviews?: Array<{ id: string; name: string; gigId?: string }>;
+  enrolledPreviews?: Array<{ id: string; name: string; gigId?: string; gigStanding?: 'active' | 'paused' }>;
+  selectedGigId?: string;
 }) {
   const { t } = useTranslation();
+  const [standingByAgent, setStandingByAgent] = useState<Record<string, 'active' | 'paused'>>({});
+  const [standingBusy, setStandingBusy] = useState<string | null>(null);
   const [selectedKpi, setSelectedKpi] = useState<
     'enrolled' | 'active' | 'atRisk' | 'avgScore' | 'invitations' | null
   >(null);
@@ -2740,23 +2766,35 @@ function TeamView({
 
   const reps: RepLeaderboard[] = useMemo(() => {
     if (!repsApi?.length) return [];
-    const sorted = [...repsApi].sort((a, b) => b.transaction - a.transaction);
+    const sorted = [...repsApi].sort((a, b) => (b.overall ?? b.avgScore) - (a.overall ?? a.avgScore));
     return sorted.map((r, idx) => {
       const convPct = r.total > 0 ? Math.round((r.transaction / r.total) * 1000) / 10 : 0;
-      const warn = r.avgScore < 50 || convPct < 5;
+      const agentId = String(r.agentId || enrolledPreviews.find((p) => p.name === r.name)?.id || r.userId);
+      const preview = enrolledPreviews.find((p) => p.id === agentId || p.id === r.userId);
+      const overall = Math.round(r.overall ?? r.avgScore ?? 0);
+      const warn = overall < 50;
       return {
         rank: idx + 1,
         initials: initialsOf(r.name),
         name: r.name,
-        score: Math.round(r.avgScore),
+        agentId,
+        score: overall,
         convPct,
         leadsCovered: r.serious,
-        transactions: r.transaction,
+        transactions: r.validatedTransactions ?? r.transaction,
         avatar: TEAM_PALETTE[idx % TEAM_PALETTE.length]!,
         warn,
+        attendance: Math.round(r.attendance ?? 0),
+        lastMinuteCancellation: Math.round(r.lastMinuteCancellation ?? 100),
+        lastMinuteCancellations: r.lastMinuteCancellations ?? 0,
+        quality: Math.round(r.quality ?? r.avgScore ?? 0),
+        fraudScore: Math.round(r.fraudScore ?? 100),
+        callVolume: r.callVolume ?? r.total,
+        validatedTransactions: r.validatedTransactions ?? r.transaction,
+        gigStanding: standingByAgent[agentId] || preview?.gigStanding || 'active',
       };
     });
-  }, [repsApi]);
+  }, [repsApi, enrolledPreviews, standingByAgent]);
 
   const teamKpis = useMemo(() => {
     const list = repsApi ?? [];
@@ -2770,6 +2808,22 @@ function TeamView({
         : 0;
     return { enrolled, active, atRisk, avgScore };
   }, [repsApi, enrolledCount]);
+
+  const changeStanding = async (agentId: string, standing: 'active' | 'paused', gigHint?: string) => {
+    const gigId = selectedGigId && selectedGigId !== 'all'
+      ? selectedGigId
+      : gigHint || enrolledPreviews.find((p) => p.id === agentId)?.gigId;
+    if (!gigId || !agentId) return;
+    setStandingBusy(agentId);
+    try {
+      const result = await setRepGigStanding(gigId, agentId, standing);
+      setStandingByAgent((prev) => ({ ...prev, [agentId]: result.gigStanding }));
+    } catch (err) {
+      console.warn('[TeamView] standing update failed', err);
+    } finally {
+      setStandingBusy(null);
+    }
+  };
 
   return (
     <>
@@ -2906,7 +2960,7 @@ function TeamView({
       <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center gap-2 text-sm font-black text-slate-900">
           <Trophy size={14} className="text-harx-500" />
-          {t('opsDashboard.team.leaderboardTitle', 'Leaderboard — transactions ce mois')}
+          {t('opsDashboard.team.leaderboardTitle', 'Scoring REPS — appels traités')}
         </header>
 
         {reps.length === 0 ? (
@@ -2921,7 +2975,9 @@ function TeamView({
               </p>
               {enrolledPreviews.length > 0 && (
                 <ul className="divide-y divide-slate-100">
-                  {enrolledPreviews.map((agent, idx) => (
+                  {enrolledPreviews.map((agent, idx) => {
+                    const standing = standingByAgent[agent.id] || agent.gigStanding || 'active';
+                    return (
                     <li key={agent.id} className="flex items-center gap-3 py-2.5">
                       <span
                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
@@ -2932,12 +2988,39 @@ function TeamView({
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-black text-slate-900">{agent.name}</p>
-                        <p className="text-[11px] font-medium text-emerald-600">
-                          {t('opsDashboard.overview.agents.enrolledStatus', 'Enrôlé · actif matching')}
+                        <p className={`text-[11px] font-medium ${standing === 'paused' ? 'text-amber-700' : 'text-emerald-600'}`}>
+                          {standing === 'paused'
+                            ? t('opsDashboard.team.pausedOnGig', 'En pause sur le gig')
+                            : t('opsDashboard.overview.agents.enrolledStatus', 'Enrôlé · actif matching')}
                         </p>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          <button
+                            type="button"
+                            disabled={standingBusy === agent.id || standing === 'active'}
+                            onClick={() => changeStanding(agent.id, 'active', agent.gigId)}
+                            className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${
+                              standing === 'active' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700'
+                            }`}
+                          >
+                            {t('opsDashboard.team.keep', 'Garder')}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={standingBusy === agent.id || standing === 'paused'}
+                            onClick={() => changeStanding(agent.id, 'paused', agent.gigId)}
+                            className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${
+                              standing === 'paused' ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-800'
+                            }`}
+                          >
+                            {standing === 'paused'
+                              ? t('opsDashboard.team.paused', 'En pause')
+                              : t('opsDashboard.team.pause', 'Mettre en pause')}
+                          </button>
+                        </div>
                       </div>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -2985,10 +3068,44 @@ function TeamView({
                   )}
                 </p>
                 <p className={`text-[11px] font-medium ${r.warn ? 'text-rose-500' : 'text-slate-500'}`}>
-                  score {r.score} · conv. {r.convPct.toFixed(1)}% · {r.leadsCovered.toLocaleString('fr-FR')}{' '}
-                  {t('opsDashboard.team.coveredLeads', 'leads couverts')}
-                  {r.warn && ` ${t('opsDashboard.team.onlyWord', 'seulement')}`}
+                  {t('opsDashboard.team.scoreLine', 'score {{score}} · présence {{attendance}} · annulation {{cancel}} · qualité {{quality}} · fraude {{fraud}} · volume {{volume}} · transactions {{tx}}', {
+                    score: r.score,
+                    attendance: r.attendance,
+                    cancel: r.lastMinuteCancellation,
+                    quality: r.quality,
+                    fraud: r.fraudScore,
+                    volume: r.callVolume,
+                    tx: r.validatedTransactions,
+                  })}
                 </p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    disabled={standingBusy === r.agentId || r.gigStanding === 'active'}
+                    onClick={() => changeStanding(r.agentId, 'active')}
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${
+                      r.gigStanding === 'active'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                    }`}
+                  >
+                    {t('opsDashboard.team.keep', 'Garder')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={standingBusy === r.agentId || r.gigStanding === 'paused'}
+                    onClick={() => changeStanding(r.agentId, 'paused')}
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${
+                      r.gigStanding === 'paused'
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                    }`}
+                  >
+                    {r.gigStanding === 'paused'
+                      ? t('opsDashboard.team.paused', 'En pause')
+                      : t('opsDashboard.team.pause', 'Mettre en pause')}
+                  </button>
+                </div>
               </div>
               <span
                 className={`shrink-0 text-2xl font-black tabular-nums ${

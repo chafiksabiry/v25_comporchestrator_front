@@ -556,6 +556,24 @@ export const getGigAgents = async (gigId: string, status?: string): Promise<any>
     }
 };
 
+/** Keep an enrolled rep on a gig, or pause them so they stop working it. */
+export const setRepGigStanding = async (
+  gigId: string,
+  agentId: string,
+  standing: 'active' | 'paused'
+): Promise<{ gigStanding: 'active' | 'paused' }> => {
+  const response = await fetch(`${MATCHING_API_URL}/gig-agents/standing`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gigId, agentId, standing }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.message || 'Failed to update rep standing');
+  }
+  return data;
+};
+
 // ===== GIG WEIGHTS API =====
 export interface GigWeights {
     _id?: string;
