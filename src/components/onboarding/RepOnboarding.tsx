@@ -1011,8 +1011,23 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       
       setTrainings(journeysArray);
 
-      // Auto-complete step 9 if trainings already exist (e.g. returning user)
-      if (journeysArray.length > 0) {
+      // A saved plan creates a journey before any module content exists.
+      // Complete the step only once a module has actually been generated.
+      const hasGeneratedModule = journeysArray.some((journey: any) => {
+        const plan = Array.isArray(journey?.modulePlan) ? journey.modulePlan : [];
+        if (plan.some((module: any) => module?.isValid === true || String(module?.detailedContentMarkdown || '').trim())) {
+          return true;
+        }
+        const modules = Array.isArray(journey?.modules) ? journey.modules : [];
+        return modules.some((module: any) => {
+          if (String(module?.detailedContentMarkdown || module?.content || '').trim()) return true;
+          const sections = module?.sections;
+          return Array.isArray(sections) && sections.some((section: any) =>
+            String(section?.content || section?.body || section?.text || '').trim()
+          );
+        });
+      });
+      if (hasGeneratedModule) {
         void updateOnboardingProgress();
         
         // --- DIAGNOSTIC: Log first journey structure ---
