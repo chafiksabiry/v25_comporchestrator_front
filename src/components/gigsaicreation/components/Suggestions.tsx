@@ -90,7 +90,157 @@ type ProcessedTimezone = {
   offset: number;
   abbreviation: string;
   countryName: string;
+  countryCode?: string;
 };
+
+const EUROZONE = new Set([
+  'AT', 'BE', 'CY', 'DE', 'EE', 'ES', 'FI', 'FR', 'GR', 'HR', 'IE', 'IT',
+  'LT', 'LU', 'LV', 'MC', 'MT', 'NL', 'PT', 'SI', 'SK',
+]);
+
+const CURRENCY_BY_CCA2: Record<string, string> = {
+  US: 'USD', CA: 'CAD', GB: 'GBP', AU: 'AUD', NZ: 'NZD', JP: 'JPY',
+  CH: 'CHF', MX: 'MXN', BR: 'BRL', IN: 'INR', SG: 'SGD', AE: 'AED',
+  MA: 'MAD', ZA: 'ZAR', CN: 'CNY', KR: 'KRW', SE: 'SEK', NO: 'NOK',
+  DK: 'DKK', PL: 'PLN', TR: 'TRY',
+};
+
+const ZONE_BY_CCA2: Record<string, string> = {
+  US: 'America/New_York',
+  CA: 'America/Toronto',
+  MX: 'America/Mexico_City',
+  GB: 'Europe/London',
+  FR: 'Europe/Paris',
+  DE: 'Europe/Berlin',
+  ES: 'Europe/Madrid',
+  IT: 'Europe/Rome',
+  BE: 'Europe/Brussels',
+  NL: 'Europe/Amsterdam',
+  PT: 'Europe/Lisbon',
+  CH: 'Europe/Zurich',
+  AU: 'Australia/Sydney',
+  NZ: 'Pacific/Auckland',
+  JP: 'Asia/Tokyo',
+  IN: 'Asia/Kolkata',
+  SG: 'Asia/Singapore',
+  AE: 'Asia/Dubai',
+  MA: 'Africa/Casablanca',
+  BR: 'America/Sao_Paulo',
+  ZA: 'Africa/Johannesburg',
+};
+
+function currencyCodeForCountry(cca2: string): string | null {
+  const code = (cca2 || '').toUpperCase();
+  if (CURRENCY_BY_CCA2[code]) return CURRENCY_BY_CCA2[code];
+  if (EUROZONE.has(code)) return 'EUR';
+  return null;
+}
+
+function resolveCountry(value: string, countries: Country[]): Country | undefined {
+  const trimmed = (value || '').trim();
+  if (!trimmed || countries.length === 0) return undefined;
+  const byId = countries.find((c) => c._id === trimmed);
+  if (byId) return byId;
+  const upper = trimmed.toUpperCase();
+  if (upper.length === 2) {
+    const byCode = countries.find((c) => c.cca2 === upper);
+    if (byCode) return byCode;
+  }
+  const lower = trimmed.toLowerCase();
+  return countries.find((c) =>
+    c.name.common.toLowerCase() === lower ||
+    c.name.official.toLowerCase() === lower
+  );
+}
+
+function countryFromTimezoneId(
+  timezoneId: string | undefined,
+  timezones: TimezoneData[],
+  countries: Country[]
+): Country | undefined {
+  if (!timezoneId) return undefined;
+  const tz = timezones.find((item) => item._id === timezoneId);
+  if (!tz) return undefined;
+  return countries.find((c) => c.cca2 === tz.countryCode)
+    || countries.find((c) => c.name.common.toLowerCase() === (tz.countryName || '').toLowerCase());
+}
+
+function preferredTimezone(cca2: string, timezones: TimezoneData[]): TimezoneData | undefined {
+  const code = (cca2 || '').toUpperCase();
+  const pool = timezones.filter((tz) => (tz.countryCode || '').toUpperCase() === code);
+  const preferred = ZONE_BY_CCA2[code];
+  if (preferred) {
+    const hit = pool.find((tz) => tz.zoneName === preferred);
+    if (hit) return hit;
+  }
+  return pool[0];
+}
+
+function countryMeta(country: Country) {
+  return {
+    _id: country._id,
+    name: {
+      common: country.name?.common || '',
+      official: country.name?.official || country.name?.common || '',
+    },
+    cca2: country.cca2,
+  };
+}
+
+function applyDestinationMarket<T extends GigSuggestion>(
+  draft: T,
+  country: Country,
+  timezones: TimezoneData[],
+  currencies: Currency[],
+  opts?: { timezoneId?: string }
+): T {
+  const next: T = {
+    ...draft,
+    destinationZones: [country._id],
+    destination_zone: country._id,
+    destination_zone_meta: countryMeta(country),
+    team: {
+      size: draft.team?.size ?? 1,
+      structure: draft.team?.structure || [],
+      reporting: draft.team?.reporting,
+      collaboration: draft.team?.collaboration,
+      ...(draft.team || {}),
+      territories: [country._id],
+    },
+  } as T;
+
+  const code = currencyCodeForCountry(country.cca2);
+  if (code) {
+    const currency = currencies.find((item) => item.code === code);
+    if (currency) {
+      next.commission = {
+        ...(draft.commission || {}),
+        currency: currency._id,
+        currency_meta: {
+          _id: currency._id,
+          name: currency.name,
+          code: currency.code,
+          symbol: currency.symbol,
+        },
+      } as T['commission'];
+    }
+  }
+
+  const tzId = opts?.timezoneId || preferredTimezone(country.cca2, timezones)?._id;
+  if (tzId) {
+    next.schedule = {
+      ...(draft.schedule || {
+        schedules: [],
+        flexibility: [],
+        minimumHours: { daily: 0, weekly: 0, monthly: 0 },
+      }),
+      timeZones: [tzId],
+      time_zone: tzId,
+    } as T['schedule'];
+  }
+
+  return next;
+}
 
 // Register languages
 i18n.registerLocale(fr);
@@ -257,6 +407,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
   const [destinationCountriesLoading, setDestinationCountriesLoading] = useState(false);
   const isGeneratingRef = useRef(false);
   const lastProcessedInputRef = useRef<string>("");
+  const marketTouchedRef = useRef(false);
   const skillsLoadedRef = useRef(false);
   const [activities, setActivities] = useState<Array<{ value: string; label: string; category: string }>>([]);
   const [industries, setIndustries] = useState<Array<{ value: string; label: string }>>([]);
@@ -432,25 +583,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     loadCurrencies();
   }, []);
 
-  // Set default currency when currencies are loaded and suggestions exist
-  useEffect(() => {
-    if (currencies.length > 0 && suggestions?.commission) {
-      const defaultCurrencyId = getDefaultCurrencyId();
-
-      // Set default currency for main commission if not already set
-      if (!suggestions.commission.currency) {
-        setSuggestions(prev => prev ? {
-          ...prev,
-          commission: {
-            ...prev.commission,
-            currency: defaultCurrencyId
-          }
-        } : null);
-      }
-
-      
-    }
-  }, [currencies, suggestions?.commission]);
+  // Currency follows the destination country. Do not force EUR when the zone is still empty.
 
   const filteredCurrencies = React.useMemo(() => {
     if (!currencySearchTerm.trim()) return currencies;
@@ -1152,14 +1285,9 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
               return zone;
             }
 
-            // If it's "Global", replace with France's MongoDB ObjectId
+            // "Global" is not a country. Leave it unresolved so it is dropped below.
             if (typeof zone === 'string' && zone.toLowerCase() === 'global') {
-              // Find France in allCountriesFromAPI
-              const franceCountry = allCountriesFromAPI.find(c =>
-                c.name.common.toLowerCase() === 'france' ||
-                c.cca2 === 'FR'
-              );
-              return franceCountry ? franceCountry._id : zone;
+              return '';
             }
 
             // If it's an alpha-2 code, convert to MongoDB ObjectId
@@ -1180,14 +1308,18 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             return zone;
           }));
 
-          result.destinationZones = convertedZones;
+          result.destinationZones = convertedZones.filter((zone): zone is string => {
+            if (typeof zone !== 'string' || !zone.trim()) return false;
+            if (/^[a-f0-9]{24}$/i.test(zone)) return true;
+            // Keep a country name until the country list is loaded.
+            return allCountriesFromAPI.length === 0;
+          });
+          const primaryCountry = resolveCountry(result.destinationZones[0] || '', allCountriesFromAPI);
+          if (primaryCountry) {
+            Object.assign(result, applyDestinationMarket(result, primaryCountry, allTimezones, currencies));
+          }
         } else {
-          // If no destination zones are provided, default to France's MongoDB ObjectId
-          const franceCountry = allCountriesFromAPI.find(c =>
-            c.name.common.toLowerCase() === 'france' ||
-            c.cca2 === 'FR'
-          );
-          result.destinationZones = franceCountry ? [franceCountry._id] : [];
+          result.destinationZones = [];
         }
 
         // Ensure ref data is loaded, then normalize names → IDs
@@ -1261,22 +1393,51 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       }));
   }, [availableTimezones]);
 
-  // Auto-select first timezone when available timezones change
+  // Time zone, currency, destination and territories stay on the same country.
   useEffect(() => {
-    if (!suggestions?.schedule || availableTimezones.length === 0) return;
+    if (!allCountriesFromAPI.length || !allTimezones.length) return;
 
-    setSuggestions(prev => {
-      if (!prev || !prev.schedule) return prev;
-      return {
-        ...prev,
-        schedule: {
-          ...prev.schedule,
-          timeZones: [availableTimezones[0]._id],
-          time_zone: availableTimezones[0]._id
-        }
-      };
+    setSuggestions((prev) => {
+      if (!prev) return prev;
+      const rawDest = String(prev.destinationZones?.[0] || prev.destination_zone || '');
+      const tzCountry = countryFromTimezoneId(prev.schedule?.time_zone, allTimezones, allCountriesFromAPI);
+      const destCountry = resolveCountry(rawDest, allCountriesFromAPI);
+      const destIsName = Boolean(rawDest) && !/^[a-f0-9]{24}$/i.test(rawDest) && Boolean(destCountry);
+      let market = tzCountry || destCountry;
+      if (!marketTouchedRef.current && destIsName && destCountry && tzCountry && destCountry._id !== tzCountry._id) {
+        market = destCountry;
+      }
+      if (!market) return prev;
+
+      const keepTimezone = Boolean(tzCountry && market._id === tzCountry._id);
+      const tzId = keepTimezone
+        ? prev.schedule?.time_zone
+        : preferredTimezone(market.cca2, allTimezones)?._id;
+      const currencyCode = currencyCodeForCountry(market.cca2);
+      const currency = currencyCode ? currencies.find((item) => item.code === currencyCode) : undefined;
+      const rawCurrency = prev.commission?.currency as { $oid?: string; _id?: string } | string | undefined;
+      const currentCurrency = typeof rawCurrency === 'string'
+        ? rawCurrency
+        : rawCurrency?.$oid || rawCurrency?._id || '';
+      const aligned =
+        prev.destinationZones?.length === 1 &&
+        prev.destinationZones[0] === market._id &&
+        prev.destination_zone === market._id &&
+        prev.team?.territories?.length === 1 &&
+        prev.team.territories[0] === market._id &&
+        (!tzId || prev.schedule?.time_zone === tzId) &&
+        (!currency || currentCurrency === currency._id);
+      if (aligned) return prev;
+
+      return applyDestinationMarket(
+        prev,
+        market,
+        allTimezones,
+        currencies,
+        keepTimezone ? { timezoneId: prev.schedule?.time_zone } : undefined
+      );
     });
-  }, [availableTimezones]); // Only depend on availableTimezones
+  }, [allCountriesFromAPI, allTimezones, currencies, suggestions?.schedule?.time_zone, suggestions?.destinationZones]);
 
   // Auto-select first job title when suggestions are loaded (only on initial load)
   useEffect(() => {
@@ -1729,10 +1890,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       }
       case "destinationZones":
         // For destination zones, we store the MongoDB ObjectId
-
-        // If someone tries to add "Global", replace with "France"
         if (item.toLowerCase() === 'global') {
-          item = 'France';
+          break;
         }
 
         // Find the country by name or code and get its MongoDB ObjectId
@@ -1838,10 +1997,8 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
       }
       case "destinationZones":
         // For destination zones, we store the MongoDB ObjectId
-
-        // If someone tries to update to "Global", replace with "France"
         if (newValue.toLowerCase() === 'global') {
-          newValue = 'France';
+          break;
         }
 
         // Find the country by name or code and get its MongoDB ObjectId
@@ -2828,24 +2985,33 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
     const handleTimezoneChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       const value = e.target.value;
-      const newSuggestions = { ...suggestions };
-
-      if (value) {
-        // Find the selected timezone to get the _id
-        const selectedTimezone = filteredTimezones.find(tz => tz._id === value);
-        if (selectedTimezone) {
-          newSuggestions.schedule.timeZones = [selectedTimezone._id];
-          newSuggestions.schedule.time_zone = selectedTimezone._id;
-        } else {
-          newSuggestions.schedule.timeZones = [value]; // Fallback to string
-          newSuggestions.schedule.time_zone = value;
-        }
-      } else {
-        newSuggestions.schedule.timeZones = [];
-        newSuggestions.schedule.time_zone = undefined;
+      if (!value) {
+        setSuggestions({
+          ...suggestions,
+          schedule: {
+            ...suggestions.schedule,
+            timeZones: [],
+            time_zone: undefined,
+          },
+        });
+        return;
       }
 
-      setSuggestions(newSuggestions);
+      marketTouchedRef.current = true;
+      const country = countryFromTimezoneId(value, allTimezones, allCountriesFromAPI);
+      if (country) {
+        setSuggestions(applyDestinationMarket(suggestions, country, allTimezones, currencies, { timezoneId: value }));
+        return;
+      }
+
+      setSuggestions({
+        ...suggestions,
+        schedule: {
+          ...suggestions.schedule,
+          timeZones: [value],
+          time_zone: value,
+        },
+      });
     };
 
     // Filter timezones based on search
@@ -2915,39 +3081,33 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
   const renderDestinationZonesSection = () => {
     if (!suggestions) return null;
 
-    const handleAddDestinationZone = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const value = e.target.value; // This is the MongoDB ObjectId
+    const handleAddDestinationZone = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const value = e.target.value;
       if (!value) return;
-
-      // Use the existing addItem logic for destination zones
-      addItem("destinationZones", value);
-
-      // Reset select
+      const country = resolveCountry(value, allCountriesFromAPI);
+      if (country) {
+        marketTouchedRef.current = true;
+        setSuggestions(applyDestinationMarket(suggestions, country, allTimezones, currencies));
+      }
       e.target.value = '';
     };
 
     const handleRemoveDestinationZone = (zone: string) => {
-      const newSuggestions = { ...suggestions };
-      newSuggestions.destinationZones = newSuggestions.destinationZones.filter(z => z !== zone);
-      const nextPrimary = newSuggestions.destinationZones[0];
-      if (nextPrimary) {
-        const country = allCountriesFromAPI.find(c => c._id === nextPrimary);
-        (newSuggestions as any).destination_zone = nextPrimary;
-        (newSuggestions as any).destination_zone_meta = country
-          ? {
-              _id: country._id,
-              name: {
-                common: country.name?.common || '',
-                official: (country.name as any)?.official || country.name?.common || '',
-              },
-              cca2: country.cca2,
-            }
-          : undefined;
-      } else {
-        (newSuggestions as any).destination_zone = '';
-        (newSuggestions as any).destination_zone_meta = undefined;
+      const remaining = (suggestions.destinationZones || []).filter((item) => item !== zone);
+      const nextCountry = remaining[0] ? resolveCountry(remaining[0], allCountriesFromAPI) : undefined;
+      if (nextCountry) {
+        setSuggestions(applyDestinationMarket(suggestions, nextCountry, allTimezones, currencies));
+        return;
       }
-      setSuggestions(newSuggestions);
+      setSuggestions({
+        ...suggestions,
+        destinationZones: [],
+        destination_zone: '',
+        destination_zone_meta: undefined,
+        team: suggestions.team
+          ? { ...suggestions.team, territories: [] }
+          : suggestions.team,
+      });
     };
 
     const selected = suggestions.destinationZones || [];
@@ -5702,7 +5862,12 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         newSuggestions.team.territories = [];
       }
 
-      // Only add if not already present
+      const country = resolveCountry(territory, allCountriesFromAPI.length ? allCountriesFromAPI : territoriesFromAPI);
+      if (country) {
+        marketTouchedRef.current = true;
+        setSuggestions(applyDestinationMarket(newSuggestions, country, allTimezones, currencies));
+        return;
+      }
       if (!newSuggestions.team.territories.includes(territory)) {
         newSuggestions.team.territories.push(territory);
         setSuggestions(newSuggestions);
@@ -5711,13 +5876,25 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
     const removeTerritory = (territoryToRemove: string) => {
       if (!suggestions) return;
-      const newSuggestions = { ...suggestions };
-      if (newSuggestions.team && newSuggestions.team.territories) {
-        newSuggestions.team.territories = newSuggestions.team.territories.filter(
-          (territory) => territory !== territoryToRemove
-        );
-        setSuggestions(newSuggestions);
+      const remaining = (suggestions.team?.territories || []).filter(
+        (territory) => territory !== territoryToRemove
+      );
+      const nextCountry = remaining[0]
+        ? resolveCountry(remaining[0], allCountriesFromAPI.length ? allCountriesFromAPI : territoriesFromAPI)
+        : undefined;
+      if (nextCountry) {
+        setSuggestions(applyDestinationMarket(suggestions, nextCountry, allTimezones, currencies));
+        return;
       }
+      setSuggestions({
+        ...suggestions,
+        destinationZones: [],
+        destination_zone: '',
+        destination_zone_meta: undefined,
+        team: suggestions.team
+          ? { ...suggestions.team, territories: [] }
+          : suggestions.team,
+      });
     };
 
     return (
