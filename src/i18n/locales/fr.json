@@ -1163,7 +1163,7 @@
     "title": "Configuration Téléphonique",
     "subtitle": "Gérez et configurez vos points d'entrée réseau mondiaux",
     "nextStep": "Étape suivante",
-    "nextStepRequiresNumber": "Achetez au moins un numéro pour passer à l'étape suivante",
+    "nextStepRequiresNumber": "Associez ou achetez au moins un numéro pour passer à l'étape suivante",
     "errors": {
       "configurationTitle": "Erreur de Configuration",
       "companyIdMissing": "ID d'entreprise requis introuvable. Veuillez rafraîchir la page si le problème persiste."
@@ -1192,6 +1192,15 @@
     "regional": "Régional",
     "globalGateway": "Passerelle Mondiale",
     "purchase": "Acheter",
+    "owned": {
+      "title": "Numéros déjà souscrits",
+      "use": "Utiliser",
+      "using": "Attribution...",
+      "assignSuccess": "{{number}} est maintenant rattaché à ce gig.",
+      "assignFailed": "Impossible d'attribuer ce numéro.",
+      "unassigned": "Non assigné",
+      "previousGig": "Gig précédent supprimé"
+    },
     "empty": {
       "title": "Aucun numéro pour le moment",
       "subtitle": "Recherchez les numéros disponibles dans la zone de destination pour activer ce gig.",

@@ -12,6 +12,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
 import { phoneNumberService, BASE_URL } from '../services/api';
+import { getOrchestratorApiBase } from '../lib/paypalCheckout';
+import toast from 'react-hot-toast';
 import { markGigStepDone } from '../services/gigSetupSync';
 import { providerForDestinationCountry } from '../utils/phoneProvider';
 import { requirementService, RequirementDetail } from '../services/requirementService';
@@ -19,6 +21,15 @@ import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
 import type { AvailablePhoneNumber } from '../services/api';
 import { ONBOARDING_NEXT_STEP_GATE_EVENT } from './onboarding/OnboardingNextStepButton';
+
+interface CompanyLine {
+  _id?: string;
+  id?: string;
+  phoneNumber: string;
+  gigId?: string;
+  status?: string;
+  provider?: string;
+}
 
 interface PhoneNumber {
   phoneNumber: string;
@@ -136,6 +147,8 @@ const TelephonySetup = ({
     }
   }, []);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
+  const [companyLines, setCompanyLines] = useState<CompanyLine[]>([]);
+  const [assigningNumber, setAssigningNumber] = useState<string | null>(null);
   const [destinationZone, setDestinationZone] = useState('');
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
   const [isSearchingNumbers, setIsSearchingNumbers] = useState(false);
@@ -200,7 +213,34 @@ const TelephonySetup = ({
   // Logic for multi-number support
   const selectedGig = Array.isArray(gigs) ? gigs.find(g => g._id === selectedGigId) : null;
   const teamSize = selectedGig ? parseInt(selectedGig.team?.size?.toString() || '1') : 1;
-  const purchasedNumbersCount = Array.isArray(phoneNumbers) ? phoneNumbers.length : 0;
+  const liveGigIds = new Set((Array.isArray(gigs) ? gigs : []).map((g) => String(g._id)));
+  const linesOnSelectedGig = companyLines.filter(
+    (n) => Boolean(n.phoneNumber) && Boolean(selectedGigId) && String(n.gigId || '') === String(selectedGigId)
+  );
+  const reusableLines = companyLines.filter((n) => {
+    if (!n.phoneNumber) return false;
+    if (selectedGigId && String(n.gigId || '') === String(selectedGigId)) return false;
+    if (!n.gigId) return true;
+    return !liveGigIds.has(String(n.gigId));
+  });
+  const displayedActiveNumbers = (() => {
+    const rows: { phoneNumber: string; status: string; metadata?: { type?: string } }[] = [];
+    const seen = new Set<string>();
+    const add = (phoneNumber: string, status?: string, metadata?: { type?: string }) => {
+      if (!phoneNumber || seen.has(phoneNumber)) return;
+      seen.add(phoneNumber);
+      rows.push({ phoneNumber, status: status || 'pending', metadata });
+    };
+    (Array.isArray(phoneNumbers) ? phoneNumbers : [])
+      .filter((n) => !n.provider || n.provider === provider)
+      .forEach((n) => add(n.phoneNumber, n.status, (n as { metadata?: { type?: string } }).metadata));
+    linesOnSelectedGig.forEach((n) => add(n.phoneNumber, n.status));
+    return rows;
+  })();
+  const purchasedNumbersCount = new Set([
+    ...(Array.isArray(phoneNumbers) ? phoneNumbers.map((n) => n.phoneNumber) : []),
+    ...linesOnSelectedGig.map((n) => n.phoneNumber),
+  ].filter(Boolean)).size;
   const isQuotaReached = purchasedNumbersCount >= teamSize;
 
   useEffect(() => {
@@ -314,6 +354,16 @@ const TelephonySetup = ({
       fetchExistingNumbers();
     }
   }, [selectedGigId]);
+
+  useEffect(() => {
+    void fetchCompanyLines();
+  }, [companyId]);
+
+  useEffect(() => {
+    if (selectedGigId && linesOnSelectedGig.length > 0) {
+      markGigStepDone(selectedGigId, 'telephony', true);
+    }
+  }, [selectedGigId, linesOnSelectedGig.length]);
 
   // Mettre à jour la destination zone + provider quand un gig est sélectionné
   useEffect(() => {
@@ -793,6 +843,65 @@ const TelephonySetup = ({
     } catch (error) {
       console.error('❌ Error checking gig numbers:', error);
       setPhoneNumbers([]);
+    }
+  };
+
+  const fetchCompanyLines = async () => {
+    if (!companyId) {
+      setCompanyLines([]);
+      return;
+    }
+    try {
+      const res = await fetch(`${getOrchestratorApiBase()}/phone-numbers`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+      setCompanyLines(
+        list
+          .filter((n: { companyId?: string; status?: string }) => {
+            if (String(n.companyId || '') !== String(companyId)) return false;
+            const status = String(n.status || '').toLowerCase();
+            return status !== 'cancelled' && status !== 'released' && status !== 'terminated';
+          })
+          .map((n: { _id?: string; id?: string; phoneNumber: string; gigId?: string; status?: string; provider?: string }) => ({
+            _id: n._id || n.id,
+            id: n.id || n._id,
+            phoneNumber: n.phoneNumber,
+            gigId: n.gigId ? String(n.gigId) : undefined,
+            status: n.status,
+            provider: n.provider,
+          }))
+      );
+    } catch (error) {
+      console.error('Error loading company phone lines:', error);
+    }
+  };
+
+  const assignExistingNumber = async (line: CompanyLine) => {
+    if (!selectedGigId || !companyId || isQuotaReached) return;
+    setAssigningNumber(line.phoneNumber);
+    try {
+      const res = await fetch(`${getOrchestratorApiBase()}/phone-numbers/assign-gig`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: line._id || line.id,
+          phoneNumber: line.phoneNumber,
+          gigId: selectedGigId,
+          companyId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data?.success === false) {
+        throw new Error(data?.message || data?.error || t('telephonySetup.owned.assignFailed'));
+      }
+      toast.success(t('telephonySetup.owned.assignSuccess', { number: line.phoneNumber }));
+      await fetchExistingNumbers();
+      await fetchCompanyLines();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('telephonySetup.owned.assignFailed'));
+    } finally {
+      setAssigningNumber(null);
     }
   };
 
@@ -1397,7 +1506,7 @@ const TelephonySetup = ({
             {/* Combined Active & Available List */}
             <div className="space-y-4">
               {/* Active Numbers */}
-              {Array.isArray(phoneNumbers) && phoneNumbers.filter(n => n.provider === provider).map((number: any) => (
+              {displayedActiveNumbers.map((number) => (
                 <div key={number.phoneNumber} className="flex items-center justify-between p-5 rounded-xl border border-harx-100/60 bg-gradient-to-br from-white to-harx-50/30 hover:from-white hover:to-harx-50/60 hover:border-harx-300/60 hover:shadow-[0_18px_40px_-18px_rgba(255,77,77,0.35)] transition-all duration-500 group">
                   <div className="flex items-center space-x-5">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-harx-50 to-harx-alt-50 border border-harx-100 flex items-center justify-center group-hover:bg-gradient-harx group-hover:border-transparent transition-all duration-500 shadow-sm">
@@ -1418,6 +1527,43 @@ const TelephonySetup = ({
                   </div>
                 </div>
               ))}
+
+              {reusableLines.length > 0 && (
+                <div className="space-y-3 mt-6">
+                  <div className="flex items-center space-x-3 text-[11px] uppercase font-black tracking-widest text-gray-300">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-harx-200/60 to-transparent" />
+                    <span className="flex items-center space-x-2 bg-gradient-harx bg-clip-text text-transparent">
+                      <Phone className="h-3 w-3 text-harx-400" />
+                      <span>{t('telephonySetup.owned.title')}</span>
+                    </span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-harx-200/60 to-transparent" />
+                  </div>
+                  {reusableLines.map((line) => {
+                    const busy = assigningNumber === line.phoneNumber;
+                    const disabled = isQuotaReached || busy || Boolean(assigningNumber);
+                    return (
+                      <div key={line._id || line.phoneNumber} className="flex items-center justify-between p-4 rounded-xl border border-harx-100/50 bg-white hover:border-harx-400 hover:shadow-[0_18px_40px_-18px_rgba(255,77,77,0.35)] transition-all group">
+                        <div className="flex flex-col">
+                          <span className="text-[18px] font-black text-gray-900 group-hover:text-harx-600 transition-colors tracking-tight">{line.phoneNumber}</span>
+                          <span className="text-[12px] font-bold text-gray-400 uppercase italic mt-1 leading-none">
+                            {line.gigId ? t('telephonySetup.owned.previousGig') : t('telephonySetup.owned.unassigned')}
+                          </span>
+                        </div>
+                        <button
+                          disabled={disabled}
+                          onClick={() => void assignExistingNumber(line)}
+                          className={`px-6 py-2.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${disabled
+                              ? 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-200'
+                              : 'bg-gradient-harx text-white hover:shadow-[0_12px_30px_-8px_rgba(255,77,77,0.6)] active:scale-95'
+                            }`}
+                        >
+                          {busy ? t('telephonySetup.owned.using') : t('telephonySetup.owned.use')}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Available Numbers (If searched) */}
               {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
@@ -1466,7 +1612,7 @@ const TelephonySetup = ({
               )}
 
               {/* Centered Empty State */}
-              {(!phoneNumbers || phoneNumbers.filter(n => n.provider === provider).length === 0) && (!availableNumbers || availableNumbers.length === 0) && (
+              {displayedActiveNumbers.length === 0 && reusableLines.length === 0 && (!availableNumbers || availableNumbers.length === 0) && (
                 <div className="py-16 flex flex-col items-center text-center animate-in fade-in duration-700">
                   <div className="relative w-16 h-16 mb-6">
                     <div className="absolute inset-0 rounded-full bg-gradient-to-br from-harx-50 to-harx-alt-50 border border-harx-100 shadow-sm" />
@@ -1514,6 +1660,7 @@ const TelephonySetup = ({
         onClose={async () => {
           if (purchaseStatus === 'success') {
             await fetchExistingNumbers();
+            await fetchCompanyLines();
           }
           if (provider === 'telnyx') {
             await searchAvailableNumbers();
