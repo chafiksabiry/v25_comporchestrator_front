@@ -20,8 +20,6 @@ import { JourneyService } from '../../infrastructure/services/JourneyService';
 
 import { DraftService } from '../../infrastructure/services/DraftService';
 
-import { OnboardingService } from '../../infrastructure/services/OnboardingService';
-
 import { cloudinaryService } from '../../lib/cloudinaryService';
 
 import { getGigsByCompanyId } from '../../../../api/matching';
@@ -4016,14 +4014,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (streamResult.planSaved && streamResult.journeyId && /^[a-f\d]{24}$/i.test(streamResult.journeyId)) {
           chatConfirmedJourneyIdRef.current = streamResult.journeyId;
           setIsPlanSavedForChat(true);
-
-          // Update onboarding progress
-          const compId = company?.id || company?._id ? String(company?.id || company?._id) : undefined;
-          if (compId) {
-            void OnboardingService.updateOnboardingProgress(compId).catch((err) => {
-              console.error('[ContentUploader] Failed to update onboarding progress:', err);
-            });
-          }
 
           // Le backend peut creer un shell de journey avec titre/description par defaut.
           // Re-applique immediatement les metadonnees configurees au setup.
