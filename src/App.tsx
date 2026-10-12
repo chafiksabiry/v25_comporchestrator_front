@@ -1063,16 +1063,18 @@ function AppContent() {
 
                   {isProfileDropdownOpen && (
                     <div className="absolute right-0 top-full mt-2 w-56 bg-[#0B0F19] border border-white/10 rounded-2xl shadow-xl z-[200] overflow-hidden animate-fade-in">
-                      <button
-                        onClick={() => {
-                          setIsProfileDropdownOpen(false);
-                          openDashboard('/dashboard/profile');
-                        }}
-                        className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
-                      >
-                        <Building2 size={16} className="text-gray-400" />
-                        <span className="font-bold">{t('userMenu.profile')}</span>
-                      </button>
+                      {onboardingComplete && (
+                        <button
+                          onClick={() => {
+                            setIsProfileDropdownOpen(false);
+                            openDashboard('/dashboard/profile');
+                          }}
+                          className="flex items-center gap-3 w-full p-4 text-left text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5"
+                        >
+                          <Building2 size={16} className="text-gray-400" />
+                          <span className="font-bold">{t('userMenu.profile')}</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
