@@ -99,7 +99,8 @@
     "linePlural": "Lines",
     "company": "Company",
     "planning": "Planning",
-    "planningLabel": "Sessions"
+    "planningLabel": "Sessions",
+    "finishOnboardingFirst": "Finish onboarding before opening the dashboard."
   },
   "language": {
     "title": "Change language",
