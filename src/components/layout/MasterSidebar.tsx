@@ -36,6 +36,8 @@ import { useAuth } from '../dashboard/contexts/AuthContext';
 import type { ProjectView } from '../ProjectViewSwitch';
 import { useTranslation } from 'react-i18next';
 import { goToCompanyOnboardingTab } from '../../hooks/useOnboardingGlobalBack';
+import { getCompletedStepsFromStorage, isOnboardingFullyCompleted } from '../../hooks/useStepGuide';
+import { resolveSessionUserId } from '../../lib/sessionUserId';
 import { isCallCenterWorkspace } from '../../utils/callCenterWorkspace';
 
 interface MasterSidebarProps {
@@ -63,11 +65,14 @@ export function MasterSidebar({
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
+  const initialSteps = getCompletedStepsFromStorage();
   const [hasCompany, setHasCompany] = useState(false);
-  const [hasGigs, setHasGigs] = useState(false);
-  const [hasLeads, setHasLeads] = useState(false);
-  const [hasKb, setHasKb] = useState(false);
-  const [hasRepMatching, setHasRepMatching] = useState(false);
+  const [hasGigs, setHasGigs] = useState(
+    () => initialSteps.includes(3) || Cookies.get('createGigStepCompleted') === 'true'
+  );
+  const [hasLeads, setHasLeads] = useState(() => initialSteps.includes(5));
+  const [hasKb, setHasKb] = useState(() => initialSteps.includes(8) || initialSteps.includes(9));
+  const [hasRepMatching, setHasRepMatching] = useState(() => initialSteps.includes(13));
   const [openGroups, setOpenGroups] = useState<number[]>([1, 2, 3]); // All open by default
   const { t } = useTranslation();
   const isCallCenter = isCallCenterWorkspace();
@@ -84,7 +89,13 @@ export function MasterSidebar({
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
-      const userId = Cookies.get('userId');
+      const stored = getCompletedStepsFromStorage();
+      setHasGigs(stored.includes(3) || Cookies.get('createGigStepCompleted') === 'true');
+      setHasLeads(stored.includes(5));
+      setHasKb(stored.includes(8) || stored.includes(9));
+      setHasRepMatching(stored.includes(13));
+
+      const userId = resolveSessionUserId();
       if (!userId) return;
 
       try {
@@ -136,6 +147,12 @@ export function MasterSidebar({
     };
 
     checkOnboardingStatus();
+    window.addEventListener('stepCompleted', checkOnboardingStatus);
+    window.addEventListener('refreshOnboardingProgress', checkOnboardingStatus);
+    return () => {
+      window.removeEventListener('stepCompleted', checkOnboardingStatus);
+      window.removeEventListener('refreshOnboardingProgress', checkOnboardingStatus);
+    };
   }, [location.pathname, activeProject]);
 
   const dashboardItems = [
@@ -256,7 +273,7 @@ export function MasterSidebar({
         }`}
       >
         <nav className="space-y-1">
-          {activeProject === 'comporchestrator' ? (
+          {activeProject !== 'dashboard' || !isOnboardingFullyCompleted() ? (
             <>
               {orchestratorItems.map((item) => {
                 const isActive = activeTab === item.key;
@@ -401,7 +418,7 @@ export function MasterSidebar({
             </>
           )}
 
-          {!isCollapsed && activeProject === 'comporchestrator' && (
+          {!isCollapsed && (activeProject !== 'dashboard' || !isOnboardingFullyCompleted()) && (
             <div className="mt-8 flex flex-col items-center shrink-0">
               <div className="relative group">
                 <div className="absolute -inset-4 bg-rose-500/20 rounded-full blur-2xl group-hover:bg-rose-500/30 transition-all duration-700" />
