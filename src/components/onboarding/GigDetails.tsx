@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getActiveAgentsForCompany } from '../../api/matching';
+import { useCompanyPermission } from '../../hooks/useCompanyPermission';
 
 const buildParticipantCountByGig = (activeAgents: any[]): Record<string, number> => {
   const counts: Record<string, number> = {};
@@ -176,6 +177,10 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
   const [participantsModalGig, setParticipantsModalGig] = useState<Gig | null>(null);
   const [participantCountByGig, setParticipantCountByGig] = useState<Record<string, number>>({});
   const companyId = Cookies.get('companyId');
+  // AUTH-11: hide create/edit/delete for a "lecture seule" company member.
+  const canCreateGig = useCompanyPermission('gigs.create');
+  const canEditGig = useCompanyPermission('gigs.edit');
+  const canDeleteGig = useCompanyPermission('gigs.delete');
 
   const refreshParticipantCounts = React.useCallback(async () => {
     if (!companyId) {
@@ -333,6 +338,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
     return (
       <GigDetailsView
         gig={mappedGig as any}
+        canEdit={canEditGig}
         onBack={() => setSelectedGig(null)}
         onGigUpdated={(updatedGig: any) => {
           setSelectedGig(updatedGig);
@@ -403,7 +409,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
               {t('gigDetails.subtitle')}
             </p>
           </div>
-          <button
+          {canCreateGig && <button
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 via-purple-600 to-indigo-600 hover:from-purple-700 hover:via-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20 hover:scale-105 active:scale-95"
             onClick={() => {
               if (onAddNew) {
@@ -415,7 +421,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
           >
             <Plus className="w-4 h-4" />
             {t('gigDetails.addNew')}
-          </button>
+          </button>}
         </div>
         {/* Subtle geometric circles */}
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-slate-50 rounded-full pointer-events-none border border-slate-100/30" />
@@ -535,13 +541,13 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
 
                   {/* Strategic Actions */}
                   <div className="col-span-2 flex flex-wrap justify-end items-center gap-2">
-                    <button
+                    {canDeleteGig && <button
                       className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-100 hover:border-rose-100 hover:scale-110 active:scale-90 transition-all duration-300 shadow-sm"
                       onClick={(e) => handleDelete(e, gig._id)}
                       title={t('gigDetails.terminate')}
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </button>}
                     <button
                       type="button"
                       className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 shadow-sm transition-all duration-300 hover:border-indigo-300 hover:bg-indigo-50 hover:scale-105 active:scale-95"
