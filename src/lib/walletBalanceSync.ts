@@ -1,4 +1,5 @@
 import Cookies from 'js-cookie';
+import { authFetch } from './authFetch';
 
 export type WalletBalanceSnapshot = {
   balance: number;
@@ -28,8 +29,8 @@ export async function fetchCompanyWalletSnapshot(
 
   try {
     const [walletRes, minutesRes, escrowRes] = await Promise.all([
-      fetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
-      fetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
+      authFetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
+      authFetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
       fetch(`${apiBaseUrl}/escrow/wallet/${compId}`).catch(() => null),
     ]);
 

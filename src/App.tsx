@@ -69,6 +69,7 @@ import {
   type OpenCallDetailsDetail,
 } from './lib/callAnalysisHelpNotification';
 import { resolveSessionUserId } from './lib/sessionUserId';
+import { authFetch } from './lib/authFetch';
 import { useOrchestratorGuide } from './hooks/useOrchestratorGuide';
 import { OnboardingNextStepButton } from './components/onboarding/OnboardingNextStepButton';
 import { goToCompanyOnboardingTab } from './hooks/useOnboardingGlobalBack';
@@ -200,9 +201,9 @@ function AppContent() {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
     try {
       const [walletRes, minutesRes, tokensRes, phoneRes] = await Promise.all([
-        fetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
-        fetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
-        fetch(`${apiBaseUrl}/tokens-company/${compId}`).catch(() => null),
+        authFetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
+        authFetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
+        authFetch(`${apiBaseUrl}/tokens-company/${compId}`).catch(() => null),
         fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
       ]);
 

@@ -1,5 +1,6 @@
 import Cookies from 'js-cookie';
 import { getOrchestratorApiBase } from './paypalCheckout';
+import { authFetch } from './authFetch';
 
 export function formatAiTokensBalance(tokens: number): string {
   const n = Number(tokens) || 0;
@@ -19,7 +20,7 @@ export async function fetchCompanyAiTokens(companyId?: string): Promise<number> 
   const id = companyId || Cookies.get('companyId');
   if (!id) return 0;
   const apiBaseUrl = getOrchestratorApiBase();
-  const res = await fetch(`${apiBaseUrl}/tokens-company/${id}`);
+  const res = await authFetch(`${apiBaseUrl}/tokens-company/${id}`);
   if (!res.ok) return 0;
   const json = await res.json();
   return typeof json?.data?.tokens === 'number' ? json.data.tokens : 0;
@@ -86,7 +87,7 @@ export async function assertCompanyHasAiTokens(
   }
 
   const apiBaseUrl = getOrchestratorApiBase();
-  const res = await fetch(
+  const res = await authFetch(
     `${apiBaseUrl}/tokens-company/${encodeURIComponent(id)}/check?min=${Math.max(1, minRequired)}`
   );
   const json = await res.json().catch(() => ({}));

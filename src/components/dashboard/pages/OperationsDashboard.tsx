@@ -62,6 +62,7 @@ import { computeMinutesPurchaseCents } from '../../../utils/minutesPricing';
 // ignore VITE_API_URL_CALL (which targets the CRUD dashboard backend)
 // so swapping the CRUD provider never breaks the charts.
 import { getDashCallsApiBase } from '../lib/callsApiBase';
+import { authFetch } from '../../../lib/authFetch';
 import { VoiceAssistantOverviewCard } from '../components/VoiceAssistantOverviewCard';
 import {
   extractGigAgentList,
@@ -597,8 +598,8 @@ export default function OperationsDashboard() {
     const fetchWallet = async () => {
       try {
         const [walletRes, entriesRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/wallet-company/${companyId}`),
-          fetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
+          authFetch(`${apiBaseUrl}/wallet-company/${companyId}`),
+          authFetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
         ]);
 
         if (walletRes.ok) {
@@ -663,10 +664,10 @@ export default function OperationsDashboard() {
       setOverviewResources((prev) => ({ ...prev, loading: true }));
       try {
         const [minsRes, subRes, phoneRes, entriesRes, repTxRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/minutes-company/${companyId}`).catch(() => null),
+          authFetch(`${apiBaseUrl}/minutes-company/${companyId}`).catch(() => null),
           fetch(`${backUrl}/api/subscriptions/current/${companyId}`).catch(() => null),
           fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
-          fetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
+          authFetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
           fetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`).catch(() => null),
         ]);
 
@@ -4748,9 +4749,9 @@ function WalletView({
       setLoading(true);
       try {
         const [walletRes, repTxRes, balRes] = await Promise.all([
-          fetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
+          authFetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
           fetch(`${walletApi}/escrow/company/rep-transactions/${companyId}${gigQs}`).catch(() => null),
-          fetch(`${walletApi}/wallet-company/${companyId}`).catch(() => null),
+          authFetch(`${walletApi}/wallet-company/${companyId}`).catch(() => null),
         ]);
 
         if (balRes?.ok) {

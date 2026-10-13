@@ -22,6 +22,7 @@ import {
   runStripeCheckoutFlow,
 } from '../../../lib/paypalCheckout';
 import { formatAiTokensBalance } from '../../../lib/aiTokensUsage';
+import { authFetch } from '../../../lib/authFetch';
 import { getGigsByCompanyId } from '../../../api/matching';
 
 type TokensState = {
@@ -138,9 +139,9 @@ export function TokensCompanyPanel() {
     if (!isSilent) setLoading(true);
     try {
       const [walletRes, usageRes, purchasesRes, gigs] = await Promise.all([
-        fetch(`${apiBaseUrl}/tokens-company/${companyId}`),
-        fetch(`${apiBaseUrl}/tokens-company/${companyId}/usage?limit=100`),
-        fetch(`${apiBaseUrl}/tokens-company/${companyId}/purchases?limit=20`),
+        authFetch(`${apiBaseUrl}/tokens-company/${companyId}`),
+        authFetch(`${apiBaseUrl}/tokens-company/${companyId}/usage?limit=100`),
+        authFetch(`${apiBaseUrl}/tokens-company/${companyId}/purchases?limit=20`),
         getGigsByCompanyId(companyId).catch(() => [] as any[]),
       ]);
 
