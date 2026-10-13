@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import GigSetupChecklist from '../components/GigSetupChecklist';
 import StepCompletionToaster from '../components/StepCompletionToaster';
+import PendingSaleReviewsPopup from '../components/PendingSaleReviewsPopup';
 import { buildCompanyPageTitle, resolveCompanyTabTitle } from '../config/companySections';
 import { usePageTitle } from '../../../lib/tracking/usePageTitle';
 
@@ -21,6 +22,9 @@ export function DashboardLayout() {
             Gigs, …). Dismissible for the current session; re-appears when a
             gig's status changes or a new pending gig is added. */}
         <GigSetupChecklist />
+        {/* VAL-01: once-per-session reminder for sales the AI detected that
+            the company hasn't approved/refused yet. */}
+        <PendingSaleReviewsPopup />
         {/* Listens for `harx:gig-step-complete` events and surfaces a
             unified "Continue →" toast that routes to the next step. */}
         <StepCompletionToaster />
