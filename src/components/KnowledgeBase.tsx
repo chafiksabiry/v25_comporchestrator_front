@@ -442,6 +442,19 @@ const KnowledgeBase: React.FC = () => {
         throw new Error('No files selected');
       }
 
+      // ENT-11: reject oversized files before sending anything over the
+      // wire — the backend enforces the same 50MB cap, but only after
+      // receiving the full body.
+      const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+      const oversized = uploadFiles.filter((f) => f.size > MAX_UPLOAD_BYTES);
+      if (oversized.length > 0) {
+        alert(
+          `${oversized.map((f) => f.name).join(', ')} : fichier trop volumineux (50 Mo max). Veuillez retirer ce fichier avant de continuer.`
+        );
+        setIsUploading(false);
+        return;
+      }
+
       const userId = getUserId();
       if (!userId) {
         throw new Error('User ID not found');
