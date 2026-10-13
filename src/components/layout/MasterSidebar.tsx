@@ -41,7 +41,7 @@ import { getCompletedStepsFromStorage, isOnboardingFullyCompleted } from '../../
 import { resolveSessionUserId } from '../../lib/sessionUserId';
 import { isCallCenterWorkspace } from '../../utils/callCenterWorkspace';
 import { getMyCompanyAccess } from '../../services/companyMembersApi';
-import { SIDEBAR_PERMISSION } from '../../constants/companyPermissions';
+import { SIDEBAR_PERMISSION, SIDEBAR_PERMISSION_FALLBACK } from '../../constants/companyPermissions';
 
 interface MasterSidebarProps {
   isCollapsed: boolean;
@@ -237,7 +237,8 @@ export function MasterSidebar({
     if (!memberAccess || memberAccess.isOwner || !memberAccess.permissions) return true;
     const needed = SIDEBAR_PERMISSION[item.key];
     if (!needed) return true;
-    return Boolean(memberAccess.permissions[needed]);
+    const fallback = SIDEBAR_PERMISSION_FALLBACK[item.key];
+    return Boolean(memberAccess.permissions[needed] || (fallback && memberAccess.permissions[fallback]));
   });
 
   const groupedItems = groups.map(group => ({

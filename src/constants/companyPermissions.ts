@@ -76,7 +76,9 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     label: 'Formation',
     actions: [
       { id: 'view', label: 'Voir' },
+      { id: 'create', label: 'Créer' },
       { id: 'edit', label: 'Modifier' },
+      { id: 'delete', label: 'Supprimer' },
     ],
   },
   {
@@ -86,6 +88,100 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { id: 'view', label: 'Voir' },
       { id: 'listen', label: 'Écouter' },
       { id: 'validate', label: 'Valider' },
+      { id: 'export', label: 'Exporter' },
+    ],
+  },
+  {
+    id: 'dashboard',
+    label: 'Tableau de bord',
+    actions: [{ id: 'view', label: 'Voir' }],
+  },
+  {
+    id: 'agents',
+    label: 'Agents',
+    actions: [
+      { id: 'view', label: 'Voir' },
+      { id: 'create', label: 'Créer' },
+      { id: 'edit', label: 'Modifier' },
+      { id: 'remove', label: 'Retirer' },
+    ],
+  },
+  {
+    id: 'planning',
+    label: 'Planification',
+    actions: [
+      { id: 'view', label: 'Voir' },
+      { id: 'create', label: 'Créer' },
+      { id: 'edit', label: 'Modifier' },
+      { id: 'delete', label: 'Supprimer' },
+    ],
+  },
+  {
+    id: 'emails',
+    label: 'E-mails',
+    actions: [
+      { id: 'view', label: 'Voir' },
+      { id: 'create', label: 'Créer' },
+      { id: 'send', label: 'Envoyer' },
+    ],
+  },
+  {
+    id: 'chat',
+    label: 'Chat',
+    actions: [
+      { id: 'view', label: 'Voir' },
+      { id: 'reply', label: 'Répondre' },
+    ],
+  },
+  {
+    id: 'voice',
+    label: 'Assistant vocal',
+    actions: [
+      { id: 'view', label: 'Voir' },
+      { id: 'edit', label: 'Configurer' },
+    ],
+  },
+  {
+    id: 'activation',
+    label: 'Activation des gigs',
+    actions: [
+      { id: 'view', label: 'Voir' },
+      { id: 'edit', label: 'Modifier' },
+    ],
+  },
+  {
+    id: 'quality',
+    label: 'Qualité',
+    actions: [
+      { id: 'view', label: 'Voir' },
+      { id: 'review', label: 'Contrôler' },
+    ],
+  },
+  {
+    id: 'operations',
+    label: 'Opérations',
+    actions: [{ id: 'view', label: 'Voir' }],
+  },
+  {
+    id: 'analytics',
+    label: 'Analytique',
+    actions: [{ id: 'view', label: 'Voir' }],
+  },
+  {
+    id: 'wallet',
+    label: 'Portefeuille',
+    actions: [
+      { id: 'view', label: 'Voir' },
+      { id: 'deposit', label: 'Déposer' },
+      { id: 'withdraw', label: 'Retirer' },
+    ],
+  },
+  {
+    id: 'subscription',
+    label: 'Abonnement',
+    actions: [
+      { id: 'view', label: 'Voir' },
+      { id: 'change', label: 'Changer de plan' },
     ],
   },
   {
@@ -161,21 +257,35 @@ export function permissionsForPreset(preset: string): PermissionMap {
 
 /** Sidebar item key → permission required to see it. Owners skip this map. */
 export const SIDEBAR_PERMISSION: Record<string, string> = {
-  'premium-dashboard': 'calls.view',
+  'premium-dashboard': 'dashboard.view',
   calls: 'calls.view',
+  'cc-agents': 'agents.view',
   leads: 'leads.view',
   'rep-matching': 'matching.view',
   training: 'training.view',
-  scheduler: 'matching.view',
-  emails: 'calls.view',
-  'live-chat': 'calls.view',
+  scheduler: 'planning.view',
+  emails: 'emails.view',
+  'live-chat': 'chat.view',
   gigs: 'gigs.view',
   'script-generator': 'scripts.view',
   'knowledge-base': 'knowledge.view',
   telephony: 'telephony.view',
+  'voice-assistant': 'voice.view',
+  integrations: 'activation.view',
+  'quality-assurance': 'quality.view',
+  operations: 'operations.view',
+  analytics: 'analytics.view',
+  team: 'members.view',
+};
+
+/** Older memberships were granted through these keys before each area had its own right. */
+export const SIDEBAR_PERMISSION_FALLBACK: Record<string, string> = {
+  'premium-dashboard': 'calls.view',
+  scheduler: 'matching.view',
+  emails: 'calls.view',
+  'live-chat': 'calls.view',
   integrations: 'gigs.activate',
   'quality-assurance': 'calls.view',
   operations: 'calls.view',
   analytics: 'calls.view',
-  team: 'members.view',
 };

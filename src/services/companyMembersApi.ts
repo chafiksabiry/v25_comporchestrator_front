@@ -28,11 +28,19 @@ export type CompanyMember = {
   phone?: string;
   isOwner: boolean;
   preset: PresetId;
+  roleId?: string | null;
+  roleName?: string;
   status: 'pending' | 'invited' | 'active' | string;
   online?: boolean;
   lastSeenAt?: string | null;
   permissions: PermissionMap;
   invitedAt?: string | null;
+};
+
+export type CompanyRole = {
+  _id: string;
+  name: string;
+  permissions: PermissionMap;
 };
 
 export type CompanyAccess = {
@@ -87,6 +95,7 @@ export async function inviteCompanyMember(payload: {
   email: string;
   phone?: string;
   preset: string;
+  roleId?: string | null;
   permissions: PermissionMap;
 }): Promise<{ member: CompanyMember; emailSent: boolean; emailError?: string | null; temporaryPassword?: string }> {
   const res = await fetch(`${getRegistrationBackendBase()}/api/company-members`, {
@@ -115,7 +124,7 @@ export async function reinviteCompanyMember(
 export async function updateCompanyMember(
   companyId: string,
   userId: string,
-  payload: { preset: string; permissions: PermissionMap }
+  payload: { preset: string; permissions: PermissionMap; roleId?: string | null }
 ): Promise<CompanyMember> {
   const qs = new URLSearchParams({ companyId });
   const res = await fetch(
@@ -136,6 +145,56 @@ export async function removeCompanyMember(companyId: string, userId: string): Pr
   if (caller) qs.set('userId', caller);
   const res = await fetch(
     `${getRegistrationBackendBase()}/api/company-members/${userId}?${qs.toString()}`,
+    { method: 'DELETE', headers: authHeaders() }
+  );
+  await parse(res);
+}
+
+export async function listCompanyRoles(companyId: string): Promise<CompanyRole[]> {
+  const qs = new URLSearchParams({ companyId });
+  const res = await fetch(`${getRegistrationBackendBase()}/api/company-members/roles?${qs.toString()}`, {
+    headers: authHeaders(),
+  });
+  const json = await parse(res);
+  return Array.isArray(json.data) ? json.data : [];
+}
+
+export async function createCompanyRole(payload: {
+  companyId: string;
+  name: string;
+  permissions: PermissionMap;
+}): Promise<CompanyRole> {
+  const res = await fetch(`${getRegistrationBackendBase()}/api/company-members/roles`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+  const json = await parse(res);
+  return json.data;
+}
+
+export async function updateCompanyRole(
+  companyId: string,
+  roleId: string,
+  payload: { name?: string; permissions?: PermissionMap }
+): Promise<CompanyRole> {
+  const qs = new URLSearchParams({ companyId });
+  const res = await fetch(
+    `${getRegistrationBackendBase()}/api/company-members/roles/${roleId}?${qs.toString()}`,
+    {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ companyId, ...payload }),
+    }
+  );
+  const json = await parse(res);
+  return json.data;
+}
+
+export async function deleteCompanyRole(companyId: string, roleId: string): Promise<void> {
+  const qs = new URLSearchParams({ companyId });
+  const res = await fetch(
+    `${getRegistrationBackendBase()}/api/company-members/roles/${roleId}?${qs.toString()}`,
     { method: 'DELETE', headers: authHeaders() }
   );
   await parse(res);

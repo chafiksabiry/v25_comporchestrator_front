@@ -11,10 +11,14 @@ import {
 import {
   inviteCompanyMember,
   listCompanyMembers,
+  listCompanyRoles,
+  createCompanyRole,
+  deleteCompanyRole,
   reinviteCompanyMember,
   removeCompanyMember,
   updateCompanyMember,
   type CompanyMember,
+  type CompanyRole,
 } from '../../../services/companyMembersApi';
 
 const PRESETS: { id: Exclude<PresetId, 'owner' | 'custom'>; label: string; hint: string }[] = [
@@ -102,6 +106,7 @@ function PermissionGrid({
 export default function CompanyMembersPage() {
   const companyId = Cookies.get('companyId') || localStorage.getItem('companyId') || '';
   const [members, setMembers] = useState<CompanyMember[]>([]);
+  const [roles, setRoles] = useState<CompanyRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -116,6 +121,12 @@ export default function CompanyMembersPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [reinviteId, setReinviteId] = useState<string | null>(null);
   const [reinviteEmail, setReinviteEmail] = useState('');
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  const [editRoleId, setEditRoleId] = useState<string | null>(null);
+  const [showRoleForm, setShowRoleForm] = useState(false);
+  const [roleName, setRoleName] = useState('');
+  const [roleRights, setRoleRights] = useState<PermissionMap>(() => emptyPermissions());
+  const [savingRole, setSavingRole] = useState(false);
 
   const load = useCallback(async (silent = false) => {
     if (!companyId) {
@@ -126,7 +137,12 @@ export default function CompanyMembersPage() {
     if (!silent) setLoading(true);
     if (!silent) setError(null);
     try {
-      setMembers(await listCompanyMembers(companyId));
+      const [nextMembers, nextRoles] = await Promise.all([
+        listCompanyMembers(companyId),
+        listCompanyRoles(companyId).catch(() => [] as CompanyRole[]),
+      ]);
+      setMembers(nextMembers);
+      setRoles(nextRoles);
     } catch (e: any) {
       if (!silent) setError(e?.message || 'Impossible de charger l\'équipe.');
     } finally {
@@ -167,7 +183,52 @@ export default function CompanyMembersPage() {
 
   const applyPreset = (id: Exclude<PresetId, 'owner' | 'custom'>) => {
     setPreset(id);
+    setSelectedRoleId(null);
     setRights(permissionsForPreset(id));
+  };
+
+  const applyRole = (role: CompanyRole) => {
+    setSelectedRoleId(role._id);
+    setPreset('custom');
+    setRights({ ...emptyPermissions(), ...role.permissions });
+  };
+
+  const onCreateRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!companyId) return;
+    setSavingRole(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const created = await createCompanyRole({
+        companyId,
+        name: roleName.trim(),
+        permissions: roleRights,
+      });
+      setRoles((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setRoleName('');
+      setRoleRights(emptyPermissions());
+      setShowRoleForm(false);
+      setSuccess(`Rôle « ${created.name} » créé.`);
+    } catch (err: any) {
+      setError(err?.message || 'Création du rôle impossible.');
+    } finally {
+      setSavingRole(false);
+    }
+  };
+
+  const onDeleteRole = async (role: CompanyRole) => {
+    if (!companyId) return;
+    if (!window.confirm(`Supprimer le rôle « ${role.name} » ? Les membres gardent leurs droits actuels.`)) return;
+    setError(null);
+    try {
+      await deleteCompanyRole(companyId, role._id);
+      setRoles((prev) => prev.filter((item) => item._id !== role._id));
+      if (selectedRoleId === role._id) setSelectedRoleId(null);
+      setSuccess(`Rôle « ${role.name} » supprimé.`);
+    } catch (err: any) {
+      setError(err?.message || 'Suppression du rôle impossible.');
+    }
   };
 
   const onInvite = async (e: React.FormEvent) => {
@@ -184,6 +245,7 @@ export default function CompanyMembersPage() {
         email: form.email.trim(),
         phone: form.phone.trim(),
         preset,
+        roleId: selectedRoleId,
         permissions: rights,
       });
       if (result.emailSent) {
@@ -211,6 +273,7 @@ export default function CompanyMembersPage() {
     setEditingId(member.userId);
     setEditRights({ ...emptyPermissions(), ...member.permissions });
     setEditPreset(member.preset || 'custom');
+    setEditRoleId(member.roleId || null);
   };
 
   const saveEdit = async (userId: string) => {
@@ -218,7 +281,11 @@ export default function CompanyMembersPage() {
     setBusyId(userId);
     setError(null);
     try {
-      await updateCompanyMember(companyId, userId, { preset: editPreset, permissions: editRights });
+      await updateCompanyMember(companyId, userId, {
+        preset: editPreset,
+        permissions: editRights,
+        roleId: editRoleId,
+      });
       setEditingId(null);
       setSuccess('Droits mis à jour.');
       await load();
@@ -319,6 +386,67 @@ export default function CompanyMembersPage() {
         </div>
       ) : null}
 
+      <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">Rôles</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Créez un rôle et cochez chaque fonctionnalité : tableau de bord, gigs, prospects, appels, planification, e-mails, chat, qualité, portefeuille, abonnement.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowRoleForm((open) => !open)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+          >
+            <Shield size={14} />
+            {showRoleForm ? 'Fermer' : 'Nouveau rôle'}
+          </button>
+        </div>
+        {roles.length === 0 ? (
+          <p className="text-sm font-semibold text-slate-500">Aucun rôle enregistré. Les profils Admin, Opérateur et Lecture seule restent disponibles.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {roles.map((role) => (
+              <span key={role._id} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-700">
+                {role.name}
+                <button
+                  type="button"
+                  onClick={() => void onDeleteRole(role)}
+                  className="text-rose-600 hover:text-rose-800"
+                  aria-label={`Supprimer ${role.name}`}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        {showRoleForm ? (
+          <form onSubmit={onCreateRole} className="space-y-3 border-t border-slate-100 pt-3">
+            <label className="block text-xs font-bold text-slate-600">
+              Nom du rôle
+              <input
+                required
+                value={roleName}
+                onChange={(e) => setRoleName(e.target.value)}
+                placeholder="Ex. Superviseur, Finance, Recrutement"
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900"
+              />
+            </label>
+            <PermissionGrid value={roleRights} onChange={setRoleRights} />
+            <button
+              type="submit"
+              disabled={savingRole}
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-black text-white disabled:opacity-60"
+            >
+              {savingRole ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              Enregistrer le rôle
+            </button>
+          </form>
+        ) : null}
+      </section>
+
       {showForm ? (
         <form onSubmit={onInvite} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 text-harx-600">
@@ -372,14 +500,31 @@ export default function CompanyMembersPage() {
                   type="button"
                   onClick={() => applyPreset(item.id)}
                   className={`rounded-xl border px-3 py-2 text-left ${
-                    preset === item.id
+                    preset === item.id && !selectedRoleId
                       ? 'border-slate-900 bg-slate-900 text-white'
                       : 'border-slate-200 bg-white text-slate-700'
                   }`}
                 >
                   <span className="block text-xs font-black uppercase">{item.label}</span>
-                  <span className={`block text-[11px] ${preset === item.id ? 'text-white/70' : 'text-slate-500'}`}>
+                  <span className={`block text-[11px] ${preset === item.id && !selectedRoleId ? 'text-white/70' : 'text-slate-500'}`}>
                     {item.hint}
+                  </span>
+                </button>
+              ))}
+              {roles.map((role) => (
+                <button
+                  key={role._id}
+                  type="button"
+                  onClick={() => applyRole(role)}
+                  className={`rounded-xl border px-3 py-2 text-left ${
+                    selectedRoleId === role._id
+                      ? 'border-slate-900 bg-slate-900 text-white'
+                      : 'border-slate-200 bg-white text-slate-700'
+                  }`}
+                >
+                  <span className="block text-xs font-black uppercase">{role.name}</span>
+                  <span className={`block text-[11px] ${selectedRoleId === role._id ? 'text-white/70' : 'text-slate-500'}`}>
+                    Rôle enregistré
                   </span>
                 </button>
               ))}
@@ -430,7 +575,7 @@ export default function CompanyMembersPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-sm font-black text-slate-900">{member.fullName || member.email}</h3>
                       <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-600">
-                        {member.isOwner ? 'Propriétaire' : member.preset}
+                        {member.isOwner ? 'Propriétaire' : (member.roleName || member.preset)}
                       </span>
                       <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
                         member.isOwner || member.status === 'active'
@@ -528,6 +673,7 @@ export default function CompanyMembersPage() {
                           type="button"
                           onClick={() => {
                             setEditPreset(item.id);
+                            setEditRoleId(null);
                             setEditRights(permissionsForPreset(item.id));
                           }}
                           className={`rounded-lg border px-2.5 py-1 text-[11px] font-black uppercase ${
@@ -537,6 +683,24 @@ export default function CompanyMembersPage() {
                           }`}
                         >
                           {item.label}
+                        </button>
+                      ))}
+                      {roles.map((role) => (
+                        <button
+                          key={role._id}
+                          type="button"
+                          onClick={() => {
+                            setEditPreset('custom');
+                            setEditRoleId(role._id);
+                            setEditRights({ ...emptyPermissions(), ...role.permissions });
+                          }}
+                          className={`rounded-lg border px-2.5 py-1 text-[11px] font-black uppercase ${
+                            editRoleId === role._id
+                              ? 'border-slate-900 bg-slate-900 text-white'
+                              : 'border-slate-200 text-slate-600'
+                          }`}
+                        >
+                          {role.name}
                         </button>
                       ))}
                     </div>
