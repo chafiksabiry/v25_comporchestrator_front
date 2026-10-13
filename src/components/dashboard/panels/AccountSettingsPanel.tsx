@@ -526,11 +526,17 @@ function AccountSettingsPanel() {
                 setPwdLoading(true);
                 try {
                   const token = localStorage.getItem('token') || Cookies.get('token') || '';
-                  await axios.post(
+                  const { data } = await axios.post(
                     `${backendUrl}/api/auth/change-password`,
                     { newPassword: pwdNew },
                     { headers: token ? { Authorization: `Bearer ${token}` } : {} }
                   );
+                  // The old token still carries mustChangePassword:true (JWTs
+                  // are immutable) and would now be rejected by the backend
+                  // on every other request — swap in the fresh one.
+                  if (data?.token) {
+                    localStorage.setItem('token', data.token);
+                  }
                   localStorage.removeItem('mustChangePassword');
                   setForcePassword(false);
                   setPwdNew('');
